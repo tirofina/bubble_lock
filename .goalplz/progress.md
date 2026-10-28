@@ -80,3 +80,7 @@ source commit `113b03c`를 만들고 `git push origin codex/keyring-namho`가 �
 - 테스트/린트/정적분석/build/flash/장비·COM/CLI 실행/앱·서비스·컨테이너 재시작/검증용 데이터 생성은 모두 미실행이다. 전체 goal의 실물·통합·release 증거는 미완료다.
 
 다음 작업은 중앙 정산 및 INTEGRATION API 계약이 생기면 연동하고, 독립적으로 남은 현장 운용·재연결·전원 상태 전달을 구현하는 것이다. 이 checkpoint의 commit/push 결과는 실제 Git 출력으로 후속 기록한다.
+
+### Journal 소스 업로드 결과
+
+source commit `6203dec`의 일반 push가 성공했다(`365f4e7..6203dec`, origin/codex/keyring-namho). main/CORE·운영 서버는 변경하지 않았다. 이것은 구현 코드 업로드이며 실제 장치 capture/보관·정산·reclaim·동작 검증 증거가 아니다. 구현 상태의 sourceCommit도6203dec로 갱신했다. goal은 active이고 필수 실물/통합/release 증거는 남아 있다.

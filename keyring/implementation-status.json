@@ -85,12 +85,12 @@
   "releaseSha": null,
   "firmwareRevision": "keyring-0.5.0",
   "publication": {
-    "sourceCommit": "113b03c",
+    "sourceCommit": "6203dec",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "113b03c",
-    "latestCheckpoint": "firmware 0.5.0 journal capture and Gateway archive source (unverified)"
+    "latestLocalSourceCommit": "6203dec",
+    "latestCheckpoint": "firmware 0.5.0 read-only journal export and Gateway archive source pushed (unverified)"
   }
 }
