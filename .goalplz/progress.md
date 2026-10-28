@@ -167,3 +167,11 @@ source commit `3d0f0cc` 일반 push가 성공했다(`c5f1617..3d0f0cc`, origin/c
 - 같은 빌드·검증 허가 부재를 앞 질문 턴에 이어 이번에도 확인했다(2회). 아직3회 blocked 기준 전이므로 goal을 active로 유지하고 질문을 중복 생성하지 않는다. 권한/중앙 계약/자료가 바뀌지 않은 채 반복 상태 문서만 만들어 기능 진척으로 계산하지 않는다.
 
 전체 goal은 미완료다. 검증·빌드·실행은 미실행이며 기존 허가 질문의 답변을 기다린다. 이 대조 기록은 release evidence가 아니다.
+
+## 2026-10-28 — blocked 전환 / 반복 실행 중단
+
+직전 턴은 완료 조건·지정 reference 부재를 파일로 대조한 문서 작업이었으며 새 구현/검증 진척으로 계산하지 않는다. 이번 재확인에서도 기존 build/unit-test 허가 질문에 답변이 없고 main/CORE는91a281b다. 이전 질문 턴·공백 대조 턴·이번 턴의 동일 조건3회 후, 더 진행할 새 승인/계약/자료가 없으므로 update_goal(status=blocked)를 호출했고 실제 반환 status=blocked를 확인했다.
+
+검증·빌드·테스트 데이터/fixture·장비·서비스·기존 DB 실행은 하지 않았다. 기능을 임의 추가하거나 같은 상태 기록을 진척으로 계산하며 계속 돌리지 않는다. 전체 목표를 complete로 표시하지 않는다. source firmware0.7.0/Gateway0.2.0은3d0f0cc이며 직전 증거 공백 문서는7f0e3ab로 업로드돼 있다.
+
+다음 진행에는 기존 질문의 로컬3개 compile profile·Gateway 모의 단위 테스트(+필요 개발 dependency) 범위에 대한 현재 작업의 명시적 요청이 필요하다. 그 허가도 flash/COM/실제 BLE·장비·기존 DB·운영 서비스 실행을 포함하지 않는다. 최종 완료의 중앙 INTEGRATION·settlement/recovery 계약, JD9853 구매 모듈 초기화, 지정 원문과 실제 Pi/측정/통합/영상·release evidence도 남아 있다. 이 마지막 상태 commit/push는 기록 보존이며 구현 진척이나 시험 통과가 아니다.

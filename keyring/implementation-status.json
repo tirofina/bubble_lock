@@ -126,5 +126,14 @@
     ],
     "missingReferenceScope": "exact repository/original workspace root paths only",
     "currentBuildTestAuthorization": "unanswered-existing-question"
+  },
+  "goalExecutionState": {
+    "goalStatus": "blocked",
+    "consecutiveGoalTurns": 3,
+    "reason": "Existing local build/unit-test authorization question remains unanswered; required central contracts, referenced originals and real-device evidence are not supplied.",
+    "latestRemoteCore": "91a281b",
+    "sourceCommit": "3d0f0cc",
+    "sourceValidation": "not-run",
+    "nextAuthorizedScope": "Await explicit current-task request for three local compile profiles and Gateway mock unit tests, including required development dependencies; no flash/COM/live BLE/device/existing DB or operational-service execution."
   }
 }
