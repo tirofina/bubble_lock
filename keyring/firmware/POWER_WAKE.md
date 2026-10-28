@@ -1,6 +1,6 @@
 # r18 저전력·깨우기 구현
 
-ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.3.0 · 상태 implemented / unverified.
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.4.0 · 상태 implemented / unverified.
 
 ## 설정과 가용성
 
@@ -31,7 +31,7 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.3.0 · 상태 imple
 
 ## 절전 상태 전환
 
-가속도계 인터럽트가 정상 구성되고 저장소가 정상이며, 연결·대기 명령·전송 중 receipt·출력·하드웨어 fault가 없을 때만 진입을 검토한다. 기존 interrupt를 지우는 순간 새 움직임이 발견되면 진입을 취소한다. 연결 callback과 절전 예약은 같은 link lock으로 조정하고 절전 예약 후 새 연결을 수락하지 않는다.
+가속도계 인터럽트가 정상 구성되고 저장소가 정상이며, 연결·대기 명령·전송 중 receipt·출력·하드웨어 fault가 없을 때만 진입을 검토한다. keyring-0.4.0은 audio worker·보조 전원 화면 창·LCD/SD I/O·SD queue도 유휴여야 하며 절전 예약 후 peripheral worker의 신규 I/O를 막는다. 기존 interrupt를 지우는 순간 새 움직임이 발견되면 진입을 취소한다. 연결 callback과 절전 예약은 같은 link lock으로 조정하고 절전 예약 후 새 연결을 수락하지 않는다.
 
 [ESP-IDF4.4.7 ESP32-S3 sleep 문서](https://docs.espressif.com/projects/esp-idf/en/v4.4.7/esp32s3/api-reference/system/sleep_modes.html)의 EXT0/EXT1/timer 방식을 적용했다. EXT0는 motion GPIO17의 HIGH, EXT1 ANY_LOW는 확인/비상 GPIO6·7, timer는 재광고 기회를 담당한다. 지원 핀·API 오류는 runtime에서 진입을 막는다. RTC 버튼 pull-up과 출력 hold를 설정하고 BLE stack을 종료한 뒤 deep sleep을 호출한다.
 

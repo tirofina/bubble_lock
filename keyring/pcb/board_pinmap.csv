@@ -15,9 +15,9 @@ SD_CS,10,HIGH,microSD select
 SD_MISO,11,UNCONFIGURED,microSD input
 I2C_SDA,14,I2C,I2C at 100kHz
 I2C_SCL,21,I2C,I2C at 100kHz
-I2S_LRCLK_RAW,40,UNCONFIGURED,Audio driver not implemented
-I2S_BCLK_RAW,41,UNCONFIGURED,Audio driver not implemented
-I2S_DOUT_RAW,42,UNCONFIGURED,Audio driver not implemented
+I2S_LRCLK_RAW,40,UNCONFIGURED,Optional MAX98357A I2S cue; disabled by default
+I2S_BCLK_RAW,41,UNCONFIGURED,Optional MAX98357A I2S cue; disabled by default
+I2S_DOUT_RAW,42,UNCONFIGURED,Optional MAX98357A I2S cue; disabled by default
 HP_MCLK_RAW,13,UNCONFIGURED,Headphone driver not implemented
 USB_500_EN,47,LOW,BQ24074 EN1; remain USB100
 USB_LIMIT_EN2,9,LOW,BQ24074 EN2; remain USB100

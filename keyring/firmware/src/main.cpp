@@ -16,9 +16,12 @@
 #include "firmware_options.h"
 #include "motion_wake.h"
 #include "power_state.h"
+#include "audio_alert.h"
+#include "aux_rail.h"
+#include "peripherals.h"
 
 namespace {
-constexpr char FirmwareRevision[] = "keyring-0.3.0";
+constexpr char FirmwareRevision[] = "keyring-0.4.0";
 #if defined(KEYRING_LEGACY_GATT) && KEYRING_LEGACY_GATT
 constexpr char ServiceUuid[] = "8b8f0001-8e7a-4f36-a8c2-1c9b5d620001";
 constexpr char IdentityUuid[] = "8b8f0002-8e7a-4f36-a8c2-1c9b5d620001";
@@ -58,6 +61,10 @@ bool observationDirty = true;
 esp_timer_handle_t motorTimer = nullptr;
 volatile bool motorTimerFired = false;
 MotionWake motion;
+AudioAlert audio;
+Peripherals peripherals;
+uint64_t nextScreenAt = 0;
+bool audioPermitted() { return connected && authenticated && !sleepPreparing; }
 
 struct Frame { char bytes[MaxFrame + 1]; uint64_t firstAt, completedAt; uint32_t generation; };
 Frame processingFrame = {};
@@ -119,22 +126,25 @@ void loadJournal() {
 void output(int pin, int level) { digitalWrite(pin, level); pinMode(pin, OUTPUT); }
 bool readState() { return gpio_get_level(static_cast<gpio_num_t>(board::Motor)) != 0; }
 void stopMotor() {
+  audio.stop();
   gpio_set_level(static_cast<gpio_num_t>(board::Motor), 0);
-  gpio_set_level(static_cast<gpio_num_t>(board::AuxEnable), 0);
+  auxRail::alert(false);
   motorStopAt = 0;
   if (motorTimer) esp_timer_stop(motorTimer);
   observationDirty = true;
 }
 void motorExpired(void *) {
-  // Timer task does no JSON, BLE, I2C, or flash work; motor off is independent of those paths.
+  // GPIO mute uses a short lock; no I2S, JSON, BLE, I2C, or flash operation runs here.
+  audio.stop();
   gpio_set_level(static_cast<gpio_num_t>(board::Motor), 0);
-  gpio_set_level(static_cast<gpio_num_t>(board::AuxEnable), 0);
+  auxRail::alert(false);
   motorTimerFired = true;
 }
 void safePins() {
   output(board::Motor, LOW);
   gpio_set_direction(static_cast<gpio_num_t>(board::Motor), GPIO_MODE_INPUT_OUTPUT);
   output(board::AuxEnable, LOW);
+  gpio_set_direction(static_cast<gpio_num_t>(board::AuxEnable), GPIO_MODE_INPUT_OUTPUT);
   output(board::AmpMute, HIGH);
   output(board::LcdBacklight, HIGH);
   output(board::UsbEn1, LOW); // USB100. This firmware never opts into USB500.
@@ -254,6 +264,10 @@ void publishObservation() {
   values["wake"] = powerState::wakeCause();
   values["wakePins"] = powerState::wakePins();
   values["power"] = powerState::status();
+  values["audio"] = audio.status();
+  values["display"] = peripherals.displayStatus();
+  values["sd"] = peripherals.sdStatus();
+  values["sdDropped"] = peripherals.droppedLogs();
   std::string frame = jsonText(doc);
   if (frame.size() > 512 && !doc.overflowed()) {
     // Preserve battery and event identity first; large axis arrays are optional.
@@ -288,7 +302,9 @@ void publishReceipt(const char *commandId, const char *hash, const char *code,
   else doc["appliedUptimeMs"] = nullptr;
   doc["readback"]["state"] = record && record->phase == Completed ? record->readback != 0 : readState();
   doc["firmwareRevision"] = FirmwareRevision;
-  receiptTx.queue(jsonText(doc));
+  const std::string frame = jsonText(doc);
+  receiptTx.queue(frame);
+  peripherals.logReceipt(frame.data(), frame.size()); // Optional best-effort copy; NVS is canonical.
 }
 bool identifier(const char *value) {
   if (!value || !*value || strlen(value) > 64 || !isalnum(static_cast<unsigned char>(*value))) return false;
@@ -374,7 +390,7 @@ void processCommand(const Frame &frame) {
     uint64_t budget = remaining - elapsed;
     uint64_t pulse = min(static_cast<uint64_t>(board::MotorMaxOnMs), budget);
     motorTimerFired = false;
-    gpio_set_level(static_cast<gpio_num_t>(board::AuxEnable), 1);
+    if (!auxRail::alert(true)) { publishReceipt(id, hash, "INDETERMINATE", &r); return; }
     gpio_set_level(static_cast<gpio_num_t>(board::Motor), 1);
     // A failed start immediately clears both outputs. The timer task is independent of BLE/flash.
     motorStopAt = uptime() + pulse;
@@ -390,6 +406,9 @@ void processCommand(const Frame &frame) {
     // Keep the durable PREPARED copy in RAM. Do not claim completed storage.
     publishReceipt(id, hash, "INDETERMINATE", &journal[freeSlot]); return;
   }
+  if (desired && connected && authenticated && frame.generation == connectionGeneration &&
+      r.result == static_cast<uint8_t>(Result::Applied) && readState())
+    audio.startUntil(motorStopAt);
   publishReceipt(id, hash, r.result == static_cast<uint8_t>(Result::Applied) ? "APPLIED" : "READBACK_MISMATCH", &r);
   observationDirty = true;
 }
@@ -443,6 +462,7 @@ class ServerCallbacks : public BLEServerCallbacks {
     portENTER_CRITICAL(&linkMux);
     connected = false; authenticated = false; disconnected = true; ++connectionGeneration;
     portEXIT_CRITICAL(&linkMux);
+    audio.stop();
   }
 };
 class SecurityCallbacks : public BLESecurityCallbacks {
@@ -501,7 +521,7 @@ void initBle() {
 namespace {
 void considerSleep(uint64_t now) {
   if (!powerState::idle(now) || connected || !storageHealthy || !motion.ready() ||
-      motorStopAt || readState() || uxQueueMessagesWaiting(commandQueue) != 0 ||
+      motorStopAt || readState() || audio.busy() || auxRail::busy() || peripherals.busy() || uxQueueMessagesWaiting(commandQueue) != 0 ||
       !receiptTx.active.empty() || !receiptTx.pending.empty() ||
       digitalRead(board::MainFaultN) == LOW) return;
   if (!motion.clearForSleep()) {
@@ -514,9 +534,14 @@ void considerSleep(uint64_t now) {
   if (entering) sleepPreparing = true;
   portEXIT_CRITICAL(&linkMux);
   if (!entering) return;
+  if (!peripherals.prepareSleep()) {
+    portENTER_CRITICAL(&linkMux); sleepPreparing = false; portEXIT_CRITICAL(&linkMux);
+    return;
+  }
   BLEDevice::getAdvertising()->stop();
   stopMotor();
   powerState::enter(); // Does not return after successful deep sleep.
+  peripherals.resume();
   portENTER_CRITICAL(&linkMux);
   sleepPreparing = false;
   portEXIT_CRITICAL(&linkMux);
@@ -549,6 +574,9 @@ void setup() {
     Serial.println("KEYRING LOCKED: set a per-device passkey and valid identity before enabling BLE.");
     return;
   }
+  audio.begin(audioPermitted); // Optional; no audio path bypasses link authorization.
+  auxRail::begin();
+  peripherals.begin();
   initBle(); sampleSensors(); publishObservation();
   Serial.printf("KEYRING ready: %s, storage=%s, radioSleep=%s\n", deviceId,
       storageHealthy ? "ready" : "error", radioSleepEnabled ? "enabled" : "unavailable");
@@ -566,6 +594,7 @@ void loop() {
     motorTimerFired = false; stopMotor();
   }
   bool changedConfirm = confirm.update(now), changedPanic = panic.update(now);
+  if ((changedConfirm && confirm.pressed) || (changedPanic && panic.pressed)) peripherals.show();
   if (changedConfirm || changedPanic) observationDirty = true;
   if (confirm.pressed || panic.pressed || changedConfirm || changedPanic) powerState::activity(now);
   if (motion.poll(now)) { powerState::activity(now); observationDirty = true; }
@@ -575,6 +604,16 @@ void loop() {
   }
   if (now - lastObservation >= board::ObserveMs) { sampleSensors(); observationDirty = true; }
   if (observationDirty) publishObservation();
+  auxRail::service();
+  if (now >= nextScreenAt) {
+    KeyringScreen screen;
+    screen.linked = connected; screen.authenticated = authenticated;
+    screen.batteryValid = sensors.fuel; screen.battery = sensors.battery;
+    screen.confirm = confirm.pressed; screen.panic = panic.pressed;
+    screen.motor = readState(); screen.fault = digitalRead(board::MainFaultN) == LOW;
+    screen.journal = storageHealthy; screen.motionEvents = motion.events();
+    peripherals.update(screen); nextScreenAt = now + 250;
+  }
   receiptTx.tick(now); observationTx.tick(now);
   considerSleep(now);
   // Yield to BLE and idle tasks. Manual light-sleep is deliberately not entered with active BLE.

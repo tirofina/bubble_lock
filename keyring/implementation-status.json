@@ -8,7 +8,16 @@
   "branch": "codex/keyring-namho",
   "status": "implemented",
   "verificationStatus": "not-run",
-  "rubricIds": ["R01", "R02", "R03", "R05", "R10", "R11", "R12", "R15"],
+  "rubricIds": [
+    "R01",
+    "R02",
+    "R03",
+    "R05",
+    "R10",
+    "R11",
+    "R12",
+    "R15"
+  ],
   "implemented": [
     "r18 pin-based firmware and safe boot outputs",
     "MAX17048 battery and LIS2DW12 acceleration observations",
@@ -23,7 +32,12 @@
     "CORE v1 BLE UUID profile and optional durable MQTT projection",
     "persistent CORE sequence across firmware restarts",
     "isolated Mobius4 development server configuration and provisioning",
-    "contract schemas and manual deployment instructions"
+    "contract schemas and manual deployment instructions",
+    "optional ST7789 and JD9853 display profiles with local status UI",
+    "authorized MAX98357A I2S speaker cue with independent mute and deadline guards",
+    "shared AUX rail ownership and alert priority over LCD backlight",
+    "single-worker shared SPI and optional capped microSD receipt copies",
+    "peripheral I/O reservation before deep sleep"
   ],
   "existingHardware": {
     "status": "referenced-existing-assets",
@@ -41,12 +55,20 @@
     "central settlement and safe device journal archival procedure"
   ],
   "notImplemented": [
-    "LCD UI, I2S audio and microSD drivers",
+    "purchased JD9853 module-specific power/gamma initialization confirmation",
+    "MAX9850 headphone output",
     "OTA, secure boot and flash encryption deployment"
   ],
   "notPerformed": [
-    "firmware build", "flash", "lint", "tests", "gateway/device runtime execution", "hardware validation",
-    "power/range measurement", "integration demo", "video evidence"
+    "firmware build",
+    "flash",
+    "lint",
+    "tests",
+    "gateway/device runtime execution",
+    "hardware validation",
+    "power/range measurement",
+    "integration demo",
+    "video evidence"
   ],
   "actualReceipt": null,
   "temporaryServer": {
@@ -58,7 +80,7 @@
   },
   "logSha256": null,
   "releaseSha": null,
-  "firmwareRevision": "keyring-0.3.0",
+  "firmwareRevision": "keyring-0.4.0",
   "publication": {
     "sourceCommit": "7835874",
     "remoteBranch": "codex/keyring-namho",
@@ -66,6 +88,6 @@
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
     "latestLocalSourceCommit": "d6efe71",
-    "latestCheckpoint": "firmware power and motion wake source (unverified)"
+    "latestCheckpoint": "firmware 0.4.0 optional LCD/audio/SD source (unverified)"
   }
 }

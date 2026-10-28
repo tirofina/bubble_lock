@@ -50,3 +50,16 @@ Bootstrap가 완료되어 AE(ty2), container 3개(ty3), binarySwitch(ty28) 모�
 ### Git 재접속 명시 승인
 
 사용자가 질문에 `Git 재접속·역할 브랜치 업로드 허용`으로 답했다. 이에 따라 Git fetch를 재개했고 원격 main/CORE가 기존91a281b와 같은 상태임을 확인했다. 새 source commit은 로컬 `d6efe71`이다. 이 기록을 commit한 후 해당 역할 브랜치의 일반 push를 수행한다. GitHub PR API의 권한 오류가 해결됐다고 추정하거나 PR 생성을 재시도하지 않는다.
+
+## 2026-10-28 — 화면 두 종류·음향·SD checkpoint
+
+- 사용자 명시 승인으로 Git 재접속 후 이전 source d6efe71과 기록 a0fb438 push가 성공했다. 이번 fetch에서도 원격 main/CORE는91a281b이며 새 중앙 계약 변경은 없었다. PR API는 재시도하지 않았다.
+- 사용자가 LCD 선택 질문에 `두 화면 모두 지원`으로 답했다. firmware keyring-0.4.0에 ST7789 1.54인치240×240 profile1과 JD9853 2.01인치240×296 후보 profile2를 작성했다. 기본 profile0이며 단일 실장 화면을 명시적으로 선택한다. write-only 패널을 탐지/검증됐다고 표시하지 않는다.
+- Arduino_GFX f71dbf6532b277401d70442f43a8fa9b61c6a7e3과 JD9853 원저자 source186e52d3c264c899d8910a63297e48a1d2a8d516을 저장소 외부에서 읽었다. 그래픽 dependency만 선언했고 설치/빌드는 하지 않았다. JD9853 COLMOD0x05와 별도 MADCTL/DCS 경로를 작성했으며 다른 패널 power/gamma table은 가져오지 않았다. 구매 모듈 초기화와 geometry/offset은 실물 미확인이다.
+- buydisplay 제조사 PDF 요청이HTTP403으로 실패해 해당 사이트 요청을 중단했다. 다른 도구/경로로 재시도하지 않았다. JD9853 기본 경로의 근거는 독립 드라이버 저자 코드이며 구매 패널 제조사 확인을 대신하지 않는다.
+- MAX98357A 제조사 자료와 ESP-IDF4.4.7 I2S API를 읽고 승인된 GPIO ON/NVS 완료 이후에만 cue를 요청하는 worker를 추가했다. disconnect/취소/모터 기한은 GPIO mute를 먼저 수행한다. 실물 음향·SPL·전력·clock 측정은 없다.
+- 최신 r18 J3/J10·pinmap에 맞춰 LCD/SD SPI를 단일 worker에서 직렬화했다. aux_rail은 motor/audio alert 중 백라이트를 선점하고 별도 timer로 화면 창/fault를 처리한다. 절전 예약은 신규 peripheral I/O를 막는다.
+- SD는 기본 비활성 평문 receipt 진단 복사다. queue8행/행1024byte/기본1MiB 상한이며 자동format/삭제/순환 덮어쓰기/재시도는 없다. NVS canonical journal을 대체하지 않는다. JSONL/FAT 전원 차단 원자성을 주장하지 않는다.
+- PERIPHERALS.md·third-party notices·핀맵·인터페이스·인수인계와 구현 상태를 갱신했다. tests/lint/정적분석/build/flash/Gateway 실행/컨테이너 재시작/장비·COM 시험/검증 데이터 생성은 모두 미실행이다.
+
+다음 구현: 중앙 정산 후 장치 journal 보관·재등록 계약, 실제 INTEGRATION 승인 API가 추가될 때 adapter 연동, 구매 LCD 모듈 초기화 자료 반영. 실물/통합 evidence와 release는 미완료이며 goal은 active다. 이번 소스 commit과 push 결과는 실제 Git 출력 후 별도 기록한다.

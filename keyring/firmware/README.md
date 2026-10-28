@@ -2,11 +2,11 @@
 
 ROLE: KEYRING · DOC-REV: 2.0.0 · 구현 계약: 0.1.0 · 상태: implemented, unverified
 
-ESP32-S3-WROOM-1-N16R8 / r18-hand-solder 보드를 대상으로 작성한 소스다. BLE 관측·버튼·배터리·가속도 수집과 진동 명령/receipt를 구현한다. 테스트·린트·컴파일·빌드·플래시·실물 실행은 이번 작업에서 수행하지 않았다.
+ESP32-S3-WROOM-1-N16R8 / r18-hand-solder 보드를 대상으로 작성한 소스다. keyring-0.4.0에서 BLE 관측·버튼·배터리·가속도 수집과 진동 명령/receipt, 선택형 ST7789·JD9853 상태 화면·스피커 cue·SD receipt 복사를 구현한다. 테스트·린트·컴파일·빌드·플래시·실물 실행은 이번 작업에서 수행하지 않았다.
 
 ## 구성과 준비
 
-`platformio.ini`는 espressif32 6.9.0, Arduino framework, ArduinoJson 6.21.5를 고정한다. 내장 ESP32 BLE 라이브러리를 사용한다. 보드 프로필의 개발보드 이름은 빌드 타깃 선택이며 실제 대상은 커스텀 N16R8 보드다. 16MB flash, octal PSRAM, USB CDC를 설정했다. `partitions.csv`는 factory 앱 하나와 NVS를 할당하며 OTA는 구현하지 않았다.
+`platformio.ini`는 espressif32 6.9.0, Arduino framework, ArduinoJson 6.21.5를 고정한다. 내장 ESP32 BLE 라이브러리를 사용한다. 그래픽 dependency Arduino_GFX는 commit f71dbf6532b277401d70442f43a8fa9b61c6a7e3으로 고정했다. 이번에 dependency 설치·빌드는 실행하지 않았다. 보드 프로필의 개발보드 이름은 빌드 타깃 선택이며 실제 대상은 커스텀 N16R8 보드다. 16MB flash, octal PSRAM, USB CDC를 설정했다. `partitions.csv`는 factory 앱 하나와 NVS를 할당하며 OTA는 구현하지 않았다.
 
 1. `include/provisioning.example.h`를 로컬 `include/provisioning.h`로 복사한다.
 2. 각 실물별로 다른 100000~999999 범위의 passkey를 설정한다. 예시 값 0이면 BLE가 시작되지 않는다.
@@ -54,6 +54,6 @@ MAX17048의 SOC와 VCELL을 읽고 실패 시 battery/voltage를 null로 보낸�
 
 LIS2DW12 WHO_AM_I를 확인하고 12.5Hz·low-power mode1·±2g·BDU·주소 증가를 설정해 3축을 g 단위로 보낸다. 레지스터와 감도 근거는 [LIS2DW12 제조사 데이터시트](https://www.st.com/resource/en/datasheet/lis2dw12.pdf)다. 초기화/읽기 실패는 accelStatus=unavailable이다. 낙상 판정이나 위치 추정은 구현하지 않았다.
 
-확인/비상 버튼은 active-low, debounce35ms이며 panic을 우선한다. 관측 의도를 전송하며 자체적으로 grant나 보호자 승인을 생성하지 않는다. 관측은2초 주기 또는 버튼/출력/움직임 변화 때 갱신한다. radio controller sleep 요청과 idle yield 외에 선택형 deep sleep·motion/버튼/timer wake 경로를 작성했다. `KEYRING_ENABLE_SLEEP` 기본값은0이며 연결 중에는 절전하지 않는다. 상세 설정·제약·미실행 인수 항목은 [POWER_WAKE.md](POWER_WAKE.md)에 있다. 화면·오디오·microSD 드라이버는 아직 미구현이며 배터리 수명·소비전류·깨우기 동작은 미확인이다.
+확인/비상 버튼은 active-low, debounce35ms이며 panic을 우선한다. 관측 의도를 전송하며 자체적으로 grant나 보호자 승인을 생성하지 않는다. 관측은2초 주기 또는 버튼/출력/움직임 변화 때 갱신한다. radio controller sleep 요청과 idle yield 외에 선택형 deep sleep·motion/버튼/timer wake 경로를 작성했다. `KEYRING_ENABLE_SLEEP` 기본값은0이며 연결 중에는 절전하지 않는다. 상세 설정·제약·미실행 인수 항목은 [POWER_WAKE.md](POWER_WAKE.md)에 있다. 화면·오디오·microSD는 기본 비활성 옵션으로 소스를 추가했으며 [PERIPHERALS.md](PERIPHERALS.md)에 두 화면 선택, JD9853 패널 초기화 미확인, 공용 전원·SPI와 SD 평문 기록 제약을 설명한다. 실물 주변장치 동작과 배터리 수명·소비전류·깨우기 동작은 미확인이다.
 
 충전 전류 모드는 USB100 기본값을 유지한다. 충전기·온도 보호·충전 LED는 하드웨어 회로이며 펌웨어가 충전 LED를 제어했다고 표시하지 않는다.

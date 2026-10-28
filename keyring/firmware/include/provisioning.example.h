@@ -12,3 +12,22 @@
 // Sensor threshold in FS/64 units and duration in ODR cycles; tune on real hardware.
 // #define KEYRING_WAKE_THRESHOLD 8
 // #define KEYRING_WAKE_DURATION 1
+// Optional MAX98357A cue accompanying an already-authorized motor pulse.
+// #define KEYRING_ENABLE_AUDIO 1
+// #define KEYRING_AUDIO_FREQUENCY 880
+// #define KEYRING_AUDIO_AMPLITUDE 512
+// One physical panel per device; both controller profiles are supported in source.
+// 0 = disabled, 1 = ST7789 1.54 inch 240x240, 2 = JD9853 2.01 inch candidate 240x296.
+// #define KEYRING_DISPLAY_PROFILE 1
+// #define KEYRING_LCD_ROTATION 0
+// #define KEYRING_LCD_X_OFFSET 0
+// #define KEYRING_LCD_Y_OFFSET 0
+// #define KEYRING_LCD_SHOW_MS 5000UL
+// JD9853 geometry comes from user panel evidence and remains physically unverified.
+// #define KEYRING_JD9853_WIDTH 240
+// #define KEYRING_JD9853_HEIGHT 296
+// #define KEYRING_JD9853_BGR 0
+// #define KEYRING_JD9853_INVERT 1
+// Optional plaintext receipt copies; use only an explicitly provisioned, protected card.
+// #define KEYRING_ENABLE_SD_LOG 1
+// #define KEYRING_SD_MAX_BYTES 1048576UL
