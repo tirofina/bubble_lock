@@ -116,3 +116,7 @@ source commit `446dc6d`의 역할 브랜치 일반 push가 성공했다(`ca027d2
 - 테스트/린트/정적분석/build/flash/CLI 실행/장비·COM/앱·서비스·컨테이너 재시작/검증용 데이터 생성은 모두 미실행이다. 새 구현을 verified/released로 표시하지 않는다.
 
 다음 작업: 남은 하드웨어 출력 경로의 실제 지원 범위와 중앙 INTEGRATION 계약을 읽어 이어서 구현한다. INA219 실물 calibration·전원/범위·BLE/CSE 통합/영상·release 증거, JD9853 패널별 초기화, 중앙 settlement/reclaim 계약은 남아 있다. 이 source checkpoint의 commit/push 결과는 실제 Git 출력 후 별도 기록한다.
+
+### INA219 소스 업로드 결과
+
+source commit `a9c55ad` 일반 push가 성공했다(`e9ad8ac..a9c55ad`, origin/codex/keyring-namho). main/CORE·운영 서버·원래 하드웨어 source는 변경하지 않았다. sourceCommit을a9c55ad로 갱신했다. 이것은 driver/전송/화면/Gateway source 업로드이며 실제 계측·통합·검증·release 완료가 아니다. goal은 active이고 실물·중앙 계약 의존성은 남아 있다.

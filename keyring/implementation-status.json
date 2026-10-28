@@ -95,12 +95,12 @@
   "releaseSha": null,
   "firmwareRevision": "keyring-0.6.0",
   "publication": {
-    "sourceCommit": "446dc6d",
+    "sourceCommit": "a9c55ad",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "446dc6d",
-    "latestCheckpoint": "firmware 0.6.0 INA219 and bounded observation details source (unverified)"
+    "latestLocalSourceCommit": "a9c55ad",
+    "latestCheckpoint": "firmware 0.6.0 INA219 supply monitoring and bounded detail source pushed (unverified)"
   }
 }
