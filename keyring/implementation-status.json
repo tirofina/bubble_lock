@@ -82,12 +82,12 @@
   "releaseSha": null,
   "firmwareRevision": "keyring-0.4.0",
   "publication": {
-    "sourceCommit": "7835874",
+    "sourceCommit": "113b03c",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "d6efe71",
-    "latestCheckpoint": "firmware 0.4.0 optional LCD/audio/SD source (unverified)"
+    "latestLocalSourceCommit": "113b03c",
+    "latestCheckpoint": "firmware 0.4.0 optional LCD/audio/SD source pushed (unverified)"
   }
 }

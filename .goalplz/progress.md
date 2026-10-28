@@ -63,3 +63,7 @@ Bootstrap가 완료되어 AE(ty2), container 3개(ty3), binarySwitch(ty28) 모�
 - PERIPHERALS.md·third-party notices·핀맵·인터페이스·인수인계와 구현 상태를 갱신했다. tests/lint/정적분석/build/flash/Gateway 실행/컨테이너 재시작/장비·COM 시험/검증 데이터 생성은 모두 미실행이다.
 
 다음 구현: 중앙 정산 후 장치 journal 보관·재등록 계약, 실제 INTEGRATION 승인 API가 추가될 때 adapter 연동, 구매 LCD 모듈 초기화 자료 반영. 실물/통합 evidence와 release는 미완료이며 goal은 active다. 이번 소스 commit과 push 결과는 실제 Git 출력 후 별도 기록한다.
+
+### 주변장치 소스 업로드 결과
+
+source commit `113b03c`를 만들고 `git push origin codex/keyring-namho`가 성공했다(`a0fb438..113b03c`). main·팀 역할 브랜치는 변경하지 않았다. 이 업로드는 코드 공개 checkpoint이며 빌드·동작 검증·공동 merge·최종 release 증거가 아니다. 최신 구현 상태의 sourceCommit도113b03c로 갱신한다.
