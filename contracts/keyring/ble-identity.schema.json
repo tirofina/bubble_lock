@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:privacy-bubble:keyring:0.1.0:ble-identity",
+  "title": "BLE 장치 identity",
+  "description": "KEYRING 후보 계약 0.1.0. PC-MOBIUS canonical contract 확정 및 실물 검증 전.",
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "deviceId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "firmwareRevision": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "boardRevision": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "bootId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    }
+  },
+  "required": [
+    "version",
+    "deviceId",
+    "firmwareRevision",
+    "boardRevision",
+    "bootId"
+  ],
+  "additionalProperties": false
+}

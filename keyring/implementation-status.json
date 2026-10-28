@@ -1,0 +1,49 @@
+{
+  "role": "KEYRING",
+  "owner": "남호",
+  "document": "PROJECT_IMPLEMENTATION_RUBRIC_PLAN.md",
+  "documentRevision": "1.0.0",
+  "contractRevision": "0.1.0-candidate",
+  "date": "2026-10-28",
+  "branch": "codex/keyring-namho",
+  "status": "implemented",
+  "verificationStatus": "not-run",
+  "rubricIds": ["R01", "R02", "R03", "R05", "R10", "R11", "R12", "R15"],
+  "implemented": [
+    "r18 pin-based firmware and safe boot outputs",
+    "MAX17048 battery and LIS2DW12 acceleration observations",
+    "debounced confirm/panic buttons",
+    "BLE MITM bonding, GATT identity and framed JSON notifications",
+    "bounded NVS command journal, fencing, GPIO readback and timed motor output",
+    "Raspberry Pi BLE fleet and SQLite durable outbox",
+    "mTLS current authorization, credential status and deadline gating",
+    "MQTT 3.1.1 oneM2M request/response and HTTPS fallback",
+    "health/runtime digest and uncertain execution receipts",
+    "contract schemas and manual deployment instructions"
+  ],
+  "existingHardware": {
+    "status": "referenced-existing-assets",
+    "revision": "privacy_bubble_r18_hand_solder",
+    "reference": "pcb/README.md",
+    "modifiedThisTask": false
+  },
+  "pendingIntegration": [
+    "PC-MOBIUS canonical contract acceptance and implementation",
+    "AE/container/ACP and broker capability configuration",
+    "device passkeys and BlueZ bond enrollment",
+    "central PKI registration and mTLS credential deployment",
+    "strict UTC device deadline contract if needed beyond relative BLE budget",
+    "central settlement and safe device journal archival procedure"
+  ],
+  "notImplemented": [
+    "LCD UI, I2S audio, microSD and motion wake drivers",
+    "OTA, secure boot and flash encryption deployment"
+  ],
+  "notPerformed": [
+    "build", "flash", "lint", "tests", "runtime execution", "hardware validation",
+    "power/range measurement", "integration demo", "video evidence", "remote push"
+  ],
+  "actualReceipt": null,
+  "logSha256": null,
+  "releaseSha": null
+}

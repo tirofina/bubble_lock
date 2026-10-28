@@ -1,0 +1,24 @@
+signal,gpio,boot_level,meaning
+AUX_EN,4,LOW,HIGH enables auxiliary rail
+BTN_CONFIRM,6,INPUT_PULLUP,LOW pressed
+BTN_PANIC,7,INPUT_PULLUP,LOW pressed
+VIB_PWM,3,LOW,HIGH motor output; firmware pulse <=1000ms
+AMP_GATE,16,HIGH,HIGH mutes amplifier through Q4
+ACCEL_INT,17,INPUT,LIS2DW12 interrupt; wake not configured
+LCD_CS,18,HIGH,LCD SPI select
+LCD_DC,8,UNCONFIGURED,LCD data command
+LCD_MOSI_RAW,38,UNCONFIGURED,SPI shared with microSD
+LCD_SCK_RAW,39,UNCONFIGURED,SPI shared with microSD
+LCD_BL_PWM,2,HIGH,Active low backlight through Q3
+LCD_RST,43,UNCONFIGURED,UART_TX through R69; USB console required
+SD_CS,10,HIGH,microSD select
+SD_MISO,11,UNCONFIGURED,microSD input
+I2C_SDA,14,I2C,I2C at 100kHz
+I2C_SCL,21,I2C,I2C at 100kHz
+I2S_LRCLK_RAW,40,UNCONFIGURED,Audio driver not implemented
+I2S_BCLK_RAW,41,UNCONFIGURED,Audio driver not implemented
+I2S_DOUT_RAW,42,UNCONFIGURED,Audio driver not implemented
+HP_MCLK_RAW,13,UNCONFIGURED,Headphone driver not implemented
+USB_500_EN,47,LOW,BQ24074 EN1; remain USB100
+USB_LIMIT_EN2,9,LOW,BQ24074 EN2; remain USB100
+MAIN_FAULT_N,1,INPUT_PULLUP,LOW fault

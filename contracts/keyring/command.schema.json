@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:privacy-bubble:keyring:0.1.0:command",
+  "title": "중앙 → Gateway 명령",
+  "description": "KEYRING 후보 계약 0.1.0. PC-MOBIUS canonical contract 확정 및 실물 검증 전.",
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "gatewayId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "deviceId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "commandId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "claimId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "desiredState": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "state"
+      ],
+      "additionalProperties": false
+    },
+    "issuedAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+    },
+    "deadline": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+    },
+    "grantRevision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "ownershipEpoch": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    }
+  },
+  "required": [
+    "version",
+    "gatewayId",
+    "deviceId",
+    "commandId",
+    "claimId",
+    "desiredState",
+    "issuedAt",
+    "deadline",
+    "grantRevision",
+    "ownershipEpoch"
+  ],
+  "additionalProperties": false
+}

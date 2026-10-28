@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:privacy-bubble:keyring:0.1.0:observation",
+  "title": "Gateway → oneM2M 관측",
+  "description": "KEYRING 후보 계약 0.1.0. PC-MOBIUS canonical contract 확정 및 실물 검증 전.",
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "gatewayId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "deviceId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "bootId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+    },
+    "observedAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+    },
+    "receivedAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+    },
+    "rssi": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": -127,
+          "maximum": 20
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "battery": {
+      "anyOf": [
+        {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "buttonState": {
+      "type": "string",
+      "enum": [
+        "released",
+        "confirm",
+        "panic"
+      ]
+    },
+    "sensorValues": {
+      "type": "object",
+      "maxProperties": 32,
+      "propertyNames": {
+        "minLength": 1,
+        "maxLength": 64
+      },
+      "additionalProperties": {
+        "type": [
+          "number",
+          "boolean",
+          "string",
+          "null",
+          "object",
+          "array"
+        ]
+      }
+    },
+    "state": {
+      "type": "boolean"
+    },
+    "firmwareRevision": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "timestampSource": {
+      "const": "gateway-received"
+    }
+  },
+  "required": [
+    "version",
+    "gatewayId",
+    "deviceId",
+    "bootId",
+    "sequence",
+    "observedAt",
+    "receivedAt",
+    "rssi",
+    "battery",
+    "buttonState",
+    "sensorValues",
+    "state",
+    "firmwareRevision",
+    "timestampSource"
+  ],
+  "additionalProperties": false
+}
