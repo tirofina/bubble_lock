@@ -28,6 +28,7 @@ DEPENDENCIES: PC-MOBIUS API, AE/container/ACP, broker capability, credential 등
 | [빌드 프로필](firmware/BUILD_PROFILES.md) | 로컬 장치 provisioning을 제외한 세 컴파일 구성. 빌드 미실행 |
 | [journal 보관](JOURNAL_RETENTION.md) | 암호화 BLE snapshot·수동 보관 CLI, 원본 유지와 중앙 정산 의존성 |
 | [Gateway 상태 보관](raspberry-pi-gateway/STATE_RECOVERY.md) | DB identity·WAL snapshot·기존 DB adoption, 중앙 확인 전 복구본 실행 차단 |
+| [완료 조건·증거 공백](COMPLETION_GAPS.md) | 계획서 산출물별 자료, 미확인 원문/계약·실측·검증 허가 |
 | [raspberry-pi-gateway](raspberry-pi-gateway/README.md) | Python daemon, BLE adapter, durable queue, 인증·전송 |
 | [pcb](pcb/README.md) | r18 native KiCad 원본·로컬 CAD·BOM/배선표 snapshot과 핀 설명 정정 |
 | [INTERFACE_NOTES.md](INTERFACE_NOTES.md) | UUID, payload, 중앙 API 및 oneM2M 전송 계약 |
