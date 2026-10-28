@@ -137,3 +137,16 @@ source commit `a9c55ad` 일반 push가 성공했다(`e9ad8ac..a9c55ad`, origin/c
 ### Gateway0.2.0 상태 보관 소스 업로드
 
 source commit `a3e1943` 일반 push가 성공했다(`c2ad489..a3e1943`, origin/codex/keyring-namho). sourceCommit을a3e1943로 갱신했다. 이는 코드·계약·운영 안내의 업로드이며 실제 DB adoption/snapshot·복구 활성화·검증·빌드·release 성공이 아니다. main/CORE/운영 서버/기존 DB/장비를 변경하지 않았다. 전체 goal은 active다. 다음에는 외부 DAC의 부팅/절전 안전 상태와 남은 구현·검증 의존성을 이어서 처리한다.
+
+## 2026-10-28 — 외부 DAC 대기 상태·컴파일 프로필 checkpoint
+
+이전 goal 턴은 Gateway state sourcea3e1943와 기록c5f1617을 역할 브랜치에 push한 progress였다. 이번 시작에 최신 계획서2.0.0 역할/완료 기준, AGENTS, code-edit-no-validation을 읽고 Git fetch했다. main/CORE는91a281b이며 새 중앙 계약은 없었다.
+
+- MAX9850의 로컬 제조사 텍스트와 Analog Devices 공식 Rev4 PDF를 읽었다. Volume/General/Enable control과 power-off 설명을 근거로 HeadphoneStandby 소스를 추가했다. 원래 native U16은 main+3V3에서 전원 공급돼 MCU만 재시작할 때 POR default만 가정하지 않는다.
+- firmware keyring-0.7.0: 고정0x10에 zero-cross 대기 해제·MUTE/full attenuation·output enable 제거·global shutdown 요청과 control readback을 작성했다. 종료는 앞 I2C 실패가 있어도 시도하고5초 주기로 읽거나 재요청한다. configured_off는 register 상태 의미이며 물리 무음/VMN transient/click/pop/전류 측정이 아니다. DAC 재생·MCLK는 여전히 미구현이다.
+- 다른 I2S receiver 상태가 불명확하면 스피커 I2S 설치/계속 재생을 막는 atomic Permit guard, 회복 시 driver 설치1회·과거 cue 재실행 금지, 절전 전 control 요청을 연결했다. crypto/passkey 미설정 상태에서도 DAC 종료 요청은 유지한다. motor GPIO timer/권한/NVS receipt의 의미를 바꾸지 않았다.
+- 기본 관리 옵션은1이다.0은 DAC가 없는 별도 board를 명시적으로 선택하는 bypass이며 실제 DAC off 확인으로 표시하지 않는다. health headphone/audio 상태와 HEADPHONE_STANDBY.md에 제약을 기록했다.
+- PlatformIO 공식 extends 설명을 읽고 keyring_compile_minimal/st7789/jd9853 구성을 작성했다. local provisioning.h를 제외하고 passkey는 기본 invalid0이며 USB/PSRAM/base dependency 설정을 이어받는다. default 환경은 기존 keyring_r18이다. 설정 작성만 했고 dependency 설치·컴파일·검증·실행은 하지 않았다.
+- 테스트/린트/정적분석/build/flash/COM·장비/CLI/Gateway·DB/서비스·컨테이너 실행·재시작/검증용 데이터 생성은 모두 미실행이다. 문서/설정/연결을 갱신했고 실제 장치나 기존 DB·원본 CAD를 변경하지 않았다.
+
+계획서가 요구하는 actual build/test/실물·통합/영상·release 증거는 남아 있다. 소스 업로드 후 현재 작업의 로컬3개 프로필 빌드·Gateway 단위 테스트 실행 여부를 사용자에게 확인한다. 사용자 명시 요청 전에는 이를 시작하지 않는다. 중앙 INTEGRATION·settlement/recovery 승인 계약, JD9853 구매 모듈 초기화, 실물 장비/측정 허가 역시 별도 의존성이다.

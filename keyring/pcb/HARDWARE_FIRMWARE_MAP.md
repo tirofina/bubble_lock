@@ -1,6 +1,6 @@
 # r18 하드웨어와 펌웨어 연결
 
-ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.6.0 · source mapping / unverified.
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.7.0 · source mapping / unverified.
 
 보관한 원본·배선표와 현재 소스의 연결 관계다. 회로 분석·DRC/ERC·build·장비 실행·전류 측정은 하지 않았다. 조립·전기적 동작 확인 결과가 아니다.
 
@@ -36,7 +36,7 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.6.0 · source mappi
 | U3 BQ24074 | EN1 GPIO47/EN2 GPIO9 | USB100 기본. 충전 회로·온도 보호·LED는 하드웨어 |
 | U10 TLV6700·D2 | 충전 온도 gate/충전 LED | 사용자 명령용 GPIO LED로 제어하지 않음 |
 | U15 INA219B | 전원 모니터,I2C A0/A1 GND | 단발 bus/current 읽기와 signed 부하 전력 계산 소스 추가. 실제 calibration·측정은 미실행 |
-| U16 MAX9850·J11 | I2C0x10/I2S,MCLK13,별도 analog return | 헤드폰 DAC 미구현. 스피커 드라이버와 구분 |
+| U16 MAX9850·J11 | I2C0x10/I2S,MCLK13,별도 analog return | 재생 미구현.0.7.0은 mute/shutdown control 요청·공유 I2S guard만 추가 |
 | U11/U12/U17 | 입력 제한·UVLO/supervisor/REG_READY | 하드웨어 경로 |
 
 J3 pin1은 main +3V3, pin8은 LCD_BL_SUPPLY다. logic/backlight 공급을 구분한다. J2 pin1 VBAT/pin2 GND이며 mating housing의 실제 배터리 극성은 별도 확인이 필요하다. J6은 AUX3V3/VIB_LOW 공급·low-side 연결이다. 최신 커넥터 표를 배선 기준으로 사용한다.

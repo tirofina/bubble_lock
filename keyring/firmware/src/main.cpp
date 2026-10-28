@@ -20,9 +20,10 @@
 #include "aux_rail.h"
 #include "peripherals.h"
 #include "supply_monitor.h"
+#include "headphone_standby.h"
 
 namespace {
-constexpr char FirmwareRevision[] = "keyring-0.6.0";
+constexpr char FirmwareRevision[] = "keyring-0.7.0";
 #if defined(KEYRING_LEGACY_GATT) && KEYRING_LEGACY_GATT
 constexpr char ServiceUuid[] = "8b8f0001-8e7a-4f36-a8c2-1c9b5d620001";
 constexpr char IdentityUuid[] = "8b8f0002-8e7a-4f36-a8c2-1c9b5d620001";
@@ -69,10 +70,18 @@ MotionWake motion;
 AudioAlert audio;
 Peripherals peripherals;
 SupplyMonitor supply;
+HeadphoneStandby headphone;
+bool audioInitAttempted = false;
 uint64_t nextScreenAt = 0;
 uint64_t lastSensorRead = 0;
 uint8_t detailSection = 0;
-bool audioPermitted() { return connected && authenticated && !sleepPreparing; }
+bool audioPermitted() { return connected && authenticated && !sleepPreparing && headphone.speakerAllowed(); }
+void initializeAudioWhenQuiet() {
+  if (KEYRING_ENABLE_AUDIO && !audioInitAttempted && headphone.speakerAllowed()) {
+    audioInitAttempted = true;
+    audio.begin(audioPermitted);
+  }
+}
 
 struct Frame { char bytes[MaxFrame + 1]; uint64_t firstAt, completedAt; uint32_t generation; };
 Frame processingFrame = {};
@@ -334,7 +343,9 @@ void publishObservation() {
     else { values["journalUsed"] = nullptr; values["journalPrepared"] = nullptr; }
     values["journalCapacity"] = JournalSlots;
     values["wake"] = powerState::wakeCause(); values["wakePins"] = powerState::wakePins();
-    values["power"] = powerState::status(); values["audio"] = audio.status();
+    values["power"] = powerState::status();
+    values["audio"] = headphone.speakerAllowed() ? audio.status() : "blocked_headphone";
+    values["headphone"] = headphone.status();
     values["display"] = peripherals.displayStatus(); values["sd"] = peripherals.sdStatus();
     values["sdDropped"] = peripherals.droppedLogs();
   }
@@ -345,6 +356,7 @@ void publishObservation() {
     values.remove("batteryStatus"); values.remove("accelStatus");
     if (section == 2) {
       values.remove("audio"); values.remove("display"); values.remove("sdDropped"); values.remove("wakePins");
+      values.remove("wake");
     }
     values["truncated"] = true;
     frame = jsonText(doc);
@@ -681,7 +693,7 @@ void considerSleep(uint64_t now) {
       uxQueueMessagesWaiting(commandQueue) != 0 || uxQueueMessagesWaiting(journalRequests) != 0 ||
       !receiptTx.active.empty() || !receiptTx.pending.empty() ||
       digitalRead(board::MainFaultN) == LOW) return;
-  if (!motion.clearForSleep() || !supply.prepareSleep()) {
+  if (!motion.clearForSleep() || !supply.prepareSleep() || !headphone.prepareSleep()) {
     powerState::activity(now); observationDirty = true; return;
   }
   // Reserve the transition before stopping advertising. New peers are refused
@@ -721,6 +733,7 @@ void setup() {
   snprintf(bootId, sizeof(bootId), "%08lx%08lx%08lx%08lx", static_cast<unsigned long>(esp_random()),
       static_cast<unsigned long>(esp_random()), static_cast<unsigned long>(esp_random()), static_cast<unsigned long>(esp_random()));
   loadJournal(); initSensors();
+  headphone.begin(readRegisters, writeRegister);
   supply.begin(readRegisters, writeRegister16);
   motion.begin(accelReady, readRegisters, writeRegister);
   esp_timer_create_args_t timerArgs = {};
@@ -733,7 +746,7 @@ void setup() {
     Serial.println("KEYRING LOCKED: set a per-device passkey and valid identity before enabling BLE.");
     return;
   }
-  audio.begin(audioPermitted); // Optional; no audio path bypasses link authorization.
+  initializeAudioWhenQuiet(); // I2S installation also waits for the other receiver's quiet state.
   auxRail::begin();
   peripherals.begin();
   initBle(); sampleSensors(); publishObservation();
@@ -742,7 +755,10 @@ void setup() {
 }
 void loop() {
   uint64_t now = uptime();
+  if (headphone.poll(now)) observationDirty = true;
+  if (!headphone.speakerAllowed()) audio.stop();
   if (!provisioned) { delay(100); return; }
+  initializeAudioWhenQuiet();
   if (connected) powerState::activity(now);
   if (disconnected) {
     disconnected = false; stopMotor(); observationTx.clear(); receiptTx.clear();

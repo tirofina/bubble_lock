@@ -4,7 +4,7 @@
 #include "board_r18.h"
 // Optional local module-specific function: void keyringJd9853PanelInit(Arduino_DataBus &bus).
 // It runs after reset and before DCS sleep-out; function owns its SPI transactions.
-#if __has_include("jd9853_panel.h")
+#if !defined(KEYRING_IGNORE_PROVISIONING) && __has_include("jd9853_panel.h")
 #include "jd9853_panel.h"
 #endif
 
@@ -20,7 +20,7 @@ void KeyringJD9853::tftInit() {
   digitalWrite(_rst, LOW); delay(20);
   digitalWrite(_rst, HIGH); delay(120);
   _bus->beginWrite(); _bus->writeCommand(0x01); _bus->endWrite(); delay(120);
-#if __has_include("jd9853_panel.h")
+#if !defined(KEYRING_IGNORE_PROVISIONING) && __has_include("jd9853_panel.h")
   keyringJd9853PanelInit(*_bus);
 #endif
   _bus->beginWrite(); _bus->writeCommand(0x11); _bus->endWrite(); delay(120);

@@ -35,3 +35,6 @@
 // #define KEYRING_ENABLE_POWER_MONITOR 1
 // #define KEYRING_POWER_SAMPLE_MS 2000UL
 // #define KEYRING_POWER_SHUNT_MILLIOHMS 100
+// Default1 manages the populated r18 MAX9850 as muted/shutdown, not playback.
+// Set0 only for a selected board without this DAC; it bypasses the shared-I2S quiet-state guard.
+// #define KEYRING_MANAGE_HEADPHONE_STANDBY 1

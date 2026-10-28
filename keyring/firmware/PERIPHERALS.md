@@ -37,7 +37,7 @@ SPI GPIO는 MOSI38/SCK39, LCD CS18/DC8/RESET43이다. UART0 TX는 RESET43과 충
 
 `KEYRING_ENABLE_AUDIO=1`은 MAX98357A 스피커 경로를 선택한다. 기본0이다. 유효한 중앙 명령을 NVS에 COMPLETED로 기록하고 GPIO ON readback을 얻은 뒤에만 cue를 요청한다. 중복 명령은 재생하지 않고, 버튼은 자체적으로 모터·음향을 실행하지 않는다. receipt의 state/readback은 모터 GPIO이며 음향 확인을 뜻하지 않는다.
 
-I2S LRCLK40/BCLK41/DOUT42, 16kHz/16bit, 좌우 동일 PCM을 사용하는 별도 FreeRTOS worker다. 주파수 기본880Hz, PCM amplitude 기본512(허용0~2048)다. SPL·안전 음량·소비전류의 측정치가 아니다. 실제 청취 음량은 미확인이다. MAX9850 헤드폰 DAC와 GPIO13 MCLK는 구현하지 않았다.
+I2S LRCLK40/BCLK41/DOUT42, 16kHz/16bit, 좌우 동일 PCM을 사용하는 별도 FreeRTOS worker다. 주파수 기본880Hz, PCM amplitude 기본512(허용0~2048)다. SPL·안전 음량·소비전류의 측정치가 아니다. 실제 청취 음량은 미확인이다. MAX9850 재생과 GPIO13 MCLK 생성은 구현하지 않았다.0.7.0에는 별도 [헤드폰 DAC 종료 요청·공유 I2S guard](HEADPHONE_STANDBY.md)를 추가했다.
 
 연결·인증·generation·기한·motor/AUX GPIO·fault를 재확인한 후 Q4 mute를 해제한다. 취소는 generation을 바꾸고 GPIO16 HIGH로 즉시 mute한다. 모터 타이머와 BLE disconnect도 이를 호출하며 I2S 쓰기를 기다리지 않는다. worker는 mute 후 LRCLK/BCLK를 정지한다. 일반 파형 끝에는 ramp를 적용했지만 급한 취소·전원 차단의 click/pop은 미확인이다.
 

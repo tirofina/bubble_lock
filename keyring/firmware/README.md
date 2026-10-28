@@ -2,7 +2,7 @@
 
 ROLE: KEYRING · DOC-REV: 2.0.0 · 구현 계약: 0.1.0 · 상태: implemented, unverified
 
-ESP32-S3-WROOM-1-N16R8 / r18-hand-solder 보드를 대상으로 작성한 소스다. keyring-0.6.0에서 BLE 관측·버튼·배터리·가속도 수집과 진동 명령/receipt, 선택형 ST7789·JD9853 상태 화면·스피커 cue·SD receipt 복사를 구현한다. INA219 공급 전원 계측과 sensorValues detail별 전송도 추가했다. [POWER_MONITOR.md](POWER_MONITOR.md)에 전원 측정 영역·정수 단위·오류/null·전송 구분을 설명한다. 테스트·린트·컴파일·빌드·플래시·실물 실행은 이번 작업에서 수행하지 않았다.
+ESP32-S3-WROOM-1-N16R8 / r18-hand-solder 보드를 대상으로 작성한 소스다. keyring-0.7.0에서 BLE 관측·버튼·배터리·가속도 수집과 진동 명령/receipt, 선택형 ST7789·JD9853 상태 화면·스피커 cue·SD receipt 복사를 구현한다. INA219 공급 전원 계측과 sensorValues detail별 전송도 추가했다. [POWER_MONITOR.md](POWER_MONITOR.md)에 전원 측정 영역·정수 단위·오류/null·전송 구분을 설명한다. [MAX9850 대기 상태](HEADPHONE_STANDBY.md)에 종료 요청/공유 I2S guard를, [BUILD_PROFILES](BUILD_PROFILES.md)에 로컬 provisioning을 제외한 컴파일 구성을 기록했다. 테스트·린트·컴파일·빌드·플래시·실물 실행은 이번 작업에서 수행하지 않았다.
 
 ## 구성과 준비
 

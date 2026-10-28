@@ -46,12 +46,12 @@ sudo install -d -o bubble-gateway -g bubble-gateway -m 0700 /var/lib/privacy-bub
 sudo -u bubble-gateway /opt/bubble_lock/keyring/raspberry-pi-gateway/.venv/bin/bubble-keyring-journal \
   --device-id REAL_DEVICE_ID --address AA:BB:CC:DD:EE:FF \
   --database /var/lib/privacy-bubble-gateway/gateway.sqlite3 \
-  --gatt-profile core-v1 --firmware-revision keyring-0.6.0 \
+  --gatt-profile core-v1 --firmware-revision keyring-0.7.0 \
   --output /var/lib/privacy-bubble-gateway/keyring-journal-archives/capture-001
 sudo systemctl start privacy-bubble-gateway
 ```
 
-DB 경로가 다르면 서비스 lock과 협조할 수 없다. 현재 도구의 firmware 기본 revision은 정확히 keyring-0.6.0이며 구형 장치에 확장이 없으면 중단한다. ID/service·identity를 확인하고 capture 전후 identity가 같아야 한다. selector 응답 각각3초, 전체 capture90초 제한이다. BLE 오류 뒤 자동 재연결·capture 재시도는 없다.
+DB 경로가 다르면 서비스 lock과 협조할 수 없다. 현재 도구의 firmware 기본 revision은 정확히 keyring-0.7.0이며 구형 장치에 확장이 없으면 중단한다. ID/service·identity를 확인하고 capture 전후 identity가 같아야 한다. selector 응답 각각3초, 전체 capture90초 제한이다. BLE 오류 뒤 자동 재연결·capture 재시도는 없다.
 
 새 폴더0700과 파일0600을 생성하고 O_EXCL로 덮어쓰기를 막는다. records.jsonl을 쓰고 fsync한 뒤 마지막에 [manifest.json](../contracts/keyring/journal-archive.schema.json)을 쓴다. manifest는 장치 identity, frozen manifest, 실제 record 수, 파일 byte 수/SHA256, Gateway 보관 시각, settlementStatus:not-settled, deviceJournalModified:false를 담는다. 실제 manifest count0일 때만 빈 journal로 보관한다. 중간 I/O 실패의 부분 폴더를 자동 삭제하거나 완료로 취급하지 않는다.
 

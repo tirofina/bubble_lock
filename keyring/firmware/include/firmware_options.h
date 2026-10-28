@@ -1,5 +1,5 @@
 #pragma once
-#if __has_include("provisioning.h")
+#if !defined(KEYRING_IGNORE_PROVISIONING) && __has_include("provisioning.h")
 #include "provisioning.h"
 #endif
 #ifndef KEYRING_PASSKEY
@@ -74,6 +74,9 @@
 #ifndef KEYRING_POWER_SHUNT_MILLIOHMS
 #define KEYRING_POWER_SHUNT_MILLIOHMS 100
 #endif
+#ifndef KEYRING_MANAGE_HEADPHONE_STANDBY
+#define KEYRING_MANAGE_HEADPHONE_STANDBY 1
+#endif
 
 // Configuration errors fail at build time; this task does not run a build.
 static_assert(KEYRING_ENABLE_SLEEP == 0 || KEYRING_ENABLE_SLEEP == 1, "Sleep option must be 0 or 1");
@@ -97,3 +100,4 @@ static_assert(KEYRING_SD_MAX_BYTES >= 4096 && KEYRING_SD_MAX_BYTES <= 16777216UL
 static_assert(KEYRING_ENABLE_POWER_MONITOR == 0 || KEYRING_ENABLE_POWER_MONITOR == 1, "Power monitor option must be 0 or 1");
 static_assert(KEYRING_POWER_SAMPLE_MS >= 100 && KEYRING_POWER_SAMPLE_MS <= 60000UL, "Power sample interval range is 100ms..60s");
 static_assert(KEYRING_POWER_SHUNT_MILLIOHMS >= 10 && KEYRING_POWER_SHUNT_MILLIOHMS <= 1000, "Nominal sense resistor range is 10..1000 milliohm");
+static_assert(KEYRING_MANAGE_HEADPHONE_STANDBY == 0 || KEYRING_MANAGE_HEADPHONE_STANDBY == 1, "Headphone standby option must be 0 or 1");

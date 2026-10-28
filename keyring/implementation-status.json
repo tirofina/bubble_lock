@@ -49,7 +49,10 @@
     "Gateway INA219 integer unit/null/time/product runtime checks and LCD current display",
     "configured Gateway/CSE resource identity binding for persistent SQLite state",
     "operator-invoked consistent WAL state archives with quarantine and private manifests",
-    "explicit legacy DB identity adoption after a cold snapshot with original data rows preserved"
+    "explicit legacy DB identity adoption after a cold snapshot with original data rows preserved",
+    "MAX9850 mute/shutdown control requests at boot, periodic readback and before sleep",
+    "shared-I2S installation/playback guard while headphone shutdown controls are unknown",
+    "three explicit compile profiles excluding local device provisioning; build not run"
   ],
   "existingHardware": {
     "status": "source-snapshot-included-unverified",
@@ -99,7 +102,7 @@
   },
   "logSha256": null,
   "releaseSha": null,
-  "firmwareRevision": "keyring-0.6.0",
+  "firmwareRevision": "keyring-0.7.0",
   "publication": {
     "sourceCommit": "a3e1943",
     "remoteBranch": "codex/keyring-namho",
@@ -107,7 +110,7 @@
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
     "latestLocalSourceCommit": "a3e1943",
-    "latestCheckpoint": "Gateway 0.2.0 state identity and quarantined WAL archive source pushed (unverified)"
+    "latestCheckpoint": "firmware 0.7.0 MAX9850 standby interlock and compile profile source (unverified)"
   },
   "gatewayRevision": "0.2.0"
 }

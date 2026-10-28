@@ -32,6 +32,7 @@ constexpr int MainFaultN = 1;
 constexpr uint8_t FuelAddress = 0x36;
 constexpr uint8_t AccelAddress = 0x19;
 constexpr uint8_t PowerMonitorAddress = 0x40; // INA219 A1/A0 both grounded.
+constexpr uint8_t HeadphoneAddress = 0x10; // MAX9850 ADD grounded, 7-bit address.
 constexpr uint32_t MotorMaxOnMs = 1000;
 constexpr uint32_t DebounceMs = 35;
 constexpr uint32_t ObserveMs = 2000;
