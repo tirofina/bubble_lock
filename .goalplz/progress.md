@@ -46,3 +46,7 @@ Bootstrap가 완료되어 AE(ty2), container 3개(ty3), binarySwitch(ty28) 모�
 - 코드·문서 수정만 수행했다. 테스트/린트/정적분석/빌드/flash/앱·컨테이너 재시작/장비 시험/검증용 데이터 생성은 하지 않았다. 로컬 commit 후 원격 접근 재허가 전까지 보관한다.
 
 다음 독립 구현: 승인된 출력에 연결할 I2S 알림, 실제 LCD/controller·microSD 하드웨어에 맞춘 주변장치 드라이버, 장치 journal 정산·보관 계약. 중앙 API와 실물 시험 증거는 여전히 별도 의존성이다.
+
+### Git 재접속 명시 승인
+
+사용자가 질문에 `Git 재접속·역할 브랜치 업로드 허용`으로 답했다. 이에 따라 Git fetch를 재개했고 원격 main/CORE가 기존91a281b와 같은 상태임을 확인했다. 새 source commit은 로컬 `d6efe71`이다. 이 기록을 commit한 후 해당 역할 브랜치의 일반 push를 수행한다. GitHub PR API의 권한 오류가 해결됐다고 추정하거나 PR 생성을 재시도하지 않는다.
