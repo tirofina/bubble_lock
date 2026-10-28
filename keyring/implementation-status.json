@@ -2,7 +2,7 @@
   "role": "KEYRING",
   "owner": "남호",
   "document": "PROJECT_IMPLEMENTATION_RUBRIC_PLAN.md",
-  "documentRevision": "1.0.0",
+  "documentRevision": "2.0.0",
   "contractRevision": "0.1.0-candidate",
   "date": "2026-10-28",
   "branch": "codex/keyring-namho",
@@ -19,6 +19,9 @@
     "mTLS current authorization, credential status and deadline gating",
     "MQTT 3.1.1 oneM2M request/response and HTTPS fallback",
     "health/runtime digest and uncertain execution receipts",
+    "CORE v1 BLE UUID profile and optional durable MQTT projection",
+    "persistent CORE sequence across firmware restarts",
+    "isolated Mobius4 development server configuration and provisioning",
     "contract schemas and manual deployment instructions"
   ],
   "existingHardware": {
@@ -28,7 +31,8 @@
     "modifiedThisTask": false
   },
   "pendingIntegration": [
-    "PC-MOBIUS canonical contract acceptance and implementation",
+    "PC-MOBIUS-CORE BLE extension and application receipt acceptance",
+    "PC-MOBIUS-INTEGRATION current authorization APIs and claim/grant fields",
     "AE/container/ACP and broker capability configuration",
     "device passkeys and BlueZ bond enrollment",
     "central PKI registration and mTLS credential deployment",
@@ -40,10 +44,17 @@
     "OTA, secure boot and flash encryption deployment"
   ],
   "notPerformed": [
-    "build", "flash", "lint", "tests", "runtime execution", "hardware validation",
-    "power/range measurement", "integration demo", "video evidence", "remote push"
+    "firmware build", "flash", "lint", "tests", "gateway/device runtime execution", "hardware validation",
+    "power/range measurement", "integration demo", "video evidence"
   ],
   "actualReceipt": null,
+  "temporaryServer": {
+    "upstreamRevision": "e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8",
+    "composeProject": "privacy-bubble-keyring-dev",
+    "status": "empty-resources-provisioned",
+    "provisioningReceipt": "dev/mobius4/provisioning-receipt.json",
+    "scope": "loopback-only development server; no device integration evidence"
+  },
   "logSha256": null,
   "releaseSha": null
 }

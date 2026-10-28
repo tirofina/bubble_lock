@@ -49,6 +49,8 @@ class Gateway:
             "apiUrl": self.config.api_url, "rvi": self.config.rvi,
             "mqttEnabled": self.config.mqtt_enabled, "mqttHost": self.config.mqtt_host,
             "mqttWrappedPrimitive": self.config.mqtt_wrapped_primitive,
+            "coreBridgeEnabled": self.config.core_bridge_enabled,
+            "bleGattProfile": self.config.ble_gatt_profile,
             "devices": self.config.ble_devices,
             "firmwareAllowlist": self.config.firmware_revision_allowlist,
         }
@@ -102,7 +104,7 @@ class Gateway:
     async def observation(self, raw: dict) -> None:
         try:
             payload = validate_observation(raw, self.config.gateway_id, self.config.ble_devices)
-            if self.store.observation(self.config.observation_container, payload):
+            if self.store.observation(self.config.observation_container, payload, self.config.core_bridge_enabled):
                 self.counters["observations_queued"] += 1
             else:
                 self.counters["observations_duplicate"] += 1
@@ -269,7 +271,7 @@ class Gateway:
 
     async def _outbox_loop(self) -> None:
         while not self.stop.is_set():
-            self.store.stage_receipts(self.config.receipt_container)
+            self.store.stage_receipts(self.config.receipt_container, self.config.core_bridge_enabled)
             item = self.store.due()
             if item is None:
                 await self._pause(0.5)

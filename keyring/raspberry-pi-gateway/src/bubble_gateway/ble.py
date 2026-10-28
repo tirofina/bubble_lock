@@ -19,6 +19,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Awaitable, Callable
 
 from bleak import BleakClient, BleakScanner
+from .core_bridge import CORE_SERVICE, CORE_IDENTITY, CORE_OBSERVATION, CORE_COMMAND, CORE_RECEIPT
 
 LOG = logging.getLogger(__name__)
 SERVICE = "8b8f0001-8e7a-4f36-a8c2-1c9b5d620001"
@@ -139,6 +140,12 @@ class _Peer:
 class BleFleet:
     def __init__(self, config: Any):
         self.config = config
+        if config.ble_gatt_profile == "core-v1":
+            self.service, self.identity_uuid, self.observation_uuid, self.command_uuid, self.receipt_uuid = (
+                CORE_SERVICE, CORE_IDENTITY, CORE_OBSERVATION, CORE_COMMAND, CORE_RECEIPT)
+        else:
+            self.service, self.identity_uuid, self.observation_uuid, self.command_uuid, self.receipt_uuid = (
+                SERVICE, IDENTITY, OBSERVATION, COMMAND, RECEIPT)
         self._peers = {device_id: _Peer(device_id, address)
                        for device_id, address in config.ble_devices.items()}
         self._by_address = {peer.address.casefold(): peer for peer in self._peers.values()}
@@ -216,9 +223,9 @@ class BleFleet:
                                      disconnected_callback=lambda _: self._lost(peer))
                 async with client:
                     peer.client = client
-                    if client.services.get_service(SERVICE) is None:
+                    if client.services.get_service(self.service) is None:
                         raise BleProtocolError("required service missing")
-                    identity = _object(await client.read_gatt_char(IDENTITY), 512)
+                    identity = _object(await client.read_gatt_char(self.identity_uuid), 512)
                     required = {"version", "deviceId", "firmwareRevision", "boardRevision", "bootId"}
                     if set(identity) != required or type(identity.get("version")) is not int or identity["version"] != 1:
                         raise BleProtocolError("invalid identity shape")
@@ -233,11 +240,11 @@ class BleFleet:
                     if allowed and identity["firmwareRevision"] not in allowed:
                         raise BleProtocolError("firmware revision not allowed")
                     peer.identity = identity
-                    await client.start_notify(RECEIPT, lambda _, data: self._receipt_fragment(peer, data))
-                    await client.start_notify(OBSERVATION, lambda _, data: self._observation_fragment(peer, data))
+                    await client.start_notify(self.receipt_uuid, lambda _, data: self._receipt_fragment(peer, data))
+                    await client.start_notify(self.observation_uuid, lambda _, data: self._observation_fragment(peer, data))
                     # READ supplies the complete current value; NOTIFY supplies LF
                     # framed fragments. These paths intentionally do not mix buffers.
-                    current = _object(await client.read_gatt_char(OBSERVATION), 512)
+                    current = _object(await client.read_gatt_char(self.observation_uuid), 512)
                     self._queue_observation(peer, current)
                     peer.ready.set()
                     peer.last_error = None
@@ -389,7 +396,7 @@ class BleFleet:
                     async with asyncio.timeout(min(self.config.ble_command_timeout,
                                                    max(0.001, expires - time.monotonic()))):
                         for offset in range(0, len(raw), 20):
-                            await peer.client.write_gatt_char(COMMAND, raw[offset:offset + 20], response=True)
+                            await peer.client.write_gatt_char(self.command_uuid, raw[offset:offset + 20], response=True)
                         receipt = await peer.pending
                     return self._receipt_times(peer, receipt)
                 except BaseException:

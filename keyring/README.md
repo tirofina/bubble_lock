@@ -2,11 +2,13 @@
 
 남호의 담당 범위인 키링 펌웨어와 Raspberry Pi Gateway를 이 디렉터리에서 개발한다. 기존 r18 PCB를 하드웨어 기준으로 연결하고 BLE 관측, 중앙 명령 전달, 장치 receipt, oneM2M 전송을 구현한다.
 
+최신 기준은 DOC-REV 2.0.0이다. 원격 PC-MOBIUS-CORE 구현을 역할 브랜치로 merge했다. [팀 계약 연동과 남은 차이](CORE_INTEGRATION.md), [교체 가능한 임시 Mobius4 환경](dev/mobius4/README.md), [지속 개발 목표](../.goalplz/goal-contract.md)를 기준으로 다음 작업을 이어간다. 운영 서버 반영과 최종 merge는 별도 단계다.
+
 ```text
 ROLE: KEYRING
 OWNER: 남호
 DOC: PROJECT_IMPLEMENTATION_RUBRIC_PLAN.md
-DOC-REV: 1.0.0
+DOC-REV: 2.0.0
 RUBRIC: R01, R02, R03, R05, R10, R11, R12, R15
 SCOPE: r18 PCB 기반 펌웨어 및 Raspberry Pi Gateway
 INTERFACES: KEYRING contract candidate 0.1.0 / BLE GATT / mTLS HTTPS / MQTT 3.1.1 / oneM2M cin

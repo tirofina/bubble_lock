@@ -1,6 +1,6 @@
 # KEYRING 계약 후보 0.1.0
 
-담당: 남호 / KEYRING · 기준 문서: `PROJECT_IMPLEMENTATION_RUBRIC_PLAN.md` · DOC-REV: `1.0.0`
+담당: 남호 / KEYRING · 기준 문서: `PROJECT_IMPLEMENTATION_RUBRIC_PLAN.md` · DOC-REV: `2.0.0`
 
 이 디렉터리는 키링 펌웨어와 Raspberry Pi Gateway가 공유하는 JSON Schema 2020-12를 담는다. PC-MOBIUS의 canonical contract를 아직 받지 못한 상태에서 작성한 **통합 제안**이다. API 주소, MQTT topic, oneM2M RVI와 receipt 수용 규칙은 중앙 담당자와 같은 revision으로 확정해야 한다.
 

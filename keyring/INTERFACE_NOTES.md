@@ -1,16 +1,18 @@
 # KEYRING 구현 계약 0.1.0
 
-DOC-REV: 1.0.0 · 담당: 남호 / KEYRING · 상태: implemented, unverified
+DOC-REV: 2.0.0 · 담당: 남호 / KEYRING · 상태: implemented, unverified
 
 중앙 PC의 canonical contract가 아직 제공되지 않아 아래 주소와 payload는 PC-MOBIUS에 전달할 **제안 계약**이다. 중앙 승인·Mobius capability probe·실물 시험을 마쳤다는 뜻이 아니다.
 
 ## BLE
 
-- Service `8b8f0001-8e7a-4f36-a8c2-1c9b5d620001`
-- Identity READ `8b8f0002-8e7a-4f36-a8c2-1c9b5d620001`
-- Observation READ/NOTIFY `8b8f0003-8e7a-4f36-a8c2-1c9b5d620001`
-- Command WRITE with response `8b8f0004-8e7a-4f36-a8c2-1c9b5d620001`
-- Receipt READ/NOTIFY `8b8f0005-8e7a-4f36-a8c2-1c9b5d620001`
+- 기본 GATT profile: `core-v1` (DOC-REV 2.0.0 CORE UUID와 KEYRING identity extension).
+- Service `7f8a0001-4b6e-4f4e-9b0a-505249564255`
+- Observation READ/NOTIFY `7f8a0002-4b6e-4f4e-9b0a-505249564255`
+- Command WRITE with response `7f8a0003-4b6e-4f4e-9b0a-505249564255`
+- Receipt READ/NOTIFY `7f8a0004-4b6e-4f4e-9b0a-505249564255`
+- Identity READ `7f8a0005-4b6e-4f4e-9b0a-505249564255` (KEYRING extension)
+- 옛 UUID는 명시적 `keyring-v01` profile에서만 사용한다. [CORE 연동·미합의 항목](CORE_INTEGRATION.md)을 함께 적용한다.
 - UTF-8 JSON + LF. WRITE/NOTIFY는 기본 ATT MTU 23에서도 동작하도록 최대 20 byte fragment. 한 프레임 최대 4096 byte, 조각 사이 timeout 5초. READ는 마지막 전체 JSON(최대 512 byte identity/observation, receipt는 NOTIFY 우선). command write는 한 장치당 직렬화.
 - Identity: `version:1, deviceId, firmwareRevision, boardRevision, bootId`.
 - Observation: `version:1, deviceId, bootId, sequence, uptimeMs, battery`(0..100 또는 null), `buttonState`("released"|"confirm"|"panic"), `sensorValues`(객체), `state`(boolean). RSSI와 UTC observedAt은 Gateway 관측 시 부여한다. BLE RSSI는 실제 scan 값 또는 null이며 거리로 환산하지 않는다.

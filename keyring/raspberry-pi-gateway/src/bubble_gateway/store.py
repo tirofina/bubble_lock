@@ -9,6 +9,7 @@ import time
 from pathlib import Path
 
 from .model import canonical, iso_time
+from .core_bridge import telemetry, measurable, acknowledgement
 
 
 class CapacityError(RuntimeError):
@@ -44,6 +45,9 @@ class Store:
                 command_id TEXT
             );
             CREATE INDEX IF NOT EXISTS outbox_due ON outbox(next_attempt, created_at);
+            CREATE TABLE IF NOT EXISTS core_sequences (
+                device_id TEXT PRIMARY KEY, wire_sequence INTEGER NOT NULL
+            );
         """)
 
     @staticmethod
@@ -111,24 +115,36 @@ class Store:
         with self.db:
             self._enqueue(self.request_id(kind, identity), container, payload, critical)
 
-    def observation(self, container: str, payload: dict) -> bool:
+    def observation(self, container: str, payload: dict, core_enabled: bool = False) -> bool:
         with self.db:
             previous = self.db.execute("SELECT boot_id,sequence FROM observations WHERE device_id=?", (payload["deviceId"],)).fetchone()
             if previous and previous["boot_id"] == payload["bootId"] and payload["sequence"] <= previous["sequence"]:
                 return False
             identity = f"{payload['deviceId']}:{payload['bootId']}:{payload['sequence']}"
             self._enqueue(self.request_id("observation", identity), container, payload)
+            if core_enabled and measurable(payload):
+                previous_core = self.db.execute("SELECT wire_sequence FROM core_sequences WHERE device_id=?", (payload["deviceId"],)).fetchone()
+                wire_sequence = previous_core["wire_sequence"] + 1 if previous_core else 0
+                if wire_sequence > 4294967295:
+                    raise CapacityError("CORE uint32 sequence exhausted; explicit device identity rotation required")
+                self._enqueue(self.request_id("core-telemetry", identity), "@core/telemetry", telemetry(payload, wire_sequence))
+                self.db.execute("INSERT INTO core_sequences(device_id,wire_sequence) VALUES(?,?) ON CONFLICT(device_id) DO UPDATE SET wire_sequence=excluded.wire_sequence",
+                                (payload["deviceId"], wire_sequence))
             self.db.execute("INSERT INTO observations(device_id,boot_id,sequence) VALUES(?,?,?) ON CONFLICT(device_id) DO UPDATE SET boot_id=excluded.boot_id,sequence=excluded.sequence",
                             (payload["deviceId"], payload["bootId"], payload["sequence"]))
         return True
 
-    def stage_receipts(self, container: str) -> None:
+    def stage_receipts(self, container: str, core_enabled: bool = False) -> None:
         rows = self.db.execute("SELECT command_id,receipt FROM commands WHERE receipt IS NOT NULL AND receipt_delivered=0 LIMIT 128").fetchall()
         for row in rows:
             try:
                 with self.db:
+                    receipt = json.loads(row["receipt"])
+                    projected = acknowledgement(receipt) if core_enabled else None
+                    if projected is not None:
+                        self._enqueue(self.request_id("core-ack", row["command_id"]), "@core/ack", projected, True)
                     self._enqueue(self.request_id("receipt", row["command_id"]), container,
-                                  json.loads(row["receipt"]), True, row["command_id"])
+                                  receipt, True, row["command_id"])
             except CapacityError:
                 break
 

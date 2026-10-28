@@ -59,6 +59,8 @@ class GatewayConfig:
     max_outbox_rows: int
     max_outbox_bytes: int
     max_commands: int
+    core_bridge_enabled: bool
+    ble_gatt_profile: str
 
     @classmethod
     def from_env(cls) -> "GatewayConfig":
@@ -123,6 +125,12 @@ class GatewayConfig:
         if not pair:
             raise ValueError("Secure pairing is required; BLE_PAIR=false is not supported")
         revisions = tuple(v.strip() for v in os.getenv("FIRMWARE_REVISION_ALLOWLIST", "").split(",") if v.strip())
+        core_bridge = boolean("CORE_BRIDGE_ENABLED", "false")
+        if core_bridge and not boolean("MQTT_ENABLED", "true"):
+            raise ValueError("CORE_BRIDGE_ENABLED requires MQTT_ENABLED=true")
+        profile = os.getenv("BLE_GATT_PROFILE", "core-v1")
+        if profile not in {"core-v1", "keyring-v01"}:
+            raise ValueError("BLE_GATT_PROFILE must be core-v1 or keyring-v01")
         return cls(
             gateway_id=identifier("GATEWAY_ID"), originator=identifier("M2M_ORIGINATOR"),
             cse_id=identifier("M2M_CSE_ID"), cse_url=endpoint("M2M_CSE_URL", True),
@@ -148,4 +156,5 @@ class GatewayConfig:
             max_outbox_rows=int(number("MAX_OUTBOX_ROWS", "10000", 100, 1000000)),
             max_outbox_bytes=int(number("MAX_OUTBOX_BYTES", "33554432", 1048576, 1073741824)),
             max_commands=int(number("MAX_COMMANDS", "100000", 100, 10000000)),
+            core_bridge_enabled=core_bridge, ble_gatt_profile=profile,
         )

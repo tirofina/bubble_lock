@@ -1,5 +1,7 @@
 # Raspberry Pi Gateway
 
+DOC-REV 2.0.0의 팀 CORE 계약을 연결했다. `BLE_GATT_PROFILE=core-v1`이 새 기본값이며 기존 UUID는 `keyring-v01`로 지정한다. `CORE_BRIDGE_ENABLED=true`는 telemetry/성공 ACK의 영속 전송과 command topic 수신을 추가한다. 원본 oneM2M cin·권한 검사는 유지한다. CORE payload 차이와 승인 필드 공백은 [연동 메모](../CORE_INTEGRATION.md)를 따른다. 로컬 테스트 서버 설정은 [Mobius4](../dev/mobius4/README.md)에 있다.
+
 Python 3.11 이상과 Linux BlueZ를 사용하는 KEYRING 현장 daemon이다. BLE 관측을 SQLite outbox에 저장하고 MQTT 또는 HTTPS로 oneM2M contentInstance를 생성한다. 중앙에서 받은 명령은 최신 승인·credential·deadline을 확인한 뒤 BLE로 전달한다.
 
 현재 상태는 **소스 작성 / unverified**다. 아래 명령은 Raspberry Pi에서 사용자가 수동으로 수행할 배포 절차이며, 이번 작업에서는 설치·빌드·실행·장비 연결을 하지 않았다.

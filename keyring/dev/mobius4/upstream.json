@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/IoTKETI/mobius4",
+  "revision": "e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8",
+  "sourceLocation": "external checkout selected by MOBIUS4_ROOT",
+  "teamCoreRevision": "91a281b12769493fab6d34d573a6a979f37f7b02",
+  "docRevision": "2.0.0",
+  "temporary": true,
+  "runtimeStatus": "empty-resources-provisioned"
+}

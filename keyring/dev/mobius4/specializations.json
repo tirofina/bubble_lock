@@ -1,0 +1,7 @@
+{
+  "org.onem2m.common.moduleclass.binarySwitch": {
+    "typeName": "binarySwitch",
+    "namespacePrefix": "pb",
+    "attributes": {"state": {"type": "boolean", "required": true}}
+  }
+}

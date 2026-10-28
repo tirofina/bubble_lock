@@ -21,12 +21,21 @@
 #endif
 
 namespace {
-constexpr char FirmwareRevision[] = "keyring-0.1.0";
+constexpr char FirmwareRevision[] = "keyring-0.2.0";
+#if defined(KEYRING_LEGACY_GATT) && KEYRING_LEGACY_GATT
 constexpr char ServiceUuid[] = "8b8f0001-8e7a-4f36-a8c2-1c9b5d620001";
 constexpr char IdentityUuid[] = "8b8f0002-8e7a-4f36-a8c2-1c9b5d620001";
 constexpr char ObservationUuid[] = "8b8f0003-8e7a-4f36-a8c2-1c9b5d620001";
 constexpr char CommandUuid[] = "8b8f0004-8e7a-4f36-a8c2-1c9b5d620001";
 constexpr char ReceiptUuid[] = "8b8f0005-8e7a-4f36-a8c2-1c9b5d620001";
+#else
+// DOC-REV 2.0.0 / pc-mobius/contracts/raspberrypi-gateway.v1.json.
+constexpr char ServiceUuid[] = "7f8a0001-4b6e-4f4e-9b0a-505249564255";
+constexpr char ObservationUuid[] = "7f8a0002-4b6e-4f4e-9b0a-505249564255";
+constexpr char CommandUuid[] = "7f8a0003-4b6e-4f4e-9b0a-505249564255";
+constexpr char ReceiptUuid[] = "7f8a0004-4b6e-4f4e-9b0a-505249564255";
+constexpr char IdentityUuid[] = "7f8a0005-4b6e-4f4e-9b0a-505249564255";
+#endif
 constexpr size_t MaxFrame = 4096;
 constexpr unsigned JournalSlots = 32;
 constexpr uint32_t JournalMagic = 0x4b524731;

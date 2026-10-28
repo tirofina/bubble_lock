@@ -1,0 +1,31 @@
+map $ssl_client_s_dn $keyring_identity_allowed {
+    default 0;
+    "CN=keyring-dev-gateway" 1;
+}
+server {
+    listen 8759 ssl;
+    server_name localhost;
+    ssl_protocols TLSv1.3;
+    ssl_certificate /etc/nginx/keyring-tls/server.pem;
+    ssl_certificate_key /etc/nginx/keyring-tls/server.key;
+    ssl_client_certificate /etc/nginx/keyring-tls/ca.pem;
+    ssl_verify_client on;
+    ssl_verify_depth 2;
+    client_max_body_size 256k;
+    access_log off;
+    if ($keyring_identity_allowed = 0) { return 403; }
+    location /api/ {
+        default_type application/json;
+        return 503 '{"error":"INTEGRATION_API_NOT_CONFIGURED","allowed":false}';
+    }
+    location / {
+        proxy_pass http://mobius4:7599;
+        # This generated administrator mapping belongs ONLY to this isolated dev CSE.
+        # A real server must bind a client certificate to its registered AE/ACP.
+        proxy_set_header X-M2M-Origin "${CSE_ADMIN}";
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_connect_timeout 5s;
+        proxy_read_timeout 15s;
+    }
+}

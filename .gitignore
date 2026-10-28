@@ -22,3 +22,7 @@ dist/
 *.sqlite3-wal
 *.sqlite3-shm
 *.lock
+.local/
+_local/
+*.csr
+*.srl

@@ -1,6 +1,8 @@
 # KEYRING 인수인계 — 남호
 
-기준 문서: `PROJECT_IMPLEMENTATION_RUBRIC_PLAN.md` · DOC-REV: `1.0.0` · 계약 후보: `0.1.0` · 브랜치: `codex/keyring-namho`
+2026-10-28 업데이트: 저장소 최신 DOC-REV 2.0.0과 CORE `91a281b`를 인수했다. oneM2M/SDT/topic/DB는 PC-MOBIUS-CORE, commands/authorize/credential와 grant/claim/epoch는 PC-MOBIUS-INTEGRATION에 연결한다. [상세 CORE 차이 및 변경 제안](../keyring/CORE_INTEGRATION.md)에 BLE UUID 변경, sequence 유지, 승인 필드 누락, CORE ty/op 불일치를 기록했다. 원본 팀 구현은 보존했다.
+
+기준 문서: `PROJECT_IMPLEMENTATION_RUBRIC_PLAN.md` · DOC-REV: `2.0.0` · 계약 후보: `0.1.0` · 브랜치: `codex/keyring-namho`
 
 ## 구현 범위와 상태
 

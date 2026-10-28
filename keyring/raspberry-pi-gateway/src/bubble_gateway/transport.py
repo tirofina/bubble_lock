@@ -15,6 +15,7 @@ from urllib.parse import quote, urlsplit
 
 import httpx
 import paho.mqtt.client as mqtt
+from .core_bridge import command as core_command
 
 LOG = logging.getLogger(__name__)
 MAX_BODY = 256 * 1024
@@ -93,6 +94,8 @@ class TransportHub:
         self._request_topic = f"/oneM2M/req/{config.originator}/{config.cse_id}/json"
         self._response_topic = f"/oneM2M/resp/{config.originator}/{config.cse_id}/json"
         self._gateway_path = "/api/v1/gateways/" + quote(config.gateway_id, safe="")
+        self._core_root = f"privacy-bubble/gateway/{config.gateway_id}"
+        self._commands: asyncio.Queue = asyncio.Queue(maxsize=128)
         self._http: httpx.AsyncClient | None = None
         self._mqtt: mqtt.Client | None = None
         self._loop: asyncio.AbstractEventLoop | None = None
@@ -114,7 +117,8 @@ class TransportHub:
                                       limits=httpx.Limits(max_connections=8, max_keepalive_connections=4))
         if not self.config.mqtt_enabled:
             return
-        client_id = "gw-" + hashlib.sha256(self.config.gateway_id.encode("utf-8")).hexdigest()[:20]
+        client_id = (f"pb-gateway-{self.config.gateway_id}" if self.config.core_bridge_enabled
+                     else "gw-" + hashlib.sha256(self.config.gateway_id.encode("utf-8")).hexdigest()[:20])
         client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
                              client_id=client_id, clean_session=False, protocol=mqtt.MQTTv311,
                              reconnect_on_failure=True)
@@ -146,7 +150,10 @@ class TransportHub:
         if reason_code != 0:
             LOG.warning("MQTT connection rejected")
             return
-        result, mid = client.subscribe(self._response_topic, qos=1)
+        subscriptions = [(self._response_topic, 1)]
+        if self.config.core_bridge_enabled:
+            subscriptions.append((self._core_root + "/command", 1))
+        result, mid = client.subscribe(subscriptions)
         if result == mqtt.MQTT_ERR_SUCCESS:
             self._subscribe_mid = mid
         else:
@@ -173,7 +180,16 @@ class TransportHub:
                 future.set_exception(ConnectionError("MQTT disconnected before oneM2M response"))
 
     def _on_message(self, _client: Any, _userdata: Any, message: Any) -> None:
-        if message.topic != self._response_topic or message.retain or len(message.payload) > MAX_BODY:
+        if message.retain or len(message.payload) > MAX_BODY:
+            return
+        if self.config.core_bridge_enabled and message.topic == self._core_root + "/command":
+            try:
+                command = core_command(_object(message.payload), self.config.gateway_id, self.config.ble_devices)
+                self._schedule(self._queue_command, command)
+            except (ValueError, TypeError, KeyError, RemoteResponseError):
+                LOG.warning("CORE command rejected: canonical grant/claim fields required")
+            return
+        if message.topic != self._response_topic:
             return
         try:
             envelope = _object(message.payload)
@@ -193,6 +209,12 @@ class TransportHub:
         future = self._pending.get(response["rqi"])
         if future is not None and not future.done():
             future.set_result(response)
+
+    def _queue_command(self, command: dict[str, Any]) -> None:
+        try:
+            self._commands.put_nowait(command)
+        except asyncio.QueueFull:
+            LOG.error("CORE command ingress full; command was not durably accepted or executed")
 
     async def _http_json(self, method: str, url: str, *, headers: dict[str, str],
                          body: dict[str, Any] | None = None) -> tuple[int, httpx.Headers, dict[str, Any]]:
@@ -239,6 +261,9 @@ class TransportHub:
             raise RemoteResponseError("existing oneM2M resource has different content", 4105, status)
 
     async def publish(self, rqi: str, container: str, payload: dict[str, Any]) -> None:
+        if container.startswith("@core/"):
+            await self._publish_core(container, payload)
+            return
         if not isinstance(rqi, str) or not 1 <= len(rqi) <= 128:
             raise ValueError("invalid request ID")
         path = _resource_path(container)
@@ -286,6 +311,21 @@ class TransportHub:
             return
         raise RemoteResponseError("oneM2M HTTPS request rejected", rsc, status)
 
+    async def _publish_core(self, target: str, payload: dict[str, Any]) -> None:
+        if target not in {"@core/telemetry", "@core/ack"} or not self.config.core_bridge_enabled:
+            raise ValueError("Unsupported CORE outbox target")
+        if self._mqtt is None or not self._ready.is_set():
+            raise ConnectionError("CORE MQTT session is not ready")
+        topic = self._core_root + "/" + target.split("/", 1)[1]
+        info = self._mqtt.publish(topic, payload=_json(payload), qos=1, retain=False)
+        if info.rc != mqtt.MQTT_ERR_SUCCESS:
+            raise ConnectionError("CORE publish was not accepted")
+        await asyncio.to_thread(info.wait_for_publish, timeout=self.config.request_timeout)
+        if not info.is_published():
+            raise TimeoutError("CORE MQTT PUBACK timeout")
+        # PUBACK proves broker ingress only. It does not assert CORE processing,
+        # a oneM2M UPDATE or a physical device actuation.
+
     async def _api(self, method: str, suffix: str, body: dict[str, Any] | None = None,
                     correlation_id: str | None = None) -> dict[str, Any]:
         request_id = str(uuid.uuid4())
@@ -299,11 +339,22 @@ class TransportHub:
         return document
 
     async def poll_commands(self) -> list[dict[str, Any]]:
-        document = await self._api("GET", "/commands?limit=16")
+        queued = []
+        while len(queued) < 16 and not self._commands.empty():
+            queued.append(self._commands.get_nowait())
+            self._commands.task_done()
+        if len(queued) == 16:
+            return queued
+        try:
+            document = await self._api("GET", "/commands?limit=16")
+        except Exception:
+            if queued:
+                return queued
+            raise
         commands = document.get("commands")
         if not isinstance(commands, list) or len(commands) > 16 or any(not isinstance(item, dict) for item in commands):
             raise RemoteResponseError("invalid PC command list")
-        return commands
+        return queued + commands[:16 - len(queued)]
 
     async def authorize(self, command_dict: dict[str, Any], payload_hash: str) -> dict[str, Any]:
         body = {key: command_dict[key] for key in

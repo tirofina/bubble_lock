@@ -1,6 +1,6 @@
 # 남호 · KEYRING 펌웨어
 
-ROLE: KEYRING · DOC-REV: 1.0.0 · 구현 계약: 0.1.0 · 상태: implemented, unverified
+ROLE: KEYRING · DOC-REV: 2.0.0 · 구현 계약: 0.1.0 · 상태: implemented, unverified
 
 ESP32-S3-WROOM-1-N16R8 / r18-hand-solder 보드를 대상으로 작성한 소스다. BLE 관측·버튼·배터리·가속도 수집과 진동 명령/receipt를 구현한다. 테스트·린트·컴파일·빌드·플래시·실물 실행은 이번 작업에서 수행하지 않았다.
 

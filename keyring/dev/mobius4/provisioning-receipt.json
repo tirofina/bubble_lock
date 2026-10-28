@@ -1,0 +1,57 @@
+[
+  {
+    "requestId": "kr-setup-4f5cbef2-0e2c-4dae-921c-b4140e2b4d89",
+    "parent": "/Mobius",
+    "ty": 2,
+    "httpStatus": 201,
+    "rsc": 2001,
+    "rqi": "kr-setup-4f5cbef2-0e2c-4dae-921c-b4140e2b4d89",
+    "status": "CREATED",
+    "timestamp": "2026-10-28T08:25:20.068Z",
+    "evidenceScope": "empty-resource-provisioning"
+  },
+  {
+    "requestId": "kr-setup-31208890-bb99-4ab3-9e11-e7a9c789f67e",
+    "parent": "/Mobius/privacy-bubble-test-ae",
+    "ty": 3,
+    "httpStatus": 201,
+    "rsc": 2001,
+    "rqi": "kr-setup-31208890-bb99-4ab3-9e11-e7a9c789f67e",
+    "status": "CREATED",
+    "timestamp": "2026-10-28T08:25:27.104Z",
+    "evidenceScope": "empty-resource-provisioning"
+  },
+  {
+    "requestId": "kr-setup-090765a6-faa1-4dd2-8a90-13be14de69ea",
+    "parent": "/Mobius/privacy-bubble-test-ae",
+    "ty": 3,
+    "httpStatus": 201,
+    "rsc": 2001,
+    "rqi": "kr-setup-090765a6-faa1-4dd2-8a90-13be14de69ea",
+    "status": "CREATED",
+    "timestamp": "2026-10-28T08:25:34.131Z",
+    "evidenceScope": "empty-resource-provisioning"
+  },
+  {
+    "requestId": "kr-setup-acd6815b-f396-4641-90dc-d62cfb0c72a3",
+    "parent": "/Mobius/privacy-bubble-test-ae",
+    "ty": 3,
+    "httpStatus": 201,
+    "rsc": 2001,
+    "rqi": "kr-setup-acd6815b-f396-4641-90dc-d62cfb0c72a3",
+    "status": "CREATED",
+    "timestamp": "2026-10-28T08:25:41.155Z",
+    "evidenceScope": "empty-resource-provisioning"
+  },
+  {
+    "requestId": "kr-setup-58c034c9-e186-4ac4-bbac-e68cd471a518",
+    "parent": "/Mobius/privacy-bubble-test-ae",
+    "ty": 28,
+    "httpStatus": 201,
+    "rsc": 2001,
+    "rqi": "kr-setup-58c034c9-e186-4ac4-bbac-e68cd471a518",
+    "status": "CREATED",
+    "timestamp": "2026-10-28T08:25:48.180Z",
+    "evidenceScope": "empty-resource-provisioning"
+  }
+]
