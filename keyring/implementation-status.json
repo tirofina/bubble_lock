@@ -92,12 +92,12 @@
   "releaseSha": null,
   "firmwareRevision": "keyring-0.5.0",
   "publication": {
-    "sourceCommit": "6203dec",
+    "sourceCommit": "446dc6d",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "6203dec",
-    "latestCheckpoint": "r18 hardware source handoff snapshot and firmware mapping (unverified)"
+    "latestLocalSourceCommit": "446dc6d",
+    "latestCheckpoint": "r18 native hardware source snapshot and firmware mapping pushed (unverified)"
   }
 }
