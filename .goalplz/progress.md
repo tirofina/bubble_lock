@@ -84,3 +84,16 @@ source commit `113b03c`를 만들고 `git push origin codex/keyring-namho`가 �
 ### Journal 소스 업로드 결과
 
 source commit `6203dec`의 일반 push가 성공했다(`365f4e7..6203dec`, origin/codex/keyring-namho). main/CORE·운영 서버는 변경하지 않았다. 이것은 구현 코드 업로드이며 실제 장치 capture/보관·정산·reclaim·동작 검증 증거가 아니다. 구현 상태의 sourceCommit도6203dec로 갱신했다. goal은 active이고 필수 실물/통합/release 증거는 남아 있다.
+
+## 2026-10-28 — r18 native 하드웨어 인계 checkpoint
+
+이전 goal 턴은 journal source6203dec·기록ca027d2를 역할 브랜치에 push한 progress였다. 이번 시작에 최신 계획서 DOC-REV2.0.0의 역할/완료 조건, AGENTS, 자동 검증 금지 스킬을 읽고 Git fetch했다. main/CORE는 기존91a281b로 새 팀 계약 변경이 없었다.
+
+- 기존 pcb README가 저장소 외부 작업공간의 파일만 가리켜 clone만으로 설계를 인수할 수 없었다. KEYRING PCB 자산 인계 범위에서 원본 r18-hand-solder의 native sch/pcb/pro/dru, Release 심볼, 로컬 footprint·모델, BOM/두 LCD 외장표·배선표, 기존 stackup·패드 변경 이력을 keyring/pcb/r18에 복사했다. 원래 파일과 회로/배치/패드/네트/BOM 값을 수정하지 않았다.
+- 원본 복사222개·16,312,470byte의 출처/byte 수/SHA256/파일 시각을 source-inventory.json에 기록했다. 해시는 복사한 데이터 식별용이며 코드/CAD/전기 검증이 아니다. .gitattributes에 snapshot byte 보존 규칙을 추가했다. 분석 결과/Checks·제조 거버/드릴·ZIP·editor state·중복 미사용 library는 새 인계에 포함하지 않았고 원래 작업공간에 보존했다.
+- KiCad/BOM 스킬의 자산 구조/출처 지침을 적용했다. 분석기·BOM 재추출/부품정보/가격/재고 조회·datasheet 동기화·시뮬레이션·DRC/ERC·제조출력 생성은 실행하지 않았다. 라이선스 안내는 KiCad 공식 library license 페이지를 순차1회 읽고 출처를 링크했다. 원래 model/property/source attribution을 유지하며 프로젝트나 supplier 모델에 일괄 새 라이선스를 부여하지 않는다.
+- 원본 README의 과거 DRC/ERC/hash/simulation 주장은 UPSTREAM_README로 보존하고 현재 firmware release 증거와 구분했다. 실제 검증을 수행하거나 과거 결과를 현재 결과로 재사용하지 않았다.
+- HARDWARE_FIRMWARE_MAP에 현재 배선표/핀 선언과 충돌하는 U1·U13 BOM prose를 정리했다. GPIO12→AUX_EN4, LCD reset15→43, GPIO5/48 NC를 원본 덮어쓰기 없이 설명했다. U15 INA219B는 실제 BOM에 존재하지만 firmware 계측 경로가 없어 notImplemented/다음 독립 구현 항목으로 기록했다. U16 MAX9850 헤드폰 경로도 여전히 미구현이다.
+- 인계 안내·소프트웨어/하드웨어 연결·구현 상태를 갱신했다. KiCad 열기/분석기/DRC/ERC/SPICE/build/flash/장비·COM/앱·서비스·컨테이너 재시작/검증용 데이터 생성은 모두 미실행이다. 실제 조립 revision·배선·전원/RF/열·실물/통합/release evidence는 남아 있다.
+
+다음 독립 구현은 원본 U15 INA219의 제조사 register/전류 sense 연결을 읽고 실제 전류·전압·전력/오류 관측 소스를 추가하는 것이다. 중앙 INTEGRATION 승인/settlement 계약·구매 JD9853 초기화 자료·실물 실행 허가는 여전히 별도 의존성이다. 이번 인계 source commit/push는 실제 Git 결과로 후속 기록한다.

@@ -1,0 +1,226 @@
+(footprint "C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C36_HandSolder"
+	(version 20260206)
+	(generator "pcbnew")
+	(generator_version "10.0")
+	(locked yes)
+	(layer "F.Cu")
+	(descr "Capacitor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf); r18 KiCad HandSolder land pattern; same package and original model/placement")
+	(tags "capacitor")
+	(property "Reference" "REF**"
+		(at 0 2.026905 90)
+		(layer "F.SilkS")
+		(uuid "aac29444-0d6f-401c-8543-75993193e7d8")
+		(effects
+			(font
+				(size 0.8 0.8)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "100nF 50V X7R"
+		(at 0 1.16 180)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "a074dfc4-1d07-4a0f-8a29-d25c8de1ef89")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" "https://www.murata.com/"
+		(at 0 0 180)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "34d77f3d-4c45-4651-bbfb-6fef5520abb7")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 180)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "11cc6608-c8dd-472c-94c2-d3199859acfe")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "KiLib_Generator" "SMD_2terminal_chip_molded"
+		(at 0 0 180)
+		(layer "F.SilkS")
+		(hide yes)
+		(uuid "94ea9f4d-6510-481a-9f89-73d920fc5610")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "MPN" "GRM155R71H104KE14D"
+		(at 0 0 180)
+		(layer "F.SilkS")
+		(hide yes)
+		(uuid "833d245b-6698-4ec4-bb37-316519d59d4d")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Manufacturer" "Murata"
+		(at 0 0 180)
+		(layer "F.SilkS")
+		(hide yes)
+		(uuid "bc7b3829-36c8-475a-aa97-a00d80907522")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "BOM Comments" "Local bypass; place next to associated IC"
+		(at 0 0 180)
+		(layer "F.SilkS")
+		(hide yes)
+		(uuid "6e341a32-a477-464f-8887-cb08351eefef")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Validated" ""
+		(at 0 0 180)
+		(layer "F.SilkS")
+		(hide yes)
+		(uuid "36c26d13-7f8e-4477-9481-b3f2b353ede3")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr smd)
+	(duplicate_pad_numbers_are_jumpers no)
+	(fp_line
+		(start -1.085 -0.455)
+		(end 1.085 -0.455)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "eacadcbb-e05b-40f9-89f6-9bae283a3f66")
+	)
+	(fp_line
+		(start -1.085 0.455)
+		(end -1.085 -0.455)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "1265a323-acc7-45cd-b040-617b33ad596d")
+	)
+	(fp_line
+		(start 1.085 -0.455)
+		(end 1.085 0.455)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "02806a90-e47d-4c78-8b7b-08971b8d66ac")
+	)
+	(fp_line
+		(start 1.085 0.455)
+		(end -1.085 0.455)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "da39fca4-6890-439e-9c10-20549607d60c")
+	)
+	(fp_line
+		(start -0.107836 -0.36)
+		(end 0.107836 -0.36)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "136adec9-37d6-415a-b5f8-4dde740f4c01")
+	)
+	(fp_line
+		(start -0.107836 0.36)
+		(end 0.107836 0.36)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "f800fbc8-d830-4c42-8530-e2e22cf7a2ba")
+	)
+	(fp_rect
+		(start -0.5 -0.25)
+		(end 0.5 0.25)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "8c6ae896-0b23-4c09-b32c-6bd6b95ef199")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 0 0 180)
+		(layer "F.Fab")
+		(uuid "712c43f3-bc90-4fad-bffa-72e7086c614d")
+		(effects
+			(font
+				(size 0.25 0.25)
+				(thickness 0.04)
+			)
+		)
+	)
+	(pad "1" smd roundrect
+		(at -0.48 0)
+		(size 0.56 0.62)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(roundrect_rratio 0.25)
+		(zone_connect 2)
+		(uuid "0cdc23ed-5bd1-418b-bcf6-b438d263eb8c")
+	)
+	(pad "2" smd roundrect
+		(at 0.5675 0)
+		(size 0.735 0.62)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(roundrect_rratio 0.25)
+		(zone_connect 2)
+		(uuid "64aeafa5-fcf2-4e70-9c63-800c9dc11401")
+	)
+	(embedded_fonts no)
+	(model "${KICAD10_3DMODEL_DIR}/Capacitor_SMD.3dshapes/C_0402_1005Metric.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
+)

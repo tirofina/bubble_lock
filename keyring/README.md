@@ -25,7 +25,7 @@ DEPENDENCIES: PC-MOBIUS API, AE/container/ACP, broker capability, credential 등
 | [주변장치](firmware/PERIPHERALS.md) | ST7789·JD9853 선택형 화면, 스피커 cue, microSD receipt 복사와 미확인 범위 |
 | [journal 보관](JOURNAL_RETENTION.md) | 암호화 BLE snapshot·수동 보관 CLI, 원본 유지와 중앙 정산 의존성 |
 | [raspberry-pi-gateway](raspberry-pi-gateway/README.md) | Python daemon, BLE adapter, durable queue, 인증·전송 |
-| [pcb](pcb/README.md) | 기존 r18 설계 자산과 실제 핀맵의 출처 |
+| [pcb](pcb/README.md) | r18 native KiCad 원본·로컬 CAD·BOM/배선표 snapshot과 핀 설명 정정 |
 | [INTERFACE_NOTES.md](INTERFACE_NOTES.md) | UUID, payload, 중앙 API 및 oneM2M 전송 계약 |
 | [contracts/keyring](../contracts/keyring/README.md) | standalone JSON Schema 2020-12 |
 | [인수인계](../docs/keyring-handoff.md) | 구현 범위, 중앙 의존성, 미실행 수용 항목 |

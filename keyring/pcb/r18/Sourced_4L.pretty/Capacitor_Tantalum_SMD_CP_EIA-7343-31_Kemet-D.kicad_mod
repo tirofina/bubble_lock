@@ -1,0 +1,234 @@
+(footprint "Capacitor_Tantalum_SMD_CP_EIA-7343-31_Kemet-D"
+	(version 20260206)
+	(generator "pcbnew")
+	(generator_version "10.0")
+	(layer "F.Cu")
+	(descr "Tantalum Capacitor SMD Kemet-D (7343-31 Metric), IPC-7352 nominal, (Body size from: http://www.kemet.com/Lists/ProductCatalog/Attachments/253/KEM_TC101_STD.pdf)")
+	(tags "capacitor tantalum")
+	(property "Reference" "C37"
+		(at 0 -3.1 0)
+		(layer "F.SilkS")
+		(uuid "80c5fdf3-b2bc-45d0-b67a-d0fa82dbacd9")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "470uF 6.3V polymer"
+		(at 0 3.1 0)
+		(layer "F.Fab")
+		(uuid "68cdd306-9ce2-4b7d-8480-67e056438489")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" "https://www.digikey.com/en/products/detail/kemet/T520D477M006ATE025/1129673"
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "141e8470-758c-454f-8b8b-2e8e75441062")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "696b582d-c731-4cf3-872d-81e701ed17e1")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "KiLib_Generator" "SMD_2terminal_chip_molded"
+		(at 0 0 0)
+		(layer "F.SilkS")
+		(hide yes)
+		(uuid "cd814f74-e621-4348-a6f2-ecddd35e61ad")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "MPN" "T520D477M006ATE025"
+		(at 0 0 0)
+		(layer "F.SilkS")
+		(uuid "69777e88-ce1a-4c3a-979d-a13fd60f5c76")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "Manufacturer" "KEMET"
+		(at 0 0 0)
+		(layer "F.SilkS")
+		(uuid "79b6e472-22e2-49c3-9995-bd6ae087fbd5")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "BOM Comments" "Polarized polymer reserve,470uF +/-20%,ESR25mOhm,7343 caseD,max3.1mm height. Positive pad1=+3V3. Original KiCad Kemet-D footprint/model; distributor manufacturer-supplied specifications."
+		(at 0 0 0)
+		(layer "F.SilkS")
+		(uuid "45f21053-91dc-4239-ba70-1dd262d12fdf")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "Validated" ""
+		(at 0 0 0)
+		(layer "F.SilkS")
+		(uuid "10d08009-4691-4eaa-9783-4fc5436304b6")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(attr smd)
+	(duplicate_pad_numbers_are_jumpers no)
+	(fp_line
+		(start -4.415 -2.26)
+		(end -4.415 2.26)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "37c0d17d-0246-4879-b4ea-df4ccc98cb4f")
+	)
+	(fp_line
+		(start -4.415 2.26)
+		(end 3.65 2.26)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "5f2f0681-75dd-4730-9e83-dc70cd5bdd0a")
+	)
+	(fp_line
+		(start 3.65 -2.26)
+		(end -4.415 -2.26)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "6875a0e9-d427-4182-84ef-8ced001d450d")
+	)
+	(fp_rect
+		(start -4.41 -2.4)
+		(end 4.41 2.4)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.CrtYd")
+		(uuid "c54e71df-0d7e-41ed-b910-d0e03930f423")
+	)
+	(fp_line
+		(start -3.65 -1.15)
+		(end -3.65 2.15)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "7511a0de-28b9-499e-b49d-66002b14b1d7")
+	)
+	(fp_line
+		(start -3.65 2.15)
+		(end 3.65 2.15)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "e40c517e-1750-4c23-aa48-f071fee7f195")
+	)
+	(fp_line
+		(start -2.65 -2.15)
+		(end -3.65 -1.15)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "b3e36da6-e557-4f0d-a035-7ca08fa12caa")
+	)
+	(fp_line
+		(start 3.65 -2.15)
+		(end -2.65 -2.15)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "17c5d87b-2f63-4abe-99b6-c12b9d294984")
+	)
+	(fp_line
+		(start 3.65 2.15)
+		(end 3.65 -2.15)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "bd814f5a-a249-4a29-8505-560b6af1cfc9")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 0 0 0)
+		(layer "F.Fab")
+		(uuid "3d213169-ef97-4866-9fb3-faba849579b4")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "1" smd roundrect
+		(at -3.12 0)
+		(size 2.07 2.59)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(roundrect_rratio 0.120773)
+		(uuid "8e3db31b-7de3-4bb3-9410-9f40ad031548")
+	)
+	(pad "2" smd roundrect
+		(at 3.12 0)
+		(size 2.07 2.59)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(roundrect_rratio 0.120773)
+		(uuid "a915406b-5bf5-4bc4-83c1-95d311bf23d9")
+	)
+	(embedded_fonts no)
+	(model "${KIPRJMOD}/3dmodels/CP_EIA-7343-31_Kemet-D.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
+)

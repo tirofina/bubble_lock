@@ -1,0 +1,195 @@
+(footprint "C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C44_HandSolder"
+	(version 20260206)
+	(generator "pcbnew")
+	(generator_version "10.0")
+	(locked yes)
+	(layer "F.Cu")
+	(descr "Capacitor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC-7351 nominal, (Body size source: IPC-SM-782 page 76, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf); r18 outward toe extension; original inner edge / width retained; same package and original model/placement")
+	(tags "capacitor")
+	(property "Reference" "REF**"
+		(at -3.08125 -0.209999 270)
+		(layer "F.SilkS")
+		(uuid "303113eb-f9e2-4407-827e-01cf75817e69")
+		(effects
+			(font
+				(size 0.8 0.8)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "470nF 10V X5R"
+		(at 0 1.16 180)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "7a9c1d0d-c3d1-4573-9cb5-9beca396bb1d")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" "https://www.murata.com/"
+		(at 0 0 180)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "40ec6d08-e1e9-470c-8d49-f9ae9a4c4eab")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 180)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "b5967ac0-5b66-46a4-9857-249f42d55be1")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "KiLib_Generator" "SMD_2terminal_chip_molded"
+		(at 0 0 180)
+		(layer "F.SilkS")
+		(hide yes)
+		(uuid "3979403e-70d9-4f08-a75d-a03e4b78b30f")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "MPN" "GRM155R61A474KE15D"
+		(at 0 0 180)
+		(layer "F.SilkS")
+		(hide yes)
+		(uuid "2abd1314-20ea-4a2a-8615-44aba297ff37")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Manufacturer" "Murata"
+		(at 0 0 180)
+		(layer "F.SilkS")
+		(hide yes)
+		(uuid "22461e17-f683-4382-95f8-579a7e6ad845")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "BOM Comments" "Flying capacitor pins25/23; compact loop; MAX9850 datasheet pin table and PCB layout p33"
+		(at 0 0 180)
+		(layer "F.SilkS")
+		(hide yes)
+		(uuid "9d755e7c-5ae9-42c2-8163-cf01a51a62a7")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Validated" ""
+		(at 0 0 180)
+		(layer "F.SilkS")
+		(hide yes)
+		(uuid "14acfa81-b8c9-421b-aed0-91d629cd4bd2")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr smd)
+	(duplicate_pad_numbers_are_jumpers no)
+	(fp_rect
+		(start -1.01 -0.56)
+		(end 1.26 0.56)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.CrtYd")
+		(uuid "7c9116d8-50bd-4eb4-8a26-ae8d453c47fc")
+	)
+	(fp_line
+		(start -0.107836 -0.36)
+		(end 0.107836 -0.36)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "4ae277b4-606b-4535-bcba-a95b62727bf6")
+	)
+	(fp_line
+		(start -0.107836 0.36)
+		(end 0.107836 0.36)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "28768ba1-ab80-4640-8cb5-6b589a08e587")
+	)
+	(fp_rect
+		(start -0.5 -0.25)
+		(end 0.5 0.25)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "edc0ca13-62b8-4239-a181-303c935ff824")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 0 0 180)
+		(layer "F.Fab")
+		(uuid "020f9d12-f6b1-4381-b3bf-8a686e566cb9")
+		(effects
+			(font
+				(size 0.25 0.25)
+				(thickness 0.04)
+			)
+		)
+	)
+	(pad "1" smd roundrect
+		(at -0.48 0)
+		(size 0.56 0.62)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(roundrect_rratio 0.25)
+		(uuid "ba3e13f2-36f1-4bb4-aeee-c08748939b68")
+	)
+	(pad "2" smd roundrect
+		(at 0.605 0)
+		(size 0.81 0.62)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(roundrect_rratio 0.2258064516)
+		(uuid "e4ae7287-753a-4f22-bd14-557a24090cef")
+	)
+	(embedded_fonts no)
+	(model "${KIPRJMOD}/3dmodels/KiCad_C_0402_1005Metric.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
+)

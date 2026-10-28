@@ -1,0 +1,1805 @@
+{
+  "inventoryVersion": 1,
+  "role": "KEYRING",
+  "documentRevision": "2.0.0",
+  "boardRevision": "privacy_bubble_r18_hand_solder",
+  "capturedAt": "2026-10-28T09:28:20.0092711Z",
+  "status": "source-snapshot-included-unverified",
+  "sourceRoot": "hardware/privacy_bubble_r18_hand_solder (original workspace outside Git repository)",
+  "originalDesignModified": false,
+  "copiedSourceModified": false,
+  "hashesPurpose": "Identify the copied source bytes; no CAD/build/electrical validation performed.",
+  "inheritedEvidence": "UPSTREAM_README.md preserves historical claims; not adopted as current release evidence.",
+  "fileCount": 222,
+  "totalBytes": 16312470,
+  "files": [
+    {
+      "path": "privacy_bubble.kicad_sch",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/privacy_bubble.kicad_sch",
+      "kind": "native-design-or-inherited-configuration",
+      "bytes": 429936,
+      "sha256": "3e9ddcbc19e53145117b5cd3e818ea0b4e482aa9e46a5ca83476e7d850c76c3e",
+      "inheritedLastWriteUtc": "2026-10-22T08:15:30.4012791Z"
+    },
+    {
+      "path": "privacy_bubble.kicad_pcb",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/privacy_bubble.kicad_pcb",
+      "kind": "native-design-or-inherited-configuration",
+      "bytes": 5202840,
+      "sha256": "7087331b2a9f53e38606acf691d6c499693d7e2b03f7ed0a5feb0297f1b2ef1b",
+      "inheritedLastWriteUtc": "2026-10-22T08:15:32.7826915Z"
+    },
+    {
+      "path": "privacy_bubble.kicad_pro",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/privacy_bubble.kicad_pro",
+      "kind": "native-design-or-inherited-configuration",
+      "bytes": 14762,
+      "sha256": "b31e32444b98737f040ded6b8bf3cb9e3e43a3987f35aa0d22cab6736cdd824e",
+      "inheritedLastWriteUtc": "2026-10-21T19:51:23.2811572Z"
+    },
+    {
+      "path": "privacy_bubble.kicad_dru",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/privacy_bubble.kicad_dru",
+      "kind": "native-design-or-inherited-configuration",
+      "bytes": 901,
+      "sha256": "b7229e20cd7d9b3ea5a36ee44b181d215d32af1fd0fa60e91ddea646a4550673",
+      "inheritedLastWriteUtc": "2026-10-21T13:40:02.7441879Z"
+    },
+    {
+      "path": "Release.kicad_sym",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Release.kicad_sym",
+      "kind": "native-design-or-inherited-configuration",
+      "bytes": 83719,
+      "sha256": "7c940acec9130b1149af1ba646124d2d0cdd68415c7ecea74b74848a43c92761",
+      "inheritedLastWriteUtc": "2026-10-21T11:24:01.4958053Z"
+    },
+    {
+      "path": "sym-lib-table",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/sym-lib-table",
+      "kind": "native-design-or-inherited-configuration",
+      "bytes": 164,
+      "sha256": "847b9bb649e9256185e61f680b7244fa3acfc0811eeb8933c32ebab23108714e",
+      "inheritedLastWriteUtc": "2026-10-21T11:24:01.4958053Z"
+    },
+    {
+      "path": "fp-lib-table",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/fp-lib-table",
+      "kind": "native-design-or-inherited-configuration",
+      "bytes": 453,
+      "sha256": "b77ae3d8477230abd4df6e4650331e0081a040b4d6dbfc2e194d37c561adfde4",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:07.5323159Z"
+    },
+    {
+      "path": "four_layer_stackup.json",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/four_layer_stackup.json",
+      "kind": "native-design-or-inherited-configuration",
+      "bytes": 1015,
+      "sha256": "d9e05c3ec6cfb4bac803b73314ecef4fcc8eaede75d46c11b5ef5d39cd4b3561",
+      "inheritedLastWriteUtc": "2026-10-22T01:07:04.0709671Z"
+    },
+    {
+      "path": "hand_solder_changes.csv",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/hand_solder_changes.csv",
+      "kind": "native-design-or-inherited-configuration",
+      "bytes": 20593,
+      "sha256": "31d4c53d4f0ff592fdbfa151a8ae0344df1aa88aed037334af9b9fe9cfbe8fae",
+      "inheritedLastWriteUtc": "2026-10-22T08:15:32.7993684Z"
+    },
+    {
+      "path": "hand_solder_changes.json",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/hand_solder_changes.json",
+      "kind": "native-design-or-inherited-configuration",
+      "bytes": 167308,
+      "sha256": "faaffeacb14649c269f4a801ca46786d3066c2b12a4511cb3d7885aedb1ba45a",
+      "inheritedLastWriteUtc": "2026-10-22T08:17:20.8168528Z"
+    },
+    {
+      "path": "UPSTREAM_README.md",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/README.md",
+      "kind": "historical-source-notes-not-current-validation",
+      "bytes": 4211,
+      "sha256": "421163797082c0f16b763596037e0a99afe5b077b3602158cfcd09d75dd517f3",
+      "inheritedLastWriteUtc": "2026-10-22T08:19:05.7267681Z"
+    },
+    {
+      "path": "HandSolder.pretty/AUDIO-SMD_PJ-320D_J11_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/AUDIO-SMD_PJ-320D_J11_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5888,
+      "sha256": "6a50e9173daaa19ec70e849e59c6d6318b4b75c585d71b44bc977486e837a495",
+      "inheritedLastWriteUtc": "2026-10-22T07:37:00.6178401Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C15_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C15_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5709,
+      "sha256": "c89f1e6652d01b6e02215a48ce1210435a652625a8e589bc9ae6ed7dab6174f1",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6597742Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C16_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C16_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5761,
+      "sha256": "e2213920d09aab24172fa370c5f8c40159d6f6ab820f4f94d9dae8ac6a50e3bc",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.661242Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C20_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C20_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3746,
+      "sha256": "b2abfd795dcf5f202a1a36d0ff3cb7491598e85e0c9caa43a950358a9cb009f1",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.666742Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C24_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C24_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5688,
+      "sha256": "b8dd9608629a94625f7b35ca376e4c510971525ea4f8f2e1ac533e891eedde6b",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.670249Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C25_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C25_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3690,
+      "sha256": "0928ac089375b10075849da87f8c3f1e99598b3820b2b072c2bef10ad41a150e",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6712512Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C26_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C26_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3682,
+      "sha256": "25aaf6fd974227a782e3fbd62bf73f1e735451136b7e2fd8626c0880a3f4af7b",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6722492Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C27_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C27_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5609,
+      "sha256": "e6ad434a9f5c15905a7ee63ff201264c8443e5a0c8963548c13c77352934b08c",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6732488Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C29_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C29_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 4733,
+      "sha256": "12f35a512a9b4f4c87ece278e4d408478405fcdf7aa29e9d17ce408310afa800",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6752526Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C31_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C31_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 6354,
+      "sha256": "8e6eaca677319e63aaea68c86d5e021877390cc0f1b0afbbd7fb8d1aa200d53c",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.678249Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C32_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C32_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5843,
+      "sha256": "83ea8d33d396c751a951caad75062f231b8a3275bd5009cfc7684ecd75b3ddc5",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6787537Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C35_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C35_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 6090,
+      "sha256": "1cc2068083a7b7f984de5d383f563db86f32a0e18b93c6de40dc63cab2c46a13",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6807547Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C36_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C36_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 4569,
+      "sha256": "8aa163849ee38736d57cf3a6ba6da156a60c581a89131dda5f34ed72e2c48e25",
+      "inheritedLastWriteUtc": "2026-10-22T08:15:30.3947561Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C38_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C38_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3711,
+      "sha256": "47cc11665ea9a7ba6d7852bc12b20ce63790f810a4344892fba9c530c3d8ff63",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6842627Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C39_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C39_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5949,
+      "sha256": "6ec54d9d9c5e484d5e425e5642ce87e47e2d04ed606b66ee83b55160533f0849",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6857661Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C40_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C40_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3735,
+      "sha256": "caeed918d07024c97d5d7cbff62427a4bf6f17d3705f02a2373a9ceb55cdf1e2",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6877707Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C41_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C41_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 4423,
+      "sha256": "50327011818234f79ac10dff44def88bb700618ed04e61cbe2093cb04d1c154c",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6887724Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C42_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C42_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5135,
+      "sha256": "96374a65c604577eb743db37842e5ccc897978e2ac93b400feafe806a497d2a4",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6902777Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C43_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C43_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 6139,
+      "sha256": "5b890ca3ede3fd31d41adf5da36afe8ae62c2e66f56d13a91f8a10d21f657ba9",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6912844Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C44_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C44_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 4068,
+      "sha256": "0cf923cae2c944ee61ba677afed55cad6c437252aa1da112ac418022b60098a8",
+      "inheritedLastWriteUtc": "2026-10-22T07:36:59.0225966Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C48_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C48_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 6155,
+      "sha256": "3dd63851a5aa4479057d354b5fbce4639325fd221a4bed7e1e89b9ab6c7fc278",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6942991Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0603_1608Metric_Pad1.08x0.95mm_HandSolder_C1_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0603_1608Metric_Pad1.08x0.95mm_HandSolder_C1_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5847,
+      "sha256": "0b0d90fe6adfb757326ec8d60dcc043217d66d5f7fe3cb5882af55d3b21b700a",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6562387Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0603_1608Metric_Pad1.08x0.95mm_HandSolder_C17_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0603_1608Metric_Pad1.08x0.95mm_HandSolder_C17_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5207,
+      "sha256": "f8627d5ccb7149e2e1af83fbd0d27db68a306b38e99446a04da4dc83b51fcdbc",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6622333Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0603_1608Metric_Pad1.08x0.95mm_HandSolder_C18_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0603_1608Metric_Pad1.08x0.95mm_HandSolder_C18_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 6461,
+      "sha256": "60001b469bb49e7d1b292564d3ae19678933d1b10d7ee251acef7209ccbd7acc",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6632335Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0603_1608Metric_Pad1.08x0.95mm_HandSolder_C21_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0603_1608Metric_Pad1.08x0.95mm_HandSolder_C21_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 4396,
+      "sha256": "55e1bdc1ea6ee140026854d2bb7ccfd0ad45c4c891cefbc4dfe4f90352edaa22",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6677418Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0603_1608Metric_Pad1.08x0.95mm_HandSolder_C3_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0603_1608Metric_Pad1.08x0.95mm_HandSolder_C3_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3651,
+      "sha256": "fc601cf38651922befbc479b88c30b5d3a30866159ba0e61c93dc56c2448fc13",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6762487Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0603_1608Metric_Pad1.08x0.95mm_HandSolder_C45_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0603_1608Metric_Pad1.08x0.95mm_HandSolder_C45_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 4119,
+      "sha256": "c9d75c25a11c0057081c64b8878e020cff411c30720f70261e69c1dbab12a97b",
+      "inheritedLastWriteUtc": "2026-10-22T07:36:59.0352814Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0603_1608Metric_Pad1.08x0.95mm_HandSolder_C7_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0603_1608Metric_Pad1.08x0.95mm_HandSolder_C7_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 4045,
+      "sha256": "e912fa0b6fadc90b1b03f931fde6010777b7c467146054f1542d33d765c566f5",
+      "inheritedLastWriteUtc": "2026-10-22T07:36:59.1420857Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C10_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C10_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 4617,
+      "sha256": "812836e72863bd1d42befa3cc83a5a3dcc483f07c71a4cfa8554b88da1bd06d5",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6587762Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C19_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C19_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3779,
+      "sha256": "7dd57283281f70659ed8d056e6530f5ba27893d0010a25224c0e6dca50c8eed5",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6642331Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C2_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C2_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3789,
+      "sha256": "9bd07ee70e78637de46afcda389a6d78564b54b99640b652c7ebf90121f3931c",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6657408Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C22_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C22_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5895,
+      "sha256": "92a714f88e2a8ee95f59ff87f290eb0a11aa35c6ef95d62d7c4a29ce3fc57ce8",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6682452Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C28_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C28_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 4363,
+      "sha256": "ab59608de7cf537ad5f9787f61c07ac2a5580d6ee093bddae9a7c020c9f7e4cd",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.674252Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C33_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C33_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5257,
+      "sha256": "6535bbe9e34571430affbd883237127b3010673149612d1a1cf753ada148a3ac",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.679758Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C4_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C4_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3781,
+      "sha256": "767704d3bf67332e15ce4f56ade74dfe1a54809a95deb963126e12a7382435db",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6867702Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C5_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C5_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5864,
+      "sha256": "be117c8fdd0bcce51dcd92ced051d641026160040cb9f2ea7a2ca275aa367583",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6962959Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C6_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C6_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 4854,
+      "sha256": "d42990d3c78973cb2b7fb4d2827242ad961872ece452e3b1dd4c9b490e629170",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6979672Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C8_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C8_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3790,
+      "sha256": "9521cad6067585d8f76f15d00936679b5f7b0e2be6072121fb83b334e3133fed",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6989623Z"
+    },
+    {
+      "path": "HandSolder.pretty/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C9_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C9_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3771,
+      "sha256": "0570b37445ba03b7ec1fb478f6122337cedd9d08c037de1ca2c6832176d4cb13",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6999622Z"
+    },
+    {
+      "path": "HandSolder.pretty/Connector_JST_JST_PH_S2B-PH-SM4-TB_1x02-1MP_P2.00mm_Horizontal_J2_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/Connector_JST_JST_PH_S2B-PH-SM4-TB_1x02-1MP_P2.00mm_Horizontal_J2_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 10004,
+      "sha256": "106230ffc846e3a5193c92219d9e2638badfefa5cf71747b1e09b128ab52351c",
+      "inheritedLastWriteUtc": "2026-10-22T07:37:00.6510148Z"
+    },
+    {
+      "path": "HandSolder.pretty/Connector_JST_JST_SH_SM08B-SRSS-TB_1x08_1MP_P1.00mm_Horizontal_J3_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/Connector_JST_JST_SH_SM08B-SRSS-TB_1x08_1MP_P1.00mm_Horizontal_J3_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 7325,
+      "sha256": "e2080ecc6c228ee18667b2392810f29dbb5cf386e826bd0bd493a19894fa0d6b",
+      "inheritedLastWriteUtc": "2026-10-22T08:15:30.3982671Z"
+    },
+    {
+      "path": "HandSolder.pretty/Connector_JST_JST_SH_SM08B-SRSS-TB_1x08-1MP_P1.00mm_Horizontal_J3_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/Connector_JST_JST_SH_SM08B-SRSS-TB_1x08-1MP_P1.00mm_Horizontal_J3_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 7325,
+      "sha256": "228283dee4b0b5c64ec147d8fdc0b18c54a5a2b2e225a5ab42d50f2b1c644844",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7646412Z"
+    },
+    {
+      "path": "HandSolder.pretty/Connector_USB_USB_C_Receptacle_HRO_TYPE-C-31-M-12_J1_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/Connector_USB_USB_C_Receptacle_HRO_TYPE-C-31-M-12_J1_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 8510,
+      "sha256": "9cdce8b1ff70aad3263f9538b62c487923a6c7b23a73132eed09754b39324d13",
+      "inheritedLastWriteUtc": "2026-10-22T08:06:31.8807895Z"
+    },
+    {
+      "path": "HandSolder.pretty/CP_EIA-7343-31_Kemet-D_C37_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/CP_EIA-7343-31_Kemet-D_C37_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 4722,
+      "sha256": "42f4733f5d4ac789b715909caa8ca2bf3ecaec4772c2701a3acc6473e6f1ce8d",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6832639Z"
+    },
+    {
+      "path": "HandSolder.pretty/CP_EIA-7343-31_Kemet-D_C50_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/CP_EIA-7343-31_Kemet-D_C50_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5521,
+      "sha256": "ad7d190192a84afe062389ea5d43cca561d060f213d3fb93e13a895b2a408ffc",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6969506Z"
+    },
+    {
+      "path": "HandSolder.pretty/CP_EIA-7343-43_Kemet-X_C46_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/CP_EIA-7343-43_Kemet-X_C46_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5277,
+      "sha256": "2a0a044178d6a9c2aa61cba3d15b70fcbd022520d6e84860e46c67699a29d647",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6917889Z"
+    },
+    {
+      "path": "HandSolder.pretty/CP_EIA-7343-43_Kemet-X_C47_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/CP_EIA-7343-43_Kemet-X_C47_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5745,
+      "sha256": "2858a55e413f9dd3c50cace7ac895d0a19c9b51dac0f17e521ade1b9c7a0a543",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.6932924Z"
+    },
+    {
+      "path": "HandSolder.pretty/D_Diode_SMD_Nexperia_CFP3_SOD-123W_D1_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/D_Diode_SMD_Nexperia_CFP3_SOD-123W_D1_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 6256,
+      "sha256": "b975b00ca41564c79b88235967cc44ec261360f6127b16efab30e5d863ad6c5b",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.701466Z"
+    },
+    {
+      "path": "HandSolder.pretty/Diode_SMD_Nexperia_CFP3_SOD-123W_D1_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/Diode_SMD_Nexperia_CFP3_SOD-123W_D1_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 6254,
+      "sha256": "effddbf0123205c0b8f9c5500e345aa4f5517d22b813cfe0084330b5aa1a1dcc",
+      "inheritedLastWriteUtc": "2026-10-22T08:06:31.816158Z"
+    },
+    {
+      "path": "HandSolder.pretty/Inductor_SMD_L_Coilcraft_XxL4020_L1_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/Inductor_SMD_L_Coilcraft_XxL4020_L1_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 4201,
+      "sha256": "e12d3e6855c5ede09298170748d6e4f6c37a2b258663eee73b93ef6ec600e7b3",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7034703Z"
+    },
+    {
+      "path": "HandSolder.pretty/LED_0603_1608Metric_Pad1.05x0.95mm_HandSolder_D2_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/LED_0603_1608Metric_Pad1.05x0.95mm_HandSolder_D2_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5741,
+      "sha256": "d5820778f5ee64ddebdb133851cbb337979564cfe82906058f3ae51a35fe7407",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7024702Z"
+    },
+    {
+      "path": "HandSolder.pretty/microSD_HC_Hirose_DM3AT-SF-PEJM5_J10_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/microSD_HC_Hirose_DM3AT-SF-PEJM5_J10_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 13658,
+      "sha256": "ef6788675ccb396662157bac46bc460480a10663b2a72c706772996d84e3ce6b",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7636419Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R1_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R1_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3951,
+      "sha256": "d3b36a5fee07ca4f87c3556c1c76ace0f3bfd0fab48f02329ef178a05477286f",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7044701Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R10_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R10_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3864,
+      "sha256": "757bc1635356f774f880007c8e602cda24bd13422a0a423a6d13a5f5ae782765",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7054701Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R11_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R11_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3667,
+      "sha256": "e3661bb6d81f0ae0b6481e2767924c5b32b188a0296e6faea1fb555e82a41934",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7064699Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R12_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R12_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3714,
+      "sha256": "524bf64ab69ef5a1d20850b6d60efcce92eaab6e4636b025b5ea59ac183d7829",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7074713Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R13_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R13_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3710,
+      "sha256": "b4f4951b8987d23cc96e645a464788b93621a422a8622ba6c01f590460c24473",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7089751Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R14_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R14_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 6393,
+      "sha256": "02ea6347c0bf237b62a9bc4de46f503193e2c0907ce20749e6a9f8621787bc9d",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7099805Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R15_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R15_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 4485,
+      "sha256": "8bef7e8e66197135b2006e00f088b6c19dcca487638c76be297dc8b93d87bad3",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.710981Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R18_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R18_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5914,
+      "sha256": "ffafb91d218d884ec4c65dbb6e8126f8885e7f3ca81132f4a5dddcdf9a8cf4d9",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7124861Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R19_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R19_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 6863,
+      "sha256": "91401460f505932649ab8cfc6e45311a8db0342ddcb519ca8c55b3a96d2d41c1",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7134926Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R2_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R2_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5005,
+      "sha256": "e8072cfb702bf49190030a356a0eb0ac3b78440883637eba675c5a83a7b74f96",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.714491Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R20_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R20_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 6356,
+      "sha256": "0ddd836cff38399f1f789fbff1b8e0ed86c0d5b743228eb0ddd48c985d9355fa",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7154902Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R3_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R3_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 6637,
+      "sha256": "da225758f4033173ce8ee8633026c274e7e4091d7866830cb328e36300524834",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7164899Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R31_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R31_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3613,
+      "sha256": "28bf4a127943840d7422e53204badd603141848e5234e293f8f69709f9fced5d",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7174901Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R32_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R32_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3613,
+      "sha256": "bf6dee69a609b25796c95d4340e895b1e03e02829d55e05cddf9f2890e7990f8",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7189931Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R33_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R33_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3602,
+      "sha256": "2091110a703cb84518425a78c74527fec25905ee32d76b0c0e6ae36ed9e645a7",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7189931Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R34_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R34_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3601,
+      "sha256": "45b241905dfb3def6ca9908245c39c25facbafd37d2411205276fda3d2dde18a",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7205151Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R36_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R36_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5048,
+      "sha256": "77b0fccb284cfb577ac8c1734b9622a3bcb1204fc2cb2bce8a2f51293a0dd8fe",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7215221Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R37_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R37_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 4709,
+      "sha256": "cee8d76253a8b7313041c4b2e0898cde1a04d28ef619133fe0c73044ebded3e8",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.723026Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R38_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R38_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5048,
+      "sha256": "03fa46c03be8be35470d1df27b6d9cb17f4f7aecaafaad1450a2463df430af87",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.723026Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R39_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R39_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3692,
+      "sha256": "760894a82769eed8aca5f53f3bab23f7d4f5ca93aa94f989e73a3371f4003539",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7245459Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R4_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R4_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5968,
+      "sha256": "b2c80bf9b90df667e7b0e82903f358b4413325c7c36e7fe861a8896bfe17f40c",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7255503Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R40_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R40_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 4719,
+      "sha256": "553930b05ae96bfd52151ab513e8c7865fb669e230a91cbb881fb2cb63276d49",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7265498Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R41_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R41_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5718,
+      "sha256": "f08ce8cf83f4b0fcfd208fb5626e066c126327b2a83a7e62a422a64a749b92f9",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7275523Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R42_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R42_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 6819,
+      "sha256": "6eed79f060ca611e21c7e8955b3656185ef04ae1642d683b0a3aec52cd2f1a22",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7295517Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R43_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R43_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5442,
+      "sha256": "e4a591aad21ca3b83b0fa0f9be1509b11647956b5082a08f106ed89b03f51bd5",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7305528Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R44_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R44_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3616,
+      "sha256": "0821b2a202909b08875fd62d6d66926544ffe0d086c542a378cc4234859ffb73",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7315518Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R46_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R46_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3993,
+      "sha256": "ad6ecc818df21cb65422f3e53d96b9e28549eab5c974dfcb4745be2a60afdc45",
+      "inheritedLastWriteUtc": "2026-10-22T07:36:59.7971947Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R47_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R47_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 4352,
+      "sha256": "d64a8fb2eaf4a327724378a5fdc146e72e4e1a977852152f29c9b21c8c84074d",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7325518Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R48_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R48_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3607,
+      "sha256": "721258dba0c56e0ff337003bc56687b7d9f40ffdb293f4d29e910d7ff9aca97d",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7325518Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R49_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R49_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3671,
+      "sha256": "ecc3809fa86088e89c44256325d94c051f42f410a387d36e6eeb97239913eca0",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7340571Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R5_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R5_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 6613,
+      "sha256": "9e60701772f4e19ccdf3f015d87c01df680f9a5ea97c77d2ec9f7011aef0aada",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7350608Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R50_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R50_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3625,
+      "sha256": "30fb4085fec5f61ebc1fce48588acb96cd6f951abc8f3aa4c6c0de6a90b41ddd",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7360605Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R51_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R51_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 6029,
+      "sha256": "12551118073c8337c7a1c79ace8cc3ec72eb454dbec683b3eba4634b377f9412",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7370605Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R52_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R52_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3642,
+      "sha256": "97e146acd656ce36b9636a39436c5005907c5487913aeffb153de5d207f30a05",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.738563Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R53_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R53_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5030,
+      "sha256": "b83ecf04d4f1ac70cd19319c02056ec0abb058f196d46c67c162d7c64795781c",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.739567Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R54_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R54_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3630,
+      "sha256": "0bc8815430e1fae6c35ea645c323d3f93966bda78a17b6ab2b64636f9937b67c",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7405671Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R55_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R55_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3620,
+      "sha256": "f19eb87f962eb287195c8d8985a871069bb5b45f1846d16a466f3613c3ad9efd",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7415666Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R56_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R56_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3605,
+      "sha256": "719fbc7285fb858b9fef12ea36e61062a8c54d5664ab50de859c727d2a2dc861",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7425682Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R57_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R57_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5121,
+      "sha256": "3ed358338218e523a931afbe31788499f2a3d3ef839eb122c72ac7cca80830ca",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7440774Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R59_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R59_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 4017,
+      "sha256": "a33f9ef8a2106a72ece950da4aea1b843dab7d0362b48d0460365c914eb95892",
+      "inheritedLastWriteUtc": "2026-10-22T07:37:00.1376102Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R6_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R6_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5913,
+      "sha256": "a2238925da1e0c7a169c30497fd844c625180d96deb1deebb376af8cdf686a75",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7450773Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R62_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R62_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3643,
+      "sha256": "d8883254ce841f4e2a6da0fa286ee2433f6670062b8e9c65a3fbb938b917cd16",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.748077Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R63_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R63_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3620,
+      "sha256": "f4303b118dd8cfbceca40b62e7fe7833a7f2e1aa61c9953e73d1c29f9bf84858",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7490774Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R64_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R64_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5949,
+      "sha256": "4bec4ad07c19f65ac97681005aaced33d4e3c60b77fcae09508a1637fc6f3cd8",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7490774Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R65_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R65_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5022,
+      "sha256": "5cb547c92739a69c3f77a5e86cdbe3c19f573bdb350d3b7dce203839571b7e68",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7511083Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R66_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R66_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5018,
+      "sha256": "ae33333b75e02fdc99e8a114ca9df0b2974e5ce588a88f4969cef2eb4cd7ac33",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7526163Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R67_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R67_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3641,
+      "sha256": "1017f6c02caa350c3853c35d9d83edf358a51125a197e2824ab072c277078acb",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7526163Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R68_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R68_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 4327,
+      "sha256": "7b71b1ed307dc4afb381a10c7bd4058d11b050b63036e7e96c5609fbe893fd5c",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7546176Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R7_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R7_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5860,
+      "sha256": "227dfdca7bb3de7976470b8221d7a13fdc023acb2b9c0349abae359beb96494f",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7561212Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R8_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R8_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 6175,
+      "sha256": "53d5b62d196f89c07bb32239d343e93851da174865b1f541a5f547299db7f6da",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7586428Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R9_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R9_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3862,
+      "sha256": "587c5fac1490df69ee27c83bda4ef59d723e7af31d7e53eafe55af7dd394a821",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.75964Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0603_1608Metric_Pad0.98x0.95mm_HandSolder_R69_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0603_1608Metric_Pad0.98x0.95mm_HandSolder_R69_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3870,
+      "sha256": "c31c22e2c255981a41be0e3730936270464aaa5eddeba657bc3793f98d7c845c",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7546176Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0805_2012Metric_Pad1.20x1.40mm_HandSolder_R60_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0805_2012Metric_Pad1.20x1.40mm_HandSolder_R60_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3837,
+      "sha256": "a8c3cb484a3f1cae0b1130c531c60b716cef9a52b97fea25976f579e4826ffe7",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7460769Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0805_2012Metric_Pad1.20x1.40mm_HandSolder_R61_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0805_2012Metric_Pad1.20x1.40mm_HandSolder_R61_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5873,
+      "sha256": "b4ec92dffa2b85925a6fe09569b3379bfa649737345ef34372abb0da1b638600",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7470771Z"
+    },
+    {
+      "path": "HandSolder.pretty/R_0805_2012Metric_Pad1.20x1.40mm_HandSolder_R71_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/R_0805_2012Metric_Pad1.20x1.40mm_HandSolder_R71_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5233,
+      "sha256": "136340ab4b60b665f356a39bb4bedceb26db79b810c247c6d48b89e66c28f62f",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7576358Z"
+    },
+    {
+      "path": "HandSolder.pretty/SOT-23_Handsoldering_Q1_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/SOT-23_Handsoldering_Q1_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 7168,
+      "sha256": "e1ded8e8641dac961db5db6847845986b13b47778ceda866139af654dd2d8ecb",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7661461Z"
+    },
+    {
+      "path": "HandSolder.pretty/SOT-23_Handsoldering_Q2_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/SOT-23_Handsoldering_Q2_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 7516,
+      "sha256": "b1256433df094f2ff7e20d6ca76b983f9231ca6351c10a362bd6bc4539a7b90c",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7671494Z"
+    },
+    {
+      "path": "HandSolder.pretty/SOT-23_Handsoldering_Q3_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/SOT-23_Handsoldering_Q3_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 7271,
+      "sha256": "4b4d95caa6e9503250342a20356c407d1b9d9cabf93ab120d0ce500e8c747216",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7696734Z"
+    },
+    {
+      "path": "HandSolder.pretty/SOT-23_Handsoldering_Q4_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/SOT-23_Handsoldering_Q4_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 6202,
+      "sha256": "929719f8899ea51ea555cb31ba7d90c256c9597589a9bc9ed5ef80a795320975",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7706717Z"
+    },
+    {
+      "path": "HandSolder.pretty/SOT-23_Handsoldering_U17_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/SOT-23_Handsoldering_U17_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 6839,
+      "sha256": "0d3c235a1d87cfb33dfb23bb6930a301a011620f3b9fc7bd7d891d4541f779d1",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7798663Z"
+    },
+    {
+      "path": "HandSolder.pretty/SOT-23-6_Handsoldering_U10_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/SOT-23-6_Handsoldering_U10_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 7038,
+      "sha256": "739708f64c8ff7e5ab43c006d419f1e4a2cd832cad3e2bf4f49527048a2759c1",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7726707Z"
+    },
+    {
+      "path": "HandSolder.pretty/SOT-23-6_Handsoldering_U11_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/SOT-23-6_Handsoldering_U11_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 6086,
+      "sha256": "784afb3f9b7545555b46165f96687b2bb9d971a3e8c4c62f51894690acffbf39",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7738674Z"
+    },
+    {
+      "path": "HandSolder.pretty/SOT-23-6_Handsoldering_U12_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/SOT-23-6_Handsoldering_U12_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 7368,
+      "sha256": "e8271372e255cc0d48022a6232085a045f4fa8ca68dd4fc70e40c8f7c53e935b",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7748677Z"
+    },
+    {
+      "path": "HandSolder.pretty/SOT-23-6_Handsoldering_U13_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/SOT-23-6_Handsoldering_U13_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 7323,
+      "sha256": "c99821c5b1d103258d344ded494560d73e53e7ab584c89c69b6be8b4bdd5b488",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7768676Z"
+    },
+    {
+      "path": "HandSolder.pretty/SOT-23-6_Handsoldering_U9_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/SOT-23-6_Handsoldering_U9_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 8174,
+      "sha256": "6ffead20f1c96ced977dcfeb14600f7bbf8830ba021603141762f21d23f7fb54",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7878844Z"
+    },
+    {
+      "path": "HandSolder.pretty/SOT-23-8_Handsoldering_U15_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/SOT-23-8_Handsoldering_U15_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 8427,
+      "sha256": "bb8aecdc6279ff531beffa69c059dc3c8c41c77ee2cfb6b4e744a65db11c09e1",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.7778665Z"
+    },
+    {
+      "path": "HandSolder.pretty/USB_C_Receptacle_HRO_TYPE-C-31-M-12_J1_HandSolder.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/HandSolder.pretty/USB_C_Receptacle_HRO_TYPE-C-31-M-12_J1_HandSolder.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 8496,
+      "sha256": "ff3217936186896b624899f1e531ad354c7777a5fa31d82e9523532acaa7a0ce",
+      "inheritedLastWriteUtc": "2026-10-22T08:09:10.761642Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/AUDIO-SMD_PJ-320D.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/AUDIO-SMD_PJ-320D.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5706,
+      "sha256": "e5e69707471b0b07abf557450e0d35b5fb2baa339d24bd3694c1000d52ef44c3",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0203641Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/Button_Switch_SMD_SW_SPST_B3U-1000P.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/Button_Switch_SMD_SW_SPST_B3U-1000P.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3698,
+      "sha256": "bda498054f17e63352434f6148addcba9bf81c3b4fb10a3dd1245185bf7f7297",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0203641Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/Button_Switch_SMD_SW_SPST_PTS810.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/Button_Switch_SMD_SW_SPST_PTS810.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 4682,
+      "sha256": "c232f11178d15b597bdf8f1c5ce8118ab6d73de8b66f349b3576b859031591ed",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0218708Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/C_0402_1005Metric.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/C_0402_1005Metric.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 2439,
+      "sha256": "9c4f24b8f0fc0278bb2971147a6a7994d8a44211ae98c1b9b4111e6455edb92c",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0248759Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/C_0603_1608Metric.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/C_0603_1608Metric.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 2040,
+      "sha256": "d45eebd5cb9faace255d4ec95a0f9484efde898359507b02e2ba9bbb3ef6d857",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0248759Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/C_0805_2012Metric.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/C_0805_2012Metric.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 1775,
+      "sha256": "76d965369d228a7ef2e00921faebbc009ebf83c2f603600c1ba106047bad6de9",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0258754Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/Capacitor_SMD_C_0402_1005Metric.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/Capacitor_SMD_C_0402_1005Metric.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 1666,
+      "sha256": "f7e8d21f06673ef3249454256b89b3970c2f3081ae208780754bbc665a257db8",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0218708Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/Capacitor_SMD_C_0603_1608Metric.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/Capacitor_SMD_C_0603_1608Metric.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 1680,
+      "sha256": "8be9bb556395ca249bcd82c852d7aa59f852b8c73cdb77cb7260d8fb523a763f",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0218708Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/Capacitor_SMD_C_0805_2012Metric.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/Capacitor_SMD_C_0805_2012Metric.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 1782,
+      "sha256": "29fdd21de5361ab4ec68f9629e342673c6e26b0e90e7c8db44f96b3c654f0aa8",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0228759Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/Capacitor_Tantalum_SMD_CP_EIA-7343-31_Kemet-D.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/Capacitor_Tantalum_SMD_CP_EIA-7343-31_Kemet-D.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 4693,
+      "sha256": "82c1e9be6bc49fb13a3034603e52b3743cf20e02090e129e79e4439136fc0a07",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0228759Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/Connector_JST_JST_PH_S2B-PH-SM4-TB_1x02-1MP_P2.00mm_Horizontal.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/Connector_JST_JST_PH_S2B-PH-SM4-TB_1x02-1MP_P2.00mm_Horizontal.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 4952,
+      "sha256": "a71b8a4dd54dedcdfbc2fbc76c9d286d12e38bd90335fbd8d9e547716914a506",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0228759Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/Connector_JST_JST_SH_SM02B-SRSS-TB_1x02-1MP_P1.00mm_Horizontal.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/Connector_JST_JST_SH_SM02B-SRSS-TB_1x02-1MP_P1.00mm_Horizontal.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 4223,
+      "sha256": "f572fd64bab17b47f39e52c47cec8c8a920946e8fbdd26598898b63cd9ce2b68",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0238768Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/Connector_JST_JST_SH_SM08B-SRSS-TB_1x08-1MP_P1.00mm_Horizontal.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/Connector_JST_JST_SH_SM08B-SRSS-TB_1x08-1MP_P1.00mm_Horizontal.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 4873,
+      "sha256": "ba363d81231968ba25a59a62208770c152f0e8225c95875fa14bc33b822fc096",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0238768Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/Connector_USB_USB_C_Receptacle_HRO_TYPE-C-31-M-12.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/Connector_USB_USB_C_Receptacle_HRO_TYPE-C-31-M-12.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 7976,
+      "sha256": "7e7c1258a2c629d7dabbbbf3bb49f92599cded0bdba9bd597cf8d795bde4a43e",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0238768Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/Connector_Wire_SolderWire-0.127sqmm_1x03_P3.7mm_D0.48mm_OD1mm.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/Connector_Wire_SolderWire-0.127sqmm_1x03_P3.7mm_D0.48mm_OD1mm.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 2076,
+      "sha256": "2f32f9f5d159cbf0d58eb6c4d908b0fb061b1522052806492d580fe7dd5ba954",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0238768Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/Connector_Wire_SolderWire-0.5sqmm_1x03_P4.6mm_D0.9mm_OD2.1mm.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/Connector_Wire_SolderWire-0.5sqmm_1x03_P4.6mm_D0.9mm_OD2.1mm.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 2706,
+      "sha256": "b85786e32cb1999d1b747c397613d504032ce2e60da035ac85d312f6759b335c",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0248759Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/CP_EIA-7343-31_Kemet-D.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/CP_EIA-7343-31_Kemet-D.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 4740,
+      "sha256": "f89494215d6279df9f465c6d58514093622323ad5138ddab9e46215c3eebe16c",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0248759Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/CP_EIA-7343-43_Kemet-X.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/CP_EIA-7343-43_Kemet-X.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3112,
+      "sha256": "6b24f159a05ba1abddde8a36b0110944befda7916128e957a8ad9d5820bf99e9",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0248759Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/DebugPads_1x04_P1.27.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/DebugPads_1x04_P1.27.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 433,
+      "sha256": "ec33974278ee20b64b88242e68eb37a482ca703d121cb5c2c127b15a63407bac",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0258754Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/Diode_SMD_Nexperia_CFP3_SOD-123W.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/Diode_SMD_Nexperia_CFP3_SOD-123W.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3919,
+      "sha256": "8c0ce37f512f4d094fdf1acee2a4dcbd52361441a89e96503539813fac1bf3bf",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0258754Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/DWM3000.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/DWM3000.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 9306,
+      "sha256": "e28d560541e4a79887b1bcc570565e819db9daaa17d86bfa27a5e0d83b2455a1",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0258754Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/Inductor_SMD_L_Coilcraft_XxL4020.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/Inductor_SMD_L_Coilcraft_XxL4020.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 2893,
+      "sha256": "ecaf46819f1f9da7c86d701e0c50b088589009202fde16dee05881a3cdd6b632",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0268751Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/Jack_3.5mm_KoreanHropartsElec_PJ-320D-4A_Horizontal.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/Jack_3.5mm_KoreanHropartsElec_PJ-320D-4A_Horizontal.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 6671,
+      "sha256": "7b81be326fedbde38b421c8559845a61747068ea610779b0465f3af6a9f27ec3",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0268751Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/LED_SMD_LED_0603_1608Metric.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/LED_SMD_LED_0603_1608Metric.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 2085,
+      "sha256": "be267650ef9a2da67bb853689b6d87d4d1c1df93c9cd76f2ed75d0a13da97c98",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0268751Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/microSD_HC_Hirose_DM3AT-SF-PEJM5.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/microSD_HC_Hirose_DM3AT-SF-PEJM5.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 12203,
+      "sha256": "610e77e869c81f008ceb704b4160708227f1f9fdfa801bb342241f89f8f353db",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0268751Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/MountingHole_2.2mm_M2.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/MountingHole_2.2mm_M2.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 1114,
+      "sha256": "f9b3b9e0149cecb2584086004c9897988d5f4ac7d71eb565572c4b3aeea20dda",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0278759Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/NetTie_NetTie-2_SMD_Pad0.5mm.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/NetTie_NetTie-2_SMD_Pad0.5mm.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 1434,
+      "sha256": "34c3381fc74d1d9870a2d350bd638d22180556da6c2370f870533183ecc740a2",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0278759Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/NetTie-2_SMD_Pad0.5mm.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/NetTie-2_SMD_Pad0.5mm.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 1708,
+      "sha256": "9154bff23cc4d58df6c38f373fca9f2f2b0f11aeb7de978cbba2a25e61f87bca",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0278759Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/Package_DFN_QFN_TDFN-8-1EP_2x2mm_P0.5mm_EP0.8x1.2mm.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/Package_DFN_QFN_TDFN-8-1EP_2x2mm_P0.5mm_EP0.8x1.2mm.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 4015,
+      "sha256": "9be70f7728201465a96a812fc3689910f24b6179923092041f6228678331a1ef",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0278759Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/Package_DFN_QFN_TQFN-16-1EP_3x3mm_P0.5mm_EP1.23x1.23mm.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/Package_DFN_QFN_TQFN-16-1EP_3x3mm_P0.5mm_EP1.23x1.23mm.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 6457,
+      "sha256": "31e65d1913428889a3010d03ede1c8d57bc1986be0f5b58be91de43e6b5a96a8",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0288753Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/Package_DFN_QFN_VQFN-16-1EP_3x3mm_P0.5mm_EP1.6x1.6mm.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/Package_DFN_QFN_VQFN-16-1EP_3x3mm_P0.5mm_EP1.6x1.6mm.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 6425,
+      "sha256": "913b04157eae590dc016147eb3330d5802a3531eca7ca72771c8cbbcb0f1eebe",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0288753Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/Package_LGA_LGA-12_2x2mm_P0.5mm.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/Package_LGA_LGA-12_2x2mm_P0.5mm.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5965,
+      "sha256": "9bd3fd23f1be87d90c2a186991d79b443866985f5982a9f60c7a4455811d69c9",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0288753Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/Package_SO_SOIC-8_3.9x4.9mm_P1.27mm.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/Package_SO_SOIC-8_3.9x4.9mm_P1.27mm.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3917,
+      "sha256": "f0fbbe202f464ce22c63532aef3e235d867cc224026563c307d0b2198d29cd50",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0298747Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/Package_SON_Texas_DRC0010J_ThermalVias_JLC030.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/Package_SON_Texas_DRC0010J_ThermalVias_JLC030.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 9980,
+      "sha256": "c9a15e31207405acd8014ea6fba14e3a1810207feb8b1863e39dc9a66883af24",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0298747Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/Package_SON_Texas_DRC0010J_ThermalVias.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/Package_SON_Texas_DRC0010J_ThermalVias.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 7265,
+      "sha256": "8001f5cd2a68a36228059dc1313cf921b10d4eda53da359fdcfd433e338b31bf",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0288753Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/Package_TO_SOT_SMD_SOT-23-6.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/Package_TO_SOT_SMD_SOT-23-6.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3615,
+      "sha256": "19053e7aeaf7b666dfb91f4402f7566c9d0e7a2b8e1599f02d03a939cba27c02",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0298747Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/Package_TO_SOT_SMD_SOT-23.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/Package_TO_SOT_SMD_SOT-23.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3753,
+      "sha256": "81569d49d7268ae9fa696ac39704b6bd7ce7d64b0dd3b96987ccf337453b7b30",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0298747Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/R_0402_1005Metric.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/R_0402_1005Metric.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 1682,
+      "sha256": "d1673dc7ea11a248e76abcb637d6cae0bd91d5269c9d385629ff33d149896ca1",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0318749Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/R_0603_1608Metric_UART.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/R_0603_1608Metric_UART.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 2902,
+      "sha256": "74e40bbc3f58a98132dc3e00ca330c70a230d6c6607c0e8897a3d4473f083bc5",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0318749Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/R_0805_2012Metric.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/R_0805_2012Metric.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 1690,
+      "sha256": "2b55c782b6b9e615f45844d4ae4fc439e50291f7f0ac96196603450b88975003",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0318749Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/R_1206_3216Metric.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/R_1206_3216Metric.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 2055,
+      "sha256": "f45a0f7c60b15463e1126a75a9ff484349ecd1861de62f1cbff41574e03b7643",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0318749Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/Resistor_SMD_R_0402_1005Metric.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/Resistor_SMD_R_0402_1005Metric.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 1688,
+      "sha256": "105ef306f3b475a62a92ee2c83cdad7e4099228f1aa75b38de774e2d2988ea36",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0308758Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/RF_Module_ESP32-S3-WROOM-1_JLC030.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/RF_Module_ESP32-S3-WROOM-1_JLC030.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 15361,
+      "sha256": "92b218c8b4c5051afaa44620f48c50cd51b72c13eba010dce508802ae9fb5d75",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0308758Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/RF_Module_ESP32-S3-WROOM-1.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/RF_Module_ESP32-S3-WROOM-1.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 14588,
+      "sha256": "653f36c211e32af62be27ace7b82a3f3b40a77d75f0dd6329a3cc17a4da69af3",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0308758Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/SolderWire-0.1sqmm_1x02_P3.6mm_D0.4mm_OD1mm.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/SolderWire-0.1sqmm_1x02_P3.6mm_D0.4mm_OD1mm.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 2269,
+      "sha256": "29e8da0e2c0807b2f29230ae2fe2e60f3c600c4444def1e8179650842a709c5d",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0328781Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/SolderWire-0.25sqmm_1x02_P4.2mm_D0.65mm_OD1.7mm.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/SolderWire-0.25sqmm_1x02_P4.2mm_D0.65mm_OD1.7mm.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 2306,
+      "sha256": "47ee2237f30eb2d18ebbf98b716caf36dce4fe4fa311c51e4412c1883c061138",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0328781Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/SolderWire-0.5sqmm_1x02_P4.6mm_D0.9mm_OD2.1mm.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/SolderWire-0.5sqmm_1x02_P4.6mm_D0.9mm_OD2.1mm.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 1749,
+      "sha256": "504ef93175a558ef517fda7db56e8900f5ad591146d7606c6218885f4d97f7a3",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0328781Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/SOT-23-6.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/SOT-23-6.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3625,
+      "sha256": "0ed48d4ac184a364b233c6db601808d2e716c5b356a906f58aa1808c67f099c4",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0328781Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/SOT-23-8.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/SOT-23-8.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 3896,
+      "sha256": "9884174fcccf82bff61274f4886bde81ee006f5ee802b908b07435892f3dc2ab",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0328781Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/SOT-23.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/SOT-23.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 5531,
+      "sha256": "97851b61fa786bcd0655d6c4e3e65569e96cf99d74f2a24204febe68343c151c",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0338778Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/TestPoint_TestPoint_Pad_D1.0mm.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/TestPoint_TestPoint_Pad_D1.0mm.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 1537,
+      "sha256": "766b62e3ba1b892c6856a2b1847f4d11475f9eb0e8991c784233382fd41b80e7",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0338778Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/TQFN-28-1EP_5x5mm_P0.5mm_EP3.25x3.25mm.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/TQFN-28-1EP_5x5mm_P0.5mm_EP3.25x3.25mm.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 9499,
+      "sha256": "3075472c10f013e129cda5eaa0f9580c78b73e0d30dda81583165856f10c18e2",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0338778Z"
+    },
+    {
+      "path": "Sourced_4L.pretty/TSSOP-20_4.4x6.5mm_P0.65mm.kicad_mod",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/Sourced_4L.pretty/TSSOP-20_4.4x6.5mm_P0.65mm.kicad_mod",
+      "kind": "project-local-cad-dependency",
+      "bytes": 6040,
+      "sha256": "94f967893e344384ab679c2f671831c90227f85f3d27f320c42dbe55ba1689a4",
+      "inheritedLastWriteUtc": "2026-10-22T04:52:38.0338778Z"
+    },
+    {
+      "path": "3dmodels/Button_Switch_SMD_SW_SPST_B3U-1000P.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/Button_Switch_SMD_SW_SPST_B3U-1000P.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 69351,
+      "sha256": "4b5ee4da023d76030db22a90f5835f3691d5e4e9fc41b3f37b2c5922c65d307b",
+      "inheritedLastWriteUtc": "2026-05-01T23:38:54Z"
+    },
+    {
+      "path": "3dmodels/Button_Switch_SMD_SW_SPST_PTS810.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/Button_Switch_SMD_SW_SPST_PTS810.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 68761,
+      "sha256": "03ea59013f361d6becd35559a0a130d1ad29f382cf861d2a1365880acf17005a",
+      "inheritedLastWriteUtc": "2026-10-08T02:29:24.3370376Z"
+    },
+    {
+      "path": "3dmodels/Capacitor_SMD_C_0603_1608Metric.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/Capacitor_SMD_C_0603_1608Metric.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 43450,
+      "sha256": "4857b3dc717675bf1fb22edda622ac3b3ae03cf44d81eefaf3fa3ba3a86d84c1",
+      "inheritedLastWriteUtc": "2026-10-08T02:29:24.7628931Z"
+    },
+    {
+      "path": "3dmodels/Capacitor_SMD_C_0805_2012Metric.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/Capacitor_SMD_C_0805_2012Metric.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 43618,
+      "sha256": "9a669c1a2f1ea25b88b401acef6efeaa80a067bd7da9db6993de719a7fbe155c",
+      "inheritedLastWriteUtc": "2026-10-08T02:29:25.4678067Z"
+    },
+    {
+      "path": "3dmodels/Coilcraft_4020_package.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/Coilcraft_4020_package.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 32254,
+      "sha256": "ccccee60d1c700cb295b890024e8da4e4d7507b6b69039c751b6dcc3e91bd3ee",
+      "inheritedLastWriteUtc": "2026-05-01T23:39:04Z"
+    },
+    {
+      "path": "3dmodels/Connector_JST_JST_PH_S2B-PH-SM4-TB_1x02-1MP_P2.00mm_Horizontal.STEP",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/Connector_JST_JST_PH_S2B-PH-SM4-TB_1x02-1MP_P2.00mm_Horizontal.STEP",
+      "kind": "project-local-cad-dependency",
+      "bytes": 271283,
+      "sha256": "67493412dbd25960c100685f6bc193c6bb7a29cac04f6e8e5e8221894478aee1",
+      "inheritedLastWriteUtc": "2026-10-08T02:30:32.4557261Z"
+    },
+    {
+      "path": "3dmodels/Connector_JST_JST_SH_SM08B-SRSS-TB_1x08-1MP_P1.00mm_Horizontal.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/Connector_JST_JST_SH_SM08B-SRSS-TB_1x08-1MP_P1.00mm_Horizontal.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 106088,
+      "sha256": "ff2dee3fae4da6045a727d5531bfa03fa29352f740971584931e711dc34dba55",
+      "inheritedLastWriteUtc": "2026-10-08T02:29:26.8039304Z"
+    },
+    {
+      "path": "3dmodels/Connector_USB_USB_C_Receptacle_HRO_TYPE-C-31-M-12.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/Connector_USB_USB_C_Receptacle_HRO_TYPE-C-31-M-12.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 493019,
+      "sha256": "1ebb5dbf5f1ce1f17702e251558f8e3ba36ad5957862cd1de86184359c8f2055",
+      "inheritedLastWriteUtc": "2026-10-07T08:06:15.6839444Z"
+    },
+    {
+      "path": "3dmodels/CP_EIA-7343-31_Kemet-D.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/CP_EIA-7343-31_Kemet-D.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 171596,
+      "sha256": "1d578cc03d3128d635ae0205945d796d728d36c1e32e83d288ba1795bc01429b",
+      "inheritedLastWriteUtc": "2026-05-01T23:38:54Z"
+    },
+    {
+      "path": "3dmodels/Diode_SMD_Nexperia_CFP3_SOD-123W.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/Diode_SMD_Nexperia_CFP3_SOD-123W.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 59769,
+      "sha256": "b7e56594bfc2e4eec42ca2b7b7911cc7eff91c1f55a3c8db11ddfba2e5ce21d7",
+      "inheritedLastWriteUtc": "2026-10-08T02:29:25.4828741Z"
+    },
+    {
+      "path": "3dmodels/KiCad_C_0402_1005Metric.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/KiCad_C_0402_1005Metric.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 43502,
+      "sha256": "03e44c4b2b727b8d4b6b1fd598cbd12dd5e614f1dfeefa96a92a07e3a3b312a2",
+      "inheritedLastWriteUtc": "2026-05-01T23:38:54Z"
+    },
+    {
+      "path": "3dmodels/KiCad_C_0603_1608Metric.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/KiCad_C_0603_1608Metric.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 43450,
+      "sha256": "4857b3dc717675bf1fb22edda622ac3b3ae03cf44d81eefaf3fa3ba3a86d84c1",
+      "inheritedLastWriteUtc": "2026-05-01T23:38:54Z"
+    },
+    {
+      "path": "3dmodels/KiCad_C_0805_2012Metric.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/KiCad_C_0805_2012Metric.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 43618,
+      "sha256": "9a669c1a2f1ea25b88b401acef6efeaa80a067bd7da9db6993de719a7fbe155c",
+      "inheritedLastWriteUtc": "2026-05-01T23:38:54Z"
+    },
+    {
+      "path": "3dmodels/KiCad_QFN28_5x5_visual.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/KiCad_QFN28_5x5_visual.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 320760,
+      "sha256": "e9d6d740f505b03e5aa0ac826330f9e269344b84656d051f50eb07ac162749eb",
+      "inheritedLastWriteUtc": "2026-05-01T23:39:04Z"
+    },
+    {
+      "path": "3dmodels/KiCad_R_0402_1005Metric.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/KiCad_R_0402_1005Metric.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 40756,
+      "sha256": "91507e5af4251cb4ef38e04889c9b98da29904432bd83786bba13ae9b605eacb",
+      "inheritedLastWriteUtc": "2026-05-01T23:39:06Z"
+    },
+    {
+      "path": "3dmodels/KiCad_R_0805_2012Metric.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/KiCad_R_0805_2012Metric.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 40592,
+      "sha256": "ded342cdb394fb45395227beaaa75cc390613cf2581b29cd6d22c12abd6103b2",
+      "inheritedLastWriteUtc": "2026-05-01T23:39:06Z"
+    },
+    {
+      "path": "3dmodels/KiCad_SOT-23-6.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/KiCad_SOT-23-6.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 99639,
+      "sha256": "c9fe686b4d1b56927a41fa84a9bc1efb61d8a45a123a3db43bcaa05c2891d635",
+      "inheritedLastWriteUtc": "2026-05-01T23:39:06Z"
+    },
+    {
+      "path": "3dmodels/KiCad_SOT-23-8.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/KiCad_SOT-23-8.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 125704,
+      "sha256": "b9dc5b435d49868df7491668d5322debfe5d699dbb41c2ad93a41518ec9b5007",
+      "inheritedLastWriteUtc": "2026-05-01T23:39:06Z"
+    },
+    {
+      "path": "3dmodels/KiCad_SOT-23.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/KiCad_SOT-23.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 60296,
+      "sha256": "dd5d1711204e1d8d26cd11490923bd84340820baa69538c385a4300ec2539bc0",
+      "inheritedLastWriteUtc": "2026-05-01T23:39:06Z"
+    },
+    {
+      "path": "3dmodels/LED_SMD_LED_0603_1608Metric.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/LED_SMD_LED_0603_1608Metric.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 77068,
+      "sha256": "98343205ec260ec165026ba2d44329a23096779ac36c553ea84aa7b370242e6d",
+      "inheritedLastWriteUtc": "2026-10-08T02:29:25.3581723Z"
+    },
+    {
+      "path": "3dmodels/MAX17048_EasyEDA.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/MAX17048_EasyEDA.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 1135099,
+      "sha256": "9311ae3b0047f4ddf2f1efebbcbcc4660633caa09edeb5604e50502315e4b1e6",
+      "inheritedLastWriteUtc": "2026-10-13T03:46:37.7664169Z"
+    },
+    {
+      "path": "3dmodels/Package_DFN_QFN_VQFN-16-1EP_3x3mm_P0.5mm_EP1.6x1.6mm.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/Package_DFN_QFN_VQFN-16-1EP_3x3mm_P0.5mm_EP1.6x1.6mm.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 179429,
+      "sha256": "512022c59981b092eb0b88cb61324405361f8be98f10772f4895cfce7cc87101",
+      "inheritedLastWriteUtc": "2026-10-08T02:29:25.8309914Z"
+    },
+    {
+      "path": "3dmodels/Package_LGA_LGA-12_2x2mm_P0.5mm.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/Package_LGA_LGA-12_2x2mm_P0.5mm.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 105329,
+      "sha256": "5e6c16287491528f89c09590e0d5dace14debf478226f74b45504eb906119145",
+      "inheritedLastWriteUtc": "2026-10-08T02:29:24.6257331Z"
+    },
+    {
+      "path": "3dmodels/Package_TO_SOT_SMD_SOT-23-6.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/Package_TO_SOT_SMD_SOT-23-6.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 199168,
+      "sha256": "9491de18305b16fe125ee3d603109a29edd837d50d22305b6f929886492ce755",
+      "inheritedLastWriteUtc": "2026-10-08T02:29:24.8887556Z"
+    },
+    {
+      "path": "3dmodels/Package_TO_SOT_SMD_SOT-23.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/Package_TO_SOT_SMD_SOT-23.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 119867,
+      "sha256": "9fe9af3cc6cf3d3bc3bd3da71731af2037c67f690245102a20e1e39a33e9ade4",
+      "inheritedLastWriteUtc": "2026-10-08T02:29:25.1560806Z"
+    },
+    {
+      "path": "3dmodels/PJ320D_supplier_aligned.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/PJ320D_supplier_aligned.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 1642148,
+      "sha256": "656d8db36160b5d127f73549a5dd10152d427484ffb6861214a090aee61c278a",
+      "inheritedLastWriteUtc": "2026-10-20T08:43:50.575368Z"
+    },
+    {
+      "path": "3dmodels/R_0603_1608Metric.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/R_0603_1608Metric.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 40618,
+      "sha256": "1875571c326d0d9e96f36b4efeb8094068ef7619f0a449c781caf0b49c2e5861",
+      "inheritedLastWriteUtc": "2026-05-01T23:39:06Z"
+    },
+    {
+      "path": "3dmodels/Resistor_SMD_R_0402_1005Metric.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/Resistor_SMD_R_0402_1005Metric.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 40756,
+      "sha256": "91507e5af4251cb4ef38e04889c9b98da29904432bd83786bba13ae9b605eacb",
+      "inheritedLastWriteUtc": "2026-10-08T02:29:24.6983397Z"
+    },
+    {
+      "path": "3dmodels/RF_Module_ESP32-S3-WROOM-1.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/RF_Module_ESP32-S3-WROOM-1.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 1906878,
+      "sha256": "3e35bb7ba7d030d88855fcf968398c8670934c7dca08b4e30b2c578bc1e13954",
+      "inheritedLastWriteUtc": "2026-10-08T02:29:25.5352443Z"
+    },
+    {
+      "path": "3dmodels/TPS63001_DRC_KiCad_VSON.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/3dmodels/TPS63001_DRC_KiCad_VSON.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 160413,
+      "sha256": "85804ba94b0730ed3d056007f77b4e0d612870916a4c6134f9b44fb798c4b30a",
+      "inheritedLastWriteUtc": "2026-05-01T23:39:06Z"
+    },
+    {
+      "path": "sourced_cad/MAX98357A.3dshapes/TQFN-16_L3.0-W3.0-P0.50-BL-EP1.5.step",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/sourced_cad/MAX98357A.3dshapes/TQFN-16_L3.0-W3.0-P0.50-BL-EP1.5.step",
+      "kind": "project-local-cad-dependency",
+      "bytes": 1662662,
+      "sha256": "28160c80f36cc6db18e6d073c1167cfd79da711a4a7d3d680689c4a913f545ff",
+      "inheritedLastWriteUtc": "2026-10-20T08:17:04.3659116Z"
+    },
+    {
+      "path": "working_data/BOM_by_reference.csv",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/working_data/BOM_by_reference.csv",
+      "kind": "inherited-bom-export-not-refreshed",
+      "bytes": 33407,
+      "sha256": "f84e2b056aeb048b05f78eba6e88941d6f6201bad6e0cf7277caffa09eb3e13c",
+      "inheritedLastWriteUtc": "2026-10-22T08:17:20.7896352Z"
+    },
+    {
+      "path": "working_data/BOM_purchase.csv",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/working_data/BOM_purchase.csv",
+      "kind": "inherited-bom-export-not-refreshed",
+      "bytes": 21046,
+      "sha256": "308389e36d173a95d0b8974a37718ced31dab17a261bdb4ac925a8d4f6046318",
+      "inheritedLastWriteUtc": "2026-10-22T08:17:20.7906359Z"
+    },
+    {
+      "path": "reference_exports/BOM_PCB_1board.csv",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/deliverables/BOM_PCB_1board.csv",
+      "kind": "inherited-one-board-bom-not-an-order",
+      "bytes": 15509,
+      "sha256": "9209ee71864a7ede65b584b5b3fa8a500941ca67bc13003578668444b45853ba",
+      "inheritedLastWriteUtc": "2026-10-22T08:19:05.5914152Z"
+    },
+    {
+      "path": "external_parts/Case_hardware.csv",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/deliverables/External_parts/Case_hardware.csv",
+      "kind": "inherited-external-parts-and-wiring",
+      "bytes": 1250,
+      "sha256": "daf243201b69c4c1fd5e925d734f398be2ea1e0fbe0d3bfe6928b809146f7780",
+      "inheritedLastWriteUtc": "2026-10-22T05:15:30.9358651Z"
+    },
+    {
+      "path": "external_parts/Connector_pinout.csv",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/deliverables/External_parts/Connector_pinout.csv",
+      "kind": "inherited-external-parts-and-wiring",
+      "bytes": 2051,
+      "sha256": "87077a1e5f3babe5c32c23ee1598b655192c4e6b6458e7b43cf8f822eb277842",
+      "inheritedLastWriteUtc": "2026-10-22T05:15:30.9230272Z"
+    },
+    {
+      "path": "external_parts/External_parts_jd9853_201.csv",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/deliverables/External_parts/External_parts_jd9853_201.csv",
+      "kind": "inherited-external-parts-and-wiring",
+      "bytes": 1880,
+      "sha256": "6ce628bc13e53b0dda7ee587b1c2af5ffb94baf633b52ee0eb818fb1cdbcda2b",
+      "inheritedLastWriteUtc": "2026-10-22T05:15:30.9270275Z"
+    },
+    {
+      "path": "external_parts/External_parts_st7789_154.csv",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/deliverables/External_parts/External_parts_st7789_154.csv",
+      "kind": "inherited-external-parts-and-wiring",
+      "bytes": 1893,
+      "sha256": "631c5711936a418005651191bcab4771d0684a7f70cae913e1cf96390f6e3cb8",
+      "inheritedLastWriteUtc": "2026-10-22T05:15:30.9260287Z"
+    },
+    {
+      "path": "external_parts/GPIO_pinmap.csv",
+      "sourcePath": "hardware/privacy_bubble_r18_hand_solder/deliverables/External_parts/GPIO_pinmap.csv",
+      "kind": "inherited-external-parts-and-wiring",
+      "bytes": 1421,
+      "sha256": "310506bd87c483b45f8e1e9addb8e573b53f75820daf72ebb9de90e92a461c77",
+      "inheritedLastWriteUtc": "2026-10-22T05:15:30.920518Z"
+    }
+  ],
+  "excluded": [
+    "local UI state .kicad_prl and editor locks",
+    "analysis and Checks results",
+    "Gerber/drill/stencil manufacturing outputs and ZIP packages",
+    "unused Sourced.pretty duplicate",
+    "unreferenced sourced_cad supplier packages",
+    "firmware credentials, device observations and runtime databases"
+  ],
+  "externalDependencies": [
+    "KiCad 10 project format and normal installed libraries",
+    "KICAD10_3DMODEL_DIR for models already referenced through the installed KiCad 3D library"
+  ]
+}

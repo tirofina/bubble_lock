@@ -1,0 +1,1 @@
+(sym_lib_table (version 7) (lib (name "Release") (type "KiCad") (uri "${KIPRJMOD}/Release.kicad_sym") (options "") (descr "Current embedded symbol definitions")))

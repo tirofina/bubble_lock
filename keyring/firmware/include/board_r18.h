@@ -2,6 +2,7 @@
 #include <stdint.h>
 
 // Source: r17/common_pcb/working_data/GPIO_pinmap.csv and r18 native PCB U1 nets.
+// Portable source handoff: keyring/pcb/r18/ and pcb/HARDWARE_FIRMWARE_MAP.md.
 // Older r17 root pin maps and BOM prose contain superseded GPIO assignments.
 namespace board {
 constexpr char Revision[] = "r18-hand-solder";

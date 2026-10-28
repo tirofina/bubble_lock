@@ -8,7 +8,7 @@
 
 | 영역 | 전달물 | 현재 상태 |
 |---|---|---|
-| 하드웨어 연결 | 기존 r18 PCB 및 최신 핀맵을 연결하는 [PCB 문서](../keyring/pcb/README.md) | 기존 자산 참조. 이번 작업에서 PCB 재설계·제조·조립하지 않음 |
+| 하드웨어 연결 | 기존 r18 PCB 및 최신 핀맵을 연결하는 [PCB 문서](../keyring/pcb/README.md) | r18 native 원본 snapshot·로컬 CAD·기존 BOM/배선표 포함. PCB 재설계·제조·조립·새 검증은 하지 않음 |
 | 펌웨어 | [ESP32-S3 소스와 설정](../keyring/firmware/README.md) | 소스 작성, 빌드·flash·장비 실행 미실행 |
 | 화면·음향·SD | [두 LCD 프로필, MAX98357A cue, SD receipt 복사](../keyring/firmware/PERIPHERALS.md) | keyring-0.4.0 선택형 구현. JD9853 구매 모듈 초기화·실물 표시·부하 미확인 |
 | BLE | identity / observation / command / receipt UUID와 fragmentation | 구현 계약 작성, pairing·notify·reconnect 미검증 |
@@ -37,7 +37,7 @@ KEYRING은 중앙 command 전체의 hash를 BLE 명령과 receipt에 유지한�
 
 ## 하드웨어 및 배포 제한
 
-기존 로컬 r18 손납땜 보드가 전제다. 자세한 자산 경로와 핀 출처는 PCB 문서에 남겼다. PCB·부품 BOM·조립 revision을 이번 구현 저장소에서 새로 완성했다는 뜻은 아니다. 보드 파일을 독립 저장소에 포함할 배포 범위와 실제 조립본의 revision 식별은 별도로 맞춰야 한다.
+기존 로컬 r18 손납땜 보드가 전제다. 자세한 자산 경로와 핀 출처는 PCB 문서에 남겼다. PCB·부품 BOM·조립 revision을 이번 구현 저장소에서 새로 완성했다는 뜻은 아니다. 인계용 원본 snapshot을 저장소에 포함했다. 실제 조립본의 revision 식별과 제조 release는 별도로 맞춰야 한다.
 
 현재 binarySwitch의 대상은 진동 GPIO이다. readback은 GPIO 출력 수준이며 물리적 진동 검출이 아니다. 충전 제어·충전 LED는 보드 하드웨어 경로를 따른다. 배터리 보정, 센서 정확도, 전력·범위, 제품 수준의 사용자 피드백은 실물 수용 단계에서 다룬다.
 

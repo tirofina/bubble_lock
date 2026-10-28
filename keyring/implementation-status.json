@@ -40,13 +40,19 @@
     "peripheral I/O reservation before deep sleep",
     "authenticated read-only frozen BLE NVS journal snapshots",
     "operator-invoked private journal archives with actual record count and SHA256",
-    "journal usage observations and explicit non-settlement archive contracts"
+    "journal usage observations and explicit non-settlement archive contracts",
+    "portable r18 native KiCad project snapshot with local CAD dependencies and inherited BOM/wiring",
+    "source byte inventory and explicit stale GPIO prose corrections for hardware handoff"
   ],
   "existingHardware": {
-    "status": "referenced-existing-assets",
+    "status": "source-snapshot-included-unverified",
     "revision": "privacy_bubble_r18_hand_solder",
     "reference": "pcb/README.md",
-    "modifiedThisTask": false
+    "modifiedThisTask": false,
+    "sourceInventory": "pcb/r18/source-inventory.json",
+    "copiedSourceFiles": 222,
+    "copiedSourceBytes": 16312470,
+    "originalDesignModified": false
   },
   "pendingIntegration": [
     "PC-MOBIUS-CORE BLE extension and application receipt acceptance",
@@ -60,7 +66,8 @@
   "notImplemented": [
     "purchased JD9853 module-specific power/gamma initialization confirmation",
     "MAX9850 headphone output",
-    "OTA, secure boot and flash encryption deployment"
+    "OTA, secure boot and flash encryption deployment",
+    "INA219 onboard current/power telemetry"
   ],
   "notPerformed": [
     "firmware build",
@@ -91,6 +98,6 @@
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
     "latestLocalSourceCommit": "6203dec",
-    "latestCheckpoint": "firmware 0.5.0 read-only journal export and Gateway archive source pushed (unverified)"
+    "latestCheckpoint": "r18 hardware source handoff snapshot and firmware mapping (unverified)"
   }
 }

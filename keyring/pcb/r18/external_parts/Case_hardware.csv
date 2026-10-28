@@ -1,0 +1,11 @@
+﻿Use,Item,Quantity_for_one_selected_case,Specification,Assembly_note
+Closure,M1.6 x 18 pan head,4,"M1.6 x0.35; head OD<=3.2mm, height<=1.42mm",Rear body to front body
+PCB mounting,M1.6 x 4 pan head,2,"M1.6 x0.35; head OD<=3.2mm, height<=1.42mm",PCB to common frame nuts
+LCD holder,M1.6 x 4 pan head,4,"M1.6 x0.35; head OD<=3.2mm, height<=1.42mm",Selected LCD holder to front body
+Switch clamp,M1.6 x 5 countersunk,2,M1.6 x0.35; head OD<=3.0mm,MSL case clamp; countersunk head
+PCB mounting,M1.6 nut,2,Across flats3.2mm; height1.3mm,Insert into common frame side slots
+PCB mounting,pcb_spacer_05,2,PLA; OD3.6mm / ID1.9mm / H0.5mm,Printed; already included twice in each 3MF
+Button adjuster,SFN-M2-4-A2 dimensional reference,2,M2 x0.4; 1mm nylon tip; tip0.8mm; metal body3.2..4.0mm checked,Extended printed collar begins Z4.5mm; tap M2 and set actual release gap
+Reusable tool,M1.6 x0.35 tap,1,Cut printed case pilot threads before assembly,Assembly tool; one tool serves both variants
+Reusable tool,M2 x0.4 tap,1,Tap the1.7mm button pilot holes,Assembly tool; one tool serves both variants
+Reusable tool,Slotted precision screwdriver,1,Blade thickness<=0.25mm for specified adjuster slot,Assembly tool; tip width fits the2.4mm access bore

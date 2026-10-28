@@ -4,3 +4,5 @@
 *.template text eol=lf
 Dockerfile text eol=lf
 *.Dockerfile text eol=lf
+# Preserve received CAD/BOM/model source bytes for handoff inventory hashes.
+keyring/pcb/r18/** -text

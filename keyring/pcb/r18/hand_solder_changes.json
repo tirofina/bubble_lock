@@ -1,0 +1,8242 @@
+{
+  "source": "C:\\Users\\NH\\Documents\\ChatGPT\\mobius 해커톤\\hardware\\privacy_bubble_r17\\common_pcb",
+  "revision": "r18-hand-solder",
+  "changed_count": 109,
+  "full_drc_erc_run": true,
+  "records": [
+    {
+      "reference": "C1",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Capacitor_SMD/C_0603_1608Metric_Pad1.08x0.95mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Capacitor_SMD_C_0603_1608Metric",
+      "new": "HandSolder:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder_C1_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            105.275,
+            105.5
+          ],
+          "size": [
+            0.9,
+            0.95
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            103.725,
+            105.5
+          ],
+          "size": [
+            0.9,
+            0.95
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            105.4,
+            105.5
+          ],
+          "size": [
+            1.15,
+            0.95
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            103.675,
+            105.5
+          ],
+          "size": [
+            1.0,
+            0.95
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C10",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Capacitor_SMD/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder",
+      "pads": [
+        "2"
+      ],
+      "old": "Sourced:Capacitor_SMD_C_0805_2012Metric",
+      "new": "HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C10_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            110.5,
+            118.75
+          ],
+          "size": [
+            1.0,
+            1.45
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            110.5,
+            120.65
+          ],
+          "size": [
+            1.0,
+            1.45
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            110.5,
+            118.75
+          ],
+          "size": [
+            1.0,
+            1.45
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            110.5,
+            120.725
+          ],
+          "size": [
+            1.15,
+            1.45
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C15",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Capacitor_SMD/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "pads": [
+        "2"
+      ],
+      "old": "Sourced:C_0402_1005Metric",
+      "new": "HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C15_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            122.98,
+            106.7
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            122.02,
+            106.7
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            122.98,
+            106.7
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            121.845,
+            106.7
+          ],
+          "size": [
+            0.91,
+            0.62
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C16",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Capacitor_SMD/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "pads": [
+        "1"
+      ],
+      "old": "Sourced:C_0402_1005Metric",
+      "new": "HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C16_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            124.52,
+            103.8
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            125.48,
+            103.8
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            124.345,
+            103.8
+          ],
+          "size": [
+            0.91,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            125.48,
+            103.8
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C17",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Capacitor_SMD/C_0603_1608Metric_Pad1.08x0.95mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Capacitor_SMD_C_0603_1608Metric",
+      "new": "HandSolder:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder_C17_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            117.725,
+            104.0
+          ],
+          "size": [
+            0.9,
+            0.95
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            119.275,
+            104.0
+          ],
+          "size": [
+            0.9,
+            0.95
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            117.675,
+            104.0
+          ],
+          "size": [
+            1.0,
+            0.95
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            119.325,
+            104.0
+          ],
+          "size": [
+            1.0,
+            0.95
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C18",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Capacitor_SMD/C_0603_1608Metric_Pad1.08x0.95mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Capacitor_SMD_C_0603_1608Metric",
+      "new": "HandSolder:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder_C18_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            118.025,
+            142.5
+          ],
+          "size": [
+            0.9,
+            0.95
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            119.575,
+            142.5
+          ],
+          "size": [
+            0.9,
+            0.95
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            117.975,
+            142.5
+          ],
+          "size": [
+            1.0,
+            0.95
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            119.75,
+            142.5
+          ],
+          "size": [
+            1.25,
+            0.95
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C19",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Capacitor_SMD/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Capacitor_SMD_C_0805_2012Metric",
+      "new": "HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C19_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            138.3,
+            121.75
+          ],
+          "size": [
+            1.0,
+            1.45
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            138.3,
+            119.85
+          ],
+          "size": [
+            1.0,
+            1.45
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            138.3,
+            121.8375
+          ],
+          "size": [
+            1.175,
+            1.45
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            138.3,
+            119.7625
+          ],
+          "size": [
+            1.175,
+            1.45
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C2",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Capacitor_SMD/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Capacitor_SMD_C_0805_2012Metric",
+      "new": "HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C2_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            103.3825,
+            103.385
+          ],
+          "size": [
+            1.0,
+            1.45
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            105.2825,
+            103.385
+          ],
+          "size": [
+            1.0,
+            1.45
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            103.295,
+            103.385
+          ],
+          "size": [
+            1.175,
+            1.45
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            105.37,
+            103.385
+          ],
+          "size": [
+            1.175,
+            1.45
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C20",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Capacitor_SMD/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:C_0402_1005Metric",
+      "new": "HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C20_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            135.52,
+            123.5
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            136.48,
+            123.5
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            135.4325,
+            123.5
+          ],
+          "size": [
+            0.735,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            136.5675,
+            123.5
+          ],
+          "size": [
+            0.735,
+            0.62
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C21",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Capacitor_SMD/C_0603_1608Metric_Pad1.08x0.95mm_HandSolder",
+      "pads": [
+        "1"
+      ],
+      "old": "Sourced:Capacitor_SMD_C_0603_1608Metric",
+      "new": "HandSolder:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder_C21_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            102.575,
+            135.5
+          ],
+          "size": [
+            0.9,
+            0.95
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            101.025,
+            135.5
+          ],
+          "size": [
+            0.9,
+            0.95
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            102.625,
+            135.5
+          ],
+          "size": [
+            1.0,
+            0.95
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            101.025,
+            135.5
+          ],
+          "size": [
+            0.9,
+            0.95
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C22",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Capacitor_SMD/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder",
+      "pads": [
+        "1"
+      ],
+      "old": "Sourced:Capacitor_SMD_C_0805_2012Metric",
+      "new": "HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C22_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            105.45,
+            146.4
+          ],
+          "size": [
+            1.0,
+            1.45
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            103.55,
+            146.4
+          ],
+          "size": [
+            1.0,
+            1.45
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            105.625,
+            146.4
+          ],
+          "size": [
+            1.35,
+            1.45
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            103.55,
+            146.4
+          ],
+          "size": [
+            1.0,
+            1.45
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C23",
+      "status": "retained",
+      "method": "existing land retained: via ",
+      "old": "Sourced:Capacitor_SMD_C_0805_2012Metric",
+      "new": "Sourced:Capacitor_SMD_C_0805_2012Metric"
+    },
+    {
+      "reference": "C24",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Capacitor_SMD/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "pads": [
+        "1"
+      ],
+      "old": "Sourced:Capacitor_SMD_C_0402_1005Metric",
+      "new": "HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C24_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            114.27,
+            120.7
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            115.23,
+            120.7
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            114.145,
+            120.7
+          ],
+          "size": [
+            0.81,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            115.23,
+            120.7
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C25",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Capacitor_SMD/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Capacitor_SMD_C_0402_1005Metric",
+      "new": "HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C25_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            125.92,
+            120.0
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            126.88,
+            120.0
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            125.8325,
+            120.0
+          ],
+          "size": [
+            0.735,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            126.9675,
+            120.0
+          ],
+          "size": [
+            0.735,
+            0.62
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C26",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Capacitor_SMD/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Capacitor_SMD_C_0402_1005Metric",
+      "new": "HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C26_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            121.48,
+            148.8
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            120.52,
+            148.8
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            121.5675,
+            148.8
+          ],
+          "size": [
+            0.735,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            120.4325,
+            148.8
+          ],
+          "size": [
+            0.735,
+            0.62
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C27",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Capacitor_SMD/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "pads": [
+        "2"
+      ],
+      "old": "Sourced:C_0402_1005Metric",
+      "new": "HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C27_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            121.98,
+            114.3
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            121.02,
+            114.3
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            121.98,
+            114.3
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            120.845,
+            114.3
+          ],
+          "size": [
+            0.91,
+            0.62
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C28",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Capacitor_SMD/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder",
+      "pads": [
+        "1"
+      ],
+      "old": "Sourced:C_0805_2012Metric",
+      "new": "HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C28_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            124.55,
+            116.5
+          ],
+          "size": [
+            1.0,
+            1.45
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            126.45,
+            116.5
+          ],
+          "size": [
+            1.0,
+            1.45
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            124.5,
+            116.5
+          ],
+          "size": [
+            1.1,
+            1.45
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            126.45,
+            116.5
+          ],
+          "size": [
+            1.0,
+            1.45
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C29",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Capacitor_SMD/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "pads": [
+        "1"
+      ],
+      "old": "Sourced:C_0402_1005Metric",
+      "new": "HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C29_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            131.62,
+            138.8
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            132.58,
+            138.8
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            131.545,
+            138.8
+          ],
+          "size": [
+            0.71,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            132.58,
+            138.8
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C3",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Capacitor_SMD/C_0603_1608Metric_Pad1.08x0.95mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Capacitor_SMD_C_0603_1608Metric",
+      "new": "HandSolder:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder_C3_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            101.7,
+            106.275
+          ],
+          "size": [
+            0.9,
+            0.95
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            101.7,
+            104.725
+          ],
+          "size": [
+            0.9,
+            0.95
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            101.7,
+            106.3625
+          ],
+          "size": [
+            1.075,
+            0.95
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            101.7,
+            104.6375
+          ],
+          "size": [
+            1.075,
+            0.95
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C30",
+      "status": "retained",
+      "method": "existing land retained: track ",
+      "old": "Sourced:C_0402_1005Metric",
+      "new": "Sourced:C_0402_1005Metric"
+    },
+    {
+      "reference": "C31",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Capacitor_SMD/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:C_0402_1005Metric",
+      "new": "HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C31_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            128.52,
+            140.0
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            129.48,
+            140.0
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            128.345,
+            140.0
+          ],
+          "size": [
+            0.91,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            129.53,
+            140.0
+          ],
+          "size": [
+            0.66,
+            0.62
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C32",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Capacitor_SMD/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "pads": [
+        "2"
+      ],
+      "old": "Sourced:C_0402_1005Metric",
+      "new": "HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C32_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            126.65,
+            133.28
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            126.65,
+            132.32
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            126.65,
+            133.28
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            126.65,
+            132.145
+          ],
+          "size": [
+            0.91,
+            0.62
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C33",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Capacitor_SMD/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder",
+      "pads": [
+        "2"
+      ],
+      "old": "Sourced:C_0805_2012Metric",
+      "new": "HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C33_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            131.85,
+            134.5
+          ],
+          "size": [
+            1.0,
+            1.45
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            133.75,
+            134.5
+          ],
+          "size": [
+            1.0,
+            1.45
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            131.85,
+            134.5
+          ],
+          "size": [
+            1.0,
+            1.45
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            133.875,
+            134.5
+          ],
+          "size": [
+            1.25,
+            1.45
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C35",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Capacitor_SMD/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "pads": [
+        "2"
+      ],
+      "old": "Sourced:C_0402_1005Metric",
+      "new": "HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C35_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            116.9,
+            124.37
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            116.9,
+            125.33
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            116.9,
+            124.37
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            116.9,
+            125.505
+          ],
+          "size": [
+            0.91,
+            0.62
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C36",
+      "status": "changed",
+      "method": "partial HandSolder: pad 1 original to preserve C49 ground neck; pad 2 extended",
+      "source": "Capacitor_SMD/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:C_0402_1005Metric",
+      "new": "HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C36_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            108.7,
+            134.695
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            108.7,
+            135.655
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            108.7,
+            134.695
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            108.7,
+            135.7425
+          ],
+          "size": [
+            0.735,
+            0.62
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C37",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "r17 sourced footprint / outward-only adaptation",
+      "pads": [
+        "1"
+      ],
+      "old": "Sourced:CP_EIA-7343-31_Kemet-D",
+      "new": "HandSolder:CP_EIA-7343-31_Kemet-D_C37_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            118.68,
+            127.0
+          ],
+          "size": [
+            2.07,
+            2.59
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            124.92,
+            127.0
+          ],
+          "size": [
+            2.07,
+            2.59
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            118.63,
+            127.0
+          ],
+          "size": [
+            2.17,
+            2.59
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            124.92,
+            127.0
+          ],
+          "size": [
+            2.07,
+            2.59
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C38",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Capacitor_SMD/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:C_0402_1005Metric",
+      "new": "HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C38_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            130.52,
+            110.5
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            131.48,
+            110.5
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            130.4325,
+            110.5
+          ],
+          "size": [
+            0.735,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            131.5675,
+            110.5
+          ],
+          "size": [
+            0.735,
+            0.62
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C39",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Capacitor_SMD/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "pads": [
+        "1"
+      ],
+      "old": "Sourced:C_0402_1005Metric",
+      "new": "HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C39_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            121.0,
+            111.32
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            121.0,
+            112.28
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            121.0,
+            111.145
+          ],
+          "size": [
+            0.91,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            121.0,
+            112.28
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C4",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Capacitor_SMD/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Capacitor_SMD_C_0805_2012Metric",
+      "new": "HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C4_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            132.2,
+            148.25
+          ],
+          "size": [
+            1.0,
+            1.45
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            132.2,
+            150.15
+          ],
+          "size": [
+            1.0,
+            1.45
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            132.2,
+            148.1625
+          ],
+          "size": [
+            1.175,
+            1.45
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            132.2,
+            150.2375
+          ],
+          "size": [
+            1.175,
+            1.45
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C40",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Capacitor_SMD/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:C_0402_1005Metric",
+      "new": "HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C40_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            126.9,
+            114.42
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            126.9,
+            115.38
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            126.9,
+            114.3325
+          ],
+          "size": [
+            0.735,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            126.9,
+            115.4675
+          ],
+          "size": [
+            0.735,
+            0.62
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C41",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Capacitor_SMD/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "pads": [
+        "1"
+      ],
+      "old": "Sourced:C_0402_1005Metric",
+      "new": "HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C41_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            124.4,
+            106.88
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            124.4,
+            105.92
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            124.4,
+            106.93
+          ],
+          "size": [
+            0.66,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            124.4,
+            105.92
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C42",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Capacitor_SMD/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "pads": [
+        "1"
+      ],
+      "old": "Sourced:C_0402_1005Metric",
+      "new": "HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C42_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            122.3,
+            108.1
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            121.34,
+            108.1
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            122.4,
+            108.1
+          ],
+          "size": [
+            0.76,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            121.34,
+            108.1
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C43",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Capacitor_SMD/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:C_0402_1005Metric",
+      "new": "HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C43_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            122.08,
+            109.1
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            121.12,
+            109.1
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            122.13,
+            109.1
+          ],
+          "size": [
+            0.66,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            120.995,
+            109.1
+          ],
+          "size": [
+            0.81,
+            0.62
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C44",
+      "status": "retained",
+      "method": "existing land retained: courtyard C45",
+      "old": "Sourced:C_0402_1005Metric",
+      "new": "Sourced:C_0402_1005Metric"
+    },
+    {
+      "reference": "C45",
+      "status": "retained",
+      "method": "existing land retained: track ",
+      "old": "Sourced:C_0603_1608Metric",
+      "new": "Sourced:C_0603_1608Metric"
+    },
+    {
+      "reference": "C46",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "r17 sourced footprint / outward-only adaptation",
+      "pads": [
+        "2"
+      ],
+      "old": "Sourced:CP_EIA-7343-43_Kemet-X",
+      "new": "HandSolder:CP_EIA-7343-43_Kemet-X_C46_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            130.38,
+            106.5
+          ],
+          "size": [
+            2.07,
+            2.59
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            136.62,
+            106.5
+          ],
+          "size": [
+            2.07,
+            2.59
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            130.38,
+            106.5
+          ],
+          "size": [
+            2.07,
+            2.59
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            136.795,
+            106.5
+          ],
+          "size": [
+            2.42,
+            2.59
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C47",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "r17 sourced footprint / outward-only adaptation",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:CP_EIA-7343-43_Kemet-X",
+      "new": "HandSolder:CP_EIA-7343-43_Kemet-X_C47_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            134.5,
+            110.38
+          ],
+          "size": [
+            2.07,
+            2.59
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            134.5,
+            116.62
+          ],
+          "size": [
+            2.07,
+            2.59
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            134.5,
+            110.28
+          ],
+          "size": [
+            2.27,
+            2.59
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            134.5,
+            116.795
+          ],
+          "size": [
+            2.42,
+            2.59
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C48",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Capacitor_SMD/C_0402_1005Metric_Pad0.74x0.62mm_HandSolder",
+      "pads": [
+        "2"
+      ],
+      "old": "Sourced:C_0402_1005Metric",
+      "new": "HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C48_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            118.12,
+            116.6
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            119.08,
+            116.6
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            118.12,
+            116.6
+          ],
+          "size": [
+            0.56,
+            0.62
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            119.255,
+            116.6
+          ],
+          "size": [
+            0.91,
+            0.62
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C49",
+      "status": "retained",
+      "method": "existing land retained: track ",
+      "old": "Sourced:Capacitor_SMD_C_0805_2012Metric",
+      "new": "Sourced:Capacitor_SMD_C_0805_2012Metric"
+    },
+    {
+      "reference": "C5",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Capacitor_SMD/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder",
+      "pads": [
+        "2"
+      ],
+      "old": "Sourced:Capacitor_SMD_C_0805_2012Metric",
+      "new": "HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C5_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            131.45,
+            144.5
+          ],
+          "size": [
+            1.0,
+            1.45
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            133.35,
+            144.5
+          ],
+          "size": [
+            1.0,
+            1.45
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            131.45,
+            144.5
+          ],
+          "size": [
+            1.0,
+            1.45
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            133.525,
+            144.5
+          ],
+          "size": [
+            1.35,
+            1.45
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C50",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "r17 sourced footprint / outward-only adaptation",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:CP_EIA-7343-31_Kemet-D",
+      "new": "HandSolder:CP_EIA-7343-31_Kemet-D_C50_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            130.38,
+            106.5
+          ],
+          "size": [
+            2.07,
+            2.59
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            136.62,
+            106.5
+          ],
+          "size": [
+            2.07,
+            2.59
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            130.33,
+            106.5
+          ],
+          "size": [
+            2.17,
+            2.59
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            136.795,
+            106.5
+          ],
+          "size": [
+            2.42,
+            2.59
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C6",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Capacitor_SMD/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder",
+      "pads": [
+        "1"
+      ],
+      "old": "Sourced:Capacitor_SMD_C_0805_2012Metric",
+      "new": "HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C6_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            125.55,
+            146.95
+          ],
+          "size": [
+            1.0,
+            1.45
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            125.55,
+            148.85
+          ],
+          "size": [
+            1.0,
+            1.45
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            125.55,
+            146.85
+          ],
+          "size": [
+            1.2,
+            1.45
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            125.55,
+            148.85
+          ],
+          "size": [
+            1.0,
+            1.45
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C7",
+      "status": "retained",
+      "method": "existing land retained: track ",
+      "old": "Sourced:Capacitor_SMD_C_0603_1608Metric",
+      "new": "Sourced:Capacitor_SMD_C_0603_1608Metric"
+    },
+    {
+      "reference": "C8",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Capacitor_SMD/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Capacitor_SMD_C_0805_2012Metric",
+      "new": "HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C8_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            116.05,
+            114.85
+          ],
+          "size": [
+            1.0,
+            1.45
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            116.05,
+            116.75
+          ],
+          "size": [
+            1.0,
+            1.45
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            116.05,
+            114.7625
+          ],
+          "size": [
+            1.175,
+            1.45
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            116.05,
+            116.8375
+          ],
+          "size": [
+            1.175,
+            1.45
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "C9",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Capacitor_SMD/C_0805_2012Metric_Pad1.18x1.45mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Capacitor_SMD_C_0805_2012Metric",
+      "new": "HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C9_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            109.6,
+            115.3
+          ],
+          "size": [
+            1.0,
+            1.45
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            107.7,
+            115.3
+          ],
+          "size": [
+            1.0,
+            1.45
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            109.6875,
+            115.3
+          ],
+          "size": [
+            1.175,
+            1.45
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            107.6125,
+            115.3
+          ],
+          "size": [
+            1.175,
+            1.45
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "D1",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "r17 sourced footprint / outward-only adaptation",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Diode_SMD_Nexperia_CFP3_SOD-123W",
+      "new": "HandSolder:D_Diode_SMD_Nexperia_CFP3_SOD-123W_D1_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            111.0,
+            141.8
+          ],
+          "size": [
+            1.2,
+            1.2
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            113.8,
+            141.8
+          ],
+          "size": [
+            1.2,
+            1.2
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            110.95,
+            141.8
+          ],
+          "size": [
+            1.3,
+            1.2
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            113.975,
+            141.8
+          ],
+          "size": [
+            1.55,
+            1.2
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "D2",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "LED_SMD/LED_0603_1608Metric_Pad1.05x0.95mm_HandSolder",
+      "pads": [
+        "2"
+      ],
+      "old": "Sourced:LED_SMD_LED_0603_1608Metric",
+      "new": "HandSolder:LED_0603_1608Metric_Pad1.05x0.95mm_HandSolder_D2_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            120.0,
+            153.7875
+          ],
+          "size": [
+            0.875,
+            0.95
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            120.0,
+            152.2125
+          ],
+          "size": [
+            0.875,
+            0.95
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            120.0,
+            153.7875
+          ],
+          "size": [
+            0.875,
+            0.95
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            120.0,
+            152.0875
+          ],
+          "size": [
+            1.125,
+            0.95
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "L1",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "r17 sourced footprint / outward-only adaptation",
+      "pads": [
+        "2"
+      ],
+      "old": "Sourced:Inductor_SMD_L_Coilcraft_XxL4020",
+      "new": "HandSolder:Inductor_SMD_L_Coilcraft_XxL4020_L1_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            113.935,
+            110.5
+          ],
+          "size": [
+            0.98,
+            3.4
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            111.565,
+            110.5
+          ],
+          "size": [
+            0.98,
+            3.4
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            113.935,
+            110.5
+          ],
+          "size": [
+            0.98,
+            3.4
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            111.49,
+            110.5
+          ],
+          "size": [
+            1.13,
+            3.4
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R1",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R1_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            106.7,
+            106.81
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            106.7,
+            105.79
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            106.7,
+            106.8975
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            106.7,
+            105.7025
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R10",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R10_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            103.4,
+            116.01
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            103.4,
+            114.99
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            103.4,
+            116.0975
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            103.4,
+            114.9025
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R11",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R11_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            124.01,
+            142.8
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            122.99,
+            142.8
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            124.0975,
+            142.8
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            122.9025,
+            142.8
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R12",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R12_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            123.49,
+            144.5
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            124.51,
+            144.5
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            123.4025,
+            144.5
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            124.5975,
+            144.5
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R13",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R13_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            132.51,
+            146.3
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            131.49,
+            146.3
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            132.5975,
+            146.3
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            131.4025,
+            146.3
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R14",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R14_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            130.49,
+            142.0
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            131.51,
+            142.0
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            130.315,
+            142.0
+          ],
+          "size": [
+            0.89,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            131.56,
+            142.0
+          ],
+          "size": [
+            0.64,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R15",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R15_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            130.2,
+            148.29
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            130.2,
+            149.31
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            130.2,
+            148.24
+          ],
+          "size": [
+            0.64,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            130.2,
+            149.31
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R18",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R18_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            117.2,
+            153.51
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            117.2,
+            152.49
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            117.2,
+            153.51
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            117.2,
+            152.315
+          ],
+          "size": [
+            0.89,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R19",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R19_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            113.16,
+            121.5
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            112.14,
+            121.5
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            113.26,
+            121.5
+          ],
+          "size": [
+            0.74,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            112.015,
+            121.5
+          ],
+          "size": [
+            0.79,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R2",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R2_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            118.6,
+            121.51
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            118.6,
+            120.49
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            118.6,
+            121.61
+          ],
+          "size": [
+            0.74,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            118.6,
+            120.49
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R20",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R20_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            122.01,
+            140.4
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            120.99,
+            140.4
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            122.06,
+            140.4
+          ],
+          "size": [
+            0.64,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            120.815,
+            140.4
+          ],
+          "size": [
+            0.89,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R3",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R3_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            110.71,
+            124.0
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            109.69,
+            124.0
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            110.785,
+            124.0
+          ],
+          "size": [
+            0.69,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            109.515,
+            124.0
+          ],
+          "size": [
+            0.89,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R31",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R31_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            117.79,
+            113.3
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            118.81,
+            113.3
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            117.7025,
+            113.3
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            118.8975,
+            113.3
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R32",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R32_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            117.79,
+            114.9
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            118.81,
+            114.9
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            117.7025,
+            114.9
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            118.8975,
+            114.9
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R33",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R33_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            137.99,
+            129.5
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            139.01,
+            129.5
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            137.9025,
+            129.5
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            139.0975,
+            129.5
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R34",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R34_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            137.99,
+            134.0
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            139.01,
+            134.0
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            137.9025,
+            134.0
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            139.0975,
+            134.0
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R35",
+      "status": "retained",
+      "method": "existing land retained: track ",
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "Sourced:Resistor_SMD_R_0402_1005Metric"
+    },
+    {
+      "reference": "R36",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R36_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            116.49,
+            110.96
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            117.51,
+            110.96
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            116.49,
+            110.96
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            117.61,
+            110.96
+          ],
+          "size": [
+            0.74,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R37",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R37_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            116.49,
+            112.23
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            117.51,
+            112.23
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            116.49,
+            112.23
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            117.585,
+            112.23
+          ],
+          "size": [
+            0.69,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R38",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R38_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            116.49,
+            109.69
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            117.51,
+            109.69
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            116.49,
+            109.69
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            117.61,
+            109.69
+          ],
+          "size": [
+            0.74,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R39",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R39_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            110.2,
+            136.51
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            110.2,
+            135.49
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            110.2,
+            136.5975
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            110.2,
+            135.4025
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R4",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R4_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            112.71,
+            124.0
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            111.69,
+            124.0
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            112.885,
+            124.0
+          ],
+          "size": [
+            0.89,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            111.69,
+            124.0
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R40",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R40_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            108.5,
+            133.49
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            108.5,
+            134.51
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            108.5,
+            133.415
+          ],
+          "size": [
+            0.69,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            108.5,
+            134.51
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R41",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R41_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            113.7,
+            148.61
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            113.7,
+            147.59
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            113.7,
+            148.61
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            113.7,
+            147.415
+          ],
+          "size": [
+            0.89,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R42",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R42_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            116.09,
+            152.0
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            117.11,
+            152.0
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            115.965,
+            152.0
+          ],
+          "size": [
+            0.79,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            117.21,
+            152.0
+          ],
+          "size": [
+            0.74,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R43",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R43_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            114.24,
+            119.3
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            115.26,
+            119.3
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            114.115,
+            119.3
+          ],
+          "size": [
+            0.79,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            115.26,
+            119.3
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R44",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R44_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            130.8,
+            125.31
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            130.8,
+            124.29
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            130.8,
+            125.3975
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            130.8,
+            124.2025
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R45",
+      "status": "retained",
+      "method": "existing land retained: track ",
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "Sourced:Resistor_SMD_R_0402_1005Metric"
+    },
+    {
+      "reference": "R46",
+      "status": "retained",
+      "method": "existing land retained: track ",
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "Sourced:Resistor_SMD_R_0402_1005Metric"
+    },
+    {
+      "reference": "R47",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R47_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            128.89,
+            122.5
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            129.91,
+            122.5
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            128.89,
+            122.5
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            129.96,
+            122.5
+          ],
+          "size": [
+            0.64,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R48",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R48_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            136.29,
+            120.5
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            137.31,
+            120.5
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            136.2025,
+            120.5
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            137.3975,
+            120.5
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R49",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R49_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            134.79,
+            151.5
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            135.81,
+            151.5
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            134.7025,
+            151.5
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            135.8975,
+            151.5
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R5",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R5_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            126.49,
+            150.7
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            127.51,
+            150.7
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            126.44,
+            150.7
+          ],
+          "size": [
+            0.64,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            127.685,
+            150.7
+          ],
+          "size": [
+            0.89,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R50",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R50_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            137.31,
+            119.0
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            136.29,
+            119.0
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            137.3975,
+            119.0
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            136.2025,
+            119.0
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R51",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R51_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            126.3,
+            142.11
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            126.3,
+            141.09
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            126.3,
+            142.285
+          ],
+          "size": [
+            0.89,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            126.3,
+            141.09
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R52",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R52_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            128.0,
+            114.09
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            128.0,
+            115.11
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            128.0,
+            114.0025
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            128.0,
+            115.1975
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R53",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1"
+      ],
+      "old": "Sourced:R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R53_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            127.21,
+            135.9
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            126.19,
+            135.9
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            127.31,
+            135.9
+          ],
+          "size": [
+            0.74,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            126.19,
+            135.9
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R54",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R54_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            127.21,
+            137.1
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            126.19,
+            137.1
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            127.2975,
+            137.1
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            126.1025,
+            137.1
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R55",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R55_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            125.49,
+            140.0
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            126.51,
+            140.0
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            125.4025,
+            140.0
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            126.5975,
+            140.0
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R56",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R56_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            128.51,
+            112.4
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            127.49,
+            112.4
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            128.5975,
+            112.4
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            127.4025,
+            112.4
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R57",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "2"
+      ],
+      "old": "Sourced:R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R57_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            131.51,
+            128.0
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            130.49,
+            128.0
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            131.51,
+            128.0
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            130.39,
+            128.0
+          ],
+          "size": [
+            0.74,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R58",
+      "status": "retained",
+      "method": "existing land retained: track ",
+      "old": "Sourced:R_0402_1005Metric",
+      "new": "Sourced:R_0402_1005Metric"
+    },
+    {
+      "reference": "R59",
+      "status": "retained",
+      "method": "existing land retained: track ",
+      "old": "Sourced:R_0402_1005Metric",
+      "new": "Sourced:R_0402_1005Metric"
+    },
+    {
+      "reference": "R6",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R6_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            111.29,
+            147.8
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            112.31,
+            147.8
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            111.29,
+            147.8
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            112.485,
+            147.8
+          ],
+          "size": [
+            0.89,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R60",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Resistor_SMD/R_0805_2012Metric_Pad1.20x1.40mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:R_0805_2012Metric",
+      "new": "HandSolder:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder_R60_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            131.5875,
+            125.3
+          ],
+          "size": [
+            1.025,
+            1.4
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            133.4125,
+            125.3
+          ],
+          "size": [
+            1.025,
+            1.4
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            131.5,
+            125.3
+          ],
+          "size": [
+            1.2,
+            1.4
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            133.5,
+            125.3
+          ],
+          "size": [
+            1.2,
+            1.4
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R61",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Resistor_SMD/R_0805_2012Metric_Pad1.20x1.40mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:R_0805_2012Metric",
+      "new": "HandSolder:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder_R61_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            120.0875,
+            122.3
+          ],
+          "size": [
+            1.025,
+            1.4
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            121.9125,
+            122.3
+          ],
+          "size": [
+            1.025,
+            1.4
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            120.0375,
+            122.3
+          ],
+          "size": [
+            1.125,
+            1.4
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            122.0375,
+            122.3
+          ],
+          "size": [
+            1.275,
+            1.4
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R62",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R62_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            124.49,
+            130.5
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            125.51,
+            130.5
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            124.4025,
+            130.5
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            125.5975,
+            130.5
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R63",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R63_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            112.69,
+            137.5
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            113.71,
+            137.5
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            112.6025,
+            137.5
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            113.7975,
+            137.5
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R64",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "2"
+      ],
+      "old": "Sourced:R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R64_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            112.69,
+            133.0
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            113.71,
+            133.0
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            112.69,
+            133.0
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            113.885,
+            133.0
+          ],
+          "size": [
+            0.89,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R65",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "2"
+      ],
+      "old": "Sourced:R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R65_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            112.69,
+            134.5
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            113.71,
+            134.5
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            112.69,
+            134.5
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            113.81,
+            134.5
+          ],
+          "size": [
+            0.74,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R66",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "2"
+      ],
+      "old": "Sourced:R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R66_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            112.69,
+            136.0
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            113.71,
+            136.0
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            112.69,
+            136.0
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            113.81,
+            136.0
+          ],
+          "size": [
+            0.74,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R67",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R67_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            119.4,
+            129.59
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            119.4,
+            130.61
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            119.4,
+            129.5025
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            119.4,
+            130.6975
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R68",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1"
+      ],
+      "old": "Sourced:R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R68_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            109.51,
+            123.0
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            108.49,
+            123.0
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            109.56,
+            123.0
+          ],
+          "size": [
+            0.64,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            108.49,
+            123.0
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R69",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Resistor_SMD/R_0603_1608Metric_Pad0.98x0.95mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:R_0603_1608Metric_UART",
+      "new": "HandSolder:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder_R69_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            118.616637,
+            151.516637
+          ],
+          "size": [
+            0.8,
+            0.95
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            119.783363,
+            152.683363
+          ],
+          "size": [
+            0.8,
+            0.95
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            118.554765,
+            151.454765
+          ],
+          "size": [
+            0.975,
+            0.95
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            119.845235,
+            152.745235
+          ],
+          "size": [
+            0.975,
+            0.95
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R7",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R7_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            116.7,
+            161.49
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            116.7,
+            162.51
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            116.7,
+            161.39
+          ],
+          "size": [
+            0.74,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            116.7,
+            162.56
+          ],
+          "size": [
+            0.64,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R71",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Resistor_SMD/R_0805_2012Metric_Pad1.20x1.40mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:R_0805_2012Metric",
+      "new": "HandSolder:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder_R71_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            109.218593,
+            130.336172
+          ],
+          "size": [
+            1.025,
+            1.4
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            110.981407,
+            129.863828
+          ],
+          "size": [
+            1.025,
+            1.4
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            109.170296,
+            130.349113
+          ],
+          "size": [
+            1.125,
+            1.4
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            111.053852,
+            129.844416
+          ],
+          "size": [
+            1.175,
+            1.4
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R8",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R8_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            123.0,
+            162.46
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            123.0,
+            161.44
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            123.0,
+            162.535
+          ],
+          "size": [
+            0.69,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            123.0,
+            161.34
+          ],
+          "size": [
+            0.74,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "R9",
+      "status": "changed",
+      "method": "KiCad HandSolder land pattern",
+      "source": "Resistor_SMD/R_0402_1005Metric_Pad0.72x0.64mm_HandSolder",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Resistor_SMD_R_0402_1005Metric",
+      "new": "HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R9_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            102.0,
+            116.01
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            102.0,
+            114.99
+          ],
+          "size": [
+            0.54,
+            0.64
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            102.0,
+            116.0975
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            102.0,
+            114.9025
+          ],
+          "size": [
+            0.715,
+            0.64
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "J1",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "r17 sourced footprint / outward-only adaptation",
+      "pads": [
+        "A4",
+        "A5",
+        "A6",
+        "A7",
+        "A8",
+        "A9",
+        "A12",
+        "B1",
+        "B4",
+        "B5",
+        "B6",
+        "B7",
+        "B8",
+        "B9"
+      ],
+      "old": "Sourced:Connector_USB_USB_C_Receptacle_HRO_TYPE-C-31-M-12",
+      "new": "HandSolder:USB_C_Receptacle_HRO_TYPE-C-31-M-12_J1_HandSolder",
+      "before": [
+        {
+          "number": "",
+          "xy": [
+            117.11,
+            158.35
+          ],
+          "size": [
+            0.65,
+            0.65
+          ]
+        },
+        {
+          "number": "",
+          "xy": [
+            122.89,
+            158.35
+          ],
+          "size": [
+            0.65,
+            0.65
+          ]
+        },
+        {
+          "number": "A1",
+          "xy": [
+            116.75,
+            156.905
+          ],
+          "size": [
+            0.6,
+            1.45
+          ]
+        },
+        {
+          "number": "A4",
+          "xy": [
+            117.55,
+            156.905
+          ],
+          "size": [
+            0.6,
+            1.45
+          ]
+        },
+        {
+          "number": "A5",
+          "xy": [
+            118.75,
+            156.905
+          ],
+          "size": [
+            0.3,
+            1.45
+          ]
+        },
+        {
+          "number": "A6",
+          "xy": [
+            119.75,
+            156.905
+          ],
+          "size": [
+            0.3,
+            1.45
+          ]
+        },
+        {
+          "number": "A7",
+          "xy": [
+            120.25,
+            156.905
+          ],
+          "size": [
+            0.3,
+            1.45
+          ]
+        },
+        {
+          "number": "A8",
+          "xy": [
+            121.25,
+            156.905
+          ],
+          "size": [
+            0.3,
+            1.45
+          ]
+        },
+        {
+          "number": "A9",
+          "xy": [
+            122.45,
+            156.905
+          ],
+          "size": [
+            0.6,
+            1.45
+          ]
+        },
+        {
+          "number": "A12",
+          "xy": [
+            123.25,
+            156.905
+          ],
+          "size": [
+            0.6,
+            1.45
+          ]
+        },
+        {
+          "number": "B1",
+          "xy": [
+            123.25,
+            156.905
+          ],
+          "size": [
+            0.6,
+            1.45
+          ]
+        },
+        {
+          "number": "B4",
+          "xy": [
+            122.45,
+            156.905
+          ],
+          "size": [
+            0.6,
+            1.45
+          ]
+        },
+        {
+          "number": "B5",
+          "xy": [
+            121.75,
+            156.905
+          ],
+          "size": [
+            0.3,
+            1.45
+          ]
+        },
+        {
+          "number": "B6",
+          "xy": [
+            120.75,
+            156.905
+          ],
+          "size": [
+            0.3,
+            1.45
+          ]
+        },
+        {
+          "number": "B7",
+          "xy": [
+            119.25,
+            156.905
+          ],
+          "size": [
+            0.3,
+            1.45
+          ]
+        },
+        {
+          "number": "B8",
+          "xy": [
+            118.25,
+            156.905
+          ],
+          "size": [
+            0.3,
+            1.45
+          ]
+        },
+        {
+          "number": "B9",
+          "xy": [
+            117.55,
+            156.905
+          ],
+          "size": [
+            0.6,
+            1.45
+          ]
+        },
+        {
+          "number": "B12",
+          "xy": [
+            116.75,
+            156.905
+          ],
+          "size": [
+            0.6,
+            1.45
+          ]
+        },
+        {
+          "number": "SH",
+          "xy": [
+            115.68,
+            157.82
+          ],
+          "size": [
+            1.0,
+            2.1
+          ]
+        },
+        {
+          "number": "SH",
+          "xy": [
+            115.68,
+            162.0
+          ],
+          "size": [
+            1.0,
+            1.6
+          ]
+        },
+        {
+          "number": "SH",
+          "xy": [
+            124.32,
+            157.82
+          ],
+          "size": [
+            1.0,
+            2.1
+          ]
+        },
+        {
+          "number": "SH",
+          "xy": [
+            124.32,
+            162.0
+          ],
+          "size": [
+            1.0,
+            1.6
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "",
+          "xy": [
+            117.11,
+            158.35
+          ],
+          "size": [
+            0.65,
+            0.65
+          ]
+        },
+        {
+          "number": "",
+          "xy": [
+            122.89,
+            158.35
+          ],
+          "size": [
+            0.65,
+            0.65
+          ]
+        },
+        {
+          "number": "A1",
+          "xy": [
+            116.75,
+            156.905
+          ],
+          "size": [
+            0.6,
+            1.45
+          ]
+        },
+        {
+          "number": "A4",
+          "xy": [
+            117.55,
+            156.705
+          ],
+          "size": [
+            0.6,
+            1.85
+          ]
+        },
+        {
+          "number": "A5",
+          "xy": [
+            118.75,
+            156.855
+          ],
+          "size": [
+            0.3,
+            1.55
+          ]
+        },
+        {
+          "number": "A6",
+          "xy": [
+            119.75,
+            156.855
+          ],
+          "size": [
+            0.3,
+            1.55
+          ]
+        },
+        {
+          "number": "A7",
+          "xy": [
+            120.25,
+            156.705
+          ],
+          "size": [
+            0.3,
+            1.85
+          ]
+        },
+        {
+          "number": "A8",
+          "xy": [
+            121.25,
+            156.705
+          ],
+          "size": [
+            0.3,
+            1.85
+          ]
+        },
+        {
+          "number": "A9",
+          "xy": [
+            122.45,
+            156.705
+          ],
+          "size": [
+            0.6,
+            1.85
+          ]
+        },
+        {
+          "number": "A12",
+          "xy": [
+            123.25,
+            156.705
+          ],
+          "size": [
+            0.6,
+            1.85
+          ]
+        },
+        {
+          "number": "B1",
+          "xy": [
+            123.25,
+            156.705
+          ],
+          "size": [
+            0.6,
+            1.85
+          ]
+        },
+        {
+          "number": "B4",
+          "xy": [
+            122.45,
+            156.705
+          ],
+          "size": [
+            0.6,
+            1.85
+          ]
+        },
+        {
+          "number": "B5",
+          "xy": [
+            121.75,
+            156.705
+          ],
+          "size": [
+            0.3,
+            1.85
+          ]
+        },
+        {
+          "number": "B6",
+          "xy": [
+            120.75,
+            156.855
+          ],
+          "size": [
+            0.3,
+            1.55
+          ]
+        },
+        {
+          "number": "B7",
+          "xy": [
+            119.25,
+            156.705
+          ],
+          "size": [
+            0.3,
+            1.85
+          ]
+        },
+        {
+          "number": "B8",
+          "xy": [
+            118.25,
+            156.705
+          ],
+          "size": [
+            0.3,
+            1.85
+          ]
+        },
+        {
+          "number": "B9",
+          "xy": [
+            117.55,
+            156.705
+          ],
+          "size": [
+            0.6,
+            1.85
+          ]
+        },
+        {
+          "number": "B12",
+          "xy": [
+            116.75,
+            156.905
+          ],
+          "size": [
+            0.6,
+            1.45
+          ]
+        },
+        {
+          "number": "SH",
+          "xy": [
+            115.68,
+            157.82
+          ],
+          "size": [
+            1.0,
+            2.1
+          ]
+        },
+        {
+          "number": "SH",
+          "xy": [
+            115.68,
+            162.0
+          ],
+          "size": [
+            1.0,
+            1.6
+          ]
+        },
+        {
+          "number": "SH",
+          "xy": [
+            124.32,
+            157.82
+          ],
+          "size": [
+            1.0,
+            2.1
+          ]
+        },
+        {
+          "number": "SH",
+          "xy": [
+            124.32,
+            162.0
+          ],
+          "size": [
+            1.0,
+            1.6
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "J10",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "r17 sourced footprint / outward-only adaptation",
+      "pads": [
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "9"
+      ],
+      "old": "Sourced:microSD_HC_Hirose_DM3AT-SF-PEJM5",
+      "new": "HandSolder:microSD_HC_Hirose_DM3AT-SF-PEJM5_J10_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            104.875,
+            129.625
+          ],
+          "size": [
+            0.7,
+            1.2
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            104.875,
+            130.725
+          ],
+          "size": [
+            0.7,
+            1.2
+          ]
+        },
+        {
+          "number": "3",
+          "xy": [
+            104.875,
+            131.825
+          ],
+          "size": [
+            0.7,
+            1.2
+          ]
+        },
+        {
+          "number": "4",
+          "xy": [
+            104.875,
+            132.925
+          ],
+          "size": [
+            0.7,
+            1.2
+          ]
+        },
+        {
+          "number": "5",
+          "xy": [
+            104.875,
+            134.025
+          ],
+          "size": [
+            0.7,
+            1.2
+          ]
+        },
+        {
+          "number": "6",
+          "xy": [
+            104.875,
+            135.125
+          ],
+          "size": [
+            0.7,
+            1.2
+          ]
+        },
+        {
+          "number": "7",
+          "xy": [
+            104.875,
+            136.225
+          ],
+          "size": [
+            0.7,
+            1.2
+          ]
+        },
+        {
+          "number": "8",
+          "xy": [
+            104.875,
+            137.325
+          ],
+          "size": [
+            0.7,
+            1.2
+          ]
+        },
+        {
+          "number": "9",
+          "xy": [
+            104.875,
+            138.275
+          ],
+          "size": [
+            0.7,
+            1.2
+          ]
+        },
+        {
+          "number": "10",
+          "xy": [
+            94.375,
+            139.225
+          ],
+          "size": [
+            1.0,
+            0.8
+          ]
+        },
+        {
+          "number": "SH",
+          "xy": [
+            90.225,
+            139.225
+          ],
+          "size": [
+            1.0,
+            2.8
+          ]
+        },
+        {
+          "number": "SH",
+          "xy": [
+            100.575,
+            139.225
+          ],
+          "size": [
+            1.0,
+            1.2
+          ]
+        },
+        {
+          "number": "SH",
+          "xy": [
+            104.875,
+            128.075
+          ],
+          "size": [
+            1.0,
+            1.2
+          ]
+        },
+        {
+          "number": "SH",
+          "xy": [
+            89.775,
+            125.725
+          ],
+          "size": [
+            1.3,
+            1.9
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            104.875,
+            129.625
+          ],
+          "size": [
+            0.7,
+            1.2
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            104.875,
+            130.725
+          ],
+          "size": [
+            0.7,
+            1.2
+          ]
+        },
+        {
+          "number": "3",
+          "xy": [
+            105.025,
+            131.825
+          ],
+          "size": [
+            0.7,
+            1.5
+          ]
+        },
+        {
+          "number": "4",
+          "xy": [
+            105.025,
+            132.925
+          ],
+          "size": [
+            0.7,
+            1.5
+          ]
+        },
+        {
+          "number": "5",
+          "xy": [
+            105.025,
+            134.025
+          ],
+          "size": [
+            0.7,
+            1.5
+          ]
+        },
+        {
+          "number": "6",
+          "xy": [
+            105.025,
+            135.125
+          ],
+          "size": [
+            0.7,
+            1.5
+          ]
+        },
+        {
+          "number": "7",
+          "xy": [
+            104.925,
+            136.225
+          ],
+          "size": [
+            0.7,
+            1.3
+          ]
+        },
+        {
+          "number": "8",
+          "xy": [
+            104.875,
+            137.325
+          ],
+          "size": [
+            0.7,
+            1.2
+          ]
+        },
+        {
+          "number": "9",
+          "xy": [
+            104.975,
+            138.275
+          ],
+          "size": [
+            0.7,
+            1.4
+          ]
+        },
+        {
+          "number": "10",
+          "xy": [
+            94.375,
+            139.225
+          ],
+          "size": [
+            1.0,
+            0.8
+          ]
+        },
+        {
+          "number": "SH",
+          "xy": [
+            90.225,
+            139.225
+          ],
+          "size": [
+            1.0,
+            2.8
+          ]
+        },
+        {
+          "number": "SH",
+          "xy": [
+            100.575,
+            139.225
+          ],
+          "size": [
+            1.0,
+            1.2
+          ]
+        },
+        {
+          "number": "SH",
+          "xy": [
+            104.875,
+            128.075
+          ],
+          "size": [
+            1.0,
+            1.2
+          ]
+        },
+        {
+          "number": "SH",
+          "xy": [
+            89.775,
+            125.725
+          ],
+          "size": [
+            1.3,
+            1.9
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "J11",
+      "status": "retained",
+      "method": "existing land retained: board edge",
+      "old": "Sourced:AUDIO-SMD_PJ-320D",
+      "new": "Sourced:AUDIO-SMD_PJ-320D"
+    },
+    {
+      "reference": "J2",
+      "status": "retained",
+      "method": "existing land retained: track ",
+      "old": "Sourced:Connector_JST_JST_PH_S2B-PH-SM4-TB_1x02-1MP_P2.00mm_Horizontal",
+      "new": "Sourced:Connector_JST_JST_PH_S2B-PH-SM4-TB_1x02-1MP_P2.00mm_Horizontal"
+    },
+    {
+      "reference": "J3",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "r17 sourced footprint / outward-only adaptation",
+      "pads": [
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8"
+      ],
+      "old": "Sourced:Connector_JST_JST_SH_SM08B-SRSS-TB_1x08-1MP_P1.00mm_Horizontal",
+      "new": "Connector_HandSolder:Connector_JST_JST_SH_SM08B-SRSS-TB_1x08_1MP_P1.00mm_Horizontal_J3_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            133.925,
+            133.199999
+          ],
+          "size": [
+            0.6,
+            1.55
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            133.925,
+            132.199999
+          ],
+          "size": [
+            0.6,
+            1.55
+          ]
+        },
+        {
+          "number": "3",
+          "xy": [
+            133.925,
+            131.199999
+          ],
+          "size": [
+            0.6,
+            1.55
+          ]
+        },
+        {
+          "number": "4",
+          "xy": [
+            133.925,
+            130.199999
+          ],
+          "size": [
+            0.6,
+            1.55
+          ]
+        },
+        {
+          "number": "5",
+          "xy": [
+            133.925,
+            129.199999
+          ],
+          "size": [
+            0.6,
+            1.55
+          ]
+        },
+        {
+          "number": "6",
+          "xy": [
+            133.925,
+            128.199999
+          ],
+          "size": [
+            0.6,
+            1.55
+          ]
+        },
+        {
+          "number": "7",
+          "xy": [
+            133.925,
+            127.199999
+          ],
+          "size": [
+            0.6,
+            1.55
+          ]
+        },
+        {
+          "number": "8",
+          "xy": [
+            133.925,
+            126.199999
+          ],
+          "size": [
+            0.6,
+            1.55
+          ]
+        },
+        {
+          "number": "MP",
+          "xy": [
+            137.8,
+            134.499999
+          ],
+          "size": [
+            1.2,
+            1.8
+          ]
+        },
+        {
+          "number": "MP",
+          "xy": [
+            137.8,
+            124.899999
+          ],
+          "size": [
+            1.2,
+            1.8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            133.925,
+            133.199999
+          ],
+          "size": [
+            0.6,
+            1.55
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            133.925,
+            132.199999
+          ],
+          "size": [
+            0.6,
+            1.55
+          ]
+        },
+        {
+          "number": "3",
+          "xy": [
+            133.875,
+            131.199999
+          ],
+          "size": [
+            0.6,
+            1.65
+          ]
+        },
+        {
+          "number": "4",
+          "xy": [
+            133.875,
+            130.199999
+          ],
+          "size": [
+            0.6,
+            1.65
+          ]
+        },
+        {
+          "number": "5",
+          "xy": [
+            133.85,
+            129.199999
+          ],
+          "size": [
+            0.6,
+            1.7
+          ]
+        },
+        {
+          "number": "6",
+          "xy": [
+            133.825,
+            128.199999
+          ],
+          "size": [
+            0.6,
+            1.75
+          ]
+        },
+        {
+          "number": "7",
+          "xy": [
+            133.775,
+            127.199999
+          ],
+          "size": [
+            0.6,
+            1.85
+          ]
+        },
+        {
+          "number": "8",
+          "xy": [
+            133.85,
+            126.199999
+          ],
+          "size": [
+            0.6,
+            1.7
+          ]
+        },
+        {
+          "number": "MP",
+          "xy": [
+            137.8,
+            134.499999
+          ],
+          "size": [
+            1.2,
+            1.8
+          ]
+        },
+        {
+          "number": "MP",
+          "xy": [
+            137.8,
+            124.899999
+          ],
+          "size": [
+            1.2,
+            1.8
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "Q1",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Package_TO_SOT_SMD/SOT-23_Handsoldering",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Package_TO_SOT_SMD_SOT-23",
+      "new": "HandSolder:SOT-23_Handsoldering_Q1_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            112.5625,
+            152.45
+          ],
+          "size": [
+            1.475,
+            0.6
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            112.5625,
+            150.55
+          ],
+          "size": [
+            1.475,
+            0.6
+          ]
+        },
+        {
+          "number": "3",
+          "xy": [
+            114.4375,
+            151.5
+          ],
+          "size": [
+            1.475,
+            0.6
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            112.3875,
+            152.45
+          ],
+          "size": [
+            1.825,
+            0.6
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            112.3875,
+            150.55
+          ],
+          "size": [
+            1.825,
+            0.6
+          ]
+        },
+        {
+          "number": "3",
+          "xy": [
+            114.4375,
+            151.5
+          ],
+          "size": [
+            1.475,
+            0.6
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "Q2",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Package_TO_SOT_SMD/SOT-23_Handsoldering",
+      "pads": [
+        "1",
+        "2",
+        "3"
+      ],
+      "old": "Sourced:Package_TO_SOT_SMD_SOT-23",
+      "new": "HandSolder:SOT-23_Handsoldering_Q2_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            137.45,
+            149.7375
+          ],
+          "size": [
+            1.475,
+            0.6
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            135.55,
+            149.7375
+          ],
+          "size": [
+            1.475,
+            0.6
+          ]
+        },
+        {
+          "number": "3",
+          "xy": [
+            136.5,
+            147.8625
+          ],
+          "size": [
+            1.475,
+            0.6
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            137.45,
+            149.8125
+          ],
+          "size": [
+            1.625,
+            0.6
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            135.55,
+            149.8625
+          ],
+          "size": [
+            1.725,
+            0.6
+          ]
+        },
+        {
+          "number": "3",
+          "xy": [
+            136.5,
+            147.6875
+          ],
+          "size": [
+            1.825,
+            0.6
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "Q3",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Package_TO_SOT_SMD/SOT-23_Handsoldering",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:SOT-23",
+      "new": "HandSolder:SOT-23_Handsoldering_Q3_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            125.2625,
+            126.75
+          ],
+          "size": [
+            1.475,
+            0.6
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            125.2625,
+            124.85
+          ],
+          "size": [
+            1.475,
+            0.6
+          ]
+        },
+        {
+          "number": "3",
+          "xy": [
+            127.1375,
+            125.8
+          ],
+          "size": [
+            1.475,
+            0.6
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            125.0875,
+            126.75
+          ],
+          "size": [
+            1.825,
+            0.6
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            125.0875,
+            124.85
+          ],
+          "size": [
+            1.825,
+            0.6
+          ]
+        },
+        {
+          "number": "3",
+          "xy": [
+            127.1375,
+            125.8
+          ],
+          "size": [
+            1.475,
+            0.6
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "Q4",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Package_TO_SOT_SMD/SOT-23_Handsoldering",
+      "pads": [
+        "3"
+      ],
+      "old": "Sourced:SOT-23",
+      "new": "HandSolder:SOT-23_Handsoldering_Q4_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            101.2625,
+            129.55
+          ],
+          "size": [
+            1.475,
+            0.6
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            101.2625,
+            131.45
+          ],
+          "size": [
+            1.475,
+            0.6
+          ]
+        },
+        {
+          "number": "3",
+          "xy": [
+            103.1375,
+            130.5
+          ],
+          "size": [
+            1.475,
+            0.6
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            101.2625,
+            129.55
+          ],
+          "size": [
+            1.475,
+            0.6
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            101.2625,
+            131.45
+          ],
+          "size": [
+            1.475,
+            0.6
+          ]
+        },
+        {
+          "number": "3",
+          "xy": [
+            103.3125,
+            130.5
+          ],
+          "size": [
+            1.825,
+            0.6
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "U1",
+      "status": "retained",
+      "method": "底面端子 / thermal / LGA land and paste unchanged",
+      "old": "Sourced:RF_Module_ESP32-S3-WROOM-1_JLC030",
+      "new": "Sourced:RF_Module_ESP32-S3-WROOM-1_JLC030"
+    },
+    {
+      "reference": "U10",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Package_TO_SOT_SMD/SOT-23-6_Handsoldering",
+      "pads": [
+        "1",
+        "2"
+      ],
+      "old": "Sourced:Package_TO_SOT_SMD_SOT-23-6",
+      "new": "HandSolder:SOT-23-6_Handsoldering_U10_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            125.2625,
+            121.25
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            125.2625,
+            122.2
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "3",
+          "xy": [
+            125.2625,
+            123.15
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "4",
+          "xy": [
+            127.5375,
+            123.15
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "5",
+          "xy": [
+            127.5375,
+            122.2
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "6",
+          "xy": [
+            127.5375,
+            121.25
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            125.0875,
+            121.25
+          ],
+          "size": [
+            1.675,
+            0.6
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            125.1625,
+            122.2
+          ],
+          "size": [
+            1.525,
+            0.6
+          ]
+        },
+        {
+          "number": "3",
+          "xy": [
+            125.2625,
+            123.15
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "4",
+          "xy": [
+            127.5375,
+            123.15
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "5",
+          "xy": [
+            127.5375,
+            122.2
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "6",
+          "xy": [
+            127.5375,
+            121.25
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "U11",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Package_TO_SOT_SMD/SOT-23-6_Handsoldering",
+      "pads": [
+        "4"
+      ],
+      "old": "Sourced:SOT-23-6",
+      "new": "HandSolder:SOT-23-6_Handsoldering_U11_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            123.3625,
+            114.45
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            123.3625,
+            113.5
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "3",
+          "xy": [
+            123.3625,
+            112.55
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "4",
+          "xy": [
+            125.6375,
+            112.55
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "5",
+          "xy": [
+            125.6375,
+            113.5
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "6",
+          "xy": [
+            125.6375,
+            114.45
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            123.3625,
+            114.45
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            123.3625,
+            113.5
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "3",
+          "xy": [
+            123.3625,
+            112.55
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "4",
+          "xy": [
+            125.7125,
+            112.55
+          ],
+          "size": [
+            1.475,
+            0.6
+          ]
+        },
+        {
+          "number": "5",
+          "xy": [
+            125.6375,
+            113.5
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "6",
+          "xy": [
+            125.6375,
+            114.45
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "U12",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Package_TO_SOT_SMD/SOT-23-6_Handsoldering",
+      "pads": [
+        "2",
+        "3",
+        "6"
+      ],
+      "old": "Sourced:SOT-23-6",
+      "new": "HandSolder:SOT-23-6_Handsoldering_U12_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            127.8625,
+            136.05
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            127.8625,
+            137.0
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "3",
+          "xy": [
+            127.8625,
+            137.95
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "4",
+          "xy": [
+            130.1375,
+            137.95
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "5",
+          "xy": [
+            130.1375,
+            137.0
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "6",
+          "xy": [
+            130.1375,
+            136.05
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            127.8625,
+            136.05
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            127.8125,
+            137.0
+          ],
+          "size": [
+            1.425,
+            0.6
+          ]
+        },
+        {
+          "number": "3",
+          "xy": [
+            127.6875,
+            137.95
+          ],
+          "size": [
+            1.675,
+            0.6
+          ]
+        },
+        {
+          "number": "4",
+          "xy": [
+            130.1375,
+            137.95
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "5",
+          "xy": [
+            130.1375,
+            137.0
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "6",
+          "xy": [
+            130.2375,
+            136.05
+          ],
+          "size": [
+            1.525,
+            0.6
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "U13",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Package_TO_SOT_SMD/SOT-23-6_Handsoldering",
+      "pads": [
+        "2",
+        "4",
+        "5",
+        "6"
+      ],
+      "old": "Sourced:SOT-23-6",
+      "new": "HandSolder:SOT-23-6_Handsoldering_U13_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            128.3625,
+            132.45
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            128.3625,
+            131.5
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "3",
+          "xy": [
+            128.3625,
+            130.55
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "4",
+          "xy": [
+            130.6375,
+            130.55
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "5",
+          "xy": [
+            130.6375,
+            131.5
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "6",
+          "xy": [
+            130.6375,
+            132.45
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            128.3625,
+            132.45
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            128.3125,
+            131.5
+          ],
+          "size": [
+            1.425,
+            0.6
+          ]
+        },
+        {
+          "number": "3",
+          "xy": [
+            128.3625,
+            130.55
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "4",
+          "xy": [
+            130.8125,
+            130.55
+          ],
+          "size": [
+            1.675,
+            0.6
+          ]
+        },
+        {
+          "number": "5",
+          "xy": [
+            130.8125,
+            131.5
+          ],
+          "size": [
+            1.675,
+            0.6
+          ]
+        },
+        {
+          "number": "6",
+          "xy": [
+            130.7375,
+            132.45
+          ],
+          "size": [
+            1.525,
+            0.6
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "U15",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Package_TO_SOT_SMD/SOT-23-8_Handsoldering",
+      "pads": [
+        "2",
+        "3",
+        "4",
+        "8"
+      ],
+      "old": "Sourced:SOT-23-8",
+      "new": "HandSolder:SOT-23-8_Handsoldering_U15_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            118.6625,
+            126.475
+          ],
+          "size": [
+            1.325,
+            0.5
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            118.6625,
+            125.825
+          ],
+          "size": [
+            1.325,
+            0.5
+          ]
+        },
+        {
+          "number": "3",
+          "xy": [
+            118.6625,
+            125.175
+          ],
+          "size": [
+            1.325,
+            0.5
+          ]
+        },
+        {
+          "number": "4",
+          "xy": [
+            118.6625,
+            124.525
+          ],
+          "size": [
+            1.325,
+            0.5
+          ]
+        },
+        {
+          "number": "5",
+          "xy": [
+            120.9375,
+            124.525
+          ],
+          "size": [
+            1.325,
+            0.5
+          ]
+        },
+        {
+          "number": "6",
+          "xy": [
+            120.9375,
+            125.175
+          ],
+          "size": [
+            1.325,
+            0.5
+          ]
+        },
+        {
+          "number": "7",
+          "xy": [
+            120.9375,
+            125.825
+          ],
+          "size": [
+            1.325,
+            0.5
+          ]
+        },
+        {
+          "number": "8",
+          "xy": [
+            120.9375,
+            126.475
+          ],
+          "size": [
+            1.325,
+            0.5
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            118.6625,
+            126.475
+          ],
+          "size": [
+            1.325,
+            0.5
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            118.4875,
+            125.825
+          ],
+          "size": [
+            1.675,
+            0.5
+          ]
+        },
+        {
+          "number": "3",
+          "xy": [
+            118.4875,
+            125.175
+          ],
+          "size": [
+            1.675,
+            0.5
+          ]
+        },
+        {
+          "number": "4",
+          "xy": [
+            118.4875,
+            124.525
+          ],
+          "size": [
+            1.675,
+            0.5
+          ]
+        },
+        {
+          "number": "5",
+          "xy": [
+            120.9375,
+            124.525
+          ],
+          "size": [
+            1.325,
+            0.5
+          ]
+        },
+        {
+          "number": "6",
+          "xy": [
+            120.9375,
+            125.175
+          ],
+          "size": [
+            1.325,
+            0.5
+          ]
+        },
+        {
+          "number": "7",
+          "xy": [
+            120.9375,
+            125.825
+          ],
+          "size": [
+            1.325,
+            0.5
+          ]
+        },
+        {
+          "number": "8",
+          "xy": [
+            121.0375,
+            126.475
+          ],
+          "size": [
+            1.525,
+            0.5
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "U16",
+      "status": "retained",
+      "method": "底面端子 / thermal / LGA land and paste unchanged",
+      "old": "Sourced:TQFN-28-1EP_5x5mm_P0.5mm_EP3.25x3.25mm",
+      "new": "Sourced:TQFN-28-1EP_5x5mm_P0.5mm_EP3.25x3.25mm"
+    },
+    {
+      "reference": "U17",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Package_TO_SOT_SMD/SOT-23_Handsoldering",
+      "pads": [
+        "1",
+        "2",
+        "3"
+      ],
+      "old": "Sourced:SOT-23",
+      "new": "HandSolder:SOT-23_Handsoldering_U17_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            116.85,
+            118.3375
+          ],
+          "size": [
+            1.475,
+            0.6
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            118.75,
+            118.3375
+          ],
+          "size": [
+            1.475,
+            0.6
+          ]
+        },
+        {
+          "number": "3",
+          "xy": [
+            117.8,
+            116.4625
+          ],
+          "size": [
+            1.475,
+            0.6
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            116.85,
+            118.3875
+          ],
+          "size": [
+            1.575,
+            0.6
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            118.75,
+            118.3875
+          ],
+          "size": [
+            1.575,
+            0.6
+          ]
+        },
+        {
+          "number": "3",
+          "xy": [
+            117.8,
+            116.4125
+          ],
+          "size": [
+            1.575,
+            0.6
+          ]
+        }
+      ]
+    },
+    {
+      "reference": "U3",
+      "status": "retained",
+      "method": "底面端子 / thermal / LGA land and paste unchanged",
+      "old": "Sourced:Package_DFN_QFN_VQFN-16-1EP_3x3mm_P0.5mm_EP1.6x1.6mm",
+      "new": "Sourced:Package_DFN_QFN_VQFN-16-1EP_3x3mm_P0.5mm_EP1.6x1.6mm"
+    },
+    {
+      "reference": "U4",
+      "status": "retained",
+      "method": "底面端子 / thermal / LGA land and paste unchanged",
+      "old": "Sourced:Package_SON_Texas_DRC0010J_ThermalVias_JLC030",
+      "new": "Sourced:Package_SON_Texas_DRC0010J_ThermalVias_JLC030"
+    },
+    {
+      "reference": "U6",
+      "status": "retained",
+      "method": "底面端子 / thermal / LGA land and paste unchanged",
+      "old": "Sourced:Package_LGA_LGA-12_2x2mm_P0.5mm",
+      "new": "Sourced:Package_LGA_LGA-12_2x2mm_P0.5mm"
+    },
+    {
+      "reference": "U7",
+      "status": "retained",
+      "method": "底面端子 / thermal / LGA land and paste unchanged",
+      "old": "Sourced:Package_DFN_QFN_TDFN-8-1EP_2x2mm_P0.5mm_EP0.8x1.2mm",
+      "new": "Sourced:Package_DFN_QFN_TDFN-8-1EP_2x2mm_P0.5mm_EP0.8x1.2mm"
+    },
+    {
+      "reference": "U8",
+      "status": "retained",
+      "method": "底面端子 / thermal / LGA land and paste unchanged",
+      "old": "Sourced:Package_DFN_QFN_TQFN-16-1EP_3x3mm_P0.5mm_EP1.23x1.23mm",
+      "new": "Sourced:Package_DFN_QFN_TQFN-16-1EP_3x3mm_P0.5mm_EP1.23x1.23mm"
+    },
+    {
+      "reference": "U9",
+      "status": "changed",
+      "method": "outward toe extension; original inner edge / width retained",
+      "source": "Package_TO_SOT_SMD/SOT-23-6_Handsoldering",
+      "pads": [
+        "1",
+        "2",
+        "3",
+        "6"
+      ],
+      "old": "Sourced:Package_TO_SOT_SMD_SOT-23-6",
+      "new": "HandSolder:SOT-23-6_Handsoldering_U9_HandSolder",
+      "before": [
+        {
+          "number": "1",
+          "xy": [
+            118.8625,
+            161.7
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            118.8625,
+            160.75
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "3",
+          "xy": [
+            118.8625,
+            159.8
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "4",
+          "xy": [
+            121.1375,
+            159.8
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "5",
+          "xy": [
+            121.1375,
+            160.75
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "6",
+          "xy": [
+            121.1375,
+            161.7
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        }
+      ],
+      "after": [
+        {
+          "number": "1",
+          "xy": [
+            118.6875,
+            161.7
+          ],
+          "size": [
+            1.675,
+            0.6
+          ]
+        },
+        {
+          "number": "2",
+          "xy": [
+            118.7875,
+            160.75
+          ],
+          "size": [
+            1.475,
+            0.6
+          ]
+        },
+        {
+          "number": "3",
+          "xy": [
+            118.7875,
+            159.8
+          ],
+          "size": [
+            1.475,
+            0.6
+          ]
+        },
+        {
+          "number": "4",
+          "xy": [
+            121.1375,
+            159.8
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "5",
+          "xy": [
+            121.1375,
+            160.75
+          ],
+          "size": [
+            1.325,
+            0.6
+          ]
+        },
+        {
+          "number": "6",
+          "xy": [
+            121.3125,
+            161.7
+          ],
+          "size": [
+            1.675,
+            0.6
+          ]
+        }
+      ]
+    }
+  ],
+  "final_check_counts": {
+    "drc": 0,
+    "unconnected": 0,
+    "schematic_parity": 0,
+    "erc": 0
+  }
+}
