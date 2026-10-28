@@ -37,7 +37,10 @@
     "authorized MAX98357A I2S speaker cue with independent mute and deadline guards",
     "shared AUX rail ownership and alert priority over LCD backlight",
     "single-worker shared SPI and optional capped microSD receipt copies",
-    "peripheral I/O reservation before deep sleep"
+    "peripheral I/O reservation before deep sleep",
+    "authenticated read-only frozen BLE NVS journal snapshots",
+    "operator-invoked private journal archives with actual record count and SHA256",
+    "journal usage observations and explicit non-settlement archive contracts"
   ],
   "existingHardware": {
     "status": "referenced-existing-assets",
@@ -80,7 +83,7 @@
   },
   "logSha256": null,
   "releaseSha": null,
-  "firmwareRevision": "keyring-0.4.0",
+  "firmwareRevision": "keyring-0.5.0",
   "publication": {
     "sourceCommit": "113b03c",
     "remoteBranch": "codex/keyring-namho",
@@ -88,6 +91,6 @@
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
     "latestLocalSourceCommit": "113b03c",
-    "latestCheckpoint": "firmware 0.4.0 optional LCD/audio/SD source pushed (unverified)"
+    "latestCheckpoint": "firmware 0.5.0 journal capture and Gateway archive source (unverified)"
   }
 }

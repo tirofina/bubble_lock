@@ -67,3 +67,16 @@ Bootstrap가 완료되어 AE(ty2), container 3개(ty3), binarySwitch(ty28) 모�
 ### 주변장치 소스 업로드 결과
 
 source commit `113b03c`를 만들고 `git push origin codex/keyring-namho`가 성공했다(`a0fb438..113b03c`). main·팀 역할 브랜치는 변경하지 않았다. 이 업로드는 코드 공개 checkpoint이며 빌드·동작 검증·공동 merge·최종 release 증거가 아니다. 최신 구현 상태의 sourceCommit도113b03c로 갱신한다.
+
+## 2026-10-28 — NVS journal 읽기·보관 checkpoint
+
+이전 goal 턴은 source113b03c와 기록365f4e7을 역할 브랜치에 push한 실제 progress였다. 이번 턴 시작에 계획서 역할/프로토콜/완료 기준과 AGENTS/자동 검증 금지 스킬을 읽었다. Git fetch 결과 main/CORE는 여전히91a281b이며 새 중앙 정산 계약은 없었다.
+
+- firmware keyring-0.5.0: MITM READ/WRITE journal extension0006을 작성했다.8byte selector는 volatile RAM 요청이며 NVS/출력을 수정하지 않는다. 유효한 NVS load에서만 frozen snapshot을 만들고 connection generation/120초 TTL에 묶었다. record는512byte 이내 두 READ 조각으로 전달하고 requestId/snapshotId/index/part를 맞춘다.
+- PREPARED의 readback/appliedUptimeMs를 null/INDETERMINATE로 유지한다. 과거 record bootId의 uptime을 capture boot의 시간으로 바꾸지 않는다. native CRC는 storage metadata이며 JSON 서명으로 취급하지 않는다. 관측의 journal usage는 NVS 오류 때 null이고 선택 필드 생략 가능성을 문서화했다.
+- Gateway capture helper와 BleFleet.capture_journal을 추가했다. per-device command lock으로 직렬화하고 identity/boot/snapshot/조각/record 수·ID 유일성/phase·시각·fence를 판정한다. 중앙 성공을 합성하지 않는다.
+- Linux/BlueZ 수동 bubble-keyring-journal CLI를 작성했다. daemon과 같은 DB lock으로 협조하고 기존 bond를 사용하며 ID/revision을 대조한다. output은 새 owner-only 폴더·파일만 생성하고 JSONL과 SHA256/실제 수/not-settled manifest를 기록하는 소스다. 실제 도구 실행·보관 파일 생성은 하지 않았다.
+- JSON Schema4개와 JOURNAL_RETENTION.md, 인수인계·설정을 추가/수정했다. NVS erase/compact/reset API는 추가하지 않았다. 이 단계는 실제 중앙 정산·공간 회수를 대체하지 않으며32개 한계는 남는다. 중앙의 영속 command ID·checkpoint/epoch·settlement receipt·crash 복구 계약이 필요하다.
+- 테스트/린트/정적분석/build/flash/장비·COM/CLI 실행/앱·서비스·컨테이너 재시작/검증용 데이터 생성은 모두 미실행이다. 전체 goal의 실물·통합·release 증거는 미완료다.
+
+다음 작업은 중앙 정산 및 INTEGRATION API 계약이 생기면 연동하고, 독립적으로 남은 현장 운용·재연결·전원 상태 전달을 구현하는 것이다. 이 checkpoint의 commit/push 결과는 실제 Git 출력으로 후속 기록한다.

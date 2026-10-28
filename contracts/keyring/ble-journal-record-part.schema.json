@@ -1,0 +1,273 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:privacy-bubble:keyring:0.1.0:ble-journal-record-part",
+  "title": "KEYRING ble-journal-record-part",
+  "description": "DOC-REV 2.0.0 KEYRING extension candidate; implemented, unverified. Capture is not settlement or permission to erase. Cross-field time/count/order checks also apply at runtime.",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
+    "requestId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}$"
+    },
+    "status": {
+      "const": "ok"
+    },
+    "type": {
+      "const": "record"
+    },
+    "snapshotId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$"
+    },
+    "index": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 31
+    },
+    "part": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "parts": {
+      "type": "integer",
+      "const": 2
+    },
+    "data": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "version",
+    "requestId",
+    "status",
+    "type",
+    "snapshotId",
+    "index",
+    "part",
+    "parts",
+    "data"
+  ],
+  "additionalProperties": false,
+  "oneOf": [
+    {
+      "properties": {
+        "part": {
+          "const": 0
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "commandId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+            },
+            "payloadHash": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "bootId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+            },
+            "ownershipEpoch": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "grantRevision": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2147483647
+            }
+          },
+          "required": [
+            "commandId",
+            "payloadHash",
+            "bootId",
+            "ownershipEpoch",
+            "grantRevision"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "properties": {
+        "part": {
+          "const": 1
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "phase": {
+              "enum": [
+                "prepared",
+                "completed"
+              ]
+            },
+            "ackCode": {
+              "enum": [
+                "APPLIED",
+                "READBACK_MISMATCH",
+                "INDETERMINATE"
+              ]
+            },
+            "desiredState": {
+              "type": "boolean"
+            },
+            "readback": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "acceptedUptimeMs": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "appliedUptimeMs": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "storageCrc32": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}$"
+            }
+          },
+          "required": [
+            "phase",
+            "ackCode",
+            "desiredState",
+            "readback",
+            "acceptedUptimeMs",
+            "appliedUptimeMs",
+            "storageCrc32"
+          ],
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "phase": {
+                    "const": "prepared"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "ackCode": {
+                    "const": "INDETERMINATE"
+                  },
+                  "readback": {
+                    "type": "null"
+                  },
+                  "appliedUptimeMs": {
+                    "type": "null"
+                  }
+                }
+              },
+              "else": {
+                "properties": {
+                  "ackCode": {
+                    "enum": [
+                      "APPLIED",
+                      "READBACK_MISMATCH"
+                    ]
+                  },
+                  "readback": {
+                    "type": "boolean"
+                  },
+                  "appliedUptimeMs": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "ackCode": {
+                    "const": "APPLIED"
+                  }
+                }
+              },
+              "then": {
+                "anyOf": [
+                  {
+                    "properties": {
+                      "desiredState": {
+                        "const": true
+                      },
+                      "readback": {
+                        "const": true
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "desiredState": {
+                        "const": false
+                      },
+                      "readback": {
+                        "const": false
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "ackCode": {
+                    "const": "READBACK_MISMATCH"
+                  }
+                }
+              },
+              "then": {
+                "anyOf": [
+                  {
+                    "properties": {
+                      "desiredState": {
+                        "const": true
+                      },
+                      "readback": {
+                        "const": false
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "desiredState": {
+                        "const": false
+                      },
+                      "readback": {
+                        "const": true
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

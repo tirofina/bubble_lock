@@ -12,6 +12,7 @@ CORE v1 canonical contract는 인수했다. 아래 KEYRING identity·receipt 확
 - Command WRITE with response `7f8a0003-4b6e-4f4e-9b0a-505249564255`
 - Receipt READ/NOTIFY `7f8a0004-4b6e-4f4e-9b0a-505249564255`
 - Identity READ `7f8a0005-4b6e-4f4e-9b0a-505249564255` (KEYRING extension)
+- Journal selector WRITE / snapshot READ `7f8a0006-4b6e-4f4e-9b0a-505249564255` (keyring-0.5.0 KEYRING extension). legacy profile의 추가 UUID는 `8b8f0006-8e7a-4f36-a8c2-1c9b5d620001`. 기존 MITM 권한과 volatile selector만 사용하며 erase/actuator 명령이 아니다. [journal 보관·정산 계약](JOURNAL_RETENTION.md)에 binary8byte 요청, frozen snapshot, 두 조각 record, 오류와 TTL을 정의했다.
 - 옛 UUID는 명시적 `keyring-v01` profile에서만 사용한다. [CORE 연동·미합의 항목](CORE_INTEGRATION.md)을 함께 적용한다.
 - UTF-8 JSON + LF. WRITE/NOTIFY는 기본 ATT MTU 23에서도 동작하도록 최대 20 byte fragment. 한 프레임 최대 4096 byte, 조각 사이 timeout 5초. READ는 마지막 전체 JSON(최대 512 byte identity/observation, receipt는 NOTIFY 우선). command write는 한 장치당 직렬화.
 - Identity: `version:1, deviceId, firmwareRevision, boardRevision, bootId`.
@@ -20,6 +21,7 @@ CORE v1 canonical contract는 인수했다. 아래 KEYRING identity·receipt 확
 - Command: `version:1, type:"command", deviceId, commandId, desiredState:{state:boolean}, grantRevision`(양의 정수), `ownershipEpoch`(0 이상), `payloadHash`(원래 중앙 command의 canonical JSON SHA256), `remainingMs`(1..30000).
 - firmware keyring-0.4.0은 선택형 주변장치의 sensorValues.audio/display/sd/sdDropped를 추가한다. display는 write-only 소프트웨어 구성 상태(`st7789_unverified`/`jd9853_unverified`)이며 실물 검출 결과가 아니다. SD는 best-effort receipt 복사이고 NVS journal·BLE ackCode 계약을 바꾸지 않는다. 512byte 제한에서 선택 상태 필드가 생략될 수 있다. [주변장치 설정과 남은 확인](firmware/PERIPHERALS.md)을 참조한다.
 - Receipt: `version:1, deviceId, bootId, commandId, payloadHash, ackCode, acceptedUptimeMs, appliedUptimeMs`(null 가능), `readback:{state:boolean}`, `firmwareRevision`.
+- keyring-0.5.0의 선택형 sensorValues.journalUsed/journalPrepared/journalCapacity는 장치 NVS 사용량이다. NVS 오류 때 사용량은 null이고 payload 제한으로 생략될 수 있다. 파일 보관은 중앙 정산·NVS 공간 반환과 별개다.
 - ackCode: APPLIED, DUPLICATE, REJECTED_EPOCH, REJECTED_GRANT, EXPIRED, CONFLICT, INVALID, JOURNAL_FULL, STORAGE_ERROR, INDETERMINATE, READBACK_MISMATCH. 명령 ID의 같은 payload는 저장된 결과를 반환하고 다른 hash는 CONFLICT. 장치 journal은 bounded, 가득 차면 임의로 지우지 않고 JOURNAL_FULL. 저장 중 전원 차단은 재실행하지 않고 INDETERMINATE로 반환.
 - 암호화·MITM·bonding과 명시적으로 설정한 장치별 passkey를 사용한다. 설정 없는 firmware는 명령을 허용하지 않는다. 보드는 passkey를 표시할 실제 UI가 없으므로 라벨/안전한 등록 경로로 배포해야 한다.
 - binarySwitch의 `state`는 현재 GPIO 진동 출력의 on/off이다. ON은 최대 1000ms 또는 남은 기한 중 작은 값 후 자동 OFF되며 관측에 반영된다. readback은 적용 시점의 GPIO 수준 확인이며 모터의 물리적 작동을 측정했다는 뜻이 아니다. 배터리·센서 I2C 실패는 null/상태값으로 표시한다.

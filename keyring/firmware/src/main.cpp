@@ -21,13 +21,14 @@
 #include "peripherals.h"
 
 namespace {
-constexpr char FirmwareRevision[] = "keyring-0.4.0";
+constexpr char FirmwareRevision[] = "keyring-0.5.0";
 #if defined(KEYRING_LEGACY_GATT) && KEYRING_LEGACY_GATT
 constexpr char ServiceUuid[] = "8b8f0001-8e7a-4f36-a8c2-1c9b5d620001";
 constexpr char IdentityUuid[] = "8b8f0002-8e7a-4f36-a8c2-1c9b5d620001";
 constexpr char ObservationUuid[] = "8b8f0003-8e7a-4f36-a8c2-1c9b5d620001";
 constexpr char CommandUuid[] = "8b8f0004-8e7a-4f36-a8c2-1c9b5d620001";
 constexpr char ReceiptUuid[] = "8b8f0005-8e7a-4f36-a8c2-1c9b5d620001";
+constexpr char JournalUuid[] = "8b8f0006-8e7a-4f36-a8c2-1c9b5d620001";
 #else
 // DOC-REV 2.0.0 / pc-mobius/contracts/raspberrypi-gateway.v1.json.
 constexpr char ServiceUuid[] = "7f8a0001-4b6e-4f4e-9b0a-505249564255";
@@ -35,6 +36,7 @@ constexpr char ObservationUuid[] = "7f8a0002-4b6e-4f4e-9b0a-505249564255";
 constexpr char CommandUuid[] = "7f8a0003-4b6e-4f4e-9b0a-505249564255";
 constexpr char ReceiptUuid[] = "7f8a0004-4b6e-4f4e-9b0a-505249564255";
 constexpr char IdentityUuid[] = "7f8a0005-4b6e-4f4e-9b0a-505249564255";
+constexpr char JournalUuid[] = "7f8a0006-4b6e-4f4e-9b0a-505249564255";
 #endif
 constexpr size_t MaxFrame = 4096;
 constexpr unsigned JournalSlots = 32;
@@ -46,7 +48,9 @@ uint64_t uptime() { return static_cast<uint64_t>(esp_timer_get_time()) / 1000; }
 char deviceId[65] = {}, bootId[33] = {};
 BLEServer *server = nullptr;
 BLECharacteristic *identityChar = nullptr, *observationChar = nullptr, *receiptChar = nullptr;
+BLECharacteristic *journalChar = nullptr;
 QueueHandle_t commandQueue = nullptr;
+QueueHandle_t journalRequests = nullptr;
 Preferences nvs;
 bool storageHealthy = false, provisioned = false, radioSleepEnabled = false;
 volatile bool connected = false, authenticated = false, disconnected = false;
@@ -81,6 +85,15 @@ struct Record {
 };
 Record journal[JournalSlots] = {};
 bool occupied[JournalSlots] = {};
+struct JournalRequest { uint32_t id, generation; uint8_t operation, index, part; };
+struct JournalCapture {
+  Record records[JournalSlots];
+  char id[33];
+  uint64_t capturedAt;
+  uint32_t generation, epoch, grant;
+  uint8_t count, prepared;
+  bool active;
+} journalCapture = {};
 
 uint32_t crc32(const void *data, size_t size) {
   auto p = static_cast<const uint8_t *>(data);
@@ -259,6 +272,14 @@ void publishObservation() {
   } else values["accelerationG"] = nullptr;
   values["fault"] = digitalRead(board::MainFaultN) == LOW;
   values["journal"] = storageHealthy ? "ready" : "error";
+  unsigned journalUsed = 0, journalPrepared = 0;
+  for (unsigned slot = 0; slot < JournalSlots; ++slot) if (occupied[slot]) {
+    ++journalUsed; if (journal[slot].phase == Prepared) ++journalPrepared;
+  }
+  // Counts are meaningful only after the entire NVS load succeeded.
+  if (storageHealthy) { values["journalUsed"] = journalUsed; values["journalPrepared"] = journalPrepared; }
+  else { values["journalUsed"] = nullptr; values["journalPrepared"] = nullptr; }
+  values["journalCapacity"] = JournalSlots;
   values["motion"] = motion.ready() ? "ready" : "unavailable";
   values["motionEvents"] = motion.events();
   values["wake"] = powerState::wakeCause();
@@ -413,6 +434,86 @@ void processCommand(const Frame &frame) {
   observationDirty = true;
 }
 
+void processJournalRequest(const JournalRequest &request) {
+  if (!connected || !authenticated || request.generation != connectionGeneration) return;
+  StaticJsonDocument<768> doc;
+  char requestId[9]; snprintf(requestId, sizeof(requestId), "%08lx", static_cast<unsigned long>(request.id));
+  doc["version"] = 1; doc["requestId"] = requestId; doc["status"] = "ok";
+  if (request.operation == 1) {
+    journalCapture.active = false;
+    if (!storageHealthy) doc["status"] = "storage_error";
+    else if (motorStopAt || readState() || audio.busy() || uxQueueMessagesWaiting(commandQueue)) doc["status"] = "busy";
+    else {
+      journalCapture.count = journalCapture.prepared = 0;
+      for (unsigned slot = 0; slot < JournalSlots; ++slot) if (occupied[slot]) {
+        journalCapture.records[journalCapture.count++] = journal[slot];
+        if (journal[slot].phase == Prepared) ++journalCapture.prepared;
+      }
+      snprintf(journalCapture.id, sizeof(journalCapture.id), "%08lx%08lx%08lx%08lx",
+          static_cast<unsigned long>(esp_random()), static_cast<unsigned long>(esp_random()),
+          static_cast<unsigned long>(esp_random()), static_cast<unsigned long>(esp_random()));
+      journalCapture.capturedAt = uptime(); journalCapture.generation = request.generation;
+      journalCapture.epoch = maxEpoch; journalCapture.grant = maxGrant;
+      journalCapture.active = true;
+      doc["type"] = "manifest"; doc["snapshotId"] = journalCapture.id;
+      doc["deviceId"] = deviceId; doc["bootId"] = bootId;
+      doc["capturedUptimeMs"] = journalCapture.capturedAt;
+      doc["recordCount"] = journalCapture.count; doc["preparedCount"] = journalCapture.prepared;
+      doc["capacity"] = JournalSlots; doc["format"] = 1;
+      doc["maxEpoch"] = journalCapture.epoch; doc["maxGrant"] = journalCapture.grant;
+    }
+  } else if (!journalCapture.active || journalCapture.generation != request.generation ||
+             uptime() - journalCapture.capturedAt >= 120000) {
+    journalCapture.active = false; doc["status"] = "expired";
+  } else if (request.operation == 3) {
+    memset(&journalCapture, 0, sizeof(journalCapture));
+    doc["type"] = "closed";
+  } else if (request.index >= journalCapture.count) doc["status"] = "invalid_index";
+  else {
+    const Record &r = journalCapture.records[request.index];
+    doc["type"] = "record"; doc["snapshotId"] = journalCapture.id;
+    doc["index"] = request.index; doc["part"] = request.part; doc["parts"] = 2;
+    JsonObject data = doc.createNestedObject("data");
+    if (request.part == 0) {
+      data["commandId"] = r.commandId; data["payloadHash"] = r.hash; data["bootId"] = r.bootId;
+      data["ownershipEpoch"] = r.epoch; data["grantRevision"] = r.grant;
+    } else {
+      data["phase"] = r.phase == Prepared ? "prepared" : "completed";
+      data["ackCode"] = r.phase == Prepared ? "INDETERMINATE" :
+          r.result == static_cast<uint8_t>(Result::Applied) ? "APPLIED" : "READBACK_MISMATCH";
+      data["desiredState"] = r.desired != 0;
+      if (r.phase == Completed) data["readback"] = r.readback != 0; else data["readback"] = nullptr;
+      data["acceptedUptimeMs"] = r.acceptedAt;
+      if (r.phase == Completed) data["appliedUptimeMs"] = r.appliedAt; else data["appliedUptimeMs"] = nullptr;
+      char crc[9]; snprintf(crc, sizeof(crc), "%08lx", static_cast<unsigned long>(r.crc));
+      data["storageCrc32"] = crc;
+    }
+  }
+  std::string frame = jsonText(doc);
+  if (doc.overflowed() || frame.size() > 512) {
+    doc.clear(); doc["version"] = 1; doc["requestId"] = requestId; doc["status"] = "overflow";
+    frame = jsonText(doc);
+  }
+  journalChar->setValue(frame);
+}
+
+class JournalCallbacks : public BLECharacteristicCallbacks {
+  void onWrite(BLECharacteristic *characteristic) override {
+    if (!connected || !authenticated || !provisioned) return;
+    const std::string bytes = characteristic->getValue();
+    if (bytes.size() != 8 || static_cast<uint8_t>(bytes[0]) != 1) return;
+    const uint8_t op = bytes[1], index = bytes[6], part = bytes[7];
+    if (op < 1 || op > 3 || part > 1 || index >= JournalSlots ||
+        (op != 2 && (index || part))) return;
+    JournalRequest request = {};
+    request.operation = op; request.index = index; request.part = part;
+    request.generation = connectionGeneration;
+    for (unsigned byte = 0; byte < 4; ++byte) request.id |= static_cast<uint32_t>(static_cast<uint8_t>(bytes[2 + byte])) << (byte * 8);
+    // Selector writes affect only volatile capture state; never NVS or an output.
+    xQueueSend(journalRequests, &request, 0);
+  }
+};
+
 class CommandCallbacks : public BLECharacteristicCallbacks {
   std::string partial;
   Frame assembled = {}; // BLE task stack is too small for a 4KiB automatic frame.
@@ -494,10 +595,14 @@ void initBle() {
   observationChar = service->createCharacteristic(ObservationUuid, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
   receiptChar = service->createCharacteristic(ReceiptUuid, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
   BLECharacteristic *command = service->createCharacteristic(CommandUuid, BLECharacteristic::PROPERTY_WRITE);
+  journalChar = service->createCharacteristic(JournalUuid, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
   identityChar->setAccessPermissions(ESP_GATT_PERM_READ_ENC_MITM);
   observationChar->setAccessPermissions(ESP_GATT_PERM_READ_ENC_MITM);
   receiptChar->setAccessPermissions(ESP_GATT_PERM_READ_ENC_MITM);
   command->setAccessPermissions(ESP_GATT_PERM_WRITE_ENC_MITM);
+  journalChar->setAccessPermissions(ESP_GATT_PERM_READ_ENC_MITM | ESP_GATT_PERM_WRITE_ENC_MITM);
+  journalChar->setCallbacks(new JournalCallbacks());
+  journalChar->setValue(std::string());
   for (BLECharacteristic *characteristic : {observationChar, receiptChar}) {
     auto cccd = new BLE2902();
     cccd->setAccessPermissions(ESP_GATT_PERM_READ_ENC_MITM | ESP_GATT_PERM_WRITE_ENC_MITM);
@@ -521,7 +626,8 @@ void initBle() {
 namespace {
 void considerSleep(uint64_t now) {
   if (!powerState::idle(now) || connected || !storageHealthy || !motion.ready() ||
-      motorStopAt || readState() || audio.busy() || auxRail::busy() || peripherals.busy() || uxQueueMessagesWaiting(commandQueue) != 0 ||
+      motorStopAt || readState() || audio.busy() || auxRail::busy() || peripherals.busy() ||
+      uxQueueMessagesWaiting(commandQueue) != 0 || uxQueueMessagesWaiting(journalRequests) != 0 ||
       !receiptTx.active.empty() || !receiptTx.pending.empty() ||
       digitalRead(board::MainFaultN) == LOW) return;
   if (!motion.clearForSleep()) {
@@ -569,7 +675,8 @@ void setup() {
   timerArgs.callback = motorExpired; timerArgs.name = "motor-stop";
   if (esp_timer_create(&timerArgs, &motorTimer) != ESP_OK) motorTimer = nullptr;
   commandQueue = xQueueCreate(4, sizeof(Frame));
-  provisioned = KEYRING_PASSKEY >= 100000 && KEYRING_PASSKEY <= 999999 && identifier(deviceId) && commandQueue;
+  journalRequests = xQueueCreate(4, sizeof(JournalRequest));
+  provisioned = KEYRING_PASSKEY >= 100000 && KEYRING_PASSKEY <= 999999 && identifier(deviceId) && commandQueue && journalRequests;
   if (!provisioned) {
     Serial.println("KEYRING LOCKED: set a per-device passkey and valid identity before enabling BLE.");
     return;
@@ -588,6 +695,8 @@ void loop() {
   if (disconnected) {
     disconnected = false; stopMotor(); observationTx.clear(); receiptTx.clear();
     xQueueReset(commandQueue); BLEDevice::startAdvertising();
+    xQueueReset(journalRequests); memset(&journalCapture, 0, sizeof(journalCapture));
+    journalChar->setValue(std::string());
   }
   if (motorTimerFired || (motorStopAt && now >= motorStopAt) ||
       (!authenticated && readState()) || (digitalRead(board::MainFaultN) == LOW && readState())) {
@@ -601,6 +710,12 @@ void loop() {
   // Preserve every receipt notification frame. A new command waits until its predecessor drains.
   if (receiptTx.active.empty() && receiptTx.pending.empty()) {
     if (xQueueReceive(commandQueue, &processingFrame, 0) == pdTRUE) processCommand(processingFrame);
+  }
+  JournalRequest journalRequest = {};
+  if (xQueueReceive(journalRequests, &journalRequest, 0) == pdTRUE) processJournalRequest(journalRequest);
+  if (journalCapture.active && uptime() - journalCapture.capturedAt >= 120000) {
+    memset(&journalCapture, 0, sizeof(journalCapture));
+    journalChar->setValue(std::string());
   }
   if (now - lastObservation >= board::ObserveMs) { sampleSensors(); observationDirty = true; }
   if (observationDirty) publishObservation();

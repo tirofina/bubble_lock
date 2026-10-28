@@ -2,7 +2,7 @@
 
 담당: 남호 / KEYRING · 기준 문서: `PROJECT_IMPLEMENTATION_RUBRIC_PLAN.md` · DOC-REV: `2.0.0`
 
-이 디렉터리는 키링 펌웨어와 Raspberry Pi Gateway가 공유하는 JSON Schema 2020-12를 담는다. PC-MOBIUS의 canonical contract를 아직 받지 못한 상태에서 작성한 **통합 제안**이다. API 주소, MQTT topic, oneM2M RVI와 receipt 수용 규칙은 중앙 담당자와 같은 revision으로 확정해야 한다.
+이 디렉터리는 키링 펌웨어와 Raspberry Pi Gateway가 공유하는 JSON Schema 2020-12를 담는다. CORE v1 canonical contract를 인수했으며 KEYRING 확장과 INTEGRATION API는 여전히 중앙 합의가 필요한 **통합 제안**이다. API 주소, MQTT topic, oneM2M RVI와 receipt 수용 규칙은 중앙 담당자와 같은 revision으로 확정해야 한다.
 
 | 파일 | 보내는 쪽 → 받는 쪽 | 내용 |
 |---|---|---|
@@ -16,6 +16,10 @@
 | [observation.schema.json](observation.schema.json) | Gateway → CSE | Gateway 시각·실측 RSSI를 결합한 관측 |
 | [receipt.schema.json](receipt.schema.json) | Gateway → CSE | 정산 상태, 명령 hash, 시각의 근거, 장치 결과 |
 | [health.schema.json](health.schema.json) | Gateway → CSE | 실행 프로세스, credential, queue 및 연결 상태 |
+| [ble-journal-manifest.schema.json](ble-journal-manifest.schema.json) | 장치 → Gateway | frozen NVS journal manifest, KEYRING 확장 |
+| [ble-journal-record-part.schema.json](ble-journal-record-part.schema.json) | 장치 → Gateway | snapshot에 묶인 READ record 조각 |
+| [journal-record.schema.json](journal-record.schema.json) | Gateway 보관 | 조립한 PREPARED/COMPLETED record |
+| [journal-archive.schema.json](journal-archive.schema.json) | Gateway 보관 | JSONL byte 수·hash·미정산 상태 manifest |
 
 각 파일은 외부 `$ref` 없이 사용할 수 있다. top-level 속성은 모두 필수이며, 미확인 값에는 스키마에서 허용하는 `null`을 사용한다. `additionalProperties:false`를 기본으로 두되 센서 값과 장치별 health 확장 필드는 별도로 허용한다. JSON Schema 라이브러리에서 `format` 검사를 기본적으로 생략하는 경우에는 `date-time` 검사기를 함께 설정해야 한다.
 

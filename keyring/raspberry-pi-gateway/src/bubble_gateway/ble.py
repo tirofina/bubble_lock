@@ -413,6 +413,23 @@ class BleFleet:
                     peer.pending = None
                     peer.pending_command = peer.pending_hash = None
 
+    async def capture_journal(self, device_id: str) -> dict[str, Any]:
+        """Explicit read-only maintenance capture, serialized with device commands."""
+        from .journal_export import capture
+        peer = self._peers.get(device_id)
+        if peer is None:
+            raise BleUnavailable("device is not enrolled")
+        async with peer.lock:
+            client = peer.client
+            identity = dict(peer.identity)
+            if client is None or not peer.ready.is_set():
+                raise BleUnavailable("device has no authenticated session")
+            result = await capture(client, identity, self.config.ble_gatt_profile)
+            current = _object(await client.read_gatt_char(self.identity_uuid), 512)
+            if current != identity or peer.client is not client or not peer.ready.is_set():
+                raise BleUnavailable("device session changed during journal capture")
+            return result
+
     def snapshot(self) -> list[dict[str, Any]]:
         return [{"deviceId": peer.device_id, "connected": peer.ready.is_set(),
                  "firmwareRevision": peer.identity.get("firmwareRevision"),

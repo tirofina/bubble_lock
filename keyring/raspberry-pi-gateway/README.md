@@ -55,6 +55,8 @@ sudoedit /etc/privacy-bubble/gateway.env
 
 ## BlueZ 등록
 
+keyring-0.5.0 장치의 NVS journal을 수동으로 보관하는 `bubble-keyring-journal` 명령도 제공한다. 실제 장치 ID/revision을 대조하고 새 private 폴더에만 기록한다. 자동 실행·NVS 삭제·공간 회수는 없다. [사용 절차와 정산 미확정 항목](../JOURNAL_RETENTION.md)을 따른다. 이번 작업에서는 CLI·장비·빌드·검증을 실행하지 않았다.
+
 서비스 전용 그룹에 BlueZ D-Bus 접근 권한을 부여한다. 일반 사용자 전체에 pairing 권한을 열거나 자동으로 모든 passkey를 승인하는 agent를 추가하지 않는다.
 
 ```sh
