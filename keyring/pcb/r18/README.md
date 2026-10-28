@@ -23,7 +23,7 @@ KiCad 10에서 [privacy_bubble.kicad_pro](privacy_bubble.kicad_pro)를 연다. �
 
 inventory hash는 복사한 byte의 식별 정보다. 분석·build·전기적 검증 결과가 아니다. `.gitattributes`로 이 폴더의 newline 변환을 막았다. 목록에는 원본 복사 파일만 기록하며 이 README 등 새 안내 문서는 제외한다.
 
-원본 README·stackup·BOM 안의 verified/DRC/ERC/simulation/구매 정보는 기존 저자의 과거 기록이다. 이번에 재현·검증·갱신하지 않았으며 firmware keyring-0.5.0의 release 증거로 승격하지 않는다. analysis/Checks·거버·드릴·ZIP·editor 상태·중복 미사용 library는 가져오지 않았고 원래 작업공간에 보존했다.
+원본 README·stackup·BOM 안의 verified/DRC/ERC/simulation/구매 정보는 기존 저자의 과거 기록이다. 이번에 재현·검증·갱신하지 않았으며 현재 firmware의 release 증거로 승격하지 않는다. analysis/Checks·거버·드릴·ZIP·editor 상태·중복 미사용 library는 가져오지 않았고 원래 작업공간에 보존했다.
 
 BOM은 기존 export이며 현재 가격·재고·공급사 번호를 확인한 표가 아니다. GPIO prose 일부가 오래됐으므로 [핀 정정·펌웨어 연결](../HARDWARE_FIRMWARE_MAP.md)을 먼저 따른다. 부품 재선정·제조 발주를 하지 않았다.
 

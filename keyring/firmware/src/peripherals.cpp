@@ -172,6 +172,12 @@ void Peripherals::draw(const KeyringScreen &screen) {
   display.setCursor(8, 168); display.setTextColor(screen.fault || !screen.journal ? Red : White);
   display.print(screen.fault ? "POWER FAULT" : !screen.journal ? "JOURNAL ERROR" : "Journal: READY");
   display.setTextColor(White); display.setCursor(8, 194); display.print("SD: "); display.print(sdStatus());
+  display.setCursor(8, 220); display.print("Supply: ");
+  const uint64_t currentTime = nowMs();
+  const bool freshSupply = screen.supplyValid && currentTime >= screen.supplyReadAt &&
+      currentTime - screen.supplyReadAt <= static_cast<uint64_t>(KEYRING_POWER_SAMPLE_MS) * 2 + 100;
+  if (freshSupply) { display.print(screen.supplyCurrentMa, 1); display.print(" mA"); }
+  else display.print("--");
 #else
   (void)screen;
 #endif

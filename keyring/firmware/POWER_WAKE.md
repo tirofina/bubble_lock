@@ -1,6 +1,6 @@
 # r18 저전력·깨우기 구현
 
-ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.4.0 · 상태 implemented / unverified.
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.6.0 · 상태 implemented / unverified.
 
 ## 설정과 가용성
 
@@ -41,7 +41,7 @@ GPIO 출력은 진동/AUX/충전모드 EN을 LOW, amp mute/백라이트 OFF/CS�
 
 `sensorValues`에 motion 상태·부팅 중 누적 motionEvents·wake(cold/motion/button/timer/other)·wakePins·power 상태를 추가했다. 버튼으로 부팅했지만 debounce 전에 손을 떼는 경우에도 RTC wakePins는 별도로 남는다. 이 값은 사용자 승인·보호자 grant를 생성하지 않는다. 외부 서버나 파일에 추가 원시 기록을 자동 생성하지 않는다.
 
-512byte를 넘는 일반 관측은 accelerationG·voltage·중복 상태 설명을 우선 생략하고 truncated=true를 표시한다. 측정 가능한 배터리 값은 유지한다. 그래도 한도를 넘으면 기존 최소 sensorValues 상태만 사용한다. mandatory top-level 필드·framing·버전1은 유지한다.
+keyring-0.6.0은 detail별로 센서/INA219/health를 순환한다. INA219 변환 중에는 절전하지 않고 진입 전 power-down readback을 요구한다. [계측/전송 정책](POWER_MONITOR.md)을 함께 따른다. 512byte를 넘는 일반 관측은 accelerationG·voltage·중복 상태 설명을 우선 생략하고 truncated=true를 표시한다. 측정 가능한 배터리 값은 유지한다. 그래도 한도를 넘으면 기존 최소 sensorValues 상태만 사용한다. mandatory top-level 필드·framing·버전1은 유지한다.
 
 ## 인수 항목 — 전부 미실행
 

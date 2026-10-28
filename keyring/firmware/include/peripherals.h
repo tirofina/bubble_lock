@@ -9,6 +9,9 @@ struct KeyringScreen {
   bool linked = false, authenticated = false, batteryValid = false;
   bool confirm = false, panic = false, motor = false, fault = false, journal = false;
   float battery = 0;
+  bool supplyValid = false;
+  float supplyCurrentMa = 0;
+  uint64_t supplyReadAt = 0;
   uint32_t motionEvents = 0;
 };
 

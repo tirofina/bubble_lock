@@ -65,6 +65,15 @@
 #ifndef KEYRING_SD_MAX_BYTES
 #define KEYRING_SD_MAX_BYTES 1048576UL
 #endif
+#ifndef KEYRING_ENABLE_POWER_MONITOR
+#define KEYRING_ENABLE_POWER_MONITOR 1
+#endif
+#ifndef KEYRING_POWER_SAMPLE_MS
+#define KEYRING_POWER_SAMPLE_MS 2000UL
+#endif
+#ifndef KEYRING_POWER_SHUNT_MILLIOHMS
+#define KEYRING_POWER_SHUNT_MILLIOHMS 100
+#endif
 
 // Configuration errors fail at build time; this task does not run a build.
 static_assert(KEYRING_ENABLE_SLEEP == 0 || KEYRING_ENABLE_SLEEP == 1, "Sleep option must be 0 or 1");
@@ -85,3 +94,6 @@ static_assert(KEYRING_JD9853_BGR == 0 || KEYRING_JD9853_BGR == 1, "BGR option mu
 static_assert(KEYRING_JD9853_INVERT == 0 || KEYRING_JD9853_INVERT == 1, "Inversion option must be 0 or 1");
 static_assert(KEYRING_ENABLE_SD_LOG == 0 || KEYRING_ENABLE_SD_LOG == 1, "SD log option must be 0 or 1");
 static_assert(KEYRING_SD_MAX_BYTES >= 4096 && KEYRING_SD_MAX_BYTES <= 16777216UL, "SD receipt cap range is 4KiB..16MiB");
+static_assert(KEYRING_ENABLE_POWER_MONITOR == 0 || KEYRING_ENABLE_POWER_MONITOR == 1, "Power monitor option must be 0 or 1");
+static_assert(KEYRING_POWER_SAMPLE_MS >= 100 && KEYRING_POWER_SAMPLE_MS <= 60000UL, "Power sample interval range is 100ms..60s");
+static_assert(KEYRING_POWER_SHUNT_MILLIOHMS >= 10 && KEYRING_POWER_SHUNT_MILLIOHMS <= 1000, "Nominal sense resistor range is 10..1000 milliohm");

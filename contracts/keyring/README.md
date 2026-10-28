@@ -20,6 +20,7 @@
 | [ble-journal-record-part.schema.json](ble-journal-record-part.schema.json) | 장치 → Gateway | snapshot에 묶인 READ record 조각 |
 | [journal-record.schema.json](journal-record.schema.json) | Gateway 보관 | 조립한 PREPARED/COMPLETED record |
 | [journal-archive.schema.json](journal-archive.schema.json) | Gateway 보관 | JSONL byte 수·hash·미정산 상태 manifest |
+| [ina219-reading.schema.json](ina219-reading.schema.json) | 장치 → Gateway/native cin | sensorValues.ina219의 signed 정수 단위·null·read uptime,0.6.0 확장 |
 
 각 파일은 외부 `$ref` 없이 사용할 수 있다. top-level 속성은 모두 필수이며, 미확인 값에는 스키마에서 허용하는 `null`을 사용한다. `additionalProperties:false`를 기본으로 두되 센서 값과 장치별 health 확장 필드는 별도로 허용한다. JSON Schema 라이브러리에서 `format` 검사를 기본적으로 생략하는 경우에는 `date-time` 검사기를 함께 설정해야 한다.
 

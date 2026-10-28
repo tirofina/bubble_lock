@@ -1,6 +1,6 @@
 # r18 하드웨어와 펌웨어 연결
 
-ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.5.0 · source mapping / unverified.
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.6.0 · source mapping / unverified.
 
 보관한 원본·배선표와 현재 소스의 연결 관계다. 회로 분석·DRC/ERC·build·장비 실행·전류 측정은 하지 않았다. 조립·전기적 동작 확인 결과가 아니다.
 
@@ -34,7 +34,7 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.5.0 · source mappi
 | U13 TPS2553 보조 전원 | GPIO4,모터·음향·백라이트 공유 | alert가 백라이트 선점. 실제 부하 미확인 |
 | U3 BQ24074 | EN1 GPIO47/EN2 GPIO9 | USB100 기본. 충전 회로·온도 보호·LED는 하드웨어 |
 | U10 TLV6700·D2 | 충전 온도 gate/충전 LED | 사용자 명령용 GPIO LED로 제어하지 않음 |
-| U15 INA219B | 전원 모니터,I2C A0/A1 GND | 전류·전력 읽기 미구현. BOM calibration 설명을 실측값으로 쓰지 않음 |
+| U15 INA219B | 전원 모니터,I2C A0/A1 GND | 단발 bus/current 읽기와 signed 부하 전력 계산 소스 추가. 실제 calibration·측정은 미실행 |
 | U16 MAX9850·J11 | I2C0x10/I2S,MCLK13,별도 analog return | 헤드폰 DAC 미구현. 스피커 드라이버와 구분 |
 | U11/U12/U17 | 입력 제한·UVLO/supervisor/REG_READY | 하드웨어 경로 |
 

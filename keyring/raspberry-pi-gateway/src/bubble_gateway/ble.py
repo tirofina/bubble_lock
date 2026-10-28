@@ -87,6 +87,29 @@ def _integer(value: Any, minimum: int = 0, maximum: int = 2**63 - 1) -> bool:
     return type(value) is int and minimum <= value <= maximum
 
 
+def _power_reading(value: Any, uptime_ms: int) -> None:
+    fields = {"status", "busVoltageMv", "currentUa", "loadPowerUw", "shuntVoltageUv", "readUptimeMs"}
+    states = {"disabled", "waiting", "sampling", "ok", "stale", "configuration_error", "configuration_changed",
+              "i2c_error", "conversion_timeout", "overflow", "overrange", "inconsistent", "shutdown_error"}
+    if (not isinstance(value, dict) or set(value) != fields or not isinstance(value.get("status"), str)
+            or value["status"] not in states):
+        raise BleProtocolError("invalid INA219 detail shape")
+    if value["status"] != "ok":
+        if any(value[key] is not None for key in fields - {"status"}):
+            raise BleProtocolError("invalid INA219 state must not carry numeric readings")
+        return
+    if (not _integer(value["busVoltageMv"], maximum=15996) or value["busVoltageMv"] % 4
+            or not _integer(value["shuntVoltageUv"], -79990, 79990) or value["shuntVoltageUv"] % 10
+            or not _integer(value["currentUa"], -8000000, 8000000)
+            or not _integer(value["loadPowerUw"], -128000000, 128000000)
+            or not _integer(value["readUptimeMs"], maximum=uptime_ms)):
+        raise BleProtocolError("invalid INA219 units/time/range")
+    product = value["busVoltageMv"] * value["currentUa"]
+    expected = (abs(product) + 500) // 1000 * (-1 if product < 0 else 1)
+    if value["loadPowerUw"] != expected:
+        raise BleProtocolError("INA219 derived load power disagrees with voltage/current")
+
+
 @dataclass
 class _Frames:
     data: bytearray = field(default_factory=bytearray)
@@ -286,6 +309,8 @@ class BleFleet:
         if battery is not None and (type(battery) not in (int, float)
                                     or not 0 <= battery <= 100 or not math.isfinite(battery)):
             raise BleProtocolError("invalid battery reading")
+        if "ina219" in frame["sensorValues"]:
+            _power_reading(frame["sensorValues"]["ina219"], frame["uptimeMs"])
         if frame["sequence"] <= peer.last_sequence:
             return
         received = datetime.now(timezone.utc)

@@ -35,7 +35,7 @@ def main() -> None:
     parser.add_argument("--database", type=Path, required=True, help="same database path as the Gateway; used only for its process lock")
     parser.add_argument("--output", type=Path, required=True, help="new archive directory; parent must exist")
     parser.add_argument("--gatt-profile", choices=("core-v1", "keyring-v01"), default="core-v1")
-    parser.add_argument("--firmware-revision", default="keyring-0.5.0")
+    parser.add_argument("--firmware-revision", default="keyring-0.6.0")
     args = parser.parse_args()
     if os.name != "posix":
         parser.error("this operator command requires Linux/BlueZ")

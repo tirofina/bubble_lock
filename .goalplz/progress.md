@@ -101,3 +101,18 @@ source commit `6203dec`의 일반 push가 성공했다(`365f4e7..6203dec`, origi
 ### r18 인계 업로드 결과
 
 source commit `446dc6d`의 역할 브랜치 일반 push가 성공했다(`ca027d2..446dc6d`, origin/codex/keyring-namho). 복사한 원본과 인계 문서를 원격에 반영했으며 main/CORE·운영 서버·원래 하드웨어 파일은 변경하지 않았다. 이것은 자산 인계이며 CAD/전기/firmware 검증·실물 제조·release 완료가 아니다. sourceCommit을446dc6d로 갱신했다. 다음 독립 구현은 U15 INA219 계측이고 전체 goal은 active다.
+
+## 2026-10-28 — INA219 공급 전원 계측 checkpoint
+
+이전 goal 턴은 r18 native source446dc6d와 기록e9ad8ac를 역할 브랜치에 업로드한 progress였다. 이번 시작에 최신 계획서 DOC-REV2.0.0 역할/계약/완료 기준, AGENTS와 code-edit-no-validation 스킬을 읽고 Git fetch했다. main/CORE는 기존91a281b로 새 중앙 계약 변경이 없었다.
+
+- datasheets 스킬을 적용해 기존 INA219 제조사 텍스트와 TI 공식 PDF SBOS448G Rev.G의 register/단위/calibration 설명을 읽었다. TI PDF 열람과 page12 요청은 자료 읽기였으며 코드/실물 화면 검증이 아니다. datasheet score/analyzer/cache validation·시뮬레이션·DRC/ERC는 실행하지 않았다.
+- native PCB의 R61 VREG3V3→+3V3, U15 VIN+/VIN-/VS/A0/A1 네트를 읽었다. 실제 공급 도메인은 shunt 뒤3.3V 부하이며 INA219 자체도 포함한다. R61 prose의 supply-before 주장과 U15/C35/native 연결의 차이, R61 MPN/URL 품번 차이를 문서화하고 원본은 보존했다. 배터리 입력/충전 전류를 측정한다고 표시하지 않는다.
+- firmware keyring-0.6.0: SupplyMonitor를 추가했다. 고정0x40·nominal100mΩ·cal0x4000·config0x099B의 bus+shunt single shot, CNVR/OVF·범위·cal/config/원시 current 관계 판정,0x0998 standby/readback, 오류5초 backoff, cached sample timestamp/staleness/null, sleep 전 power-down 확인 경로를 작성했다. GPIO timer/BLEcallback/worker에서 I2C하지 않는다. 실제 calibration·전류/전압·전력·sleep 소비전류 측정은 없다.
+- signed currentUa와 busVoltageMv·shuntVoltageUv·derived loadPowerUw·readUptimeMs를 정수로 전송한다. 표시 단위를 정확도/분해능 보장으로 사용하지 않는다. peak/평균/누적 energy/배터리 수명 추정이나 새로운 권한·전류 제한 정책을 만들지 않았다.
+-512byte READ에서 데이터가 계속 탈락하지 않도록 sensors/energy/health detail을 순환한다. detail별 최신 pending frame3개를 publication order로 전송해 sequence 역전을 피한다. active LF/20byte framing과 공통 battery/button/state/fault/journal을 유지한다. sensor polling을 notification 발행과 분리했고 JSON overflow 시 새 최소 frame으로 재구성한다. 현재 값이 없을 때0을 합성하지 않는다.
+- Gateway의 INA219 shape/null/정수 단위·ADC step·시각·signed power product runtime 경로와 standalone schema를 추가했다. native cin은 detail을 유지하며 CORE v1 projection에는 sensor 확장이 없음을 기록했다. LCD 두 profile에는 유효한 공급 전류 또는--를 표시하고 worker 자체도 freshness를 판정한다. 실제 Gateway/장비 연결은 실행하지 않았다.
+- POWER_MONITOR.md·인수인계·핀/전원 설명·allowlist 안내·journal CLI 기본 firmware revision과 구현 상태를 갱신했다. 기존 원본 CAD/BOM·NVS/중앙 정책/서버는 수정하지 않았다.
+- 테스트/린트/정적분석/build/flash/CLI 실행/장비·COM/앱·서비스·컨테이너 재시작/검증용 데이터 생성은 모두 미실행이다. 새 구현을 verified/released로 표시하지 않는다.
+
+다음 작업: 남은 하드웨어 출력 경로의 실제 지원 범위와 중앙 INTEGRATION 계약을 읽어 이어서 구현한다. INA219 실물 calibration·전원/범위·BLE/CSE 통합/영상·release 증거, JD9853 패널별 초기화, 중앙 settlement/reclaim 계약은 남아 있다. 이 source checkpoint의 commit/push 결과는 실제 Git 출력 후 별도 기록한다.

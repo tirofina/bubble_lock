@@ -19,6 +19,6 @@ KiCad 10 형식이며 설치된 표준 라이브러리를 참조하는 모델도
 
 기존 BOM의 일부 GPIO prose는 오래됐으므로 배선표·펌웨어 선언을 우선한다. AUX_EN4/motor3/AMP_GATE16/backlight2/LCD reset43을 사용하며5/12/15/48은 NC,35/36/37은 octal PSRAM 예약이다. 스피커는 MAX98357A I2S BTL이며 GPIO 부저나 접지 단자로 취급하지 않는다. 상세 충돌은 연결 문서에 있다.
 
-LED D2·BQ24074 충전·TLV6700 온도 gate·전원 제한/UVLO는 하드웨어 동작이다. 펌웨어는 USB100 기본을 유지한다. 실제 조립 revision·배터리 극성·LCD 모듈·소비전류·거리·출력 동작은 미확인이다. INA219 계측과 MAX9850 헤드폰은 아직 미구현이다.
+LED D2·BQ24074 충전·TLV6700 온도 gate·전원 제한/UVLO는 하드웨어 동작이다. 펌웨어는 USB100 기본을 유지한다. 실제 조립 revision·배터리 극성·LCD 모듈·소비전류·거리·출력 동작은 미확인이다. INA219 계측 소스는 keyring-0.6.0에 추가했고 [설정·단위·제약](../firmware/POWER_MONITOR.md)에 연결했다. MAX9850 헤드폰은 아직 미구현이다.
 
 원래 README/stackup/BOM의 DRC/ERC/simulation·수량·가격·재고 기록은 과거 자료다. 이번 검증·제조 승인·현재 firmware release 증거로 재사용하지 않는다. KiCad 실행·DRC/ERC·분석기·시뮬레이션·거버 생성·발주·실장·전원 인가·flash·빌드·장비 시험은 수행하지 않았다.

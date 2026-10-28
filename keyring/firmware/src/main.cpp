@@ -19,9 +19,10 @@
 #include "audio_alert.h"
 #include "aux_rail.h"
 #include "peripherals.h"
+#include "supply_monitor.h"
 
 namespace {
-constexpr char FirmwareRevision[] = "keyring-0.5.0";
+constexpr char FirmwareRevision[] = "keyring-0.6.0";
 #if defined(KEYRING_LEGACY_GATT) && KEYRING_LEGACY_GATT
 constexpr char ServiceUuid[] = "8b8f0001-8e7a-4f36-a8c2-1c9b5d620001";
 constexpr char IdentityUuid[] = "8b8f0002-8e7a-4f36-a8c2-1c9b5d620001";
@@ -67,7 +68,10 @@ volatile bool motorTimerFired = false;
 MotionWake motion;
 AudioAlert audio;
 Peripherals peripherals;
+SupplyMonitor supply;
 uint64_t nextScreenAt = 0;
+uint64_t lastSensorRead = 0;
+uint8_t detailSection = 0;
 bool audioPermitted() { return connected && authenticated && !sleepPreparing; }
 
 struct Frame { char bytes[MaxFrame + 1]; uint64_t firstAt, completedAt; uint32_t generation; };
@@ -194,6 +198,11 @@ bool writeRegister(uint8_t address, uint8_t reg, uint8_t value) {
   Wire.beginTransmission(address); Wire.write(reg); Wire.write(value);
   return Wire.endTransmission() == 0;
 }
+bool writeRegister16(uint8_t address, uint8_t reg, uint16_t value) {
+  Wire.beginTransmission(address); Wire.write(reg);
+  Wire.write(static_cast<uint8_t>(value >> 8)); Wire.write(static_cast<uint8_t>(value));
+  return Wire.endTransmission() == 0;
+}
 bool accelReady = false;
 void initSensors() {
   Wire.begin(board::I2cSda, board::I2cScl, 100000);
@@ -223,6 +232,7 @@ void sampleSensors() {
       sensors.xyz[i] = (raw / 16) * 0.000976f; // 12-bit left-aligned, +/-2g LP1, units g.
     }
   }
+  lastSensorRead = uptime();
 }
 
 std::string jsonText(JsonDocument &doc) {
@@ -231,6 +241,8 @@ std::string jsonText(JsonDocument &doc) {
 struct Tx {
   BLECharacteristic *characteristic = nullptr;
   std::string pending, active, full;
+  std::string sections[3];
+  uint64_t sectionOrder[3] = {}, enqueueOrder = 0;
   size_t offset = 0;
   uint64_t nextAt = 0;
   void restoreReadValue() {
@@ -240,10 +252,27 @@ struct Tx {
     else characteristic->setValue(std::string());
   }
   void queue(const std::string &frame) { pending = frame; full = frame; restoreReadValue(); }
-  void clear() { pending.clear(); active.clear(); offset = 0; }
+  void queueSection(uint8_t section, const std::string &frame) {
+    sections[section] = frame; sectionOrder[section] = ++enqueueOrder;
+    full = frame; restoreReadValue();
+  }
+  void clear() {
+    pending.clear(); active.clear(); offset = 0;
+    for (unsigned i = 0; i < 3; ++i) { sections[i].clear(); sectionOrder[i] = 0; }
+  }
   void tick(uint64_t now) {
     if (!connected || !authenticated || now < nextAt) return;
-    if (active.empty()) { active.swap(pending); offset = 0; }
+    if (active.empty()) {
+      active.swap(pending); offset = 0;
+      if (active.empty()) {
+        // Select by publication order, never round-robin older sequence frames
+        // after newer ones. Replacements retain the newest value for each detail.
+        int selected = -1;
+        for (unsigned i = 0; i < 3; ++i)
+          if (!sections[i].empty() && (selected < 0 || sectionOrder[i] < sectionOrder[selected])) selected = i;
+        if (selected >= 0) { active.swap(sections[selected]); sectionOrder[selected] = 0; }
+      }
+    }
     if (active.empty()) return;
     size_t count = min(static_cast<size_t>(20), active.size() - offset);
     characteristic->setValue(reinterpret_cast<uint8_t *>(&active[offset]), count);
@@ -257,56 +286,78 @@ Tx observationTx, receiptTx;
 
 void publishObservation() {
   StaticJsonDocument<1536> doc;
-  doc["version"] = 1; doc["deviceId"] = deviceId; doc["bootId"] = bootId;
-  doc["sequence"] = sequence++; doc["uptimeMs"] = uptime();
-  if (sensors.fuel) doc["battery"] = sensors.battery; else doc["battery"] = nullptr;
-  doc["buttonState"] = panic.pressed ? "panic" : confirm.pressed ? "confirm" : "released";
-  doc["state"] = readState();
-  JsonObject values = doc.createNestedObject("sensorValues");
-  values["batteryStatus"] = sensors.fuel ? "ok" : "unavailable";
-  values["accelStatus"] = sensors.accel ? "ok" : "unavailable";
-  if (sensors.fuel) values["voltage"] = sensors.volts; else values["voltage"] = nullptr;
-  if (sensors.accel) {
-    JsonArray axes = values.createNestedArray("accelerationG");
-    for (float value : sensors.xyz) axes.add(value);
-  } else values["accelerationG"] = nullptr;
-  values["fault"] = digitalRead(board::MainFaultN) == LOW;
-  values["journal"] = storageHealthy ? "ready" : "error";
-  unsigned journalUsed = 0, journalPrepared = 0;
-  for (unsigned slot = 0; slot < JournalSlots; ++slot) if (occupied[slot]) {
-    ++journalUsed; if (journal[slot].phase == Prepared) ++journalPrepared;
+  const uint32_t observationSequence = sequence++;
+  const uint64_t now = uptime();
+  const bool outputState = readState(), fault = digitalRead(board::MainFaultN) == LOW;
+  const uint8_t section = detailSection; detailSection = (detailSection + 1) % 3;
+  const char *detail = section == 0 ? "sensors" : section == 1 ? "energy" : "health";
+  auto base = [&]() -> JsonObject {
+    doc.clear(); // Also clears overflow state before rebuilding a minimal frame.
+    doc["version"] = 1; doc["deviceId"] = deviceId; doc["bootId"] = bootId;
+    doc["sequence"] = observationSequence; doc["uptimeMs"] = now;
+    if (sensors.fuel) doc["battery"] = sensors.battery; else doc["battery"] = nullptr;
+    doc["buttonState"] = panic.pressed ? "panic" : confirm.pressed ? "confirm" : "released";
+    doc["state"] = outputState;
+    JsonObject values = doc.createNestedObject("sensorValues");
+    values["detail"] = detail; values["fault"] = fault;
+    values["journal"] = storageHealthy ? "ready" : "error";
+    return values;
+  };
+  JsonObject values = base();
+  if (section == 0) {
+    values["batteryStatus"] = sensors.fuel ? "ok" : "unavailable";
+    values["accelStatus"] = sensors.accel ? "ok" : "unavailable";
+    if (sensors.fuel) values["voltage"] = sensors.volts; else values["voltage"] = nullptr;
+    if (sensors.accel) {
+      JsonArray axes = values.createNestedArray("accelerationG");
+      for (float value : sensors.xyz) axes.add(value);
+    } else values["accelerationG"] = nullptr;
+    values["motion"] = motion.ready() ? "ready" : "unavailable";
+    values["motionEvents"] = motion.events();
+  } else if (section == 1) {
+    const auto &reading = supply.reading();
+    JsonObject monitor = values.createNestedObject("ina219");
+    monitor["status"] = supply.status(now);
+    if (supply.valid(now)) {
+      monitor["busVoltageMv"] = reading.busMv; monitor["currentUa"] = reading.currentUa;
+      monitor["loadPowerUw"] = reading.loadPowerUw; monitor["shuntVoltageUv"] = reading.shuntUv;
+      monitor["readUptimeMs"] = reading.readAt;
+    } else {
+      for (const char *key : {"busVoltageMv", "currentUa", "loadPowerUw", "shuntVoltageUv", "readUptimeMs"}) monitor[key] = nullptr;
+    }
+  } else {
+    unsigned used = 0, prepared = 0;
+    for (unsigned slot = 0; slot < JournalSlots; ++slot) if (occupied[slot]) {
+      ++used; if (journal[slot].phase == Prepared) ++prepared;
+    }
+    if (storageHealthy) { values["journalUsed"] = used; values["journalPrepared"] = prepared; }
+    else { values["journalUsed"] = nullptr; values["journalPrepared"] = nullptr; }
+    values["journalCapacity"] = JournalSlots;
+    values["wake"] = powerState::wakeCause(); values["wakePins"] = powerState::wakePins();
+    values["power"] = powerState::status(); values["audio"] = audio.status();
+    values["display"] = peripherals.displayStatus(); values["sd"] = peripherals.sdStatus();
+    values["sdDropped"] = peripherals.droppedLogs();
   }
-  // Counts are meaningful only after the entire NVS load succeeded.
-  if (storageHealthy) { values["journalUsed"] = journalUsed; values["journalPrepared"] = journalPrepared; }
-  else { values["journalUsed"] = nullptr; values["journalPrepared"] = nullptr; }
-  values["journalCapacity"] = JournalSlots;
-  values["motion"] = motion.ready() ? "ready" : "unavailable";
-  values["motionEvents"] = motion.events();
-  values["wake"] = powerState::wakeCause();
-  values["wakePins"] = powerState::wakePins();
-  values["power"] = powerState::status();
-  values["audio"] = audio.status();
-  values["display"] = peripherals.displayStatus();
-  values["sd"] = peripherals.sdStatus();
-  values["sdDropped"] = peripherals.droppedLogs();
   std::string frame = jsonText(doc);
   if (frame.size() > 512 && !doc.overflowed()) {
-    // Preserve battery and event identity first; large axis arrays are optional.
+    // Sensor detail is optional; identity/battery/button/output stay in every frame.
     values.remove("accelerationG"); values.remove("voltage");
     values.remove("batteryStatus"); values.remove("accelStatus");
+    if (section == 2) {
+      values.remove("audio"); values.remove("display"); values.remove("sdDropped"); values.remove("wakePins");
+    }
     values["truncated"] = true;
     frame = jsonText(doc);
   }
   if (frame.size() > 512 || doc.overflowed()) {
     // Keep identity, sequence, buttons, state and uptime. Do not invent readings
     // when the full sensor object exceeds the READ attribute budget.
-    doc.remove("sensorValues");
-    doc.createNestedObject("sensorValues")["status"] = "payload_too_large";
+    values = base(); values["status"] = "payload_too_large";
     frame = jsonText(doc);
   }
   // Enforce the wire bound at runtime even if a future identity/field expansion
   // also makes the minimal observation too large.
-  if (frame.size() <= 512 && !doc.overflowed()) observationTx.queue(frame);
+  if (frame.size() <= 512 && !doc.overflowed()) observationTx.queueSection(section, frame);
   observationDirty = false; lastObservation = uptime();
 }
 
@@ -626,11 +677,11 @@ void initBle() {
 namespace {
 void considerSleep(uint64_t now) {
   if (!powerState::idle(now) || connected || !storageHealthy || !motion.ready() ||
-      motorStopAt || readState() || audio.busy() || auxRail::busy() || peripherals.busy() ||
+      motorStopAt || readState() || audio.busy() || auxRail::busy() || peripherals.busy() || supply.busy() ||
       uxQueueMessagesWaiting(commandQueue) != 0 || uxQueueMessagesWaiting(journalRequests) != 0 ||
       !receiptTx.active.empty() || !receiptTx.pending.empty() ||
       digitalRead(board::MainFaultN) == LOW) return;
-  if (!motion.clearForSleep()) {
+  if (!motion.clearForSleep() || !supply.prepareSleep()) {
     powerState::activity(now); observationDirty = true; return;
   }
   // Reserve the transition before stopping advertising. New peers are refused
@@ -670,6 +721,7 @@ void setup() {
   snprintf(bootId, sizeof(bootId), "%08lx%08lx%08lx%08lx", static_cast<unsigned long>(esp_random()),
       static_cast<unsigned long>(esp_random()), static_cast<unsigned long>(esp_random()), static_cast<unsigned long>(esp_random()));
   loadJournal(); initSensors();
+  supply.begin(readRegisters, writeRegister16);
   motion.begin(accelReady, readRegisters, writeRegister);
   esp_timer_create_args_t timerArgs = {};
   timerArgs.callback = motorExpired; timerArgs.name = "motor-stop";
@@ -717,7 +769,9 @@ void loop() {
     memset(&journalCapture, 0, sizeof(journalCapture));
     journalChar->setValue(std::string());
   }
-  if (now - lastObservation >= board::ObserveMs) { sampleSensors(); observationDirty = true; }
+  supply.poll(uptime());
+  if (uptime() - lastSensorRead >= board::ObserveMs) { sampleSensors(); observationDirty = true; }
+  if (uptime() - lastObservation >= board::ObserveMs) observationDirty = true;
   if (observationDirty) publishObservation();
   auxRail::service();
   if (now >= nextScreenAt) {
@@ -727,6 +781,8 @@ void loop() {
     screen.confirm = confirm.pressed; screen.panic = panic.pressed;
     screen.motor = readState(); screen.fault = digitalRead(board::MainFaultN) == LOW;
     screen.journal = storageHealthy; screen.motionEvents = motion.events();
+    screen.supplyValid = supply.valid(uptime()); screen.supplyCurrentMa = supply.reading().currentUa / 1000.0f;
+    screen.supplyReadAt = supply.reading().readAt;
     peripherals.update(screen); nextScreenAt = now + 250;
   }
   receiptTx.tick(now); observationTx.tick(now);

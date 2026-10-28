@@ -42,7 +42,11 @@
     "operator-invoked private journal archives with actual record count and SHA256",
     "journal usage observations and explicit non-settlement archive contracts",
     "portable r18 native KiCad project snapshot with local CAD dependencies and inherited BOM/wiring",
-    "source byte inventory and explicit stale GPIO prose corrections for hardware handoff"
+    "source byte inventory and explicit stale GPIO prose corrections for hardware handoff",
+    "INA219 single-shot load-side supply current/voltage and derived signed power telemetry",
+    "INA219 standby/readback error/backoff/staleness and deep-sleep coordination",
+    "bounded per-detail observation coalescing with publication-order sequence preservation",
+    "Gateway INA219 integer unit/null/time/product runtime checks and LCD current display"
   ],
   "existingHardware": {
     "status": "source-snapshot-included-unverified",
@@ -66,8 +70,7 @@
   "notImplemented": [
     "purchased JD9853 module-specific power/gamma initialization confirmation",
     "MAX9850 headphone output",
-    "OTA, secure boot and flash encryption deployment",
-    "INA219 onboard current/power telemetry"
+    "OTA, secure boot and flash encryption deployment"
   ],
   "notPerformed": [
     "firmware build",
@@ -90,7 +93,7 @@
   },
   "logSha256": null,
   "releaseSha": null,
-  "firmwareRevision": "keyring-0.5.0",
+  "firmwareRevision": "keyring-0.6.0",
   "publication": {
     "sourceCommit": "446dc6d",
     "remoteBranch": "codex/keyring-namho",
@@ -98,6 +101,6 @@
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
     "latestLocalSourceCommit": "446dc6d",
-    "latestCheckpoint": "r18 native hardware source snapshot and firmware mapping pushed (unverified)"
+    "latestCheckpoint": "firmware 0.6.0 INA219 and bounded observation details source (unverified)"
   }
 }

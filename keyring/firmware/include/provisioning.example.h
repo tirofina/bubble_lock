@@ -31,3 +31,7 @@
 // Optional plaintext receipt copies; use only an explicitly provisioned, protected card.
 // #define KEYRING_ENABLE_SD_LOG 1
 // #define KEYRING_SD_MAX_BYTES 1048576UL
+// r18 INA219 monitor is enabled by default. These are nominal settings, not measured calibration.
+// #define KEYRING_ENABLE_POWER_MONITOR 1
+// #define KEYRING_POWER_SAMPLE_MS 2000UL
+// #define KEYRING_POWER_SHUNT_MILLIOHMS 100

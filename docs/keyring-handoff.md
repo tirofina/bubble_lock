@@ -11,6 +11,7 @@
 | 하드웨어 연결 | 기존 r18 PCB 및 최신 핀맵을 연결하는 [PCB 문서](../keyring/pcb/README.md) | r18 native 원본 snapshot·로컬 CAD·기존 BOM/배선표 포함. PCB 재설계·제조·조립·새 검증은 하지 않음 |
 | 펌웨어 | [ESP32-S3 소스와 설정](../keyring/firmware/README.md) | 소스 작성, 빌드·flash·장비 실행 미실행 |
 | 화면·음향·SD | [두 LCD 프로필, MAX98357A cue, SD receipt 복사](../keyring/firmware/PERIPHERALS.md) | keyring-0.4.0 선택형 구현. JD9853 구매 모듈 초기화·실물 표시·부하 미확인 |
+| 공급 전원 계측 | [INA219·BLE detail·화면·Gateway 연결](../keyring/firmware/POWER_MONITOR.md) | keyring-0.6.0 소스 작성. 실물 calibration·전류·전력/배터리 수명 측정 미실행 |
 | BLE | identity / observation / command / receipt UUID와 fragmentation | 구현 계약 작성, pairing·notify·reconnect 미검증 |
 | Gateway | [daemon 및 설치 안내](../keyring/raspberry-pi-gateway/README.md) | 소스 작성, Raspberry Pi 배포·실행 미실행 |
 | 권한·연속성 | 중앙 승인, epoch/deadline, 중복·journal·queue 처리 | 구현 작성, 중앙 정책과 장애 시나리오 미검증 |

@@ -28,3 +28,9 @@ INTEGRATION: commands/authorize/credential API, grant·claim·epoch·handover.
 KEYRING: firmware/GATT, BLE framing, 실제 관측, durable Gateway adapter, 장치 journal/readback.
 
 임시 서버와 향후 서버 교체 절차는 [Mobius4 환경](dev/mobius4/README.md)에 있다. 테스트·빌드·장비 실행은 이번 checkpoint에서 수행하지 않았다.
+
+## firmware0.6.0 센서 detail 확장
+
+KEYRING의 sensorValues는 sensors/energy/health detail로 순환한다. INA219의 signed 정수 단위/오류/null/readUptimeMs는 `firmware/POWER_MONITOR.md`와 `contracts/keyring/ina219-reading.schema.json`에 정의했다. Gateway는 객체가 있는 프레임에서 필드·단위·시각·전력 계산을 runtime에서 판정하고 native observation cin에 원본을 보관한다. 이번 작업에서는 그 runtime을 실행하지 않았다.
+
+기존 CORE v1 MQTT telemetry projection은 base battery/rssi/state/identity만 전달하므로 INA219·기타 센서 상세를 포함하지 않는다. CORE topic 확장은 owner의 canonical revision 합의 뒤 연결한다. 필드를 임의로 schemaVersion1.0.0 telemetry에 넣거나 중앙 정책·권한으로 변환하지 않았다. detail 누락을0으로 채우거나 서로 다른 boot/time의 측정을 합치지 않는다.
