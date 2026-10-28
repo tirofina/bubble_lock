@@ -1,0 +1,58 @@
+{
+  "contractId": "privacy-bubble.raspberrypi-gateway",
+  "contractVersion": "1.0.0",
+  "docRevision": "2.0.0",
+  "owner": "KEYRING",
+  "reviewOwner": "PC-MOBIUS-CORE",
+  "device": {
+    "gateway": "Raspberry Pi 5",
+    "transportIn": "BLE GATT",
+    "transportOut": ["MQTT", "HTTPS"],
+    "timeSource": "gateway-ntp"
+  },
+  "ble": {
+    "serviceUuid": "7f8a0001-4b6e-4f4e-9b0a-505249564255",
+    "characteristics": {
+      "state": "7f8a0002-4b6e-4f4e-9b0a-505249564255",
+      "command": "7f8a0003-4b6e-4f4e-9b0a-505249564255",
+      "ack": "7f8a0004-4b6e-4f4e-9b0a-505249564255"
+    },
+    "payload": {
+      "deviceId": "string",
+      "sequence": "uint32",
+      "timestamp": "RFC3339",
+      "state": "boolean",
+      "batteryPct": "uint8",
+      "rssiDbm": "int8",
+      "schemaVersion": "1.0.0"
+    }
+  },
+  "mqtt": {
+    "broker": "PC-MOBIUS-CORE",
+    "telemetryTopic": "privacy-bubble/gateway/{gatewayId}/telemetry",
+    "commandTopic": "privacy-bubble/gateway/{gatewayId}/command",
+    "ackTopic": "privacy-bubble/gateway/{gatewayId}/ack",
+    "qos": 1,
+    "retain": false,
+    "clientId": "pb-gateway-{gatewayId}",
+    "correlation": "commandId"
+  },
+  "https": {
+    "endpoint": "/api/v1/gateways/{gatewayId}/events",
+    "method": "POST",
+    "contentType": "application/json",
+    "auth": "mTLS-or-OIDC-device-token",
+    "idempotencyHeader": "Idempotency-Key"
+  },
+  "processing": {
+    "dedupKey": "deviceId:sequence",
+    "queue": "sqlite-or-filesystem-journal",
+    "reconnect": "exponential-backoff-with-jitter",
+    "ackStates": ["RECEIVED", "FORWARDED", "APPLIED", "READBACK_VERIFIED", "RETRY_PENDING"],
+    "oneM2MMapping": "/Mobius/privacy-bubble-test-ae/bubbleState"
+  },
+  "acceptance": {
+    "rubric": ["R01", "R02", "R03", "R10", "R11", "R15"],
+    "evidence": ["ble-capture", "mqtt-trace", "http-receipt", "oneM2M-subscription-receipt", "ack-readback-video"]
+  }
+}

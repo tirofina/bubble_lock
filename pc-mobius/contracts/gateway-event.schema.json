@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://privacy-bubble.example/schema/gateway-event.v1.json",
+  "title": "Privacy Bubble Raspberry Pi Gateway Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["deviceId", "sequence", "timestamp", "state", "batteryPct", "rssiDbm", "schemaVersion"],
+  "properties": {
+    "deviceId": { "type": "string", "minLength": 1 },
+    "sequence": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "state": { "type": "boolean" },
+    "batteryPct": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "rssiDbm": { "type": "integer", "minimum": -127, "maximum": 0 },
+    "schemaVersion": { "const": "1.0.0" }
+  }
+}

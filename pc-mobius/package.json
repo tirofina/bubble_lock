@@ -1,0 +1,21 @@
+{
+  "name": "privacy-bubble-pc-mobius-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate": "node scripts/validate-contract.mjs",
+    "dry-run": "node scripts/run-contract.mjs --dry-run",
+    "prepare-specialization": "node scripts/prepare-specialization.mjs",
+    "test": "node --test test/**/*.test.mjs",
+    "bridge": "node scripts/run-bridge.mjs",
+    "release-manifest": "node scripts/build-release-manifest.mjs",
+    "replay-receipt": "node scripts/replay-receipt.mjs"
+  },
+  "dependencies": {
+    "mqtt": "^5.14.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

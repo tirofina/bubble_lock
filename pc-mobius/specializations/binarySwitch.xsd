@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:m2m="http://www.onem2m.org/xml/protocols"
+           xmlns:pb="https://privacy-bubble.example/schema"
+           targetNamespace="https://privacy-bubble.example/schema"
+           elementFormDefault="unqualified">
+  <xs:import namespace="http://www.onem2m.org/xml/protocols" schemaLocation="CDT-commonTypes.xsd"/>
+  <xs:element name="binarySwitch" substitutionGroup="m2m:sg_flexContainerResource">
+    <xs:complexType>
+      <xs:complexContent>
+        <xs:extension base="m2m:flexContainerResource">
+          <xs:sequence>
+            <xs:element name="state" type="xs:boolean"/>
+          </xs:sequence>
+        </xs:extension>
+      </xs:complexContent>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

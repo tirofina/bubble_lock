@@ -1,0 +1,32 @@
+{
+  "releaseId": "privacy-bubble-pc-mobius-core",
+  "role": "PC-MOBIUS-CORE",
+  "docRevision": "2.0.0",
+  "runtime": "Mobius4 temporary test server",
+  "oneM2M": {
+    "rvi": "4",
+    "resourcePath": "/Mobius/privacy-bubble-test-ae/bubbleState",
+    "containerDefinition": "org.onem2m.common.moduleclass.binarySwitch",
+    "wireEnvelope": "pb:binarySwitch",
+    "transports": ["HTTP", "MQTT"]
+  },
+  "artifacts": [
+    "contracts/oneM2M-test-contract.v1.json",
+    "contracts/raspberrypi-gateway.v1.json",
+    "contracts/gateway-event.schema.json",
+    "specializations/binarySwitch.xsd",
+    "db/migrations/001_core_receipts.sql",
+    "src/gateway-bridge.mjs",
+    "src/group-dispatcher.mjs",
+    "src/receipt-journal.mjs"
+  ],
+  "commands": {
+    "install": "npm ci",
+    "test": "npm test",
+    "validate": "npm run validate",
+    "prepareSpecialization": "node scripts/prepare-specialization.mjs --mobius-root <mobius4-source>",
+    "httpContract": "node scripts/run-contract.mjs",
+    "mqttBridge": "npm run bridge",
+    "replayReceipt": "node scripts/replay-receipt.mjs --input <receipt.json>"
+  }
+}
