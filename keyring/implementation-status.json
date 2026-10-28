@@ -46,7 +46,10 @@
     "INA219 single-shot load-side supply current/voltage and derived signed power telemetry",
     "INA219 standby/readback error/backoff/staleness and deep-sleep coordination",
     "bounded per-detail observation coalescing with publication-order sequence preservation",
-    "Gateway INA219 integer unit/null/time/product runtime checks and LCD current display"
+    "Gateway INA219 integer unit/null/time/product runtime checks and LCD current display",
+    "configured Gateway/CSE resource identity binding for persistent SQLite state",
+    "operator-invoked consistent WAL state archives with quarantine and private manifests",
+    "explicit legacy DB identity adoption after a cold snapshot with original data rows preserved"
   ],
   "existingHardware": {
     "status": "source-snapshot-included-unverified",
@@ -65,12 +68,14 @@
     "device passkeys and BlueZ bond enrollment",
     "central PKI registration and mTLS credential deployment",
     "strict UTC device deadline contract if needed beyond relative BLE budget",
-    "central settlement and safe device journal archival procedure"
+    "central settlement/checkpoint and crash-safe device journal reclaim",
+    "authoritative recovery checkpoint and fenced Gateway snapshot activation"
   ],
   "notImplemented": [
     "purchased JD9853 module-specific power/gamma initialization confirmation",
     "MAX9850 headphone output",
-    "OTA, secure boot and flash encryption deployment"
+    "OTA, secure boot and flash encryption deployment",
+    "central-authorized Gateway snapshot restore activation"
   ],
   "notPerformed": [
     "firmware build",
@@ -81,7 +86,8 @@
     "hardware validation",
     "power/range measurement",
     "integration demo",
-    "video evidence"
+    "video evidence",
+    "Gateway state snapshot/adoption runtime execution"
   ],
   "actualReceipt": null,
   "temporaryServer": {
@@ -101,6 +107,7 @@
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
     "latestLocalSourceCommit": "a9c55ad",
-    "latestCheckpoint": "firmware 0.6.0 INA219 supply monitoring and bounded detail source pushed (unverified)"
-  }
+    "latestCheckpoint": "Gateway 0.2.0 state binding and quarantined archives source (unverified)"
+  },
+  "gatewayRevision": "0.2.0"
 }

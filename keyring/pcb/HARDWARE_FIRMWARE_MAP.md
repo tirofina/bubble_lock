@@ -11,6 +11,7 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.6.0 · source mappi
 | 기능 | 오래된 BOM prose | 현재 사용하는 연결 |
 |---|---|---|
 | AUX_EN | U1/U13 GPIO12 | GPIO4, HIGH ON / boot LOW |
+| AMP_GATE | Q4 prose GPIO42 | GPIO16 HIGH mute. GPIO42는 I2S DOUT이므로 혼용하지 않음 |
 | LCD reset | U1 GPIO15 | GPIO43 UART_TX → R69 → LCD_RST. UART0 로그 금지 |
 | AUX fault | U1 GPIO5 | GPIO5 NC. 별도 AUX fault GPIO를 가정하지 않음 |
 | FUEL alert | U1 GPIO48 | GPIO48 NC. MAX17048 I2C polling |

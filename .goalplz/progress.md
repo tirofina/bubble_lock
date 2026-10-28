@@ -120,3 +120,16 @@ source commit `446dc6d`의 역할 브랜치 일반 push가 성공했다(`ca027d2
 ### INA219 소스 업로드 결과
 
 source commit `a9c55ad` 일반 push가 성공했다(`e9ad8ac..a9c55ad`, origin/codex/keyring-namho). main/CORE·운영 서버·원래 하드웨어 source는 변경하지 않았다. sourceCommit을a9c55ad로 갱신했다. 이것은 driver/전송/화면/Gateway source 업로드이며 실제 계측·통합·검증·release 완료가 아니다. goal은 active이고 실물·중앙 계약 의존성은 남아 있다.
+
+## 2026-10-28 — Gateway 상태 identity·보관 checkpoint
+
+이전 goal 턴은 INA219 sourcea9c55ad와 기록c2ad489를 역할 브랜치에 push한 progress였다. 이번 시작에 계획서 DOC-REV2.0.0의 역할/계약/완료 기준, AGENTS와 code-edit-no-validation을 읽고 Git fetch했다. main/CORE는91a281b로 새 중앙 계약 변경이 없었다.
+
+- 남은 MAX9850 경로의 제조사 보관 텍스트와 native U16 nets를 읽었다. DVDD/AVDD/PVDD는 main+3V3이며 speaker AUX_EN/AMP_GATE처럼 별도 GPIO mute를 가정할 수 없다. 이 경로에 기존 스피커 차단 방식을 그대로 복사하지 않았으며 헤드폰 출력은 여전히 미구현이다. Q4 BOM prose의 GPIO42와 현재 AMP_GATE16 차이도 인계 정정표에 추가했다. 실제 측정/실행은 하지 않았다.
+- 직접적인 R12/상태 보관 경로를 구현했다. Gateway0.2.0은 local configured gatewayId/originator/cseId/rvi/container identity를 DB에 연결하고 mismatch/QUARANTINED/필수 table 누락을 BLE·전송 시작 전에 거절한다. endpoint/certificate 경로 변경은 binding에서 제외하지만 다른 configured principal/자원에 state를 조용히 재사용하지 않는다. 로컬 binding을 중앙 권한/attestation으로 표시하지 않는다.
+- Python3.11 sqlite3 공식 backup 문서를 읽고 operator-only bubble-gateway-state snapshot/adopt 소스를 추가했다. daemon lock·read-only source·SQLite backup으로 committed WAL을 포함하고, 새 owner-only 파일/폴더에 DB·실제 table/status 수·SHA256 manifest를 기록하는 경로다. source-copy 논리 data row를 유지하면서 복사본 metadata만 QUARANTINED로 만들어 무단 rollback 실행을 막는다. 실제 snapshot/data/manifest를 생성하지 않았다.
+- 0.1.x 원본의 비어 있지 않은 unbound DB는 자동 소유를 추정하지 않고 명시적 adopt가 필요하다. adoption은 기존 record의 Gateway/hash/route를 읽고 새 격리 snapshot을 먼저 완성한 다음, data_version/write transaction으로 원본에 binding만 추가하는 코드다. 필요한 초기 CORE table을 추가할 수 있으나 기존 data row/명령을 삭제·재실행하지 않는다. 실제 DB schema/data migration은 실행하지 않았다.
+- 복구 copy activation은 중앙 checkpoint/현재 권한·장치 NVS·CORE sequence 상한 계약이 필요해 구현하지 않았다. snapshot이 있다고 R12·정산·recovery 완료로 표시하지 않는다. STATE_RECOVERY.md와 schema3개, 인수인계·버전0.2.0·설정을 갱신했다.
+- 테스트/린트/정적분석/build/flash/SQLite/CLI/Gateway 실행/실물·COM/앱·서비스·컨테이너 재시작/검증용 데이터 생성은 모두 미실행이다. 새 코드를 검증 또는 운영 migration 성공으로 보고하지 않는다.
+
+현재 source checkpoint는 commit/push 후 실제 Git 결과를 기록한다. 계획서의 필수 검증 증거가 아직 없어 전체 완료가 아니며, 로컬 빌드·Gateway 단위 테스트도 현재 작업의 명시적 허가 전에는 실행하지 않는다. 중앙 INTEGRATION/settlement/recovery 계약, 구매 JD9853 초기화, 실제 board/Pi·측정/영상 증거도 남아 있다.

@@ -24,7 +24,9 @@ DEVICE_ACKS = {"APPLIED", "DUPLICATE", "REJECTED_EPOCH", "REJECTED_GRANT", "EXPI
 class Gateway:
     def __init__(self, config: GatewayConfig):
         self.config = config
-        self.store = Store(config.database, config.max_outbox_rows, config.max_outbox_bytes, config.max_commands)
+        from .state_identity import configured_binding
+        self.store = Store(config.database, config.max_outbox_rows, config.max_outbox_bytes,
+                           config.max_commands, configured_binding(config))
         self.transport = TransportHub(config)
         self.ble = BleFleet(config)
         self.stop = asyncio.Event()

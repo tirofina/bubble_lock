@@ -103,6 +103,8 @@ sudo systemctl enable --now privacy-bubble-gateway.service
 
 ## 저장소·권한·시간 동작
 
+Gateway0.2.0은 DB를 configured Gateway/Originator/CSE 자원 identity에 연결한다. 기존의 비어 있지 않은0.1.x DB에는 명시적 adoption이 필요하다. [STATE_RECOVERY.md](STATE_RECOVERY.md)에 같은 원본의 adoption·WAL snapshot·archive quarantine과 미구현 restore activation을 구분했다. 새 도구를 실행하거나 기존 DB를 변경한 것은 아니며 이번에는 소스만 추가했다.
+
 - SQLite WAL과 `synchronous=FULL`을 사용한다. 관측 dedup, command journal, ownership fence, receipt와 outbox를 보존한다. 이미 SQLite에 저장된 전송 항목은 재시작 후 재전송한다.
 - `MAX_OUTBOX_ROWS`와 `MAX_OUTBOX_BYTES`는 미전송 payload 수와 합산 byte 예산이다. SQLite 파일·WAL·command journal의 전체 디스크 크기 제한은 아니다. 관측은 outbox 예산의 90%를 사용하고 나머지를 receipt에 남긴다.
 - queue가 가득 차면 기존 항목을 삭제하지 않는다. BLE 전달 대기 항목은 메모리에서 재시도하지만 버퍼가 넘치거나 프로세스가 종료되면 아직 저장되지 않은 관측을 복구할 수 없다. [IO 메모](IO_NOTES.md)에 drop counter와 reconnect 경계를 정리했다.

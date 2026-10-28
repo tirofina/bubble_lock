@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:privacy-bubble:keyring:0.1.0:gateway-state-binding",
+  "title": "KEYRING gateway-state-binding",
+  "description": "Gateway 0.2.0 candidate. Local state provenance/consistency, not a central grant, attestation, restore activation or settlement receipt. Source implementation unverified.",
+  "type": "object",
+  "properties": {
+    "bindingVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "gatewayId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "originator": {
+      "type": "string",
+      "minLength": 1
+    },
+    "cseId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "rvi": {
+      "type": "string",
+      "minLength": 1
+    },
+    "observationContainer": {
+      "type": "string",
+      "pattern": "^/"
+    },
+    "receiptContainer": {
+      "type": "string",
+      "pattern": "^/"
+    },
+    "healthContainer": {
+      "type": "string",
+      "pattern": "^/"
+    }
+  },
+  "required": [
+    "bindingVersion",
+    "gatewayId",
+    "originator",
+    "cseId",
+    "rvi",
+    "observationContainer",
+    "receiptContainer",
+    "healthContainer"
+  ],
+  "additionalProperties": false
+}

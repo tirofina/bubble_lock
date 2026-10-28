@@ -10,6 +10,7 @@ from pathlib import Path
 
 from .model import canonical, iso_time
 from .core_bridge import telemetry, measurable, acknowledgement
+from .state_identity import preflight, install
 
 
 class CapacityError(RuntimeError):
@@ -17,8 +18,9 @@ class CapacityError(RuntimeError):
 
 
 class Store:
-    def __init__(self, path: Path, max_rows: int, max_bytes: int, max_commands: int):
+    def __init__(self, path: Path, max_rows: int, max_bytes: int, max_commands: int, binding: dict):
         path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        preflight(path, binding)
         self.db = sqlite3.connect(str(path), timeout=10)
         self.db.row_factory = sqlite3.Row
         self.max_rows, self.max_bytes, self.max_commands = max_rows, max_bytes, max_commands
@@ -49,6 +51,13 @@ class Store:
                 device_id TEXT PRIMARY KEY, wire_sequence INTEGER NOT NULL
             );
         """)
+        try:
+            with self.db:
+                self.db.execute("BEGIN IMMEDIATE")
+                install(self.db, binding)
+        except Exception:
+            self.db.close()
+            raise
 
     @staticmethod
     def request_id(kind: str, identity: str) -> str:

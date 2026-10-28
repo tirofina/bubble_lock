@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:privacy-bubble:keyring:0.1.0:gateway-state-adoption",
+  "title": "KEYRING gateway-state-adoption",
+  "description": "Gateway 0.2.0 candidate. Local state provenance/consistency, not a central grant, attestation, restore activation or settlement receipt. Source implementation unverified.",
+  "type": "object",
+  "properties": {
+    "adoptionVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "archiveId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "completedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "bindingSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "bindingAdded": {
+      "type": "boolean"
+    },
+    "dataRowsModified": {
+      "const": false
+    },
+    "sourceRecoveryState": {
+      "const": "LIVE"
+    }
+  },
+  "required": [
+    "adoptionVersion",
+    "archiveId",
+    "completedAt",
+    "bindingSha256",
+    "bindingAdded",
+    "dataRowsModified",
+    "sourceRecoveryState"
+  ],
+  "additionalProperties": false
+}

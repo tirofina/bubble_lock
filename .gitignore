@@ -26,5 +26,6 @@ dist/
 .local/
 _local/
 keyring-journal-archives/
+keyring-gateway-archives/
 *.csr
 *.srl

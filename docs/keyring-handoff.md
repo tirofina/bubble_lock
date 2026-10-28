@@ -16,6 +16,7 @@
 | Gateway | [daemon 및 설치 안내](../keyring/raspberry-pi-gateway/README.md) | 소스 작성, Raspberry Pi 배포·실행 미실행 |
 | 권한·연속성 | 중앙 승인, epoch/deadline, 중복·journal·queue 처리 | 구현 작성, 중앙 정책과 장애 시나리오 미검증 |
 | journal 보관 | [읽기 전용 snapshot·보관 CLI](../keyring/JOURNAL_RETENTION.md) | keyring-0.5.0 소스 작성. 실제 보관/정산·reclaim 미실행, 중앙 계약 필요 |
+| Gateway 상태 | [binding·cold snapshot·legacy adoption](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md) | Gateway0.2.0 소스 작성. migration/backup 미실행. 복구 활성화는 중앙 checkpoint 계약 후 구현 |
 | 전송 | MQTT 3.1.1 및 mTLS HTTPS, oneM2M 응답 판정 | 구현 작성, Mobius capability probe 미실행 |
 | 계약 | [JSON Schema](../contracts/keyring/README.md)와 [전송 계약](../keyring/INTERFACE_NOTES.md) | 후보 계약. canonical revision 합의 전 |
 | 공개 증거 | 시험 receipt, 로그 hash, 실물 영상, release manifest | 이번 작업에서 생성하지 않음 |

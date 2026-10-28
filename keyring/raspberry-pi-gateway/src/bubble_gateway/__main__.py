@@ -9,6 +9,7 @@ import signal
 from pathlib import Path
 
 from .config import GatewayConfig, read_env_file
+from .state_identity import StateIdentityError
 
 
 async def serve(config: GatewayConfig) -> None:
@@ -41,6 +42,9 @@ def main() -> None:
             asyncio.run(serve(config))
     except KeyboardInterrupt:
         pass
+    except StateIdentityError as exc:
+        logging.getLogger(__name__).error("Gateway state blocked: %s; see STATE_RECOVERY.md", str(exc))
+        raise SystemExit(1) from None
     except Exception as exc:
         # Do not dump environment, certificates, command payloads or raw HTTP bodies.
         logging.getLogger(__name__).error("Gateway stopped: %s", type(exc).__name__)
