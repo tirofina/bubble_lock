@@ -150,3 +150,9 @@ source commit `a3e1943` 일반 push가 성공했다(`c2ad489..a3e1943`, origin/c
 - 테스트/린트/정적분석/build/flash/COM·장비/CLI/Gateway·DB/서비스·컨테이너 실행·재시작/검증용 데이터 생성은 모두 미실행이다. 문서/설정/연결을 갱신했고 실제 장치나 기존 DB·원본 CAD를 변경하지 않았다.
 
 계획서가 요구하는 actual build/test/실물·통합/영상·release 증거는 남아 있다. 소스 업로드 후 현재 작업의 로컬3개 프로필 빌드·Gateway 단위 테스트 실행 여부를 사용자에게 확인한다. 사용자 명시 요청 전에는 이를 시작하지 않는다. 중앙 INTEGRATION·settlement/recovery 승인 계약, JD9853 구매 모듈 초기화, 실물 장비/측정 허가 역시 별도 의존성이다.
+
+### DAC 대기 상태 소스 업로드 결과와 다음 실행 범위
+
+source commit `3d0f0cc` 일반 push가 성공했다(`c5f1617..3d0f0cc`, origin/codex/keyring-namho). sourceCommit을3d0f0cc로 갱신했다. compile profile은 provisioning.h뿐 아니라 local jd9853_panel.h도 제외해 장치별 비공개 설정과 분리한다. 이는 소스/설정 업로드이며 실제 DAC 종료·소비전류·음향·빌드/테스트·release 완료가 아니다.
+
+계획서 actual build/test 증거를 진행하려면 현재 작업의 명시적 실행 요청이 필요하다. 다음 확인 범위는 로컬3개 compile profile과 Gateway 단위 테스트 및 필요한 개발 dependency 설치이며 flash/COM/실제 BLE·장비/운영·기존 DB 실행은 포함하지 않는다. 허가 전에는 dependency 설치·테스트 데이터/fixture 생성·실행을 하지 않는다. goal은 active이며 JD9853 실물 초기화/중앙 승인·settlement/recovery 계약/실물·통합·영상 evidence는 남아 있다.

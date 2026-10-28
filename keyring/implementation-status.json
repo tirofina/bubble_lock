@@ -104,13 +104,14 @@
   "releaseSha": null,
   "firmwareRevision": "keyring-0.7.0",
   "publication": {
-    "sourceCommit": "a3e1943",
+    "sourceCommit": "3d0f0cc",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "a3e1943",
-    "latestCheckpoint": "firmware 0.7.0 MAX9850 standby interlock and compile profile source (unverified)"
+    "latestLocalSourceCommit": "3d0f0cc",
+    "latestCheckpoint": "firmware 0.7.0 MAX9850 standby and compile profile source pushed (unverified)"
   },
-  "gatewayRevision": "0.2.0"
+  "gatewayRevision": "0.2.0",
+  "pendingValidationScope": "Explicit user request required: compile minimal/ST7789/JD9853 profiles and Gateway unit tests, including necessary development dependencies; no flash/COM/real-device or live-service execution."
 }
