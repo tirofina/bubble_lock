@@ -4,7 +4,7 @@ BTN_CONFIRM,6,INPUT_PULLUP,LOW pressed
 BTN_PANIC,7,INPUT_PULLUP,LOW pressed
 VIB_PWM,3,LOW,HIGH motor output; firmware pulse <=1000ms
 AMP_GATE,16,HIGH,HIGH mutes amplifier through Q4
-ACCEL_INT,17,INPUT,LIS2DW12 interrupt; wake not configured
+ACCEL_INT,17,INPUT,LIS2DW12 INT1 active-high latched motion; optional EXT0 wake
 LCD_CS,18,HIGH,LCD SPI select
 LCD_DC,8,UNCONFIGURED,LCD data command
 LCD_MOSI_RAW,38,UNCONFIGURED,SPI shared with microSD

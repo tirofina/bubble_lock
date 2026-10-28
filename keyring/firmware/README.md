@@ -30,7 +30,7 @@ GPIO43은 LCD reset에 연결돼 있으므로 UART0 콘솔을 사용하지 않�
 
 UUID와 payload는 [공통 인터페이스](../INTERFACE_NOTES.md)를 따른다. WRITE/NOTIFY는 UTF-8 JSON+LF, 조각당 최대 20byte, 최대 프레임 4096byte다. 조각 간 5초 timeout을 적용하며 송신 알림은 15ms 간격으로 나눈다. Gateway는 명령을 직렬 처리한다. 명령 큐는 4개이며 가득 찼거나 식별할 수 없는 malformed 프레임은 실행하지 않고 버린다. Gateway는 dispatch 이후 TIMEOUT/INDETERMINATE 결과에서 자동 재실행하지 않고 결과 정산 또는 수동 복구로 넘긴다. 펌웨어의 동일 commandId 중복 응답은 다른 Gateway로의 handover나 명시적인 복구 과정에서 사용한다. 수신 callback에서는 조립과 큐 삽입만 수행하고 GPIO·NVS 처리는 주 loop에서 수행한다.
 
-Observation은 LF를 포함해 직렬화 길이 512byte 이하일 때만 게시한다. 전체 관측이 초과하면 battery를 null로, sensorValues를 `{"status":"payload_too_large"}`로 바꾼 최소 관측을 사용한다. 이 최소 관측도 512byte를 넘거나 JSON 저장 공간이 부족하면 게시하지 않는다. Receipt는 길이와 관계없이 NOTIFY의 전체 프레임 조각을 수신해야 한다. 512byte를 넘는 receipt의 READ 값은 빈 값이며 불완전한 JSON 조각을 전체 receipt로 사용해서는 안 된다.
+Observation은 LF를 포함해 512byte 이하일 때만 게시한다. 초과하면 선택적인 accelerationG·voltage·중복 상태 설명을 먼저 생략하고 truncated=true를 표시한다. 그래도 초과하면 sensorValues를 `{"status":"payload_too_large"}`로 바꾼 최소 관측을 사용하며 실제 battery는 유지한다. 최소 관측도 한도를 넘거나 JSON 저장 공간이 부족하면 게시하지 않는다. Receipt는 NOTIFY의 전체 프레임을 조립해야 한다. 512byte를 넘는 receipt의 READ 값은 빈 값이다.
 
 암호화된 Secure Connections + MITM + bonding을 요구한다. 읽기·쓰기와 알림 구독 descriptor에도 MITM 접근 권한을 설정한다. 인증 완료되지 않은 연결에서 명령을 처리하지 않는다. passkey를 가진 등록 Gateway를 신뢰하는 구조이며 장치가 중앙 OIDC/grant를 독립 검증하는 구조는 아니다.
 
@@ -54,6 +54,6 @@ MAX17048의 SOC와 VCELL을 읽고 실패 시 battery/voltage를 null로 보낸�
 
 LIS2DW12 WHO_AM_I를 확인하고 12.5Hz·low-power mode1·±2g·BDU·주소 증가를 설정해 3축을 g 단위로 보낸다. 레지스터와 감도 근거는 [LIS2DW12 제조사 데이터시트](https://www.st.com/resource/en/datasheet/lis2dw12.pdf)다. 초기화/읽기 실패는 accelStatus=unavailable이다. 낙상 판정이나 위치 추정은 구현하지 않았다.
 
-확인/비상 버튼은 active-low, debounce 35ms이며 panic을 우선한다. 버튼은 관측 의도를 전송하며 자체적으로 grant나 보호자 승인을 생성하지 않는다. 관측은 2초 주기 또는 버튼/출력 변화 때 갱신한다. radio controller sleep을 요청하고 지원 여부만 로그에 남기며 loop는 RTOS에 양보한다. BLE 활성 상태에서 수동 light-sleep을 호출하지 않는다. 이는 배터리 수명·소비전류 측정 결과가 아니며 화면·오디오·microSD 드라이버 및 motion wake는 후속 구현 대상이다.
+확인/비상 버튼은 active-low, debounce35ms이며 panic을 우선한다. 관측 의도를 전송하며 자체적으로 grant나 보호자 승인을 생성하지 않는다. 관측은2초 주기 또는 버튼/출력/움직임 변화 때 갱신한다. radio controller sleep 요청과 idle yield 외에 선택형 deep sleep·motion/버튼/timer wake 경로를 작성했다. `KEYRING_ENABLE_SLEEP` 기본값은0이며 연결 중에는 절전하지 않는다. 상세 설정·제약·미실행 인수 항목은 [POWER_WAKE.md](POWER_WAKE.md)에 있다. 화면·오디오·microSD 드라이버는 아직 미구현이며 배터리 수명·소비전류·깨우기 동작은 미확인이다.
 
 충전 전류 모드는 USB100 기본값을 유지한다. 충전기·온도 보호·충전 LED는 하드웨어 회로이며 펌웨어가 충전 LED를 제어했다고 표시하지 않는다.

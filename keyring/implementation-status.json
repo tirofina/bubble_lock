@@ -13,6 +13,7 @@
     "r18 pin-based firmware and safe boot outputs",
     "MAX17048 battery and LIS2DW12 acceleration observations",
     "debounced confirm/panic buttons",
+    "LIS2DW12 latched motion events and optional ESP32-S3 deep sleep/button/timer wake",
     "BLE MITM bonding, GATT identity and framed JSON notifications",
     "bounded NVS command journal, fencing, GPIO readback and timed motor output",
     "Raspberry Pi BLE fleet and SQLite durable outbox",
@@ -40,7 +41,7 @@
     "central settlement and safe device journal archival procedure"
   ],
   "notImplemented": [
-    "LCD UI, I2S audio, microSD and motion wake drivers",
+    "LCD UI, I2S audio and microSD drivers",
     "OTA, secure boot and flash encryption deployment"
   ],
   "notPerformed": [
@@ -56,12 +57,14 @@
     "scope": "loopback-only development server; no device integration evidence"
   },
   "logSha256": null,
-  "releaseSha": null
-  ,"publication": {
+  "releaseSha": null,
+  "firmwareRevision": "keyring-0.3.0",
+  "publication": {
     "sourceCommit": "7835874",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
-    "remoteAccess": "stopped-after-403-until-explicit-user-reconnect"
+    "remoteAccess": "stopped-after-403-until-explicit-user-reconnect",
+    "unpublishedCheckpoint": "firmware power and motion wake source (unverified)"
   }
 }

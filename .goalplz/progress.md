@@ -33,3 +33,16 @@ Bootstrap가 완료되어 AE(ty2), container 3개(ty3), binarySwitch(ty28) 모�
 2. CORE와 MQTT app-level receipt/durable ingress 및 BLE frame 확장을 맞추고, INTEGRATION의 claim/grant/current authorization API가 생기면 실제 adapter를 연결한다. 없는 승인 값을 만들지 않는다.
 3. 장치 journal 정산·보관 계약, motion wake와 남은 주변장치 드라이버를 하드웨어 출처에 맞춰 구현한다.
 4. 사용자 명시 실행 요청과 실물 장비가 확보되면 power/range/reconnect/ACK·시연 evidence를 수집한다. 그 전에는 전체 goal을 complete로 표시하지 않는다.
+
+## 2026-10-28 — 펌웨어 motion/power checkpoint (로컬)
+
+이전 goal 턴은 source commit7835874의 원격 업로드와 실제 임시 서버 자원 생성으로 progress였다. 이번 턴도 현재 plan/AGENTS/source/log를 읽고 독립 구현을 진행했다. GitHub 재접속은 사용자 명시 요청이 없어서 수행하지 않았다.
+
+- firmware revision keyring-0.3.0: MotionWake와 powerState 모듈을 추가했다. r18 U6 INT1 pad12→ACCEL_INT/GPIO17을 실제 PCB 텍스트와 최신 핀맵에서 읽었다.
+- ST DS11811 Rev9의 wake register와 Espressif IDF4.4.7 ESP32-S3 sleep API 문서를 읽고 motion latch/event clear, 버튼 ANY_LOW·motion EXT0·timer deep wake 경로를 작성했다. 자료 읽기 외 datasheet score/analyzer·테스트·build·실행은 하지 않았다.
+- sleep 기본값은0이다. 명시적으로 켠 장치만 disconnected idle 상태에서 진입한다. 연결/명령/receipt/출력/fault/센서·저장소 오류에서 진입을 막고 callback과 예약을 link lock으로 조정했다. wake 원인과 이벤트는 기존 sensorValues 확장으로 전달한다.
+- 관측 프레임 크기를 맞출 때 실제 battery를 유지하고 선택적인 축·전압·중복 상태 설명을 우선 줄인다. 센서값을 추정해 채우지 않는다.
+- `keyring/firmware/POWER_WAKE.md`에 설정·출처·가용성 제약과 KR-SLEEP-01~08 미실행 인수 제안을 남겼다. 실제 소비전류·wake·배터리 수명·실물 trace는 미확인이다.
+- 코드·문서 수정만 수행했다. 테스트/린트/정적분석/빌드/flash/앱·컨테이너 재시작/장비 시험/검증용 데이터 생성은 하지 않았다. 로컬 commit 후 원격 접근 재허가 전까지 보관한다.
+
+다음 독립 구현: 승인된 출력에 연결할 I2S 알림, 실제 LCD/controller·microSD 하드웨어에 맞춘 주변장치 드라이버, 장치 journal 정산·보관 계약. 중앙 API와 실물 시험 증거는 여전히 별도 의존성이다.

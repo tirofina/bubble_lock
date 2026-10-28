@@ -13,15 +13,12 @@
 #include <stddef.h>
 #include <string>
 #include "board_r18.h"
-#if __has_include("provisioning.h")
-#include "provisioning.h"
-#endif
-#ifndef KEYRING_PASSKEY
-#define KEYRING_PASSKEY 0
-#endif
+#include "firmware_options.h"
+#include "motion_wake.h"
+#include "power_state.h"
 
 namespace {
-constexpr char FirmwareRevision[] = "keyring-0.2.0";
+constexpr char FirmwareRevision[] = "keyring-0.3.0";
 #if defined(KEYRING_LEGACY_GATT) && KEYRING_LEGACY_GATT
 constexpr char ServiceUuid[] = "8b8f0001-8e7a-4f36-a8c2-1c9b5d620001";
 constexpr char IdentityUuid[] = "8b8f0002-8e7a-4f36-a8c2-1c9b5d620001";
@@ -50,6 +47,7 @@ QueueHandle_t commandQueue = nullptr;
 Preferences nvs;
 bool storageHealthy = false, provisioned = false, radioSleepEnabled = false;
 volatile bool connected = false, authenticated = false, disconnected = false;
+volatile bool sleepPreparing = false;
 volatile uint32_t connectionGeneration = 0;
 uint8_t peerAddress[6] = {};
 uint16_t peerConnection = 0;
@@ -59,6 +57,7 @@ uint64_t motorStopAt = 0, lastObservation = 0;
 bool observationDirty = true;
 esp_timer_handle_t motorTimer = nullptr;
 volatile bool motorTimerFired = false;
+MotionWake motion;
 
 struct Frame { char bytes[MaxFrame + 1]; uint64_t firstAt, completedAt; uint32_t generation; };
 Frame processingFrame = {};
@@ -250,11 +249,22 @@ void publishObservation() {
   } else values["accelerationG"] = nullptr;
   values["fault"] = digitalRead(board::MainFaultN) == LOW;
   values["journal"] = storageHealthy ? "ready" : "error";
+  values["motion"] = motion.ready() ? "ready" : "unavailable";
+  values["motionEvents"] = motion.events();
+  values["wake"] = powerState::wakeCause();
+  values["wakePins"] = powerState::wakePins();
+  values["power"] = powerState::status();
   std::string frame = jsonText(doc);
+  if (frame.size() > 512 && !doc.overflowed()) {
+    // Preserve battery and event identity first; large axis arrays are optional.
+    values.remove("accelerationG"); values.remove("voltage");
+    values.remove("batteryStatus"); values.remove("accelStatus");
+    values["truncated"] = true;
+    frame = jsonText(doc);
+  }
   if (frame.size() > 512 || doc.overflowed()) {
     // Keep identity, sequence, buttons, state and uptime. Do not invent readings
     // when the full sensor object exceeds the READ attribute budget.
-    doc["battery"] = nullptr;
     doc.remove("sensorValues");
     doc.createNestedObject("sensorValues")["status"] = "payload_too_large";
     frame = jsonText(doc);
@@ -418,8 +428,12 @@ class CommandCallbacks : public BLECharacteristicCallbacks {
 };
 class ServerCallbacks : public BLEServerCallbacks {
   void onConnect(BLEServer *instance, esp_ble_gatts_cb_param_t *param) override {
-    if (connected) { instance->disconnect(param->connect.conn_id); return; }
     portENTER_CRITICAL(&linkMux);
+    const bool reject = connected || sleepPreparing;
+    if (reject) {
+      portEXIT_CRITICAL(&linkMux);
+      instance->disconnect(param->connect.conn_id); return;
+    }
     connected = true; authenticated = false; ++connectionGeneration;
     peerConnection = param->connect.conn_id; memcpy(peerAddress, param->connect.remote_bda, 6);
     portEXIT_CRITICAL(&linkMux);
@@ -484,7 +498,36 @@ void initBle() {
 }
 } // namespace
 
+namespace {
+void considerSleep(uint64_t now) {
+  if (!powerState::idle(now) || connected || !storageHealthy || !motion.ready() ||
+      motorStopAt || readState() || uxQueueMessagesWaiting(commandQueue) != 0 ||
+      !receiptTx.active.empty() || !receiptTx.pending.empty() ||
+      digitalRead(board::MainFaultN) == LOW) return;
+  if (!motion.clearForSleep()) {
+    powerState::activity(now); observationDirty = true; return;
+  }
+  // Reserve the transition before stopping advertising. New peers are refused
+  // rather than accepting a connection while the main loop arms sleep.
+  portENTER_CRITICAL(&linkMux);
+  const bool entering = !connected && !sleepPreparing;
+  if (entering) sleepPreparing = true;
+  portEXIT_CRITICAL(&linkMux);
+  if (!entering) return;
+  BLEDevice::getAdvertising()->stop();
+  stopMotor();
+  powerState::enter(); // Does not return after successful deep sleep.
+  portENTER_CRITICAL(&linkMux);
+  sleepPreparing = false;
+  portEXIT_CRITICAL(&linkMux);
+  powerState::activity(now); observationDirty = true;
+  BLEDevice::startAdvertising();
+}
+}
+
 void setup() {
+  safePins();
+  powerState::begin(); // Release sleep holds after writing safe output latches.
   safePins();
   Serial.begin(115200); // Native USB CDC only; GPIO43 is reserved for LCD reset.
   uint64_t mac = ESP.getEfuseMac();
@@ -496,6 +539,7 @@ void setup() {
   snprintf(bootId, sizeof(bootId), "%08lx%08lx%08lx%08lx", static_cast<unsigned long>(esp_random()),
       static_cast<unsigned long>(esp_random()), static_cast<unsigned long>(esp_random()), static_cast<unsigned long>(esp_random()));
   loadJournal(); initSensors();
+  motion.begin(accelReady, readRegisters, writeRegister);
   esp_timer_create_args_t timerArgs = {};
   timerArgs.callback = motorExpired; timerArgs.name = "motor-stop";
   if (esp_timer_create(&timerArgs, &motorTimer) != ESP_OK) motorTimer = nullptr;
@@ -512,6 +556,7 @@ void setup() {
 void loop() {
   uint64_t now = uptime();
   if (!provisioned) { delay(100); return; }
+  if (connected) powerState::activity(now);
   if (disconnected) {
     disconnected = false; stopMotor(); observationTx.clear(); receiptTx.clear();
     xQueueReset(commandQueue); BLEDevice::startAdvertising();
@@ -522,6 +567,8 @@ void loop() {
   }
   bool changedConfirm = confirm.update(now), changedPanic = panic.update(now);
   if (changedConfirm || changedPanic) observationDirty = true;
+  if (confirm.pressed || panic.pressed || changedConfirm || changedPanic) powerState::activity(now);
+  if (motion.poll(now)) { powerState::activity(now); observationDirty = true; }
   // Preserve every receipt notification frame. A new command waits until its predecessor drains.
   if (receiptTx.active.empty() && receiptTx.pending.empty()) {
     if (xQueueReceive(commandQueue, &processingFrame, 0) == pdTRUE) processCommand(processingFrame);
@@ -529,6 +576,7 @@ void loop() {
   if (now - lastObservation >= board::ObserveMs) { sampleSensors(); observationDirty = true; }
   if (observationDirty) publishObservation();
   receiptTx.tick(now); observationTx.tick(now);
+  considerSleep(now);
   // Yield to BLE and idle tasks. Manual light-sleep is deliberately not entered with active BLE.
   delay(5);
 }
