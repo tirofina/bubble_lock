@@ -133,3 +133,7 @@ source commit `a9c55ad` 일반 push가 성공했다(`e9ad8ac..a9c55ad`, origin/c
 - 테스트/린트/정적분석/build/flash/SQLite/CLI/Gateway 실행/실물·COM/앱·서비스·컨테이너 재시작/검증용 데이터 생성은 모두 미실행이다. 새 코드를 검증 또는 운영 migration 성공으로 보고하지 않는다.
 
 현재 source checkpoint는 commit/push 후 실제 Git 결과를 기록한다. 계획서의 필수 검증 증거가 아직 없어 전체 완료가 아니며, 로컬 빌드·Gateway 단위 테스트도 현재 작업의 명시적 허가 전에는 실행하지 않는다. 중앙 INTEGRATION/settlement/recovery 계약, 구매 JD9853 초기화, 실제 board/Pi·측정/영상 증거도 남아 있다.
+
+### Gateway0.2.0 상태 보관 소스 업로드
+
+source commit `a3e1943` 일반 push가 성공했다(`c2ad489..a3e1943`, origin/codex/keyring-namho). sourceCommit을a3e1943로 갱신했다. 이는 코드·계약·운영 안내의 업로드이며 실제 DB adoption/snapshot·복구 활성화·검증·빌드·release 성공이 아니다. main/CORE/운영 서버/기존 DB/장비를 변경하지 않았다. 전체 goal은 active다. 다음에는 외부 DAC의 부팅/절전 안전 상태와 남은 구현·검증 의존성을 이어서 처리한다.

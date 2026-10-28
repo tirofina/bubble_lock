@@ -101,13 +101,13 @@
   "releaseSha": null,
   "firmwareRevision": "keyring-0.6.0",
   "publication": {
-    "sourceCommit": "a9c55ad",
+    "sourceCommit": "a3e1943",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "a9c55ad",
-    "latestCheckpoint": "Gateway 0.2.0 state binding and quarantined archives source (unverified)"
+    "latestLocalSourceCommit": "a3e1943",
+    "latestCheckpoint": "Gateway 0.2.0 state identity and quarantined WAL archive source pushed (unverified)"
   },
   "gatewayRevision": "0.2.0"
 }
