@@ -1,7 +1,7 @@
 # Peripheral source references and notices
 
 Arduino_GFX is a pinned dependency, not vendored. Its upstream
-[license.txt](https://github.com/moononournation/Arduino_GFX/blob/f71dbf6532b277401d70442f43a8fa9b61c6a7e3/license.txt)
+[license.txt](https://github.com/moononournation/Arduino_GFX/blob/3cc08c4e9ab6d85807e49b657d73fae10871616e/license.txt)
 contains the BSD license and Adafruit Industries copyright. Retain the dependency
 license and applicable upstream notices when distributing source or firmware.
 

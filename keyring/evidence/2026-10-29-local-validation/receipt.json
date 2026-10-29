@@ -1,0 +1,369 @@
+{
+  "evidenceVersion": 1,
+  "generatedAt": "2026-10-29T06:50:00.912806+00:00",
+  "role": "KEYRING",
+  "owner": "남호",
+  "documentRevision": "2.0.0",
+  "scope": "local compile profiles and Gateway mock unit tests",
+  "sourceCommit": "3c27f4d43f80e8538e4ae6b953571b2d3bd9333f",
+  "sourcePushConfirmed": true,
+  "remoteBranch": "codex/keyring-namho",
+  "remoteCore": "91a281b",
+  "authorization": "Explicit user reply: 로컬 빌드·단위 테스트 허용; required development dependencies included",
+  "host": {
+    "system": "Windows",
+    "release": "11",
+    "python": "3.12.14",
+    "platformio": "6.2.0"
+  },
+  "dependencies": {
+    "espressif32": "6.9.0",
+    "arduino": "2.0.17",
+    "frameworkPackage": "3.20017.241212+sha.dcc1105b",
+    "toolchain": "8.4.0+2021r2-patch5",
+    "arduinoJson": "6.21.5",
+    "arduinoGfx": "1.4.9",
+    "arduinoGfxCommit": "3cc08c4e9ab6d85807e49b657d73fae10871616e"
+  },
+  "firmware": {
+    "command": "python -m platformio run -e keyring_compile_minimal -e keyring_compile_st7789 -e keyring_compile_jd9853",
+    "buildDirectory": "C:\\Users\\NH\\.cache\\keyring-validation-20261029\\build",
+    "exitCode": 0,
+    "profiles": [
+      {
+        "environment": "keyring_compile_minimal",
+        "result": "SUCCESS",
+        "elapsedSeconds": 112.63,
+        "ramBytes": 58160,
+        "ramLimitBytes": 327680,
+        "flashBytes": 807093,
+        "flashLimitBytes": 6291456,
+        "artifacts": [
+          {
+            "file": "firmware.bin",
+            "bytes": 807456,
+            "sha256": "44f54ea6009be364b57b3860c08f4d74db48d528c85e66ee8c0cd16a1dc3c904"
+          },
+          {
+            "file": "firmware.elf",
+            "bytes": 19737224,
+            "sha256": "363e22dbf71a221833b7f5d8ae77b3639747a64cec78f0388fd6772502f5d4a6"
+          },
+          {
+            "file": "firmware.map",
+            "bytes": 15927973,
+            "sha256": "684b11fd9333a9d82264cfd5694b8be5cd4fb49e66a008526d38469da88c79b9"
+          },
+          {
+            "file": "bootloader.bin",
+            "bytes": 15104,
+            "sha256": "2a71d69b471e20c2bac7fb469f3c6a807b3ebee780e348e5889db0da849ca363"
+          },
+          {
+            "file": "partitions.bin",
+            "bytes": 3072,
+            "sha256": "b16b1b27ccfeecedd026631c54e77065d3913bca810cad5cfe77525fc9938f75"
+          }
+        ]
+      },
+      {
+        "environment": "keyring_compile_st7789",
+        "result": "SUCCESS",
+        "elapsedSeconds": 112.69,
+        "ramBytes": 59484,
+        "ramLimitBytes": 327680,
+        "flashBytes": 889965,
+        "flashLimitBytes": 6291456,
+        "artifacts": [
+          {
+            "file": "firmware.bin",
+            "bytes": 890384,
+            "sha256": "77f00039b95cfe3ab6eed3345ee1896b69265c67fc61e719adf9bcfbd0f49b95"
+          },
+          {
+            "file": "firmware.elf",
+            "bytes": 21583676,
+            "sha256": "c333acf1f0a3b137ddf546f794ddf1282e0b482de9207082c4a5d33f93a84acb"
+          },
+          {
+            "file": "firmware.map",
+            "bytes": 16483598,
+            "sha256": "e54f1d73297002dddb9bf444a13137fac52ee73d1b1627b594628333dc4140ad"
+          },
+          {
+            "file": "bootloader.bin",
+            "bytes": 15104,
+            "sha256": "2a71d69b471e20c2bac7fb469f3c6a807b3ebee780e348e5889db0da849ca363"
+          },
+          {
+            "file": "partitions.bin",
+            "bytes": 3072,
+            "sha256": "b16b1b27ccfeecedd026631c54e77065d3913bca810cad5cfe77525fc9938f75"
+          }
+        ]
+      },
+      {
+        "environment": "keyring_compile_jd9853",
+        "result": "SUCCESS",
+        "elapsedSeconds": 133.75,
+        "ramBytes": 59484,
+        "ramLimitBytes": 327680,
+        "flashBytes": 889581,
+        "flashLimitBytes": 6291456,
+        "artifacts": [
+          {
+            "file": "firmware.bin",
+            "bytes": 890000,
+            "sha256": "9b0186f30a821b630c1522f345ae353ae4d01728bef9ade12cab20b78df87dc8"
+          },
+          {
+            "file": "firmware.elf",
+            "bytes": 21580536,
+            "sha256": "61443c7d1d98c0a571b848daaa04acd09b023d0f50d2c6ac7c7123d5648437cd"
+          },
+          {
+            "file": "firmware.map",
+            "bytes": 16474315,
+            "sha256": "5f83431160556ca30a8a3529f38fd14bba3451059209907b14bd9287b7facee1"
+          },
+          {
+            "file": "bootloader.bin",
+            "bytes": 15104,
+            "sha256": "2a71d69b471e20c2bac7fb469f3c6a807b3ebee780e348e5889db0da849ca363"
+          },
+          {
+            "file": "partitions.bin",
+            "bytes": 3072,
+            "sha256": "b16b1b27ccfeecedd026631c54e77065d3913bca810cad5cfe77525fc9938f75"
+          }
+        ]
+      }
+    ],
+    "provisioned": false,
+    "localProvisioningExcluded": true,
+    "binaryCommitted": false,
+    "runtimeValidation": false
+  },
+  "gateway": {
+    "command": "PYTHONPATH=keyring/raspberry-pi-gateway/src python -m unittest discover -s keyring/raspberry-pi-gateway/tests -v",
+    "exitCode": 0,
+    "tests": 37,
+    "failures": 0,
+    "errors": 0,
+    "elapsedSeconds": 0.908,
+    "result": "OK",
+    "syntheticTemporaryDatabaseOnly": true,
+    "actualSqliteBackupExercised": true,
+    "posixDirectoryFsync": "mocked",
+    "networkConnections": false,
+    "bleConnections": false,
+    "daemonStarted": false
+  },
+  "exclusions": [
+    "flash",
+    "COM",
+    "real BLE/device",
+    "existing databases",
+    "operational services",
+    "separate lint",
+    "Pi/BlueZ deployment",
+    "POSIX ownership/lock/fsync durability",
+    "physical measurements",
+    "CSE E2E",
+    "release approval"
+  ],
+  "overallProjectStatus": "implemented; real-device/integration/release evidence incomplete",
+  "sources": [
+    {
+      "path": "keyring/firmware/include/audio_alert.h",
+      "sha256LfNormalized": "e233c7bce8003240ea9fd11a7e27122bc7e5ab2e8eb15f5eab6bda4e508f58bd"
+    },
+    {
+      "path": "keyring/firmware/include/aux_rail.h",
+      "sha256LfNormalized": "1e325bfd3c2bbb090f31420a4d2f9e5906c25d4f906e68056b25a11977975a53"
+    },
+    {
+      "path": "keyring/firmware/include/board_r18.h",
+      "sha256LfNormalized": "cf1b72dd4146190f4f5be108a54ce7fb5d9cf7c931f02773af553b2e00f1f616"
+    },
+    {
+      "path": "keyring/firmware/include/firmware_options.h",
+      "sha256LfNormalized": "e4bb9cddb2e371b8cda9ad52982c3e695b0380d0eedb3253504290efa370e28d"
+    },
+    {
+      "path": "keyring/firmware/include/headphone_standby.h",
+      "sha256LfNormalized": "74811b680c9ab3e7b7549138bf4e45876ecff2df74eadd82776e6d35f83ba44d"
+    },
+    {
+      "path": "keyring/firmware/include/jd9853_display.h",
+      "sha256LfNormalized": "d574854379c5587a77a8ecb1e368df5b352f2bcc5729ed22087d43535d85a188"
+    },
+    {
+      "path": "keyring/firmware/include/motion_wake.h",
+      "sha256LfNormalized": "f753aeea45d2c8208708dd2f4271ce56580cce0b845f870ae0122181e1ccdf45"
+    },
+    {
+      "path": "keyring/firmware/include/peripherals.h",
+      "sha256LfNormalized": "724e63b1e1bbc5cd30a0d568543883994f1b2f29bc43ff3efacb5a583406d253"
+    },
+    {
+      "path": "keyring/firmware/include/power_state.h",
+      "sha256LfNormalized": "c13e292d4fb122d04d50267a5951099809d329d32a58043eef763a339cbecbcc"
+    },
+    {
+      "path": "keyring/firmware/include/provisioning.example.h",
+      "sha256LfNormalized": "a92c4281bb5a4d158fce67f2df4557f544d816239d3cffda41e77a236ee042c3"
+    },
+    {
+      "path": "keyring/firmware/include/supply_monitor.h",
+      "sha256LfNormalized": "45faf16f22024a90acd5266280588816a5d65dbd0e4c31f13f976442f4b71f4e"
+    },
+    {
+      "path": "keyring/firmware/partitions.csv",
+      "sha256LfNormalized": "cae3cb563090b72f32579b5258daa8cf8f3d1e9ddee053ea2de263a4a29129fa"
+    },
+    {
+      "path": "keyring/firmware/platformio.ini",
+      "sha256LfNormalized": "51f4facb3d76861698c313c8a46807695ede9cc7ddaf94022aaa1622392f8930"
+    },
+    {
+      "path": "keyring/firmware/src/audio_alert.cpp",
+      "sha256LfNormalized": "df9f31a03a10b49ab1d1716d8f3b64a80c1ca65300671b08f1ba8a3203fdde6b"
+    },
+    {
+      "path": "keyring/firmware/src/aux_rail.cpp",
+      "sha256LfNormalized": "8d9a36501206889e8ee3d3a5924c36051f9db0c2429243c6314a2d5372cbb2ec"
+    },
+    {
+      "path": "keyring/firmware/src/headphone_standby.cpp",
+      "sha256LfNormalized": "90fd23ba1e10f77fe334f86072c8d2d1dd8ccebc8c0dbf90c02f0046798e5a7b"
+    },
+    {
+      "path": "keyring/firmware/src/jd9853_display.cpp",
+      "sha256LfNormalized": "19f6ffe611248c05112013510dd27446cf2b1220a4488bec48bcff5d21ca1b9e"
+    },
+    {
+      "path": "keyring/firmware/src/main.cpp",
+      "sha256LfNormalized": "3d74ebf9fae4b4b985faffd45c02b7cdc69d7be2323fda8b3f40d419472e58ea"
+    },
+    {
+      "path": "keyring/firmware/src/motion_wake.cpp",
+      "sha256LfNormalized": "cbe25e0df3f2642e884f92ab3b3364c8a5f10d691c4aa1c60b99c4dd53e9e65c"
+    },
+    {
+      "path": "keyring/firmware/src/peripherals.cpp",
+      "sha256LfNormalized": "dc04dd2224efee97dc88e682900ef59db88ad3c62718883a6c97b0ea34733ac6"
+    },
+    {
+      "path": "keyring/firmware/src/power_state.cpp",
+      "sha256LfNormalized": "208a1a84b5a65abfedadf479cfb04eec1a3663d4b6b45b37b05d3e2e0b648fed"
+    },
+    {
+      "path": "keyring/firmware/src/supply_monitor.cpp",
+      "sha256LfNormalized": "77328876b63d250b2a760ad0b35bbf1ab585a78a78b617f8ae3bbb9a843923c5"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/__init__.py",
+      "sha256LfNormalized": "97add990fc3875d3942ac163bf95f48381b8623a3c6bce6356faea680b7b34f0"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/__main__.py",
+      "sha256LfNormalized": "36dcb434b1343f6cdedb174c9f68e372141d27de327e94f54e958bd9719c4219"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/ble.py",
+      "sha256LfNormalized": "c2272eab16d427f4242eb8a1a0e6d813652a897e35cee3917d4a9fc6b86f22c0"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/config.py",
+      "sha256LfNormalized": "aaa913c289848cfbce6aad544d19b0d705f0bcbef3574435a96866489c2c54f2"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/core_bridge.py",
+      "sha256LfNormalized": "eddb76e43b823c8c53d351544f0132bc64f3321f3b6778fbdec7842209c49fa9"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/journal_cli.py",
+      "sha256LfNormalized": "a22dac2ddbf6142f8c0665e5efe460827721e502bb40453fde4d366783bff1fe"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/journal_export.py",
+      "sha256LfNormalized": "02ee7f74547656a650b3dbaebec6e1e7b1378d041825ff1937dbd05dba99d046"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/model.py",
+      "sha256LfNormalized": "964b4c982d94177f251bcbaec430e18edb36106300db45d79b094c0eca8c7fa6"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/service.py",
+      "sha256LfNormalized": "e6649210103decb3e02dfe81a576c2b09ede3f8c9130d8c842a0014329a3ebf1"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/state_archive.py",
+      "sha256LfNormalized": "be49b0c2cb336a69153aed777184bc038db398a480ad3f99bd1f421a60e93e97"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/state_identity.py",
+      "sha256LfNormalized": "aac06ec93f0c0e3ca22e67d0d4e8a7b605890d3aecc5aa1710a5a9cbd04f6ef0"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/store.py",
+      "sha256LfNormalized": "b639e3b02892f18db2c8c6c21c0910568cf372523573070e88f524c0e53d288a"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/transport.py",
+      "sha256LfNormalized": "62b4c42dea5437882b4b69f79418e4f8e64387d2aa83a3eb570ae698707f0a13"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/helpers.py",
+      "sha256LfNormalized": "eee17a8b5cd175dc3e92c55adae0a88a5923b0331046a15f317b1f31fd6ff82e"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_dispatch.py",
+      "sha256LfNormalized": "193b158d20e019f7f75348be0c31908323a7a7a63e7be56b9935d167a645d668"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_journal.py",
+      "sha256LfNormalized": "262b3baa8af2b985dfb14c46bbeabe9898fb1064343d74b0dcf20c0b42273858"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_protocol.py",
+      "sha256LfNormalized": "e75220ddb7b92e2bc50edd465c8777acc65829c8dd1c91c5c184f3f8f61332a2"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_store.py",
+      "sha256LfNormalized": "e740d04e4a8349fce6ec2a6439093c4f450b7f67ca27837f99b8e2e810c590a6"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_transport.py",
+      "sha256LfNormalized": "773d8e4fb0cbdb7f339590da7903249f002ae0bc042306c8f727d7afa7dc63ae"
+    }
+  ],
+  "logs": [
+    {
+      "path": "firmware-build-initial.log",
+      "bytes": 21293,
+      "sha256": "22204b32e641e4db3a5de6e8d3bd55e2ef49ae07c0d0bc2b6f810a54755c5672"
+    },
+    {
+      "path": "firmware-build-unicode-path.log",
+      "bytes": 26730,
+      "sha256": "dcfe53a8116b76b5e95d050a7ec45a0a451c9d35350edaa4a5a0708a3140fc47"
+    },
+    {
+      "path": "firmware-build.log",
+      "bytes": 85077,
+      "sha256": "61b25f509ee1f2bffee8c1ced7c4283eb5993a80b68e134846c19c2ca8468007"
+    },
+    {
+      "path": "gateway-tests.log",
+      "bytes": 5449,
+      "sha256": "43ce83defef9d1c0415e8761795ed3c4d65f443c48778fd429ec2606ab001957"
+    },
+    {
+      "path": "python-packages.json",
+      "bytes": 1806,
+      "sha256": "601b022337aefbfc72a20328718d9898e8d9150870361052cf957c540ccbe854"
+    }
+  ]
+}

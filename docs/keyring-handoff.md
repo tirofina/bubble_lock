@@ -1,8 +1,10 @@
 # KEYRING 인수인계 — 남호
 
-2026-10-28 업데이트: 저장소 최신 DOC-REV 2.0.0과 CORE `91a281b`를 인수했다. oneM2M/SDT/topic/DB는 PC-MOBIUS-CORE, commands/authorize/credential와 grant/claim/epoch는 PC-MOBIUS-INTEGRATION에 연결한다. [상세 CORE 차이 및 변경 제안](../keyring/CORE_INTEGRATION.md)에 BLE UUID 변경, sequence 유지, 승인 필드 누락, CORE ty/op 불일치를 기록했다. 원본 팀 구현은 보존했다.
+2026-10-29 업데이트: 저장소 최신 DOC-REV 2.0.0과 CORE `91a281b`를 인수했다. oneM2M/SDT/topic/DB는 PC-MOBIUS-CORE, commands/authorize/credential와 grant/claim/epoch는 PC-MOBIUS-INTEGRATION에 연결한다. [상세 CORE 차이 및 변경 제안](../keyring/CORE_INTEGRATION.md)에 BLE UUID 변경, sequence 유지, 승인 필드 누락, CORE ty/op 불일치를 기록했다. 원본 팀 구현은 보존했다.
 
 기준 문서: `PROJECT_IMPLEMENTATION_RUBRIC_PLAN.md` · DOC-REV: `2.0.0` · 계약 후보: `0.1.0` · 브랜치: `codex/keyring-namho`
+
+2026-10-29 사용자 허가로 기본/ST7789/JD9853 compile profile 세 개와 Gateway 모의 단위 테스트37개가 통과했다. source3c27f4d를 역할 브랜치에 업로드했다. [원본 로그·receipt·산출물 hash](../keyring/evidence/2026-10-29-local-validation/README.md)에 범위와 한계를 기록한다. flash·실제 장비·기존 DB·운영 서비스·Pi/CSE 통합은 실행하지 않았다.
 
 ## 구현 범위와 상태
 
@@ -17,10 +19,10 @@
 | Gateway | [daemon 및 설치 안내](../keyring/raspberry-pi-gateway/README.md) | 소스 작성, Raspberry Pi 배포·실행 미실행 |
 | 권한·연속성 | 중앙 승인, epoch/deadline, 중복·journal·queue 처리 | 구현 작성, 중앙 정책과 장애 시나리오 미검증 |
 | journal 보관 | [읽기 전용 snapshot·보관 CLI](../keyring/JOURNAL_RETENTION.md) | keyring-0.5.0 소스 작성. 실제 보관/정산·reclaim 미실행, 중앙 계약 필요 |
-| Gateway 상태 | [binding·cold snapshot·legacy adoption](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md) | Gateway0.2.0 소스 작성. migration/backup 미실행. 복구 활성화는 중앙 checkpoint 계약 후 구현 |
+| Gateway 상태 | [binding·cold snapshot·legacy adoption](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md) | Gateway0.2.0 모의 단위 테스트에서 임시 SQLite backup/adoption·격리 확인. 실제 POSIX CLI·기존 DB migration/backup 미실행. 복구 활성화는 중앙 checkpoint 계약 후 구현 |
 | 전송 | MQTT 3.1.1 및 mTLS HTTPS, oneM2M 응답 판정 | 구현 작성, Mobius capability probe 미실행 |
 | 계약 | [JSON Schema](../contracts/keyring/README.md)와 [전송 계약](../keyring/INTERFACE_NOTES.md) | 후보 계약. canonical revision 합의 전 |
-| 공개 증거 | 시험 receipt, 로그 hash, 실물 영상, release manifest | 이번 작업에서 생성하지 않음 |
+| 공개 증거 | 시험 receipt, 로그 hash, 실물 영상, release manifest | 로컬 빌드·모의 테스트 로그/hash 생성. 실물·통합·영상·release 미완료 |
 
 ## PC-MOBIUS에 전달할 계약
 

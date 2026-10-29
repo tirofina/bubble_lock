@@ -20,7 +20,7 @@ ROUTE: render_goal
 
 ## 확인과 증거
 
-사용자 no-validation 지침에 따라 코드 수정 후 자동 테스트·정적 분석·빌드·실행은 하지 않는다. 요청된 임시 서버 provisioning은 수행할 수 있으나 그것을 E2E·실물 검증으로 표시하지 않는다. 코드·계약·설정·git commit/push 증거와 실패한 provisioning을 구분한다. 최종 plan의 실제 시험 evidence는 별도 명시적 실행 요청 및 장비가 필요하다.
+2026-10-29 최신 사용자 AGENTS 지침에 따라 코드·스크립트 수정 뒤 관련 빌드·테스트·스크립트를 직접 실행하고 실제 결과를 보고한다. 이번 명시 허가 범위인 로컬 펌웨어3개 compile profile과 Gateway 모의 단위 테스트·개발 의존성 설치를 수행했다. flash·COM·실제 BLE/장비·기존 DB·운영 서비스 실행은 이번 허가 범위 밖이다. 로컬 build/test와 임시 서버 provisioning을 실제 Pi·중앙 E2E·실물 검증으로 표시하지 않는다. 코드·계약·설정·git commit/push·실행 로그와 오류·미실행 범위를 구분한다.
 
 ## 반복
 

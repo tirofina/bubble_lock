@@ -31,7 +31,7 @@ SPI GPIO는 MOSI38/SCK39, LCD CS18/DC8/RESET43이다. UART0 TX는 RESET43과 충
 
 독립 드라이버 저자의 [jd9853-rs blocking 구현](https://github.com/drindr/jd9853-rs/blob/186e52d3c264c899d8910a63297e48a1d2a8d516/src/blocking.rs)과 [MADCTL 정의](https://github.com/drindr/jd9853-rs/blob/186e52d3c264c899d8910a63297e48a1d2a8d516/src/lib.rs)를 읽었다. 이는 구매 모듈 제조사의 확인 자료가 아니다. 제조사 데이터시트 제공 사이트 buydisplay가 HTTP403을 반환해 추가 요청을 중단했다. 제조사 문서를 읽었다고 표시하지 않는다.
 
-그래픽은 [Arduino_GFX f71dbf6](https://github.com/moononournation/Arduino_GFX/tree/f71dbf6532b277401d70442f43a8fa9b61c6a7e3)를 dependency로 고정했다. 라이브러리를 설치하거나 빌드하지 않았다. [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES.md)에 라이선스·참고 출처가 있다.
+그래픽은 [Arduino_GFX v1.4.9 / 3cc08c4](https://github.com/moononournation/Arduino_GFX/tree/3cc08c4e9ab6d85807e49b657d73fae10871616e)를 dependency로 고정했다. Arduino 2.0.17과 호환되는 버전으로 고정했다. 처음 선택한1.6.9는 esp32-hal-periman.h 부재로 컴파일에 실패했다. [빌드 기록](BUILD_PROFILES.md)에 실제 결과를 연결한다. [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES.md)에 라이선스·참고 출처가 있다.
 
 ## 승인된 출력의 오디오
 

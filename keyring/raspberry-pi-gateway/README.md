@@ -4,7 +4,7 @@ DOC-REV 2.0.0의 팀 CORE 계약을 연결했다. `BLE_GATT_PROFILE=core-v1`이 
 
 Python 3.11 이상과 Linux BlueZ를 사용하는 KEYRING 현장 daemon이다. BLE 관측을 SQLite outbox에 저장하고 MQTT 또는 HTTPS로 oneM2M contentInstance를 생성한다. 중앙에서 받은 명령은 최신 승인·credential·deadline을 확인한 뒤 BLE로 전달한다.
 
-현재 상태는 **소스 작성 / unverified**다. 아래 명령은 Raspberry Pi에서 사용자가 수동으로 수행할 배포 절차이며, 이번 작업에서는 설치·빌드·실행·장비 연결을 하지 않았다.
+현재 전체 상태는 **implemented / 실물·통합 unverified**다. 2026-10-29 사용자 허가로 Windows Python에서 모의 단위 테스트 37개가 통과했다([범위와 재실행](TESTING.md)). 아래 명령은 Raspberry Pi 배포 절차이며 실제 Pi daemon·BLE·운영 서비스는 실행하지 않았다.
 
 ## 먼저 준비할 환경
 
@@ -116,4 +116,4 @@ Gateway0.2.0은 DB를 configured Gateway/Originator/CSE 자원 identity에 연�
 
 oneM2M은 같은 `rqi`의 CREATE 성공 응답을 받아야 전송 완료 처리한다. MQTT PUBACK은 완료 근거가 아니다. HTTPS fallback도 동일한 contentInstance 이름을 쓰며, 이름 충돌은 기존 payload가 일치할 때만 완료로 처리한다.
 
-수용 항목과 중앙 인수 조건은 [KEYRING 인수인계](../../docs/keyring-handoff.md)에 있다. **검증·빌드·실행 미실행.**
+수용 항목과 중앙 인수 조건은 [KEYRING 인수인계](../../docs/keyring-handoff.md)에 있다. 로컬 모의 단위 테스트 결과는 [TESTING.md](TESTING.md)에 있다. Pi 배포·장비·서비스 통합 검증은 미실행이다.

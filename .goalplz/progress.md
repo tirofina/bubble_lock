@@ -175,3 +175,18 @@ source commit `3d0f0cc` 일반 push가 성공했다(`c5f1617..3d0f0cc`, origin/c
 검증·빌드·테스트 데이터/fixture·장비·서비스·기존 DB 실행은 하지 않았다. 기능을 임의 추가하거나 같은 상태 기록을 진척으로 계산하며 계속 돌리지 않는다. 전체 목표를 complete로 표시하지 않는다. source firmware0.7.0/Gateway0.2.0은3d0f0cc이며 직전 증거 공백 문서는7f0e3ab로 업로드돼 있다.
 
 다음 진행에는 기존 질문의 로컬3개 compile profile·Gateway 모의 단위 테스트(+필요 개발 dependency) 범위에 대한 현재 작업의 명시적 요청이 필요하다. 그 허가도 flash/COM/실제 BLE·장비·기존 DB·운영 서비스 실행을 포함하지 않는다. 최종 완료의 중앙 INTEGRATION·settlement/recovery 계약, JD9853 구매 모듈 초기화, 지정 원문과 실제 Pi/측정/통합/영상·release evidence도 남아 있다. 이 마지막 상태 commit/push는 기록 보존이며 구현 진척이나 시험 통과가 아니다.
+
+
+## 2026-10-29 — 명시 허가 후 로컬 빌드3개·Gateway 모의 테스트37개 통과
+
+사용자가 기존 질문에 “로컬 빌드·단위 테스트 허용”으로 답했다. 펌웨어3개 compile profile·Gateway 모의 단위 테스트와 필요한 개발 의존성 설치 범위로 진행했다. 최신 사용자 AGENTS는 코드/스크립트 수정 뒤 관련 검증을 직접 수행하도록 이전 no-validation 기본값을 대체했으며, 저장소 AGENTS와 goal contract의 해당 검증 조항을 갱신했다. flash/COM/실제 BLE·장비/기존 DB/운영 서비스는 실행하지 않았다.
+
+- 시작/종료 준비 시 fetch의 main/CORE는91a281b, WEB은80ed37f였다. 새 팀 계약 변경은 없었다. 원본 중앙 구현·하드웨어 자산은 수정하지 않았다.
+- 분리된 .venv에 PlatformIO Core6.2.0과 Gateway 개발 의존성을 설치했다. Windows11/Python3.12.14, espressif32 6.9.0, Arduino2.0.17, Xtensa8.4.0+2021r2-patch5, ArduinoJson6.21.5다.
+- 첫 빌드에서 GFX1.6.9의 esp32-hal-periman.h 부재와 C++11 Button 초기화 오류를 재현했다. 원본 upstream v1.4.9의 Arduino2.x 분기를 읽고 dependency를3cc08c4e9ab6d85807e49b657d73fae10871616e로 고정했다. Button에는 명시적 생성자를 추가했다. 이 소스 및 테스트는3c27f4d로 commit/push 성공(d233c0f..3c27f4d, origin/codex/keyring-namho).
+- 다음 빌드는 한글 경로 firmware.map을 Windows 링커가 열지 못해 실패했다. 저장소는 보존하고 PLATFORMIO_BUILD_DIR=C:/Users/NH/.cache/keyring-validation-20261029/build로 출력만 바꿨다. 초기 실패/중단 로그도 보존했다.
+- 최종 `python -m platformio run -e keyring_compile_minimal -e keyring_compile_st7789 -e keyring_compile_jd9853`는 exit0/3 succeeded,5분59.074초다. minimal flash807093/RAM58160,ST7789 flash889965/RAM59484,JD9853 flash889581/RAM59484 bytes. firmware.bin은 각각807456/890384/890000bytes다. 장치 provisioning.h와 jd9853_panel.h는 제외했고 passkey는 invalid0이므로 실제 장치 펌웨어로 배포하지 않았다.
+- `python -m unittest discover -s keyring/raspberry-pi-gateway/tests -v`는37개/0failure/0error/OK,0.908초다. 모의 BLE/MQTT/HTTP, 합성 명령, 테스트 전용 임시 SQLite만 사용했다. 중복/충돌·fence·기한·권한 binding·미확정 실행 재시도 방지·outbox·CORE sequence·journal capture·WAL backup/quarantine/adoption을 확인했다. Windows에서 POSIX directory fsync는 모의 처리했다. 실제 Pi 권한/lock/전원 손실 내구성 증거가 아니다.
+- `keyring/evidence/2026-10-29-local-validation/`에 실제 로그·환경 package 목록·receipt와 바이너리/ELF/map/bootloader/partition SHA256을 기록했다. .gitattributes는 evidence 원본 byte를 보존한다. 바이너리·credential·실제 장치 데이터는 Git에 포함하지 않았다.
+
+허가 대기는 해소됐고 이번 로컬 검증 범위는 완료됐다. get_goal의 마지막 반환은 기존 blocked 상태였으며 도구가 지원하지 않는 active 전환을 시도하거나 전체 goal을 complete로 표시하지 않았다. 전체 역할 목표에는 중앙 승인/settlement/recovery 계약·지정 원문·JD9853 구매 모듈 init·실제 Pi/장비/전력·거리/CSE 통합·영상/release evidence가 남아 있다. 로컬 통과를 실물·전체 verified/released로 승격하지 않는다.

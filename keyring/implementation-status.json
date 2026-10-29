@@ -4,10 +4,10 @@
   "document": "PROJECT_IMPLEMENTATION_RUBRIC_PLAN.md",
   "documentRevision": "2.0.0",
   "contractRevision": "0.1.0-candidate",
-  "date": "2026-10-28",
+  "date": "2026-10-29",
   "branch": "codex/keyring-namho",
   "status": "implemented",
-  "verificationStatus": "not-run",
+  "verificationStatus": "local-build-and-mock-unit-tests-passed; real-device/integration-unverified",
   "rubricIds": [
     "R01",
     "R02",
@@ -52,7 +52,7 @@
     "explicit legacy DB identity adoption after a cold snapshot with original data rows preserved",
     "MAX9850 mute/shutdown control requests at boot, periodic readback and before sleep",
     "shared-I2S installation/playback guard while headphone shutdown controls are unknown",
-    "three explicit compile profiles excluding local device provisioning; build not run"
+    "three unprovisioned compile profiles built successfully on Windows; no hardware execution"
   ],
   "existingHardware": {
     "status": "source-snapshot-included-unverified",
@@ -81,18 +81,17 @@
     "central-authorized Gateway snapshot restore activation"
   ],
   "notPerformed": [
-    "firmware build",
     "flash",
     "lint",
-    "tests",
-    "gateway/device runtime execution",
     "hardware validation",
     "power/range measurement",
     "integration demo",
     "video evidence",
-    "Gateway state snapshot/adoption runtime execution"
+    "real-device and CSE end-to-end tests",
+    "Gateway daemon/device hardware execution",
+    "deployed POSIX state operator CLI and existing database snapshot/adoption"
   ],
-  "actualReceipt": null,
+  "actualReceipt": "evidence/2026-10-29-local-validation/receipt.json",
   "temporaryServer": {
     "upstreamRevision": "e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8",
     "composeProject": "privacy-bubble-keyring-dev",
@@ -100,20 +99,20 @@
     "provisioningReceipt": "dev/mobius4/provisioning-receipt.json",
     "scope": "loopback-only development server; no device integration evidence"
   },
-  "logSha256": null,
+  "logSha256": "61b25f509ee1f2bffee8c1ced7c4283eb5993a80b68e134846c19c2ca8468007",
   "releaseSha": null,
   "firmwareRevision": "keyring-0.7.0",
   "publication": {
-    "sourceCommit": "3d0f0cc",
+    "sourceCommit": "3c27f4d",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "3d0f0cc",
-    "latestCheckpoint": "firmware 0.7.0 MAX9850 standby and compile profile source pushed (unverified)"
+    "latestLocalSourceCommit": "3c27f4d",
+    "latestCheckpoint": "Arduino 2 compatibility fix and Gateway mock tests pushed; three local compile profiles and 37 mock tests passed"
   },
   "gatewayRevision": "0.2.0",
-  "pendingValidationScope": "Explicit user request required: compile minimal/ST7789/JD9853 profiles and Gateway unit tests, including necessary development dependencies; no flash/COM/real-device or live-service execution.",
+  "pendingValidationScope": "Local authorized scope completed. Flash/COM/real BLE/device/existing DB/operational services/Pi/CSE E2E and physical evidence remain outside this authorization.",
   "lastCompletionAudit": {
     "sourceRef": "98f525e",
     "scope": "plan/evidence file reading only; not build, code analysis, tests or runtime validation",
@@ -125,15 +124,32 @@
       "references/hackathon_2026/extracted/Hackathon Rubric 2026.txt"
     ],
     "missingReferenceScope": "exact repository/original workspace root paths only",
-    "currentBuildTestAuthorization": "unanswered-existing-question"
+    "currentBuildTestAuthorization": "explicit-user-reply-2026-10-29-completed-local-scope"
   },
   "goalExecutionState": {
-    "goalStatus": "blocked",
-    "consecutiveGoalTurns": 3,
-    "reason": "Existing local build/unit-test authorization question remains unanswered; required central contracts, referenced originals and real-device evidence are not supplied.",
+    "lastReportedGoalStatus": "blocked",
+    "previousConsecutiveBlockedTurns": 3,
+    "previousAuthorizationGateResolved": true,
+    "executionRequest": "explicitly authorized local builds/unit tests completed",
+    "remainingCompletionDependencies": [
+      "authoritative central authorization/settlement/recovery contracts",
+      "purchased JD9853 module initialization",
+      "named source references",
+      "real Pi/device/measurement/CSE integration/video/release evidence"
+    ],
     "latestRemoteCore": "91a281b",
-    "sourceCommit": "3d0f0cc",
-    "sourceValidation": "not-run",
-    "nextAuthorizedScope": "Await explicit current-task request for three local compile profiles and Gateway mock unit tests, including required development dependencies; no flash/COM/live BLE/device/existing DB or operational-service execution."
+    "sourceCommit": "3c27f4d",
+    "sourceValidation": "three local compile profiles and 37 Gateway mock unit tests passed; full system unverified",
+    "goalComplete": false
+  },
+  "actualReceiptScope": "Local compile profiles and Gateway mock unit tests only; no device/Pi/central integration or release approval",
+  "localValidation": {
+    "date": "2026-10-29",
+    "sourceCommit": "3c27f4d",
+    "firmwareProfilesPassed": 3,
+    "gatewayUnitTestsPassed": 37,
+    "host": "Windows 11 / Python 3.12.14",
+    "receipt": "evidence/2026-10-29-local-validation/receipt.json",
+    "limits": "Unprovisioned compile only; synthetic temporary DBs and mocked BLE/MQTT/HTTP; POSIX directory fsync mocked; no real device or live service"
   }
 }

@@ -12,8 +12,8 @@ DOC-REV: 2.0.0
 RUBRIC: R01, R02, R03, R05, R10, R11, R12, R15
 SCOPE: r18 PCB 기반 펌웨어 및 Raspberry Pi Gateway
 INTERFACES: KEYRING contract candidate 0.1.0 / BLE GATT / mTLS HTTPS / MQTT 3.1.1 / oneM2M cin
-TESTS: 미실행 — KR-* 수용 항목은 인수인계 문서에 제안
-EVIDENCE: 이번 실행의 시험 로그·receipt·hash 없음
+TESTS: Gateway 모의 단위 테스트37개 통과; 펌웨어 compile profile 결과는 BUILD_PROFILES.md 참조; 실물/E2E 미실행
+EVIDENCE: evidence/2026-10-29-local-validation/ — 로컬 검증 로그·receipt·hash
 DEPENDENCIES: PC-MOBIUS API, AE/container/ACP, broker capability, credential 등록
 ```
 
@@ -25,7 +25,7 @@ DEPENDENCIES: PC-MOBIUS API, AE/container/ACP, broker capability, credential 등
 | [주변장치](firmware/PERIPHERALS.md) | ST7789·JD9853 선택형 화면, 스피커 cue, microSD receipt 복사와 미확인 범위 |
 | [공급 전원 계측](firmware/POWER_MONITOR.md) | INA219 단발 전류·전압·부하 전력, 센서/전력/상태 detail과 단위 |
 | [DAC 대기 상태](firmware/HEADPHONE_STANDBY.md) | MAX9850 mute/shutdown 요청·공유 I2S interlock. 헤드폰 재생은 미구현 |
-| [빌드 프로필](firmware/BUILD_PROFILES.md) | 로컬 장치 provisioning을 제외한 세 컴파일 구성. 빌드 미실행 |
+| [빌드 프로필](firmware/BUILD_PROFILES.md) | 로컬 장치 provisioning을 제외한 세 컴파일 구성과 실제 빌드 기록 |
 | [journal 보관](JOURNAL_RETENTION.md) | 암호화 BLE snapshot·수동 보관 CLI, 원본 유지와 중앙 정산 의존성 |
 | [Gateway 상태 보관](raspberry-pi-gateway/STATE_RECOVERY.md) | DB identity·WAL snapshot·기존 DB adoption, 중앙 확인 전 복구본 실행 차단 |
 | [완료 조건·증거 공백](COMPLETION_GAPS.md) | 계획서 산출물별 자료, 미확인 원문/계약·실측·검증 허가 |
@@ -39,4 +39,4 @@ DEPENDENCIES: PC-MOBIUS API, AE/container/ACP, broker capability, credential 등
 
 펌웨어 빌드·flash 및 Gateway 설치·실행 절차는 각 모듈 README에 있다. 실제 장치 ID, passkey, BLE 주소, CA/인증서/개인키 및 중앙 주소를 배포 환경에 설정해야 한다. 예시 설정만으로 현장 연결이 완료되지는 않는다.
 
-현재 소스 상태는 **implemented / unverified**다. 검증·빌드·실행은 하지 않았으며 실물 동작, BLE 거리·전력, CSE 연동, 영상 및 공개 evidence를 완료로 표시하지 않는다. 중앙 API와 oneM2M binding은 PC-MOBIUS 담당과 확정해야 하는 계약 후보이다.
+현재 전체 상태는 **implemented / 실물·통합 unverified**다. 사용자 허가로 진행한 로컬 빌드·모의 단위 테스트는 [실행 증거](evidence/2026-10-29-local-validation/README.md)에 연결한다. 실물 동작, BLE 거리·전력, CSE 연동, 영상 및 공개 evidence는 미완료다. 중앙 API와 oneM2M binding은 PC-MOBIUS 담당과 확정해야 하는 계약 후보이다.

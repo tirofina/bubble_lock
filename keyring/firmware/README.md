@@ -2,20 +2,20 @@
 
 ROLE: KEYRING · DOC-REV: 2.0.0 · 구현 계약: 0.1.0 · 상태: implemented, unverified
 
-ESP32-S3-WROOM-1-N16R8 / r18-hand-solder 보드를 대상으로 작성한 소스다. keyring-0.7.0에서 BLE 관측·버튼·배터리·가속도 수집과 진동 명령/receipt, 선택형 ST7789·JD9853 상태 화면·스피커 cue·SD receipt 복사를 구현한다. INA219 공급 전원 계측과 sensorValues detail별 전송도 추가했다. [POWER_MONITOR.md](POWER_MONITOR.md)에 전원 측정 영역·정수 단위·오류/null·전송 구분을 설명한다. [MAX9850 대기 상태](HEADPHONE_STANDBY.md)에 종료 요청/공유 I2S guard를, [BUILD_PROFILES](BUILD_PROFILES.md)에 로컬 provisioning을 제외한 컴파일 구성을 기록했다. 테스트·린트·컴파일·빌드·플래시·실물 실행은 이번 작업에서 수행하지 않았다.
+ESP32-S3-WROOM-1-N16R8 / r18-hand-solder 보드를 대상으로 작성한 소스다. keyring-0.7.0에서 BLE 관측·버튼·배터리·가속도 수집과 진동 명령/receipt, 선택형 ST7789·JD9853 상태 화면·스피커 cue·SD receipt 복사를 구현한다. INA219 공급 전원 계측과 sensorValues detail별 전송도 추가했다. [POWER_MONITOR.md](POWER_MONITOR.md)에 전원 측정 영역·정수 단위·오류/null·전송 구분을 설명한다. [MAX9850 대기 상태](HEADPHONE_STANDBY.md)에 종료 요청/공유 I2S guard를, [BUILD_PROFILES](BUILD_PROFILES.md)에 로컬 provisioning을 제외한 컴파일 구성을 기록했다. 2026-10-29 사용자 허가로 로컬 compile profile 빌드를 진행했다. [빌드 기록](BUILD_PROFILES.md)에 실제 결과·오류 수정을 연결한다. flash·COM·실물 실행·별도 lint는 수행하지 않았다.
 
 ## 구성과 준비
 
-`platformio.ini`는 espressif32 6.9.0, Arduino framework, ArduinoJson 6.21.5를 고정한다. 내장 ESP32 BLE 라이브러리를 사용한다. 그래픽 dependency Arduino_GFX는 commit f71dbf6532b277401d70442f43a8fa9b61c6a7e3으로 고정했다. 이번에 dependency 설치·빌드는 실행하지 않았다. 보드 프로필의 개발보드 이름은 빌드 타깃 선택이며 실제 대상은 커스텀 N16R8 보드다. 16MB flash, octal PSRAM, USB CDC를 설정했다. `partitions.csv`는 factory 앱 하나와 NVS를 할당하며 OTA는 구현하지 않았다.
+`platformio.ini`는 espressif32 6.9.0, Arduino framework, ArduinoJson 6.21.5를 고정한다. 내장 ESP32 BLE 라이브러리를 사용한다. 그래픽 dependency Arduino_GFX는 commit 3cc08c4e9ab6d85807e49b657d73fae10871616e으로 고정했다. 2026-10-29 사용자 허가로 개발 dependency 설치와 로컬 compile profile 빌드를 진행했다. 실제 결과는 [BUILD_PROFILES](BUILD_PROFILES.md)에 기록한다. 보드 프로필의 개발보드 이름은 빌드 타깃 선택이며 실제 대상은 커스텀 N16R8 보드다. 16MB flash, octal PSRAM, USB CDC를 설정했다. `partitions.csv`는 factory 앱 하나와 NVS를 할당하며 OTA는 구현하지 않았다.
 
 1. `include/provisioning.example.h`를 로컬 `include/provisioning.h`로 복사한다.
 2. 각 실물별로 다른 100000~999999 범위의 passkey를 설정한다. 예시 값 0이면 BLE가 시작되지 않는다.
 3. 선택적으로 `KEYRING_DEVICE_ID`에 재고 관리 ID를 설정한다. 미설정 시 eFuse MAC 기반 `keyring-...`를 사용한다. ID는 ASCII `[A-Za-z0-9][A-Za-z0-9._:-]*`, 최대 64자다.
 4. Gateway의 `ble_devices`와 firmware revision 허용 목록에 이 기기를 등록하고 BlueZ 등록 과정에서 해당 passkey를 사용한다.
 
-passkey는 소스 저장소·로그에 넣지 않는다. 이 보드의 화면 드라이버는 아직 없어 passkey를 화면에 표시하지 않는다. 담당자가 장치 라벨 또는 별도 등록 경로로 전달해야 한다. 설정만 바꾸어도 기존 Bluetooth bond가 철회되는 것은 아니다. 기기 분실·재등록에는 Gateway 권한 회수와 기존 bond 폐기 절차가 별도로 필요하다.
+passkey는 소스 저장소·로그에 넣지 않는다. 선택형 상태 화면은 passkey를 표시하지 않는다. 담당자가 장치 라벨 또는 별도 등록 경로로 전달해야 한다. 설정만 바꾸어도 기존 Bluetooth bond가 철회되는 것은 아니다. 기기 분실·재등록에는 Gateway 권한 회수와 기존 bond 폐기 절차가 별도로 필요하다.
 
-아래는 사용자가 명시적으로 빌드·업로드를 요청할 때 사용할 명령이다. 현재 실행 결과는 없다.
+아래는 실제 장치 설정을 사용하는 작업 명령이다. 이번 로컬 빌드는 provisioning을 제외한 별도 compile profile로 수행했다. upload·device monitor는 이번 작업에서 실행하지 않았다.
 
 ```powershell
 cd "C:\Users\NH\Documents\ChatGPT\mobius 해커톤\github_upload\bubble_lock\keyring\firmware"
