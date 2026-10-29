@@ -87,7 +87,7 @@ RECEIPT_FILE=./fixtures/core-partial.jsonl npm run sse
 | 6 | 로그·receipt·artifact hash | [evidence/](evidence/), [docs/release-manifest.json](docs/release-manifest.json)의 `artifacts` |
 | 7 | release manifest와 문서 연결 | [docs/release-manifest.json](docs/release-manifest.json), [docs/R04-article.md](docs/R04-article.md), [DESIGN.md](DESIGN.md), [기준 문서](../PROJECT_IMPLEMENTATION_RUBRIC_PLAN.md) |
 
-상태는 기준 문서대로 `planned → implemented → verified → released`를 씁니다. 모의 대시보드 동작은 브라우저에서 확인했으며, 실제 장치·Mobius 통합과 프로젝트 release 승인은 별도입니다. 독립 검토자 서명은 없고 부모 세션의 self-review만 수행했습니다. 항목별 범위는 manifest에 적었습니다.
+상태는 기준 문서대로 `planned → implemented → verified → released`를 씁니다. 모의 대시보드 동작은 브라우저에서 확인했으며, 실제 장치·Mobius 통합과 프로젝트 release 승인은 별도입니다. 초기 기능 데모는 부모 self-review로 확인했고, 아래 HIG 시각 보정은 별도 독립 검토를 통과했습니다. 항목별 범위는 각 증거 문서에 적었습니다.
 
 ### 브라우저 검증 증거
 
@@ -95,6 +95,17 @@ RECEIPT_FILE=./fixtures/core-partial.jsonl npm run sse
 - [데스크톱 light](evidence/desktop-light.png), [dark](evidence/desktop-dark.png), [부분 실패](evidence/desktop-partial.png): 1440px.
 - [모바일 light](evidence/mobile-light.png), [dark](evidence/mobile-dark.png), [하단](evidence/mobile-end.png): iPhone 14, 390 CSS px. 긴 전체 캡처는 Chrome의 16383 device-pixel 제한에 걸려 하단을 별도로 캡처했습니다.
 - [discovery HTTP fixture](evidence/discovery-http-fixture.png), [HTTP 오류](evidence/discovery-error.png): 공식 `m2m:uril`/`pb:binarySwitch` 형태의 로컬 모의 서버로 discovery와 개별 GET을 확인했습니다. 실제 Mobius 실배포 확인은 아닙니다.
+
+### HIG 시각 보정 검증 (2026-10-29)
+
+위 기능 캡처는 초기 `2529e0a`의 기록입니다. 최신 시각 보정은
+[항목별 HIG 판정](evidence/hig-visual-qa.md), [Apple 1차 자료](docs/hig-sources.md),
+[현재 캡처·해시](evidence/hig/capture-manifest.json),
+[실측·최종 시험 기록](evidence/hig/round2-proof.json)을 참조하세요.
+390/1440/1920px 밝은·어두운 테마와 상태 화면 87장, 수정 전후 58쌍을
+기록했고 독립 최종 검토에서 69항목 중 PASS 53, N/A 16, FAIL 0을 받았습니다.
+한국 시간 KST(+09:00)를 기본 표시하되 원본 시각과 밀리초는 보존합니다.
+최종 `npm test` 21/21 및 `npm run build`가 통과했습니다.
 
 ## 디렉터리
 

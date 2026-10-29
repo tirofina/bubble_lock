@@ -39,6 +39,7 @@ function Tree({ nodes, parent = null, selected, onSelect }: {
     {nodes.filter((node) => node.parent === parent).map((node) => <li key={node.uri}>
       <button type="button" aria-pressed={selected === node.uri} onClick={() => onSelect(node.uri)}>
         <span>{node.name}{node.inferred && <span className="caption muted"> · 경로</span>}</span>
+        <span className="caption selection-label">{selected === node.uri ? '선택됨' : ' '}</span>
         <span className="path">{node.uri}</span>
       </button>
       {nodes.some((child) => child.parent === node.uri) &&
@@ -140,6 +141,7 @@ export function Resources({ refresh }: { readonly refresh: number }) {
         {settingFields.map(([key, label, placeholder]) => <label key={key} className={key === 'cnd' ? 'field-wide' : undefined}>
           {label}
           <input value={draft[key]} placeholder={placeholder} autoComplete="off"
+            inputMode={key === 'baseUrl' ? 'url' : ['ty', 'limit', 'offset'].includes(key) ? 'numeric' : 'text'}
             required={key !== 'acp' && key !== 'cnd'}
             onChange={(event) => setDraft({ ...draft, [key]: event.target.value })} />
         </label>)}
@@ -149,10 +151,11 @@ export function Resources({ refresh }: { readonly refresh: number }) {
       <div className="cluster"><button type="submit">설정 적용 / discovery 조회</button><code>GET · fu=1 · drt=1</code></div>
     </form>}
     {mode === 'live' && <p className="notice">
-      학교 PC의 endpoint, 운영자 AE/ACP, CORS, RVI 및 SDT 등록은 미확인입니다.
-      조회 실패 시 모의 데이터로 대체하지 않습니다. 검색 결과는 ACP와 페이지 범위에 한정되며 전체 inventory가 아닙니다.
+      학교 PC의 endpoint, 운영자 AE/ACP, CORS, RVI 및 SDT 등록은 미확인입니다.{' '}
+      <span className="keep-phrase">조회 실패 시</span> 모의 데이터로 대체하지 않습니다. <span className="keep-phrase">검색 결과는</span> ACP와 페이지 범위에 한정되며 전체 inventory가 아닙니다.
     </p>}
-    {status === 'loading' && <p role="status">자원을 조회하고 있습니다…</p>}
+    <div className="resource-results stack" aria-busy={status === 'loading'}>
+    {status === 'loading' && <div className="panel loading-placeholder"><p role="status">자원을 조회하고 있습니다…</p>{[1, 2, 3, 4].map((row) => <div className="placeholder-row" aria-hidden="true" key={row} />)}</div>}
     {status === 'idle' && <p className="notice">운영자 설정을 입력하고 discovery 조회를 실행하세요.</p>}
     {error !== null && <p className="notice error" role="alert">{error} · 설정과 서버 상태를 확인한 뒤 새로고침하세요.</p>}
     {status === 'ready' && nodes.length === 0 && <p className="notice">조회된 자원이 없습니다. AE 경로·필터·ACP 범위를 확인하거나 새로고침하세요.</p>}
@@ -178,7 +181,7 @@ export function Resources({ refresh }: { readonly refresh: number }) {
         </>}
         {mode === 'live' && <>
           {detailLoading && <p role="status">선택한 자원을 GET 조회하고 있습니다…</p>}
-          {detailError !== null && <p className="notice error" role="alert">{detailError}</p>}
+          {detailError !== null && <p className="notice error" role="alert">{detailError} · 자원 경로와 서버 상태를 확인한 뒤 다시 선택하거나 새로고침하세요.</p>}
           {detail !== null && <>
             <dl>
               <dt>state</dt><dd><BooleanState value={detail.attributes['state']} /></dd>
@@ -193,5 +196,6 @@ export function Resources({ refresh }: { readonly refresh: number }) {
         </>}
       </div>
     </div>}
+    </div>
   </div>;
 }

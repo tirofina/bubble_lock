@@ -8,7 +8,7 @@ export class ReadError extends Error {
 }
 
 export function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : '알 수 없는 조회 오류';
+  return error instanceof Error ? `조회하지 못했습니다. 진단: ${error.message}` : '알 수 없는 조회 오류';
 }
 
 export function isRecord(value: unknown): value is Record<string, unknown> {

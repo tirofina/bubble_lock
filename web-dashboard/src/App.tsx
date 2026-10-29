@@ -64,14 +64,14 @@ function EventDetails({ events }: { readonly events: readonly DashboardEvent[] }
       <dl>
         <dt>마지막 수신 시각</dt><dd><Timestamp at={latest.receivedAt} /></dd>
         <dt>자원 URI</dt><dd><code>{latest.resourceUri}</code></dd>
-        <dt>현재 revision</dt><dd>{latest.currentRevision ?? '미제공 · sequence로 대체하지 않음'}</dd>
+        <dt>현재 revision</dt><dd>{latest.currentRevision ?? <>미제공 · sequence로 <span className="keep-phrase">대체하지 않음</span></>}</dd>
         <dt>role scope</dt><dd>{latest.roleScope.join(', ')} · 메타데이터이며 권한 판정 아님</dd>
         <dt>원본</dt><dd>{latest.source} · 모의 replay</dd>
       </dl>
       <ol className="audit-list" aria-label="최근 수신 이벤트">
         {events.map((event) => <li key={event.sequence}>
           <span className="mono">#{event.sequence} · {event.type}</span><Badge tone="warning">모의</Badge>
-          <span className="audit-meta">{event.receivedAt} · {event.resourceUri}</span>
+          <span className="audit-meta"><Timestamp at={event.receivedAt} /> · {event.resourceUri}</span>
         </li>)}
       </ol>
       <p className="caption muted">최근 100개까지만 표시합니다. 누적 명령 상태와 재개 cursor는 유지합니다.</p>
@@ -101,21 +101,26 @@ function Audit({ refresh }: { readonly refresh: number }) {
   return <div className="stack">
     <div className="row"><p className="small muted">정책·ACP·consent 감사 API 연동 전의 검색용 fixture입니다.</p><Badge tone="warning">모의 감사 기록</Badge></div>
     <form className="row" onSubmit={(event) => { event.preventDefault(); setQuery(input); setRequest((value) => value + 1); }}>
-      <label>감사 기록 검색
-        <input type="search" value={input} onChange={(event) => setInput(event.target.value)} placeholder="actor, commandId, action, URI" />
-      </label>
+      <div className="stack-tight">
+        <label>감사 기록 검색
+          <input type="search" value={input} onChange={(event) => setInput(event.target.value)} placeholder="검색어 입력"
+            aria-describedby="audit-search-scope" list="audit-search-suggestions" />
+        </label>
+        <p id="audit-search-scope" className="small muted">검색 범위: actor, commandId, action, URI</p>
+        <datalist id="audit-search-suggestions"><option value="grp-demo" /><option value="grp-partial" /><option value="demo-operator" /></datalist>
+      </div>
       <button type="submit">검색</button>
     </form>
-    <div className="panel" aria-live="polite">
-      {loading ? <p role="status">감사 기록 조회 중…</p> : error !== null ?
-        <p className="error" role="alert">{error}</p> : <>
+    <div className={`panel audit-results${loading ? ' loading-placeholder' : ''}`} aria-live="polite" aria-busy={loading}>
+      {loading ? <><p role="status">감사 기록 조회 중…</p>{[1, 2, 3, 4].map((row) => <div className="placeholder-row" aria-hidden="true" key={row} />)}</> : error !== null ?
+        <p className="error" role="alert">{error} · 검색어와 서버 상태를 확인한 뒤 다시 검색하세요.</p> : <>
           <p className="small muted">{records.length}개 검색 결과{query && ` · “${query}”`}</p>
           {records.length === 0 && <p>일치하는 기록이 없습니다. 검색어를 지우고 다시 검색하세요.</p>}
           <ul className="audit-list">
             {records.map((record) => <li key={record.id}>
               <div className="stack-tight"><strong className="small">{record.action}</strong><span className="small">{record.actor} · {record.commandId ?? 'commandId 없음'}</span></div>
               <div className="cluster"><Badge tone="warning">모의</Badge><Badge tone={record.outcome === 'denied' ? 'danger' : record.outcome === 'allowed' ? 'success' : 'warning'}>{record.outcome}</Badge></div>
-              <div className="audit-meta">{record.receivedAt}<br /><code>{record.resourceUri}</code><br />{record.id}</div>
+              <div className="audit-meta"><Timestamp at={record.receivedAt} /><br /><code>{record.resourceUri}</code><br />{record.id}</div>
             </li>)}
           </ul>
         </>}
@@ -188,13 +193,16 @@ export function App() {
         </div>
         <Section id="commands" number="01" title="명령 타임라인">
           <div className="row">
+            <div className="stack-tight">
             <label>명령 선택
-              <select value={selected?.commandId ?? ''} disabled={commands.length === 0} onChange={(event) => setSelectedId(event.target.value)}>
+              <select value={selected?.commandId ?? ''} disabled={commands.length === 0} aria-describedby="selected-command-summary" onChange={(event) => setSelectedId(event.target.value)}>
                 {commands.length === 0 && <option value="">명령 수신 대기</option>}
                 {commands.map((command) => <option key={command.commandId} value={command.commandId}>{command.commandId} · {commandLabels[summarizeCommand(command).status] ?? '상태 미확인'}</option>)}
               </select>
             </label>
-            <span className="small muted">시각 기준 UTC · receipt에 없는 시각은 대기</span>
+            <p id="selected-command-summary" className="small muted">{selected === undefined ? '명령 수신 대기' : `${selected.commandId} · ${commandLabels[summarizeCommand(selected).status] ?? '상태 미확인'}`}</p>
+            </div>
+            <div className="stack-tight small muted"><span>한국 시간 KST · UTC+09:00</span><span>receipt에 없는 시각은 대기</span></div>
           </div>
           {selected === undefined ?
             <p className="notice">{stream.connection === 'connecting' ? '이벤트 stream에 연결하고 있습니다…' : '수신한 명령이 없습니다. 연결 상태를 확인하거나 처음부터 재동기화하세요.'}</p> :

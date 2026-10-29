@@ -41,6 +41,7 @@ All component colors use semantic CSS variables. Light/dark values:
 | text | #202d26 | #e7eee9 |
 | muted | #53645a | #b2c0b7 |
 | border | #cbd5cd | #44564a |
+| control-border | #748278 | #87998d |
 | accent | #205c42 | #a3d8b9 |
 | accent-hover | #16462f | #c0e7cf |
 | on-accent | #ffffff | #12271b |
@@ -52,7 +53,9 @@ All component colors use semantic CSS variables. Light/dark values:
 Font: `"Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui`.
 No network font dependency. Monospace identifiers use `ui-monospace`.
 Sizes: h1 2rem, h2 1.5rem, h3 1.125rem, h4/body 1rem,
-small .875rem, caption .75rem. Body line-height 1.6; heading 1.25.
+small/caption .875rem. At compact widths body is 17px and secondary text
+is 15px minimum. Body line-height 1.6; heading 1.25. Korean prose keeps
+words together; machine identifiers can wrap anywhere.
 Weights 400/600/700. No oversized marketing headings.
 
 ## 4. Spacing and layout
@@ -66,7 +69,8 @@ Layout: dashboard - persistent navigation beside receipt detail -> sidebar +
 stack, following the local layout reference; scroll owner: document; avoid
 nested vertical scroll panels and fixed content heights. At <=52rem navigation
 becomes a wrapping horizontal row. Stages use a two-column grid on phones and
-four columns on desktop. Resource list/detail collapses to one column.
+four columns on desktop; compact cells use a 9rem minimum and reflow to one
+column with enlarged text. Resource list/detail collapses to one column.
 Long resource paths and hashes wrap; raw JSON alone owns horizontal overflow.
 
 ## 5. Primitives and composition
@@ -77,8 +81,9 @@ or explicitly pending evidence. Standard buttons/labels/inputs share tokenized
 sizes, borders, hover, focus and disabled states. Data comparisons use tables,
 definition lists and ordered stages, not decorative cards.
 
-Command stage order: 수락, 전송, 적용, 확인. UTC timestamps are preserved with
-milliseconds; duration is unknown when evidence is absent. ACK observation is
+Command stage order: 수락, 전송, 적용, 확인. Display timestamps in Korean standard
+time (KST, UTC+09:00), with milliseconds; original offset-bearing values remain
+in HTML dateTime and hover titles. Duration is unknown when evidence is absent. ACK observation is
 not proof of success. `false` readback is displayed as OFF, not as missing.
 
 ## 6. States and provenance
@@ -101,11 +106,26 @@ text-based status. Live connection announcements are polite; errors use alerts.
 No animation or decorative motion. Light/dark follows `prefers-color-scheme`.
 No icon-only actions. Keyboard follows DOM/visual reading order.
 
+HIG correction: explanatory prose is capped at 75ch. Loading reserves flexible
+minimum result footprints (resources 40rem / audit 52rem; compact 72rem / 64rem)
+with static placeholders, not fixed heights or animated skeletons. Arbitrarily
+large remote results may expand; changing data sources remains explicit.
+Selection labels reserve the same line in every tree row to avoid moving targets.
+The full selected command is also readable below its native select at large text
+sizes. Search has a wrapping scope description and native fixture suggestions.
+
+Checklist B7 adaptation: this is an intentionally long operations document,
+not a three-metric overview. Its priorities must appear in document reading order
+and in the leading navigation, not all actual data in one phone viewport.
+Putting all three datasets above the fold would require a new summary surface
+outside this visual-only brief; shrinking text or hiding content is not accepted.
+
 ## 8. Verification and accepted limits
 
-Owned checks: TypeScript diagnostics and `npm run build`. Parent owns real
-browser acceptance at 390px and 1440px in light/dark, using its running SSE
-server. No screenshot or accessibility pass is claimed by this document.
+HIG correction lane owns actual Chrome captures at 390px, 1440px and 1920px
+in light/dark, before/after state pairs and independent visual review.
+See `evidence/hig-visual-qa.md` for measured results, source references,
+states, accepted limits and cleanup. No Apple certification is implied.
 Real Mobius reachability, AE/ACP, CORS, RVI, SDT registration, auth and service
 integrations remain unconfirmed. Evidence links are repository artifacts;
 pending video and public discussion have no invented URLs.

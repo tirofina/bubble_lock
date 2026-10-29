@@ -1,0 +1,159 @@
+{
+  "capturedAt": "2026-10-29T03:42:19.943Z",
+  "baseCommit": "2529e0a",
+  "metrics": [
+    {
+      "width": 390,
+      "theme": "light",
+      "minTextContrast": 5.471210278378915,
+      "contrastFailures": [],
+      "targetFailures": [],
+      "controlCount": 25,
+      "body": "17px",
+      "caption": "15px",
+      "controlBorder": 4.033135738505316
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "minTextContrast": 7.4286583483373105,
+      "contrastFailures": [],
+      "targetFailures": [],
+      "controlCount": 25,
+      "body": "17px",
+      "caption": "15px",
+      "controlBorder": 5.334623133196761
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "minTextContrast": 5.471210278378915,
+      "contrastFailures": [],
+      "targetFailures": [],
+      "controlCount": 25,
+      "body": "16px",
+      "caption": "14px",
+      "controlBorder": 4.033135738505316
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "minTextContrast": 7.4286583483373105,
+      "contrastFailures": [],
+      "targetFailures": [],
+      "controlCount": 25,
+      "body": "16px",
+      "caption": "14px",
+      "controlBorder": 5.334623133196761
+    }
+  ],
+  "scrollProbes": [
+    {
+      "phase": "after",
+      "width": 390,
+      "theme": "light",
+      "viewport": 390,
+      "documentWidth": 390,
+      "scrollOwners": [
+        "document"
+      ]
+    },
+    {
+      "phase": "after",
+      "width": 390,
+      "theme": "dark",
+      "viewport": 390,
+      "documentWidth": 390,
+      "scrollOwners": [
+        "document"
+      ]
+    },
+    {
+      "phase": "after",
+      "width": 1440,
+      "theme": "light",
+      "viewport": 1440,
+      "documentWidth": 1425,
+      "scrollOwners": [
+        "document"
+      ]
+    },
+    {
+      "phase": "after",
+      "width": 1440,
+      "theme": "dark",
+      "viewport": 1440,
+      "documentWidth": 1425,
+      "scrollOwners": [
+        "document"
+      ]
+    },
+    {
+      "phase": "after",
+      "width": 1920,
+      "theme": "light",
+      "viewport": 1920,
+      "documentWidth": 1905,
+      "scrollOwners": [
+        "document"
+      ]
+    },
+    {
+      "phase": "after",
+      "width": 1920,
+      "theme": "dark",
+      "viewport": 1920,
+      "documentWidth": 1905,
+      "scrollOwners": [
+        "document"
+      ]
+    }
+  ],
+  "offlineError": [
+    {
+      "width": 390,
+      "theme": "light",
+      "error": "Failed to fetch · 설정과 서버 상태를 확인한 뒤 새로고침하세요.",
+      "offline": true,
+      "motion": true
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "error": "Failed to fetch · 설정과 서버 상태를 확인한 뒤 새로고침하세요.",
+      "offline": true,
+      "motion": true
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "error": "Failed to fetch · 설정과 서버 상태를 확인한 뒤 새로고침하세요.",
+      "offline": true,
+      "motion": true
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "error": "Failed to fetch · 설정과 서버 상태를 확인한 뒤 새로고침하세요.",
+      "offline": true,
+      "motion": true
+    }
+  ],
+  "keyboardFirst": {
+    "tag": "A",
+    "text": "본문으로 건너뛰기",
+    "outline": "rgb(163, 216, 185) solid 3px",
+    "visible": true
+  },
+  "focusProbeNote": "Closed details descendants excluded from keyboard scope; hidden reset button is not focusable until details opens.",
+  "timeCases": [
+    {
+      "at": "2026-10-29T09:00:00.123+09:00",
+      "html": "<time class=\"stage-time\" dateTime=\"2026-10-29T09:00:00.123+09:00\" title=\"원본: 2026-10-29T09:00:00.123+09:00\"><span class=\"stage-date\">2026-10-29</span>09:00:00.123 <span class=\"caption\">KST</span></time>"
+    },
+    {
+      "at": "2026-10-29T23:59:59.987Z",
+      "html": "<time class=\"stage-time\" dateTime=\"2026-10-29T23:59:59.987Z\" title=\"원본: 2026-10-29T23:59:59.987Z\"><span class=\"stage-date\">2026-10-30</span>08:59:59.987 <span class=\"caption\">KST</span></time>"
+    }
+  ]
+}

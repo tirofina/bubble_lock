@@ -1,0 +1,432 @@
+{
+  "created": "2026-10-29T04:16:28.673Z",
+  "sourceHashes": [
+    {
+      "path": "DESIGN.md",
+      "sha256": "a4043d98744d10ff17d112df7cc72da3ad0df71dd2df234182b2df0f7465b8cd"
+    },
+    {
+      "path": "src/App.tsx",
+      "sha256": "2dcd4afe075d2a1e5a080300f12772b90a287cdff65a1c48216c55b692570543"
+    },
+    {
+      "path": "src/ui.tsx",
+      "sha256": "38462fbb535207a156082b9e68436cda0e6f3189169c270ab0500ee1fa8d7fb6"
+    },
+    {
+      "path": "src/Resources.tsx",
+      "sha256": "39ab74472535e7bea08c1da784e5f3ae72e7d18a299afef611e2c4fc2ec47674"
+    },
+    {
+      "path": "src/styles.css",
+      "sha256": "a7d6e97dd452c4479582e89ef1430fc7a05ac998abb71996ec3f94945a5d3c3e"
+    },
+    {
+      "path": "src/client.ts",
+      "sha256": "ed84a0af4a2bd29bfab3c0409c84d2fe0f432fbf254a3df537d681e101dabae2"
+    },
+    {
+      "path": "src/useEventStream.ts",
+      "sha256": "39009f63d55a11d550d3f7c3d0f827d6b4310f1cca093bfec783328974b99ff5"
+    }
+  ],
+  "metrics": [
+    {
+      "width": 390,
+      "theme": "light",
+      "minTextContrast": 5.471210278378915,
+      "contrastFailures": [],
+      "targetFailures": [],
+      "controlCount": 24,
+      "documentWidth": 390,
+      "body": "17px",
+      "caption": "15px",
+      "controlBorder": 4.033135738505316
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "minTextContrast": 7.4286583483373105,
+      "contrastFailures": [],
+      "targetFailures": [],
+      "controlCount": 24,
+      "documentWidth": 390,
+      "body": "17px",
+      "caption": "15px",
+      "controlBorder": 5.334623133196761
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "minTextContrast": 5.471210278378915,
+      "contrastFailures": [],
+      "targetFailures": [],
+      "controlCount": 24,
+      "documentWidth": 1425,
+      "body": "16px",
+      "caption": "14px",
+      "controlBorder": 4.033135738505316
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "minTextContrast": 7.4286583483373105,
+      "contrastFailures": [],
+      "targetFailures": [],
+      "controlCount": 24,
+      "documentWidth": 1425,
+      "body": "16px",
+      "caption": "14px",
+      "controlBorder": 5.334623133196761
+    }
+  ],
+  "treeTargetStability": [
+    {
+      "width": 390,
+      "before": [
+        {
+          "y": 2905.859375,
+          "h": 101.1875
+        },
+        {
+          "y": 3011.046875,
+          "h": 101.1875
+        },
+        {
+          "y": 3116.234375,
+          "h": 125.1875
+        },
+        {
+          "y": 3245.421875,
+          "h": 125.1875
+        },
+        {
+          "y": 3374.609375,
+          "h": 101.1875
+        }
+      ],
+      "after": [
+        {
+          "y": 2905.859375,
+          "h": 101.1875
+        },
+        {
+          "y": 3011.046875,
+          "h": 101.1875
+        },
+        {
+          "y": 3116.234375,
+          "h": 125.1875
+        },
+        {
+          "y": 3245.421875,
+          "h": 125.1875
+        },
+        {
+          "y": 3374.609375,
+          "h": 101.1875
+        }
+      ],
+      "pass": true
+    },
+    {
+      "width": 1440,
+      "before": [
+        {
+          "y": 1743.703125,
+          "h": 96.375
+        },
+        {
+          "y": 1844.078125,
+          "h": 96.375
+        },
+        {
+          "y": 1944.453125,
+          "h": 96.375
+        },
+        {
+          "y": 2044.828125,
+          "h": 96.375
+        },
+        {
+          "y": 2145.203125,
+          "h": 96.375
+        }
+      ],
+      "after": [
+        {
+          "y": 1743.703125,
+          "h": 96.375
+        },
+        {
+          "y": 1844.078125,
+          "h": 96.375
+        },
+        {
+          "y": 1944.453125,
+          "h": 96.375
+        },
+        {
+          "y": 2044.828125,
+          "h": 96.375
+        },
+        {
+          "y": 2145.203125,
+          "h": 96.375
+        }
+      ],
+      "pass": true
+    }
+  ],
+  "loadingStability": [
+    {
+      "width": 390,
+      "theme": "light",
+      "before": {
+        "resourceHeight": 1323,
+        "auditHeight": 1400.1875
+      },
+      "after": {
+        "resourceHeight": 1323,
+        "auditHeight": 1400.1875
+      },
+      "pass": true
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "before": {
+        "resourceHeight": 1323,
+        "auditHeight": 1400.1875
+      },
+      "after": {
+        "resourceHeight": 1323,
+        "auditHeight": 1400.1875
+      },
+      "pass": true
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "before": {
+        "resourceHeight": 817.390625,
+        "auditHeight": 1086.171875
+      },
+      "after": {
+        "resourceHeight": 817.390625,
+        "auditHeight": 1086.171875
+      },
+      "pass": true
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "before": {
+        "resourceHeight": 817.390625,
+        "auditHeight": 1086.171875
+      },
+      "after": {
+        "resourceHeight": 817.390625,
+        "auditHeight": 1086.171875
+      },
+      "pass": true
+    }
+  ],
+  "keyboardTabOrder": [
+    {
+      "label": "본문으로 건너뛰기",
+      "tag": "A",
+      "ring": "3px"
+    },
+    {
+      "label": "01명령 타임라인",
+      "tag": "A",
+      "ring": "3px"
+    },
+    {
+      "label": "02자원과 장치",
+      "tag": "A",
+      "ring": "3px"
+    },
+    {
+      "label": "03감사 기록",
+      "tag": "A",
+      "ring": "3px"
+    },
+    {
+      "label": "04연동 현황",
+      "tag": "A",
+      "ring": "3px"
+    },
+    {
+      "label": "05증거 인덱스",
+      "tag": "A",
+      "ring": "3px"
+    },
+    {
+      "label": "다시 연결 / 새로고침",
+      "tag": "BUTTON",
+      "ring": "3px"
+    },
+    {
+      "label": "재개 / 초기화 안내",
+      "tag": "SUMMARY",
+      "ring": "3px"
+    },
+    {
+      "label": "grp-demo · 확인 완료grp-partial · 부분 확인",
+      "tag": "SELECT",
+      "ring": "3px"
+    },
+    {
+      "label": "수신 메타데이터 / 이벤트 기록",
+      "tag": "SUMMARY",
+      "ring": "3px"
+    },
+    {
+      "label": "모의 · fixture API실서버 · Mobius HTTP 조회",
+      "tag": "SELECT",
+      "ring": "3px"
+    },
+    {
+      "label": "Mobius IN-CSE /Mobius",
+      "tag": "BUTTON",
+      "ring": "3px"
+    },
+    {
+      "label": "Privacy Bubble AE /Mobius/privacy-bubble-test-ae",
+      "tag": "BUTTON",
+      "ring": "3px"
+    },
+    {
+      "label": "Keyring A선택됨/Mobius/privacy-bubble-test-ae/bubbleState",
+      "tag": "BUTTON",
+      "ring": "3px"
+    },
+    {
+      "label": "Keyring B /Mobius/privacy-bubble-test-ae/keyringB",
+      "tag": "BUTTON",
+      "ring": "3px"
+    },
+    {
+      "label": "Household group /Mobius/privacy-bubble-group",
+      "tag": "BUTTON",
+      "ring": "3px"
+    },
+    {
+      "label": "감사 기록 검색",
+      "tag": "INPUT",
+      "ring": "3px"
+    },
+    {
+      "label": "검색",
+      "tag": "BUTTON",
+      "ring": "3px"
+    },
+    {
+      "label": "실행 / 재현 안내",
+      "tag": "A",
+      "ring": "3px"
+    },
+    {
+      "label": "Article / 프로토콜 조사",
+      "tag": "A",
+      "ring": "3px"
+    },
+    {
+      "label": "이벤트 JSON Schema",
+      "tag": "A",
+      "ring": "3px"
+    },
+    {
+      "label": "계약 / SSE / 타임라인 시험",
+      "tag": "A",
+      "ring": "3px"
+    },
+    {
+      "label": "HTTP / 브라우저 artifacts",
+      "tag": "A",
+      "ring": "3px"
+    },
+    {
+      "label": "공통 구현 기준",
+      "tag": "A",
+      "ring": "3px"
+    }
+  ],
+  "zoom": {
+    "width": 390,
+    "documentWidth": 390,
+    "columns": "324px",
+    "selectedSummary": "grp-demo · 확인 완료"
+  },
+  "suggestions": {
+    "list": "audit-search-suggestions",
+    "options": [
+      "grp-demo",
+      "grp-partial",
+      "demo-operator"
+    ],
+    "scope": "검색 범위: actor, commandId, action, URI"
+  },
+  "feedback": {
+    "treeRest": "rgb(36, 46, 40)",
+    "treeHover": "rgb(19, 25, 22)",
+    "treePressed": "rgb(68, 86, 74)",
+    "summaryRest": "rgba(0, 0, 0, 0)",
+    "summaryHover": "rgb(27, 35, 31)"
+  },
+  "disabled": [
+    {
+      "width": 390,
+      "theme": "light",
+      "disabled": true
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "disabled": true
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "disabled": true
+    },
+    {
+      "width": 1440,
+      "theme": "dark",
+      "disabled": true
+    }
+  ],
+  "failurePaths": [
+    {
+      "width": 390,
+      "theme": "dark",
+      "audit": "조회하지 못했습니다. 진단: Failed to fetch · 검색어와 서버 상태를 확인한 뒤 다시 검색하세요."
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "audit": "조회하지 못했습니다. 진단: Failed to fetch · 검색어와 서버 상태를 확인한 뒤 다시 검색하세요."
+    },
+    {
+      "detailURL": "http://127.0.0.1:33191",
+      "detail": "조회하지 못했습니다. 진단: 조회 실패: HTTP 404 Not Found · 자원 경로와 서버 상태를 확인한 뒤 다시 선택하거나 새로고침하세요."
+    }
+  ],
+  "fixtureCleanup": {
+    "port": 33191,
+    "stopped": true,
+    "connectionRefused": true
+  },
+  "tests": {
+    "session": "bash_13",
+    "exit": 0,
+    "pass": 21,
+    "fail": 0,
+    "skipped": 0,
+    "build": "tsc --noEmit && vite build",
+    "css": "index-BY01x9Rt.css",
+    "js": "index-C2Cz1zPO.js"
+  }
+}
