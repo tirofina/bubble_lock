@@ -1,0 +1,210 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://privacy-bubble.example/schema/dashboard-event.v1.json",
+  "title": "WEB-DASHBOARD event v1 (DOC-REV 2.0.0)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "type", "sequence", "resourceUri", "currentRevision", "receivedAt", "roleScope", "simulation", "source", "receipt", "acceptance"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "type": { "enum": ["command.accepted", "command.dispatched", "command.ack", "gateway.telemetry", "receipt.review", "group.summary"] },
+    "sequence": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+    "resourceUri": { "type": "string", "pattern": "^/[^\\s]*$", "maxLength": 2048 },
+    "currentRevision": { "type": ["string", "null"], "minLength": 1 },
+    "receivedAt": { "$ref": "#/$defs/dateTime" },
+    "roleScope": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 128 } },
+    "simulation": { "type": "boolean" },
+    "source": { "enum": ["fixture-replay", "core-journal-replay"] },
+    "receipt": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/coreReceipt" }] },
+    "acceptance": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/acceptance" }] }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "type": { "const": "command.accepted" } } },
+      "then": {
+        "properties": { "acceptance": { "$ref": "#/$defs/acceptance" }, "receipt": { "type": "null" }, "simulation": { "const": true }, "source": { "const": "fixture-replay" } }
+      },
+      "else": { "properties": { "acceptance": { "type": "null" }, "receipt": { "$ref": "#/$defs/coreReceipt" } } }
+    },
+    {
+      "if": { "properties": { "type": { "const": "command.dispatched" } } },
+      "then": { "properties": { "receipt": { "type": "object", "required": ["status"], "properties": { "status": { "const": "DISPATCHED" } } } } }
+    },
+    {
+      "if": { "properties": { "type": { "const": "command.ack" } } },
+      "then": { "properties": { "receipt": { "type": "object", "required": ["status"], "properties": { "status": { "const": "ACK_RECORDED" } } } } }
+    },
+    {
+      "if": { "properties": { "type": { "const": "gateway.telemetry" } } },
+      "then": { "properties": { "receipt": { "type": "object", "required": ["status"], "properties": { "status": { "enum": ["APPLIED", "MQTT_DISPATCHED"] } } } } }
+    },
+    {
+      "if": { "properties": { "type": { "const": "receipt.review" } } },
+      "then": { "properties": { "receipt": { "type": "object", "required": ["status"], "properties": { "status": { "enum": ["REVIEW", "DUPLICATE", "IN_FLIGHT"] } }, "not": { "required": ["groupId"], "properties": { "groupId": {} } } } } }
+    },
+    {
+      "if": { "properties": { "type": { "const": "group.summary" } } },
+      "then": { "properties": { "receipt": { "type": "object", "required": ["contractId", "groupId"], "properties": { "contractId": { "const": "privacy-bubble.group-dispatch" }, "groupId": { "$ref": "#/$defs/id" } } } } }
+    }
+  ],
+  "$defs": {
+    "dateTime": { "type": "string", "format": "date-time" },
+    "id": { "type": "string", "minLength": 1, "maxLength": 512 },
+    "ackState": { "enum": ["RECEIVED", "FORWARDED", "APPLIED", "READBACK_VERIFIED", "RETRY_PENDING"] },
+    "acceptance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commandId", "groupId", "acceptedAt", "label"],
+      "properties": {
+        "commandId": { "$ref": "#/$defs/id" },
+        "groupId": { "$ref": "#/$defs/id" },
+        "acceptedAt": { "$ref": "#/$defs/dateTime" },
+        "label": { "const": "SIMULATED API acceptance; not a CORE receipt" }
+      }
+    },
+    "commandPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["deviceId", "commandId", "desiredState", "issuedAt"],
+      "properties": {
+        "deviceId": { "$ref": "#/$defs/id" },
+        "commandId": { "$ref": "#/$defs/id" },
+        "desiredState": { "type": "boolean" },
+        "deadline": { "$ref": "#/$defs/dateTime" },
+        "epoch": { "type": "integer", "minimum": 0 },
+        "issuedAt": { "$ref": "#/$defs/dateTime" }
+      }
+    },
+    "ackPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["deviceId", "commandId", "ackState", "timestamp"],
+      "properties": {
+        "deviceId": { "$ref": "#/$defs/id" },
+        "commandId": { "$ref": "#/$defs/id" },
+        "ackState": { "$ref": "#/$defs/ackState" },
+        "timestamp": { "$ref": "#/$defs/dateTime" },
+        "acceptedAt": { "$ref": "#/$defs/dateTime" },
+        "appliedAt": { "$ref": "#/$defs/dateTime" },
+        "ackCode": { "type": "string" },
+        "readback": { "type": "boolean" },
+        "firmwareRevision": { "type": "string" }
+      }
+    },
+    "telemetryPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["deviceId", "sequence", "timestamp", "state", "batteryPct", "rssiDbm", "schemaVersion"],
+      "properties": {
+        "deviceId": { "$ref": "#/$defs/id" },
+        "sequence": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+        "timestamp": { "$ref": "#/$defs/dateTime" },
+        "state": { "type": "boolean" },
+        "batteryPct": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "rssiDbm": { "type": "integer", "minimum": -127, "maximum": 0 },
+        "schemaVersion": { "const": "1.0.0" }
+      }
+    },
+    "member": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["memberId", "memberCommandId", "deviceId", "gatewayId", "status", "attempts"],
+      "properties": {
+        "memberId": { "$ref": "#/$defs/id" },
+        "memberCommandId": { "$ref": "#/$defs/id" },
+        "deviceId": { "$ref": "#/$defs/id" },
+        "gatewayId": { "$ref": "#/$defs/id" },
+        "status": { "enum": ["DISPATCHED", "RECEIVED", "FORWARDED", "APPLIED", "READBACK_VERIFIED", "RETRY_PENDING"] },
+        "attempts": { "type": "integer", "minimum": 1 },
+        "ackTimestamp": { "$ref": "#/$defs/dateTime" }
+      }
+    },
+    "coreReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "timestamp"],
+      "properties": {
+        "status": { "enum": ["DISPATCHED", "ACK_RECORDED", "APPLIED", "MQTT_DISPATCHED", "REVIEW", "DUPLICATE", "IN_FLIGHT", "DISPATCHING", "SETTLED"] },
+        "timestamp": { "$ref": "#/$defs/dateTime" },
+        "journaledAt": { "$ref": "#/$defs/dateTime" },
+        "receiptHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "contractId": { "enum": ["privacy-bubble.raspberrypi-gateway", "privacy-bubble.group-dispatch"] },
+        "contractVersion": { "const": "1.0.0" },
+        "docRevision": { "const": "2.0.0" },
+        "gatewayId": { "$ref": "#/$defs/id" },
+        "deviceId": { "$ref": "#/$defs/id" },
+        "commandId": { "$ref": "#/$defs/id" },
+        "sequence": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+        "dedupKey": { "$ref": "#/$defs/id" },
+        "requestId": { "$ref": "#/$defs/id" },
+        "oneM2MResource": { "type": "string", "pattern": "^/" },
+        "responseStatus": { "type": "integer" },
+        "responseBody": { "type": "string" },
+        "transport": { "enum": ["mqtt", "oneM2M-http", "oneM2M-mqtt"] },
+        "topic": { "type": "string" },
+        "error": { "type": "string" },
+        "ackState": { "$ref": "#/$defs/ackState" },
+        "payload": { "oneOf": [{ "$ref": "#/$defs/commandPayload" }, { "$ref": "#/$defs/ackPayload" }, { "$ref": "#/$defs/telemetryPayload" }] },
+        "groupId": { "$ref": "#/$defs/id" },
+        "state": { "type": "boolean" },
+        "attempts": { "type": "integer", "minimum": 0 },
+        "memberCount": { "type": "integer", "minimum": 0 },
+        "appliedCount": { "type": "integer", "minimum": 0 },
+        "members": { "type": "array", "items": { "$ref": "#/$defs/member" } }
+      },
+      "allOf": [
+        {
+          "if": { "required": ["contractId"], "properties": { "contractId": { "const": "privacy-bubble.group-dispatch" } } },
+          "then": {
+            "required": ["groupId", "commandId", "state", "attempts", "memberCount", "appliedCount", "members"],
+            "properties": {
+              "status": { "enum": ["DISPATCHING", "IN_FLIGHT", "SETTLED"] },
+              "groupId": { "$ref": "#/$defs/id" },
+              "commandId": { "$ref": "#/$defs/id" },
+              "state": { "type": "boolean" },
+              "attempts": { "type": "integer", "minimum": 0 },
+              "memberCount": { "type": "integer", "minimum": 0 },
+              "appliedCount": { "type": "integer", "minimum": 0 },
+              "members": { "type": "array", "items": { "$ref": "#/$defs/member" } }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "status": { "enum": ["DISPATCHED", "ACK_RECORDED", "APPLIED", "MQTT_DISPATCHED"] } } },
+          "then": {
+            "required": ["contractId", "contractVersion", "docRevision", "gatewayId", "deviceId", "payload"],
+            "properties": {
+              "contractId": { "const": "privacy-bubble.raspberrypi-gateway" },
+              "contractVersion": { "const": "1.0.0" },
+              "docRevision": { "const": "2.0.0" },
+              "gatewayId": { "$ref": "#/$defs/id" },
+              "deviceId": { "$ref": "#/$defs/id" },
+              "payload": { "type": "object" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "status": { "const": "DISPATCHED" } } },
+          "then": { "required": ["commandId", "topic"], "properties": { "commandId": { "$ref": "#/$defs/id" }, "topic": { "type": "string" }, "payload": { "$ref": "#/$defs/commandPayload" } } }
+        },
+        {
+          "if": { "properties": { "status": { "const": "ACK_RECORDED" } } },
+          "then": { "required": ["commandId", "ackState"], "properties": { "commandId": { "$ref": "#/$defs/id" }, "ackState": { "$ref": "#/$defs/ackState" }, "payload": { "$ref": "#/$defs/ackPayload" } } }
+        },
+        {
+          "if": { "properties": { "status": { "enum": ["APPLIED", "MQTT_DISPATCHED"] } } },
+          "then": {
+            "required": ["sequence", "dedupKey", "requestId", "oneM2MResource"],
+            "properties": {
+              "sequence": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+              "dedupKey": { "$ref": "#/$defs/id" },
+              "requestId": { "$ref": "#/$defs/id" },
+              "oneM2MResource": { "type": "string", "pattern": "^/" },
+              "payload": { "$ref": "#/$defs/telemetryPayload" }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "source": "fixture",
+  "simulation": true,
+  "records": [
+    { "id": "audit-demo-001", "receivedAt": "2026-10-29T00:00:00.000Z", "actor": "demo-operator", "action": "group.command.accepted", "resourceUri": "/Mobius/privacy-bubble-group", "outcome": "allowed", "commandId": "grp-demo", "simulation": true },
+    { "id": "audit-demo-002", "receivedAt": "2026-10-29T00:00:23.000Z", "actor": "demo-operator", "action": "group.command.accepted", "resourceUri": "/Mobius/privacy-bubble-group", "outcome": "allowed", "commandId": "grp-partial", "simulation": true },
+    { "id": "audit-demo-003", "receivedAt": "2026-10-29T00:00:40.000Z", "actor": "pi-01", "action": "member.retry.pending", "resourceUri": "/Mobius/privacy-bubble-test-ae/keyringB", "outcome": "pending", "commandId": "grp-partial", "simulation": true },
+    { "id": "audit-demo-004", "receivedAt": "2026-10-29T00:00:46.000Z", "actor": "demo-visitor", "action": "policy.command.denied", "resourceUri": "/Mobius/privacy-bubble-group", "outcome": "denied", "simulation": true }
+  ]
+}

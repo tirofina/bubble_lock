@@ -1,0 +1,11 @@
+{
+  "source": "fixture",
+  "simulation": true,
+  "resources": [
+    { "resourceUri": "/Mobius", "parentUri": null, "name": "Mobius IN-CSE", "ty": 5, "health": "healthy" },
+    { "resourceUri": "/Mobius/privacy-bubble-test-ae", "parentUri": "/Mobius", "name": "Privacy Bubble AE", "ty": 2, "health": "healthy" },
+    { "resourceUri": "/Mobius/privacy-bubble-test-ae/bubbleState", "parentUri": "/Mobius/privacy-bubble-test-ae", "name": "Keyring A", "ty": 28, "cnd": "org.onem2m.common.moduleclass.binarySwitch", "state": true, "deviceId": "keyring-A", "gatewayId": "pi-01", "health": "healthy" },
+    { "resourceUri": "/Mobius/privacy-bubble-test-ae/keyringB", "parentUri": "/Mobius/privacy-bubble-test-ae", "name": "Keyring B", "ty": 28, "cnd": "org.onem2m.common.moduleclass.binarySwitch", "state": false, "deviceId": "keyring-B", "gatewayId": "pi-01", "health": "degraded" },
+    { "resourceUri": "/Mobius/privacy-bubble-group", "parentUri": "/Mobius", "name": "Household group", "ty": 9, "health": "degraded" }
+  ]
+}

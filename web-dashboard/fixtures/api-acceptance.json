@@ -1,0 +1,38 @@
+[
+  {
+    "schemaVersion": "1.0.0",
+    "type": "command.accepted",
+    "sequence": 1,
+    "resourceUri": "/Mobius/privacy-bubble-test-ae/bubbleState",
+    "currentRevision": null,
+    "receivedAt": "2026-10-29T00:00:00.000Z",
+    "roleScope": ["operator"],
+    "simulation": true,
+    "source": "fixture-replay",
+    "receipt": null,
+    "acceptance": {
+      "commandId": "grp-demo",
+      "groupId": "household",
+      "acceptedAt": "2026-10-29T00:00:00.000Z",
+      "label": "SIMULATED API acceptance; not a CORE receipt"
+    }
+  },
+  {
+    "schemaVersion": "1.0.0",
+    "type": "command.accepted",
+    "sequence": 2,
+    "resourceUri": "/Mobius/privacy-bubble-test-ae/bubbleState",
+    "currentRevision": null,
+    "receivedAt": "2026-10-29T00:00:23.000Z",
+    "roleScope": ["operator"],
+    "simulation": true,
+    "source": "fixture-replay",
+    "receipt": null,
+    "acceptance": {
+      "commandId": "grp-partial",
+      "groupId": "household",
+      "acceptedAt": "2026-10-29T00:00:23.000Z",
+      "label": "SIMULATED API acceptance; not a CORE receipt"
+    }
+  }
+]
