@@ -1,0 +1,12 @@
+{
+  "scenario": "page.goto('http://127.0.0.1:5173'); EventSource receives grp-demo acceptance 2026-10-29T09:00:00.000+09:00; query '#commands .stages time'",
+  "observed": {
+    "input": "2026-10-29T09:00:00.000+09:00",
+    "display": "2026-10-2900:00:00.000 UTC",
+    "pass": true
+  },
+  "screenshot": "timezone-offset.png",
+  "result": "PASS",
+  "cleanup": "offsetBrowser.close(); offsetStub.stop(true); bash_21 killed; ss 4174/5173/33153 empty; owned Chrome pgrep empty",
+  "reviewFinding": "Raw RFC3339 slicing mislabeled timezone offsets as UTC; fixed Timestamp normalization. Existing Z-input captures retain identical display and layout."
+}

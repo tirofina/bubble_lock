@@ -1,0 +1,167 @@
+{
+  "observedAt": "2026-10-29T03:02:45.107Z",
+  "baseline": "91a281b",
+  "surface": "http://127.0.0.1:5173 with fixture SSE 4174",
+  "engine": "omowright connectPipe /opt/google/chrome/chrome; isolated owned profile",
+  "scenarios": [
+    {
+      "name": "SSE default stages",
+      "observed": {
+        "pass": true,
+        "stages": [
+          "수락2026-10-2900:00:00.000 UTC전송2026-10-2900:00:05.000 UTC적용2026-10-2900:00:15.000 UTC확인2026-10-2900:00:18.000 UTC",
+          "수락대기 · 시각 미수신전송2026-10-2900:00:02.000 UTC적용2026-10-2900:00:09.000 UTC확인2026-10-2900:00:12.000 UTC",
+          "수락대기 · 시각 미수신전송2026-10-2900:00:05.000 UTC적용2026-10-2900:00:15.000 UTC확인2026-10-2900:00:18.000 UTC"
+        ]
+      }
+    },
+    {
+      "name": "partial failure",
+      "observed": {
+        "pass": true,
+        "text": "01명령 타임라인명령 선택grp-demo · 확인 완료grp-partial · 부분 확인시각 기준 UTC · receipt에 없는 시각은 대기grp-partialhousehold부분 확인수락2026-10-2900:00:23.000 UTC전송2026-10-2900:00:28.000 UTC적용대기 · 시각 미수신확인대기 · 시각 미수신ACK 관측 2/2 · readback 확인 1/2 · 재시도 대기 1수락 → 전송 5000 ms / 전송 → 적용 미확인 / 적용 → 확인 미확인구성원별 ACK / readbackACK 수신은 적용 성공과 다릅니다. 구성원 수락 시각은 계약에 없으므로 대기로 표시합니다.keyringAkeyring-A · pi-01READBACK_VERIFIEDreadback ON · truegrp-partial:keyringA수락대기 · 시각 미수신전송2026-10-2900:00:25.000 UTC적용2026-10-2900:00:32.000 UTC확인2026-10-2900:00:35.000 UTCkeyringBkeyring-B · pi-01실패 / 재시도 대기readback OFF · falsegrp-partial:keyringB수락대기 · 시각 미수신전송2026-10-2900:00:28.000 UTC적용대기 · 시각 미수신확인대기 · 시각 미수신수신 메타데이터 / 이벤트 기록마지막 수신 시각2026-10-2900:00:45.000 UTC자원 URI/Mobius/privacy-bubble-test-ae/bubbleState현재 revision미제공 · sequence로 대체하지 않음role scopeoperator · 메타데이터이며 권한 판정 아님원본fixture-replay · 모의 replay#1 · command.accepted모의2026-10-29T00:00:00.000Z · /Mobius/privacy-bubble-test-ae/bubbleState#2 · command.accepted모의2026-10-29T00:00:23.000Z · /Mobius/privacy-bubble-test-ae/bubbleState#3 · command.dispatched모의2026-10-29T00:00:03.000Z · /Mobius/privacy-bubble-test-ae/bubbleState#4 · command.dispatched모의2026-10-29T00:00:06.000Z · /Mobius/privacy-bubble-test-ae/bubbleState#5 · group.summary모의2026-10-29T00:00:08.000Z · /Mobius/privacy-bubble-test-ae/bubbleState#6 · command.ack모의2026-10-29T00:00:11.000Z · /Mobius/privacy-bubble-test-ae/bubbleState#7 · command.ack모의2026-10-29T00:00:14.000Z · /Mobius/privacy-bubble-test-ae/bubbleState#8 · command.ack모의2026-10-29T00:00:17.000Z · /Mobius/privacy-bubble-test-ae/bubbleState#9 · command.ack모의2026-10-29T00:00:20.000Z · /Mobius/privacy-bubble-test-ae/bubbleState#10 · group.summary모의2026-10-29T00:00:22.000Z · /Mobius/privacy-bubble-test-ae/bubbleState#11 · command.dispatched모의2026-10-29T00:00:26.000Z · /Mobius/privacy-bubble-test-ae/bubbleState#12 · command.dispatched모의2026-10-29T00:00:29.000Z · /Mobius/privacy-bubble-test-ae/bubbleState#13 · group.summary모의2026-10-29T00:00:31.000Z · /Mobius/privacy-bubble-test-ae/bubbleState#14 · command.ack모의2026-10-29T00:00:34.000Z · /Mobius/privacy-bubble-test-ae/bubbleState#15 · command.ack모의2026-10-29T00:00:37.000Z · /Mobius/privacy-bubble-test-ae/bubbleState#16 · command.ack모의2026-10-29T00:00:40.000Z · /Mobius/privacy-bubble-test-ae/bubbleState#17 · group.summary모의2026-10-29T00:00:42.000Z · /Mobius/privacy-bubble-test-ae/bubbleState#18 · gateway.telemetry모의2026-10-29T00:00:45.000Z · /Mobius/privacy-bubble-test-ae/bubbleState최근 100개까지만 표시합니다. 누적 명령 상태와 재개 cursor는 유지합니다."
+      }
+    },
+    {
+      "name": "audit filtered",
+      "observed": {
+        "pass": true,
+        "count": 2
+      }
+    },
+    {
+      "name": "audit empty",
+      "observed": {
+        "pass": true,
+        "text": "03감사 기록정책·ACP·consent 감사 API 연동 전의 검색용 fixture입니다.모의 감사 기록감사 기록 검색검색0개 검색 결과 · “READBACK”일치하는 기록이 없습니다. 검색어를 지우고 다시 검색하세요."
+      }
+    },
+    {
+      "name": "false device state",
+      "observed": {
+        "pass": true
+      }
+    },
+    {
+      "name": "reconnect retains command",
+      "observed": {
+        "pass": true,
+        "options": "grp-demo · 확인 완료grp-partial · 부분 확인"
+      }
+    },
+    {
+      "name": "desktop dark overflow",
+      "observed": {
+        "pass": true,
+        "width": 1440,
+        "scrollWidth": 1440,
+        "dark": true
+      }
+    },
+    {
+      "name": "mobile light overflow",
+      "observed": {
+        "pass": true,
+        "width": 390,
+        "scrollWidth": 390
+      }
+    },
+    {
+      "name": "discovery/retrieve HTTP fixture",
+      "observed": {
+        "pass": true,
+        "text": "02자원과 장치자원 데이터 소스모의 · fixture API실서버 · Mobius HTTP 조회실서버 조회 모드 · 연결 성공과 별개운영자 조회 설정Mobius HTTP origin운영자 Originator · X-M2M-Origin운영자 AE / 검색할 하위 경로운영자 ACP 참조 · 표시 전용Release Version · X-M2M-RVI자원 유형 필터 · tySDT 정의 필터 · cnd페이지 크기 · lim페이지 시작 · ofst설정은 이 탭의 메모리에만 유지됩니다. 비밀키·토큰을 입력하지 마세요. AE 경로는 discovery 시작점이며 ACP 참조는 운영 맥락입니다. 권한 부여·AE 등록·인증은 수행하지 않습니다.설정 적용 / discovery 조회GET · fu=1 · drt=1학교 PC의 endpoint, 운영자 AE/ACP, CORS, RVI 및 SDT 등록은 미확인입니다. 조회 실패 시 모의 데이터로 대체하지 않습니다. 검색 결과는 ACP와 페이지 범위에 한정되며 전체 inventory가 아닙니다.이 페이지 1개 · 완전성 미확인 · RSC 2000자원 트리Mobius · 경로/Mobiusprivacy-bubble-test-ae · 경로/Mobius/privacy-bubble-test-aebubbleState/Mobius/privacy-bubble-test-ae/bubbleState장치 / 자원 상태HTTP 조회/Mobius/privacy-bubble-test-ae/bubbleStatestateOFF · falseJSON envelopepb:binarySwitchRSC2000운영자 AE/Mobius/privacy-bubble-test-aeACP 참조미입력 · 서버 권한 미확인health미측정 · GET 성공은 장치 health가 아닙니다.원본 namespaced JSON{\n  \"pb:binarySwitch\": {\n    \"ty\": 28,\n    \"state\": false,\n    \"cnd\": \"org.onem2m.common.moduleclass.binarySwitch\"\n  }\n}"
+      }
+    },
+    {
+      "name": "discovery HTTP 404 honest error",
+      "observed": {
+        "pass": true,
+        "text": "조회 실패: HTTP 404 Not Found · 설정과 서버 상태를 확인한 뒤 새로고침하세요."
+      }
+    }
+  ],
+  "discoveryRequests": [
+    {
+      "method": "OPTIONS",
+      "path": "/Mobius/privacy-bubble-test-ae",
+      "query": "?fu=1&drt=1&ty=28&lim=100&ofst=0&cnd=org.onem2m.common.moduleclass.binarySwitch",
+      "headers": {
+        "origin": null,
+        "ri": null,
+        "rvi": null
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/Mobius/privacy-bubble-test-ae",
+      "query": "?fu=1&drt=1&ty=28&lim=100&ofst=0&cnd=org.onem2m.common.moduleclass.binarySwitch",
+      "headers": {
+        "origin": "qa-operator",
+        "ri": "dashboard-1824a12b-ed2a-4ac6-8f74-05f0ba9facf0",
+        "rvi": "3"
+      }
+    },
+    {
+      "method": "OPTIONS",
+      "path": "/Mobius/privacy-bubble-test-ae/bubbleState",
+      "query": "",
+      "headers": {
+        "origin": null,
+        "ri": null,
+        "rvi": null
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/Mobius/privacy-bubble-test-ae/bubbleState",
+      "query": "",
+      "headers": {
+        "origin": "qa-operator",
+        "ri": "dashboard-013ea00a-1372-4fa0-ae29-eef4e02e17bc",
+        "rvi": "3"
+      }
+    }
+  ],
+  "discoveryBoundary": "HTTP fixture at 127.0.0.1:33153 only; no real Mobius deployment exercised; subsequent 404 shown without fixture fallback",
+  "captures": [
+    "desktop-light.png",
+    "desktop-dark.png",
+    "desktop-partial.png",
+    "mobile-light.png",
+    "mobile-dark.png",
+    "mobile-end.png",
+    "discovery-http-fixture.png",
+    "discovery-error.png"
+  ],
+  "invocations": [
+    "omowright.connectPipe({browserPath:'/opt/google/chrome/chrome', browserArgs:['--headless=new','--no-sandbox','--no-first-run','--disable-extensions','--user-data-dir=<owned-run-root>/chrome-qa']})",
+    "browser.attachPage(liveTarget.id); page.goto('http://127.0.0.1:5173'); omowright.emulate(page,'desktop-1440')",
+    "page.locator('#commands select').selectOption('grp-partial')",
+    "page.locator('#audit input[type=search]').fill('grp-partial'); page.locator('#audit button[type=submit]').click(); page.waitForSelector('#audit .audit-list')",
+    "page.locator('#audit input[type=search]').fill('READBACK'); page.locator('#audit button[type=submit]').click(); page.waitForSelector('#audit .panel p.small')",
+    "const buttons=await page.locator('#resources .tree button').all(); await buttons[3].click()",
+    "page.locator('#commands select').selectOption('grp-demo'); page.locator('.primary').click()",
+    "page.cdp.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-color-scheme',value:'dark'}]},await page.resolveSessionId())",
+    "omowright.emulate(page,'iphone-14'); page.screenshot({path:'evidence/mobile-light.png',fullPage:true}); page.evaluate(()=>scrollTo(0,document.body.scrollHeight)); page.screenshot({path:'evidence/mobile-end.png'})",
+    "page.locator('#resources select').selectOption('live'); page.locator('#resources .field-grid label:nth-child(1) input').fill('http://127.0.0.1:33153'); page.locator('#resources .field-grid label:nth-child(2) input').fill('qa-operator'); page.locator('#resources button[type=submit]').click(); page.waitForSelector('#resources dl')",
+    "page.locator('#resources .field-grid label:nth-child(1) input').fill('http://127.0.0.1:5173'); page.locator('#resources button[type=submit]').click(); page.waitForSelector('#resources [role=alert]')"
+  ],
+  "visualReview": {
+    "result": "PASS",
+    "desktopWidth": 1440,
+    "mobileWidth": 390,
+    "notes": "No document horizontal overflow, no overlap/blank content observed. Phone full capture capped at 16383 device pixels; mobile-end supplies bottom evidence table/footer. Both color schemes inspected.",
+    "reviewer": "parent self-review; no ulw-plan reviewer gate triggered"
+  },
+  "qaHarnessCorrections": [
+    "Detached page sessions disappeared between eval calls; reattached live tab and completed action batch within a cell.",
+    "Empty audit ul was not visible; waited for non-loading results summary instead."
+  ],
+  "cleanup": {
+    "mockServer": "mobiusStub.stop(true); port 33153 absent from ss read-back",
+    "browser": "qaBrowser.close(); pgrep owned Chrome profile found no processes",
+    "sse": "bash_13 terminated; port 4174 absent from ss read-back",
+    "vite": "bash_15 terminated; port 5173 absent from ss read-back"
+  }
+}
