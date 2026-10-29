@@ -184,6 +184,7 @@ void safePins() {
 }
 struct Button {
   int pin; bool raw = false, pressed = false; uint64_t changed = 0;
+  explicit Button(int inputPin) : pin(inputPin) {}
   bool update(uint64_t now) {
     bool next = digitalRead(pin) == LOW;
     if (next != raw) { raw = next; changed = now; }
