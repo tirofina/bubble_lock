@@ -83,6 +83,21 @@ def _resource_path(path: str) -> str:
     return quote(path.rstrip("/"), safe="/:-._~")
 
 
+def _mqtt_to(http_path: str) -> str:
+    """Reverse TS-0009 HTTP path encoding for the oneM2M request's To field."""
+    _resource_path(http_path)
+    if http_path.startswith("/~/"):
+        target = http_path[2:]  # SP-relative: /~/CSE/base -> /CSE/base
+    elif http_path.startswith("/_/"):
+        target = "/" + http_path[2:]  # Absolute: /_/SP/CSE/base -> //SP/CSE/base
+    else:
+        target = http_path[1:]  # CSE-relative: /base/cnt -> base/cnt
+    target = target.rstrip("/")
+    if not target.strip("/"):
+        raise ValueError("empty oneM2M To resource identifier")
+    return target
+
+
 class TransportHub:
     def __init__(self, config: Any):
         self.config = config
@@ -276,7 +291,7 @@ class TransportHub:
                 raise RuntimeError("request ID already in flight")
             future = asyncio.get_running_loop().create_future()
             self._pending[rqi] = future
-            primitive = {"op": 1, "to": container, "fr": self.config.originator,
+            primitive = {"op": 1, "to": _mqtt_to(container), "fr": self.config.originator,
                          "rqi": rqi, "ty": 4, "rvi": self.config.rvi, "pc": {"m2m:cin": cin}}
             try:
                 wire = {"m2m:rqp": primitive} if self.config.mqtt_wrapped_primitive else primitive

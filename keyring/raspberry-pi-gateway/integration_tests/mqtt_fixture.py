@@ -15,7 +15,7 @@ RESPONSE = "/oneM2M/resp/Ctest/test-cse/json"
 
 
 def docker(*args, check=True):
-    result = subprocess.run(["docker", *args], capture_output=True, text=True, timeout=20)
+    result = subprocess.run(["docker", *args], capture_output=True, text=True, encoding="utf-8", timeout=20)
     if check and result.returncode:
         raise RuntimeError(f"test Docker command failed: {args[0]}: {result.stderr.strip()}")
     return result
@@ -24,7 +24,7 @@ def docker(*args, check=True):
 class DockerBroker:
     label = "privacy-bubble.test-token"
 
-    def __init__(self, pki):
+    def __init__(self, pki, *, network=None, originator="Ctest", cse_id="test-cse", internal_listener=False):
         self.token, self.container = uuid.uuid4().hex, None
         image = os.environ.get("KEYRING_TEST_MQTT_IMAGE", "eclipse-mosquitto:2")
         # Resolve the cached image before starting; --pull never forbids network installs.
@@ -33,13 +33,18 @@ class DockerBroker:
             raise RuntimeError("cached Mosquitto image identity unavailable")
         self.config = pki.root / f"broker-{self.token}.conf"
         self.acl = pki.root / f"acl-{self.token}.txt"
-        self.acl.write_text("user gw-test\n" + f"topic write {REQUEST}\ntopic read {RESPONSE}\n"
+        if any(re.fullmatch(r"[A-Za-z0-9._:-]+", value) is None for value in (originator, cse_id)):
+            raise ValueError("test broker identities must be safe topic segments")
+        request, response = f"/oneM2M/req/{originator}/{cse_id}/json", f"/oneM2M/resp/{originator}/{cse_id}/json"
+        self.acl.write_text("user gw-test\n" + f"topic write {request}\ntopic read {response}\n"
                             "user cse-test\ntopic read /oneM2M/req/#\n" + f"topic write {RESPONSE}\n", encoding="ascii")
         uid = os.getuid() if hasattr(os, "getuid") else 0
         # Container root is used only when the private temporary PKI is root-owned
         # (including Docker Desktop). No deployment credentials are mounted.
         self.config.write_text(("user root\n" if uid == 0 else "") +
-            "persistence false\nlog_dest stdout\nlog_type all\nlistener 8883\nallow_anonymous false\n"
+            "persistence false\nlog_dest stdout\nlog_type all\nper_listener_settings true\n" +
+            ("listener 1883\nallow_anonymous true\n" if internal_listener else "") +
+            "listener 8883\nallow_anonymous false\n"
             "cafile /mosquitto/test/trusted.pem\ncertfile /mosquitto/test/server.pem\n"
             "keyfile /mosquitto/test/server.key\nrequire_certificate true\nuse_identity_as_username true\n"
             f"tls_version tlsv1.3\nacl_file /mosquitto/test/{self.acl.name}\n", encoding="ascii")
@@ -49,6 +54,7 @@ class DockerBroker:
                             "--security-opt", "no-new-privileges:true", "--memory", "128m", "--pids-limit", "64",
                             "--user", str(uid), "-p", "127.0.0.1::8883",
                             "--mount", f"type=bind,source={pki.root.as_posix()},target=/mosquitto/test,readonly",
+                            *(["--network", network, "--network-alias", "broker"] if network else []),
                             "--entrypoint", "mosquitto", self.image_id, "-c", f"/mosquitto/test/{self.config.name}")
             self.container = result.stdout.strip()
             if not re.fullmatch(r"[0-9a-f]{64}", self.container):

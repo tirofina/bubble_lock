@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, Mock
 
 import httpx
 
-from bubble_gateway.transport import RemoteResponseError, TransportHub
+from bubble_gateway.transport import RemoteResponseError, TransportHub, _mqtt_to
 from helpers import config
 
 
@@ -25,11 +25,22 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
         def publish(topic, payload, qos, retain):
             wire = json.loads(payload)["m2m:rqp"]
             self.assertEqual(wire["rqi"], self.rqi)
+            self.assertEqual(wire["to"], "test/receipts")
             if response is not None:
                 self.hub._receive(dict(rqi=self.rqi, rsc=response))
             return SimpleNamespace(rc=0)  # Queued / PUBACK alone cannot settle content.
         self.hub._mqtt = SimpleNamespace(publish=Mock(side_effect=publish))
         self.hub._ready.set()
+
+    def test_mqtt_to_reverses_http_identifier_scope_encoding(self):
+        for path, expected in (("/Mobius/receipts", "Mobius/receipts"),
+                               ("/~/Mobius4/Mobius/receipts", "/Mobius4/Mobius/receipts"),
+                               ("/_/example.org/Mobius4/Mobius/receipts", "//example.org/Mobius4/Mobius/receipts")):
+            with self.subTest(path=path):
+                self.assertEqual(_mqtt_to(path), expected)
+        for invalid in ("/", "/~/", "/_/", "//Mobius/receipts", "/Mobius/../receipts", "/Mobius/%2e%2e"):
+            with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                _mqtt_to(invalid)
 
     async def test_mqtt_application_receipt_avoids_http(self):
         self.mqtt(2001)
