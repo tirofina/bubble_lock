@@ -12,7 +12,7 @@ DOC-REV: 2.0.0
 RUBRIC: R01, R02, R03, R05, R10, R11, R12, R15
 SCOPE: r18 PCB 기반 펌웨어 및 Raspberry Pi Gateway
 INTERFACES: KEYRING contract candidate 0.1.0 / BLE GATT / mTLS HTTPS / MQTT 3.1.1 / oneM2M cin
-TESTS: Gateway0.2.3 소스·설치 wheel 각 실제 Mobius4/영속 큐10개 통과; 직전 기본56개/MQTT6개·firmware3개 build 유지; 실물/E2E 미완료
+TESTS: Gateway0.2.3 소스·설치 wheel 각 Linux POSIX10개 통과; 기존 CSE/영속 큐10개·기본56개/MQTT6개·firmware3개 build 유지; 실물/E2E 미완료
 EVIDENCE: evidence/2026-10-30-mqtt-wire/ — 최신 로그·receipt·hash; 이전 HTTPS/build/BLE/receipt 기록 유지
 DEPENDENCIES: PC-MOBIUS API, AE/container/ACP, broker capability, credential 등록
 ```
@@ -42,3 +42,5 @@ DEPENDENCIES: PC-MOBIUS API, AE/container/ACP, broker capability, credential 등
 펌웨어 빌드·flash 및 Gateway 설치·실행 절차는 각 모듈 README에 있다. 실제 장치 ID, passkey, BLE 주소, CA/인증서/개인키 및 중앙 주소를 배포 환경에 설정해야 한다. 예시 설정만으로 현장 연결이 완료되지는 않는다.
 
 현재 상태는 **소스 구현·로컬 시험 통과 / 실물·중앙 통합 미완료**다. Gateway0.2.3의 실제 CSE 저장·영속 큐·송신 프로세스 중단 복구10개는 [최신 실행 증거](evidence/2026-10-30-outbox-cse/README.md), firmware0.7.0의3개 프로필 빌드는 [기존 실행 증거](evidence/2026-10-29-local-validation/README.md)에 연결한다. 실물 Pi·BLE·전력/거리, 중앙 principal/AE/ACP/grant·앱/웹, 영상·release는 남아 있다.
+
+[Linux POSIX 상태 CLI10개](evidence/2026-10-30-posix-state/README.md)에서 실제 flock·fsync·0700/0600·WAL·ENOSPC와 명시적 adoption 변경 감지를 확인했다. 새 합성 DB/비특권 x86_64 container 시험이며 실물 Pi·운영 DB·중앙 복구 승인은 남아 있다.

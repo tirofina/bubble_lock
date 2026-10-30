@@ -1,0 +1,16 @@
+{
+  "imageId": "sha256:2aaad292418dfca5b3ab3d9d0643a6f0be0857e00ccde376f85edf7fc4e66f18",
+  "imageTag": "privacy-bubble-keyring-posix-test:local",
+  "containerName": "keyring-posix-test-70eecc7a5ac84d35ac24680258dca34d",
+  "ownershipToken": "70eecc7a5ac84d35ac24680258dca34d",
+  "network": "none",
+  "user": "65532:65532",
+  "readOnlyRoot": true,
+  "sourceBindReadOnly": true,
+  "wheelBindReadOnly": true,
+  "existingDatabaseMounted": false,
+  "wheelName": "privacy_bubble_gateway-0.2.3-py3-none-any.whl",
+  "wheelSha256": "fd6254cea210059330d14910ca0bb2299b638b8b8e98bec70a808befbbc4e63d",
+  "exitCode": 0,
+  "finishedAt": "2026-10-30T03:03:20.1027976+00:00"
+}

@@ -1,0 +1,55 @@
+POSIX_RUNTIME {"suite": "source", "uid": 65532, "python": "3.12.16", "machine": "x86_64", "sqlite": "3.48.0"}
+POSIX_FACT {"adoptionRefused": true, "realDirectoryFsync": true, "realOtherProcessWrite": true, "snapshotEpoch": 2, "snapshotRecoveryState": "QUARANTINED", "sourceEpoch": 3, "sourceIdentityAdded": false, "test": "test_adoption_detects_other_process_write_after_durable_snapshot"}
+test_adoption_detects_other_process_write_after_durable_snapshot (test_state_cli.PosixStateTests.test_adoption_detects_other_process_write_after_durable_snapshot) ... ok
+POSIX_FACT {"bindingAdded": true, "realDirectoryFsync": true, "snapshotRecoveryState": "QUARANTINED", "sourceIdentityState": "LIVE", "sourceRowsUnchanged": true, "test": "test_cli_adopt_preserves_rows_and_quarantines_snapshot"}
+test_cli_adopt_preserves_rows_and_quarantines_snapshot (test_state_cli.PosixStateTests.test_cli_adopt_preserves_rows_and_quarantines_snapshot) ... ok
+POSIX_FACT {"daemonEntryExit": 1, "daemonServeStarted": false, "outputCreated": false, "realOtherProcessFlock": true, "snapshotExit": 1, "sourceRowsUnchanged": true, "test": "test_cli_and_daemon_refuse_other_process_lock"}
+test_cli_and_daemon_refuse_other_process_lock (test_state_cli.PosixStateTests.test_cli_and_daemon_refuse_other_process_lock) ... ok
+POSIX_FACT {"apiExpiredDeadline": true, "completedManifest": false, "partialOutputRetained": true, "sourceRowsUnchanged": true, "test": "test_copy_deadline_retains_partial_output_without_manifest"}
+test_copy_deadline_retains_partial_output_without_manifest (test_state_cli.PosixStateTests.test_copy_deadline_retains_partial_output_without_manifest) ... ok
+test_existing_output_and_symlink_never_overwritten (test_state_cli.PosixStateTests.test_existing_output_and_symlink_never_overwritten) ... ok
+POSIX_FACT {"existingOutputExit": 2, "symlinkExit": 2, "targetUnchanged": true, "test": "test_existing_output_and_symlink_never_overwritten"}
+POSIX_FACT {"exitCode": 1, "outputCreated": false, "sourceRowsUnchanged": true, "test": "test_identity_mismatch_refused_before_output"}
+test_identity_mismatch_refused_before_output (test_state_cli.PosixStateTests.test_identity_mismatch_refused_before_output) ... ok
+POSIX_FACT {"bindingAdded": false, "invalidHashRefused": true, "outputCreated": false, "sourceRowsUnchanged": true, "test": "test_legacy_hash_mismatch_refused_before_output"}
+test_legacy_hash_mismatch_refused_before_output (test_state_cli.PosixStateTests.test_legacy_hash_mismatch_refused_before_output) ... ok
+POSIX_FACT {"archiveCannotBeRearchivedAsLive": true, "archiveCannotLaunch": true, "snapshotUnchanged": true, "test": "test_quarantined_copy_cannot_be_opened_or_archived"}
+test_quarantined_copy_cannot_be_opened_or_archived (test_state_cli.PosixStateTests.test_quarantined_copy_cannot_be_opened_or_archived) ... ok
+POSIX_FACT {"completedManifest": false, "exitCode": 1, "partialOutputRetained": true, "realEnospcErrno": 28, "sourceRowsUnchanged": true, "test": "test_real_full_filesystem_retains_partial_output"}
+test_real_full_filesystem_retains_partial_output (test_state_cli.PosixStateTests.test_real_full_filesystem_retains_partial_output) ... ok
+POSIX_FACT {"archiveRecoveryState": "QUARANTINED", "modes": {"gateway.sqlite3": "0o600", "manifest.json": "0o600", "snapshot": "0o700"}, "realDirectoryFsync": true, "sourceRowsUnchanged": true, "test": "test_snapshot_keeps_committed_wal_and_owner_only_permissions", "walCommittedRowsPreserved": true}
+test_snapshot_keeps_committed_wal_and_owner_only_permissions (test_state_cli.PosixStateTests.test_snapshot_keeps_committed_wal_and_owner_only_permissions) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 1.289s
+
+OK
+Processing /wheel/privacy_bubble_gateway-0.2.3-py3-none-any.whl
+Installing collected packages: privacy-bubble-gateway
+Successfully installed privacy-bubble-gateway-0.2.3
+POSIX_RUNTIME {"suite": "installed", "version": "0.2.3", "importPath": "/tmp/gateway-installed/bubble_gateway", "matchedModules": ["__init__.py", "__main__.py", "ble.py", "config.py", "core_bridge.py", "journal_cli.py", "journal_export.py", "model.py", "service.py", "state_archive.py", "state_identity.py", "store.py", "transport.py"]}
+test_adoption_detects_other_process_write_after_durable_snapshot (test_state_cli.PosixStateTests.test_adoption_detects_other_process_write_after_durable_snapshot) ... ok
+POSIX_FACT {"adoptionRefused": true, "realDirectoryFsync": true, "realOtherProcessWrite": true, "snapshotEpoch": 2, "snapshotRecoveryState": "QUARANTINED", "sourceEpoch": 3, "sourceIdentityAdded": false, "test": "test_adoption_detects_other_process_write_after_durable_snapshot"}
+POSIX_FACT {"bindingAdded": true, "realDirectoryFsync": true, "snapshotRecoveryState": "QUARANTINED", "sourceIdentityState": "LIVE", "sourceRowsUnchanged": true, "test": "test_cli_adopt_preserves_rows_and_quarantines_snapshot"}
+test_cli_adopt_preserves_rows_and_quarantines_snapshot (test_state_cli.PosixStateTests.test_cli_adopt_preserves_rows_and_quarantines_snapshot) ... ok
+POSIX_FACT {"daemonEntryExit": 1, "daemonServeStarted": false, "outputCreated": false, "realOtherProcessFlock": true, "snapshotExit": 1, "sourceRowsUnchanged": true, "test": "test_cli_and_daemon_refuse_other_process_lock"}
+test_cli_and_daemon_refuse_other_process_lock (test_state_cli.PosixStateTests.test_cli_and_daemon_refuse_other_process_lock) ... ok
+POSIX_FACT {"apiExpiredDeadline": true, "completedManifest": false, "partialOutputRetained": true, "sourceRowsUnchanged": true, "test": "test_copy_deadline_retains_partial_output_without_manifest"}
+test_copy_deadline_retains_partial_output_without_manifest (test_state_cli.PosixStateTests.test_copy_deadline_retains_partial_output_without_manifest) ... ok
+POSIX_FACT {"existingOutputExit": 2, "symlinkExit": 2, "targetUnchanged": true, "test": "test_existing_output_and_symlink_never_overwritten"}
+test_existing_output_and_symlink_never_overwritten (test_state_cli.PosixStateTests.test_existing_output_and_symlink_never_overwritten) ... ok
+POSIX_FACT {"exitCode": 1, "outputCreated": false, "sourceRowsUnchanged": true, "test": "test_identity_mismatch_refused_before_output"}
+test_identity_mismatch_refused_before_output (test_state_cli.PosixStateTests.test_identity_mismatch_refused_before_output) ... ok
+POSIX_FACT {"bindingAdded": false, "invalidHashRefused": true, "outputCreated": false, "sourceRowsUnchanged": true, "test": "test_legacy_hash_mismatch_refused_before_output"}
+test_legacy_hash_mismatch_refused_before_output (test_state_cli.PosixStateTests.test_legacy_hash_mismatch_refused_before_output) ... ok
+POSIX_FACT {"archiveCannotBeRearchivedAsLive": true, "archiveCannotLaunch": true, "snapshotUnchanged": true, "test": "test_quarantined_copy_cannot_be_opened_or_archived"}
+test_quarantined_copy_cannot_be_opened_or_archived (test_state_cli.PosixStateTests.test_quarantined_copy_cannot_be_opened_or_archived) ... ok
+POSIX_FACT {"completedManifest": false, "exitCode": 1, "partialOutputRetained": true, "realEnospcErrno": 28, "sourceRowsUnchanged": true, "test": "test_real_full_filesystem_retains_partial_output"}
+test_real_full_filesystem_retains_partial_output (test_state_cli.PosixStateTests.test_real_full_filesystem_retains_partial_output) ... ok
+POSIX_FACT {"archiveRecoveryState": "QUARANTINED", "modes": {"gateway.sqlite3": "0o600", "manifest.json": "0o600", "snapshot": "0o700"}, "realDirectoryFsync": true, "sourceRowsUnchanged": true, "test": "test_snapshot_keeps_committed_wal_and_owner_only_permissions", "walCommittedRowsPreserved": true}
+test_snapshot_keeps_committed_wal_and_owner_only_permissions (test_state_cli.PosixStateTests.test_snapshot_keeps_committed_wal_and_owner_only_permissions) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.818s
+
+OK

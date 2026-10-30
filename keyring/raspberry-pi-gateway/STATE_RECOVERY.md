@@ -1,8 +1,8 @@
 # Gateway 상태 보관과 신원 연결
 
-ROLE KEYRING / 남호 · DOC-REV 2.0.0 · Gateway0.2.0 · implemented / unverified.
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · Gateway0.2.3 · 로컬 POSIX 시험 통과 / Pi·중앙 복구 미완료.
 
-SQLite journal/outbox/fence/dedup/CORE sequence를 보관하고, 다른 Gateway 설정에서 같은 DB를 잘못 사용하는 것을 막는 소스를 추가했다. 실제 daemon·CLI·DB migration·백업·복구·테스트는 실행하지 않았다. 이 문서의 수용 항목은 모두 미실행이다.
+SQLite journal/outbox/fence/dedup/CORE sequence를 보관하고 다른 Gateway 설정의 DB 사용을 차단한다. [실제 Linux POSIX 시험10개](../evidence/2026-10-30-posix-state/README.md)가 소스·설치 wheel에서 각각 통과했다. 실제 flock/fsync·권한·WAL·CLI snapshot/adopt·ENOSPC·adoption 변경 감지를 새 합성 DB로 확인했다. 운영 DB·실물 Pi·전원 손실·중앙 복구 활성화는 미완료다.
 
 ## 상태의 경계
 
@@ -63,13 +63,17 @@ commit 후 [adoption.json](../../contracts/keyring/gateway-state-adoption.schema
 
 원래 DB를 그대로 재시작하는 기존 경로는 유지한다. DISPATCHING이 남아 있으면 기존 service가 INDETERMINATE receipt를 만들고 동작을 재실행하지 않는다. 새 백업을 활성 상태로 가장하지 않는다.
 
-## 미실행 인수 항목
+## 인수 항목의 현재 증거
 
-| ID | 남은 확인 | 결과 |
+아래는 로컬 부분 증거다. approver/gate 승인과 실물 결과는 남아 있다.
+
+| ID | 로컬 실제 결과 | 남은 범위 |
 |---|---|---|
-| KR-STATE-01 | 새 빈 DB binding·같은 identity 재시작·mismatch/필수 table 누락 거절 | 미실행 |
-| KR-STATE-02 | committed WAL·command/fence/outbox/CORE sequence의 snapshot 보존 | 미실행 |
-| KR-STATE-03 | daemon lock·copy timeout·full disk·partial output·overwrite 거절 | 미실행 |
-| KR-STATE-04 | legacy ownership/hash/route·변경 감지·metadata transaction·중단 adoption | 미실행 |
-| KR-STATE-05 | archive 직접 실행 거절·오래된 snapshot activation 차단 | 미실행 |
-| KR-STATE-ACTIVATE-01 | 중앙 checkpoint/권한·NVS/CORE 대조 뒤 복구 활성화 | 계약 미확정·미구현 |
+| KR-STATE-01 | 기본 단위시험의 identity 재시작/table 검사와 Linux CLI의 mismatch 거절 | Pi 실제 배포/startup |
+| KR-STATE-02 | Linux CLI가 실제 committed WAL·command/fence/outbox/CORE sequence row 보존·manifest hash·0700/0600 확인 | Pi SD카드·전원 손실 내구성 |
+| KR-STATE-03 | 별도 프로세스 flock로 CLI/daemon entry 차단, 실제 ENOSPC/partial output/기존 output/symlink 거절 | 장시간 CLI copy timeout·실물 저장 장치. timeout=-1 API 시험은 이미 경과한 deadline만 확인 |
+| KR-STATE-04 | 합성 legacy CLI adopt·hash 오류 거절·실제 fsync 후 다른 프로세스 DB 변경 감지·원본 row 보존 | 운영 원본 식별·DB commit 후 receipt 쓰기 중단·중앙 정산 |
+| KR-STATE-05 | QUARANTINED Store 시작·CLI 재보관 거절·snapshot byte 보존 | 중앙 승인 후 activation은 별도 경로 |
+| KR-STATE-ACTIVATE-01 | 계약 미확정·미구현 | 중앙 checkpoint/권한·NVS/CORE 대조와 복구 승인/활성화 |
+
+재현은 [TESTING.md](TESTING.md)의 별도 POSIX10개 절차를 따른다. 비특권 Linux x86_64/tmpfs에서 수행했으며 Pi ARM 실물·기존 DB adoption/backup 결과로 표시하지 않는다. 전체 daemon은 시작하지 않았고 lock 시험의 entry는 serve 전에 중단됐다.

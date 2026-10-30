@@ -7,7 +7,7 @@
   "date": "2026-10-30",
   "branch": "codex/keyring-namho",
   "status": "implemented",
-  "verificationStatus": "local-builds-unit-TLS-MQTT-and-real-disposable-CSE-tests-passed; physical-device/central-integration-unverified",
+  "verificationStatus": "local-firmware-builds-unit-TLS-MQTT-real-CSE-outbox-and-POSIX-CLI-tests-passed; Pi/device/central-integration-unverified",
   "rubricIds": [
     "R01",
     "R02",
@@ -56,7 +56,8 @@
     "per-connection BLE generation guards, pinned command writes and failed-handshake readiness fencing",
     "atomic first staging of native receipt and optional CORE ACK; no completed ACK regeneration during native retry/restart",
     "HTTP address scope reversed for native MQTT To; real disposable Mobius4/PostgreSQL storage/readback/idempotency/conflict/restart tests",
-    "Real SQLite sender/CSE integration: reopened dedup, native receipt confirmation, persisted outage backoff, abrupt child exit after remote commit, conflicting outbox retention"
+    "Real SQLite sender/CSE integration: reopened dedup, native receipt confirmation, persisted outage backoff, abrupt child exit after remote commit, conflicting outbox retention",
+    "Opt-in unprivileged Linux POSIX state CLI container runner: actual flock/fsync/permissions, committed WAL, ENOSPC, guarded adoption and concurrent-write rejection"
   ],
   "existingHardware": {
     "status": "source-snapshot-included-unverified",
@@ -93,9 +94,9 @@
     "video evidence",
     "real-device and CSE end-to-end tests",
     "Gateway daemon/device hardware execution",
-    "deployed POSIX state operator CLI and existing database snapshot/adoption"
+    "Pi-deployed state operator CLI and existing operational database snapshot/adoption"
   ],
-  "actualReceipt": "evidence/2026-10-30-outbox-cse/receipt.json",
+  "actualReceipt": "evidence/2026-10-30-posix-state/receipt.json",
   "temporaryServer": {
     "upstreamRevision": "e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8",
     "composeProject": "privacy-bubble-keyring-dev",
@@ -103,23 +104,23 @@
     "provisioningReceipt": "dev/mobius4/provisioning-receipt.json",
     "scope": "loopback-only development server; no device integration evidence"
   },
-  "logSha256": "a8a7ee844a0f1db4e9a8db1cdd563761664f23f850028b2181c9ad641f05edc3",
+  "logSha256": "772491be7821661d193122248ffe86d1732b6e789ac26d147c9fa0a882107ea1",
   "releaseSha": null,
   "firmwareRevision": "keyring-0.7.0",
   "publication": {
-    "sourceCommit": "2166ded59caa05660c2d97e8d961c074345e27fa",
+    "sourceCommit": "0017edac40815f9d3a812d7f858705496f7aaa3b",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "2166ded59caa05660c2d97e8d961c074345e27fa",
-    "latestCheckpoint": "Actual SQLite sender/outbox/CSE recovery tests pushed; source/installed CSE10 passed; runtime0.2.3 unchanged"
+    "latestLocalSourceCommit": "0017edac40815f9d3a812d7f858705496f7aaa3b",
+    "latestCheckpoint": "POSIX test runner/source pushed; Linux source/installed CLI10 each passed; Gateway0.2.3 runtime unchanged"
   },
   "gatewayRevision": "0.2.3",
   "pendingValidationScope": "Actual central PKI/principal/AE/ACP/grants, INTEGRATION APIs, Pi/BlueZ/keyring/app/web, hardware power/range/video/release remain.",
   "lastCompletionAudit": {
-    "sourceRef": "2166ded59caa05660c2d97e8d961c074345e27fa",
-    "scope": "Current plan deliverables/seven materials/demo conditions vs current source and evidence; no physical/central completion proof",
+    "sourceRef": "0017edac40815f9d3a812d7f858705496f7aaa3b",
+    "scope": "Plan and actual POSIX state operator evidence vs remaining Pi/central integration requirements",
     "outcome": "incomplete",
     "reference": "COMPLETION_GAPS.md",
     "missingNamedReferences": [
@@ -134,7 +135,7 @@
     "lastReportedGoalStatus": "active",
     "previousConsecutiveBlockedTurns": 3,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "continued KEYRING development: actual durable outbox/CSE outage and process-death recovery",
+    "executionRequest": "continued KEYRING development: actual Linux state operator locking/filesystem/legacy adoption boundaries",
     "remainingCompletionDependencies": [
       "authoritative central authorization/settlement/recovery contracts",
       "purchased JD9853 module initialization",
@@ -142,34 +143,37 @@
       "real Pi/device/measurement/CSE integration/video/release evidence"
     ],
     "latestRemoteCore": "91a281b",
-    "sourceCommit": "2166ded59caa05660c2d97e8d961c074345e27fa",
-    "sourceValidation": "source/installed CSE10 each passed; previous default56 MQTT6 retained; full system incomplete",
+    "sourceCommit": "0017edac40815f9d3a812d7f858705496f7aaa3b",
+    "sourceValidation": "Linux source/installed POSIX10 passed; prior CSE10 default56 MQTT6 firmware3 retained; full system incomplete",
     "goalComplete": false,
     "pendingInput": "Asked for Raspberry Pi SSH alias/address and keyring board/panel readiness; no passwords/private keys requested"
   },
-  "actualReceiptScope": "Source/installed real disposable CSE10 (original5 plus actual SQLite sender/outbox/recovery5); previous default56/MQTT6 unchanged",
+  "actualReceiptScope": "Non-root Linux POSIX CLI10 from source and installed wheel; actual flock/fsync/permissions/WAL/ENOSPC/new legacy adoption and concurrent write detection",
   "localValidation": {
     "date": "2026-10-30",
-    "sourceCommit": "2166ded59caa05660c2d97e8d961c074345e27fa",
+    "sourceCommit": "0017edac40815f9d3a812d7f858705496f7aaa3b",
     "runtimeCodeCommit": "a970e3a5b2586cc80abd6eea49fb685dc79ab740",
-    "defaultSourceTestsPassed": 56,
-    "defaultInstalledTestsPassed": 56,
-    "mqttSourceIntegrationTestsPassed": 6,
-    "mqttInstalledIntegrationTestsPassed": 6,
-    "cseSourceIntegrationTestsPassed": 10,
-    "cseInstalledIntegrationTestsPassed": 10,
+    "posixSourceTestsPassed": 10,
+    "posixInstalledTestsPassed": 10,
     "skipped": 0,
-    "optInIntegrationSuite": true,
-    "testBroker": "Mosquitto2.1.2",
+    "host": {
+      "system": "Linux",
+      "machine": "x86_64",
+      "kernel": "6.6.87.2-microsoft-standard-WSL2",
+      "python": "3.12.16",
+      "sqlite": "3.48.0",
+      "uid": 65532,
+      "alpine": "3.21.9"
+    },
+    "testContainerUser": 65532,
     "testContainersRemaining": 0,
-    "testNetworksRemaining": 0,
+    "testNetwork": "none",
     "operationalServicesChanged": false,
-    "productionCodeChangedOrRebuilt": false,
+    "runtimeCodeChangedOrRebuilt": false,
     "databaseSchemaChanged": false,
-    "receipt": "evidence/2026-10-30-outbox-cse/receipt.json",
-    "limits": "Fresh SQLite/tmpfs PostgreSQL and actual sender loop/CSE; child process exit73 before local confirmation; synthetic principal/receipt; no full daemon/Pi/device/operational authorization",
-    "defaultAndMqttSuitesRerunThisCheckpoint": false,
-    "previousDefaultAndMqttReceipt": "evidence/2026-10-30-real-cse/receipt.json"
+    "receipt": "evidence/2026-10-30-posix-state/receipt.json",
+    "priorSuitesRerunThisCheckpoint": false,
+    "limits": "Linux x86_64/tmpfs actual CLI/flock/fsync/ENOSPC on synthetic DB; no Pi/SD power loss/operational DB or central recovery authorization"
   },
   "previousLocalValidation": {
     "date": "2026-10-29",
@@ -219,5 +223,28 @@
     "productionCodeChangedOrRebuilt": false,
     "receipt": "evidence/2026-10-30-https-tls/receipt.json",
     "limits": "test-only PKI/loopback HTTPS; no operational principal binding/MQTT/Pi/CSE/device proof"
+  },
+  "cseOutboxValidation": {
+    "date": "2026-10-30",
+    "sourceCommit": "2166ded59caa05660c2d97e8d961c074345e27fa",
+    "runtimeCodeCommit": "a970e3a5b2586cc80abd6eea49fb685dc79ab740",
+    "defaultSourceTestsPassed": 56,
+    "defaultInstalledTestsPassed": 56,
+    "mqttSourceIntegrationTestsPassed": 6,
+    "mqttInstalledIntegrationTestsPassed": 6,
+    "cseSourceIntegrationTestsPassed": 10,
+    "cseInstalledIntegrationTestsPassed": 10,
+    "skipped": 0,
+    "optInIntegrationSuite": true,
+    "testBroker": "Mosquitto2.1.2",
+    "testContainersRemaining": 0,
+    "testNetworksRemaining": 0,
+    "operationalServicesChanged": false,
+    "productionCodeChangedOrRebuilt": false,
+    "databaseSchemaChanged": false,
+    "receipt": "evidence/2026-10-30-outbox-cse/receipt.json",
+    "limits": "Fresh SQLite/tmpfs PostgreSQL and actual sender loop/CSE; child process exit73 before local confirmation; synthetic principal/receipt; no full daemon/Pi/device/operational authorization",
+    "defaultAndMqttSuitesRerunThisCheckpoint": false,
+    "previousDefaultAndMqttReceipt": "evidence/2026-10-30-real-cse/receipt.json"
   }
 }

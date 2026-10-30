@@ -6,6 +6,8 @@ ROLE KEYRING / 남호 · DOC-REV2.0.0 · 2026-10-30.
 
 현재 [실제 Mobius4/영속 큐10개](evidence/2026-10-30-outbox-cse/README.md)가 소스·설치본에서 각각 통과했다. 직전 [기본56개·MQTT6개·CSE5개](evidence/2026-10-30-real-cse/README.md)와 [firmware3개 프로필](evidence/2026-10-29-local-validation/README.md)은 당시 증거로 유지한다. 현재 CSE10개는 기존5개와 추가영속큐5개를 포함한다.
 
+현재 [Linux POSIX10개](evidence/2026-10-30-posix-state/README.md)도 소스/설치본에서 각각 통과했다. 실제 flock/fsync·0700/0600·WAL·새 합성 legacy CLI adopt·ENOSPC·동시 변경 감지를 확인했다. Pi/운영 DB·중앙 복구 활성화 증거는 남아 있다.
+
 ## 담당 산출물
 
 | 계획서 요구 | 현재 자료/실행 증거 | 남은 작업·입력 |
@@ -16,7 +18,7 @@ ROLE KEYRING / 남호 · DOC-REV2.0.0 · 2026-10-30.
 | sensor/button/LED/battery/charger | [센서/GPIO](firmware/README.md), [INA219](firmware/POWER_MONITOR.md), [주변장치](firmware/PERIPHERALS.md), [DAC standby](firmware/HEADPHONE_STANDBY.md) | calibration/오류/wake/출력·전력 측정·구매 JD9853 init/geometry. LED·충전·온도 gate는 하드웨어 경로 |
 | Raspberry Pi Gateway daemon | [설치/config/systemd](raspberry-pi-gateway/README.md), Gateway0.2.3 wheel build/install·소스 일치 | 실제 Pi/BlueZ·장치·인증서 배포와 daemon startup/runtime |
 | MQTT/HTTPS transport | 실제 TLS/mTLS·ACL6개, 실제 Mobius4 HTTPS/MQTT3주소 범위 저장/조회, duplicate/conflict/CSE restart | 운영 principal→AE/Originator·ACP/grant·capability 합의. 개발 admin mapping은 승인 증거가 아님 |
-| queue/dedup/ACK/readback | SQLite reopened queue·CSE 중단/backoff/recovery·원격 commit 뒤 자식 송신 프로세스 exit73/WAL 복구·native receipt 확인 플래그·충돌 원본 보존 | 실제 장치 ACK/readback·Pi 전원 손실·중앙 settlement/checkpoint·journal reclaim·복구 승인/활성화 |
+| queue/dedup/ACK/readback | SQLite reopened queue·CSE 중단/backoff/recovery·원격 commit 뒤 자식 송신 프로세스 exit73/WAL 복구·native receipt 확인 플래그·충돌 원본 보존 | Linux 실제 상태 CLI10개도 확보. 실제 장치 ACK/readback·Pi 전원 손실·운영 DB·중앙 settlement/checkpoint·journal reclaim·복구 승인/활성화 |
 | power/range/reconnect/command 시험 | 모의 BLE·기한/fence/명령 회귀와 실제 로컬 전송 복구 | 실제 전원·BLE 거리·명령·회수·journal 장애·재연결 측정 |
 | PCB·Gateway·앱 연동 영상 | 코드/config/로컬 실행 로그·hash | 실제 Pi→CSE→앱/웹·5분 미만 영상·공개/제출 evidence |
 
@@ -26,7 +28,7 @@ ROLE KEYRING / 남호 · DOC-REV2.0.0 · 2026-10-30.
 
 1. 계약: KEYRING 후보 schema와 CORE v1 adapter가 있다. INTEGRATION 승인/정산/복구와 확장 수용은 미확정이다.
 2. 코드/configuration: 역할 브랜치에 업로드했다. 실물 Pi·장치 설치/runtime은 남아 있다.
-3. 단위/통합/장애 시험: firmware3개 build, 기본56개, MQTT6개, 현재 실제 CSE/영속큐10개 증거를 확보했다. 실제 Pi/BLE·중앙 통합·전원 손실은 남아 있다.
+3. 단위/통합/장애 시험: firmware3개 build, 기본56개, MQTT6개, 현재 실제 CSE/영속큐10개와 Linux POSIX10개 증거를 확보했다. 실제 Pi/BLE·중앙 통합·전원 손실은 남아 있다.
 4. 기대/실제 결과: 로컬 로그·delivery facts·hash를 보존했다. 합성 payload와 test worker를 실물 수행으로 표시하지 않는다.
 5. 수행/승인/gate: owner 남호/KEYRING·로컬 수행 환경을 기록했다. approver는 null이며 중앙 gate 승인·A01~A26의 원래 정의/매핑은 미확정이다.
 6. 로그/receipt/hash: source·CAD inventory·firmware/wheel·TLS/MQTT/CSE/queue의 실제 로그와 hash가 있다. 실물/E2E·전력/거리·영상은 남아 있다.

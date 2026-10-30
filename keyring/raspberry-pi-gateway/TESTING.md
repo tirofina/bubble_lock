@@ -2,7 +2,7 @@
 
 DOC-REV2.0.0 · KEYRING / 남호 · 2026-10-30 · Gateway0.2.3.
 
-현재 실제 CSE suite10개가 소스·기존0.2.3 설치 wheel에서 각각 통과했다. [영속 큐·프로세스 중단 복구 증거](../evidence/2026-10-30-outbox-cse/README.md)에 로그와 hash를 보존한다. 기본56개·별도 MQTT6개와 firmware0.7.0의3개 프로필 빌드는 변경하지 않았으며 [직전 실행 기록](../evidence/2026-10-30-real-cse/README.md)을 유지한다. skipped0이다.
+현재 실제 CSE suite10개와 별도 Linux POSIX suite10개가 소스·기존0.2.3 설치 wheel에서 각각 통과했다. [영속 큐·프로세스 중단 복구 증거](../evidence/2026-10-30-outbox-cse/README.md)에 로그와 hash를 보존한다. 기본56개·별도 MQTT6개와 firmware0.7.0의3개 프로필 빌드는 변경하지 않았으며 [직전 실행 기록](../evidence/2026-10-30-real-cse/README.md)을 유지한다. skipped0이다.
 
 ## 준비
 
@@ -58,3 +58,18 @@ python -m unittest discover -s keyring/raspberry-pi-gateway/cse_integration_test
 CSE 테스트 principal은 합성 admin mapping이다. 중앙 PKI/principal→AE/Originator·ACP/grant, INTEGRATION API·Group/SDT 명령·실물 Pi/BlueZ·키링·앱/웹·전력/거리·영상/release는 미완료다. 로컬 시험은 중앙 gate 승인을 뜻하지 않는다.
 
 과거 [TLS55개](../evidence/2026-10-30-https-tls/README.md), [MQTT6개](../evidence/2026-10-30-mqtt-wire/README.md), [영수증47개](../evidence/2026-10-30-receipt-routing/README.md), [BLE42개](../evidence/2026-10-30-ble-sessions/README.md), [firmware3개](../evidence/2026-10-29-local-validation/README.md)는 당시 기록으로 유지한다.
+
+## 별도 Linux POSIX10개
+
+[실행 증거](../evidence/2026-10-30-posix-state/README.md)에 source/installed console CLI10개와 실제 flock·directory fsync·권한0700/0600·WAL snapshot·명시적 legacy adoption·ENOSPC·partial output·quarantine·concurrent write 결과를 보존했다. Windows 기본 tests/가 대체한 directory fsync를 이 suite에서는 실제 Linux syscall로 실행한다. 별도 프로세스 write 주입 wrapper도 실제 fsync를 먼저 호출한다.
+
+Docker daemon, 캐시된 privacy-bubble-keyring-dev-certificates:local base, 기존 Gateway wheel과 PowerShell7이 필요하다. 새 시험 image build에서만 Python/pip 개발 package를 다운로드한다. 기존 개발 PKI entrypoint는 실행하지 않는다.
+
+```powershell
+docker build --pull=false -t privacy-bubble-keyring-posix-test:local -f keyring/raspberry-pi-gateway/posix_integration_tests/Dockerfile keyring/raspberry-pi-gateway/posix_integration_tests
+& ./keyring/raspberry-pi-gateway/posix_integration_tests/run-posix.ps1 -Wheel '<기존 wheel 절대경로>' -LogFile '<새 로그 절대경로>'
+```
+
+runner는 --pull never/network none/UID65532/read-only root로 실행하며 source/wheel만 read-only mount한다. wheel 설치는 --no-index --no-deps다. 새/tmp SQLite와256KiB/limited tmpfs만 사용한다. 새 log path를 요구하며 label/token 일치 자원만 정리한다. 시험 종료 후 host source/wheel은 그대로다.
+
+TLS/env는 시험용 placeholder 파일이다. snapshot/adopt는 새 합성 DB에만 실행한다. daemon entry는 다른 프로세스 lock 때문에 serve 전에 중단되므로 BLE·network·전체 daemon은 실행하지 않는다. API timeout=-1은 이미 경과한 deadline 확인이다. fsync는 tmpfs에서 실행했으며 Pi ARM/SD카드 전원 손실·운영 DB·중앙 복구 승인·실물 시험은 남아 있다. 기본56/MQTT6/CSE10/firmware3은 이번 POSIX checkpoint에서 변경·재실행하지 않았다.

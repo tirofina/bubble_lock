@@ -269,3 +269,16 @@ DOC-REV2.0.0을 읽고 KEYRING/R02·R03·R10·R11의 실제 CSE 경계를 시험
 - COMPLETION_GAPS를현행0.2.3과원래산출물/7자료/통합조건으로갱신했다. 세지정원문을저장소/원작업공간root에서다시조회해미발견확인. 원래A01~A26매핑·approver·release를만들지않았다.
 
 이번은 실제영속송신복구경계의새증거를확보한progress다. 전체goal은active/미완료이며 실물Pi/키링/BLE·운영PKI/AE/ACP/grant·INTEGRATION승인/정산/recovery·Group/SDT/앱/웹·JD9853자료·전력/거리·영상/release가남아있다.
+
+
+## 2026-10-30 — Linux POSIX 상태 CLI 실제 실행
+
+직전 턴은 actual Store/송신loop/CSE10개·5884554까지업로드한progress였다. 이번시작active·DOC-REV2.0.0/AGENTS재독·팀fetch main/CORE91a281b·WEB80ed37f동일. 기존Windows기본tests는directory fsync를대체했고STATE_RECOVERY문서는실제CLI미실행이었다. 이경계를독립진행했다. 기존Pi질문은답변대기다.
+
+- 캐시PostGIS에서/usr/bin/python3 --version확인은실행파일부재/exit127. --rm인새probe뿐이며기존DB/서비스는없다. 캐시개발base9a2d989412a4fcd7645394f7d42683c89a7dbd03ed8780c8c388f07625660d70에Python/pip개발package를설치한전용image를만들었다. build중AlpineAPK다운로드가있었고baseimagepull은없다. PKI생성entrypoint는실행하지않았다.
+- 실제Linuxx86_64/Alpine3.21.9/Python3.12.16/SQLite3.48.0/WSL2kernel6.6.87.2·UID65532. 시험은network none·read-onlyroot·source/wheelreadonly·새/tmp와256KiB/limited tmpfs만사용했다. source/installed 각10개 통과. 실제flock다른프로세스→CLI/daemon entry차단, fsync/0700/0600/WALsnapshot, 합성legacyadopt/hash검사, quarantine, ENOSPC28/partialoutput, 기존output/symlink거절, 실fsync후외부SQLitewrite감지를확인했다. timeout=-1은API기한경과만확인했다.
+- 최초직접실행source10/1.339초·설치10/0.801초 exit0. 재현run-posix.ps1구현후source10/1.289초·설치10/0.818초로다시실행해exit0/skipped0. runner는logoverwrite를거절하고exactname/token을확인한자원만정리한다. 실제installed console entry와모든Python module LF일치를확인했다. 기존wheel0.2.3 SHA256 fd6254cea210059330d14910ca0bb2299b638b8b8e98bec70a808befbbc4e63d 재사용·재빌드없음. runtime/DBschema/firmware는변경하지않았다.
+- source0017edac40815f9d3a812d7f858705496f7aaa3b 일반push성공(5884554..0017eda). evidence/2026-10-30-posix-state에imagebuild·최초/runner실행로그·runtime/runner metadata·source/image/wheelhash를보존했다. 소유container잔여0·기존개발4개running. DB/envplaceholder는container내삭제했고실제PKI/기존DB/장비/BLE/full daemon은없다. daemon entry는lock에서serve전에중단됐다.
+- STATE_RECOVERY미실행선언을실제로컬증거와Pi/운영잔여범위로갱신했다. 기본56/MQTT6/CSE10/firmware3은이번에변경/재실행하지않고이전evidence를유지했다.
+
+이번은미검증POSIX운영경계의새실행증거와재현runner를추가한progress다. 전체goal active/미완료. tmpfs fsync는Pi SD전원손실증거가아니다. 실물Pi/키링/BLE·운영DB·중앙principal/AE/ACP/grant·INTEGRATION승인/정산/recovery·Group/SDT/앱/웹·JD9853자료·전력/거리·영상/release는남아있다.
