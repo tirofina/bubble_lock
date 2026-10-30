@@ -1,0 +1,9 @@
+Processing c:\users\nh\documents\chatgpt\mobius 해커톤\github_upload\bubble_lock\keyring\raspberry-pi-gateway
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: privacy-bubble-gateway
+  Building wheel for privacy-bubble-gateway (pyproject.toml): started
+  Building wheel for privacy-bubble-gateway (pyproject.toml): finished with status 'done'
+  Created wheel for privacy-bubble-gateway: filename=privacy_bubble_gateway-0.2.3-py3-none-any.whl size=40685 sha256=fd6254cea210059330d14910ca0bb2299b638b8b8e98bec70a808befbbc4e63d
+  Stored in directory: c:\users\nh\appdata\local\pip\cache\wheels\4a\60\be\64a51e3f39ef169e90b2caee06b1c47a55cfa71c4681a7fe81
+Successfully built privacy-bubble-gateway

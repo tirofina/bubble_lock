@@ -1,0 +1,65 @@
+Exception in thread Thread-51 (_readerthread):
+Traceback (most recent call last):
+  File "C:\Users\NH\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\threading.py", line 1075, in _bootstrap_inner
+    self.run()
+  File "C:\Users\NH\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\threading.py", line 1012, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\NH\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 1599, in _readerthread
+    buffer.append(fh.read())
+                  ^^^^^^^^^
+UnicodeDecodeError: 'cp949' codec can't decode byte 0xed in position 4153: illegal multibyte sequence
+Exception in thread Thread-53 (_readerthread):
+Traceback (most recent call last):
+  File "C:\Users\NH\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\threading.py", line 1075, in _bootstrap_inner
+    self.run()
+  File "C:\Users\NH\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\threading.py", line 1012, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\NH\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\subprocess.py", line 1599, in _readerthread
+    buffer.append(fh.read())
+                  ^^^^^^^^^
+UnicodeDecodeError: 'cp949' codec can't decode byte 0xed in position 4153: illegal multibyte sequence
+setUpClass (test_mobius_cse.MobiusCseTests) ... ERROR
+
+======================================================================
+ERROR: setUpClass (test_mobius_cse.MobiusCseTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\NH\Documents\ChatGPT\mobius 해커톤\github_upload\bubble_lock\keyring\raspberry-pi-gateway\cse_integration_tests\mobius_fixture.py", line 49, in __init__
+    self.run("cse", ["--network-alias", "mobius4", "--read-only", "--cap-drop", "ALL", "--memory", "512m",
+  File "C:\Users\NH\Documents\ChatGPT\mobius 해커톤\github_upload\bubble_lock\keyring\raspberry-pi-gateway\cse_integration_tests\mobius_fixture.py", line 78, in run
+    self.check(name)
+  File "C:\Users\NH\Documents\ChatGPT\mobius 해커톤\github_upload\bubble_lock\keyring\raspberry-pi-gateway\cse_integration_tests\mobius_fixture.py", line 86, in check
+    data = json.loads(docker("container", "inspect", self.containers[name]).stdout)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\NH\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\json\__init__.py", line 339, in loads
+    raise TypeError(f'the JSON object must be str, bytes or bytearray, '
+TypeError: the JSON object must be str, bytes or bytearray, not NoneType
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\NH\Documents\ChatGPT\mobius 해커톤\github_upload\bubble_lock\keyring\raspberry-pi-gateway\cse_integration_tests\mobius_fixture.py", line 104, in close
+    self.check(name)
+  File "C:\Users\NH\Documents\ChatGPT\mobius 해커톤\github_upload\bubble_lock\keyring\raspberry-pi-gateway\cse_integration_tests\mobius_fixture.py", line 86, in check
+    data = json.loads(docker("container", "inspect", self.containers[name]).stdout)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\NH\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\json\__init__.py", line 339, in loads
+    raise TypeError(f'the JSON object must be str, bytes or bytearray, '
+TypeError: the JSON object must be str, bytes or bytearray, not NoneType
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\NH\Documents\ChatGPT\mobius 해커톤\github_upload\bubble_lock\keyring\raspberry-pi-gateway\cse_integration_tests\test_mobius_cse.py", line 23, in setUpClass
+    cls.stack = DisposableMobius(cls.pki)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\NH\Documents\ChatGPT\mobius 해커톤\github_upload\bubble_lock\keyring\raspberry-pi-gateway\cse_integration_tests\mobius_fixture.py", line 69, in __init__
+    self.close()
+  File "C:\Users\NH\Documents\ChatGPT\mobius 해커톤\github_upload\bubble_lock\keyring\raspberry-pi-gateway\cse_integration_tests\mobius_fixture.py", line 120, in close
+    raise RuntimeError("owned test stack cleanup failed") from errors[0]
+RuntimeError: owned test stack cleanup failed
+
+----------------------------------------------------------------------
+Ran 0 tests in 5.975s
+
+FAILED (errors=1)

@@ -1,0 +1,19 @@
+{
+  "version": "0.2.3",
+  "import": "C:\\Users\\NH\\Documents\\ChatGPT\\mobius \ud574\ucee4\ud1a4\\github_upload\\_local\\keyring-gateway-023-smoke\\bubble_gateway",
+  "matched_modules": [
+    "__init__.py",
+    "__main__.py",
+    "ble.py",
+    "config.py",
+    "core_bridge.py",
+    "journal_cli.py",
+    "journal_export.py",
+    "model.py",
+    "service.py",
+    "state_archive.py",
+    "state_identity.py",
+    "store.py",
+    "transport.py"
+  ]
+}

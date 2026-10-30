@@ -12,7 +12,7 @@ DOC-REV: 2.0.0
 RUBRIC: R01, R02, R03, R05, R10, R11, R12, R15
 SCOPE: r18 PCB 기반 펌웨어 및 Raspberry Pi Gateway
 INTERFACES: KEYRING contract candidate 0.1.0 / BLE GATT / mTLS HTTPS / MQTT 3.1.1 / oneM2M cin
-TESTS: Gateway0.2.2 소스·기존 설치 wheel 각55개 통과(모의47개·로컬 HTTPS/TLS8개), 별도 실제 MQTT6개도 각 통과; 펌웨어 compile profile 결과는 BUILD_PROFILES.md 참조; 실물/E2E 미실행
+TESTS: Gateway0.2.3 소스·새 설치 wheel 각 기본56개/MQTT6개/실제 Mobius4 CSE5개 통과; firmware3개 build 유지; 실물/E2E 미완료
 EVIDENCE: evidence/2026-10-30-mqtt-wire/ — 최신 로그·receipt·hash; 이전 HTTPS/build/BLE/receipt 기록 유지
 DEPENDENCIES: PC-MOBIUS API, AE/container/ACP, broker capability, credential 등록
 ```
@@ -41,4 +41,4 @@ DEPENDENCIES: PC-MOBIUS API, AE/container/ACP, broker capability, credential 등
 
 펌웨어 빌드·flash 및 Gateway 설치·실행 절차는 각 모듈 README에 있다. 실제 장치 ID, passkey, BLE 주소, CA/인증서/개인키 및 중앙 주소를 배포 환경에 설정해야 한다. 예시 설정만으로 현장 연결이 완료되지는 않는다.
 
-현재 전체 상태는 **implemented / 실물·통합 unverified**다. 로컬 firmware 빌드는 [기존 실행 증거](evidence/2026-10-29-local-validation/README.md), Gateway 패키지 빌드는 [영수증 경로 실행 증거](evidence/2026-10-30-receipt-routing/README.md), 최신55개·로컬 TLS는 [HTTPS 실행 증거](evidence/2026-10-30-https-tls/README.md)에 연결한다. 실물 동작, BLE 거리·전력, CSE 연동, 영상 및 공개 evidence는 미완료다. 중앙 API와 oneM2M binding은 PC-MOBIUS 담당과 확정해야 하는 계약 후보이다.
+현재 상태는 **소스 구현·로컬 시험 통과 / 실물·중앙 통합 미완료**다. Gateway0.2.3의 MQTT 주소 변환과 실제 CSE 저장·조회는 [최신 실행 증거](evidence/2026-10-30-real-cse/README.md), firmware0.7.0의3개 프로필 빌드는 [기존 실행 증거](evidence/2026-10-29-local-validation/README.md)에 연결한다. 실물 Pi·BLE·전력/거리, 중앙 principal/AE/ACP/grant·앱/웹, 영상·release는 남아 있다.

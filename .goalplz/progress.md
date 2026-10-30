@@ -242,3 +242,17 @@ source commit `3d0f0cc` 일반 push가 성공했다(`c5f1617..3d0f0cc`, origin/c
 - keyring/evidence/2026-10-30-mqtt-wire/에4개 실행 로그·각 source/설치 broker6개씩 총12개 broker 로그·환경/image/소스/로그/기존 wheel hash를 보존했다. broker 로그는 실제 TLS cipher·certificate username·QoS/deny 동작을 포함한다. 시험 종료 후 ownership label이 붙은 컨테이너0개, 기존 개발 서버4개 running을 읽기로 확인했다. 임시 인증서/키는 종료 삭제했고 commit하지 않았다.
 
 이번 턴은 실제 broker와 HTTP fallback wire 경계의 실행 증거를 추가한 progress다. 전체 goal은 active/미완료다. 중앙 PKI·principal/AE/grant/ACP·실제 CSE 저장/정산, Pi/BlueZ·키링 실물·전력/거리·구매 JD9853 init·지정 원문·영상/release는 남아 있다. 실제 integration을 합성 프로토콜 peer로 대체해 완료로 표시하지 않는다.
+
+
+## 2026-10-30 — 실제 Mobius4 저장 통합 / Gateway0.2.3
+
+DOC-REV2.0.0을 읽고 KEYRING/R02·R03·R10·R11의 실제 CSE 경계를 시험했다. 시작 상태 active, 직전 checkpoint2df3dc2다. main/CORE91a281b·WEB80ed37f는 최종 명시적 fetch에서도 그대로다. WEB ref를 WEB-DASHBOARD로 잘못 지정한 fetch는 missing-ref로 실패했고, 로컬 refs에서 실제 feature/web-dashboard를 확인해 수정했다. 인증/접속 오류는 없었다. Pi SSH/보드·화면 준비 상태 질문은 기존 답변 대기다.
+
+- 캐시된 실제 Mobius4 upstream e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8, 새 tmpfs PostgreSQL/PostGIS, Mosquitto2.1.2·nginx로 test-owned stack을 실행했다. image pull·기존 개발4개 container/기존 DB 변경은 없다. fresh PKI·합성 admin mapping·loopback 임시 포트만 사용했다.
+- setup1은 Docker UTF8출력을 CP949로 디코딩해0tests/1error, 남은 CSE/network는 exact label/token 확인 후 정리했다. Docker helper encoding을 UTF8로 수정했다. setup2는 proxy test CA 파일명 불일치로0tests/1error, trusted.pem으로 수정했다. 실패 로그도 보존한다.
+- baseline 실제 CSE5개 중4pass/1error: MQTT To에 HTTP 선행 슬래시를 복사해 SP-relative로 잘못 해석됐다. baseline은 숫자 rsc를 출력하지 않아 임의 기재하지 않았다. TS-0009 HTTP mapping 역변환으로 CSE-relative/SP-relative/absolute3가지를 수정했다. HTTP경로·rqi/rn/con·outbox/DB schema·중앙 승인 계약은 유지했다.
+- source 기본56개/2.309초, MQTT6개/17.732초, 실제 CSE5개/19.375초. 설치본 기본56개/2.485초, MQTT6개/17.584초, 실제 CSE5개/19.123초. 각각exit0/skipped0. 실제 cin 저장/조회, MQTT3가지 주소와 HTTPS POST fallback0회, 동일내용 중복cin1개, 내용충돌4105/원본보존, CSE만 재시작한 뒤 DBcin보존을 확인했다. DB재시작/전원손실은 시험하지 않았다.
+- offline0.2.3 wheel build/install 성공,40685bytes,SHA256 fd6254cea210059330d14910ca0bb2299b638b8b8e98bec70a808befbbc4e63d. 새 install target의 import/version/모든Python module LF 정규화 일치를 확인했다. firmware0.7.0 소스/설정은 변경하지 않았고 이전3개 프로필 build 증거를 유지한다.
+- source a970e3a5b2586cc80abd6eea49fb685dc79ab740 일반 push 성공(2df3dc2..a970e3a). keyring/evidence/2026-10-30-real-cse/에 최종6개시험로그·초기실패·baseline·실제broker/CSE/SQL/proxy로그와 소스/환경/image/wheelhash를 보존한다. 최종test-owned container/network잔여0, 기존개발4개running 확인. PKI개인키·DB·wheel binary는 commit하지 않는다.
+
+이번 턴은 실제 CSE통합을 통한 오류수정·검증 progress다. 전체goal은 active/미완료다. 운영principal/AE/ACP/grant·INTEGRATION승인/settlement/recovery·Group/SDT·실물Pi/BLE/키링/앱/웹·전력/거리·JD9853공장init·지정원문·영상/release는 남아 있다.

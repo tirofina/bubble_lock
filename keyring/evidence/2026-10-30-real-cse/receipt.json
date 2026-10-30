@@ -1,0 +1,736 @@
+{
+  "evidenceVersion": 1,
+  "generatedAt": "2026-10-30T02:51:57.944607+00:00",
+  "role": "KEYRING",
+  "owner": "남호",
+  "documentRevision": "2.0.0",
+  "sourceCommit": "a970e3a5b2586cc80abd6eea49fb685dc79ab740",
+  "sourcePushConfirmed": true,
+  "remoteBranch": "codex/keyring-namho",
+  "remoteCore": "91a281b",
+  "remoteWeb": "80ed37f",
+  "gatewayRevision": "0.2.3",
+  "runtimeCodeChanged": true,
+  "databaseSchemaChanged": false,
+  "firmwareChangedOrRebuilt": false,
+  "firmwareReceipt": "../2026-10-29-local-validation/receipt.json",
+  "scope": "real isolated Mobius4/PostgreSQL storage and native MQTT; not operational authorization or device integration",
+  "rubricIds": [
+    "R02",
+    "R03",
+    "R10",
+    "R11"
+  ],
+  "gateStatus": "partial-local-evidence",
+  "approver": null,
+  "testIds": [
+    "KR-CSE-01",
+    "KR-CSE-02",
+    "KR-CSE-03",
+    "KR-CSE-04",
+    "KR-CSE-05"
+  ],
+  "tests": {
+    "cse-source-tests.log": {
+      "tests": 5,
+      "seconds": 19.375,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    "cse-installed-tests.log": {
+      "tests": 5,
+      "seconds": 19.123,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    "default-source-tests.log": {
+      "tests": 56,
+      "seconds": 2.309,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    "default-installed-tests.log": {
+      "tests": 56,
+      "seconds": 2.485,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    "mqtt-source-tests.log": {
+      "tests": 6,
+      "seconds": 17.732,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    "mqtt-installed-tests.log": {
+      "tests": 6,
+      "seconds": 17.584,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exitCode": 0
+    }
+  },
+  "baseline": {
+    "tests": 5,
+    "passed": 4,
+    "errors": 1,
+    "exitCode": 1,
+    "cause": "HTTP path copied into MQTT To; CSE rejects incorrect identifier scope",
+    "observedNumericRsc": null
+  },
+  "setupFailures": [
+    {
+      "log": "initial-setup-failure.log",
+      "tests": 0,
+      "errors": 1,
+      "cause": "CP949 decoding Docker UTF-8 output; test-owned remainder manually label-checked and removed"
+    },
+    {
+      "log": "second-setup-failure.log",
+      "tests": 0,
+      "errors": 1,
+      "cause": "test proxy expected ca.pem; generated test CA is trusted.pem"
+    }
+  ],
+  "host": {
+    "system": "Windows",
+    "release": "11",
+    "python": "3.12.14",
+    "pythonOpenSsl": "OpenSSL 3.5.8 25 Aug 2026",
+    "dockerServer": "29.4.0"
+  },
+  "images": {
+    "cse": {
+      "tag": "privacy-bubble-keyring-mobius4:local",
+      "id": "sha256:43e83c7bed2d0acf46506fb59d59e8803ea55ab00b92a4ff65fd575bc37a427c",
+      "architecture": "amd64",
+      "repoDigests": [
+        "privacy-bubble-keyring-mobius4@sha256:43e83c7bed2d0acf46506fb59d59e8803ea55ab00b92a4ff65fd575bc37a427c"
+      ]
+    },
+    "postgres": {
+      "tag": "postgis/postgis:17-3.5",
+      "id": "sha256:01a6a70e41e6c4467c8f55f6063555ed72db2d6662cd0d571040d42eadaeb6f6",
+      "architecture": "amd64",
+      "repoDigests": [
+        "postgis/postgis@sha256:01a6a70e41e6c4467c8f55f6063555ed72db2d6662cd0d571040d42eadaeb6f6"
+      ]
+    },
+    "proxy": {
+      "tag": "nginx:1.28-alpine",
+      "id": "sha256:a8b39bd9cf0f83869a2162827a0caf6137ddf759d50a171451b335cecc87d236",
+      "architecture": "amd64",
+      "repoDigests": [
+        "nginx@sha256:a8b39bd9cf0f83869a2162827a0caf6137ddf759d50a171451b335cecc87d236"
+      ]
+    },
+    "broker": {
+      "tag": "eclipse-mosquitto:2",
+      "id": "sha256:860aeb5d63ce509508f6dcfb2bc8a1c1dd2bc60555b562b45ce90e52d8dabb0f",
+      "architecture": "amd64",
+      "repoDigests": [
+        "eclipse-mosquitto@sha256:860aeb5d63ce509508f6dcfb2bc8a1c1dd2bc60555b562b45ce90e52d8dabb0f"
+      ]
+    }
+  },
+  "mobiusUpstreamCommit": "e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8",
+  "imagePulled": false,
+  "testEnvironment": {
+    "database": "new per-run tmpfs PostgreSQL data; removed after run",
+    "databaseRestarted": false,
+    "cseOnlyRestartedByTest": true,
+    "pki": "fresh temporary test certificates; removed after run",
+    "principalMapping": "development proxy synthetic admin identity; no operational authorization",
+    "hostPortBinding": "127.0.0.1 ephemeral ports",
+    "existingServicesChanged": false,
+    "cleanup": {
+      "mqttContainers": [],
+      "cseContainers": [],
+      "cseNetworks": []
+    },
+    "existingDevelopmentContainers": [
+      "privacy-bubble-keyring-dev-mobius4-1 running",
+      "privacy-bubble-keyring-dev-postgres-1 running",
+      "privacy-bubble-keyring-dev-tls-1 running",
+      "privacy-bubble-keyring-dev-broker-1 running"
+    ]
+  },
+  "package": {
+    "artifact": "privacy_bubble_gateway-0.2.3-py3-none-any.whl",
+    "localPath": "C:\\Users\\NH\\Documents\\ChatGPT\\mobius 해커톤\\github_upload\\_local\\keyring-gateway-023-wheel\\privacy_bubble_gateway-0.2.3-py3-none-any.whl",
+    "bytes": 40685,
+    "sha256": "fd6254cea210059330d14910ca0bb2299b638b8b8e98bec70a808befbbc4e63d",
+    "buildExitCode": 0,
+    "installExitCode": 0,
+    "version": "0.2.3",
+    "installedPythonModulesMatchSource": true
+  },
+  "standard": "https://specifications.onem2m.org/ts/ts-0009/latest/6.2/",
+  "sources": [
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/__init__.py",
+      "sha256LfNormalized": "1b8e33c32154a30371326bc90170b517d1b4004c248e0e30ea14926b6bacd16c"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/__main__.py",
+      "sha256LfNormalized": "36dcb434b1343f6cdedb174c9f68e372141d27de327e94f54e958bd9719c4219"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/ble.py",
+      "sha256LfNormalized": "0a09b9f4b66ca63c7763e38058812dc848388d2ae446d86263b404a106f37d5f"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/config.py",
+      "sha256LfNormalized": "aaa913c289848cfbce6aad544d19b0d705f0bcbef3574435a96866489c2c54f2"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/core_bridge.py",
+      "sha256LfNormalized": "eddb76e43b823c8c53d351544f0132bc64f3321f3b6778fbdec7842209c49fa9"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/journal_cli.py",
+      "sha256LfNormalized": "a22dac2ddbf6142f8c0665e5efe460827721e502bb40453fde4d366783bff1fe"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/journal_export.py",
+      "sha256LfNormalized": "02ee7f74547656a650b3dbaebec6e1e7b1378d041825ff1937dbd05dba99d046"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/model.py",
+      "sha256LfNormalized": "964b4c982d94177f251bcbaec430e18edb36106300db45d79b094c0eca8c7fa6"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/service.py",
+      "sha256LfNormalized": "e6649210103decb3e02dfe81a576c2b09ede3f8c9130d8c842a0014329a3ebf1"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/state_archive.py",
+      "sha256LfNormalized": "be49b0c2cb336a69153aed777184bc038db398a480ad3f99bd1f421a60e93e97"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/state_identity.py",
+      "sha256LfNormalized": "aac06ec93f0c0e3ca22e67d0d4e8a7b605890d3aecc5aa1710a5a9cbd04f6ef0"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/store.py",
+      "sha256LfNormalized": "82c811e448779005545287699a9bcb9f5827f6dc4273e0a0ff87c98bec4afe1c"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/transport.py",
+      "sha256LfNormalized": "b8fdc12a0ea6a60dbda9d1f0ed6321e37cc724b5888fe94344ff8f48e33c9f85"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/helpers.py",
+      "sha256LfNormalized": "eee17a8b5cd175dc3e92c55adae0a88a5923b0331046a15f317b1f31fd6ff82e"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_ble_sessions.py",
+      "sha256LfNormalized": "d164b9c2f3733dde6b7aecd3b76aefc1c5a505f8e50aa309cccd2dd7aab97c18"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_dispatch.py",
+      "sha256LfNormalized": "193b158d20e019f7f75348be0c31908323a7a7a63e7be56b9935d167a645d668"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_https_tls.py",
+      "sha256LfNormalized": "12a2f50c007805b74615ad52993c5fd45ba97bdcde151fec7b4b4640ae6b6870"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_journal.py",
+      "sha256LfNormalized": "262b3baa8af2b985dfb14c46bbeabe9898fb1064343d74b0dcf20c0b42273858"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_protocol.py",
+      "sha256LfNormalized": "e75220ddb7b92e2bc50edd465c8777acc65829c8dd1c91c5c184f3f8f61332a2"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_receipt_outbox.py",
+      "sha256LfNormalized": "fb9dd0e7439f9c493668abfa42e23b5a72022787adfb163dbe71ceae6df96847"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_store.py",
+      "sha256LfNormalized": "e740d04e4a8349fce6ec2a6439093c4f450b7f67ca27837f99b8e2e810c590a6"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_transport.py",
+      "sha256LfNormalized": "db33d0863fa973091589054b2e5c8be79b147f217de9b310fa005dfa178b12a5"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/tls_fixture.py",
+      "sha256LfNormalized": "59c90f59f48df9f43fa694b2b7644299ad495bc4be5f78434833edb000d1ad68"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/integration_tests/mqtt_fixture.py",
+      "sha256LfNormalized": "f495ad00021f5c6fbb2f4e5c013bd3aa5c48a4c47388f2f0971ac53bc5d41aa8"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/integration_tests/test_mqtt_tls.py",
+      "sha256LfNormalized": "b9b7e79bebc03013dd727ecba564af7cc0ef03c69cd5dbeccc1990848be1b9ff"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/cse_integration_tests/mobius_fixture.py",
+      "sha256LfNormalized": "3094e8ec380b54405b3688e34b386dc5c596c1cd20a49f2c9a0d3b975e8bc56d"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/cse_integration_tests/test_mobius_cse.py",
+      "sha256LfNormalized": "c8400862579f1b52175458aa1acc0f8067e24f8bef6a559a5f426d627ddab81a"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/pyproject.toml",
+      "sha256LfNormalized": "0ca83b41c11980fb0e6c1811a597fed8e9f5b8337ec6f04a9b4964d02ba0e20c"
+    },
+    {
+      "path": "keyring/dev/mobius4/nginx.conf.template",
+      "sha256LfNormalized": "896544c12e281b46d7394457971ffb4386debf400eb1ff227c5d2956890635b5"
+    },
+    {
+      "path": "keyring/dev/mobius4/specializations.json",
+      "sha256LfNormalized": "07acb261f62ceb0ca7431e72a193ac061781a1eaf6edb548e3594e48e786d13d"
+    }
+  ],
+  "files": [
+    {
+      "path": "baseline-cse-logs/test_cse_process_restart_preserves_committed_cin/broker.log",
+      "bytes": 5059,
+      "sha256": "a51457211fa80c1c021d8551e0c7c0fb7d777bfcb4d465c6fc75fb6eb3d510de"
+    },
+    {
+      "path": "baseline-cse-logs/test_cse_process_restart_preserves_committed_cin/cse.log",
+      "bytes": 9171,
+      "sha256": "5462f72000ba3fb1383ef0e0dbb907f5ea07c931dd5411cc79403a2c9d9343d4"
+    },
+    {
+      "path": "baseline-cse-logs/test_cse_process_restart_preserves_committed_cin/postgres.log",
+      "bytes": 4496,
+      "sha256": "5f0943a9a82b11f740e6b98102ee9b004bcd6904528dcd1cbd5abfd2674ae5a3"
+    },
+    {
+      "path": "baseline-cse-logs/test_cse_process_restart_preserves_committed_cin/proxy.log",
+      "bytes": 2628,
+      "sha256": "53481ce0b453464a065a7748895fd807c87e90134a0cac7dc819edea9480cad5"
+    },
+    {
+      "path": "baseline-cse-logs/test_duplicate_request_reuses_single_cin/broker.log",
+      "bytes": 5059,
+      "sha256": "a51457211fa80c1c021d8551e0c7c0fb7d777bfcb4d465c6fc75fb6eb3d510de"
+    },
+    {
+      "path": "baseline-cse-logs/test_duplicate_request_reuses_single_cin/cse.log",
+      "bytes": 15033,
+      "sha256": "ea7f0c7008d576e8d0066eb93b2ff174d0cb567c62efbbb0768c9532d4fd5ecd"
+    },
+    {
+      "path": "baseline-cse-logs/test_duplicate_request_reuses_single_cin/postgres.log",
+      "bytes": 4496,
+      "sha256": "5f0943a9a82b11f740e6b98102ee9b004bcd6904528dcd1cbd5abfd2674ae5a3"
+    },
+    {
+      "path": "baseline-cse-logs/test_duplicate_request_reuses_single_cin/proxy.log",
+      "bytes": 3280,
+      "sha256": "e87cd4a86a6720f43d3d63bd0f1962656e440579a1c506ea7c538f4336900a63"
+    },
+    {
+      "path": "baseline-cse-logs/test_https_publish_is_stored_and_read_back_from_real_cse/broker.log",
+      "bytes": 5059,
+      "sha256": "a51457211fa80c1c021d8551e0c7c0fb7d777bfcb4d465c6fc75fb6eb3d510de"
+    },
+    {
+      "path": "baseline-cse-logs/test_https_publish_is_stored_and_read_back_from_real_cse/cse.log",
+      "bytes": 19127,
+      "sha256": "4dd488b145af1f97d61ef19da279f847705a2d16819cc13123906d8a9234fb1b"
+    },
+    {
+      "path": "baseline-cse-logs/test_https_publish_is_stored_and_read_back_from_real_cse/postgres.log",
+      "bytes": 4496,
+      "sha256": "5f0943a9a82b11f740e6b98102ee9b004bcd6904528dcd1cbd5abfd2674ae5a3"
+    },
+    {
+      "path": "baseline-cse-logs/test_https_publish_is_stored_and_read_back_from_real_cse/proxy.log",
+      "bytes": 3676,
+      "sha256": "37209b1a1e1a50452356cab8ccfdf65df97fefe88fbe4378372f93a049912acf"
+    },
+    {
+      "path": "baseline-cse-logs/test_mqtt_application_receipt_and_storage_without_https_post/broker.log",
+      "bytes": 6428,
+      "sha256": "31ee85fe9ae06fe8a566ac6d09f9f2aedcc60e6f12a35c78ea6f00dcfce68434"
+    },
+    {
+      "path": "baseline-cse-logs/test_mqtt_application_receipt_and_storage_without_https_post/cse.log",
+      "bytes": 21196,
+      "sha256": "f2cbf0e35295ef39c02b1fa854ad9c3a6a3bdf4b33431527c9386f5111e62014"
+    },
+    {
+      "path": "baseline-cse-logs/test_mqtt_application_receipt_and_storage_without_https_post/postgres.log",
+      "bytes": 4496,
+      "sha256": "5f0943a9a82b11f740e6b98102ee9b004bcd6904528dcd1cbd5abfd2674ae5a3"
+    },
+    {
+      "path": "baseline-cse-logs/test_mqtt_application_receipt_and_storage_without_https_post/proxy.log",
+      "bytes": 3781,
+      "sha256": "14a5ed656126f0c6099ef113bbdeca41c0f01593be6dd8754a178fb7be8356f8"
+    },
+    {
+      "path": "baseline-cse-logs/test_same_rqi_different_payload_is_rejected_and_original_preserved/broker.log",
+      "bytes": 6428,
+      "sha256": "31ee85fe9ae06fe8a566ac6d09f9f2aedcc60e6f12a35c78ea6f00dcfce68434"
+    },
+    {
+      "path": "baseline-cse-logs/test_same_rqi_different_payload_is_rejected_and_original_preserved/cse.log",
+      "bytes": 27053,
+      "sha256": "f1877fdeedbe23faca4bd88bbea1d48f20c9035a0f87c37910440f4e981618e0"
+    },
+    {
+      "path": "baseline-cse-logs/test_same_rqi_different_payload_is_rejected_and_original_preserved/postgres.log",
+      "bytes": 4496,
+      "sha256": "5f0943a9a82b11f740e6b98102ee9b004bcd6904528dcd1cbd5abfd2674ae5a3"
+    },
+    {
+      "path": "baseline-cse-logs/test_same_rqi_different_payload_is_rejected_and_original_preserved/proxy.log",
+      "bytes": 4431,
+      "sha256": "52083618e422b0306171d50d8763164cf4800f43e78626ee96f74ac244aaa100"
+    },
+    {
+      "path": "baseline-cse-tests.log",
+      "bytes": 2235,
+      "sha256": "dda726b5a97bedbdf88e5bc080ab1644b1120dd6f328dc42ddfba66e4d9ac247"
+    },
+    {
+      "path": "cse-installed-tests.log",
+      "bytes": 859,
+      "sha256": "20a5cd6405b84bcaced5e758a85d9a0d8992902be3aec518b4a18c81ac40ebb0"
+    },
+    {
+      "path": "cse-source-tests.log",
+      "bytes": 859,
+      "sha256": "fc247aefb18d6be41a719841f865023c45c53531ec89305b2a249aec43adb4f5"
+    },
+    {
+      "path": "default-installed-tests.log",
+      "bytes": 8513,
+      "sha256": "4c0b8371c405aee52cf128c98e87c88c3148ccbe6d5cf1b9b7bf638750e99290"
+    },
+    {
+      "path": "default-source-tests.log",
+      "bytes": 8513,
+      "sha256": "743740a88f408cc852438d53140d5531f0474c14f38a8977fedee98b35fff297"
+    },
+    {
+      "path": "initial-setup-failure.log",
+      "bytes": 4677,
+      "sha256": "bf4040470f64a73c2eb9b693c9812901b70491bf9271c72e2f3d892cea499a8b"
+    },
+    {
+      "path": "installed-cse-logs/test_cse_process_restart_preserves_committed_cin/broker.log",
+      "bytes": 5059,
+      "sha256": "bc3befab93b48468b0758a45219b6485d1694892b23265bd12d6538010daf352"
+    },
+    {
+      "path": "installed-cse-logs/test_cse_process_restart_preserves_committed_cin/cse.log",
+      "bytes": 9171,
+      "sha256": "609d7180519e57d82841321bd06fa55ffcba9f9a201a1831d78704b310652347"
+    },
+    {
+      "path": "installed-cse-logs/test_cse_process_restart_preserves_committed_cin/postgres.log",
+      "bytes": 4496,
+      "sha256": "59e387ae438ee7d0aab5d32edc011df3ed86d30de2210f57af7e2894381ddc35"
+    },
+    {
+      "path": "installed-cse-logs/test_cse_process_restart_preserves_committed_cin/proxy.log",
+      "bytes": 2327,
+      "sha256": "8ca86b4815168ea3ea7f5521c0986ce8ae3a3fb8c94f29263188168f8b3d474c"
+    },
+    {
+      "path": "installed-cse-logs/test_duplicate_request_reuses_single_cin/broker.log",
+      "bytes": 5059,
+      "sha256": "bc3befab93b48468b0758a45219b6485d1694892b23265bd12d6538010daf352"
+    },
+    {
+      "path": "installed-cse-logs/test_duplicate_request_reuses_single_cin/cse.log",
+      "bytes": 15033,
+      "sha256": "abbcc158fa612d0e3d9b11562fd9e5991f1a46f2775129405eaccb8671f1f0c8"
+    },
+    {
+      "path": "installed-cse-logs/test_duplicate_request_reuses_single_cin/postgres.log",
+      "bytes": 4496,
+      "sha256": "59e387ae438ee7d0aab5d32edc011df3ed86d30de2210f57af7e2894381ddc35"
+    },
+    {
+      "path": "installed-cse-logs/test_duplicate_request_reuses_single_cin/proxy.log",
+      "bytes": 2979,
+      "sha256": "58cac7c17ad074262e1da7bb35c3a88dd9b96592421b0562267ff70d38b573ca"
+    },
+    {
+      "path": "installed-cse-logs/test_https_publish_is_stored_and_read_back_from_real_cse/broker.log",
+      "bytes": 5059,
+      "sha256": "bc3befab93b48468b0758a45219b6485d1694892b23265bd12d6538010daf352"
+    },
+    {
+      "path": "installed-cse-logs/test_https_publish_is_stored_and_read_back_from_real_cse/cse.log",
+      "bytes": 19127,
+      "sha256": "cd9ee470430b6d05dfcbff50ebae80e537a23fe54fd48f9ddd89ff35c6729483"
+    },
+    {
+      "path": "installed-cse-logs/test_https_publish_is_stored_and_read_back_from_real_cse/postgres.log",
+      "bytes": 4496,
+      "sha256": "59e387ae438ee7d0aab5d32edc011df3ed86d30de2210f57af7e2894381ddc35"
+    },
+    {
+      "path": "installed-cse-logs/test_https_publish_is_stored_and_read_back_from_real_cse/proxy.log",
+      "bytes": 3375,
+      "sha256": "7a8e9af08efb445e1d708cab45f3cf24775e9198aec7b2e43d6791831003af3d"
+    },
+    {
+      "path": "installed-cse-logs/test_mqtt_application_receipt_and_storage_without_https_post/broker.log",
+      "bytes": 7622,
+      "sha256": "e93545215db41678f76b2f7fb80db00892051392bb0c13c34eee9d175ccd8ce9"
+    },
+    {
+      "path": "installed-cse-logs/test_mqtt_application_receipt_and_storage_without_https_post/cse.log",
+      "bytes": 26601,
+      "sha256": "d9d50ed0af3c806e7d9b4253919bd916009b62508718650cfaaafb4da0c912e6"
+    },
+    {
+      "path": "installed-cse-logs/test_mqtt_application_receipt_and_storage_without_https_post/postgres.log",
+      "bytes": 4496,
+      "sha256": "59e387ae438ee7d0aab5d32edc011df3ed86d30de2210f57af7e2894381ddc35"
+    },
+    {
+      "path": "installed-cse-logs/test_mqtt_application_receipt_and_storage_without_https_post/proxy.log",
+      "bytes": 3980,
+      "sha256": "707c763226f460bda623a6e13d17e693072cf87972f56789616aa6ab21c791f8"
+    },
+    {
+      "path": "installed-cse-logs/test_same_rqi_different_payload_is_rejected_and_original_preserved/broker.log",
+      "bytes": 7622,
+      "sha256": "e93545215db41678f76b2f7fb80db00892051392bb0c13c34eee9d175ccd8ce9"
+    },
+    {
+      "path": "installed-cse-logs/test_same_rqi_different_payload_is_rejected_and_original_preserved/cse.log",
+      "bytes": 32458,
+      "sha256": "f36d73756e4b7981f464dc21058b8779197d25dfde8c48641389aec1ac5dbe2b"
+    },
+    {
+      "path": "installed-cse-logs/test_same_rqi_different_payload_is_rejected_and_original_preserved/postgres.log",
+      "bytes": 4496,
+      "sha256": "59e387ae438ee7d0aab5d32edc011df3ed86d30de2210f57af7e2894381ddc35"
+    },
+    {
+      "path": "installed-cse-logs/test_same_rqi_different_payload_is_rejected_and_original_preserved/proxy.log",
+      "bytes": 4630,
+      "sha256": "78bc16ed8970554dbed49427a4b431b3d114fd50b02d8663c872ed8b7d3022c6"
+    },
+    {
+      "path": "installed-identity.json",
+      "bytes": 470,
+      "sha256": "958b1f160c33c6fa8c182c74b2420416b2778459ed919e854e16ef50ed332dab"
+    },
+    {
+      "path": "installed-mqtt-logs/test_application_denial_does_not_bypass_through_https.log",
+      "bytes": 3419,
+      "sha256": "f0da3b98d6214f285acc9d2b0b87aae494e76bac8ed3132e3b6bbae10794711d"
+    },
+    {
+      "path": "installed-mqtt-logs/test_broker_disconnect_fails_pending_and_uses_https.log",
+      "bytes": 3041,
+      "sha256": "10ee58df1e24154e39ec21583cfd3a05e310c99113c3596b91dc86f4065f78e2"
+    },
+    {
+      "path": "installed-mqtt-logs/test_certificate_identity_acl_denies_other_originator_topic.log",
+      "bytes": 2757,
+      "sha256": "e506fd8a0379e988709a5a522665c427cc231b5090e4540540e87047e565b46c"
+    },
+    {
+      "path": "installed-mqtt-logs/test_mqtt_tls_application_receipt_completes_without_https.log",
+      "bytes": 3419,
+      "sha256": "231cb28301656d7eb5a9d233e6f29bafc28398cc9b01559d982e582feb3b9843"
+    },
+    {
+      "path": "installed-mqtt-logs/test_puback_without_application_response_falls_back_with_same_cin.log",
+      "bytes": 2992,
+      "sha256": "8266ee4e04165fc13206daddb2cadd48e2eef2aa67885cbc5ab739b24ccda8e7"
+    },
+    {
+      "path": "installed-mqtt-logs/test_wrong_response_rqi_cannot_settle_mqtt_request.log",
+      "bytes": 3419,
+      "sha256": "734feb917cf8c2e537f809c95ec2e0b97031abe20b0bbb623f4f217a1acc62fa"
+    },
+    {
+      "path": "mqtt-installed-tests.log",
+      "bytes": 1111,
+      "sha256": "323a2a324d7ea4f9886f8a27b0c703769af4f1770335fd684cb1dff617991e7c"
+    },
+    {
+      "path": "mqtt-source-tests.log",
+      "bytes": 1111,
+      "sha256": "72f87775b184c2c5b47f2579ed6525aca5933c7ca76e43bcdb2cebab353340bb"
+    },
+    {
+      "path": "README.md",
+      "bytes": 4206,
+      "sha256": "535ba0292f77c60055e24b2378d74e913ac09d880fd62a708597f710d3f8a508"
+    },
+    {
+      "path": "second-setup-failure.log",
+      "bytes": 980,
+      "sha256": "b9d5730d4f37539e33076c2bbf063e55fd5d578b90bb55c786ca2fcb050c6b2a"
+    },
+    {
+      "path": "source-cse-logs/test_cse_process_restart_preserves_committed_cin/broker.log",
+      "bytes": 5059,
+      "sha256": "5e709c88960fa641474dd3f37096fc0b7a8f8a42c330158d9bfc38761fbf4556"
+    },
+    {
+      "path": "source-cse-logs/test_cse_process_restart_preserves_committed_cin/cse.log",
+      "bytes": 9171,
+      "sha256": "c3fc0c60c6bf1f077798dc699a3512d99284a3f90a659af0ef31924951a2edc4"
+    },
+    {
+      "path": "source-cse-logs/test_cse_process_restart_preserves_committed_cin/postgres.log",
+      "bytes": 4496,
+      "sha256": "1a7a03af34721ab794ee9bd0049d756897305e2393aa14ab560a7e8a9d54b0ed"
+    },
+    {
+      "path": "source-cse-logs/test_cse_process_restart_preserves_committed_cin/proxy.log",
+      "bytes": 2628,
+      "sha256": "db8b4889ac1dd6ac9929e5d6e8277c5a502ff9643c00902f1df19ff5fc7832e1"
+    },
+    {
+      "path": "source-cse-logs/test_duplicate_request_reuses_single_cin/broker.log",
+      "bytes": 5059,
+      "sha256": "5e709c88960fa641474dd3f37096fc0b7a8f8a42c330158d9bfc38761fbf4556"
+    },
+    {
+      "path": "source-cse-logs/test_duplicate_request_reuses_single_cin/cse.log",
+      "bytes": 15033,
+      "sha256": "18983f3d2d4d4963c21a02603e1666181090a1d85ce10a4159fb287f115c7d9d"
+    },
+    {
+      "path": "source-cse-logs/test_duplicate_request_reuses_single_cin/postgres.log",
+      "bytes": 4496,
+      "sha256": "1a7a03af34721ab794ee9bd0049d756897305e2393aa14ab560a7e8a9d54b0ed"
+    },
+    {
+      "path": "source-cse-logs/test_duplicate_request_reuses_single_cin/proxy.log",
+      "bytes": 3280,
+      "sha256": "8a35ea8b5672be6c9105a90d9c5693cfa30dbc3d5388f0eca868205c5e125237"
+    },
+    {
+      "path": "source-cse-logs/test_https_publish_is_stored_and_read_back_from_real_cse/broker.log",
+      "bytes": 5059,
+      "sha256": "5e709c88960fa641474dd3f37096fc0b7a8f8a42c330158d9bfc38761fbf4556"
+    },
+    {
+      "path": "source-cse-logs/test_https_publish_is_stored_and_read_back_from_real_cse/cse.log",
+      "bytes": 19127,
+      "sha256": "2336312a8204b3a9c7429a0a929d8f83dac823492b6ef88b65956449ef3a98ea"
+    },
+    {
+      "path": "source-cse-logs/test_https_publish_is_stored_and_read_back_from_real_cse/postgres.log",
+      "bytes": 4496,
+      "sha256": "1a7a03af34721ab794ee9bd0049d756897305e2393aa14ab560a7e8a9d54b0ed"
+    },
+    {
+      "path": "source-cse-logs/test_https_publish_is_stored_and_read_back_from_real_cse/proxy.log",
+      "bytes": 3676,
+      "sha256": "424f4ab785483a210dc668609f25611075d5bb9f1a474f0a65c39716c1ceeea9"
+    },
+    {
+      "path": "source-cse-logs/test_mqtt_application_receipt_and_storage_without_https_post/broker.log",
+      "bytes": 7622,
+      "sha256": "2dc5b08af54f4729a9651d08512c58c8da45c4a5c3e06de5fd842492a7862269"
+    },
+    {
+      "path": "source-cse-logs/test_mqtt_application_receipt_and_storage_without_https_post/cse.log",
+      "bytes": 26601,
+      "sha256": "6183c963f5811f9dae5eafeb954c992f12ca5d722c6a53a6b9932ab74c08d339"
+    },
+    {
+      "path": "source-cse-logs/test_mqtt_application_receipt_and_storage_without_https_post/postgres.log",
+      "bytes": 4496,
+      "sha256": "1a7a03af34721ab794ee9bd0049d756897305e2393aa14ab560a7e8a9d54b0ed"
+    },
+    {
+      "path": "source-cse-logs/test_mqtt_application_receipt_and_storage_without_https_post/proxy.log",
+      "bytes": 4281,
+      "sha256": "fe3e049e4ce2b9f805301268d16c358b4c80f7869d2ee5e5fb00194969cb6d62"
+    },
+    {
+      "path": "source-cse-logs/test_same_rqi_different_payload_is_rejected_and_original_preserved/broker.log",
+      "bytes": 7622,
+      "sha256": "2dc5b08af54f4729a9651d08512c58c8da45c4a5c3e06de5fd842492a7862269"
+    },
+    {
+      "path": "source-cse-logs/test_same_rqi_different_payload_is_rejected_and_original_preserved/cse.log",
+      "bytes": 32458,
+      "sha256": "0e848a466deb9053028ac20433ab9ef7c3ceb81a509971609aaff04a9f7fdd2a"
+    },
+    {
+      "path": "source-cse-logs/test_same_rqi_different_payload_is_rejected_and_original_preserved/postgres.log",
+      "bytes": 4496,
+      "sha256": "1a7a03af34721ab794ee9bd0049d756897305e2393aa14ab560a7e8a9d54b0ed"
+    },
+    {
+      "path": "source-cse-logs/test_same_rqi_different_payload_is_rejected_and_original_preserved/proxy.log",
+      "bytes": 4931,
+      "sha256": "4746bea8c71ccf2b205e04c9e9c9a403e7306c9ad2f28ea8d427c76bb5be644f"
+    },
+    {
+      "path": "source-mqtt-logs/test_application_denial_does_not_bypass_through_https.log",
+      "bytes": 3419,
+      "sha256": "69ec8f9a2b7e834574e93fb847222572cfd3b00ceeff357d14ce488972863b96"
+    },
+    {
+      "path": "source-mqtt-logs/test_broker_disconnect_fails_pending_and_uses_https.log",
+      "bytes": 3041,
+      "sha256": "a884e49a1a2d0264bac2470efe32aee0495b9853126913b558eabc8781d1370d"
+    },
+    {
+      "path": "source-mqtt-logs/test_certificate_identity_acl_denies_other_originator_topic.log",
+      "bytes": 2757,
+      "sha256": "e7433c84d4bff667cc6188990b97e5a2d7fe9284c37d521092538e864bc137ad"
+    },
+    {
+      "path": "source-mqtt-logs/test_mqtt_tls_application_receipt_completes_without_https.log",
+      "bytes": 3419,
+      "sha256": "489b1f8ad680e411ddcc7c9ea6cbcfa174d6b9abce5cd85a8aa7d99d8bd1f8af"
+    },
+    {
+      "path": "source-mqtt-logs/test_puback_without_application_response_falls_back_with_same_cin.log",
+      "bytes": 2992,
+      "sha256": "4d32d8507a7a839ca76476488e0cb54f15f79cad09141042734a242eac676510"
+    },
+    {
+      "path": "source-mqtt-logs/test_wrong_response_rqi_cannot_settle_mqtt_request.log",
+      "bytes": 3419,
+      "sha256": "9074c3b737c107bf006a72e16830dca2b9de0ab9ff1236bdd2bd30d8cd99125a"
+    },
+    {
+      "path": "wheel-build.log",
+      "bytes": 809,
+      "sha256": "b0dcf0a48fade5c91bdae75ef0af55576b1fd8e28c890e1b6bf94af61f3940de"
+    },
+    {
+      "path": "wheel-install.log",
+      "bytes": 260,
+      "sha256": "762c2880e6b15c80ead2069b42fe0e5e9f0740cfe29bd528524387c185542274"
+    }
+  ],
+  "performer": "Codex-assisted local verification",
+  "remaining": [
+    "Pi/BlueZ and physical keyring",
+    "operational PKI principal AE Originator ACP grants",
+    "INTEGRATION authorization settlement recovery",
+    "Group SDT app web end-to-end",
+    "power range hardware video release"
+  ]
+}
