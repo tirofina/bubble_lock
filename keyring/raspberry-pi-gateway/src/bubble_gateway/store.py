@@ -144,16 +144,21 @@ class Store:
         return True
 
     def stage_receipts(self, container: str, core_enabled: bool = False) -> None:
+        """Choose both routes atomically on first staging, not on every retry."""
         rows = self.db.execute("SELECT command_id,receipt FROM commands WHERE receipt IS NOT NULL AND receipt_delivered=0 LIMIT 128").fetchall()
         for row in rows:
             try:
                 with self.db:
                     receipt = json.loads(row["receipt"])
-                    projected = acknowledgement(receipt) if core_enabled else None
-                    if projected is not None:
-                        self._enqueue(self.request_id("core-ack", row["command_id"]), "@core/ack", projected, True)
-                    self._enqueue(self.request_id("receipt", row["command_id"]), container,
-                                  receipt, True, row["command_id"])
+                    created = self._enqueue(self.request_id("receipt", row["command_id"]), container,
+                                            receipt, True, row["command_id"])
+                    # The retained native row (then receipt_delivered after its
+                    # confirmation) is the durable staging marker. Recreating a
+                    # completed ACK here would bypass the native retry backoff.
+                    if created and core_enabled:
+                        projected = acknowledgement(receipt)
+                        if projected is not None:
+                            self._enqueue(self.request_id("core-ack", row["command_id"]), "@core/ack", projected, True)
             except CapacityError:
                 break
 
