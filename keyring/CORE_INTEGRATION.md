@@ -12,6 +12,8 @@
 - CORE가 deviceId:sequence로 dedup하므로 device별 uint32 sequence를 SQLite에 따로 유지한다. 원래 bootId/firmwareSequence를 함께 남긴다. sequence 소진 시 오류로 보존하며 자동 wrap하지 않는다. DB를 삭제하면 이 연속성을 잃으므로 일반 복구로 사용하지 않는다.
 - 성공 ACK만 READBACK_VERIFIED로 변환하고 measurementScope=gpio-at-application을 함께 보낸다. 실제 모터 작동을 센서로 검증한 값이 아니다. 실패/미확정 결과는 원래 상세 receipt cin에 기록한다.
 
+Gateway0.2.2는 native 영수증과 CORE ACK를 최초 staging 때 한 트랜잭션에서 생성한다. ACK가 전달돼 삭제된 뒤 native 재시도 때문에 다시 생성하지 않는다. 경로별 기존 outbox는 독립 재시도하며 CORE projection 선택은 최초 staging 시 고정한다. 설정을 나중에 켜도 이미 대기 중인 native 영수증을 소급 backfill하지 않는다. [경로 수명·시험](raspberry-pi-gateway/RECEIPT_ROUTING.md)에 기록했다.
+
 ## 계약 공백과 연동 차단 조건
 
 1. CORE `sendCommand()`는 desiredState:boolean/epoch를 보내지만 claimId·grantRevision이 없다. Gateway는 해당 필드를 임의 생성하지 않고 실행을 차단한다. INTEGRATION이 canonical command와 매 실행 직전 authorize 응답을 제공해야 한다. 승인 필드가 전부 있는 CORE 별칭 형식은 Gateway가 canonical 형식으로 변환한다.

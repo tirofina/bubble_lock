@@ -203,3 +203,16 @@ source commit `3d0f0cc` 일반 push가 성공했다(`c5f1617..3d0f0cc`, origin/c
 - 소스48c71e1 일반 push 성공(bf4c8b0..48c71e1,origin/codex/keyring-namho). keyring/evidence/2026-10-30-ble-sessions/에 baseline·source/설치 package 시험·wheel build/install 로그와 실제 SHA256을 저장한다. BLE_SESSIONS.md의 KR-BLE-SESSION-01..05는 KEYRING 제안 추적 ID이며 원래 A01~A26을 대체하지 않는다.
 
 이번 작업은 재접속 결함 수정과 실행 증거로 progress다. 전체 goal은 active/미완료로 유지한다. 중앙 승인·settlement/recovery 계약, 구매 JD9853 init, 지정 reference 원문, 실제 Pi/장비·전력/거리·CSE 통합·영상/release는 남아 있다. 이 의존성을 해결한 것처럼 표시하지 않는다.
+
+
+## 2026-10-30 — 영수증 이중 경로 재등록 수정 / Gateway0.2.2
+
+직전 goal 턴은 BLE session 결함 재현·수정, source/설치 package 각42개 시험, wheel build/install 및 c1bac3e까지 push를 완료한 progress였다. 이번 시작/종료 준비 fetch의 main/CORE91a281b·WEB80ed37f는 그대로다. DOC-REV2.0.0을 읽고 KEYRING/R02·R03·R10 범위에서 durable queue/receipt 경로를 수정했다. goal의 실제 시작 상태는 active다.
+
+- 0.2.1 stage_receipts는 native receipt_delivered=0이면 이미 전송·제거한 CORE ACK를 다시 생성했다. 새 임시 SQLite와 모의 publish로 회귀5개 중3개 실패·2개 통과를 확인했다. native retry backoff 중 worker가 동일 ACK를4회 보내는 경로를 재현했고 bounded test로 중단했다.
+- 0.2.2는 native 영수증의 최초 outbox INSERT와 선택형 CORE ACK를 한 transaction에 묶는다. 이미 native outbox 행이 있으면 ACK를 재생성하지 않는다. native 전달 뒤에는 기존 receipt_delivered가 staging을 막는다. 한 경로가 완료돼도 다른 경로 outbox를 삭제하지 않으며, 용량 부족은 두 항목 모두 rollback하고 원본 receipt를 보존한다. DB schema/기존 데이터/중앙 wire는 변경하지 않았다. CORE projection 선택은 최초 staging 때 고정하며 설정 변경만으로 이미 대기 중인 native 영수증을 backfill하지 않는다.
+- 소스47개/exit0/1.073초. offline wheel build exit0,privacy_bubble_gateway-0.2.2-py3-none-any.whl40491bytes,SHA256 88c5efa07fd2f376d005f2665478baa14cf44f055e57874ce3952ee0ebb1eca3. 새 임시 경로 설치 exit0,import 경로·version 확인 후 설치 package에서도47개/exit0/1.068초다.
+- 소스3dd2e20 일반 push 성공(c1bac3e..3dd2e20,origin/codex/keyring-namho). keyring/evidence/2026-10-30-receipt-routing/에 실제 baseline/source/설치 시험·build/install 로그와 소스/로그/산출물 hash를 보존한다. KR-RECEIPT-ROUTE-01..05는 KEYRING 제안 추적 ID다.
+- fake transport·합성 command·테스트 전용 새 SQLite만 사용했다. 기존 DB·실제 broker/CSE·BLE/장비·Pi·daemon·운영 서비스는 실행하지 않았다. firmware는 수정/재빌드하지 않았다. 이전 firmware3개 build와 BLE42개 시험 evidence는 당시 기록으로 유지한다.
+
+이번 턴은 실제 결함 수정과 실행 증거로 progress다. 전체 goal은 active/미완료다. 중앙 승인/settlement/recovery 계약·구매 JD9853 init·지정 기준 원문·실제 Pi/장비·전력/거리·CSE 통합·영상/release는 남아 있다.

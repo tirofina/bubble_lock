@@ -53,7 +53,8 @@
     "MAX9850 mute/shutdown control requests at boot, periodic readback and before sleep",
     "shared-I2S installation/playback guard while headphone shutdown controls are unknown",
     "three unprovisioned compile profiles built successfully on Windows; no hardware execution",
-    "per-connection BLE generation guards, pinned command writes and failed-handshake readiness fencing"
+    "per-connection BLE generation guards, pinned command writes and failed-handshake readiness fencing",
+    "atomic first staging of native receipt and optional CORE ACK; no completed ACK regeneration during native retry/restart"
   ],
   "existingHardware": {
     "status": "source-snapshot-included-unverified",
@@ -92,7 +93,7 @@
     "Gateway daemon/device hardware execution",
     "deployed POSIX state operator CLI and existing database snapshot/adoption"
   ],
-  "actualReceipt": "evidence/2026-10-30-ble-sessions/receipt.json",
+  "actualReceipt": "evidence/2026-10-30-receipt-routing/receipt.json",
   "temporaryServer": {
     "upstreamRevision": "e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8",
     "composeProject": "privacy-bubble-keyring-dev",
@@ -100,20 +101,20 @@
     "provisioningReceipt": "dev/mobius4/provisioning-receipt.json",
     "scope": "loopback-only development server; no device integration evidence"
   },
-  "logSha256": "7b86083e15f1d5c35cf4cc5aeed4facf391062ac5bc505efed4da67b81a9224d",
+  "logSha256": "f726d44942f4222b4ee6111e1139c77a39542356313aee13bb923f42d0464b52",
   "releaseSha": null,
   "firmwareRevision": "keyring-0.7.0",
   "publication": {
-    "sourceCommit": "48c71e1",
+    "sourceCommit": "3dd2e20",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "48c71e1",
-    "latestCheckpoint": "Gateway0.2.1 BLE session isolation fix pushed; 42 source and 42 installed-wheel tests passed"
+    "latestLocalSourceCommit": "3dd2e20",
+    "latestCheckpoint": "Gateway0.2.2 receipt staging fix pushed; source and installed-wheel tests each47 passed"
   },
-  "gatewayRevision": "0.2.1",
-  "pendingValidationScope": "Gateway0.2.1 session regression, source/installed package tests and wheel build completed. Actual BLE/BlueZ/Pi/devices/CSE integration and physical evidence remain.",
+  "gatewayRevision": "0.2.2",
+  "pendingValidationScope": "Gateway0.2.2 receipt routing/source and installed-package tests/wheel build completed. Actual BLE/BlueZ/Pi/devices/CSE and physical evidence remain.",
   "lastCompletionAudit": {
     "sourceRef": "98f525e",
     "scope": "plan/evidence file reading only; not build, code analysis, tests or runtime validation",
@@ -131,7 +132,7 @@
     "lastReportedGoalStatus": "active",
     "previousConsecutiveBlockedTurns": 3,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "continued KEYRING development: BLE reconnect race fix",
+    "executionRequest": "continued KEYRING development: durable receipt routing",
     "remainingCompletionDependencies": [
       "authoritative central authorization/settlement/recovery contracts",
       "purchased JD9853 module initialization",
@@ -139,12 +140,35 @@
       "real Pi/device/measurement/CSE integration/video/release evidence"
     ],
     "latestRemoteCore": "91a281b",
-    "sourceCommit": "48c71e1",
-    "sourceValidation": "Gateway0.2.1 wheel build/install and 42 tests from source and installed package passed; firmware unchanged; full system incomplete",
+    "sourceCommit": "3dd2e20",
+    "sourceValidation": "Gateway0.2.2 package build/install and source/installed tests each47 passed; full system incomplete",
     "goalComplete": false
   },
-  "actualReceiptScope": "Gateway0.2.1 BLE fake-client regression and wheel build/install tests only",
+  "actualReceiptScope": "Gateway0.2.2 mock receipt routing/retry/restart and wheel build/install tests only",
   "localValidation": {
+    "date": "2026-10-30",
+    "sourceCommit": "3dd2e20",
+    "gatewayUnitTestsPassed": 47,
+    "installedWheelTestsPassed": 47,
+    "baselineTests": 5,
+    "baselineFailures": 3,
+    "gatewayWheelBuild": "passed",
+    "databaseSchemaChanged": false,
+    "receipt": "evidence/2026-10-30-receipt-routing/receipt.json",
+    "firmwareChangedOrRebuilt": false,
+    "firmwareEvidence": "evidence/2026-10-29-local-validation/receipt.json",
+    "limits": "synthetic commands, temporary SQLite and mocked transport only; no actual device/Pi/CSE"
+  },
+  "previousLocalValidation": {
+    "date": "2026-10-29",
+    "sourceCommit": "3c27f4d",
+    "firmwareProfilesPassed": 3,
+    "gatewayUnitTestsPassed": 37,
+    "host": "Windows 11 / Python 3.12.14",
+    "receipt": "evidence/2026-10-29-local-validation/receipt.json",
+    "limits": "Unprovisioned compile only; synthetic temporary DBs and mocked BLE/MQTT/HTTP; POSIX directory fsync mocked; no real device or live service"
+  },
+  "bleSessionValidation": {
     "date": "2026-10-30",
     "sourceCommit": "48c71e1",
     "gatewayUnitTestsPassed": 42,
@@ -155,14 +179,5 @@
     "firmwareChangedOrRebuilt": false,
     "firmwareEvidence": "evidence/2026-10-29-local-validation/receipt.json",
     "limits": "fake GATT and temporary DB only; no real BLE/device/daemon/Pi/CSE"
-  },
-  "previousLocalValidation": {
-    "date": "2026-10-29",
-    "sourceCommit": "3c27f4d",
-    "firmwareProfilesPassed": 3,
-    "gatewayUnitTestsPassed": 37,
-    "host": "Windows 11 / Python 3.12.14",
-    "receipt": "evidence/2026-10-29-local-validation/receipt.json",
-    "limits": "Unprovisioned compile only; synthetic temporary DBs and mocked BLE/MQTT/HTTP; POSIX directory fsync mocked; no real device or live service"
   }
 }

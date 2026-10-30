@@ -8,6 +8,8 @@
 
 2026-10-30 Gateway0.2.1에서 BLE 연결 세대별 callback과 command WRITE를 분리했다. 재접속 회귀5개를 추가했고 소스·설치 wheel 각각42개가 통과했다. [수정 규칙](../keyring/raspberry-pi-gateway/BLE_SESSIONS.md)과 [실행 증거](../keyring/evidence/2026-10-30-ble-sessions/README.md)를 연결한다.
 
+2026-10-30 Gateway0.2.2에서 native 재시도 중 완료한 CORE ACK를 재생성하는 오류를 수정했다. 소스·설치 wheel 각47개 시험 통과, DB schema 변경 없음. [경로 규칙](../keyring/raspberry-pi-gateway/RECEIPT_ROUTING.md)과 [실행 증거](../keyring/evidence/2026-10-30-receipt-routing/README.md)를 연결한다.
+
 ## 구현 범위와 상태
 
 | 영역 | 전달물 | 현재 상태 |
