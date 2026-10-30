@@ -1,0 +1,12 @@
+test_application_denial_does_not_bypass_through_https (test_mqtt_tls.MqttWireTests.test_application_denial_does_not_bypass_through_https) ... ok
+test_broker_disconnect_fails_pending_and_uses_https (test_mqtt_tls.MqttWireTests.test_broker_disconnect_fails_pending_and_uses_https) ... ok
+test_certificate_identity_acl_denies_other_originator_topic (test_mqtt_tls.MqttWireTests.test_certificate_identity_acl_denies_other_originator_topic) ... ok
+MQTT wire evidence: real Mosquitto, MQTTv3.1.1/TLSv1.3, mTLS identity ACL, matching rqi/rsc2001
+test_mqtt_tls_application_receipt_completes_without_https (test_mqtt_tls.MqttWireTests.test_mqtt_tls_application_receipt_completes_without_https) ... ok
+test_puback_without_application_response_falls_back_with_same_cin (test_mqtt_tls.MqttWireTests.test_puback_without_application_response_falls_back_with_same_cin) ... ok
+test_wrong_response_rqi_cannot_settle_mqtt_request (test_mqtt_tls.MqttWireTests.test_wrong_response_rqi_cannot_settle_mqtt_request) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 17.845s
+
+OK

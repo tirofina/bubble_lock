@@ -12,6 +12,8 @@ Python 3.11 이상과 Linux BlueZ를 사용하는 KEYRING 현장 daemon이다. B
 
 [최신 HTTPS/TLS 실행 증거](../evidence/2026-10-30-https-tls/README.md)에 임시 PKI·loopback server로 확인한 TLS1.3/mTLS·실패 경계를 기록한다. 개발 suite는 OpenSSL 실행 파일이 필요하다. 실제 운영 PKI·MQTT ACL·Pi/CSE 통합은 별도다.
 
+[별도 MQTT wire6개](../evidence/2026-10-30-mqtt-wire/README.md)는 임시 Mosquitto2.1.2·TLS1.3/mTLS·CN topic ACL·application receipt·HTTPS fallback을 실제 broker로 확인했다. 기본55개와 구분해 명시 실행하며, 기존 운영/개발 서버는 변경하지 않는다.
+
 ## 먼저 준비할 환경
 
 - Python 3.11+, Bluetooth LE 어댑터, BlueZ system bus, 올바르게 동기화된 시스템 시계.

@@ -229,3 +229,16 @@ source commit `3d0f0cc` 일반 push가 성공했다(`c5f1617..3d0f0cc`, origin/c
 - 실제 PKI의 principal→AE/Originator binding·grant/ACP, MQTT TLS/ACL·broker/CSE, Pi/BlueZ/장비·기존 DB·daemon·운영 서비스는 실행/검증하지 않았다. test HTTPS 서버를 operational CSE로 표기하지 않는다. 실물 단계의 실제 대상을 확보하려고 Pi SSH 별칭/주소와 키링 보드·화면 준비 상태를 async로 질문했다. 비밀번호·개인키를 요청하지 않았다. 답변 전 실제 장비 연결/flash를 시작하지 않는다.
 
 이번 턴은 기존 미확인 HTTPS/TLS 경계를 실제 로컬 wire로 확인한 progress다. 전체 goal은 active/미완료다. 임시 Mobius4 빈 자원 provisioning과 새 TLS fixture는 Pi→CSE→앱/웹 실물 통합을 대체하지 않는다. 중앙 승인/settlement/recovery 계약·구매 JD9853 init·지정 원문·실측/영상/release도 남아 있다.
+
+
+## 2026-10-30 — 실제 Mosquitto MQTT/TLS/ACL wire 증거
+
+직전 goal 턴은 실제 loopback HTTPS/TLS8개·소스/기존 설치 package55개씩·bf75795까지 push를 완료한 progress였다. 이번 시작/종료 준비 fetch의 main/CORE91a281b·WEB80ed37f는 그대로다. DOC-REV2.0.0을 읽고 KEYRING/R02·R03·R10의 실제 MQTT 경계를 확인했다. goal 실제 시작 상태는 active다. Pi SSH 별칭/주소·보드/화면 준비 상태의 기존 async 질문은 답변 대기이며 반복 질문하지 않았다.
+
+- Docker daemon29.4.0과 캐시된 eclipse-mosquitto:2 이미지를 확인했다. 실제 Mosquitto2.1.2/Linux amd64, sha256:860aeb5d63ce509508f6dcfb2bc8a1c1dd2bc60555b562b45ce90e52d8dabb0f다. --pull never로 새 이미지를 다운로드하지 않고 매 시험 별도 token/container·test PKI·127.0.0.1 임시 포트를 사용했다. 기존 개발 서버4개를 변경/재시작하지 않았다.
+- integration_tests/를 기본55개와 분리한 opt-in suite로 추가했다. 실제 Paho/Mosquitto MQTT3.1.1·TLS1.3/mTLS, CN별 topic ACL, matching oneM2M rqi/rsc2001, PUBACK만 있을 때 같은 cin으로 HTTPS fallback, wrong-rqi 무시, rsc4103 거절 시 우회 금지, Other Originator PUBLISH 거절을 확인했다. 실제 broker 종료 때10초 response timeout 전에 pending future가 ConnectionError로 끝남도 assert했다. oneM2M 응답 peer는 합성 fixture이며 Mobius/CSE나 authorization API가 아니다.
+- 최종 소스 integration6개/exit0/17.845초, 설치 package integration6개/exit0/17.956초. 변경한 공통 test PKI helper를 포함해 기본 suite도 소스55개/exit0/2.497초·설치55개/exit0/2.364초다. 모두skipped0. 설치0.2.2의 import 경로·version·모든 Python module의 소스 일치를 확인했다.
+- runtime source3dd2e20·Gateway0.2.2·기존 wheel SHA256 88c5efa07fd2f376d005f2665478baa14cf44f055e57874ce3952ee0ebb1eca3은 변경/재빌드하지 않았다. TestPki.leaf에 test-only subject 지정만 추가했다. 시험 source5dec2c0 일반 push 성공(bf75795..5dec2c0,origin/codex/keyring-namho).
+- keyring/evidence/2026-10-30-mqtt-wire/에4개 실행 로그·각 source/설치 broker6개씩 총12개 broker 로그·환경/image/소스/로그/기존 wheel hash를 보존했다. broker 로그는 실제 TLS cipher·certificate username·QoS/deny 동작을 포함한다. 시험 종료 후 ownership label이 붙은 컨테이너0개, 기존 개발 서버4개 running을 읽기로 확인했다. 임시 인증서/키는 종료 삭제했고 commit하지 않았다.
+
+이번 턴은 실제 broker와 HTTP fallback wire 경계의 실행 증거를 추가한 progress다. 전체 goal은 active/미완료다. 중앙 PKI·principal/AE/grant/ACP·실제 CSE 저장/정산, Pi/BlueZ·키링 실물·전력/거리·구매 JD9853 init·지정 원문·영상/release는 남아 있다. 실제 integration을 합성 프로토콜 peer로 대체해 완료로 표시하지 않는다.

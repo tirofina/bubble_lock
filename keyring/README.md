@@ -12,8 +12,8 @@ DOC-REV: 2.0.0
 RUBRIC: R01, R02, R03, R05, R10, R11, R12, R15
 SCOPE: r18 PCB 기반 펌웨어 및 Raspberry Pi Gateway
 INTERFACES: KEYRING contract candidate 0.1.0 / BLE GATT / mTLS HTTPS / MQTT 3.1.1 / oneM2M cin
-TESTS: Gateway0.2.2 소스·기존 설치 wheel 각55개 통과(모의47개·로컬 HTTPS/TLS8개); 펌웨어 compile profile 결과는 BUILD_PROFILES.md 참조; 실물/E2E 미실행
-EVIDENCE: evidence/2026-10-30-https-tls/ — 최신 로그·receipt·hash; 이전 build/BLE/receipt 기록 유지
+TESTS: Gateway0.2.2 소스·기존 설치 wheel 각55개 통과(모의47개·로컬 HTTPS/TLS8개), 별도 실제 MQTT6개도 각 통과; 펌웨어 compile profile 결과는 BUILD_PROFILES.md 참조; 실물/E2E 미실행
+EVIDENCE: evidence/2026-10-30-mqtt-wire/ — 최신 로그·receipt·hash; 이전 HTTPS/build/BLE/receipt 기록 유지
 DEPENDENCIES: PC-MOBIUS API, AE/container/ACP, broker capability, credential 등록
 ```
 

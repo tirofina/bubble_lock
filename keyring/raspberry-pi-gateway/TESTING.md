@@ -34,3 +34,16 @@ TLS fixture의 인증서·키는 임시 폴더에서 생성하고 종료 시 삭
 [최신 TLS55개 실행 증거](../evidence/2026-10-30-https-tls/README.md)에 로그·환경·hash를 연결했다. 이전 [영수증47개·wheel build](../evidence/2026-10-30-receipt-routing/README.md), [BLE42개](../evidence/2026-10-30-ble-sessions/README.md), [firmware3개 build](../evidence/2026-10-29-local-validation/README.md)는 당시 기록으로 유지한다.
 
 실제 Pi/BlueZ·중앙 MQTT TLS/ACL·CSE·principal/AE/grant/ACP, 장비 출력·전력/거리·영상·release는 미완료다. 로컬 TLS 결과를 중앙 정책 승인이나 전체 G-SEC 통과로 표시하지 않는다.
+
+
+## 별도 MQTT wire integration suite
+
+기본55개와 별개로 integration_tests/에6개 실제 MQTT 시험이 있다. [Mosquitto/TLS/ACL 실행 증거](../evidence/2026-10-30-mqtt-wire/README.md)에 명령·이미지 ID·로그를 연결한다. 소스와 기존 설치 wheel에서 각각6개가 통과했고 skipped0이다. OpenSSL·Docker daemon·로컬 캐시 Mosquitto 이미지가 필요하다. 이미지를 자동 다운로드하지 않으며 준비가 없으면 실패한다.
+
+```powershell
+$env:KEYRING_TEST_OPENSSL = 'C:/Program Files/Git/usr/bin/openssl.exe'
+$env:PYTHONPATH = (Join-Path $PWD 'keyring/raspberry-pi-gateway/src') + [IO.Path]::PathSeparator + (Join-Path $PWD 'keyring/raspberry-pi-gateway/tests')
+python -m unittest discover -s keyring/raspberry-pi-gateway/integration_tests -v
+```
+
+시험은 별도 container/PKI/loopback 임시 포트를 만들고 소유 token을 확인한 뒤 정리한다. 기본 tests/ 실행만으로 MQTT container를 시작하지 않는다. 실제 broker와 HTTPS를 사용하지만 oneM2M 응답 peer는 합성 프로토콜 fixture다. 실제 Mobius 자원 저장·중앙 승인·Pi/키링 통합을 완료한 결과로 표시하지 않는다.

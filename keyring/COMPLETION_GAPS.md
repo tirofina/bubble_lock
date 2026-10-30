@@ -10,6 +10,8 @@ Gateway0.2.2 [영수증 경로 수정](evidence/2026-10-30-receipt-routing/READM
 
 [로컬 HTTPS/TLS 시험](evidence/2026-10-30-https-tls/README.md)에서 TLS1.3/mTLS·인증서 오류·TLS1.2·redirect/proxy 경계를 실제 loopback socket으로 확인했다. 소스·기존 설치 wheel 각55개(기존 모의47개·TLS8개)가 통과했다. 중앙 MQTT/PKI/권한 정책·Pi/CSE 통합은 미검증이다.
 
+[별도 MQTT wire6개](evidence/2026-10-30-mqtt-wire/README.md)는 실제 Mosquitto2.1.2·TLS/mTLS·CN topic ACL·oneM2M 응답 판정·HTTPS fallback을 확인했다. 소스/설치6개씩·기본55개씩 통과. 응답 peer는 합성이며 실제 CSE 저장·중앙 권한/정산·Pi 통합은 남아 있다.
+
 ## 담당 산출물
 
 | 계획서 요구 | 현재 자료 | 남은 실제 증거/입력 |

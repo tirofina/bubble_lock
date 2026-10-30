@@ -1,0 +1,42 @@
+1793327687: mosquitto version 2.1.2 starting
+1793327687: Config loaded from /mosquitto/test/broker-e0ce7d60a25d4b87969bd7ac9ba5dc6c.conf.
+1793327687: Bridge support available.
+1793327687: Persistence support available.
+1793327687: TLS support available.
+1793327687: TLS-PSK support available.
+1793327687: Websockets support available.
+1793327687: Warning: File /mosquitto/test/acl-e0ce7d60a25d4b87969bd7ac9ba5dc6c.txt has world readable permissions. Future versions will refuse to load this file.
+To fix this, use `chmod 0700 /mosquitto/test/acl-e0ce7d60a25d4b87969bd7ac9ba5dc6c.txt`.
+
+1793327687: Plugin builtin-security has registered to receive 'acl-check' events.
+1793327687: Opening ipv4 listen socket on port 8883.
+1793327687: Opening ipv6 listen socket on port 8883.
+1793327687: mosquitto version 2.1.2 running
+1793327687: New connection from 172.17.0.1:55312 on port 8883.
+1793327687: New client connected from 172.17.0.1:55312 as cse-test-72e038a64c22473f9e997adc42b75dda (p4, c1, k10, u'cse-test').
+1793327687: No will message specified.
+1793327687: Client cse-test-72e038a64c22473f9e997adc42b75dda negotiated TLSv1.3 cipher TLS_AES_256_GCM_SHA384
+1793327687: Sending CONNACK to cse-test-72e038a64c22473f9e997adc42b75dda (0, 0)
+1793327687: Received SUBSCRIBE from cse-test-72e038a64c22473f9e997adc42b75dda
+1793327687: 	/oneM2M/req/# (QoS 1)
+1793327687: cse-test-72e038a64c22473f9e997adc42b75dda 1 /oneM2M/req/#
+1793327687: Sending SUBACK to cse-test-72e038a64c22473f9e997adc42b75dda
+1793327687: New connection from 172.17.0.1:55314 on port 8883.
+1793327687: New client connected from 172.17.0.1:55314 as gw-ecd79d2a3930b66bf4f6 (p4, c0, k10, u'gw-test').
+1793327687: No will message specified.
+1793327687: Client gw-ecd79d2a3930b66bf4f6 negotiated TLSv1.3 cipher TLS_AES_256_GCM_SHA384
+1793327687: Sending CONNACK to gw-ecd79d2a3930b66bf4f6 (0, 0)
+1793327687: Received SUBSCRIBE from gw-ecd79d2a3930b66bf4f6
+1793327687: 	/oneM2M/resp/Ctest/test-cse/json (QoS 1)
+1793327687: gw-ecd79d2a3930b66bf4f6 1 /oneM2M/resp/Ctest/test-cse/json
+1793327687: Sending SUBACK to gw-ecd79d2a3930b66bf4f6
+1793327687: Received PUBLISH from gw-ecd79d2a3930b66bf4f6 (d0, q1, r0, m2, '/oneM2M/req/Ctest/test-cse/json', ... (227 bytes))
+1793327687: Sending PUBLISH to cse-test-72e038a64c22473f9e997adc42b75dda (d0, q1, r0, m1, '/oneM2M/req/Ctest/test-cse/json', ... (227 bytes))
+1793327687: Sending PUBACK to gw-ecd79d2a3930b66bf4f6 (m2, rc0)
+1793327687: Received PUBLISH from cse-test-72e038a64c22473f9e997adc42b75dda (d0, q1, r0, m2, '/oneM2M/resp/Ctest/test-cse/json', ... (69 bytes))
+1793327687: Sending PUBLISH to gw-ecd79d2a3930b66bf4f6 (d0, q1, r0, m1, '/oneM2M/resp/Ctest/test-cse/json', ... (69 bytes))
+1793327687: Sending PUBACK to cse-test-72e038a64c22473f9e997adc42b75dda (m2, rc0)
+1793327687: Received PUBACK from cse-test-72e038a64c22473f9e997adc42b75dda (Mid: 1, RC:0)
+1793327687: Received PUBACK from gw-ecd79d2a3930b66bf4f6 (Mid: 1, RC:0)
+1793327687: Info: running mosquitto as user: root.
+1793327687: Warning: Mosquitto should not be run as root/administrator.

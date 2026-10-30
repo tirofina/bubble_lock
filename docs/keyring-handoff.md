@@ -12,6 +12,8 @@
 
 2026-10-30 [로컬 HTTPS/TLS8개](../keyring/evidence/2026-10-30-https-tls/README.md)를 추가했다. 소스·기존 설치0.2.2 wheel 각55개 통과. 실제 임시 PKI·loopback TLS/HTTP를 사용했으며 운영 CSE·MQTT·장비에 접속하지 않았다.
 
+2026-10-30 [MQTT wire6개](../keyring/evidence/2026-10-30-mqtt-wire/README.md)를 임시 실제 Mosquitto/TLS/ACL로 실행했고 소스·기존 설치 package 각각 통과했다. 기본55개도 통과했다. 프로토콜 응답은 합성 peer이며 실제 CSE/중앙 정책·Pi/장비 통합은 미완료다.
+
 ## 구현 범위와 상태
 
 | 영역 | 전달물 | 현재 상태 |
