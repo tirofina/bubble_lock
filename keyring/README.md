@@ -12,8 +12,8 @@ DOC-REV: 2.0.0
 RUBRIC: R01, R02, R03, R05, R10, R11, R12, R15
 SCOPE: r18 PCB 기반 펌웨어 및 Raspberry Pi Gateway
 INTERFACES: KEYRING contract candidate 0.1.0 / BLE GATT / mTLS HTTPS / MQTT 3.1.1 / oneM2M cin
-TESTS: Gateway 모의 단위 테스트37개 통과; 펌웨어 compile profile 결과는 BUILD_PROFILES.md 참조; 실물/E2E 미실행
-EVIDENCE: evidence/2026-10-29-local-validation/ — 로컬 검증 로그·receipt·hash
+TESTS: Gateway0.2.1 소스·설치 wheel 모의 단위 테스트 각42개 통과; 펌웨어 compile profile 결과는 BUILD_PROFILES.md 참조; 실물/E2E 미실행
+EVIDENCE: evidence/2026-10-30-ble-sessions/ 및 2026-10-29-local-validation/ — 로그·receipt·hash
 DEPENDENCIES: PC-MOBIUS API, AE/container/ACP, broker capability, credential 등록
 ```
 
@@ -29,6 +29,7 @@ DEPENDENCIES: PC-MOBIUS API, AE/container/ACP, broker capability, credential 등
 | [journal 보관](JOURNAL_RETENTION.md) | 암호화 BLE snapshot·수동 보관 CLI, 원본 유지와 중앙 정산 의존성 |
 | [Gateway 상태 보관](raspberry-pi-gateway/STATE_RECOVERY.md) | DB identity·WAL snapshot·기존 DB adoption, 중앙 확인 전 복구본 실행 차단 |
 | [완료 조건·증거 공백](COMPLETION_GAPS.md) | 계획서 산출물별 자료, 미확인 원문/계약·실측·검증 허가 |
+| [BLE 세션 경계](raspberry-pi-gateway/BLE_SESSIONS.md) | 재접속 시 이전 callback·중단한 명령의 새 연결 전송 차단과5개 회귀 시험 |
 | [raspberry-pi-gateway](raspberry-pi-gateway/README.md) | Python daemon, BLE adapter, durable queue, 인증·전송 |
 | [pcb](pcb/README.md) | r18 native KiCad 원본·로컬 CAD·BOM/배선표 snapshot과 핀 설명 정정 |
 | [INTERFACE_NOTES.md](INTERFACE_NOTES.md) | UUID, payload, 중앙 API 및 oneM2M 전송 계약 |

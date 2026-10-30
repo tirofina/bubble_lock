@@ -37,6 +37,8 @@ CORE v1 canonical contract는 인수했다. 아래 KEYRING identity·receipt 확
 - `GET /api/v1/gateways/{gatewayId}/credentials/status`: `{gatewayId,credentialRevision,status:"ACTIVE"|"LOST"|"REVOKED"}`. 등록 및 인증서 발급/교체 자체는 중앙 PKI·운영 담당. Gateway는 상태를 receipt에 기록하며 LOST/REVOKED에서 새 실행을 막는다.
 - 설정/인증서 파일 교체는 서비스 재시작 시 읽는다. 인증서/개인키 원문은 로그나 receipt에 기록하지 않는다.
 
+Gateway0.2.1은 각 GATT 연결에 프로세스 내부 generation을 할당해 이전 콜백과 중단한 명령의 후속 조각을 차단한다. 중앙 ownershipEpoch·wire field는 추가하지 않는다. [BLE 세션 수명과 시험](raspberry-pi-gateway/BLE_SESSIONS.md)에 처리 경계를 기록한다.
+
 ## oneM2M
 
 - 기존 AE와 container는 PC가 사전 생성한다. Gateway는 observation, receipts, health container 아래 `m2m:cin`을 CREATE한다.
@@ -55,4 +57,4 @@ CORE v1 canonical contract는 인수했다. 아래 KEYRING identity·receipt 확
 - config 속성: gateway_id, originator, cse_id, cse_url, api_url, ca_file, cert_file, key_file, mqtt_host, mqtt_port, mqtt_enabled, mqtt_keepalive, request_timeout, rvi, observation_container, receipt_container, health_container, ble_devices(dict deviceId->address), ble_pair(bool), ble_scan_seconds, ble_command_timeout, firmware_revision_allowlist(tuple[str,...]). pathlib 경로는 httpx/SSL에 str로 전달한다.
 - mqtt_wrapped_primitive는 선택한 MQTT primitive encoding을 나타내는 boolean이다.
 
-검증·빌드·실행 및 실제 receipt 생성은 이번 작업에서 하지 않는다. 실제 동작·표준 적합성·전력·거리·공개 영상 evidence는 미확인이다.
+로컬 firmware3개 프로필 빌드(2026-10-29), Gateway0.2.1 wheel build와 소스·설치 패키지 각42개 모의 시험(2026-10-30)을 기록했다. [최신 로그·hash](evidence/2026-10-30-ble-sessions/README.md)에 범위를 연결한다. 실제 Pi/장비·중앙 통합·표준 적합성·전력·거리·공개 영상은 미검증이다.

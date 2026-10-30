@@ -6,6 +6,8 @@
 
 2026-10-29 사용자 허가로 기본/ST7789/JD9853 compile profile 세 개와 Gateway 모의 단위 테스트37개가 통과했다. source3c27f4d를 역할 브랜치에 업로드했다. [원본 로그·receipt·산출물 hash](../keyring/evidence/2026-10-29-local-validation/README.md)에 범위와 한계를 기록한다. flash·실제 장비·기존 DB·운영 서비스·Pi/CSE 통합은 실행하지 않았다.
 
+2026-10-30 Gateway0.2.1에서 BLE 연결 세대별 callback과 command WRITE를 분리했다. 재접속 회귀5개를 추가했고 소스·설치 wheel 각각42개가 통과했다. [수정 규칙](../keyring/raspberry-pi-gateway/BLE_SESSIONS.md)과 [실행 증거](../keyring/evidence/2026-10-30-ble-sessions/README.md)를 연결한다.
+
 ## 구현 범위와 상태
 
 | 영역 | 전달물 | 현재 상태 |

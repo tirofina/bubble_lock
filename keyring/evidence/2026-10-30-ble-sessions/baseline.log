@@ -1,0 +1,85 @@
+test_failed_handshake_never_marks_session_ready (test_ble_sessions.SessionTests.test_failed_handshake_never_marks_session_ready) ... FAIL
+test_old_disconnect_does_not_disconnect_replacement (test_ble_sessions.SessionTests.test_old_disconnect_does_not_disconnect_replacement) ... FAIL
+test_old_observation_cannot_poison_new_frame_buffer (test_ble_sessions.SessionTests.test_old_observation_cannot_poison_new_frame_buffer) ... FAIL
+test_old_receipt_cannot_settle_current_pending_command (test_ble_sessions.SessionTests.test_old_receipt_cannot_settle_current_pending_command) ... FAIL
+test_partial_command_never_continues_on_replacement_client (test_ble_sessions.SessionTests.test_partial_command_never_continues_on_replacement_client) ... FAIL
+
+======================================================================
+FAIL: test_failed_handshake_never_marks_session_ready (test_ble_sessions.SessionTests.test_failed_handshake_never_marks_session_ready)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\NH\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\NH\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\base_events.py", line 691, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\NH\Documents\ChatGPT\mobius 해커톤\github_upload\bubble_lock\keyring\raspberry-pi-gateway\tests\test_ble_sessions.py", line 174, in test_failed_handshake_never_marks_session_ready
+    self.peer.ready.set.assert_not_called()
+  File "C:\Users\NH\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 910, in assert_not_called
+    raise AssertionError(msg)
+AssertionError: Expected 'mock' to not have been called. Called 1 times.
+Calls: [call()].
+
+======================================================================
+FAIL: test_old_disconnect_does_not_disconnect_replacement (test_ble_sessions.SessionTests.test_old_disconnect_does_not_disconnect_replacement)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\NH\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\NH\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\base_events.py", line 691, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\NH\Documents\ChatGPT\mobius 해커톤\github_upload\bubble_lock\keyring\raspberry-pi-gateway\tests\test_ble_sessions.py", line 96, in test_old_disconnect_does_not_disconnect_replacement
+    self.assertTrue(self.peer.ready.is_set())
+AssertionError: False is not true
+
+======================================================================
+FAIL: test_old_observation_cannot_poison_new_frame_buffer (test_ble_sessions.SessionTests.test_old_observation_cannot_poison_new_frame_buffer)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\NH\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\NH\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\base_events.py", line 691, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\NH\Documents\ChatGPT\mobius 해커톤\github_upload\bubble_lock\keyring\raspberry-pi-gateway\tests\test_ble_sessions.py", line 110, in test_old_observation_cannot_poison_new_frame_buffer
+    self.assertEqual(self.peer.observation_frames.data, bytearray())
+AssertionError: bytearray(b'{"broken":') != bytearray(b'')
+
+======================================================================
+FAIL: test_old_receipt_cannot_settle_current_pending_command (test_ble_sessions.SessionTests.test_old_receipt_cannot_settle_current_pending_command)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\NH\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\NH\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\base_events.py", line 691, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\NH\Documents\ChatGPT\mobius 해커톤\github_upload\bubble_lock\keyring\raspberry-pi-gateway\tests\test_ble_sessions.py", line 124, in test_old_receipt_cannot_settle_current_pending_command
+    self.assertFalse(pending.done())
+AssertionError: True is not false
+
+======================================================================
+FAIL: test_partial_command_never_continues_on_replacement_client (test_ble_sessions.SessionTests.test_partial_command_never_continues_on_replacement_client)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\NH\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\NH\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\base_events.py", line 691, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\NH\Documents\ChatGPT\mobius 해커톤\github_upload\bubble_lock\keyring\raspberry-pi-gateway\tests\test_ble_sessions.py", line 145, in test_partial_command_never_continues_on_replacement_client
+    replacement.write_gatt_char.assert_not_awaited()
+  File "C:\Users\NH\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\unittest\mock.py", line 2429, in assert_not_awaited
+    raise AssertionError(msg)
+AssertionError: Expected mock to not have been awaited. Awaited 12 times.
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.136s
+
+FAILED (failures=5)

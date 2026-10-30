@@ -190,3 +190,16 @@ source commit `3d0f0cc` 일반 push가 성공했다(`c5f1617..3d0f0cc`, origin/c
 - `keyring/evidence/2026-10-29-local-validation/`에 실제 로그·환경 package 목록·receipt와 바이너리/ELF/map/bootloader/partition SHA256을 기록했다. .gitattributes는 evidence 원본 byte를 보존한다. 바이너리·credential·실제 장치 데이터는 Git에 포함하지 않았다.
 
 허가 대기는 해소됐고 이번 로컬 검증 범위는 완료됐다. get_goal의 마지막 반환은 기존 blocked 상태였으며 도구가 지원하지 않는 active 전환을 시도하거나 전체 goal을 complete로 표시하지 않았다. 전체 역할 목표에는 중앙 승인/settlement/recovery 계약·지정 원문·JD9853 구매 모듈 init·실제 Pi/장비/전력·거리/CSE 통합·영상/release evidence가 남아 있다. 로컬 통과를 실물·전체 verified/released로 승격하지 않는다.
+
+
+## 2026-10-30 — BLE 재접속 경계 수정 / Gateway0.2.1
+
+직전 goal 턴은 firmware3개 build·Gateway37개 단위 시험과 소스/증거 push를 완료한 progress였다. 이번 시작/최종 준비 fetch에서 main/CORE91a281b·WEB80ed37f로 새 팀 계약 변경은 없었다. get_goal 실제 상태는 active다. DOC-REV2.0.0의 KEYRING 역할·R02/R03/R10에 맞춰 장비 없이 재현되는 BLE session 결함을 수정했다. 최신 사용자 AGENTS의 수정 후 관련 검증 실행 지침을 적용했다.
+
+- 수정 전0.2.0은 매 조각 전송에 peer.client를 다시 조회했다. 모의 첫 WRITE 도중 연결을 교체하자 새 client에 남은 조각12회 WRITE가 발생했다. 이전 disconnect·observation·receipt callback이 새 연결 상태/수신 버퍼/pending을 변경했고, 실패한 handshake에서도 ready.set이 호출됐다. 새 회귀 시험5개가 모두 실패했으며 baseline exit1 로그를 보존했다.
+- Gateway0.2.1은 연결 generation을 할당하고 상실 즉시 무효화한다. callback의 generation을 캡처하고, command client/generation/future를 고정한다. 각 WRITE 전후와 결과/handshake 경계에서 세션을 확인하며 이전 작업의 예외·정리는 새 연결에 적용하지 않는다. journal capture 후 세션 검사도 generation을 확인한다. 이 번호는 프로세스 내부 상태이며 ownershipEpoch·GATT·JSON schema·DB/중앙 계약을 바꾸지 않는다.
+- 소스 단위 시험42개/0failure/0error/exit0/1.008초. setuptools84.2.1·wheel0.48.0·packaging26.3을 개발 환경에 설치했다. --no-index --no-deps --no-build-isolation wheel build exit0,privacy_bubble_gateway-0.2.1-py3-none-any.whl40336bytes,SHA256 5f5d14e2b524c38bd57ae502a99e83fbbc0ac487c2aeb9a824898a8caca37f8a.
+- wheel을 새 임시 target에 네트워크 없이 설치했다(exit0). import 경로·version0.2.1을 확인한 설치 패키지에서도42개 시험/exit0/0.960초로 통과했다. fake GATT·모의 MQTT/HTTP·임시 SQLite만 사용했다. 실제 scanner/BLE·장비·Pi·daemon·기존 DB·운영 서비스는 실행하지 않았다. firmware 소스/설정은 변경·재빌드하지 않았으며2026-10-29의3개 build 증거를 유지한다.
+- 소스48c71e1 일반 push 성공(bf4c8b0..48c71e1,origin/codex/keyring-namho). keyring/evidence/2026-10-30-ble-sessions/에 baseline·source/설치 package 시험·wheel build/install 로그와 실제 SHA256을 저장한다. BLE_SESSIONS.md의 KR-BLE-SESSION-01..05는 KEYRING 제안 추적 ID이며 원래 A01~A26을 대체하지 않는다.
+
+이번 작업은 재접속 결함 수정과 실행 증거로 progress다. 전체 goal은 active/미완료로 유지한다. 중앙 승인·settlement/recovery 계약, 구매 JD9853 init, 지정 reference 원문, 실제 Pi/장비·전력/거리·CSE 통합·영상/release는 남아 있다. 이 의존성을 해결한 것처럼 표시하지 않는다.
