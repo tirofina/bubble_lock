@@ -1,26 +1,36 @@
-# Gateway 모의 단위 테스트
+# Gateway 단위·로컬 HTTPS 시험
 
-DOC-REV 2.0.0 · KEYRING / 남호 · 2026-10-30 · Gateway0.2.2.
+DOC-REV2.0.0 · KEYRING / 남호 · 2026-10-30 · Gateway0.2.2.
 
-이번 작업의 사용자 허가로 Python 단위 테스트를 실행했다. 테스트는 합성 명령·identity와 각 테스트가 생성한 임시 SQLite만 사용한다. 운영 설정·인증서·기존 DB를 읽지 않고 scanner, BLE 연결, MQTT broker, HTTPS 서버, daemon을 시작하지 않는다.
+현재 suite는55개다. 소스와 기존 설치 wheel에서 각각55개가 통과했고 skipped0이다. 47개는 모의 BLE/MQTT/HTTP와 합성 명령·새 임시 SQLite를 사용한다. 추가8개는 매 실행 새 test PKI와127.0.0.1 전용 HTTPS server로 실제 TLS/HTTP를 확인한다. 운영 인증서·기존 DB·실제 BLE·broker/CSE·Gateway daemon은 사용하지 않는다.
 
-저장소 루트에서 개발 환경의 Python과 아래 명령을 사용한다. 먼저 `pyproject.toml`의 Gateway 의존성(bleak/httpx/paho-mqtt)을 설치해야 한다. 테스트 프레임워크는 Python 표준 `unittest`다.
+## 준비와 실행
+
+Python3.11+와 pyproject.toml의 Gateway 의존성, OpenSSL 실행 파일, Python TLS1.3 지원이 필요하다. OpenSSL을 찾지 못하면 KEYRING_TEST_OPENSSL에 실행 파일을 지정한다. 필요한 환경이 없을 때 TLS 시험을 skip하지 않고 실패시킨다. 저장소 root에서 개발 환경의 Python으로 실행한다.
 
 ```powershell
+$env:KEYRING_TEST_OPENSSL = 'C:/Program Files/Git/usr/bin/openssl.exe'
 $env:PYTHONPATH = (Join-Path $PWD 'keyring/raspberry-pi-gateway/src')
 python -m unittest discover -s keyring/raspberry-pi-gateway/tests -v
 ```
 
+OpenSSL이 PATH에 있으면 별도 실행 파일 지정은 생략한다. 설치 패키지 시험은 PYTHONPATH를 격리 설치 디렉터리로 지정하고 import 경로·version·각 Python 모듈이 소스와 일치함을 확인한 뒤 같은 suite를 실행했다. Gateway runtime source와 wheel은 이번에 변경·재빌드하지 않았다.
+
+## 시험 범위
+
 | 파일 | 기대 결과 |
 |---|---|
-| test_protocol.py | claim/grant와 승인 hash 일치, 승인 기한 제한, JSON 중복 키/비유한 값 거절, 분할 메시지 복원, INA219 단위·부호·계산 검사, 모의 BLE 20바이트 송신과 실패 시 세션 해제 |
-| test_ble_sessions.py | 이전 연결 콜백 무시, 새 연결의 정상 callback 수신, 중단한 명령 조각의 새 연결 전송0회, 이전 작업 정리 후 새 연결 유지, handshake 실패 시 ready 설정0회 |
-| test_receipt_outbox.py | 완료한 ACK의 재생성 차단·재시작·native/CORE 독립 재시도·용량 오류 원자성·worker busy loop 방지 |
-| test_store.py | 중복/충돌·실행 intent 유지, fence·용량 오류의 원자성, 재부팅을 넘어 CORE sequence 증가, receipt 전달 확정, WAL backup의 데이터 보존, 격리된 복사본 실행 거절, 명시적 legacy adoption과 잘못된 hash/덮어쓰기 거절 |
-| test_dispatch.py | 승인/credential/기한 오류 시 BLE 미송신, BLE 이전 intent 기록, timeout·readback 불일치 처리, 자동 재실행 방지, 실제 전송 함수 성공 이후에만 outbox 전달 확정 |
-| test_transport.py | 모의 oneM2M application receipt만 성공 판정, 미응답 시 같은 cin 이름으로 HTTP fallback, CSE 거절 시 우회 전송 금지, HTTP request ID 및 충돌 자원 내용 일치 검사 |
-| test_journal.py | prepared record를 적용 성공으로 바꾸지 않고 보존, 잘못된 readback·중복 commandId 거절, 오류 후 volatile capture 닫기 |
+| test_protocol.py | claim/grant/hash·기한 검사, JSON framing, INA219 단위·부호·계산, BLE20byte 송신과 실패 처리 |
+| test_ble_sessions.py | 이전 callback 무시, 새 연결 정상 수신, 중단한 명령의 새 연결 전송0회, handshake 실패 시 ready0회 |
+| test_receipt_outbox.py | ACK 재생성 차단·재시작·경로별 독립 재시도·용량 오류 원자성·busy loop 방지 |
+| test_store.py | command/dedup/fence/outbox·CORE sequence·WAL backup/quarantine/명시적 adoption |
+| test_dispatch.py | 승인·credential·기한 실패 시 BLE 미송신, intent 선기록, 미확정 실행 자동 재시도 차단 |
+| test_transport.py | 모의 oneM2M application receipt, 같은 cin으로 fallback, CSE 거절 우회 금지, RI/충돌 내용 검사 |
+| test_journal.py | prepared 보존·잘못된 readback/중복 ID 거절·capture 닫기 |
+| test_https_tls.py | 실제 로컬 TLS1.3/mTLS·oneM2M HTTP, 잘못된 CA/client/서버 이름·무인증·TLS1.2 거절, redirect/proxy 차단 |
 
-Windows Python에서 소스·설치 wheel 각각47개가 통과했다. [최신 영수증 경로 시험](../evidence/2026-10-30-receipt-routing/README.md)에 수정 전3개 실패와 수정 후 성공·package hash를 연결한다. 이전 [BLE 세션42개 시험](../evidence/2026-10-30-ble-sessions/README.md)과 [firmware3개 빌드](../evidence/2026-10-29-local-validation/README.md)는 원래 기록으로 보존한다. `test_store.py`는 Windows에서 제공되지 않는 POSIX directory fsync만 모의 처리한다. SQLite backup·transaction·quarantine·hash와 실제 임시 파일 I/O는 수행한다. POSIX 파일 권한·advisory lock·디스크 전원 손실 내구성, Raspberry Pi/BlueZ, 실제 TLS/MQTT/BLE, 장치 NVS·GPIO·물리 출력은 이 결과로 검증하지 않는다.
+TLS fixture의 인증서·키는 임시 폴더에서 생성하고 종료 시 삭제한다. 시험용 server와 proxy socket도 종료 시 닫는다. test_store.py의 POSIX directory fsync는 Windows에서 모의 처리하며 실제 SQLite/임시 파일 처리는 수행한다.
 
-실물·통합 시험과 release는 별도 완료 조건이다. 현재 테스트 통과가 중앙 승인/settlement/checkpoint 계약의 확정이나 제품 전체 검증을 의미하지 않는다.
+[최신 TLS55개 실행 증거](../evidence/2026-10-30-https-tls/README.md)에 로그·환경·hash를 연결했다. 이전 [영수증47개·wheel build](../evidence/2026-10-30-receipt-routing/README.md), [BLE42개](../evidence/2026-10-30-ble-sessions/README.md), [firmware3개 build](../evidence/2026-10-29-local-validation/README.md)는 당시 기록으로 유지한다.
+
+실제 Pi/BlueZ·중앙 MQTT TLS/ACL·CSE·principal/AE/grant/ACP, 장비 출력·전력/거리·영상·release는 미완료다. 로컬 TLS 결과를 중앙 정책 승인이나 전체 G-SEC 통과로 표시하지 않는다.

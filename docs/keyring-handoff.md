@@ -10,6 +10,8 @@
 
 2026-10-30 Gateway0.2.2에서 native 재시도 중 완료한 CORE ACK를 재생성하는 오류를 수정했다. 소스·설치 wheel 각47개 시험 통과, DB schema 변경 없음. [경로 규칙](../keyring/raspberry-pi-gateway/RECEIPT_ROUTING.md)과 [실행 증거](../keyring/evidence/2026-10-30-receipt-routing/README.md)를 연결한다.
 
+2026-10-30 [로컬 HTTPS/TLS8개](../keyring/evidence/2026-10-30-https-tls/README.md)를 추가했다. 소스·기존 설치0.2.2 wheel 각55개 통과. 실제 임시 PKI·loopback TLS/HTTP를 사용했으며 운영 CSE·MQTT·장비에 접속하지 않았다.
+
 ## 구현 범위와 상태
 
 | 영역 | 전달물 | 현재 상태 |

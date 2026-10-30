@@ -4,11 +4,13 @@ DOC-REV 2.0.0의 팀 CORE 계약을 연결했다. `BLE_GATT_PROFILE=core-v1`이 
 
 Python 3.11 이상과 Linux BlueZ를 사용하는 KEYRING 현장 daemon이다. BLE 관측을 SQLite outbox에 저장하고 MQTT 또는 HTTPS로 oneM2M contentInstance를 생성한다. 중앙에서 받은 명령은 최신 승인·credential·deadline을 확인한 뒤 BLE로 전달한다.
 
-현재 전체 상태는 **implemented / 실물·통합 unverified**다. 2026-10-30 Gateway0.2.2에서 재접속·영수증 대기열 경계를 수정했고, 소스·설치한 wheel 각각 모의 단위 테스트47개가 통과했다([범위와 재실행](TESTING.md)). 아래 명령은 Raspberry Pi 배포 절차이며 실제 Pi daemon·BLE·운영 서비스는 실행하지 않았다.
+현재 전체 상태는 **implemented / 실물·통합 unverified**다. 2026-10-30 Gateway0.2.2에서 재접속·영수증 대기열 경계를 수정했고, 소스·기존 설치 wheel 각각55개 시험이 통과했다(모의47개·실제 로컬 HTTPS/TLS8개)([범위와 재실행](TESTING.md)). 아래 명령은 Raspberry Pi 배포 절차이며 실제 Pi daemon·BLE·운영 서비스는 실행하지 않았다.
 
 [BLE_SESSIONS.md](BLE_SESSIONS.md)에 연결 교체 시 남은 명령 조각 전송 중단·이전 callback 무시·실패한 handshake의 ready 차단을 설명한다. GATT/중앙 wire schema와 DB format은 유지한다.
 
 [RECEIPT_ROUTING.md](RECEIPT_ROUTING.md)에 native 영수증과 CORE ACK의 최초 원자적 등록·독립 재시도·중복 생성 차단을 설명한다. CORE projection 선택은 최초 staging 시 고정하며 설정 변경만으로 과거 native 영수증에 ACK를 소급 생성하지 않는다.
+
+[최신 HTTPS/TLS 실행 증거](../evidence/2026-10-30-https-tls/README.md)에 임시 PKI·loopback server로 확인한 TLS1.3/mTLS·실패 경계를 기록한다. 개발 suite는 OpenSSL 실행 파일이 필요하다. 실제 운영 PKI·MQTT ACL·Pi/CSE 통합은 별도다.
 
 ## 먼저 준비할 환경
 

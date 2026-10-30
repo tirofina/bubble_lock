@@ -7,7 +7,7 @@
   "date": "2026-10-30",
   "branch": "codex/keyring-namho",
   "status": "implemented",
-  "verificationStatus": "local-build-and-mock-unit-tests-passed; real-device/integration-unverified",
+  "verificationStatus": "local-tests-and-loopback-HTTPS-TLS-boundaries-passed; real-device/integration-unverified",
   "rubricIds": [
     "R01",
     "R02",
@@ -93,7 +93,7 @@
     "Gateway daemon/device hardware execution",
     "deployed POSIX state operator CLI and existing database snapshot/adoption"
   ],
-  "actualReceipt": "evidence/2026-10-30-receipt-routing/receipt.json",
+  "actualReceipt": "evidence/2026-10-30-https-tls/receipt.json",
   "temporaryServer": {
     "upstreamRevision": "e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8",
     "composeProject": "privacy-bubble-keyring-dev",
@@ -101,20 +101,20 @@
     "provisioningReceipt": "dev/mobius4/provisioning-receipt.json",
     "scope": "loopback-only development server; no device integration evidence"
   },
-  "logSha256": "f726d44942f4222b4ee6111e1139c77a39542356313aee13bb923f42d0464b52",
+  "logSha256": "30b58200ba3a38eacd0474415cddf11f0d1aba406f79f658e9de270813f9a4be",
   "releaseSha": null,
   "firmwareRevision": "keyring-0.7.0",
   "publication": {
-    "sourceCommit": "3dd2e20",
+    "sourceCommit": "76253ce",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "3dd2e20",
-    "latestCheckpoint": "Gateway0.2.2 receipt staging fix pushed; source and installed-wheel tests each47 passed"
+    "latestLocalSourceCommit": "76253ce",
+    "latestCheckpoint": "local TLS1.3/mTLS boundary tests pushed; source/installed tests each55 passed; runtime Gateway0.2.2 unchanged"
   },
   "gatewayRevision": "0.2.2",
-  "pendingValidationScope": "Gateway0.2.2 receipt routing/source and installed-package tests/wheel build completed. Actual BLE/BlueZ/Pi/devices/CSE and physical evidence remain.",
+  "pendingValidationScope": "Local HTTPS/TLS boundary tests completed. Operational principal-to-AE/grant/ACP, MQTT TLS/ACL, actual Pi/device/CSE and physical evidence remain.",
   "lastCompletionAudit": {
     "sourceRef": "98f525e",
     "scope": "plan/evidence file reading only; not build, code analysis, tests or runtime validation",
@@ -132,7 +132,7 @@
     "lastReportedGoalStatus": "active",
     "previousConsecutiveBlockedTurns": 3,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "continued KEYRING development: durable receipt routing",
+    "executionRequest": "continued KEYRING development: actual local HTTPS/TLS boundary evidence",
     "remainingCompletionDependencies": [
       "authoritative central authorization/settlement/recovery contracts",
       "purchased JD9853 module initialization",
@@ -140,24 +140,25 @@
       "real Pi/device/measurement/CSE integration/video/release evidence"
     ],
     "latestRemoteCore": "91a281b",
-    "sourceCommit": "3dd2e20",
-    "sourceValidation": "Gateway0.2.2 package build/install and source/installed tests each47 passed; full system incomplete",
-    "goalComplete": false
+    "sourceCommit": "76253ce",
+    "sourceValidation": "source/installed55 tests each passed including8 local TLS/mTLS tests; full system incomplete",
+    "goalComplete": false,
+    "pendingInput": "Asked for Raspberry Pi SSH alias/address and keyring board/panel readiness; no passwords/private keys requested"
   },
-  "actualReceiptScope": "Gateway0.2.2 mock receipt routing/retry/restart and wheel build/install tests only",
+  "actualReceiptScope": "Gateway0.2.2 source/installed55 tests including8 real loopback HTTPS TLS tests with test-only PKI; no operational endpoint",
   "localValidation": {
     "date": "2026-10-30",
-    "sourceCommit": "3dd2e20",
-    "gatewayUnitTestsPassed": 47,
-    "installedWheelTestsPassed": 47,
-    "baselineTests": 5,
-    "baselineFailures": 3,
-    "gatewayWheelBuild": "passed",
-    "databaseSchemaChanged": false,
-    "receipt": "evidence/2026-10-30-receipt-routing/receipt.json",
-    "firmwareChangedOrRebuilt": false,
-    "firmwareEvidence": "evidence/2026-10-29-local-validation/receipt.json",
-    "limits": "synthetic commands, temporary SQLite and mocked transport only; no actual device/Pi/CSE"
+    "sourceCommit": "76253ce",
+    "runtimeCodeCommit": "3dd2e20",
+    "gatewayTestsPassed": 55,
+    "installedWheelTestsPassed": 55,
+    "tlsSpecificTestsPassed": 8,
+    "skipped": 0,
+    "testHttpsServersStarted": true,
+    "operationalServicesStarted": false,
+    "productionCodeChangedOrRebuilt": false,
+    "receipt": "evidence/2026-10-30-https-tls/receipt.json",
+    "limits": "test-only PKI/loopback HTTPS; no operational principal binding/MQTT/Pi/CSE/device proof"
   },
   "previousLocalValidation": {
     "date": "2026-10-29",
@@ -179,5 +180,19 @@
     "firmwareChangedOrRebuilt": false,
     "firmwareEvidence": "evidence/2026-10-29-local-validation/receipt.json",
     "limits": "fake GATT and temporary DB only; no real BLE/device/daemon/Pi/CSE"
+  },
+  "receiptRoutingValidation": {
+    "date": "2026-10-30",
+    "sourceCommit": "3dd2e20",
+    "gatewayUnitTestsPassed": 47,
+    "installedWheelTestsPassed": 47,
+    "baselineTests": 5,
+    "baselineFailures": 3,
+    "gatewayWheelBuild": "passed",
+    "databaseSchemaChanged": false,
+    "receipt": "evidence/2026-10-30-receipt-routing/receipt.json",
+    "firmwareChangedOrRebuilt": false,
+    "firmwareEvidence": "evidence/2026-10-29-local-validation/receipt.json",
+    "limits": "synthetic commands, temporary SQLite and mocked transport only; no actual device/Pi/CSE"
   }
 }

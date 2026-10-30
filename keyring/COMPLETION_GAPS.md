@@ -8,6 +8,8 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · 2026-10-30.
 
 Gateway0.2.2 [영수증 경로 수정](evidence/2026-10-30-receipt-routing/README.md)은 회귀5개 중3개 실패를 재현한 뒤 수정했고 소스·설치 wheel 각47개가 통과했다.
 
+[로컬 HTTPS/TLS 시험](evidence/2026-10-30-https-tls/README.md)에서 TLS1.3/mTLS·인증서 오류·TLS1.2·redirect/proxy 경계를 실제 loopback socket으로 확인했다. 소스·기존 설치 wheel 각55개(기존 모의47개·TLS8개)가 통과했다. 중앙 MQTT/PKI/권한 정책·Pi/CSE 통합은 미검증이다.
+
 ## 담당 산출물
 
 | 계획서 요구 | 현재 자료 | 남은 실제 증거/입력 |

@@ -216,3 +216,16 @@ source commit `3d0f0cc` 일반 push가 성공했다(`c5f1617..3d0f0cc`, origin/c
 - fake transport·합성 command·테스트 전용 새 SQLite만 사용했다. 기존 DB·실제 broker/CSE·BLE/장비·Pi·daemon·운영 서비스는 실행하지 않았다. firmware는 수정/재빌드하지 않았다. 이전 firmware3개 build와 BLE42개 시험 evidence는 당시 기록으로 유지한다.
 
 이번 턴은 실제 결함 수정과 실행 증거로 progress다. 전체 goal은 active/미완료다. 중앙 승인/settlement/recovery 계약·구매 JD9853 init·지정 기준 원문·실제 Pi/장비·전력/거리·CSE 통합·영상/release는 남아 있다.
+
+
+## 2026-10-30 — 실제 loopback HTTPS/TLS 경계 증거
+
+직전 goal 턴은 Gateway0.2.2 영수증 staging 수정·소스/설치 package 각47개·wheel build/install·6893ee5까지 push를 완료한 progress였다. 이번 시작/종료 준비 fetch의 main/CORE91a281b·WEB80ed37f는 그대로다. DOC-REV2.0.0을 읽고 KEYRING/R02·R10의 HTTPS·mTLS 실제 실행 증거를 추가했다. goal의 실제 시작 상태는 active다.
+
+- 기존47개는 HTTP 전송 응답을 모의 처리해 SSL handshake를 실행하지 않았다. tests/tls_fixture.py·test_https_tls.py를 추가하고 임시 trusted/rogue test CA·client/server 인증서와127.0.0.1 전용 server로 실제 Python SSL/httpx·HTTP를 시험했다. 개인키/인증서는 매 suite 임시 생성·종료 삭제하며 파일을 commit하지 않았다. proxy 대조 socket도 시험이 소유한 임시 loopback listener다.
+- TLS전용8개/exit0/1.765초, 전체 source55개/exit0/2.450초, 기존 설치 package55개/exit0/2.481초, 모두skipped0이다. TLS1.3·test client CN=gw-test·oneM2M header/UTF8 body/rn을 확인했고 잘못된 CA·client·SAN/IP·무인증·TLS1.2와 redirect·proxy 경계를 검사했다. OpenSSL 실행 파일이 없으면 skip하지 않고 실패한다.
+- Windows11/Python3.12.14, Python SSL OpenSSL3.5.8, 인증서 도구 Git OpenSSL3.5.5다. runtime Gateway0.2.2 source3dd2e20은 수정하지 않았다. 기존 wheel SHA256 88c5efa07fd2f376d005f2665478baa14cf44f055e57874ce3952ee0ebb1eca3을 재사용했고 import 경로·version 및 모든 Python module의 소스 일치를 확인했다. package/firmware 재빌드는 하지 않았다.
+- 시험 source76253ce 일반 push 성공(6893ee5..76253ce,origin/codex/keyring-namho). keyring/evidence/2026-10-30-https-tls/에 실제3개 실행 로그·소스/로그/기존 wheel hash를 저장한다. KR-HTTPS-TLS-01..08은 KEYRING 제안 ID이며 G-SEC의 로컬 부분 증거다. 중앙 gate 승인을 채우지 않았다.
+- 실제 PKI의 principal→AE/Originator binding·grant/ACP, MQTT TLS/ACL·broker/CSE, Pi/BlueZ/장비·기존 DB·daemon·운영 서비스는 실행/검증하지 않았다. test HTTPS 서버를 operational CSE로 표기하지 않는다. 실물 단계의 실제 대상을 확보하려고 Pi SSH 별칭/주소와 키링 보드·화면 준비 상태를 async로 질문했다. 비밀번호·개인키를 요청하지 않았다. 답변 전 실제 장비 연결/flash를 시작하지 않는다.
+
+이번 턴은 기존 미확인 HTTPS/TLS 경계를 실제 로컬 wire로 확인한 progress다. 전체 goal은 active/미완료다. 임시 Mobius4 빈 자원 provisioning과 새 TLS fixture는 Pi→CSE→앱/웹 실물 통합을 대체하지 않는다. 중앙 승인/settlement/recovery 계약·구매 JD9853 init·지정 원문·실측/영상/release도 남아 있다.
