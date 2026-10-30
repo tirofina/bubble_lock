@@ -2,7 +2,7 @@
 
 DOC-REV2.0.0 · KEYRING / 남호 · 2026-10-30 · Gateway0.2.3.
 
-소스와 새0.2.3 wheel 설치본에서 기본56개, 별도 MQTT6개, 실제 Mobius4 CSE5개가 각각 통과했다. skipped0이며 [실행 로그·환경·소스/산출물 SHA256](../evidence/2026-10-30-real-cse/README.md)을 보존한다. firmware0.7.0의 기존3개 프로필 빌드 증거는 유지한다.
+현재 실제 CSE suite10개가 소스·기존0.2.3 설치 wheel에서 각각 통과했다. [영속 큐·프로세스 중단 복구 증거](../evidence/2026-10-30-outbox-cse/README.md)에 로그와 hash를 보존한다. 기본56개·별도 MQTT6개와 firmware0.7.0의3개 프로필 빌드는 변경하지 않았으며 [직전 실행 기록](../evidence/2026-10-30-real-cse/README.md)을 유지한다. skipped0이다.
 
 ## 준비
 
@@ -42,9 +42,11 @@ python -m unittest discover -s keyring/raspberry-pi-gateway/integration_tests -v
 
 Docker daemon과 캐시된 eclipse-mosquitto:2가 필요하다. --pull never와127.0.0.1 임시 포트, fresh test PKI, 소유 token을 사용한다.
 
-## 별도 실제 CSE5개
+## 별도 실제 CSE10개
 
-cse_integration_tests/는 합성 oneM2M responder 대신 실제 Mobius4와 새 PostgreSQL/PostGIS를 실행한다. HTTPS 저장/조회, MQTT3가지 주소 범위·application response·저장/조회·HTTPS POST fallback0회, 동일 요청 중복 저장 방지, 내용 충돌 거절/원본 보존, CSE 프로세스 재시작 후 조회를 확인한다.
+cse_integration_tests/는 실제 Mobius4와 새 PostgreSQL/PostGIS를 실행한다. 기존5개는 HTTPS/MQTT3가지 주소·저장/조회, 중복 방지, 충돌 거절, CSE 재시작 후 조회다. 추가5개는 실제 Store/Gateway 송신 loop를 연결해 SQLite 다시 열기/observation dedup, native receipt 확인 플래그, CSE 중단/backoff/복구, 원격 저장 직후 송신 프로세스 강제 종료/동일 요청 복구, 충돌한 outbox행 보존을 확인한다.
+
+delivery_child.py는 새 시험 DB와 test PKI로 송신 loop만 실행하고 원격 확인 직후 로컬 확인 전에 exit73으로 종료한다. parent는 같은 SQLite를 열고 동일 요청을 재전송해 cin1개를 확인한다. Gateway 전체 daemon·BLE·credential/poll/dispatch/health loop는 실행하지 않는다. 시험 child의 exit73과 전체 unittest의 성공 exit0을 구분한다.
 
 ```powershell
 $env:PYTHONPATH = (Join-Path $PWD 'keyring/raspberry-pi-gateway/src') + [IO.Path]::PathSeparator + (Join-Path $PWD 'keyring/raspberry-pi-gateway/tests') + [IO.Path]::PathSeparator + (Join-Path $PWD 'keyring/raspberry-pi-gateway/integration_tests')

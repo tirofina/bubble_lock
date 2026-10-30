@@ -55,7 +55,8 @@
     "three unprovisioned compile profiles built successfully on Windows; no hardware execution",
     "per-connection BLE generation guards, pinned command writes and failed-handshake readiness fencing",
     "atomic first staging of native receipt and optional CORE ACK; no completed ACK regeneration during native retry/restart",
-    "HTTP address scope reversed for native MQTT To; real disposable Mobius4/PostgreSQL storage/readback/idempotency/conflict/restart tests"
+    "HTTP address scope reversed for native MQTT To; real disposable Mobius4/PostgreSQL storage/readback/idempotency/conflict/restart tests",
+    "Real SQLite sender/CSE integration: reopened dedup, native receipt confirmation, persisted outage backoff, abrupt child exit after remote commit, conflicting outbox retention"
   ],
   "existingHardware": {
     "status": "source-snapshot-included-unverified",
@@ -94,7 +95,7 @@
     "Gateway daemon/device hardware execution",
     "deployed POSIX state operator CLI and existing database snapshot/adoption"
   ],
-  "actualReceipt": "evidence/2026-10-30-real-cse/receipt.json",
+  "actualReceipt": "evidence/2026-10-30-outbox-cse/receipt.json",
   "temporaryServer": {
     "upstreamRevision": "e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8",
     "composeProject": "privacy-bubble-keyring-dev",
@@ -102,23 +103,23 @@
     "provisioningReceipt": "dev/mobius4/provisioning-receipt.json",
     "scope": "loopback-only development server; no device integration evidence"
   },
-  "logSha256": "fc247aefb18d6be41a719841f865023c45c53531ec89305b2a249aec43adb4f5",
+  "logSha256": "a8a7ee844a0f1db4e9a8db1cdd563761664f23f850028b2181c9ad641f05edc3",
   "releaseSha": null,
   "firmwareRevision": "keyring-0.7.0",
   "publication": {
-    "sourceCommit": "a970e3a5b2586cc80abd6eea49fb685dc79ab740",
+    "sourceCommit": "2166ded59caa05660c2d97e8d961c074345e27fa",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "a970e3a5b2586cc80abd6eea49fb685dc79ab740",
-    "latestCheckpoint": "Gateway0.2.3 MQTT To scope fix pushed; source/installed default56 MQTT6 real CSE5 passed"
+    "latestLocalSourceCommit": "2166ded59caa05660c2d97e8d961c074345e27fa",
+    "latestCheckpoint": "Actual SQLite sender/outbox/CSE recovery tests pushed; source/installed CSE10 passed; runtime0.2.3 unchanged"
   },
   "gatewayRevision": "0.2.3",
   "pendingValidationScope": "Actual central PKI/principal/AE/ACP/grants, INTEGRATION APIs, Pi/BlueZ/keyring/app/web, hardware power/range/video/release remain.",
   "lastCompletionAudit": {
-    "sourceRef": "98f525e",
-    "scope": "plan/evidence file reading only; not build, code analysis, tests or runtime validation",
+    "sourceRef": "2166ded59caa05660c2d97e8d961c074345e27fa",
+    "scope": "Current plan deliverables/seven materials/demo conditions vs current source and evidence; no physical/central completion proof",
     "outcome": "incomplete",
     "reference": "COMPLETION_GAPS.md",
     "missingNamedReferences": [
@@ -133,7 +134,7 @@
     "lastReportedGoalStatus": "active",
     "previousConsecutiveBlockedTurns": 3,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "continued KEYRING development: real Mobius4 storage integration and MQTT To fix",
+    "executionRequest": "continued KEYRING development: actual durable outbox/CSE outage and process-death recovery",
     "remainingCompletionDependencies": [
       "authoritative central authorization/settlement/recovery contracts",
       "purchased JD9853 module initialization",
@@ -141,32 +142,34 @@
       "real Pi/device/measurement/CSE integration/video/release evidence"
     ],
     "latestRemoteCore": "91a281b",
-    "sourceCommit": "a970e3a5b2586cc80abd6eea49fb685dc79ab740",
-    "sourceValidation": "source/installed default56 MQTT6 real CSE5 each passed; full system incomplete",
+    "sourceCommit": "2166ded59caa05660c2d97e8d961c074345e27fa",
+    "sourceValidation": "source/installed CSE10 each passed; previous default56 MQTT6 retained; full system incomplete",
     "goalComplete": false,
     "pendingInput": "Asked for Raspberry Pi SSH alias/address and keyring board/panel readiness; no passwords/private keys requested"
   },
-  "actualReceiptScope": "Source and installed Gateway0.2.3: default56, real MQTT6, real disposable Mobius4 CSE5 each passed",
+  "actualReceiptScope": "Source/installed real disposable CSE10 (original5 plus actual SQLite sender/outbox/recovery5); previous default56/MQTT6 unchanged",
   "localValidation": {
     "date": "2026-10-30",
-    "sourceCommit": "a970e3a5b2586cc80abd6eea49fb685dc79ab740",
+    "sourceCommit": "2166ded59caa05660c2d97e8d961c074345e27fa",
     "runtimeCodeCommit": "a970e3a5b2586cc80abd6eea49fb685dc79ab740",
     "defaultSourceTestsPassed": 56,
     "defaultInstalledTestsPassed": 56,
     "mqttSourceIntegrationTestsPassed": 6,
     "mqttInstalledIntegrationTestsPassed": 6,
-    "cseSourceIntegrationTestsPassed": 5,
-    "cseInstalledIntegrationTestsPassed": 5,
+    "cseSourceIntegrationTestsPassed": 10,
+    "cseInstalledIntegrationTestsPassed": 10,
     "skipped": 0,
     "optInIntegrationSuite": true,
     "testBroker": "Mosquitto2.1.2",
     "testContainersRemaining": 0,
     "testNetworksRemaining": 0,
     "operationalServicesChanged": false,
-    "productionCodeChangedOrRebuilt": true,
+    "productionCodeChangedOrRebuilt": false,
     "databaseSchemaChanged": false,
-    "receipt": "evidence/2026-10-30-real-cse/receipt.json",
-    "limits": "Fresh tmpfs PostgreSQL and real Mobius4; synthetic development principal mapping; no Pi/device or operational central authorization proof"
+    "receipt": "evidence/2026-10-30-outbox-cse/receipt.json",
+    "limits": "Fresh SQLite/tmpfs PostgreSQL and actual sender loop/CSE; child process exit73 before local confirmation; synthetic principal/receipt; no full daemon/Pi/device/operational authorization",
+    "defaultAndMqttSuitesRerunThisCheckpoint": false,
+    "previousDefaultAndMqttReceipt": "evidence/2026-10-30-real-cse/receipt.json"
   },
   "previousLocalValidation": {
     "date": "2026-10-29",

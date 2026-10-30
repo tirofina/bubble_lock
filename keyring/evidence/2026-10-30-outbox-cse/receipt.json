@@ -1,0 +1,582 @@
+{
+  "evidenceVersion": 1,
+  "generatedAt": "2026-10-30T02:57:34.587347+00:00",
+  "role": "KEYRING",
+  "owner": "남호",
+  "documentRevision": "2.0.0",
+  "sourceCommit": "2166ded59caa05660c2d97e8d961c074345e27fa",
+  "sourcePushConfirmed": true,
+  "remoteBranch": "codex/keyring-namho",
+  "remoteCore": "91a281b",
+  "remoteWeb": "80ed37f",
+  "gatewayRevision": "0.2.3",
+  "runtimeCodeCommit": "a970e3a5b2586cc80abd6eea49fb685dc79ab740",
+  "runtimeCodeChanged": false,
+  "databaseSchemaChanged": false,
+  "firmwareChangedOrRebuilt": false,
+  "tests": {
+    "cse-source-tests.log": {
+      "tests": 10,
+      "seconds": 33.125,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exitCode": 0,
+      "originalCseRegressionTests": 5,
+      "newOutboxTests": 5
+    },
+    "cse-installed-tests.log": {
+      "tests": 10,
+      "seconds": 33.083,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exitCode": 0,
+      "originalCseRegressionTests": 5,
+      "newOutboxTests": 5
+    }
+  },
+  "testIds": [
+    "KR-OUTBOX-CSE-01",
+    "KR-OUTBOX-CSE-02",
+    "KR-OUTBOX-CSE-03",
+    "KR-OUTBOX-CSE-04",
+    "KR-OUTBOX-CSE-05"
+  ],
+  "rubricIds": [
+    "R02",
+    "R10",
+    "R12"
+  ],
+  "gateStatus": "partial-local-evidence",
+  "approver": null,
+  "scope": "actual SQLite outbox sender plus real disposable CSE/storage; isolated subprocess death injected before local confirmation",
+  "fullDaemonStarted": false,
+  "bleOrHardwareUsed": false,
+  "childExpectedExitCode": 73,
+  "facts": {
+    "source": {
+      "test_outbox_content_conflict_retains_row_and_remote_original": {
+        "remoteOriginalPreserved": true,
+        "conflictingOutboxRetained": true,
+        "attempts": 1,
+        "remoteCinCount": 1,
+        "rqi": "kr-0006c1e536598569b477c8940f2a049dd2398a9d0b0ef7a7"
+      },
+      "test_outbox_cse_outage_retains_backoff_across_reopen_then_recovers": {
+        "failedAttempts": 1,
+        "backoffPreservedAcrossReopen": true,
+        "remainingOutboxAfterRecovery": 0,
+        "remoteCinCount": 1,
+        "rqi": "kr-5083673402c019954aa86f9aa1f04e354a97b0facbdc615c"
+      },
+      "test_outbox_observation_restart_and_dedup_with_real_cse": {
+        "queueSurvivedReopen": true,
+        "published": 1,
+        "remainingOutbox": 0,
+        "duplicateObservationQueued": false,
+        "remoteCinCount": 1,
+        "rqi": "kr-5083673402c019954aa86f9aa1f04e354a97b0facbdc615c"
+      },
+      "test_outbox_process_death_after_remote_commit_retries_one_cin": {
+        "childExitCode": 73,
+        "childMarker": {
+          "phase": "remote-confirmed-before-local-confirmation",
+          "rqi": "kr-5083673402c019954aa86f9aa1f04e354a97b0facbdc615c"
+        },
+        "unconfirmedLocalRowRecovered": true,
+        "remainingOutbox": 0,
+        "remoteCinCount": 1
+      },
+      "test_outbox_receipt_flag_requires_real_mqtt_application_response": {
+        "syntheticReceipt": true,
+        "deviceExecuted": false,
+        "receiptDeliveredBefore": 0,
+        "receiptDeliveredAfter": 1,
+        "remainingOutbox": 0,
+        "remoteCinCount": 1,
+        "httpsPostFallbackCount": 0,
+        "rqi": "kr-7177d36f3356b2fbbb5753c54e0680e7ddbdefaf79ed475b"
+      }
+    },
+    "installed": {
+      "test_outbox_content_conflict_retains_row_and_remote_original": {
+        "remoteOriginalPreserved": true,
+        "conflictingOutboxRetained": true,
+        "attempts": 1,
+        "remoteCinCount": 1,
+        "rqi": "kr-0006c1e536598569b477c8940f2a049dd2398a9d0b0ef7a7"
+      },
+      "test_outbox_cse_outage_retains_backoff_across_reopen_then_recovers": {
+        "failedAttempts": 1,
+        "backoffPreservedAcrossReopen": true,
+        "remainingOutboxAfterRecovery": 0,
+        "remoteCinCount": 1,
+        "rqi": "kr-5083673402c019954aa86f9aa1f04e354a97b0facbdc615c"
+      },
+      "test_outbox_observation_restart_and_dedup_with_real_cse": {
+        "queueSurvivedReopen": true,
+        "published": 1,
+        "remainingOutbox": 0,
+        "duplicateObservationQueued": false,
+        "remoteCinCount": 1,
+        "rqi": "kr-5083673402c019954aa86f9aa1f04e354a97b0facbdc615c"
+      },
+      "test_outbox_process_death_after_remote_commit_retries_one_cin": {
+        "childExitCode": 73,
+        "childMarker": {
+          "phase": "remote-confirmed-before-local-confirmation",
+          "rqi": "kr-5083673402c019954aa86f9aa1f04e354a97b0facbdc615c"
+        },
+        "unconfirmedLocalRowRecovered": true,
+        "remainingOutbox": 0,
+        "remoteCinCount": 1
+      },
+      "test_outbox_receipt_flag_requires_real_mqtt_application_response": {
+        "syntheticReceipt": true,
+        "deviceExecuted": false,
+        "receiptDeliveredBefore": 0,
+        "receiptDeliveredAfter": 1,
+        "remainingOutbox": 0,
+        "remoteCinCount": 1,
+        "httpsPostFallbackCount": 0,
+        "rqi": "kr-7177d36f3356b2fbbb5753c54e0680e7ddbdefaf79ed475b"
+      }
+    }
+  },
+  "host": {
+    "system": "Windows",
+    "release": "11",
+    "python": "3.12.14",
+    "pythonOpenSsl": "OpenSSL 3.5.8 25 Aug 2026",
+    "dockerServer": "29.4.0"
+  },
+  "images": {
+    "cse": {
+      "tag": "privacy-bubble-keyring-mobius4:local",
+      "id": "sha256:43e83c7bed2d0acf46506fb59d59e8803ea55ab00b92a4ff65fd575bc37a427c",
+      "architecture": "amd64",
+      "repoDigests": [
+        "privacy-bubble-keyring-mobius4@sha256:43e83c7bed2d0acf46506fb59d59e8803ea55ab00b92a4ff65fd575bc37a427c"
+      ]
+    },
+    "postgres": {
+      "tag": "postgis/postgis:17-3.5",
+      "id": "sha256:01a6a70e41e6c4467c8f55f6063555ed72db2d6662cd0d571040d42eadaeb6f6",
+      "architecture": "amd64",
+      "repoDigests": [
+        "postgis/postgis@sha256:01a6a70e41e6c4467c8f55f6063555ed72db2d6662cd0d571040d42eadaeb6f6"
+      ]
+    },
+    "proxy": {
+      "tag": "nginx:1.28-alpine",
+      "id": "sha256:a8b39bd9cf0f83869a2162827a0caf6137ddf759d50a171451b335cecc87d236",
+      "architecture": "amd64",
+      "repoDigests": [
+        "nginx@sha256:a8b39bd9cf0f83869a2162827a0caf6137ddf759d50a171451b335cecc87d236"
+      ]
+    },
+    "broker": {
+      "tag": "eclipse-mosquitto:2",
+      "id": "sha256:860aeb5d63ce509508f6dcfb2bc8a1c1dd2bc60555b562b45ce90e52d8dabb0f",
+      "architecture": "amd64",
+      "repoDigests": [
+        "eclipse-mosquitto@sha256:860aeb5d63ce509508f6dcfb2bc8a1c1dd2bc60555b562b45ce90e52d8dabb0f"
+      ]
+    }
+  },
+  "mobiusUpstreamCommit": "e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8",
+  "imagePulled": false,
+  "package": {
+    "artifact": "privacy_bubble_gateway-0.2.3-py3-none-any.whl",
+    "localPath": "C:\\Users\\NH\\Documents\\ChatGPT\\mobius 해커톤\\github_upload\\_local\\keyring-gateway-023-wheel\\privacy_bubble_gateway-0.2.3-py3-none-any.whl",
+    "bytes": 40685,
+    "sha256": "fd6254cea210059330d14910ca0bb2299b638b8b8e98bec70a808befbbc4e63d",
+    "buildExitCode": 0,
+    "installExitCode": 0,
+    "version": "0.2.3",
+    "installedPythonModulesMatchSource": true,
+    "rebuilt": false,
+    "reinstalled": false
+  },
+  "priorUnchangedSuites": {
+    "receipt": "../2026-10-30-real-cse/receipt.json",
+    "defaultSourceAndInstalled": 56,
+    "mqttSourceAndInstalled": 6,
+    "rerunThisCheckpoint": false
+  },
+  "testEnvironment": {
+    "database": "new temporary SQLite and fresh tmpfs PostgreSQL per stack",
+    "principalMapping": "development proxy synthetic admin mapping",
+    "existingServicesChanged": false,
+    "cleanup": {
+      "mqttContainers": [],
+      "cseContainers": [],
+      "cseNetworks": []
+    },
+    "existingDevelopmentContainers": [
+      "privacy-bubble-keyring-dev-mobius4-1 running",
+      "privacy-bubble-keyring-dev-postgres-1 running",
+      "privacy-bubble-keyring-dev-tls-1 running",
+      "privacy-bubble-keyring-dev-broker-1 running"
+    ]
+  },
+  "sources": [
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/__init__.py",
+      "sha256LfNormalized": "1b8e33c32154a30371326bc90170b517d1b4004c248e0e30ea14926b6bacd16c"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/__main__.py",
+      "sha256LfNormalized": "36dcb434b1343f6cdedb174c9f68e372141d27de327e94f54e958bd9719c4219"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/ble.py",
+      "sha256LfNormalized": "0a09b9f4b66ca63c7763e38058812dc848388d2ae446d86263b404a106f37d5f"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/config.py",
+      "sha256LfNormalized": "aaa913c289848cfbce6aad544d19b0d705f0bcbef3574435a96866489c2c54f2"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/core_bridge.py",
+      "sha256LfNormalized": "eddb76e43b823c8c53d351544f0132bc64f3321f3b6778fbdec7842209c49fa9"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/journal_cli.py",
+      "sha256LfNormalized": "a22dac2ddbf6142f8c0665e5efe460827721e502bb40453fde4d366783bff1fe"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/journal_export.py",
+      "sha256LfNormalized": "02ee7f74547656a650b3dbaebec6e1e7b1378d041825ff1937dbd05dba99d046"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/model.py",
+      "sha256LfNormalized": "964b4c982d94177f251bcbaec430e18edb36106300db45d79b094c0eca8c7fa6"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/service.py",
+      "sha256LfNormalized": "e6649210103decb3e02dfe81a576c2b09ede3f8c9130d8c842a0014329a3ebf1"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/state_archive.py",
+      "sha256LfNormalized": "be49b0c2cb336a69153aed777184bc038db398a480ad3f99bd1f421a60e93e97"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/state_identity.py",
+      "sha256LfNormalized": "aac06ec93f0c0e3ca22e67d0d4e8a7b605890d3aecc5aa1710a5a9cbd04f6ef0"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/store.py",
+      "sha256LfNormalized": "82c811e448779005545287699a9bcb9f5827f6dc4273e0a0ff87c98bec4afe1c"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/transport.py",
+      "sha256LfNormalized": "b8fdc12a0ea6a60dbda9d1f0ed6321e37cc724b5888fe94344ff8f48e33c9f85"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/cse_integration_tests/delivery_child.py",
+      "sha256LfNormalized": "35093357f464751280a504511c9effc073b1f8b907fd1d917453f5a6241c8733"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/cse_integration_tests/mobius_fixture.py",
+      "sha256LfNormalized": "aa09d5ded6549bae34f4fb5a8c72dafa5f4a3043e03f291ab78ee5b59cdd29d6"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/cse_integration_tests/test_mobius_cse.py",
+      "sha256LfNormalized": "24316a8a50f6dae47f919febf22462403977f455f964b92239865921e941b6bf"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/integration_tests/mqtt_fixture.py",
+      "sha256LfNormalized": "f495ad00021f5c6fbb2f4e5c013bd3aa5c48a4c47388f2f0971ac53bc5d41aa8"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/helpers.py",
+      "sha256LfNormalized": "eee17a8b5cd175dc3e92c55adae0a88a5923b0331046a15f317b1f31fd6ff82e"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/tls_fixture.py",
+      "sha256LfNormalized": "59c90f59f48df9f43fa694b2b7644299ad495bc4be5f78434833edb000d1ad68"
+    }
+  ],
+  "files": [
+    {
+      "path": "cse-installed-tests.log",
+      "bytes": 1776,
+      "sha256": "a0fd85e26f320de9e4998e700c8e077ee284cf761f9223369a6d3fff34b9d0c3"
+    },
+    {
+      "path": "cse-source-tests.log",
+      "bytes": 1776,
+      "sha256": "a8a7ee844a0f1db4e9a8db1cdd563761664f23f850028b2181c9ad641f05edc3"
+    },
+    {
+      "path": "installed-identity.json",
+      "bytes": 473,
+      "sha256": "3be0c811709f15bf0352b428dac3ebd6fd18787fa4f3b57ef1f99e732cfed874"
+    },
+    {
+      "path": "installed-logs/test_outbox_content_conflict_retains_row_and_remote_original/broker.log",
+      "bytes": 7622,
+      "sha256": "7a7111be4291b05517d0e16f1d3d3b1ae1d52de373690543353a7b65f7fa4250"
+    },
+    {
+      "path": "installed-logs/test_outbox_content_conflict_retains_row_and_remote_original/cse.log",
+      "bytes": 32508,
+      "sha256": "2ee0fdfe178e62e0b57ba8d9ad68620b0c65de76b1b10021cbd1fa871bb0460c"
+    },
+    {
+      "path": "installed-logs/test_outbox_content_conflict_retains_row_and_remote_original/delivery-facts.json",
+      "bytes": 186,
+      "sha256": "c081f9a96b6042b54e7036c0c1dc136186391c7fa42c411c989304b4f655e754"
+    },
+    {
+      "path": "installed-logs/test_outbox_content_conflict_retains_row_and_remote_original/postgres.log",
+      "bytes": 4496,
+      "sha256": "2569de6f17929b72a93e83023aadd7f869d8cce51f915a1ec56c86aa1a34aa9a"
+    },
+    {
+      "path": "installed-logs/test_outbox_content_conflict_retains_row_and_remote_original/proxy.log",
+      "bytes": 4951,
+      "sha256": "af3a878233f6366eba81b1dd655b8e677bc846cd4ec3933ce40c3699e820265c"
+    },
+    {
+      "path": "installed-logs/test_outbox_cse_outage_retains_backoff_across_reopen_then_recovers/broker.log",
+      "bytes": 9453,
+      "sha256": "c7f2c13db05d2559bbf2eaa2157729339fee1a3d3e69fbd95909accca7beb060"
+    },
+    {
+      "path": "installed-logs/test_outbox_cse_outage_retains_backoff_across_reopen_then_recovers/cse.log",
+      "bytes": 40616,
+      "sha256": "31f33fdc263a0115ee4c918ef2bd4f76d7a15cf4648f63780da2f33b87070b15"
+    },
+    {
+      "path": "installed-logs/test_outbox_cse_outage_retains_backoff_across_reopen_then_recovers/delivery-facts.json",
+      "bytes": 197,
+      "sha256": "a183b2cb68c1ca91c40f6dfc6be54ba184070a72b73da0169cbc749fa1453cd2"
+    },
+    {
+      "path": "installed-logs/test_outbox_cse_outage_retains_backoff_across_reopen_then_recovers/postgres.log",
+      "bytes": 5203,
+      "sha256": "b103604accc8b0917e0ff5645b63be3ea95d1827d6a6c87b2ec89148e8229a93"
+    },
+    {
+      "path": "installed-logs/test_outbox_cse_outage_retains_backoff_across_reopen_then_recovers/proxy.log",
+      "bytes": 5804,
+      "sha256": "2d95773e34d81fa25a7ac8b866e9a4b4681b667cc46cb48b312597d5a849e8fb"
+    },
+    {
+      "path": "installed-logs/test_outbox_observation_restart_and_dedup_with_real_cse/broker.log",
+      "bytes": 9453,
+      "sha256": "c7f2c13db05d2559bbf2eaa2157729339fee1a3d3e69fbd95909accca7beb060"
+    },
+    {
+      "path": "installed-logs/test_outbox_observation_restart_and_dedup_with_real_cse/cse.log",
+      "bytes": 45564,
+      "sha256": "4bd06cd013370a7e892925cfce4421fcd21cd3f0cdaa154023e39d202ea1b5fd"
+    },
+    {
+      "path": "installed-logs/test_outbox_observation_restart_and_dedup_with_real_cse/delivery-facts.json",
+      "bytes": 210,
+      "sha256": "0555008978ae93319572fa93efd7841cfe8f5527e3c0d6c2d06b3ef6b2cc79fb"
+    },
+    {
+      "path": "installed-logs/test_outbox_observation_restart_and_dedup_with_real_cse/postgres.log",
+      "bytes": 5203,
+      "sha256": "b103604accc8b0917e0ff5645b63be3ea95d1827d6a6c87b2ec89148e8229a93"
+    },
+    {
+      "path": "installed-logs/test_outbox_observation_restart_and_dedup_with_real_cse/proxy.log",
+      "bytes": 6213,
+      "sha256": "0c8d2a98f320f18682c0adbd04a410ba25e746837b66e030ebb59875f4dcb565"
+    },
+    {
+      "path": "installed-logs/test_outbox_process_death_after_remote_commit_retries_one_cin/broker.log",
+      "bytes": 9453,
+      "sha256": "c7f2c13db05d2559bbf2eaa2157729339fee1a3d3e69fbd95909accca7beb060"
+    },
+    {
+      "path": "installed-logs/test_outbox_process_death_after_remote_commit_retries_one_cin/cse.log",
+      "bytes": 52950,
+      "sha256": "ccc2f8e94d02ea27f50ac18157efcfe96970b8e158fff762eb5aa7671e02b2e7"
+    },
+    {
+      "path": "installed-logs/test_outbox_process_death_after_remote_commit_retries_one_cin/delivery-facts.json",
+      "bytes": 271,
+      "sha256": "f863416ea1ab3308931ed7f3649d9210acb1817e3f8b0c6361f56969c2c2baf5"
+    },
+    {
+      "path": "installed-logs/test_outbox_process_death_after_remote_commit_retries_one_cin/postgres.log",
+      "bytes": 5203,
+      "sha256": "b103604accc8b0917e0ff5645b63be3ea95d1827d6a6c87b2ec89148e8229a93"
+    },
+    {
+      "path": "installed-logs/test_outbox_process_death_after_remote_commit_retries_one_cin/proxy.log",
+      "bytes": 6883,
+      "sha256": "ea8486d06a13a5f4ee700fb342f2d4a30338be5dcb653b548f651dd583ee6b5f"
+    },
+    {
+      "path": "installed-logs/test_outbox_receipt_flag_requires_real_mqtt_application_response/broker.log",
+      "bytes": 10919,
+      "sha256": "ba2c8ed64d67ffe528f78d872efdd5316742cab2b19f07d78ae6d8ff31d2f131"
+    },
+    {
+      "path": "installed-logs/test_outbox_receipt_flag_requires_real_mqtt_application_response/cse.log",
+      "bytes": 57833,
+      "sha256": "b7ce3c74034c5af7e3837ede324dea9fc734ece4199e72a3d69c9a492c2b1652"
+    },
+    {
+      "path": "installed-logs/test_outbox_receipt_flag_requires_real_mqtt_application_response/delivery-facts.json",
+      "bytes": 271,
+      "sha256": "ba0db3f65fa608ef2cbf8e064370794223cc37f49398d9d18fb9578d9d7e824d"
+    },
+    {
+      "path": "installed-logs/test_outbox_receipt_flag_requires_real_mqtt_application_response/postgres.log",
+      "bytes": 5203,
+      "sha256": "b103604accc8b0917e0ff5645b63be3ea95d1827d6a6c87b2ec89148e8229a93"
+    },
+    {
+      "path": "installed-logs/test_outbox_receipt_flag_requires_real_mqtt_application_response/proxy.log",
+      "bytes": 7204,
+      "sha256": "58b7d2c5d6c05807b0e4e0d522e8c1fee97955cc2fd5a37300bbf7efc95692e4"
+    },
+    {
+      "path": "README.md",
+      "bytes": 3622,
+      "sha256": "e701151c7671e74d8ed51e65592a2be50e2cf39872e639b10ca855585db86849"
+    },
+    {
+      "path": "source-logs/test_outbox_content_conflict_retains_row_and_remote_original/broker.log",
+      "bytes": 7622,
+      "sha256": "e52fa3207899980b51ddc5caa82ddd20d42f2df85050525c27360f8d9174f8b1"
+    },
+    {
+      "path": "source-logs/test_outbox_content_conflict_retains_row_and_remote_original/cse.log",
+      "bytes": 32508,
+      "sha256": "aa2b0f67f797a451c9ec40bd4212a890e21700d07e565e508e04f2fc0a6664d6"
+    },
+    {
+      "path": "source-logs/test_outbox_content_conflict_retains_row_and_remote_original/delivery-facts.json",
+      "bytes": 186,
+      "sha256": "c081f9a96b6042b54e7036c0c1dc136186391c7fa42c411c989304b4f655e754"
+    },
+    {
+      "path": "source-logs/test_outbox_content_conflict_retains_row_and_remote_original/postgres.log",
+      "bytes": 4496,
+      "sha256": "052cd33e21c64ea44d100df8c201d9144c8ee939d20738f282533e443dca7b31"
+    },
+    {
+      "path": "source-logs/test_outbox_content_conflict_retains_row_and_remote_original/proxy.log",
+      "bytes": 4650,
+      "sha256": "c9fae71fdabe937783ba74a96b983de19040139d1a16c064b41a9c9ca1c2199e"
+    },
+    {
+      "path": "source-logs/test_outbox_cse_outage_retains_backoff_across_reopen_then_recovers/broker.log",
+      "bytes": 9453,
+      "sha256": "e035fdda75ad3c743730c1b841b5f17f16ed6e86ccfb235db74b0b63f0e16191"
+    },
+    {
+      "path": "source-logs/test_outbox_cse_outage_retains_backoff_across_reopen_then_recovers/cse.log",
+      "bytes": 40616,
+      "sha256": "c4d78226e3a2a10583370c7a48e20f221e205b818895b1d52e1d724b297ab172"
+    },
+    {
+      "path": "source-logs/test_outbox_cse_outage_retains_backoff_across_reopen_then_recovers/delivery-facts.json",
+      "bytes": 197,
+      "sha256": "a183b2cb68c1ca91c40f6dfc6be54ba184070a72b73da0169cbc749fa1453cd2"
+    },
+    {
+      "path": "source-logs/test_outbox_cse_outage_retains_backoff_across_reopen_then_recovers/postgres.log",
+      "bytes": 5203,
+      "sha256": "68bed67e0dc92e5f4f0d785728b18b641421f4b182b8d4a74f9f69ee63e3eef7"
+    },
+    {
+      "path": "source-logs/test_outbox_cse_outage_retains_backoff_across_reopen_then_recovers/proxy.log",
+      "bytes": 5807,
+      "sha256": "5b1eec9b73552f5f0665a8e53a68962c31a7d54924d60c737202fa10dd09f3ce"
+    },
+    {
+      "path": "source-logs/test_outbox_observation_restart_and_dedup_with_real_cse/broker.log",
+      "bytes": 9453,
+      "sha256": "e035fdda75ad3c743730c1b841b5f17f16ed6e86ccfb235db74b0b63f0e16191"
+    },
+    {
+      "path": "source-logs/test_outbox_observation_restart_and_dedup_with_real_cse/cse.log",
+      "bytes": 45564,
+      "sha256": "28f024065cc0be9ac9a8eb3f4bcab155deec2d4d598abe84f6a7cb8e872aae27"
+    },
+    {
+      "path": "source-logs/test_outbox_observation_restart_and_dedup_with_real_cse/delivery-facts.json",
+      "bytes": 210,
+      "sha256": "0555008978ae93319572fa93efd7841cfe8f5527e3c0d6c2d06b3ef6b2cc79fb"
+    },
+    {
+      "path": "source-logs/test_outbox_observation_restart_and_dedup_with_real_cse/postgres.log",
+      "bytes": 5203,
+      "sha256": "68bed67e0dc92e5f4f0d785728b18b641421f4b182b8d4a74f9f69ee63e3eef7"
+    },
+    {
+      "path": "source-logs/test_outbox_observation_restart_and_dedup_with_real_cse/proxy.log",
+      "bytes": 6216,
+      "sha256": "cdc829fa60084179f2334834ee9c8414c732e37732cc9f671e2db7c408792947"
+    },
+    {
+      "path": "source-logs/test_outbox_process_death_after_remote_commit_retries_one_cin/broker.log",
+      "bytes": 9453,
+      "sha256": "e035fdda75ad3c743730c1b841b5f17f16ed6e86ccfb235db74b0b63f0e16191"
+    },
+    {
+      "path": "source-logs/test_outbox_process_death_after_remote_commit_retries_one_cin/cse.log",
+      "bytes": 52950,
+      "sha256": "783b0d0433f6bd703adc816b0fe437c77f55063e1dd99921ab7e9f18748b3c2f"
+    },
+    {
+      "path": "source-logs/test_outbox_process_death_after_remote_commit_retries_one_cin/delivery-facts.json",
+      "bytes": 271,
+      "sha256": "f863416ea1ab3308931ed7f3649d9210acb1817e3f8b0c6361f56969c2c2baf5"
+    },
+    {
+      "path": "source-logs/test_outbox_process_death_after_remote_commit_retries_one_cin/postgres.log",
+      "bytes": 5203,
+      "sha256": "68bed67e0dc92e5f4f0d785728b18b641421f4b182b8d4a74f9f69ee63e3eef7"
+    },
+    {
+      "path": "source-logs/test_outbox_process_death_after_remote_commit_retries_one_cin/proxy.log",
+      "bytes": 6886,
+      "sha256": "37af62bbdacd3100740343b362176314aeceb1c3cea6517680269f2b4d520d4e"
+    },
+    {
+      "path": "source-logs/test_outbox_receipt_flag_requires_real_mqtt_application_response/broker.log",
+      "bytes": 10919,
+      "sha256": "97d52fc849c66dbadaf9ba84585b6108b7ac8d5b3c47116e84a210ea4447f5d0"
+    },
+    {
+      "path": "source-logs/test_outbox_receipt_flag_requires_real_mqtt_application_response/cse.log",
+      "bytes": 57833,
+      "sha256": "7ea2e4b4226504adbdf330a750523e3e49ae71d9292347427220921a4ff4820b"
+    },
+    {
+      "path": "source-logs/test_outbox_receipt_flag_requires_real_mqtt_application_response/delivery-facts.json",
+      "bytes": 271,
+      "sha256": "ba0db3f65fa608ef2cbf8e064370794223cc37f49398d9d18fb9578d9d7e824d"
+    },
+    {
+      "path": "source-logs/test_outbox_receipt_flag_requires_real_mqtt_application_response/postgres.log",
+      "bytes": 5203,
+      "sha256": "68bed67e0dc92e5f4f0d785728b18b641421f4b182b8d4a74f9f69ee63e3eef7"
+    },
+    {
+      "path": "source-logs/test_outbox_receipt_flag_requires_real_mqtt_application_response/proxy.log",
+      "bytes": 7207,
+      "sha256": "f4431ded97ee5eed65634debd46c599399232870a90721f4453bda555ac3fa56"
+    }
+  ],
+  "performer": "Codex-assisted local verification",
+  "remaining": [
+    "Pi/BlueZ and physical keyring",
+    "operational PKI principal AE Originator ACP grants",
+    "INTEGRATION authorization settlement recovery",
+    "Group SDT app web end-to-end",
+    "power range hardware video release"
+  ]
+}

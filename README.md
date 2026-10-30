@@ -11,4 +11,4 @@ Privacy Bubble Keyring 공동 개발 저장소입니다. 구현 기준은 [PROJE
 - [계약](contracts/keyring/README.md): JSON Schema 2020-12 10종, 계약 후보 0.1.0.
 - [PC 담당 인수인계](docs/keyring-handoff.md): 필요한 API·CSE·credential와 미실행 수용 항목.
 
-Gateway0.2.3은 소스와 설치 패키지에서 단위시험56개·실제 MQTT6개·실제 Mobius4 저장/조회5개를 각각 통과했습니다. 펌웨어는 기본/ST7789/JD9853 프로필3개가 빌드됐습니다. [최신 실행 증거](keyring/evidence/2026-10-30-real-cse/README.md)에 로그와 해시를 기록했습니다. 실물 Pi·BLE·장비 시험, 중앙 권한·앱/웹 통합, 영상·release는 미완료입니다.
+Gateway0.2.3은 소스와 설치 패키지에서 단위시험56개·실제 MQTT6개·실제 Mobius4·영속 큐 복구10개를 각각 통과했습니다. 펌웨어는 기본/ST7789/JD9853 프로필3개가 빌드됐습니다. [최신 실행 증거](keyring/evidence/2026-10-30-outbox-cse/README.md)에 로그와 해시를 기록했습니다. 실물 Pi·BLE·장비 시험, 중앙 권한·앱/웹 통합, 영상·release는 미완료입니다.

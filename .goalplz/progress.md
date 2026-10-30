@@ -256,3 +256,16 @@ DOC-REV2.0.0을 읽고 KEYRING/R02·R03·R10·R11의 실제 CSE 경계를 시험
 - source a970e3a5b2586cc80abd6eea49fb685dc79ab740 일반 push 성공(2df3dc2..a970e3a). keyring/evidence/2026-10-30-real-cse/에 최종6개시험로그·초기실패·baseline·실제broker/CSE/SQL/proxy로그와 소스/환경/image/wheelhash를 보존한다. 최종test-owned container/network잔여0, 기존개발4개running 확인. PKI개인키·DB·wheel binary는 commit하지 않는다.
 
 이번 턴은 실제 CSE통합을 통한 오류수정·검증 progress다. 전체goal은 active/미완료다. 운영principal/AE/ACP/grant·INTEGRATION승인/settlement/recovery·Group/SDT·실물Pi/BLE/키링/앱/웹·전력/거리·JD9853공장init·지정원문·영상/release는 남아 있다.
+
+
+## 2026-10-30 — 영속 큐와 실제 CSE 장애/프로세스 복구
+
+직전 턴은 Gateway0.2.3 MQTT주소 수정·source/installed 기본56/MQTT6/CSE5와76e6f51까지 업로드한 progress였다. 이번 시작 상태active, DOC-REV2.0.0 재독·팀브랜치 fetch main/CORE91a281b·WEB80ed37f 동일이다. Pi SSH/보드·패널 준비 상태 기존 질문은 답변 대기이며 실제 장비 접근은 시작하지 않았다.
+
+- 기존 CSE5개는 TransportHub만 확인해 actual SQLite와 Gateway._outbox_loop의 장애창을 덮지 않았다. CSE suite에5개를 추가했다. 새 SQLite reopen/dedup→실제 CSE, 합성INDETERMINATE receipt의 MQTT application response 후 delivered0→1, CSE중단 중 동일rqi/payload와backoff 유지/reopen/복구, 원격저장 직후 test child os._exit(73) 뒤 WAL/outbox복구·동일요청cin1개, 내용충돌 때 원격원본/로컬행 보존이다.
+- test-only delivery_child.py는 송신loop만 실행한다. Store.delivered 직전 종료를 주입하고 실제SQLite연결을 닫지 않는다. parent는 같은DB를 열고 같은rqi로재전송, cin1/outbox0을 확인했다. idle/backoff정지는 parent의_pause 대체다. BLE·credential/poll/dispatch/health·full daemon·Pi를 실행하지 않았다. 관측/receipt는 합성이며 실제actuation이나중앙정산증거가 아니다.
+- source10개33.125초·설치10개33.083초, 각각exit0/failure0/error0/skipped0. 기존CSE5개도 포함한다. 의도한child종료73과전체unittest종료0을 구분했다. runtime0.2.3과DB schema·firmware0.7.0은 변경하지 않았다. 기존wheel SHA256 fd6254cea210059330d14910ca0bb2299b638b8b8e98bec70a808befbbc4e63d의import/version/모든Python module일치를 다시확인했다. 기본56/MQTT6/firmware3은 이번에 변경/재실행하지 않고직전증거를 유지한다.
+- 시험소스2166ded59caa05660c2d97e8d961c074345e27fa 일반push성공(76e6f51..2166ded). evidence/2026-10-30-outbox-cse에source/installed10개로그·5개씩deliveryfacts·실제broker/CSE/SQL/proxy로그54파일·소스/환경/image/wheelhash를 보존했다. token소유container/network0개·기존개발4개running확인. 개인키/인증서·DB·wheel binary는commit하지 않는다.
+- COMPLETION_GAPS를현행0.2.3과원래산출물/7자료/통합조건으로갱신했다. 세지정원문을저장소/원작업공간root에서다시조회해미발견확인. 원래A01~A26매핑·approver·release를만들지않았다.
+
+이번은 실제영속송신복구경계의새증거를확보한progress다. 전체goal은active/미완료이며 실물Pi/키링/BLE·운영PKI/AE/ACP/grant·INTEGRATION승인/정산/recovery·Group/SDT/앱/웹·JD9853자료·전력/거리·영상/release가남아있다.

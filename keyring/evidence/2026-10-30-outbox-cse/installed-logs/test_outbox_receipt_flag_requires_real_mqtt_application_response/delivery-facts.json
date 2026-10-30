@@ -1,0 +1,10 @@
+{
+  "syntheticReceipt": true,
+  "deviceExecuted": false,
+  "receiptDeliveredBefore": 0,
+  "receiptDeliveredAfter": 1,
+  "remainingOutbox": 0,
+  "remoteCinCount": 1,
+  "httpsPostFallbackCount": 0,
+  "rqi": "kr-7177d36f3356b2fbbb5753c54e0680e7ddbdefaf79ed475b"
+}

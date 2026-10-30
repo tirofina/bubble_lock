@@ -16,6 +16,8 @@
 
 2026-10-30 Gateway0.2.3은 실제 CSE에서 드러난 MQTT To 주소 범위 오류를 수정했다. [실제 Mobius4 시험5개](../keyring/evidence/2026-10-30-real-cse/README.md)와 기본56개·MQTT6개를 소스/새 설치 wheel에서 각각 통과했다. 새 tmpfs PostgreSQL·시험 소유 stack만 사용했다. 중앙 운영 권한·실물 Pi/장비는 남아 있다.
 
+2026-10-30 실제 CSE suite를10개로 확장했다. [영속 큐 복구5개](../keyring/evidence/2026-10-30-outbox-cse/README.md)를 추가해 SQLite 재개·CSE 중단/backoff·native receipt 확인·원격 저장 직후 시험 송신 프로세스 종료·내용 충돌 보존을 확인했다. 소스와 기존0.2.3 wheel 각10개 통과. runtime과 DB schema는 변경하지 않았다.
+
 ## 구현 범위와 상태
 
 | 영역 | 전달물 | 현재 상태 |
@@ -30,7 +32,7 @@
 | 권한·연속성 | 중앙 승인, epoch/deadline, 중복·journal·queue 처리 | 구현 작성, 중앙 정책과 장애 시나리오 미검증 |
 | journal 보관 | [읽기 전용 snapshot·보관 CLI](../keyring/JOURNAL_RETENTION.md) | keyring-0.5.0 소스 작성. 실제 보관/정산·reclaim 미실행, 중앙 계약 필요 |
 | Gateway 상태 | [binding·cold snapshot·legacy adoption](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md) | Gateway0.2.0 모의 단위 테스트에서 임시 SQLite backup/adoption·격리 확인. 실제 POSIX CLI·기존 DB migration/backup 미실행. 복구 활성화는 중앙 checkpoint 계약 후 구현 |
-| 전송 | MQTT 3.1.1 및 mTLS HTTPS, oneM2M 응답 판정 | Gateway0.2.3 실제 로컬 MQTT/TLS/ACL6개·Mobius4 저장/조회5개 통과. 운영 capability·권한은 미확정 |
+| 전송 | MQTT 3.1.1 및 mTLS HTTPS, oneM2M 응답 판정 | Gateway0.2.3 실제 로컬 MQTT/TLS/ACL6개·Mobius4/영속 큐10개 통과. 운영 capability·권한은 미확정 |
 | 계약 | [JSON Schema](../contracts/keyring/README.md)와 [전송 계약](../keyring/INTERFACE_NOTES.md) | 후보 계약. canonical revision 합의 전 |
 | 공개 증거 | 시험 receipt, 로그 hash, 실물 영상, release manifest | 로컬 빌드·단위/TLS·실제 MQTT/CSE 로그/hash 보존. 실물·중앙 통합·영상·release 미완료 |
 
@@ -70,11 +72,11 @@ KEYRING은 중앙 command 전체의 hash를 BLE 명령과 receipt에 유지한�
 | KR-SEC-01 | R10 / G-SEC | 만료·회수·다른 claim·hash·epoch의 실행 거절 | 미실행 |
 | KR-JOURNAL-01 | R01, R12 / G-CONT | 동일 ID 재전송, 다른 hash 충돌, 전원 차단과 journal full | 미실행 |
 | KR-QUEUE-01 | R02, R12 / G-CONT | broker/Gateway 재시작, 저장 queue 재전송, oneM2M 응답 유실 | 미실행 |
-| KR-TRANSPORT-01 | R02, R10 / G-SEC | MQTT ACL·mTLS, HTTPS fallback, 동일 rn 충돌의 content 비교 | 로컬 MQTT6개·실제 CSE5개 부분 통과. 운영 principal/ACL 승인 잔여 |
+| KR-TRANSPORT-01 | R02, R10 / G-SEC | MQTT ACL·mTLS, HTTPS fallback, 동일 rn 충돌의 content 비교 | 로컬 MQTT6개·실제 CSE10개 부분 통과. 운영 principal/ACL 승인 잔여 |
 | KR-HANDOVER-01 | R12 / G-CONT | 중앙 ownership epoch 전환과 이전 owner의 실행 차단 | 미실행 |
 | KR-DEVICE-01 | R02, R05 / G-RELEASE | 조립 revision, 실제 전력·BLE 범위·재연결 측정 | 미실행 |
 | KR-DEMO-01 | R03, R05 / G-SUBMIT | 키링→Gateway→CSE→앱·웹 흐름과 5분 미만 실물 영상 | 미실행 |
 
 시험 수행자는 명령, 기대 결과, 실제 결과, hostId, firmware/board revision, runtime digest, 시간, 로그 경로와 SHA256을 함께 남겨야 한다. 로컬 로그·receipt hash는 최신 evidence에 보존했다. 실측값·중앙 gate 승인은 없다.
 
-최신 로컬 검증은 Gateway0.2.3 기본56개·MQTT6개·실제 CSE5개와 firmware3개 빌드다. 실물·중앙 통합·공개 release는 미완료다.
+최신 로컬 검증은 Gateway0.2.3 실제 CSE/영속 큐10개와 직전 기본56개·MQTT6개·firmware3개 빌드다. 실물·중앙 통합·공개 release는 미완료다.
