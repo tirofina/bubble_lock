@@ -39,9 +39,9 @@ class TestPki:
     def run(self, *args):
         subprocess.run([self.openssl, *map(str, args)], check=True, capture_output=True, timeout=15)
 
-    def leaf(self, name, ca, serial, purpose, ip=None):
+    def leaf(self, name, ca, serial, purpose, ip=None, subject=None):
         self.run("req", "-new", "-newkey", "rsa:2048", "-nodes", "-keyout", self.path(name, "key"),
-                 "-out", self.path(name, "csr"), "-subj", "/CN=" + ("gw-test" if purpose == "clientAuth" else name),
+                 "-out", self.path(name, "csr"), "-subj", "/CN=" + (subject or ("gw-test" if purpose == "clientAuth" else name)),
                  "-config", self.config)
         extension = ("basicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature,keyEncipherment\n"
                      f"extendedKeyUsage={purpose}\n" + (f"subjectAltName=IP:{ip}\n" if ip else ""))
