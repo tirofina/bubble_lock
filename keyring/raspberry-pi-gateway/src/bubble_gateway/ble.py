@@ -140,6 +140,7 @@ class _Peer:
     device_id: str
     address: str
     client: Any = None
+    generation: int = 0
     discovered: Any = None
     ready: asyncio.Event = field(default_factory=asyncio.Event)
     seen: asyncio.Event = field(default_factory=asyncio.Event)
@@ -220,7 +221,12 @@ class BleFleet:
         with contextlib.suppress(asyncio.TimeoutError):
             await asyncio.wait_for(self._closed.wait(), seconds + random.uniform(0, seconds / 4))
 
-    def _lost(self, peer: _Peer) -> None:
+    def _lost(self, peer: _Peer, generation: int | None = None) -> None:
+        if generation is not None and generation != peer.generation:
+            return
+        # Invalidate callbacks immediately, including while handshake/write awaits
+        # are still unwinding. A replacement connection gets another generation.
+        peer.generation += 1
         peer.ready.clear()
         peer.disconnected.set()
         if peer.pending is not None and not peer.pending.done():
@@ -230,9 +236,19 @@ class BleFleet:
         peer.last_error = reason
         self._lost(peer)
 
+    @staticmethod
+    def _require_session(peer: _Peer, client: Any, generation: int, *, ready: bool = True) -> None:
+        if (peer.generation != generation or peer.client is not client or client is None
+                or peer.disconnected.is_set() or not client.is_connected
+                or (ready and not peer.ready.is_set())):
+            raise BleUnavailable("authenticated BLE session changed")
+
     async def _watch(self, peer: _Peer) -> None:
         delay = 1.0
         while not self._closed.is_set():
+            peer.generation += 1
+            generation = peer.generation
+            peer.ready.clear()
             try:
                 await asyncio.wait_for(peer.seen.wait(), self.config.ble_scan_seconds)
                 peer.disconnected.clear()
@@ -243,12 +259,14 @@ class BleFleet:
                 peer.receipt_frames = _Frames()
                 client = BleakClient(peer.discovered, pair=self.config.ble_pair,
                                      timeout=max(30.0, self.config.request_timeout),
-                                     disconnected_callback=lambda _: self._lost(peer))
+                                     disconnected_callback=lambda _, session=generation: self._lost(peer, session))
                 async with client:
                     peer.client = client
+                    self._require_session(peer, client, generation, ready=False)
                     if client.services.get_service(self.service) is None:
                         raise BleProtocolError("required service missing")
                     identity = _object(await client.read_gatt_char(self.identity_uuid), 512)
+                    self._require_session(peer, client, generation, ready=False)
                     required = {"version", "deviceId", "firmwareRevision", "boardRevision", "bootId"}
                     if set(identity) != required or type(identity.get("version")) is not int or identity["version"] != 1:
                         raise BleProtocolError("invalid identity shape")
@@ -263,12 +281,18 @@ class BleFleet:
                     if allowed and identity["firmwareRevision"] not in allowed:
                         raise BleProtocolError("firmware revision not allowed")
                     peer.identity = identity
-                    await client.start_notify(self.receipt_uuid, lambda _, data: self._receipt_fragment(peer, data))
-                    await client.start_notify(self.observation_uuid, lambda _, data: self._observation_fragment(peer, data))
+                    await client.start_notify(self.receipt_uuid,
+                        lambda _, data, session=generation: self._receipt_fragment(peer, data, session))
+                    self._require_session(peer, client, generation, ready=False)
+                    await client.start_notify(self.observation_uuid,
+                        lambda _, data, session=generation: self._observation_fragment(peer, data, session))
+                    self._require_session(peer, client, generation, ready=False)
                     # READ supplies the complete current value; NOTIFY supplies LF
                     # framed fragments. These paths intentionally do not mix buffers.
                     current = _object(await client.read_gatt_char(self.observation_uuid), 512)
+                    self._require_session(peer, client, generation, ready=False)
                     self._queue_observation(peer, current)
+                    self._require_session(peer, client, generation, ready=False)
                     peer.ready.set()
                     peer.last_error = None
                     delay = 1.0
@@ -279,14 +303,16 @@ class BleFleet:
                 peer.last_error = type(exc).__name__
                 LOG.warning("BLE reconnect scheduled for %s (%s)", peer.device_id, type(exc).__name__)
             finally:
-                self._lost(peer)
+                self._lost(peer, generation)
                 peer.client = None
                 peer.seen.clear()
             if not self._closed.is_set():
                 await self._pause(delay)
                 delay = min(delay * 2, 60.0)
 
-    def _observation_fragment(self, peer: _Peer, data: bytearray) -> None:
+    def _observation_fragment(self, peer: _Peer, data: bytearray, generation: int | None = None) -> None:
+        if generation is not None and generation != peer.generation:
+            return
         try:
             for frame in peer.observation_frames.feed(data):
                 self._queue_observation(peer, frame)
@@ -352,7 +378,9 @@ class BleFleet:
                     await self._pause(2.0)
             peer.observations.task_done()
 
-    def _receipt_fragment(self, peer: _Peer, data: bytearray) -> None:
+    def _receipt_fragment(self, peer: _Peer, data: bytearray, generation: int | None = None) -> None:
+        if generation is not None and generation != peer.generation:
+            return
         try:
             for frame in peer.receipt_frames.feed(data):
                 required = {"version", "deviceId", "bootId", "commandId", "payloadHash", "ackCode",
@@ -404,8 +432,8 @@ class BleFleet:
         expires = time.monotonic() + remaining_ms / 1000
         async with asyncio.timeout(min(self.config.ble_command_timeout, remaining_ms / 1000)):
             async with peer.lock:
-                if not peer.ready.is_set() or peer.client is None or not peer.client.is_connected:
-                    raise BleUnavailable("device is not ready")
+                client, generation = peer.client, peer.generation
+                self._require_session(peer, client, generation)
                 wire = {
                     "version": 1, "type": "command", "deviceId": peer.device_id,
                     "commandId": command_dict["commandId"], "desiredState": command_dict["desiredState"],
@@ -415,28 +443,32 @@ class BleFleet:
                 raw = json.dumps(wire, ensure_ascii=True, allow_nan=False, separators=(",", ":")).encode("utf-8") + b"\n"
                 if len(raw) > MAX_FRAME:
                     raise ValueError("command exceeds BLE frame size")
-                peer.pending = asyncio.get_running_loop().create_future()
+                pending = asyncio.get_running_loop().create_future()
+                peer.pending = pending
                 peer.pending_command, peer.pending_hash = command_dict["commandId"], payload_hash
                 try:
                     async with asyncio.timeout(min(self.config.ble_command_timeout,
                                                    max(0.001, expires - time.monotonic()))):
                         for offset in range(0, len(raw), 20):
-                            await peer.client.write_gatt_char(self.command_uuid, raw[offset:offset + 20], response=True)
-                        receipt = await peer.pending
+                            self._require_session(peer, client, generation)
+                            await client.write_gatt_char(self.command_uuid, raw[offset:offset + 20], response=True)
+                            self._require_session(peer, client, generation)
+                        receipt = await pending
+                    self._require_session(peer, client, generation)
                     return self._receipt_times(peer, receipt)
                 except BaseException:
                     # An interrupted partial frame must never be joined to a later
                     # command. Reconnect clears the firmware RX frame state.
-                    self._lost(peer)
+                    self._lost(peer, generation)
                     raise
                 finally:
-                    if peer.pending is not None:
-                        if not peer.pending.done():
-                            peer.pending.cancel()
-                        elif not peer.pending.cancelled():
-                            peer.pending.exception()  # Consume disconnect errors on cancelled writes.
-                    peer.pending = None
-                    peer.pending_command = peer.pending_hash = None
+                    if not pending.done():
+                        pending.cancel()
+                    elif not pending.cancelled():
+                        pending.exception()  # Consume disconnect errors on cancelled writes.
+                    if peer.pending is pending:
+                        peer.pending = None
+                        peer.pending_command = peer.pending_hash = None
 
     async def capture_journal(self, device_id: str) -> dict[str, Any]:
         """Explicit read-only maintenance capture, serialized with device commands."""
@@ -445,13 +477,13 @@ class BleFleet:
         if peer is None:
             raise BleUnavailable("device is not enrolled")
         async with peer.lock:
-            client = peer.client
+            client, generation = peer.client, peer.generation
             identity = dict(peer.identity)
-            if client is None or not peer.ready.is_set():
-                raise BleUnavailable("device has no authenticated session")
+            self._require_session(peer, client, generation)
             result = await capture(client, identity, self.config.ble_gatt_profile)
             current = _object(await client.read_gatt_char(self.identity_uuid), 512)
-            if current != identity or peer.client is not client or not peer.ready.is_set():
+            self._require_session(peer, client, generation)
+            if current != identity:
                 raise BleUnavailable("device session changed during journal capture")
             return result
 
