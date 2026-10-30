@@ -112,6 +112,14 @@ class DisposableMobius:
         self.check("cse")
         docker("restart", "--time", "1", self.containers["cse"])
 
+    def stop_cse(self):
+        self.check("cse")
+        docker("stop", "--time", "1", self.containers["cse"])
+
+    def start_cse(self):
+        self.check("cse")
+        docker("start", self.containers["cse"])
+
     def close(self):
         errors = []
         for name in list(reversed(self.containers)):

@@ -1,16 +1,24 @@
 """Real disposable Mobius4/PostgreSQL, not the synthetic protocol responder."""
 import asyncio
+from collections import Counter
 import hashlib
 import json
 import os
 from pathlib import Path
+import subprocess
+import sys
+import tempfile
 import unittest
 import uuid
 
 import httpx
 
 from bubble_gateway.transport import TransportHub, RemoteResponseError
-from helpers import config
+from bubble_gateway.model import iso_time, payload_hash
+from bubble_gateway.service import Gateway
+from bubble_gateway.state_identity import configured_binding
+from bubble_gateway.store import Store
+from helpers import command, config, observation
 from tls_fixture import TestPki
 from mobius_fixture import DisposableMobius
 
@@ -33,6 +41,7 @@ class MobiusCseTests(unittest.IsolatedAsyncioTestCase):
             cls.pki.close()
 
     async def asyncSetUp(self):
+        self.delivery_facts = {}
         self.hub = await self.hub_for(mqtt=False)
         self.addCleanup(self.save_logs)
         await self.ready()
@@ -93,6 +102,43 @@ class MobiusCseTests(unittest.IsolatedAsyncioTestCase):
             for name in self.stack.containers:
                 (root / (name + ".log")).write_text(self.stack.logs(name), encoding="utf-8")
             (root / "broker.log").write_text(self.stack.broker.logs(), encoding="utf-8")
+            if self.delivery_facts:
+                (root / "delivery-facts.json").write_text(json.dumps(self.delivery_facts, indent=2) + "\n", encoding="utf-8")
+
+    def store_for(self):
+        temp = tempfile.TemporaryDirectory(prefix="keyring-delivery-test-")
+        self.addCleanup(temp.cleanup)
+        path = Path(temp.name) / "synthetic.sqlite3"
+        cfg = self.hub.config
+        cfg.observation_container = cfg.receipt_container = cfg.health_container = self.parent
+        binding = configured_binding(cfg)
+        stores = []
+
+        def reopen():
+            store = Store(path, 100, 100000, 20, binding)
+            stores.append(store)
+            return store
+
+        self.addCleanup(lambda: [store.close() for store in stores])
+        return reopen(), reopen, path, binding
+
+    async def drain_due(self, store, hub=None):
+        """Run the actual sender until its first idle/backoff; no other daemon loops."""
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store, gateway.transport = self.hub.config, store, hub or self.hub
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+
+        async def idle(_seconds):
+            gateway.stop.set()
+
+        gateway._pause = idle
+        async with asyncio.timeout(8):
+            await gateway._outbox_loop()
+        return dict(gateway.counters)
+
+    def queued(self, store):
+        row = store.db.execute("SELECT * FROM outbox").fetchone()
+        return dict(row) if row else None
 
     async def test_https_publish_is_stored_and_read_back_from_real_cse(self):
         rqi, payload = "https-" + uuid.uuid4().hex, {"synthetic": True, "label": "키링", "sequence": 1}
@@ -135,3 +181,112 @@ class MobiusCseTests(unittest.IsolatedAsyncioTestCase):
         await self.ready()
         self.assertEqual((await self.stored(rqi))["con"], payload)
         self.assertEqual(await self.count(), 1)
+
+    async def test_outbox_observation_restart_and_dedup_with_real_cse(self):
+        store, reopen, _path, _binding = self.store_for()
+        payload = observation()
+        self.assertTrue(store.observation(self.parent, payload))
+        self.assertFalse(store.observation(self.parent, payload))
+        original = self.queued(store)
+        store.close()
+        store = reopen()
+        self.assertEqual(self.queued(store), original)
+        counters = await self.drain_due(store)
+        self.assertEqual(counters, {"published": 1})
+        self.assertEqual(store.counts(), (0, 0))
+        self.assertFalse(store.observation(self.parent, payload))
+        self.assertEqual((await self.stored(original["rqi"]))["con"], payload)
+        self.assertEqual(await self.count(), 1)
+        self.delivery_facts = {"queueSurvivedReopen": True, "published": 1, "remainingOutbox": 0,
+                               "duplicateObservationQueued": False, "remoteCinCount": 1, "rqi": original["rqi"]}
+
+    async def test_outbox_receipt_flag_requires_real_mqtt_application_response(self):
+        store, _reopen, _path, _binding = self.store_for()
+        cmd = command()
+        digest = payload_hash(cmd)
+        receipt = dict(version=1, gatewayId="gw-test", deviceId="kr-test", commandId=cmd["commandId"],
+                       payloadHash=digest, status="INDETERMINATE", ackCode="INDETERMINATE",
+                       readback=None, receivedAt=iso_time(), grantRevision=3, ownershipEpoch=2)
+        self.assertEqual(store.accept(cmd, digest), "NEW")
+        store.finish(cmd["commandId"], receipt)
+        store.stage_receipts(self.parent, core_enabled=False)
+        rqi = store.request_id("receipt", cmd["commandId"])
+        self.assertEqual(store.db.execute("SELECT receipt_delivered FROM commands").fetchone()[0], 0)
+        hub = await self.hub_for(mqtt=True)
+        counters = await self.drain_due(store, hub)
+        self.assertEqual(counters, {"published": 1})
+        self.assertEqual(store.counts(), (0, 1))
+        self.assertEqual(store.db.execute("SELECT receipt_delivered FROM commands").fetchone()[0], 1)
+        self.assertEqual((await self.stored(rqi))["con"], receipt)
+        self.assertEqual(await self.count(), 1)
+        self.assertNotIn("POST " + self.parent + " " + rqi, await asyncio.to_thread(self.stack.logs, "proxy"))
+        self.delivery_facts = {"syntheticReceipt": True, "deviceExecuted": False, "receiptDeliveredBefore": 0,
+                               "receiptDeliveredAfter": 1, "remainingOutbox": 0, "remoteCinCount": 1,
+                               "httpsPostFallbackCount": 0, "rqi": rqi}
+
+    async def test_outbox_cse_outage_retains_backoff_across_reopen_then_recovers(self):
+        store, reopen, _path, _binding = self.store_for()
+        payload = observation()
+        store.observation(self.parent, payload)
+        original = self.queued(store)
+        await asyncio.to_thread(self.stack.stop_cse)
+        try:
+            counters = await self.drain_due(store)
+            self.assertEqual(counters, {"publish_retries": 1})
+            failed = self.queued(store)
+            self.assertEqual((failed["rqi"], failed["payload"]), (original["rqi"], original["payload"]))
+            self.assertEqual(failed["attempts"], 1)
+            self.assertGreater(failed["next_attempt"], 0)
+            store.close()
+            store = reopen()
+            self.assertEqual(self.queued(store), failed)
+        finally:
+            await asyncio.to_thread(self.stack.start_cse)
+        await self.ready()
+        # Observe real persisted backoff, without patching clocks or queue deadlines.
+        import time
+        await asyncio.sleep(max(0, failed["next_attempt"] - time.time()) + 0.02)
+        self.assertEqual(await self.drain_due(store), {"published": 1})
+        self.assertIsNone(self.queued(store))
+        self.assertEqual((await self.stored(original["rqi"]))["con"], payload)
+        self.assertEqual(await self.count(), 1)
+        self.delivery_facts = {"failedAttempts": 1, "backoffPreservedAcrossReopen": True,
+                               "remainingOutboxAfterRecovery": 0, "remoteCinCount": 1, "rqi": original["rqi"]}
+
+    async def test_outbox_process_death_after_remote_commit_retries_one_cin(self):
+        store, reopen, path, binding = self.store_for()
+        payload = observation()
+        store.observation(self.parent, payload)
+        original = self.queued(store)
+        store.close()
+        fixture = path.parent / "test-child.json"
+        fixture.write_text(json.dumps({"config": vars(self.hub.config), "database": str(path),
+                                      "binding": binding, "expectedRqi": original["rqi"]}, default=str), encoding="utf-8")
+        child = Path(__file__).with_name("delivery_child.py")
+        result = await asyncio.to_thread(subprocess.run, [sys.executable, str(child), str(fixture)],
+                                         capture_output=True, text=True, encoding="utf-8", timeout=12)
+        self.assertEqual(result.returncode, 73, result.stdout + result.stderr)
+        marker = json.loads(result.stdout.strip())
+        self.assertEqual(marker, {"phase": "remote-confirmed-before-local-confirmation", "rqi": original["rqi"]})
+        self.assertEqual((await self.stored(original["rqi"]))["con"], payload)
+        store = reopen()
+        self.assertEqual(self.queued(store), original)
+        self.assertEqual(await self.drain_due(store), {"published": 1})
+        self.assertIsNone(self.queued(store))
+        self.assertEqual(await self.count(), 1)
+        self.delivery_facts = {"childExitCode": result.returncode, "childMarker": marker,
+                               "unconfirmedLocalRowRecovered": True, "remainingOutbox": 0, "remoteCinCount": 1}
+
+    async def test_outbox_content_conflict_retains_row_and_remote_original(self):
+        store, _reopen, _path, _binding = self.store_for()
+        original, different = {"synthetic": True, "value": 1}, {"synthetic": True, "value": 2}
+        rqi = store.request_id("conflict-test", "synthetic")
+        await self.hub.publish(rqi, self.parent, original)
+        store.enqueue("conflict-test", "synthetic", self.parent, different, critical=True)
+        self.assertEqual(await self.drain_due(store), {"publish_retries": 1})
+        pending = self.queued(store)
+        self.assertEqual((pending["rqi"], pending["attempts"], json.loads(pending["payload"])), (rqi, 1, different))
+        self.assertEqual((await self.stored(rqi))["con"], original)
+        self.assertEqual(await self.count(), 1)
+        self.delivery_facts = {"remoteOriginalPreserved": True, "conflictingOutboxRetained": True,
+                               "attempts": 1, "remoteCinCount": 1, "rqi": rqi}
