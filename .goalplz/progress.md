@@ -1031,3 +1031,12 @@ HTTPS 선택 보류 commit `420c07df34944681f86b763f35765db849bd55ae`를 `origin
 - 부팅 시 응답 없음, 축·인터럽트 읽기 장애와 복구, 배터리 경로 독립성을 다루는 호스트 회귀시험 소스를 추가했다. 빌드·시험·flash는 미실행이다. r18 실물 검증은 남아 있으며 goal은 active/progress다.
 
 가속도계 복구 commit `ecbf579e2b80916739af5c07f3c634966ffcd7be`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `e651bc2..ecbf579`다.
+
+## 2026-11-11 — r18 배터리 잔량 경보
+
+직전 goal turn은 가속도계와 움직임 경로의 복구를 구현한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 브랜치 head는 직전과 같다.
+
+- 펌웨어 `keyring-0.7.12`의 경보 기본값은 잔량 20% 이하에서 설정, 25% 이상에서 해제다. BLE는 `batteryAlert`를 모든 detail과 축약 관측에 보내고 읽기 오류에는 `null`을 보낸다. 켜진 LCD는 낮은 잔량을 `LOW`로 표시한다. Gateway `0.2.32`는 잔량과 경보의 일관성을 검사해 native CSE로 전달한다. [센서 설정](../keyring/firmware/README.md)
+- 경계값과 임시 읽기 오류, 축약 관측, BLE 및 Gateway 관측 계약을 다루는 회귀시험 소스를 추가했다. 빌드·시험·flash·LCD/배터리 실물 검증은 미실행이다. goal은 active/progress다.
+
+배터리 경보 commit `dd71dace86f89367cd6a51b99bbcbc0f5d980e07`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `738bced..dd71dac`다.
