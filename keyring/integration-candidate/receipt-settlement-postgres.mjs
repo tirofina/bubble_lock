@@ -1,3 +1,5 @@
+import { commitReceiptTransaction } from './receipt-postgres-transaction.mjs';
+
 const insert = `
   INSERT INTO privacy_bubble.keyring_command_settlement (gateway_id, command_id, settlement)
   VALUES ($1, $2, $3::jsonb)
@@ -15,28 +17,13 @@ export function createPostgresSettlementCommit(pool) {
       throw new Error('SETTLEMENT_KEY_MISMATCH');
     }
 
-    const client = await pool.connect();
-    let discard = false;
-    try {
-      await client.query('BEGIN ISOLATION LEVEL READ COMMITTED');
-      await client.query('SET LOCAL synchronous_commit = on');
+    return commitReceiptTransaction(pool, async (client) => {
       const inserted = await client.query(insert, [...key, JSON.stringify(candidate)]);
       const created = inserted.rows.length === 1;
       // A concurrent winner can be invisible to the INSERT snapshot. Read it in a new statement.
       const rows = created ? inserted.rows : (await client.query(select, key)).rows;
       if (rows.length !== 1 || !rows[0].settlement) throw new Error('SETTLEMENT_ROW_UNAVAILABLE');
-      const result = await client.query('COMMIT');
-      if (result.command !== 'COMMIT') throw new Error('SETTLEMENT_COMMIT_UNCONFIRMED');
       return { created, record: rows[0].settlement };
-    } catch (error) {
-      try {
-        await client.query('ROLLBACK');
-      } catch {
-        discard = true;
-      }
-      throw error;
-    } finally {
-      client.release(discard);
-    }
+    });
   };
 }

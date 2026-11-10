@@ -48,7 +48,25 @@ const settle = createCommandReceiptSettlement({
 
 경합에서 삽입되지 않은 요청은 `READ COMMITTED` 트랜잭션의 다음 조회로 먼저 커밋된 행을 읽는다. 정산 함수는 기존 해시와 대조해 동일 영수증과 내용 충돌을 구분한다. 커밋 응답을 받지 못하면 같은 키로 다시 처리한다. [PostgreSQL 트랜잭션 격리](https://www.postgresql.org/docs/17/transaction-iso.html#XACT-READ-COMMITTED)
 
-현재는 후보 SQL과 어댑터 소스가 있다. 실제 PostgreSQL에 적용하고 두 연결의 동시 저장·재시작을 확인하는 단계와 CORE의 인증된 ACK 또는 CSE 알림 연결이 남아 있다.
+현재는 후보 SQL과 어댑터 소스가 있다. 실제 PostgreSQL에 적용하고 두 연결의 동시 저장·재시작을 확인하는 단계가 남아 있다.
+
+### Mobius4 알림에서 원본 정산까지
+
+Mobius4의 Gateway 전용 영수증 컨테이너 아래 `ty=23` 구독을 둔다. `enc`에는 `net:[3]`과 `chty:[4]`, `nct`에는 `3`을 지정한다. 알림은 `m2m:sgn.sur`에 구독의 structured ID를, `nev.rep.m2m:uri`에 새 cin의 structured ID를 담는다. [Mobius4 알림 구현](https://github.com/IoTKETI/mobius4/blob/e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8/cse/noti.js)
+
+[수신 함수](receipt-notification-ingress.mjs)는 인증된 전송 계층이 부여한 `verifiedCseKey`로 등록을 찾는다. 구독의 정확한 wire `sur`, oneM2M originator와 RVI를 대조한다. 구독 확인 요청은 응답만 하고, 등록된 컨테이너 바로 아래의 `gw-<해시>` URI만 [PostgreSQL 대기열](receipt-notification-postgres.mjs)에 넣는다. `verifiedCseKey`는 HTTP 본문이나 클라이언트 헤더로 전달하지 않는다. 콜백은 등록된 경로의 POST에서 최대 8 KiB의 JSON 바이트를 넘기고 함수가 반환한 HTTP 상태·oneM2M 헤더로 응답한다.
+
+```js
+const inbox = createPostgresReceiptInbox(pgPool);
+const receive = createReceiptNotificationIngress({ subscriptions, enqueue: inbox.enqueue });
+const drainOne = createReceiptNotificationWorker({ inbox, resolveSettlement });
+```
+
+팀 서버 설정의 `subscriptions`에는 `{ cseKey, originator, rvi, subscriptionRef, receiptContainer }`를 넣는다. `subscriptionRef`는 실제 Mobius4가 보내는 `Mobius/.../settlement` 형식, `receiptContainer`는 조회에 쓸 `/Mobius/...` 형식이다. `resolveSettlement(cseKey)`는 고정된 인증 CSE 조회와 PostgreSQL 정산을 묶은 기존 `settle` 함수를 돌려준다. CORE 작업 루프는 `drainOne()`을 반복 호출하고 `IDLE`일 때 대기한다.
+
+[대기열 테이블](sql/002_receipt_notification_inbox.sql)은 `(cse_key, native_ref)`별로 중복 알림을 합친다. 수신 성공은 대기열 커밋 이후에만 반환한다. [작업자](receipt-notification-worker.mjs)는 제한 시간 동안 한 행을 맡고 원본을 조회해 정산한다. 일시 실패는 간격을 늘려 다시 시도한다. 한도를 넘겼거나 영수증이 검토로 분류되면 운영자가 확인할 상태와 코드가 남는다. 처리 도중 프로세스가 끝나면 기한 뒤 다른 작업자가 같은 URI를 처리할 수 있다.
+
+배치하려면 팀이 콜백의 CSE 인증 경계와 구독을 등록하고 DB 마이그레이션을 적용해야 한다. 사용 중인 Mobius4의 HTTP 알림은 전송 실패를 로그에 남긴다. 대기열에 들어오기 전에 전달에 실패한 영수증은 CSE 원본과 발급 기록을 대조해 보완해야 한다. 이번에는 실제 콜백·DB·재시도 시험을 실행하지 않았다. [Mobius4 HTTP 알림 처리](https://github.com/IoTKETI/mobius4/blob/e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8/cse/noti.js)
 
 ## Handover 뒤 활성 Gateway 검증
 
