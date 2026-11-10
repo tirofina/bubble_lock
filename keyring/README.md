@@ -12,7 +12,7 @@ DOC-REV: 2.0.0
 RUBRIC: R01, R02, R03, R05, R10, R11, R12, R15
 SCOPE: r18 PCB 기반 펌웨어 및 Raspberry Pi Gateway
 INTERFACES: KEYRING contract candidate 0.1.0 / BLE GATT / mTLS HTTPS / MQTT 3.1.1 / oneM2M cin
-TESTS: Gateway0.2.4·Feather0.1.1 실제 Pi/BLE 버튼·화면 유지·90초45개 관측; Pi→Mobius4 HTTPS15개·정상 MQTT5개·broker 중단 HTTPS fallback15개와 readback 전체 일치; CSE 중단 pending5개→복구5개; 전체 daemon·제작 PCB·명령/앱/웹 E2E 미완료
+TESTS: Gateway 0.2.5 기본 63개, 팀 mTLS API·모의 GATT·실제 CSE 명령 통합 2개. Gateway 0.2.4·Feather 0.1.1 실물 Pi 관측 35개 CSE 저장 일치. 실물 명령·제작 PCB·앱/웹 E2E 미완료
 EVIDENCE: evidence/2026-11-10-pi-feather/, evidence/2026-11-10-pi-cse/ — 실물 관측·저장·복구 로그와 hash; 이전 로컬 HTTPS/MQTT/build/queue/POSIX 기록 유지
 DEPENDENCIES: PC-MOBIUS API, AE/container/ACP, broker capability, credential 등록
 ```
@@ -42,7 +42,7 @@ DEPENDENCIES: PC-MOBIUS API, AE/container/ACP, broker capability, credential 등
 
 펌웨어 빌드·flash 및 Gateway 설치·실행 절차는 각 모듈 README에 있다. 실제 장치 ID, passkey, BLE 주소, CA/인증서/개인키 및 중앙 주소를 배포 환경에 설정해야 한다. 예시 설정만으로 현장 연결이 완료되지는 않는다.
 
-현재 상태는 **실제 Feather→Pi→격리 Mobius4 관측 저장·readback 통과 / 전체 daemon·제작 PCB·중앙 명령·앱/웹 통합 미완료**다. Pi에는 Gateway0.2.4, Feather에는 벤치0.1.1을 설치했다. 두 버튼의 화면 전환·해제 후 유지와 실제 Pi의90초45개 관측 수신은 [Pi·Feather 증거](evidence/2026-11-10-pi-feather/README.md)에 기록하고 `686f7b4`로 업로드했다. 현재 연결 장비는 화면·Feather·버튼 두 개이며 센서·출력·배터리 실측은 제작 PCB에서 확인한다.
+실물 Pi에는 Gateway 0.2.4, Feather에는 벤치 0.1.1을 설치했다. 화면의 마지막 버튼 표시 유지, Pi의 90초 45개 관측, Mobius4의 관측 35개 저장을 확인했다. PC에서 실행한 Gateway 0.2.5는 팀 중앙 API·모의 GATT·격리 CSE를 연결해 정상 명령과 권한 회수의 영수증을 확인했다. Pi 전체 daemon과 실물 명령, 제작 PCB·앱/웹 통합이 남아 있다. [Pi·Feather 증거](evidence/2026-11-10-pi-feather/README.md) · [중앙 명령 증거](evidence/2026-11-10-central-dispatch/README.md)
 
 [실제 Pi→CSE 증거](evidence/2026-11-10-pi-cse/)는 HTTPS 관측5개씩3회, CSE 중단 중 pending5개 보존 후 복구·전달5개, 정상 MQTT 전달5개·HTTPS fallback0개, broker 중단 후 MQTT0개·HTTPS fallback15개를 포함한다. 총35개 관측의 readback이 모두 일치했다. 이번 CSE 관측은 모두 `released`이며 `confirm/panic` 버튼 시험은 앞선 Pi·Feather 기록과 구분한다. 새 시험 인증서·관측 container·Pi SQLite를 사용했으며, relay는 기존 Gateway의 관측 검증·outbox·전송기를 실행한다. 전체 daemon의 health·credential·명령 loop와 운영 서비스는 실행하지 않았다.
 

@@ -209,6 +209,11 @@ class Gateway:
             return
         if not self._credentials_active():
             return  # Persisted pending; retry until credential recovery or command expiry.
+        device_id = command["deviceId"]
+        generation = self.ble.command_session(device_id)
+        if generation is None:
+            self.counters["dispatch_deferred_ble"] += 1
+            return
         try:
             response = await self.transport.authorize(command, digest)
         except asyncio.CancelledError:
@@ -224,6 +229,9 @@ class Gateway:
             return
         if not self._credentials_active() or not self._clock_ok():
             return
+        if self.ble.command_session(device_id) != generation:
+            self.counters["dispatch_deferred_ble"] += 1
+            return  # Authorize again on the next ready session.
         # Conservative margin for scheduling/first-fragment latency. Firmware also counts
         # elapsed time from its first fragment through journal persistence before apply.
         remaining_ms = min(30000, int((deadline - utc_now()).total_seconds() * 1000) - 250)
@@ -240,7 +248,7 @@ class Gateway:
             if budget_ms <= 0:
                 self._finish(command, digest, "REJECTED", "EXPIRED", "Deadline elapsed during durable intent recording; BLE not sent")
                 return
-            raw = await asyncio.wait_for(self.ble.execute(command, budget_ms, digest),
+            raw = await asyncio.wait_for(self.ble.execute(command, budget_ms, digest, expected_generation=generation),
                                          timeout=min(budget_ms / 1000, self.config.ble_command_timeout))
             self._validate_device_result(raw, command, digest)
             code = raw["ackCode"]
@@ -264,11 +272,18 @@ class Gateway:
             self._finish(command, digest, "INDETERMINATE", "DEVICE_UNAVAILABLE", f"Dispatch interrupted ({type(exc).__name__}); execution may have occurred")
 
     async def _dispatch_loop(self) -> None:
+        cursor = through = 0
+        batch_size = 16
         while not self.stop.is_set():
-            for item in self.store.pending():
+            if cursor == 0:
+                through = self.store.command_high_water()
+            batch = self.store.pending(batch_size, after_rowid=cursor, through_rowid=through)
+            for item in batch:
                 if self.stop.is_set():
                     return
                 await self._dispatch_one(item["command"], item["digest"])
+            # Finish each bounded pass before picking up newer arrivals.
+            cursor = batch[-1]["rowid"] if len(batch) == batch_size and batch[-1]["rowid"] < through else 0
             await self._pause(1)
 
     async def _outbox_loop(self) -> None:
@@ -327,7 +342,9 @@ class Gateway:
             for task in done:
                 if task is not stop_task:
                     task.result()
-                    raise RuntimeError(f"Worker {task.get_name()} stopped unexpectedly")
+                    # A stop request can wake a worker and the stop waiter together.
+                    if not self.stop.is_set():
+                        raise RuntimeError(f"Worker {task.get_name()} stopped unexpectedly")
         finally:
             self.stop.set()
             for task in tasks:

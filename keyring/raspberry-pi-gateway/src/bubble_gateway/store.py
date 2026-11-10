@@ -76,9 +76,16 @@ class Store:
                             (command["commandId"], digest, canonical(command), iso_time()))
         return "NEW"
 
-    def pending(self, limit: int = 16) -> list[dict]:
-        rows = self.db.execute("SELECT payload,payload_hash FROM commands WHERE status='RECEIVED' ORDER BY received_at LIMIT ?", (limit,))
-        return [{"command": json.loads(row["payload"]), "digest": row["payload_hash"]} for row in rows]
+    def pending(self, limit: int = 16, *, after_rowid: int = 0,
+                through_rowid: int = 2**63 - 1) -> list[dict]:
+        rows = self.db.execute(
+            "SELECT rowid,payload,payload_hash FROM commands WHERE status='RECEIVED' AND rowid>? AND rowid<=? "
+            "ORDER BY rowid LIMIT ?", (after_rowid, through_rowid, limit))
+        return [{"command": json.loads(row["payload"]), "digest": row["payload_hash"], "rowid": row["rowid"]}
+                for row in rows]
+
+    def command_high_water(self) -> int:
+        return self.db.execute("SELECT COALESCE(MAX(rowid),0) FROM commands").fetchone()[0]
 
     def interrupted(self) -> list[dict]:
         rows = self.db.execute("SELECT payload,payload_hash FROM commands WHERE status='DISPATCHING'")

@@ -7,7 +7,7 @@
   "date": "2026-11-10",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "local builds and 58 Gateway tests passed; Feather/Pi authenticated BLE buttons verified; 35 actual observations matched CSE readback across HTTPS normal/outage replay, native MQTT and broker-loss HTTPS fallback; final CSE count35/outbox0 and fixture cleanup verified; full daemon, production principal/central integration and production PCB pending",
+  "verificationStatus": "Gateway 0.2.5 source: 63 unit/regression and 2 full worker tests with team mTLS, fake GATT and disposable CSE passed. Physical Feather/Pi 0.2.4 evidence includes BLE buttons and 35 CSE observation readbacks. Physical command/systemd, CORE settlement, production enrollment and PCB pending.",
   "rubricIds": [
     "R01",
     "R02",
@@ -59,7 +59,8 @@
     "Real SQLite sender/CSE integration: reopened dedup, native receipt confirmation, persisted outage backoff, abrupt child exit after remote commit, conflicting outbox retention",
     "Opt-in unprivileged Linux POSIX state CLI container runner: actual flock/fsync/permissions, committed WAL, ENOSPC, guarded adoption and concurrent-write rejection",
     "Feather0.1.1 latched display and authenticated Pi BLE observations with BlueZ READ-before-NOTIFY handling in Gateway0.2.4",
-    "Opt-in real Feather/Pi relay harness with explicit env isolation, fresh private SQLite outbox, native HTTPS CSE readback and successful-channel MQTT/HTTPS accounting"
+    "Opt-in real Feather/Pi relay harness with explicit env isolation, fresh private SQLite outbox, native HTTPS CSE readback and successful-channel MQTT/HTTPS accounting",
+    "GATT command readiness deferral, current authorization for the same BLE generation, bounded fair pending batches, and graceful Gateway stop"
   ],
   "existingHardware": {
     "status": "source-snapshot-included-unverified",
@@ -95,7 +96,7 @@
     "full app/web/central authorization integration demo",
     "video evidence",
     "production PCB to production-authorized CSE end-to-end acceptance; actual Feather/Pi to isolated CSE HTTPS observation relay verified",
-    "full Gateway daemon execution and real-device command/ACK/readback with authoritative central grants",
+    "Gateway 0.2.5 deployment and full daemon execution on Pi with physical command/ACK/readback and production central grants",
     "Pi-deployed state operator CLI and existing operational database snapshot/adoption"
   ],
   "actualReceipt": "evidence/2026-11-10-pi-cse/receipt.json",
@@ -124,8 +125,8 @@
     "latestCheckpoint": "dfa5129 source/relay/tests/35-readback evidence pushed; cni35/outboxes0 and owned-resource cleanup verified; full system incomplete",
     "lastPushedCommitBeforeThisCheckpoint": "686f7b44b94cf5668df86cc97c2722a18024854b"
   },
-  "gatewayRevision": "0.2.4",
-  "pendingValidationScope": "Full Gateway daemon, production central PKI/principal/AE/ACP/grants and INTEGRATION APIs, production keyring PCB, app/web, power/range/video and release acceptance remain. Feather/Pi BLE and isolated native HTTPS/MQTT CSE observations/readback, CSE outage replay and broker-loss HTTPS fallback are verified.",
+  "gatewayRevision": "0.2.5",
+  "pendingValidationScope": "Pi deployment of 0.2.5 and physical command/systemd, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
     "supersededBy": "2026-11-10 benchCheckpoint for current execution and verification state",
@@ -146,7 +147,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "continued KEYRING development using actual Feather/Pi BLE and isolated PC Mobius4; 35 HTTPS/MQTT/failure-recovery readbacks verified and disposable resources cleaned",
+    "executionRequest": "KEYRING integration with the team mTLS authorization API and real isolated Mobius4 command receipt storage",
     "remainingCompletionDependencies": [
       "central deployment, settlement and recovery activation",
       "purchased JD9853 module initialization",
@@ -155,7 +156,7 @@
     ],
     "latestRemoteCore": "d54a43a",
     "sourceCommit": "dfa5129c2374070f8e3fcdf46fa85eefb2ca9663",
-    "sourceValidation": "58 Gateway tests and actual Feather/Pi BLE verified in pushed checkpoint; new relay tests and 35 real observation CSE readbacks passed locally across HTTPS, CSE outage replay, MQTT and broker-loss HTTPS fallback; full system incomplete",
+    "sourceValidation": "Gateway 0.2.5 basic63 and isolated full worker central dispatch2 passed. Fake GATT boundary. Existing 0.2.4 real Feather/Pi observations retained.",
     "goalComplete": false,
     "pendingInput": null,
     "currentDependencyState": "Pi SSH, authenticated BlueZ enrollment, physical buttons and isolated HTTPS/MQTT CSE observation paths available; production PCB delivery and central production integration remain",
@@ -418,5 +419,13 @@
       "evidencePublicationStatus": "pushed in dfa5129c2374070f8e3fcdf46fa85eefb2ca9663",
       "cleanupReceipt": "evidence/2026-11-10-pi-cse/cleanup.json"
     }
+  },
+  "centralDispatchValidation": {
+    "receipt": "evidence/2026-11-10-central-dispatch/receipt.json",
+    "teamMain": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+    "gatewayUnitPassed": 63,
+    "isolatedFullWorkerCasesPassed": 2,
+    "physicalGatts": false,
+    "coreAckSettlementVerified": false
   }
 }

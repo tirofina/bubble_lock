@@ -142,6 +142,7 @@ class _Peer:
     client: Any = None
     generation: int = 0
     discovered: Any = None
+    command_writable: bool = False
     ready: asyncio.Event = field(default_factory=asyncio.Event)
     seen: asyncio.Event = field(default_factory=asyncio.Event)
     disconnected: asyncio.Event = field(default_factory=asyncio.Event)
@@ -228,6 +229,7 @@ class BleFleet:
         # are still unwinding. A replacement connection gets another generation.
         peer.generation += 1
         peer.ready.clear()
+        peer.command_writable = False
         peer.disconnected.set()
         if peer.pending is not None and not peer.pending.done():
             peer.pending.set_exception(BleUnavailable("BLE disconnected before a matching receipt"))
@@ -266,7 +268,8 @@ class BleFleet:
                 async with client:
                     peer.client = client
                     self._require_session(peer, client, generation, ready=False)
-                    if client.services.get_service(self.service) is None:
+                    service = client.services.get_service(self.service)
+                    if service is None:
                         raise BleProtocolError("required service missing")
                     identity = _object(await client.read_gatt_char(self.identity_uuid), 512)
                     self._require_session(peer, client, generation, ready=False)
@@ -297,6 +300,8 @@ class BleFleet:
                     await client.start_notify(self.observation_uuid,
                         lambda _, data, session=generation: self._observation_fragment(peer, data, session))
                     self._require_session(peer, client, generation, ready=False)
+                    command = service.get_characteristic(self.command_uuid)
+                    peer.command_writable = command is not None and "write" in command.properties
                     peer.ready.set()
                     peer.last_error = None
                     delay = 1.0
@@ -427,7 +432,18 @@ class BleFleet:
             result["timestampSource"] = "gateway-estimated"
         return result
 
-    async def execute(self, command_dict: dict[str, Any], remaining_ms: int, payload_hash: str) -> dict[str, Any]:
+    def command_session(self, device_id: str) -> int | None:
+        peer = self._peers.get(device_id)
+        if peer is None or not peer.command_writable:
+            return None
+        try:
+            self._require_session(peer, peer.client, peer.generation)
+        except BleUnavailable:
+            return None
+        return peer.generation
+
+    async def execute(self, command_dict: dict[str, Any], remaining_ms: int, payload_hash: str,
+                      *, expected_generation: int | None = None) -> dict[str, Any]:
         peer = self._peers.get(command_dict["deviceId"])
         if peer is None:
             raise BleUnavailable("device is not enrolled")
@@ -436,7 +452,8 @@ class BleFleet:
         expires = time.monotonic() + remaining_ms / 1000
         async with asyncio.timeout(min(self.config.ble_command_timeout, remaining_ms / 1000)):
             async with peer.lock:
-                client, generation = peer.client, peer.generation
+                client = peer.client
+                generation = peer.generation if expected_generation is None else expected_generation
                 self._require_session(peer, client, generation)
                 wire = {
                     "version": 1, "type": "command", "deviceId": peer.device_id,

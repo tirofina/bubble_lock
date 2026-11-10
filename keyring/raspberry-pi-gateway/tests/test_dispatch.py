@@ -7,7 +7,7 @@ from collections import Counter
 from datetime import timedelta
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 from bubble_gateway.model import iso_time, payload_hash, utc_now
 from bubble_gateway.service import Gateway
@@ -39,7 +39,8 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
         self.authorization.update(allowed=True, payloadHash=self.digest, expiresAt=self.cmd["deadline"])
         self.gateway.transport = SimpleNamespace(authorize=AsyncMock(return_value=self.authorization),
                                                  publish=AsyncMock())
-        self.gateway.ble = SimpleNamespace(execute=AsyncMock(return_value=device_receipt(self.cmd, self.digest)))
+        self.gateway.ble = SimpleNamespace(command_session=Mock(return_value=1),
+                                           execute=AsyncMock(return_value=device_receipt(self.cmd, self.digest)))
 
     async def dispatch(self):
         await self.gateway._dispatch_one(self.cmd, self.digest)
@@ -64,8 +65,50 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((status, receipt["ackCode"]), ("REJECTED", "EXPIRED"))
         self.gateway.ble.execute.assert_not_awaited()
 
+    async def test_waits_for_command_session_before_authorizing_or_recording_intent(self):
+        self.gateway.ble.command_session.return_value = None
+        self.assertEqual(await self.dispatch(), ("RECEIVED", None))
+        self.gateway.transport.authorize.assert_not_awaited()
+        self.gateway.ble.execute.assert_not_awaited()
+        self.assertEqual(self.store.interrupted(), [])
+        self.assertEqual(self.store.db.execute("SELECT count(*) FROM fences").fetchone()[0], 0)
+        self.gateway.ble.command_session.return_value = 2
+        self.assertEqual((await self.dispatch())[0], "APPLIED")
+        self.gateway.transport.authorize.assert_awaited_once_with(self.cmd, self.digest)
+        self.assertEqual(self.gateway.ble.execute.await_args.kwargs["expected_generation"], 2)
+
+    async def test_session_change_during_authorization_defers_for_fresh_decision(self):
+        self.gateway.ble.command_session.side_effect = [1, 2]
+        self.assertEqual(await self.dispatch(), ("RECEIVED", None))
+        self.gateway.transport.authorize.assert_awaited_once()
+        self.gateway.ble.execute.assert_not_awaited()
+        self.assertEqual(self.store.interrupted(), [])
+
+    async def test_unavailable_batch_does_not_starve_next_device(self):
+        self.store.db.execute("DELETE FROM commands")
+        self.store.db.commit()
+        for index in range(16):
+            pending = command(commandId=f"waiting-{index}", deviceId="offline")
+            self.store.accept(pending, payload_hash(pending))
+        self.store.accept(self.cmd, self.digest)
+        self.gateway.ble.command_session.side_effect = lambda device_id: 1 if device_id == "kr-test" else None
+
+        pauses = 0
+
+        async def pause(_seconds):
+            nonlocal pauses
+            pauses += 1
+            if pauses == 2:
+                self.gateway.stop.set()
+
+        self.gateway._pause = pause
+        await self.gateway._dispatch_loop()
+        self.gateway.transport.authorize.assert_awaited_once_with(self.cmd, self.digest)
+        self.gateway.ble.execute.assert_awaited_once()
+        self.assertEqual(len(self.store.pending()), 16)
+
     async def test_intent_is_durable_before_ble_and_repeat_does_not_replay(self):
-        async def execute(*args):
+        async def execute(*args, **kwargs):
             self.assertEqual(len(self.store.interrupted()), 1)
             return device_receipt(self.cmd, self.digest)
         self.gateway.ble.execute.side_effect = execute

@@ -4,7 +4,7 @@ DOC-REV 2.0.0의 팀 CORE 계약을 연결했다. `BLE_GATT_PROFILE=core-v1`이 
 
 Python 3.11 이상과 Linux BlueZ를 사용하는 KEYRING 현장 daemon이다. BLE 관측을 SQLite outbox에 저장하고 MQTT 또는 HTTPS로 oneM2M contentInstance를 생성한다. 중앙에서 받은 명령은 최신 승인·credential·deadline을 확인한 뒤 BLE로 전달한다.
 
-현재 상태는 **implemented / Feather+Pi BLE 벤치 진행 중**이다. 2026-11-10 실제 Pi Zero 2 W에 Gateway0.2.4를 설치하고 Feather를 인증·bonding한 뒤 90초 연속 수신과 `released/confirm/panic` 버튼 관측을 확인했다. 전체 daemon·CSE 연결·실물 키링 PCB 시험은 미완료다. [Pi 벤치 실행 증거](../evidence/2026-11-10-pi-feather/README.md)와 [단독 BLE 관측 절차](../firmware/feather_probe/README.md#raspberry-pi에서-단독-ble-관측)를 따른다.
+Pi Zero 2 W에는 Gateway 0.2.4를 설치했다. 인증·bonding한 Feather에서 90초 연속 수신과 `released/confirm/panic` 관측을 확인했고, 별도 relay로 실제 관측을 격리 CSE에 저장했다. Gateway 0.2.5 소스는 PC에서 팀 mTLS API·모의 GATT·격리 CSE와 함께 전체 worker를 실행했다. Pi의 0.2.5 배포와 실물 명령 시험이 남아 있다. [Pi 벤치](../evidence/2026-11-10-pi-feather/README.md) · [관측 전송](../evidence/2026-11-10-pi-cse/README.md) · [명령 통합 시험](../evidence/2026-11-10-central-dispatch/README.md)
 
 2026-10-30 Gateway0.2.2에서 재접속·영수증 대기열 경계를 수정했고, 소스·기존 설치 wheel 각각55개 시험이 통과했다(모의47개·실제 로컬 HTTPS/TLS8개)([범위와 재실행](TESTING.md)). 아래 절차는 중앙 인증서·API와 연결할 전체 Gateway 배포용이다. 이번 Feather 벤치에서는 이 daemon과 운영 서비스를 시작하지 않았다.
 
@@ -123,6 +123,7 @@ Gateway0.2.0은 DB를 configured Gateway/Originator/CSE 자원 identity에 연�
 - 실행 직전 중앙 authorize 응답의 ID·claim·hash·grant·epoch·expiry를 확인한다. 중앙의 dispatch/회수 race 처리까지 대신하는 것은 아니다.
 - wall clock이 monotonic clock에 비해 2초를 넘게 점프하면 실행을 막는다. 시계를 동기화한 뒤 Gateway를 재시작해야 한다. `time-sync.target` 순서만으로 시각 정확도가 보장되지는 않는다.
 - timeout·재시작 중 dispatch는 성공으로 간주하지 않으며 같은 동작을 자동 재실행하지 않는다. `TIMEOUT` 또는 `INDETERMINATE` receipt로 중앙에서 정산한다. 이미 만들어진 receipt의 전달 재시도와 장치 동작 재실행은 별개다.
+- 쓰기 응답을 지원하는 GATT 명령 특성이 있는 인증 세션을 기다린다. 그 전에는 명령을 `RECEIVED`에 두고 `dispatch_deferred_ble` 카운터를 올린다. 준비된 세션에서 중앙에 승인 요청을 보내며 응답 중 세션이 바뀌면 새 승인까지 기다린다. 실행 의도를 영속화한 뒤 연결이 끊기면 기존 미확정 처리 규칙을 적용한다.
 
 oneM2M은 같은 `rqi`의 CREATE 성공 응답을 받아야 전송 완료 처리한다. MQTT PUBACK은 완료 근거가 아니다. HTTPS fallback도 동일한 contentInstance 이름을 쓰며, 이름 충돌은 기존 payload가 일치할 때만 완료로 처리한다.
 

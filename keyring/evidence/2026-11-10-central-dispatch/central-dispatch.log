@@ -1,0 +1,9 @@
+{"status": "APPLIED", "ackCode": "APPLIED", "gattWrites": 13, "commandFrames": 1, "cinCount": 1, "readbackMatchesJournal": true, "gracefulStop": true}
+test_central_command_waits_for_gatt_and_stores_one_receipt (__main__.CentralDispatchTests.test_central_command_waits_for_gatt_and_stores_one_receipt) ... ok
+{"status": "REJECTED", "ackCode": "NOT_AUTHORIZED", "gattWrites": 0, "commandFrames": 0, "cinCount": 1, "readbackMatchesJournal": true, "gracefulStop": true}
+test_grant_revoked_after_poll_is_rejected_without_gatt_write (__main__.CentralDispatchTests.test_grant_revoked_after_poll_is_rejected_without_gatt_write) ... ok
+
+----------------------------------------------------------------------
+Ran 2 tests in 15.245s
+
+OK

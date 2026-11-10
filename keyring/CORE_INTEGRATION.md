@@ -20,6 +20,10 @@ Gateway0.2.2는 native 영수증과 CORE ACK를 최초 staging 때 한 트랜잭
 
 `main`의 Node API와 Python Gateway를 새 임시 인증서로 재시험했다. 명령 조회, canonical hash 승인, 잘못된 해시 거절, grant 회수, 범위 위조 및 인증서 미제출 차단 시험 1개가 통과했다. 다음 단계는 실제 Pi의 BLE 관측과 운영 등록·인증서로 전체 경로를 시험하는 것이다. raw CORE MQTT의 PUBACK은 broker 수신 확인으로 기록한다.
 
+Gateway 0.2.5는 팀 main `715ef58`의 실제 mTLS API에서 명령을 받아 정상 worker로 처리한 뒤 격리 Mobius4의 native receipt까지 확인했다. GATT는 모의 장치를 썼다. 연결 전 grant를 회수하면 중앙의 현재 승인 응답으로 거절되고 쓰기가 발생하지 않았다. [명령 통합 증거](evidence/2026-11-10-central-dispatch/README.md)
+
+중앙에서 HTTP로 발급한 명령을 CORE MQTT ACK 정산과 연결하려면 중앙 명령 레코드를 CORE의 ACK 검증에서 조회할 수 있어야 한다. 현재 main의 `GatewayBridge.handleAck`는 `pendingCommands` 또는 `commandPayloads`에서 기대 명령을 읽고, `sendCommand`가 그 맵을 채운다. 이번 시험의 native cin 확인과 CORE의 `ACK_RECORDED`는 별도 단계로 추적한다.
+
 ## 소유권
 
 CORE: oneM2M resource/SDT/namespace, RVI, broker topic/ACL, native bridge/DB.

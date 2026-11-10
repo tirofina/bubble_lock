@@ -1,5 +1,23 @@
 # Gateway 로컬 시험
 
+Gateway 0.2.5 소스에서 기본 63개와 [중앙 명령 통합 2개](../evidence/2026-11-10-central-dispatch/README.md)가 통과했다. 후자는 팀 Node mTLS API, Gateway 전체 worker, 모의 GATT, 실제 격리 Mobius4를 실행한다.
+
+## 중앙 명령 통합 시험
+
+위 증거에 기록된 팀 main SHA에서 `pc-mobius` 전체와 `tests/integration/gateway-server.mjs`를 새 임시 경로에 추출한다. `KEYRING_TEST_CENTRAL_TREE`는 두 경로를 포함한 추출 루트다. 아래 명령은 앞선 [실제 CSE 시험](#별도-실제-cse10개)과 같은 Python 경로, OpenSSL, 캐시된 Docker 이미지를 사용한다. Node도 필요하다.
+
+```powershell
+$env:KEYRING_TEST_CENTRAL_TREE = '<팀 main을 추출한 절대 경로>'
+$env:PYTHONPATH = ('src','tests','integration_tests' | ForEach-Object {
+    Join-Path $PWD ('keyring/raspberry-pi-gateway/' + $_)
+}) -join [IO.Path]::PathSeparator
+python keyring/raspberry-pi-gateway/cse_integration_tests/central_dispatch.py -v
+```
+
+실행마다 새 시험 PKI·중앙 등록·Gateway SQLite와 격리 CSE 자원을 쓴다. 정상 명령의 중복 poll, 연결 전 grant 회수, receipt의 CSE readback, 정상 종료를 검증한다. 하드웨어는 모의 GATT 경계다.
+
+## 이전 시험 기록
+
 2026-11-10 Gateway 0.2.4의 기본 시험은 **58개 통과**다. BlueZ가 READ 값을 구독 callback에도 전달하는 회귀시험을 추가했고, 수정 전 실패와 수정 후 통과를 확인했다. 실제 Pi Zero 2 W에서도 90초 연속 관측과 A0/A1 입력 수신이 통과했다. [Pi 실행 기록](../evidence/2026-11-10-pi-feather/README.md)을 따른다. 아래 이전 날짜의 실행 수와 CSE·POSIX 결과는 당시 기록이다.
 
 DOC-REV2.0.0 · KEYRING / 남호 · 2026-10-30 · Gateway0.2.3.

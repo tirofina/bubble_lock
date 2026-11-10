@@ -34,7 +34,9 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
 
         class Client:
             is_connected = True
-            services = SimpleNamespace(get_service=lambda _: object())
+            services = SimpleNamespace(get_service=lambda _: SimpleNamespace(
+                get_characteristic=lambda uuid: SimpleNamespace(properties=["write"])
+                if uuid == fleet.command_uuid else None))
 
             def __init__(self):
                 self.callbacks = {}
@@ -102,6 +104,32 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(BleUnavailable):
             await pending
         self.assertFalse(self.peer.ready.is_set())
+
+    async def test_observation_ready_without_command_characteristic(self):
+        def observation_only(*args, **kwargs):
+            client = self.factory(*args, **kwargs)
+            client.services = SimpleNamespace(get_service=lambda _: SimpleNamespace(
+                get_characteristic=lambda _uuid: None))
+            return client
+
+        self.peer.discovered = object()
+        self.peer.seen.set()
+        with patch("bubble_gateway.ble.BleakClient", side_effect=observation_only):
+            self.watcher = asyncio.create_task(self.fleet._watch(self.peer))
+            await self.ready(1)
+            self.assertEqual(self.peer.observations.qsize(), 1)
+            self.assertIsNone(self.fleet.command_session("kr-test"))
+
+    async def test_authorized_generation_cannot_write_on_replacement(self):
+        old, current = await self.reconnect()
+        old_generation = self.peer.generation - 2
+        self.assertEqual(self.fleet.command_session("kr-test"), self.peer.generation)
+        current.write_gatt_char = AsyncMock()
+        cmd = command()
+        with self.assertRaises(BleUnavailable):
+            await self.fleet.execute(cmd, 1000, payload_hash(cmd), expected_generation=old_generation)
+        current.write_gatt_char.assert_not_awaited()
+        self.assertTrue(self.peer.ready.is_set())
 
     async def test_scan_completion_preserves_watcher_cancellation(self):
         started = asyncio.Event()

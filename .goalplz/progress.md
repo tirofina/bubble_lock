@@ -352,3 +352,12 @@ Pi Zero 2 W는 USB 데이터 포트에 연결됐고 초록 LED가 계속 켜져 
 현재 goal은 active/progress/미완료다. 실물 관측→임시CSE 전송은 검증됐고, 전체 daemon의 중앙 승인 명령·ACK, pb:binarySwitch/Group·앱/웹, 제작PCB·전력/거리·SD전원손실·운영 principal/AE/ACP/grant·영상/release는 남았다. 이번 relay/증거를 역할 브랜치에 일반 commit/push한다.
 
 업로드 확인: 구현·회귀시험·35개 실물 관측 증거 commit `dfa5129c2374070f8e3fcdf46fa85eefb2ca9663`를 `origin/codex/keyring-namho`에 일반 push했고 exit0 / `686f7b4..dfa5129`를 확인했다. 이 뒤 기록 commit은 업로드 상태만 현행화한다.
+
+## 2026-11-10 — 중앙 명령 연결 대기와 native receipt
+
+이전 goal turn은 실물 관측35개와 역할 브랜치 `615de79`를 확보한 progress다. 이번 DOC-REV2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 HEAD는 같으며 main의 중앙 API와 팀 시험 fixture를 별도 임시 경로로 추출해 사용했다.
+
+- Gateway 0.2.5는 인증된 GATT의 쓰기 가능한 명령 세션까지 `RECEIVED` 상태로 기다린다. 세션 교체 시 승인을 다시 받아야 하며 이전 generation에 대한 승인은 새 연결에 쓰지 않는다. 대기 행이 후속 장치를 막지 않도록 SQLite rowid 범위로 dispatch 배치를 순환한다. 정상 stop의 worker 완료 경합을 수정했다.
+- 기본 63개와 팀 Node mTLS API→전체 Gateway worker→모의 GATT→실제 격리 Mobius4 통합 2개가 통과했다. 승인된 명령은 중복 poll에도 한 번 처리되고 native receipt 1건이 저장됐다. 연결 전에 grant를 회수하면 쓰기 0회, 거절 receipt 1건이다. 두 경우 CSE의 내용을 SQLite와 대조했고 정상 종료했다. [증거](../keyring/evidence/2026-11-10-central-dispatch/README.md)
+- 새 PKI·DB·시험 stack만 사용했다. 종료 후 시험 container/network 0개와 기존 개발 4개 running을 확인했다. 이번에는 Pi에 0.2.5를 설치하거나 Feather에 flash하지 않았다.
+- 전체 goal은 active/progress다. 실물 GATT 명령·출력, 제작 PCB, Pi systemd, CORE의 HTTP 발급 명령과 ACK 결속, 운영 principal/AE/ACP/grant, 앱/웹·전력/거리·영상/release가 남았다.
