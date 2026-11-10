@@ -552,3 +552,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 회귀시험 소스를 추가했다. 새 Gateway 빌드, 시험 실행, scoped 브로커·소비자 재배치, handover readback과 실물 연동은 대기 중이다. 전체 goal은 active/progress다.
 
 구현 commit `935847a4a1fd8260530e804bb5018b31a590ee8c`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `4211af6..935847a`다.
+
+## 2026-11-10 — Scoped 영수증 소비자와 ACL 배치
+
+이전 goal turn은 영수증 처리와 회귀시험 소스를 작성한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- `start-scoped.ps1 -RefreshIngress`를 추가하고 적용했다. 기존 소비자 종료 코드 0을 확인한 뒤 격리 브로커와 소비자만 교체했다. 기존 개발 프로필 4개와 격리 CSE·DB·TLS의 컨테이너 ID는 교체 전과 같았다.
+- ACL과 소비자 모듈 3개의 컨테이너 파일 해시가 작업본과 일치했다. 기존 빈 cursor의 해시도 유지됐다. 새 소비자는 `SCOPED_SUBSCRIBED receipts=1`을 기록했다. [배치 기록](../keyring/evidence/2026-11-10-core-scoped-receipt-rollout/README.md)
+- 이번 실행은 임시 서버 구성 반영까지다. 관측·영수증 발행, ACL 차단, Gateway 빌드, handover readback과 실물 시험은 미실행이다. 전체 goal은 active/progress다.
+
+구현·배치 증거 commit `e615f54752bf1edcd487bc4ccf4a21eb37ea8186`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `98ad8cd..e615f54`다.

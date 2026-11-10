@@ -7,7 +7,7 @@
   "date": "2026-11-10",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Gateway 0.2.14 and scoped CSE application receipts are source-only. The isolated profile has earlier provisioning and subscription evidence. New receipt execution, handover readback and physical acceptance remain.",
+  "verificationStatus": "The scoped receipt consumer and ACL are deployed in the isolated profile and subscription was observed. Gateway 0.2.14 build, live receipt execution, handover readback and physical acceptance remain.",
   "rubricIds": [
     "R01",
     "R02",
@@ -132,15 +132,15 @@
   "firmwareRevision": "keyring-0.7.3",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "935847a4a1fd8260530e804bb5018b31a590ee8c",
+    "sourceCommit": "e615f54752bf1edcd487bc4ccf4a21eb37ea8186",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "935847a4a1fd8260530e804bb5018b31a590ee8c",
-    "lastPushedCommit": "935847a4a1fd8260530e804bb5018b31a590ee8c",
-    "latestCheckpoint": "The scoped Gateway outbox waits for a matching CSE application receipt. The scoped consumer replays receipts from a durable cursor. No new execution.",
-    "lastPushedCommitBeforeThisCheckpoint": "4211af6a1666c0f466c25dc313c8b80729e99eca"
+    "latestLocalSourceCommit": "e615f54752bf1edcd487bc4ccf4a21eb37ea8186",
+    "lastPushedCommit": "e615f54752bf1edcd487bc4ccf4a21eb37ea8186",
+    "latestCheckpoint": "Refreshed only the scoped broker and receipt consumer. Mounted sources and ACL matched, and the updated consumer subscribed.",
+    "lastPushedCommitBeforeThisCheckpoint": "98ad8cd2ba094c616c0d713ccbfa502b705f57b0"
   },
   "gatewayRevision": "0.2.14",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
@@ -164,7 +164,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Bind scoped Gateway outbox settlement to a confirmed and replayable Mobius4 application receipt",
+    "executionRequest": "Deploy the scoped application receipt consumer and ACL to the isolated Mobius4 profile",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -172,11 +172,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "935847a4a1fd8260530e804bb5018b31a590ee8c",
-    "sourceValidation": "Regression source added. No new build, test, analysis or execution. Existing scoped runtime has the prior startup configuration.",
+    "sourceCommit": "e615f54752bf1edcd487bc4ccf4a21eb37ea8186",
+    "sourceValidation": "Local scoped configuration deployment only: mounted bytes matched and receipt consumer subscribed. No telemetry publication, Gateway build or functional tests.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "The scoped receipt source and ACL update are published. Runtime rollout, positive and negative receipt cases, handover readback and actual Pi/r18 command acceptance remain.",
+    "currentDependencyState": "The receipt consumer and ACL are running in the scoped profile. Positive and negative receipt cases, handover readback and actual Pi/r18 command acceptance remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -641,10 +641,19 @@
   "coreScopedApplicationReceipt": {
     "reference": "integration-candidate/README.md",
     "gatewayVersion": "0.2.14",
-    "status": "source-only",
+    "status": "local-consumer-deployed-gateway-source-only",
     "legacyTopicUnchanged": true,
-    "scopedConsumerAndAclRolledOut": false,
+    "scopedConsumerAndAclRolledOut": true,
     "regressionsExecuted": false,
     "sourceCommit": "935847a4a1fd8260530e804bb5018b31a590ee8c"
+  },
+  "coreScopedReceiptRollout": {
+    "evidence": "evidence/2026-11-10-core-scoped-receipt-rollout/README.md",
+    "scopedConsumerSubscribed": true,
+    "mountedFilesMatched": 4,
+    "existingContainerIdsPreserved": 7,
+    "cursorUnchanged": true,
+    "telemetryPublished": false,
+    "sourceCommit": "e615f54752bf1edcd487bc4ccf4a21eb37ea8186"
   }
 }
