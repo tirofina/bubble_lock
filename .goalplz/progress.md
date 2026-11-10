@@ -662,3 +662,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 소스와 배치 절차를 반영했다. npm 설치·빌드·시험·기존 scoped TLS 교체·CSE 자원 생성·Pi/Feather 실행은 미실행이다. 운영 CORE 자동 수신과 중앙 DB 연결, 실제 장치 readback 및 재전송 영수증은 남아 있다. 전체 goal은 active/progress다.
 
 구현 commit `e5ffd4b5a8e899491b65097bcebe72932ea61156`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `3892946..e5ffd4b`다.
+
+## 2026-11-10 — 격리 Mobius4의 명령 영수증 컨테이너 실제 준비
+
+직전 goal turn은 경로와 수동 정산 명령 소스를 원격에 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- `prepare-scoped-command-receipts.ps1`은 기존 격리 프로젝트의 TLS 프록시를 교체하고 `bootstrap.mjs --scoped-command-receipts`로 전용 컨테이너 두 개만 준비한다. 기존 이름을 조회해 재사용하며 전용 준비 로그를 분리한다.
+- 실제 실행에서 격리 Mobius4의 `command-receipts-a`와 `command-receipts-b`가 HTTP 201·RSC 2001로 생성됐고 각각 응답 RQI가 일치했다. 실행 중인 TLS 프록시의 Gateway별 경로 설정을 읽었고 CSE와 PostgreSQL이 같은 인스턴스로 유지된 것을 확인했다. [배치 증거](../keyring/evidence/2026-11-10-scoped-command-receipts/provisioning.json)
+- Gateway 인증서별 교차 접근 시험, 실제 팀 발급·승인 연동과 영수증 정산 명령, Pi/Feather 실행·빌드·회귀시험은 미실행이다. 운영 CORE의 자동 수신과 중앙 DB 연결도 남아 있다. 전체 goal은 active/progress다.
+
+준비 절차와 증거 commit `b8c9177c60741976f1127ef5d12dedfe1807fa29`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `cf6b152..b8c9177`다.
