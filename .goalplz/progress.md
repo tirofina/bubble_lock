@@ -1013,3 +1013,12 @@ HTTPS 재시도 commit `3cc69fd9d14a08988475c26e203899f506c478e2`를 `origin/cod
 - 오래된 관측, 재전송 시각 전의 영수증과 전송 가능한 ACK가 함께 쌓인 경우를 다루는 회귀시험 소스를 추가했다. 이번 빌드·시험·Pi 배포·실물 장애 복구는 미실행이다. goal은 active/progress다.
 
 영수증 우선순위 commit `733c45504018f7a5e878f6cae7e09c3bfc1925f1`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `c4130e0..733c455`다.
+
+## 2026-11-11 — CSE Retry-After 동안 대기열 선택 보류
+
+직전 goal turn은 전송 가능한 명령 영수증에 제한된 우선권을 준 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 브랜치 head는 직전과 같다.
+
+- Gateway `0.2.31`은 CSE의 HTTPS 보류 기간에 HTTPS가 필요한 경로를 SQLite 송신 선택에서 제외한다. 아직 시도하지 않은 행의 retry 횟수와 시각은 그대로다. oneM2M MQTT가 준비돼 있으면 HTTPS 사전 조회가 필요한 고정 영수증 컨테이너만 제외하며, CORE MQTT 경로는 독립적으로 선택한다. [재시도 동작](../keyring/raspberry-pi-gateway/README.md)
+- CSE 보류 시작·종료, 고정 컨테이너 경로, ACK 독립 송신과 대기 행 보존을 다루는 회귀시험 소스를 추가했다. 빌드·시험·Pi 배포·실물 장애 복구는 미실행이다. goal은 active/progress다.
+
+HTTPS 선택 보류 commit `420c07df34944681f86b763f35765db849bd55ae`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `982321c..420c07d`다.
