@@ -1004,3 +1004,12 @@ HTTPS 재시도 commit `3cc69fd9d14a08988475c26e203899f506c478e2`를 `origin/cod
 - 타이머 준비 중 재구독, 오래된 큐 명령, 미전송 조각과 긴 READ의 재사용을 다루는 호스트 회귀시험 소스를 추가했다. 빌드·시험·flash는 미실행이다. r18 실물 검증은 남아 있으며 goal은 active/progress다.
 
 구독 경계 commit `28df2d166565bafdd8ced6d2b9447032aa041e58`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `d56fe0f..28df2d1`이다.
+
+## 2026-11-11 — 장애 복구 시 명령 영수증 우선 전송
+
+직전 goal turn은 r18 명령·영수증을 원래 BLE 구독에 묶은 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 브랜치 head는 직전과 같다.
+
+- Gateway `0.2.30`은 재전송 시각이 된 native 명령 영수증과 CORE ACK를 먼저 시도한다. 네 번 연속 시도 뒤 일반 항목에도 우선권을 주며, SQLite의 원래 요청 ID와 backoff, scoped CORE 장치별 순서를 보존한다. [영수증 대기열 계약](../keyring/raspberry-pi-gateway/RECEIPT_ROUTING.md)
+- 오래된 관측, 재전송 시각 전의 영수증과 전송 가능한 ACK가 함께 쌓인 경우를 다루는 회귀시험 소스를 추가했다. 이번 빌드·시험·Pi 배포·실물 장애 복구는 미실행이다. goal은 active/progress다.
+
+영수증 우선순위 commit `733c45504018f7a5e878f6cae7e09c3bfc1925f1`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `c4130e0..733c455`다.

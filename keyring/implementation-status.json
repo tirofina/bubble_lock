@@ -7,7 +7,7 @@
   "date": "2026-11-11",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Feather 0.2.0 and Pi Gateway 0.2.28 produced two APPLIED GPIO command receipts that matched pinned Mobius4, the Pi database, authenticated CSE callback and isolated PostgreSQL settlement. Gateway 0.2.29 command readiness and r18 firmware 0.7.10 subscription fencing are source-only. Visual LED confirmation, r18 hardware, physical power characterization, and offline journal history comparison remain unverified.",
+  "verificationStatus": "Feather 0.2.0 and Pi Gateway 0.2.28 produced two APPLIED GPIO command receipts that matched pinned Mobius4, the Pi database, authenticated CSE callback and isolated PostgreSQL settlement. Gateway 0.2.30 receipt priority and r18 firmware 0.7.10 subscription fencing are source-only. Visual LED confirmation, r18 hardware, physical power characterization, and offline journal history comparison remain unverified.",
   "rubricIds": [
     "R01",
     "R02",
@@ -33,6 +33,7 @@
     "r18 NVS journal tail count checkpoint, legacy adoption, and metadata-only recovery of an interrupted PREPARED append",
     "offline comparison of a trusted older device archive and a later capture for journal continuity",
     "Raspberry Pi BLE fleet and SQLite durable outbox",
+    "bounded priority for due native command receipts and CORE ACKs over the observation backlog",
     "bounded staging of unstaged command receipts across persisted retry backlogs",
     "mTLS current authorization, credential status and deadline gating",
     "absolute monotonic BLE deadline and per-fragment credential revision and clock checks",
@@ -159,17 +160,17 @@
   "firmwareRevision": "keyring-0.7.10",
   "benchFirmwareRevision": "feather-probe-0.2.0",
   "publication": {
-    "sourceCommit": "28df2d166565bafdd8ced6d2b9447032aa041e58",
+    "sourceCommit": "733c45504018f7a5e878f6cae7e09c3bfc1925f1",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "28df2d166565bafdd8ced6d2b9447032aa041e58",
-    "lastPushedCommit": "28df2d166565bafdd8ced6d2b9447032aa041e58",
-    "latestCheckpoint": "Fence r18 queued commands and BLE receipts when the receipt subscription is replaced within the same authenticated link.",
-    "lastPushedCommitBeforeThisCheckpoint": "d56fe0fa7fa356d318f655673dd3bfc98f72108d"
+    "latestLocalSourceCommit": "733c45504018f7a5e878f6cae7e09c3bfc1925f1",
+    "lastPushedCommit": "733c45504018f7a5e878f6cae7e09c3bfc1925f1",
+    "latestCheckpoint": "Prioritize due native command receipts and CORE ACKs during replay with a bounded burst for ordinary traffic.",
+    "lastPushedCommitBeforeThisCheckpoint": "c4130e01402228eb00dd4b3f1c1df736b46a3566"
   },
-  "gatewayRevision": "0.2.29",
+  "gatewayRevision": "0.2.30",
   "pendingValidationScope": "Visual Feather LED observation, r18 physical commands and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE MQTT ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
@@ -191,7 +192,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Prevent queued r18 commands and buffered command receipts from surviving replacement of the original receipt subscription",
+    "executionRequest": "Keep due command receipt and ACK delivery from falling behind an older observation backlog after a transport outage",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -199,11 +200,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "28df2d166565bafdd8ced6d2b9447032aa041e58",
-    "sourceValidation": "Read the current plan, remote team heads, r18 BLE callbacks, command queue and motor gate. Firmware fencing and host regression source only. No build, test execution, flash or physical verification was performed.",
+    "sourceCommit": "733c45504018f7a5e878f6cae7e09c3bfc1925f1",
+    "sourceValidation": "Read the current plan, remote team heads, SQLite staging, due selection and sender loop. Bounded receipt priority and regression source only. No build, test execution, deployment or physical verification was performed.",
     "goalComplete": false,
     "pendingInput": null,
-    "currentDependencyState": "The Feather 0.2.0 and Pi Gateway 0.2.28 command path was verified through isolated Mobius4 and PostgreSQL. Gateway 0.2.29 readiness regression and physical retest, visual LED observation, r18 0.7.10 build, BLE resubscription and long-read tests, NVS fault verification, archive comparison execution, authoritative production CSE routes, approved journal reclaim and automatic external rollback detection contracts, production CORE, and r18 bring-up with physical power/range/wake capture and an external supply measurement remain.",
+    "currentDependencyState": "The Feather 0.2.0 and Pi Gateway 0.2.28 command path was verified through isolated Mobius4 and PostgreSQL. Gateway 0.2.30 receipt priority and readiness validation, visual LED observation, r18 0.7.10 build, BLE resubscription and long-read tests, NVS fault verification, archive comparison execution, authoritative production CSE routes, approved journal reclaim and automatic external rollback detection contracts, production CORE, and r18 bring-up with physical power/range/wake capture and an external supply measurement remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -1075,5 +1076,14 @@
     "firmwareBuilt": false,
     "physicalBleExecuted": false,
     "sourceCommit": "28df2d166565bafdd8ced6d2b9447032aa041e58"
+  },
+  "gatewayReceiptOutboxPriority": {
+    "reference": "raspberry-pi-gateway/RECEIPT_ROUTING.md",
+    "status": "source-only",
+    "gatewayVersion": "0.2.30",
+    "receiptBurstAttempts": 4,
+    "regressionsExecuted": false,
+    "liveOutageReplayExecuted": false,
+    "sourceCommit": "733c45504018f7a5e878f6cae7e09c3bfc1925f1"
   }
 }
