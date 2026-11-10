@@ -2,7 +2,7 @@
 
 ROLE: KEYRING · DOC-REV: 2.0.0 · 구현 계약: 0.1.0 · 상태: implemented, unverified
 
-ESP32-S3-WROOM-1-N16R8 / r18-hand-solder 보드를 대상으로 작성한 소스다. keyring-0.7.5는 BLE 관측·버튼·배터리·가속도와 진동 명령/receipt, 선택형 ST7789·JD9853 상태 화면·스피커 cue·SD receipt 복사를 포함한다. 축약된 health 프레임에도 wake 원인과 핀 마스크를 담는다. [저전력·wake](POWER_WAKE.md), [전원 계측](POWER_MONITOR.md), [프로필과 빌드 기록](BUILD_PROFILES.md)을 함께 본다. 제작 PCB에서의 flash·실물 실행은 수용 시험 단계다.
+ESP32-S3-WROOM-1-N16R8 / r18-hand-solder 보드를 대상으로 작성한 소스다. keyring-0.7.6은 BLE 관측·버튼·배터리·가속도와 진동 명령/receipt, 선택형 ST7789·JD9853 상태 화면·스피커 cue·SD receipt 복사를 포함한다. 축약된 health 프레임에도 wake 원인과 핀 마스크를 담는다. [저전력·wake](POWER_WAKE.md), [전원 계측](POWER_MONITOR.md), [프로필과 빌드 기록](BUILD_PROFILES.md)을 함께 본다. 제작 PCB에서의 flash·실물 실행은 수용 시험 단계다.
 
 배송 대기 중에는 Adafruit Feather ESP32 V2와 1.54인치 ST7789에서 화면·버튼·BLE 관측을 [별도 벤치 스케치](feather_probe/README.md)로 시험한다.
 
@@ -37,6 +37,8 @@ keyring-0.7.2는 원본 명령에 중복 키, 이스케이프된 NUL, JSON 객�
 Observation은 LF를 포함해 512byte 이하일 때만 게시한다. 초과하면 선택적인 accelerationG·voltage·중복 상태 설명을 먼저 생략하고 truncated=true를 표시한다. 그래도 초과하면 sensorValues를 `{"status":"payload_too_large"}`로 바꾼 최소 관측을 사용하며 실제 battery는 유지한다. 최소 관측도 한도를 넘거나 JSON 저장 공간이 부족하면 게시하지 않는다. Receipt는 NOTIFY의 전체 프레임을 조립해야 한다. 512byte를 넘는 receipt의 READ 값은 빈 값이다.
 
 암호화된 Secure Connections + MITM + bonding을 요구한다. 읽기·쓰기와 알림 구독 descriptor에도 MITM 접근 권한을 설정한다. 인증 완료되지 않은 연결에서 명령을 처리하지 않는다. passkey를 가진 등록 Gateway를 신뢰하는 구조이며 장치가 중앙 OIDC/grant를 독립 검증하는 구조는 아니다.
+
+keyring-0.7.6은 현재 인증된 연결 ID에서 온 명령·저널 쓰기와 구독만 처리한다. 명령 쓰기에는 영수증 알림 구독과 write-with-response가 필요하다. 관측·영수증 알림은 해당 연결 ID로만 전송하고, 전송 API가 오류를 반환하면 같은 조각부터 다시 보낸다. 현재 피어가 끊기면 이전 영수증 READ 값·알림과 부분 명령을 정리하고 새 관측을 준비한 뒤 광고를 재개한다. 다른 연결의 종료는 현재 세션과 모터에 영향을 주지 않는다. [호스트 회귀시험 소스](tests/run_motor_gate_host.py)
 
 `desiredState.state=true`는 진동 GPIO를 켠다. keyring-0.7.1은 **1000ms와 명령에 남은 시간 중 작은 값**으로 ESP 차단 타이머를 먼저 시작한다. AUX 준비 전후 기한·인증 세션·전원 이상을 확인한 뒤 GPIO를 켠다. BLE 종료 콜백은 GPIO를 즉시 내리고, 타이머 만료 콜백은 GPIO와 AUX의 경보 소유권을 정리한다. ESP timer의 task 콜백에는 지연이 생길 수 있어 실물에서 차단 시간과 출력 파형을 측정해야 한다. [Espressif 타이머 동작](https://docs.espressif.com/projects/esp-idf/en/v4.4.8/esp32s3/api-reference/system/esp_timer.html)
 

@@ -2,6 +2,7 @@
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <functional>
 #include <initializer_list>
 #include <string>
@@ -58,18 +59,85 @@ bool alert(bool enabled) {
 }
 
 #include "motor_gate_subject.inc"
-struct BLEServer {};
+
+constexpr unsigned JournalSlots = 32, MaxFrame = 4096;
+using esp_gatt_if_t = uint8_t;
+constexpr esp_gatt_if_t ESP_GATT_IF_NONE = 255;
+enum esp_gatts_cb_event_t { ESP_GATTS_WRITE_EVT };
+struct esp_ble_gatts_cb_param_t {
+    struct { uint16_t conn_id; } disconnect;
+    struct {
+        uint16_t conn_id, handle, offset, len;
+        const uint8_t *value;
+        bool is_prep, need_rsp;
+    } write;
+};
+struct BLEServer { uint16_t getGattsIf() const { return 4; } };
+struct BLECharacteristic {
+    uint16_t handle = 0;
+    std::string readValue;
+    uint16_t getHandle() const { return handle; }
+    void setValue(const std::string &value) { readValue = value; }
+};
+struct BLE2902 {
+    uint16_t handle = 0;
+    uint16_t getHandle() const { return handle; }
+};
+struct Frame { char bytes[MaxFrame + 1]; uint64_t firstAt, completedAt; uint32_t generation; };
+struct JournalRequest { uint32_t id, generation; uint8_t operation, index, part; };
+BLEServer fixtureServer, *server = &fixtureServer;
+BLECharacteristic fixtureCommand, fixtureJournal, fixtureReceipt;
+BLECharacteristic *commandChar = &fixtureCommand, *journalChar = &fixtureJournal;
+BLE2902 fixtureCccd;
+uint16_t peerConnection = 7;
+bool provisioned = true;
+Frame queuedCommand;
+unsigned commandCount = 0, journalCount = 0;
+int commandQueue = 1, journalRequests = 2, notifyResult = ESP_OK;
+std::vector<std::string> notifications;
+uint64_t uptime() { return nowUs / 1000; }
+void xQueueSend(int queue, const void *value, int) {
+    if (queue == commandQueue) {
+        queuedCommand = *static_cast<const Frame *>(value);
+        ++commandCount;
+    } else {
+        assert(queue == journalRequests);
+        ++journalCount;
+    }
+}
+int esp_ble_gatts_send_indicate(esp_gatt_if_t interfaceId, uint16_t connection, uint16_t attribute,
+                               uint16_t length, uint8_t *bytes, bool confirm) {
+    assert(interfaceId == 4 && connection == peerConnection && attribute == fixtureReceipt.handle && !confirm);
+    notifications.emplace_back(reinterpret_cast<const char *>(bytes), length);
+    return notifyResult;
+}
+#include "motor_session_subject.inc"
+
 struct BleCallbacks {
-    virtual void onDisconnect(BLEServer *) = 0;
+    virtual void onDisconnect(BLEServer *, esp_ble_gatts_cb_param_t *) = 0;
 };
 struct ServerCallbacks : BleCallbacks {
 #include "motor_disconnect_subject.inc"
 };
 
+void disconnect(uint16_t connection) {
+    esp_ble_gatts_cb_param_t event{};
+    event.disconnect.conn_id = connection;
+    ServerCallbacks{}.onDisconnect(nullptr, &event);
+}
+
+void write(uint16_t connection, uint16_t handle, const std::string &bytes, bool prepared = false) {
+    esp_ble_gatts_cb_param_t event{};
+    event.write = {connection, handle, 0, static_cast<uint16_t>(bytes.size()),
+                   reinterpret_cast<const uint8_t *>(bytes.data()), prepared, true};
+    onGattsEvent(ESP_GATTS_WRITE_EVT, 4, &event);
+}
+
 void reset() {
     connected = authenticated = faultHealthy = true;
     disconnected = motorTimerFired = motorTimerCleaning = padHigh = railOn = observationDirty = linkMux = false;
     connectionGeneration = 7;
+    peerConnection = 7;
     nowUs = 100000;
     motorStopAt = timerDelay = 0;
     motorTimer = &timerHandle;
@@ -108,11 +176,13 @@ int main() {
     std::puts("PASS elapsed deadline blocks GPIO before or after rail preparation");
 
     reset();
-    duringTimerArm = [] { ServerCallbacks{}.onDisconnect(nullptr); };
+    duringTimerArm = [] { disconnect(peerConnection); };
     assert(!startMotor(120000, 7) && disconnected && connectionGeneration == 8 && !padHigh && !railOn);
     reset();
     assert(startMotor(120000, 7) && padHigh);
-    ServerCallbacks{}.onDisconnect(nullptr);
+    disconnect(8);
+    assert(padHigh && connected && authenticated && connectionGeneration == 7 && !disconnected);
+    disconnect(peerConnection);
     assert(!padHigh && disconnected);
     std::puts("PASS disconnect blocks stale starts and turns an active GPIO off immediately");
 
@@ -130,4 +200,51 @@ int main() {
     };
     assert(!startMotor(120000, 7) && !padHigh && !railOn);
     std::puts("PASS expiration fences reactivation during callback cleanup");
+
+    reset();
+    fixtureCommand.handle = 1; fixtureJournal.handle = 2; fixtureReceipt.handle = 3; fixtureCccd.handle = 4;
+    receiptTx.characteristic = &fixtureReceipt;
+    receiptTx.cccd = &fixtureCccd;
+    receiptTx.clear();
+    const std::string enable("\1\0", 2);
+    write(8, fixtureCccd.handle, enable);
+    write(peerConnection, fixtureCommand.handle, "before subscribe\n");
+    assert(!receiptTx.subscribed && commandCount == 0);
+    write(peerConnection, fixtureCccd.handle, enable);
+    write(peerConnection, fixtureCommand.handle, "prepared\n", true);
+    write(peerConnection, fixtureCommand.handle, "good");
+    write(8, fixtureCommand.handle, "foreign\n");
+    write(8, fixtureJournal.handle, std::string("\1\1\0\0\0\0\0\0", 8));
+    write(peerConnection, fixtureCommand.handle, " frame\n");
+    assert(commandCount == 1 && journalCount == 0 && queuedCommand.generation == 7 &&
+           std::strcmp(queuedCommand.bytes, "good frame") == 0);
+
+    receiptTx.queue(std::string(22, 'a'));
+    notifyResult = 1;
+    receiptTx.tick(100);
+    assert(notifications.size() == 1 && receiptTx.offset == 0);
+    notifyResult = ESP_OK;
+    receiptTx.tick(115);
+    assert(notifications.back() == notifications.front() && receiptTx.offset == 20);
+    write(peerConnection, fixtureCommand.handle, "before re-subscribe");
+    write(peerConnection, fixtureCccd.handle, std::string(2, '\0'));
+    write(peerConnection, fixtureCccd.handle, enable);
+    write(peerConnection, fixtureCommand.handle, "after\n");
+    assert(commandCount == 2 && std::strcmp(queuedCommand.bytes, "after") == 0);
+    receiptTx.tick(130);
+    assert(notifications.back() == notifications.front() && receiptTx.offset == 20);
+    receiptTx.clear();
+    assert(fixtureReceipt.readValue.empty());
+
+    write(peerConnection, fixtureCommand.handle, "stale");
+    disconnect(peerConnection);
+    connected = authenticated = true;
+    disconnected = false;
+    ++connectionGeneration;
+    peerConnection = 9;
+    write(peerConnection, fixtureCccd.handle, enable);
+    write(peerConnection, fixtureCommand.handle, "fresh\n");
+    assert(commandCount == 3 && queuedCommand.generation == 9 &&
+           std::strcmp(queuedCommand.bytes, "fresh") == 0);
+    std::puts("PASS command and receipt streams stay bound to the current subscribed connection");
 }

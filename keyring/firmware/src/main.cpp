@@ -38,7 +38,7 @@ extern "C" esp_err_t __wrap_nvs_flash_init() {
 }
 
 namespace {
-constexpr char FirmwareRevision[] = "keyring-0.7.5";
+constexpr char FirmwareRevision[] = "keyring-0.7.6";
 #if defined(KEYRING_LEGACY_GATT) && KEYRING_LEGACY_GATT
 constexpr char ServiceUuid[] = "8b8f0001-8e7a-4f36-a8c2-1c9b5d620001";
 constexpr char IdentityUuid[] = "8b8f0002-8e7a-4f36-a8c2-1c9b5d620001";
@@ -66,6 +66,7 @@ char deviceId[65] = {}, bootId[33] = {};
 BLEServer *server = nullptr;
 BLECharacteristic *identityChar = nullptr, *observationChar = nullptr, *receiptChar = nullptr;
 BLECharacteristic *journalChar = nullptr;
+BLECharacteristic *commandChar = nullptr;
 QueueHandle_t commandQueue = nullptr;
 QueueHandle_t journalRequests = nullptr;
 nvs_handle_t journalNvs = 0;
@@ -317,11 +318,17 @@ std::string jsonText(JsonDocument &doc) {
 }
 struct Tx {
   BLECharacteristic *characteristic = nullptr;
+  BLE2902 *cccd = nullptr;
+  bool subscribed = false; // Protected by linkMux.
+  uint32_t subscription = 0, activeSubscription = 0;
   std::string pending, active, full;
   std::string sections[3];
   uint64_t sectionOrder[3] = {}, enqueueOrder = 0;
   size_t offset = 0;
   uint64_t nextAt = 0;
+  void setSubscribed(bool enabled) { // Caller holds linkMux.
+    if (subscribed != enabled) { subscribed = enabled; ++subscription; }
+  }
   void restoreReadValue() {
     // ATT attribute values are at most 512 bytes. Oversized receipt frames remain
     // complete on NOTIFY; an empty READ means the peer must await those fragments.
@@ -334,11 +341,18 @@ struct Tx {
     full = frame; restoreReadValue();
   }
   void clear() {
-    pending.clear(); active.clear(); offset = 0;
+    pending.clear(); active.clear(); full.clear(); offset = 0; nextAt = 0;
     for (unsigned i = 0; i < 3; ++i) { sections[i].clear(); sectionOrder[i] = 0; }
+    restoreReadValue();
   }
   void tick(uint64_t now) {
-    if (!connected || !authenticated || now < nextAt) return;
+    portENTER_CRITICAL(&linkMux);
+    const bool ready = connected && authenticated && subscribed;
+    const uint16_t connection = peerConnection;
+    const uint32_t currentSubscription = subscription;
+    portEXIT_CRITICAL(&linkMux);
+    if (activeSubscription != currentSubscription) { offset = 0; activeSubscription = currentSubscription; }
+    if (!ready || now < nextAt) return;
     if (active.empty()) {
       active.swap(pending); offset = 0;
       if (active.empty()) {
@@ -351,12 +365,14 @@ struct Tx {
       }
     }
     if (active.empty()) return;
-    size_t count = min(static_cast<size_t>(20), active.size() - offset);
-    characteristic->setValue(reinterpret_cast<uint8_t *>(&active[offset]), count);
-    characteristic->notify();
-    restoreReadValue();
-    offset += count; nextAt = now + 15;
-    if (offset == active.size()) { active.clear(); restoreReadValue(); }
+    const auto count = static_cast<uint16_t>(min(static_cast<size_t>(20), active.size() - offset));
+    const auto interfaceId = static_cast<esp_gatt_if_t>(server->getGattsIf());
+    nextAt = now + 15;
+    if (interfaceId == ESP_GATT_IF_NONE ||
+        esp_ble_gatts_send_indicate(interfaceId, connection, characteristic->getHandle(), count,
+                                  reinterpret_cast<uint8_t *>(&active[offset]), false) != ESP_OK) return;
+    offset += count;
+    if (offset == active.size()) active.clear();
   }
 };
 Tx observationTx, receiptTx;
@@ -603,59 +619,76 @@ void processJournalRequest(const JournalRequest &request) {
   journalChar->setValue(frame);
 }
 
-class JournalCallbacks : public BLECharacteristicCallbacks {
-  void onWrite(BLECharacteristic *characteristic) override {
-    if (!connected || !authenticated || !provisioned) return;
-    const std::string bytes = characteristic->getValue();
-    if (bytes.size() != 8 || static_cast<uint8_t>(bytes[0]) != 1) return;
-    const uint8_t op = bytes[1], index = bytes[6], part = bytes[7];
-    if (op < 1 || op > 3 || part > 1 || index >= JournalSlots ||
-        (op != 2 && (index || part))) return;
-    JournalRequest request = {};
-    request.operation = op; request.index = index; request.part = part;
-    request.generation = connectionGeneration;
-    for (unsigned byte = 0; byte < 4; ++byte) request.id |= static_cast<uint32_t>(static_cast<uint8_t>(bytes[2 + byte])) << (byte * 8);
-    // Selector writes affect only volatile capture state; never NVS or an output.
-    xQueueSend(journalRequests, &request, 0);
-  }
-};
+void receiveJournalSelector(const uint8_t *bytes, size_t size, uint32_t generation) {
+  if (size != 8 || bytes[0] != 1) return;
+  const uint8_t op = bytes[1], index = bytes[6], part = bytes[7];
+  if (op < 1 || op > 3 || part > 1 || index >= JournalSlots ||
+      (op != 2 && (index || part))) return;
+  JournalRequest request = {};
+  request.operation = op; request.index = index; request.part = part;
+  request.generation = generation;
+  for (unsigned byte = 0; byte < 4; ++byte) request.id |= static_cast<uint32_t>(bytes[2 + byte]) << (byte * 8);
+  // Selector writes affect only volatile capture state; never NVS or an output.
+  xQueueSend(journalRequests, &request, 0);
+}
 
-class CommandCallbacks : public BLECharacteristicCallbacks {
-  std::string partial;
+class CommandInput {
   Frame assembled = {}; // BLE task stack is too small for a 4KiB automatic frame.
-  uint64_t started = 0, last = 0;
-  uint32_t generation = 0;
+  uint64_t last = 0;
+  size_t used = 0;
+  uint32_t subscription = 0;
   bool discarding = false;
-  void onWrite(BLECharacteristic *characteristic) override {
-    if (!connected || !authenticated || !provisioned) { partial.clear(); return; }
-    uint64_t now = uptime();
-    if (generation != connectionGeneration || now - last > 5000) {
-      partial.clear(); discarding = false; generation = connectionGeneration;
+ public:
+  void receive(const uint8_t *bytes, size_t size, uint32_t generation, uint32_t currentSubscription) {
+    const uint64_t now = uptime();
+    if (assembled.generation != generation || subscription != currentSubscription || now - last > 5000) {
+      used = 0; discarding = false; assembled.generation = generation; subscription = currentSubscription;
     }
-    std::string chunk = characteristic->getValue();
-    if (chunk.size() > 20) { partial.clear(); discarding = true; return; }
     last = now;
-    for (char value : chunk) {
+    if (!size || size > 20) { used = 0; discarding = true; return; }
+    for (size_t index = 0; index < size; ++index) {
+      const uint8_t value = bytes[index];
       if (value == '\n') {
-        if (!discarding && !partial.empty()) {
-          memcpy(assembled.bytes, partial.data(), partial.size()); assembled.bytes[partial.size()] = '\0';
-          assembled.firstAt = started; assembled.completedAt = now; assembled.generation = generation;
+        if (!discarding && used) {
+          assembled.bytes[used] = '\0'; assembled.completedAt = now;
           // Full queue is fail-closed; sender observes a timeout and may retry the same ID.
           xQueueSend(commandQueue, &assembled, 0);
         }
-        partial.clear(); discarding = false; continue;
+        used = 0; discarding = false; continue;
       }
       if (discarding) continue;
-      if (partial.empty()) started = now;
-      if (value == '\0' || partial.size() >= MaxFrame) { partial.clear(); discarding = true; continue; }
-      partial.push_back(value);
+      if (!used) assembled.firstAt = now;
+      if (value == '\0' || used >= MaxFrame) { used = 0; discarding = true; continue; }
+      assembled.bytes[used++] = static_cast<char>(value);
     }
   }
-};
+} commandInput;
+
+void onGattsEvent(esp_gatts_cb_event_t event, esp_gatt_if_t, esp_ble_gatts_cb_param_t *param) {
+  if (event != ESP_GATTS_WRITE_EVT || param->write.is_prep || param->write.offset != 0) return;
+  const auto &write = param->write;
+  portENTER_CRITICAL(&linkMux);
+  const bool accepted = provisioned && connected && authenticated && peerConnection == write.conn_id;
+  if (accepted) {
+    const bool notify = write.len == 2 && write.value[0] == 1 && write.value[1] == 0;
+    if (observationTx.cccd && write.handle == observationTx.cccd->getHandle()) observationTx.setSubscribed(notify);
+    if (receiptTx.cccd && write.handle == receiptTx.cccd->getHandle()) receiptTx.setSubscribed(notify);
+  }
+  const uint32_t generation = connectionGeneration;
+  const bool receiptSubscribed = receiptTx.subscribed;
+  const uint32_t subscription = receiptTx.subscription;
+  portEXIT_CRITICAL(&linkMux);
+  if (!accepted || !write.need_rsp) return;
+  if (commandChar && write.handle == commandChar->getHandle() && receiptSubscribed)
+    commandInput.receive(write.value, write.len, generation, subscription);
+  if (journalChar && write.handle == journalChar->getHandle())
+    receiveJournalSelector(write.value, write.len, generation);
+}
+
 class ServerCallbacks : public BLEServerCallbacks {
   void onConnect(BLEServer *instance, esp_ble_gatts_cb_param_t *param) override {
     portENTER_CRITICAL(&linkMux);
-    const bool reject = connected || sleepPreparing;
+    const bool reject = connected || disconnected || sleepPreparing;
     if (reject) {
       portEXIT_CRITICAL(&linkMux);
       instance->disconnect(param->connect.conn_id); return;
@@ -663,14 +696,19 @@ class ServerCallbacks : public BLEServerCallbacks {
     connected = true; authenticated = false; ++connectionGeneration;
     peerConnection = param->connect.conn_id; memcpy(peerAddress, param->connect.remote_bda, 6);
     portEXIT_CRITICAL(&linkMux);
-    esp_ble_set_encryption(param->connect.remote_bda, ESP_BLE_SEC_ENCRYPT_MITM);
+    if (esp_ble_set_encryption(param->connect.remote_bda, ESP_BLE_SEC_ENCRYPT_MITM) != ESP_OK)
+      instance->disconnect(param->connect.conn_id);
   }
-  void onDisconnect(BLEServer *) override {
+  void onDisconnect(BLEServer *, esp_ble_gatts_cb_param_t *param) override {
     portENTER_CRITICAL(&linkMux);
-    connected = false; authenticated = false; disconnected = true; ++connectionGeneration;
-    gpio_set_level(static_cast<gpio_num_t>(board::Motor), 0);
+    const bool current = connected && peerConnection == param->disconnect.conn_id;
+    if (current) {
+      connected = false; authenticated = false; disconnected = true; ++connectionGeneration;
+      observationTx.setSubscribed(false); receiptTx.setSubscribed(false);
+      gpio_set_level(static_cast<gpio_num_t>(board::Motor), 0);
+    }
     portEXIT_CRITICAL(&linkMux);
-    audio.stop();
+    if (current) audio.stop();
   }
 };
 class SecurityCallbacks : public BLESecurityCallbacks {
@@ -681,12 +719,18 @@ class SecurityCallbacks : public BLESecurityCallbacks {
   void onAuthenticationComplete(esp_ble_auth_cmpl_t result) override {
     bool trusted = result.success && (result.auth_mode & ESP_LE_AUTH_REQ_SC_MITM_BOND) == ESP_LE_AUTH_REQ_SC_MITM_BOND;
     portENTER_CRITICAL(&linkMux);
-    if (connected && memcmp(peerAddress, result.bd_addr, 6) == 0) authenticated = trusted;
+    const bool current = connected && memcmp(peerAddress, result.bd_addr, sizeof(peerAddress)) == 0;
+    const uint16_t connection = peerConnection;
+    if (current) {
+      authenticated = trusted;
+      if (!trusted) gpio_set_level(static_cast<gpio_num_t>(board::Motor), 0);
+    }
     portEXIT_CRITICAL(&linkMux);
-    if (!trusted && server) server->disconnect(peerConnection);
+    if (current && !trusted && server) server->disconnect(connection);
   }
 };
 void initBle() {
+  BLEDevice::setCustomGattsHandler(onGattsEvent);
   BLEDevice::init(deviceId);
   BLEDevice::setEncryptionLevel(ESP_BLE_SEC_ENCRYPT_MITM);
   BLEDevice::setSecurityCallbacks(new SecurityCallbacks());
@@ -701,26 +745,24 @@ void initBle() {
   identityChar = service->createCharacteristic(IdentityUuid, BLECharacteristic::PROPERTY_READ);
   observationChar = service->createCharacteristic(ObservationUuid, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
   receiptChar = service->createCharacteristic(ReceiptUuid, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
-  BLECharacteristic *command = service->createCharacteristic(CommandUuid, BLECharacteristic::PROPERTY_WRITE);
+  commandChar = service->createCharacteristic(CommandUuid, BLECharacteristic::PROPERTY_WRITE);
   journalChar = service->createCharacteristic(JournalUuid, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
   identityChar->setAccessPermissions(ESP_GATT_PERM_READ_ENC_MITM);
   observationChar->setAccessPermissions(ESP_GATT_PERM_READ_ENC_MITM);
   receiptChar->setAccessPermissions(ESP_GATT_PERM_READ_ENC_MITM);
-  command->setAccessPermissions(ESP_GATT_PERM_WRITE_ENC_MITM);
+  commandChar->setAccessPermissions(ESP_GATT_PERM_WRITE_ENC_MITM);
   journalChar->setAccessPermissions(ESP_GATT_PERM_READ_ENC_MITM | ESP_GATT_PERM_WRITE_ENC_MITM);
-  journalChar->setCallbacks(new JournalCallbacks());
   journalChar->setValue(std::string());
-  for (BLECharacteristic *characteristic : {observationChar, receiptChar}) {
-    auto cccd = new BLE2902();
-    cccd->setAccessPermissions(ESP_GATT_PERM_READ_ENC_MITM | ESP_GATT_PERM_WRITE_ENC_MITM);
-    characteristic->addDescriptor(cccd);
+  observationTx.characteristic = observationChar; receiptTx.characteristic = receiptChar;
+  for (Tx *stream : {&observationTx, &receiptTx}) {
+    stream->cccd = new BLE2902();
+    stream->cccd->setAccessPermissions(ESP_GATT_PERM_READ_ENC_MITM | ESP_GATT_PERM_WRITE_ENC_MITM);
+    stream->characteristic->addDescriptor(stream->cccd);
   }
-  command->setCallbacks(new CommandCallbacks());
   StaticJsonDocument<512> doc;
   doc["version"] = 1; doc["deviceId"] = deviceId; doc["firmwareRevision"] = FirmwareRevision;
   doc["boardRevision"] = board::Revision; doc["bootId"] = bootId;
   identityChar->setValue(jsonText(doc));
-  observationTx.characteristic = observationChar; receiptTx.characteristic = receiptChar;
   service->start();
   BLEAdvertising *advertising = BLEDevice::getAdvertising();
   advertising->addServiceUUID(ServiceUuid); advertising->setScanResponse(true);
@@ -809,10 +851,13 @@ void loop() {
   initializeAudioWhenQuiet();
   if (connected) powerState::activity(now);
   if (disconnected) {
-    disconnected = false; stopMotor(); observationTx.clear(); receiptTx.clear();
-    xQueueReset(commandQueue); BLEDevice::startAdvertising();
+    stopMotor(); observationTx.clear(); receiptTx.clear();
+    xQueueReset(commandQueue);
     xQueueReset(journalRequests); memset(&journalCapture, 0, sizeof(journalCapture));
     journalChar->setValue(std::string());
+    publishObservation(); // The next authenticated peer reads before it subscribes.
+    portENTER_CRITICAL(&linkMux); disconnected = false; portEXIT_CRITICAL(&linkMux);
+    BLEDevice::startAdvertising();
   }
   portENTER_CRITICAL(&linkMux);
   const bool motorExpiredNow = motorTimerFired;

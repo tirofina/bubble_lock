@@ -1,4 +1,4 @@
-"""Exercise the r18 timer gate and disconnect callback with host-side GPIO mocks."""
+"""Exercise the r18 timer gate and BLE session handling with host-side mocks."""
 import argparse
 from pathlib import Path
 import subprocess
@@ -16,7 +16,10 @@ def main():
     # Compile the production gate unchanged, without linking the Arduino BLE runtime.
     gate = source[source.index("void stopMotor() {"):source.index("void safePins() {")]
     (output / "motor_gate_subject.inc").write_text(gate, encoding="utf-8")
-    start = source.index("  void onDisconnect(BLEServer *) override {")
+    tx = source[source.index("struct Tx {"):source.index("void publishObservation() {")]
+    rx = source[source.index("void receiveJournalSelector("):source.index("class ServerCallbacks")]
+    (output / "motor_session_subject.inc").write_text(tx + rx, encoding="utf-8")
+    start = source.index("  void onDisconnect(BLEServer *, esp_ble_gatts_cb_param_t *param) override {")
     end = source.index("\n};", start)
     (output / "motor_disconnect_subject.inc").write_text(source[start:end] + "\n", encoding="utf-8")
     subprocess.run(["cl", "/nologo", "/utf-8", "/std:c++14", "/EHsc", "/W4", "/I" + str(output),
