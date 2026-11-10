@@ -18,6 +18,21 @@ CORE/INTEGRATION의 실제 연결은 발급 기록과 실행 승인 기록을 �
 
 [실행 결과](../evidence/2026-11-10-core-ack-binding/README.md)
 
+## CSE 명령 영수증의 중앙 정산 후보
+
+[CSE 원본 조회](receipt-native-source.mjs)는 중앙 설정의 Gateway별 전용 receipt 컨테이너와 `gw-<해시>` 하위 경로만 허용한다. Gateway의 `receipt:<commandId>` 요청 ID 규칙으로 자원명을 다시 계산하고 `m2m:cin`의 자원 ID와 생성 시각을 읽는다. 호출자가 고정된 CSE 주소에 인증하여 GET을 보내고 응답 RQI를 검증해야 한다. 매핑된 컨테이너에는 해당 Gateway만 영수증을 쓸 수 있도록 CSE 접근 정책을 배정한다.
+
+[정산 함수](receipt-settlement.mjs)는 중앙 `gatewayCommands`와 `receipts`의 `GATEWAY_COMMAND_AUTHORIZED` 이력을 조회한다. 팀의 `approvalHash`와 영수증 스키마 검증기를 공급한다. 당시 허용 기록은 발급 이후, 허용 만료 전, CSE 생성 시각 이하여야 한다. 임시 Mobius4의 `ct`는 UTC 초 단위이므로 같은 초의 밀리초 승인처럼 시각 순서가 불명확한 건 `REVIEW`로 남긴다. CSE 생성 시각은 보관 시각이며 장치 적용 시각은 별도 증거에서 확인한다.
+
+| 결과 | 처리 |
+|---|---|
+| `SETTLED` | 발급 내용, 당시 승인, 적용 readback이 일치하며 원본의 해시와 정산 키를 처음 영속 저장했다. |
+| `ALREADY_SETTLED` | 같은 정산 키와 영수증 해시의 영속 기록을 반환한다. |
+| `WAITING_FOR_NATIVE` | 인증된 CSE가 HTTP 404 및 oneM2M 4004를 응답했다. 나중에 같은 경로로 재시도한다. |
+| `REVIEW` | 경로·발급·승인·readback·선택 ACK의 불일치, 또는 기존 기록과 내용 충돌이다. |
+
+인증·전송·중앙 저장소 장애는 호출자에 전달하며 정산 성공을 반환하지 않는다. CORE MQTT ACK를 함께 받았으면 안에 포함된 영수증까지 원본과 대조한다. CSE 원본을 계기로 먼저 정산하는 호출도 지원한다. [격리 POSIX 파일 구현](receipt-settlement-files.mjs)은 운영자가 지정한 소유자 전용 로컬 디렉터리에서 파일 동기화와 덮어쓰기 없는 링크로 한 기록을 확정한다. 운영 CORE는 `(gatewayId, commandId)` 고유 제약과 원자적 저장을 제공하고 ACK 수신기 또는 CSE 알림 소비자를 이 함수에 연결해야 한다.
+
 ## Handover 뒤 활성 Gateway 검증
 
 팀 main `715ef58`은 전환 전 epoch의 명령을 거절한다. 같은 장치를 가진 두 Gateway 등록이 모두 유효하면 전환 뒤 이전 Gateway에도 현재 epoch의 새 명령을 발급하고 승인할 수 있다.

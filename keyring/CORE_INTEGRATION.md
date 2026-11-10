@@ -27,6 +27,8 @@ Gateway 0.2.5는 팀 main `715ef58`의 실제 mTLS API에서 명령을 받아 �
 
 팀 main 원본을 대상으로 이 차이를 재현했다. HTTP 발급 명령의 ACK는 `REVIEW`로 남았고, CORE에 등록된 명령은 ACK의 payloadHash만 바꿔도 `ACK_RECORDED`가 됐다. 중앙 발급·승인 기록, 인증된 Gateway ID, CSE native receipt를 결속하는 KEYRING 후보는 정상 입력 2개와 거절 사례 7개를 검증했다. 운영에서의 원자적 정산과 ACK 수신기 연결은 팀 owner 경계다. [결속 후보](integration-candidate/README.md) · [실행 증거](evidence/2026-11-10-core-ack-binding/README.md)
 
+후속 KEYRING 후보는 CSE 원본 조회와 과거 승인 판정에 이어, 같은 명령의 영수증 재전송과 내용 충돌을 영속 정산 경계에서 구분한다. CORE 적용에는 인증된 CSE GET, 팀 발급·승인 조회, 정산 고유 키를 가진 중앙 저장소, ACK 또는 CSE 알림 수신 연결이 필요하다. [중앙 정산 후보](integration-candidate/README.md#cse-명령-영수증의-중앙-정산-후보)
+
 handover 후에는 이전 epoch뿐 아니라 대상 Gateway도 확인해야 한다. 팀 원본 API는 이전 Gateway가 같은 장치에 등록된 상태에서 현재 epoch의 새 명령을 승인했다. 활성 Edge와 Gateway를 명시적으로 연결한 후보는 발급·조회·승인에서 이전 Gateway를 차단했다. 롤백 뒤 원래 Gateway 복구와 API 재기동 후 판정 유지도 확인했다. 운영 적용은 팀의 정본 Edge → Gateway 매핑과 drain 계약에 따른다. [후보와 입력](integration-candidate/README.md#handover-뒤-활성-gateway-검증) · [mTLS 시험](evidence/2026-11-10-handover-owner/README.md)
 
 같은 장치의 순서가 맞아도 팀 CORE 브리지에서 CSE UPDATE가 동시에 실행되면 최신 상태가 옛 값으로 덮인다. 격리 Mobius4에서 옛 ON 요청을 지연시켜 최종 ON을 재현했다. [관측 순서 후보](integration-candidate/README.md#core-관측의-동시-갱신)를 거치면 최종 OFF를 확인했고, 소유권이 바뀐 뒤 이전 Gateway의 갱신과 적용 여부가 불명확한 자원의 후속 갱신은 차단됐다. 운영 연결에는 원래 발행 epoch를 보존하는 인증 수신 경로와 중앙 handover·중복 판정 연동이 남아 있다. [실행 기록](evidence/2026-11-10-core-concurrent-order/README.md)
