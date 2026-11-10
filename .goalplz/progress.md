@@ -711,3 +711,13 @@ Pi 세션 소스 commit `6f20aaf67838a245892f6987fb1dea560ebdd841`를 `origin/co
 - 저장 충돌, 키 불일치, 커밋 응답 유실과 연결 폐기 처리를 위한 회귀시험 소스를 추가했다. DB 적용·회귀시험·CORE 수신기 연결·Pi/Feather 실행은 미실행이다. 중앙 DB 실사용과 물리 명령 영수증은 남아 있다. 전체 goal은 active/progress다.
 
 PostgreSQL 정산 소스 commit `a551e9ee797dfa18b26c85a79c23d5ceccd55df5`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `f1a58a5..a551e9e`다.
+
+## 2026-11-10 — Mobius4 알림의 영속 수신과 원본 정산 재시도
+
+직전 goal turn은 PostgreSQL 정산 저장 어댑터 후보를 반영한 progress다. DOC-REV 2.0.0, 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`와 임시 Mobius4 소스 `e8f75b1`을 확인했다.
+
+- 인증된 CSE의 등록 구독만 받는 수신 함수를 추가했다. `nct=3`의 URI를 정확한 컨테이너에 결속하고 `(cse_key, native_ref)`로 PostgreSQL 대기열에 저장한 뒤 응답한다. 구독 확인 요청은 큐를 만들지 않는다. [알림 정산 후보](../keyring/integration-candidate/README.md#mobius4-알림에서-원본-정산까지)
+- 작업자는 기간이 있는 lease로 한 행을 맡고 인증된 CSE 원본과 기존 정산 함수를 사용한다. 미도착·일시 오류는 재시도하고, 한도를 넘기거나 불일치하면 검토 상태로 남긴다. 중복 알림과 작업자 재시작은 원본 정산 고유 키를 유지한다.
+- DB 마이그레이션·실제 CSE 구독·CORE 배치·시험·실물 명령은 미실행이다. 대기열에 들어오기 전에 실패한 알림은 중앙 발급 기록과 CSE 원본을 대조할 후속 복구가 필요하다. 전체 goal은 active/progress다.
+
+알림 정산 소스 commit `b498e396e6aedcc2a4635eee38961f218d1755e7`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `00270d0..b498e39`다.
