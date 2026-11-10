@@ -449,3 +449,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - Pi 0.2.8 설치, 실제 장치의 재부팅·영수증과 Feather 0.2.0 출력 검증은 남았다. 제작 PCB와 팀 운영 정산 역시 대기 중이다. 전체 goal은 active/progress다.
 
 구현·시험 증거 commit `37e654b1f9f9074ffc92e26aa4ee9e222e3112dc`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `cbec589..37e654b`다.
+
+## 2026-11-10 — r18 진동 출력 차단
+
+이전 goal turn은 Gateway 0.2.8 영수증 검증을 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- 펌웨어 0.7.1은 타이머를 먼저 시작한다. AUX 준비 전후 기한·인증 generation·전원 이상을 확인하고 GPIO를 켠다. BLE 종료 콜백도 같은 잠금에서 GPIO를 즉시 내린다.
+- 호스트 6개 시험과 provisioning 없는 기본·ST7789·JD9853 빌드가 통과했다. 타이머 실패, 기한·fault 변화, 연결 종료, 만료 정리 중 재활성 차단을 확인했다. [시험과 빌드 해시](../keyring/evidence/2026-11-10-motor-gate/README.md)
+- 실제 r18 모터 파형·차단 시간·진동, Feather 명령 flash·Pi 실물 검증과 팀 운영 정산은 대기 중이다. 전체 goal은 active/progress다.
+
+구현·시험 증거 commit `aa0874f818d9629bc752335835fdcaba849c5613`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `3de5360..aa0874f`다.

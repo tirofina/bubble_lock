@@ -7,7 +7,7 @@
   "date": "2026-11-10",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Gateway 0.2.8: 73 basic tests and 5 central integration cases passed. A wrong-boot APPLIED notification remained indeterminate in actual CSE with mock GATT. Actual Pi daemon/replay evidence remains at 0.2.5.",
+  "verificationStatus": "Firmware 0.7.1 motor gate: three unprovisioned profiles and six host checks passed. Physical motor cutoff remains unmeasured. Gateway 0.2.8 and Pi 0.2.5 evidence are tracked separately.",
   "rubricIds": [
     "R01",
     "R02",
@@ -65,7 +65,8 @@
     "Offline deployment preflight for TLS files and paths beneath systemd STATE_DIRECTORY; checked by ExecStartPre before the daemon",
     "KEYRING handoff candidate for binding native receipt and optional CORE ACK to the authenticated Gateway and historical central issuance/authorization",
     "Authoritative HTTPS command polling ahead of CORE MQTT and exact current central hash binding before admitting MQTT-only commands",
-    "Fresh BLE APPLIED receipt binding to the current GATT boot; historical DUPLICATE readbacks retained"
+    "Fresh BLE APPLIED receipt binding to the current GATT boot; historical DUPLICATE readbacks retained",
+    "r18 motor timer armed before AUX and GPIO, with final deadline, fault and BLE session checks"
   ],
   "existingHardware": {
     "status": "source-snapshot-included-unverified",
@@ -117,18 +118,18 @@
   "logSha256": "0c25234a13f2542bb13ff4ed2fd39c8aa015375a435bc6b6156f90cf0b7d6efa",
   "logSha256Scope": "private actual Pi observations.jsonl captured in the HTTPS outage/replay run; digest recorded by actualReceipt",
   "releaseSha": null,
-  "firmwareRevision": "keyring-0.7.0",
+  "firmwareRevision": "keyring-0.7.1",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "37e654b1f9f9074ffc92e26aa4ee9e222e3112dc",
+    "sourceCommit": "aa0874f818d9629bc752335835fdcaba849c5613",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "37e654b1f9f9074ffc92e26aa4ee9e222e3112dc",
-    "lastPushedCommit": "37e654b1f9f9074ffc92e26aa4ee9e222e3112dc",
-    "latestCheckpoint": "Gateway 0.2.8 binds fresh APPLIED receipts to the current boot and preserves historical DUPLICATE results.",
-    "lastPushedCommitBeforeThisCheckpoint": "cbec58926b9f04fe0ec0a6f6b6cb1fb5a6383c72"
+    "latestLocalSourceCommit": "aa0874f818d9629bc752335835fdcaba849c5613",
+    "lastPushedCommit": "aa0874f818d9629bc752335835fdcaba849c5613",
+    "latestCheckpoint": "Firmware 0.7.1 now arms the cutoff timer before motor enable and guards the final output against expiry, fault and disconnect.",
+    "lastPushedCommitBeforeThisCheckpoint": "3de5360776d83788c4f13e84626f32e5205a0f63"
   },
   "gatewayRevision": "0.2.8",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
@@ -152,7 +153,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Prevent a mismatched boot from settling a fresh BLE apply while preserving journal duplicates",
+    "executionRequest": "Harden the production r18 motor cutoff and verify timer-first sequencing before hardware acceptance",
     "remainingCompletionDependencies": [
       "central deployment, settlement and recovery activation",
       "purchased JD9853 module initialization",
@@ -160,11 +161,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "37e654b1f9f9074ffc92e26aa4ee9e222e3112dc",
-    "sourceValidation": "73 basic tests, 5 central integration cases, and wheel/source comparison passed. Wrong-boot mock GATT generated one CSE indeterminate receipt.",
+    "sourceCommit": "aa0874f818d9629bc752335835fdcaba849c5613",
+    "sourceValidation": "The minimal, ST7789 and JD9853 profiles built successfully. Six host tests exercised the actual output functions with simulated timers, GPIO and disconnect.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "The new Gateway and LED bench procedure are ready; actual Pi/Feather output and team CORE publishing/settlement remain.",
+    "currentDependencyState": "r18 cutoff software is built; physical r18 timing, Pi/Feather output and team CORE publishing/settlement remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -525,5 +526,14 @@
     "commandFrames": 1,
     "physicalDeviceVerified": false,
     "sourceCommit": "37e654b1f9f9074ffc92e26aa4ee9e222e3112dc"
+  },
+  "motorGateValidation": {
+    "evidence": "evidence/2026-11-10-motor-gate/README.md",
+    "firmwareVersion": "keyring-0.7.1",
+    "unprovisionedProfilesBuilt": ["keyring_compile_minimal", "keyring_compile_st7789", "keyring_compile_jd9853"],
+    "hostTestGroupsPassed": 6,
+    "physicalMotorWaveformMeasured": false,
+    "flashPerformed": false,
+    "sourceCommit": "aa0874f818d9629bc752335835fdcaba849c5613"
   }
 }
