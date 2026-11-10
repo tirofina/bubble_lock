@@ -66,6 +66,9 @@ def inspect_command(step, pi_proof, inspection, team_state):
                         readbackState=pi_proof["state"])
         if canonical({key: settlement.get(key) for key in expected}) != canonical(expected):
             raise ValueError("Settlement does not match the Pi and native receipt hashes or readback")
+        if (settlement.get("nativeCseKey") != inspection["cseKey"]
+                or settlement.get("nativeRef") != inspection["nativeRef"]):
+            raise ValueError("Settlement does not bind the inspected CSE route")
         stored = parse_time(settlement["nativeStoredAt"])
         recorded = parse_time(settlement["recordedAt"])
         resource = step["cseResource"]

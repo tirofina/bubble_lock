@@ -1,10 +1,9 @@
 import { parseArgs } from 'node:util';
 import { commandReceiptName } from '../../../integration-candidate/receipt-native-source.mjs';
-import { scopedCommandReceiptContainers } from '../scoped-command-receipts.mjs';
+import { scopedCommandReceiptContainers, scopedReceiptCseKey as cseKey } from '../scoped-command-receipts.mjs';
 import { compareJournalSettlements, readJournalReport, requireScopedJournalReport } from './journal-evidence.mjs';
 import { openScopedReceiptPool } from './scoped-database.mjs';
 
-const cseKey = 'scoped-mobius4';
 const query = `
   SELECT
     requested.command_id AS "commandId", requested.native_ref AS "nativeRef",

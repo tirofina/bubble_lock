@@ -83,6 +83,7 @@ env -i PATH=/usr/bin:/bin /opt/bubble_lock/keyring/raspberry-pi-gateway/.venv/bi
 
 - `settlement_matched`는 장치·Gateway·CSE가 비교된 적용 기록과 격리 DB의 정산 행이 일치함을 뜻한다. Gateway 전송 완료 표시가 없으면 검토 건수에 남는다.
 - `settlement_missing`은 비교된 적용 기록에 중앙 정산 행이 없음을 뜻한다. `settlement_mismatch`는 불일치 필드를 반환한다. `journal_review_required`에는 PREPARED, readback 실패 등 기존 검토 건이 남는다.
+- `settlement_source_unbound`는 기존 중앙 행에 CSE 키와 원본 경로가 기록되지 않은 경우다. 둘 중 한 필드가 누락됐거나 격리 CSE 설정과 다르면 불일치로 분류한다.
 
 출력은 원본 비교 보고서의 SHA256을 포함한다. 이 해시는 두 보고서를 연결하며 보관본의 발급자 인증은 별도다. 결과가 모두 일치해도 장치 journal 정산 상태는 `not-settled`로 남는다. 회수에는 아래 중앙 계약이 필요하다.
 

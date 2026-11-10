@@ -13,14 +13,16 @@ function historicalApproval(history, command, payloadHash, storedAt) {
 }
 
 /**
- * readNativeReceipt retrieves a CSE cin, resolves its trusted Gateway from the
- * configured ACL mapping, and returns { gatewayId, resourceId, storedAt, receipt }.
+ * cseKey identifies the fixed authenticated instance used by readNativeReceipt.
+ * The reader validates nativeRef and resolves its trusted Gateway from the ACL
+ * mapping before returning { gatewayId, resourceId, storedAt, receipt }.
  * The command, approval history, canonical hash and commit come from central storage.
  * commitIfAbsent must return { created, record } for the durable unique key.
  */
 export function createCommandReceiptSettlement({
-  readNativeReceipt, validateNativeReceipt, readIssuedCommand, readAuthorizationHistory, hashPayload, commitIfAbsent,
+  cseKey, readNativeReceipt, validateNativeReceipt, readIssuedCommand, readAuthorizationHistory, hashPayload, commitIfAbsent,
 }) {
+  if (!receiptIdentifier(cseKey)) throw new Error('SETTLEMENT_CSE_KEY_REQUIRED');
   return async function settle({ nativeRef, ack } = {}) {
     let native;
     try {
@@ -70,7 +72,7 @@ export function createCommandReceiptSettlement({
       return review(error.message);
     }
     const candidate = {
-      version: 1, ...bound, nativeResourceId: resourceId, nativeStoredAt: storedAt,
+      version: 1, ...bound, nativeCseKey: cseKey, nativeRef, nativeResourceId: resourceId, nativeStoredAt: storedAt,
       authorizationEventId: authorization.eventId, receiptSha256: hashPayload(receipt),
     };
     const key = [bound.gatewayId, bound.commandId];
@@ -82,6 +84,15 @@ export function createCommandReceiptSettlement({
     if (record.deviceId !== bound.deviceId || record.payloadHash !== bound.payloadHash
         || record.receiptSha256 !== candidate.receiptSha256 || record.readbackState !== bound.readbackState) {
       return review('SETTLEMENT_CONFLICT');
+    }
+    if (record.nativeResourceId !== resourceId || receiptInstant(record.nativeStoredAt) !== receiptInstant(storedAt)) {
+      return review('SETTLEMENT_NATIVE_CONFLICT');
+    }
+    if (!Object.hasOwn(record, 'nativeCseKey') && !Object.hasOwn(record, 'nativeRef')) {
+      return review('SETTLEMENT_SOURCE_UNBOUND');
+    }
+    if (record.nativeCseKey !== cseKey || record.nativeRef !== nativeRef) {
+      return review('SETTLEMENT_SOURCE_CONFLICT');
     }
     return { status: created ? 'SETTLED' : 'ALREADY_SETTLED', record };
   };

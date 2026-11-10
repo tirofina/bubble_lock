@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import { receiptIdentifier } from '../../../integration-candidate/receipt-authorization.mjs';
+import { scopedReceiptCseKey } from '../scoped-command-receipts.mjs';
 
 const maxReportBytes = 64 * 1024;
 const exact = (pattern, value) => typeof value === 'string' && pattern.exec(value)?.[0] === value;
@@ -61,7 +62,13 @@ export function compareJournalSettlements(report, records) {
       nativeResourceId: row.nativeResourceId, nativeStoredAt: row.nativeStoredAt };
     const mismatchedFields = Object.keys(expected).filter((field) => settlement[field] !== expected[field]);
     if (!receiptIdentifier(settlement.authorizationEventId)) mismatchedFields.push('authorizationEventId');
+    const sourceBound = Object.hasOwn(settlement, 'nativeCseKey') || Object.hasOwn(settlement, 'nativeRef');
+    if (sourceBound) {
+      if (settlement.nativeCseKey !== scopedReceiptCseKey) mismatchedFields.push('nativeCseKey');
+      if (settlement.nativeRef !== nativeRef) mismatchedFields.push('nativeRef');
+    }
     if (mismatchedFields.length) return { ...result, centralResult: 'settlement_mismatch', mismatchedFields };
+    if (!sourceBound) return { ...result, centralResult: 'settlement_source_unbound' };
     return { ...result, centralResult: 'settlement_matched', authorizationEventId: settlement.authorizationEventId };
   });
   return { reportVersion: 1, checkedAt: new Date().toISOString(), gatewayId, deviceId, cseId, receiptContainer, gatewayArchiveId,

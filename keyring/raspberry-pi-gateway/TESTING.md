@@ -111,7 +111,7 @@ python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_evidenc
   --on-inspection $onInspection --off-inspection $offInspection --team-state $teamState
 ```
 
-도구는 Pi SQLite의 명령·영수증 해시와 CSE 원본의 `ri`·`ct`를 팀 발급·승인 기록과 PostgreSQL 정산에 대조한다. `centralSettlementVerified`, `cseCallbackRecorded`, `physicalLedMatched`를 분리한다. 운영자가 실제 LED를 기록하지 않으면 물리 항목은 `null`이다. 승인과 CSE 보관 순서를 판정할 수 없어 정산이 `REVIEW`라면 원래 검토 상태를 보고한다.
+도구는 Pi SQLite의 명령·영수증 해시와 CSE 원본의 `ri`·`ct`를 팀 발급·승인 기록과 PostgreSQL 정산에 대조한다. 정산 행에는 격리 CSE 키와 원본 경로도 필요하므로 시험 전에 최신 격리 작업자를 준비한다. `centralSettlementVerified`, `cseCallbackRecorded`, `physicalLedMatched`를 분리한다. 운영자가 실제 LED를 기록하지 않으면 물리 항목은 `null`이다. 승인과 CSE 보관 순서를 판정할 수 없어 정산이 `REVIEW`라면 원래 검토 상태를 보고한다.
 
 #### Pi 명령 세션
 

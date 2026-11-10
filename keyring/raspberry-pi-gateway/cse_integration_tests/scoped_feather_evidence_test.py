@@ -23,6 +23,7 @@ class ScopedFeatherEvidenceTests(unittest.TestCase):
                                            "firstSeenAt": "2026-11-10T09:00:05.000Z"}],
                            "settlement": {**identity, "version": 1, "payloadHash": self.pi["payloadHash"],
                                           "receiptSha256": self.pi["receiptHash"], "readbackState": True,
+                                          "nativeCseKey": "scoped-mobius4", "nativeRef": f"{ROUTE}/{name}",
                                           "nativeResourceId": "cin-a", "nativeStoredAt": "2026-11-10T09:00:04.000Z",
                                           "authorizationEventId": "evt-a", "recordedAt": "2026-11-10T09:00:06.000Z"}}
 
@@ -30,6 +31,10 @@ class ScopedFeatherEvidenceTests(unittest.TestCase):
         result = inspect_command(self.step, self.pi, self.inspection, self.team)
         self.assertTrue(result["settlementVerified"])
         self.assertEqual(result["deliverySources"], ["RECOVERY_SWEEP"])
+        self.inspection["settlement"]["nativeCseKey"] = "replacement-cse"
+        with self.assertRaisesRegex(ValueError, "inspected CSE route"):
+            inspect_command(self.step, self.pi, self.inspection, self.team)
+        self.inspection["settlement"]["nativeCseKey"] = self.inspection["cseKey"]
         self.inspection["settlement"]["nativeResourceId"] = "different-cin"
         with self.assertRaisesRegex(ValueError, "native receipt identity"):
             inspect_command(self.step, self.pi, self.inspection, self.team)

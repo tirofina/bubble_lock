@@ -25,6 +25,7 @@ const ack = { ...identity, payloadHash, ackState: 'READBACK_VERIFIED', timestamp
 const container = '/Mobius/gw-a/receipts';
 const name = `gw-${digest(`kr-${digest('receipt:cmd-a').slice(0, 48)}`)}`;
 const nativeRef = `${container}/${name}`;
+const cseKey = 'test-cse';
 
 function setup(overrides = {}) {
   const cin = { ty: 4, rn: name, ri: 'native-a', ct: '20261110T090004', con: originalReceipt };
@@ -33,7 +34,7 @@ function setup(overrides = {}) {
   const readNativeReceipt = createNativeReceiptReader({ receiptContainers: { 'gw-a': container },
     retrieve: async (path) => { paths.push(path); return cse; } });
   let saved;
-  const settle = createCommandReceiptSettlement({ readNativeReceipt, validateNativeReceipt: async () => true,
+  const settle = createCommandReceiptSettlement({ cseKey, readNativeReceipt, validateNativeReceipt: async () => true,
     readIssuedCommand: async () => ({ command, payloadHash }),
     readAuthorizationHistory: async () => [
       { ...approval, allowed: false, eventId: 'evt-later-denial', timestamp: '2026-11-10T09:00:16.000Z' }, approval,
@@ -56,12 +57,32 @@ test('settles authenticated native readback once and checks any later ACK', asyn
   assert.equal(first.status, 'SETTLED');
   assert.equal(first.record.authorizationEventId, 'evt-approved');
   assert.equal(first.record.nativeStoredAt, '2026-11-10T09:00:04.000Z');
+  assert.equal(first.record.nativeCseKey, cseKey);
+  assert.equal(first.record.nativeRef, nativeRef);
   assert.deepEqual(await settle({ nativeRef, ack }), { status: 'ALREADY_SETTLED', record: first.record });
   assert.deepEqual(await settle({ nativeRef, ack: { ...ack, payloadHash: '0'.repeat(64) } }),
     { status: 'REVIEW', reason: 'CORE_ACK_BINDING' });
   cin.con = { ...originalReceipt, detail: 'changed' };
   assert.deepEqual(await settle({ nativeRef }), { status: 'REVIEW', reason: 'SETTLEMENT_CONFLICT' });
   assert.deepEqual(paths, Array(4).fill(nativeRef));
+});
+
+test('holds recreated native instances and refuses to infer an old CSE route', async () => {
+  const { cin, settle } = setup();
+  const { record } = await settle({ nativeRef });
+  cin.ri = 'recreated-cin';
+  assert.deepEqual(await settle({ nativeRef }), { status: 'REVIEW', reason: 'SETTLEMENT_NATIVE_CONFLICT' });
+  cin.ri = record.nativeResourceId;
+  cin.ct = '20261110T090005';
+  assert.deepEqual(await settle({ nativeRef }), { status: 'REVIEW', reason: 'SETTLEMENT_NATIVE_CONFLICT' });
+  const fromExistingRecord = (saved) => async () => ({ created: false, record: saved });
+  const otherCse = setup({ cseKey: 'replacement-cse', commitIfAbsent: fromExistingRecord(record) });
+  assert.deepEqual(await otherCse.settle({ nativeRef }), { status: 'REVIEW', reason: 'SETTLEMENT_SOURCE_CONFLICT' });
+  const otherPath = setup({ commitIfAbsent: fromExistingRecord({ ...record, nativeRef: `/Mobius/retired/${name}` }) });
+  assert.deepEqual(await otherPath.settle({ nativeRef }), { status: 'REVIEW', reason: 'SETTLEMENT_SOURCE_CONFLICT' });
+  const { nativeCseKey: oldKey, nativeRef: oldRef, ...legacy } = record;
+  const oldSettlement = setup({ commitIfAbsent: fromExistingRecord(legacy) });
+  assert.deepEqual(await oldSettlement.settle({ nativeRef }), { status: 'REVIEW', reason: 'SETTLEMENT_SOURCE_UNBOUND' });
 });
 
 test('holds missing, misnamed or unverifiable receipts without settling', async () => {

@@ -4,10 +4,9 @@ import { readFile } from 'node:fs/promises';
 import { createReceiptNotificationHttpsServer } from '../../../integration-candidate/receipt-notification-https.mjs';
 import { createReceiptNotificationIngress } from '../../../integration-candidate/receipt-notification-ingress.mjs';
 import { createPostgresReceiptInbox } from '../../../integration-candidate/receipt-notification-postgres.mjs';
-import { scopedCommandReceiptContainers } from '../scoped-command-receipts.mjs';
+import { scopedCommandReceiptContainers, scopedReceiptCseKey as cseKey } from '../scoped-command-receipts.mjs';
 import { openScopedReceiptPool, requireScopedReceiptSchema } from './scoped-database.mjs';
 
-const cseKey = 'scoped-mobius4';
 const path = '/onem2m/keyring/receipt-notifications';
 
 async function main() {

@@ -1,7 +1,7 @@
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
-import { scopedCommandReceiptContainers } from '../scoped-command-receipts.mjs';
+import { scopedCommandReceiptContainers, scopedReceiptCseKey as cseKey } from '../scoped-command-receipts.mjs';
 import { createPostgresSettlementCommit } from '../../../integration-candidate/receipt-settlement-postgres.mjs';
 import { createPostgresReceiptInbox } from '../../../integration-candidate/receipt-notification-postgres.mjs';
 import { createReceiptNotificationSweep } from '../../../integration-candidate/receipt-notification-recovery.mjs';
@@ -9,7 +9,6 @@ import { createReceiptNotificationWorker } from '../../../integration-candidate/
 import { loadScopedReceiptContext } from './scoped-io.mjs';
 import { openScopedReceiptPool, requireScopedReceiptSchema } from './scoped-database.mjs';
 
-const cseKey = 'scoped-mobius4';
 const log = (status, details = {}) => process.stdout.write(`${JSON.stringify({ status, ...details })}\n`);
 
 async function main() {

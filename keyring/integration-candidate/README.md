@@ -26,12 +26,14 @@ CORE/INTEGRATION의 실제 연결은 발급 기록과 실행 승인 기록을 �
 
 | 결과 | 처리 |
 |---|---|
-| `SETTLED` | 발급 내용, 당시 승인, 적용 readback이 일치하며 원본의 해시와 정산 키를 처음 영속 저장했다. |
-| `ALREADY_SETTLED` | 같은 정산 키와 영수증 해시의 영속 기록을 반환한다. |
+| `SETTLED` | 발급 내용, 당시 승인, 적용 readback이 일치하며 영수증 해시와 CSE 키·원본 경로·ID·생성 시각을 영속 저장했다. |
+| `ALREADY_SETTLED` | 같은 정산 키에서 영수증 해시와 CSE 원본 식별 정보가 모두 일치하면 최초 기록을 반환한다. |
 | `WAITING_FOR_NATIVE` | 인증된 CSE가 HTTP 404 및 oneM2M 4004를 응답했다. 나중에 같은 경로로 재시도한다. |
 | `REVIEW` | 경로·발급·승인·readback·선택 ACK의 불일치, 또는 기존 기록과 내용 충돌이다. |
 
 인증·전송·중앙 저장소 장애는 호출자에 전달하며 정산 성공을 반환하지 않는다. CORE MQTT ACK를 함께 받았으면 안에 포함된 영수증까지 원본과 대조한다. CSE 원본을 계기로 먼저 정산하는 호출도 지원한다. [격리 POSIX 파일 구현](receipt-settlement-files.mjs)은 운영자가 지정한 소유자 전용 로컬 디렉터리에서 파일 동기화와 덮어쓰기 없는 링크로 한 기록을 확정한다. 운영 CORE는 `(gatewayId, commandId)` 고유 제약과 원자적 저장을 제공하고 ACK 수신기 또는 CSE 알림 소비자를 이 함수에 연결해야 한다.
+
+발급·승인 검증을 통과한 재요청에서 원본 ID·생성 시각이 달라졌으면 `SETTLEMENT_NATIVE_CONFLICT`로 분류한다. ID와 시각이 같아도 CSE 키나 경로가 다르면 `SETTLEMENT_SOURCE_CONFLICT`다. 출처 필드가 없는 기존 행은 `SETTLEMENT_SOURCE_UNBOUND`로 남기며 자동 보완하지 않는다. 이미 종료된 대기열에서 같은 경로의 후속 알림은 중복 제거된다. 이 경우 현재 원본과 저장 기록의 차이는 [저널 대조](../JOURNAL_RETENTION.md#격리-postgresql-정산-기록-대조)에서 확인한다.
 
 발급 내용과 일치하는 부정 결과는 `REVIEW`에 원본 상태와 ACK 코드를 함께 남긴다. 예를 들어 `REJECTED_NOT_AUTHORIZED`, `TIMEOUT_TIMEOUT`, `INDETERMINATE_RESTART_INTERRUPTED`를 구분한다. 이 분류는 대기열의 `last_result`에서 조회하며 성공 정산 행을 생성하지 않는다. 실행 여부가 불확실한 기록은 해당 명령을 자동 재발급하지 않는다.
 
@@ -44,11 +46,12 @@ CORE/INTEGRATION의 실제 연결은 발급 기록과 실행 승인 기록을 �
 ```js
 const settle = createCommandReceiptSettlement({
   ...authenticatedReceiptAdapters,
+  cseKey: configuredCse.key,
   commitIfAbsent: createPostgresSettlementCommit(pgPool),
 });
 ```
 
-경합에서 삽입되지 않은 요청은 `READ COMMITTED` 트랜잭션의 다음 조회로 먼저 커밋된 행을 읽는다. 정산 함수는 기존 해시와 대조해 동일 영수증과 내용 충돌을 구분한다. 커밋 응답을 받지 못하면 같은 키로 다시 처리한다. [PostgreSQL 트랜잭션 격리](https://www.postgresql.org/docs/17/transaction-iso.html#XACT-READ-COMMITTED)
+경합에서 삽입되지 않은 요청은 `READ COMMITTED` 트랜잭션의 다음 조회로 먼저 커밋된 행을 읽는다. 커밋 응답을 받지 못하면 같은 정산 키와 CSE 설정으로 다시 처리한다. `cseKey`는 인증 조회 어댑터에 배정한다. 별도 원본 저장소로 전환할 때는 새 키를 부여하고, 이전 발급 명령에 대한 조회는 기존 경로를 사용한다. 명령별 원본 경로 배정은 CORE의 발급 및 라우팅 계약이 필요하다. [PostgreSQL 트랜잭션 격리](https://www.postgresql.org/docs/17/transaction-iso.html#XACT-READ-COMMITTED)
 
 현재는 후보 SQL과 어댑터 소스가 있다. 실제 PostgreSQL에 적용하고 두 연결의 동시 저장·재시작을 확인하는 단계가 남아 있다.
 

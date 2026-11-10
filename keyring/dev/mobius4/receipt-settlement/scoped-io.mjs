@@ -8,7 +8,7 @@ import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import { createNativeReceiptReader } from '../../../integration-candidate/receipt-native-source.mjs';
 import { createCommandReceiptSettlement } from '../../../integration-candidate/receipt-settlement.mjs';
-import { scopedCommandReceiptContainers } from '../scoped-command-receipts.mjs';
+import { scopedCommandReceiptContainers, scopedReceiptCseKey } from '../scoped-command-receipts.mjs';
 
 export async function readJson(path, limit) {
   const file = await open(path, 'r');
@@ -85,7 +85,7 @@ export async function loadScopedReceiptContext({ teamRoot, state }) {
   }
 
   function settleForSnapshot({ gatewayCommands, receipts }, commitIfAbsent) {
-    return createCommandReceiptSettlement({ readNativeReceipt, validateNativeReceipt,
+    return createCommandReceiptSettlement({ cseKey: scopedReceiptCseKey, readNativeReceipt, validateNativeReceipt,
       readIssuedCommand: (commandId) => Object.hasOwn(gatewayCommands, commandId) ? gatewayCommands[commandId] : null,
       readAuthorizationHistory: (commandId) => receipts.filter((record) => record?.commandId === commandId),
       hashPayload: approvalHash, commitIfAbsent,

@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { compareJournalSettlements, requireScopedJournalReport } from '../../dev/mobius4/receipt-settlement/journal-evidence.mjs';
+import { scopedReceiptCseKey } from '../../dev/mobius4/scoped-command-receipts.mjs';
 
 const gatewayId = 'gw-a';
 const deviceId = 'kr-a';
 const receiptContainer = '/Mobius/privacy-bubble-test-ae/command-receipts-a';
+const nativeRef = receiptContainer + '/gw-example';
 const applied = { commandId: 'cmd-a', result: 'matched_applied', gatewayDelivered: true, devicePhase: 'completed',
   deviceReadbackState: false, payloadHash: 'a'.repeat(64), gatewayReceiptSha256: 'b'.repeat(64),
   cseReceiptSha256: 'b'.repeat(64), nativeResourceId: 'native-a', nativeStoredAt: '2026-11-10T09:00:04.000Z' };
@@ -13,8 +15,8 @@ const reportFor = (...results) => ({ reportVersion: 1, gatewayId, deviceId, cseI
   recordCount: results.length, settlementStatus: 'not-settled', deviceJournalModified: false, results });
 const settlement = { version: 1, gatewayId, deviceId, commandId: applied.commandId, payloadHash: applied.payloadHash,
   receiptSha256: applied.cseReceiptSha256, readbackState: false, nativeResourceId: applied.nativeResourceId,
-  nativeStoredAt: applied.nativeStoredAt, authorizationEventId: 'evt-approved' };
-const central = { commandId: applied.commandId, nativeRef: receiptContainer + '/gw-example', inbox: null, settlement };
+  nativeStoredAt: applied.nativeStoredAt, nativeCseKey: scopedReceiptCseKey, nativeRef, authorizationEventId: 'evt-approved' };
+const central = { commandId: applied.commandId, nativeRef, inbox: null, settlement };
 
 test('archive scope and applied evidence must match before lookup', () => {
   const report = reportFor(applied);
@@ -37,6 +39,11 @@ test('a replaced native resource, missing settlement and undelivered archive rem
   const conflict = compareJournalSettlements(report, [replaced]).results[0];
   assert.equal(conflict.centralResult, 'settlement_mismatch');
   assert.deepEqual(conflict.mismatchedFields, ['nativeResourceId']);
+  const otherCse = { ...central, settlement: { ...settlement, nativeCseKey: 'replacement-cse' } };
+  assert.deepEqual(compareJournalSettlements(report, [otherCse]).results[0].mismatchedFields, ['nativeCseKey']);
+  const { nativeCseKey: oldKey, nativeRef: oldRef, ...unbound } = settlement;
+  const legacy = compareJournalSettlements(report, [{ ...central, settlement: unbound }]);
+  assert.equal(legacy.results[0].centralResult, 'settlement_source_unbound');
   const missing = compareJournalSettlements(report, [{ ...central, settlement: null }]).results[0];
   assert.equal(missing.centralResult, 'settlement_missing');
   const undelivered = compareJournalSettlements(reportFor({ ...applied, gatewayDelivered: false }), [central]);
