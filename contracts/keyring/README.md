@@ -46,6 +46,7 @@
 - `observation.observedAt`은 Gateway가 BLE 값을 수신한 시각이다. `timestampSource`는 `gateway-received`이며 장치에서 정확한 UTC를 측정했다는 뜻이 아니다.
 - `battery:null`은 배터리 값 미확인, `rssi:null`은 scan RSSI 미확인이다. RSSI로 물리적 거리를 계산하거나 예시 측정값을 채우지 않는다.
 - `sensorValues`의 필드 의미는 [펌웨어 문서](../../keyring/firmware/README.md)와 함께 확정한다. 센서 오류를 정상 측정값 0으로 대체하지 않는다.
+- `sensorValues.buttonPresses`는 선택형 `[확인, 비상]` 누름 누계이며 두 값은 0..4294967295 정수다. `buttonState`는 순간 상태다. 누계 비교 범위는 동일 `deviceId`와 `bootId`다.
 - Gateway receipt의 `acceptedAt`과 `appliedAt`은 동일 boot의 시간 anchor가 있을 때만 계산한다. 이때 `timestampSource`는 `gateway-estimated`다. 근거가 없으면 두 필드를 `null`, source를 `unavailable`로 설정한다.
 - `readback.state`는 GPIO 출력 수준이다. 모터 회전이나 진동 강도를 측정한 결과로 해석하지 않는다.
 - `APPLIED`는 명령 처리 상태다. 모터 자동 OFF 같은 이후 상태 변화는 새로운 관측에서 확인한다. 과거 APPLIED receipt를 현재 출력 상태로 사용하지 않는다.

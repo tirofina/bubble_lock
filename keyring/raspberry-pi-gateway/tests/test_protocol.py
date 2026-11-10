@@ -8,11 +8,20 @@ from unittest.mock import AsyncMock, patch
 
 from bubble_gateway.ble import BleFleet, BleProtocolError, BleUnavailable, _Frames, _object, _power_reading
 from bubble_gateway.core_bridge import command as core_command
-from bubble_gateway.model import authorization_deadline, parse_time, payload_hash, validate_command
-from helpers import DEVICES, command, config, device_receipt
+from bubble_gateway.model import authorization_deadline, parse_time, payload_hash, validate_command, validate_observation
+from helpers import DEVICES, command, config, device_receipt, observation
 
 
 class ContractTests(unittest.TestCase):
+    def test_optional_button_counts_require_two_uint32_values(self):
+        legacy = observation()
+        self.assertEqual(validate_observation(legacy, "gw-test", DEVICES), legacy)
+        valid = observation(sensorValues={"buttonPresses": [1, 4294967295]})
+        self.assertEqual(validate_observation(valid, "gw-test", DEVICES), valid)
+        for value in (None, [1], [1, 2, 3], [True, 0], [0, 1.0], [-1, 0], [0, 4294967296]):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                validate_observation(observation(sensorValues={"buttonPresses": value}), "gw-test", DEVICES)
+
     def test_closed_command_requires_claim_and_real_boolean(self):
         original = command()
         self.assertEqual(validate_command(original, "gw-test", DEVICES), original)

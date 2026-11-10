@@ -13,6 +13,7 @@
 #include <stddef.h>
 #include <string>
 #include "board_r18.h"
+#include "button_presses.h"
 #include "command_wire.h"
 #include "firmware_options.h"
 #include "motion_wake.h"
@@ -24,7 +25,7 @@
 #include "headphone_standby.h"
 
 namespace {
-constexpr char FirmwareRevision[] = "keyring-0.7.2";
+constexpr char FirmwareRevision[] = "keyring-0.7.3";
 #if defined(KEYRING_LEGACY_GATT) && KEYRING_LEGACY_GATT
 constexpr char ServiceUuid[] = "8b8f0001-8e7a-4f36-a8c2-1c9b5d620001";
 constexpr char IdentityUuid[] = "8b8f0002-8e7a-4f36-a8c2-1c9b5d620001";
@@ -226,6 +227,7 @@ struct Button {
   }
 };
 Button confirm{board::Confirm}, panic{board::Panic};
+ButtonPresses buttonPresses;
 
 bool readRegisters(uint8_t address, uint8_t reg, uint8_t *data, size_t count) {
   Wire.beginTransmission(address); Wire.write(reg);
@@ -344,6 +346,7 @@ void publishObservation() {
     JsonObject values = doc.createNestedObject("sensorValues");
     values["detail"] = detail; values["fault"] = fault;
     values["journal"] = storageHealthy ? "ready" : "error";
+    buttonPresses.append(values);
     return values;
   };
   JsonObject values = base();
@@ -780,6 +783,7 @@ void loop() {
     stopMotor();
   }
   bool changedConfirm = confirm.update(now), changedPanic = panic.update(now);
+  buttonPresses.record(changedConfirm && confirm.pressed, changedPanic && panic.pressed, panic.pressed);
   if ((changedConfirm && confirm.pressed) || (changedPanic && panic.pressed)) peripherals.show();
   if (changedConfirm || changedPanic) observationDirty = true;
   if (confirm.pressed || panic.pressed || changedConfirm || changedPanic) powerState::activity(now);

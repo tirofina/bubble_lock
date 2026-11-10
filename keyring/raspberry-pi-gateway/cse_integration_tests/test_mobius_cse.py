@@ -14,6 +14,7 @@ import uuid
 import httpx
 
 from bubble_gateway.transport import TransportHub, RemoteResponseError
+from bubble_gateway.ble import BleFleet
 from bubble_gateway.model import iso_time, payload_hash
 from bubble_gateway.service import Gateway
 from bubble_gateway.state_identity import configured_binding
@@ -199,6 +200,29 @@ class MobiusCseTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await self.count(), 1)
         self.delivery_facts = {"queueSurvivedReopen": True, "published": 1, "remainingOutbox": 0,
                                "duplicateObservationQueued": False, "remoteCinCount": 1, "rqi": original["rqi"]}
+
+    async def test_released_observation_keeps_boot_local_presses_in_native_cse(self):
+        store, reopen, _path, _binding = self.store_for()
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store, gateway.counters = self.hub.config, store, Counter()
+        fleet = BleFleet(gateway.config)
+        peer = fleet._peers["kr-test"]
+        peer.identity = dict(bootId="boot-test", firmwareRevision="keyring-0.7.3")
+        frame = dict(version=1, deviceId="kr-test", bootId="boot-test", sequence=4, uptimeMs=150,
+                     battery=None, buttonState="released", sensorValues={"buttonPresses": [1, 2]}, state=False)
+        fleet._queue_observation(peer, frame)
+        normalized = peer.observations.get_nowait()
+        await gateway.observation(normalized)
+        rqi = self.queued(store)["rqi"]
+        store.close()
+        store = reopen()
+        self.assertEqual(await self.drain_due(store), {"published": 1})
+        result = (await self.stored(rqi))["con"]
+        self.assertEqual(result, normalized)
+        self.assertEqual((result["buttonState"], result["sensorValues"]["buttonPresses"]), ("released", [1, 2]))
+        self.assertEqual(await self.count(), 1)
+        self.delivery_facts = {"liveState": "released", "buttonPresses": [1, 2], "nativeCinCount": 1,
+                               "queueSurvivedReopen": True}
 
     async def test_outbox_receipt_flag_requires_real_mqtt_application_response(self):
         store, _reopen, _path, _binding = self.store_for()

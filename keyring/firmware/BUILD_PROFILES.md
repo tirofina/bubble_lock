@@ -1,5 +1,7 @@
 # 빌드용 프로필과 실제 로컬 결과
 
+keyring-0.7.3의 부팅별 버튼 누계는 세 프로필과 실제 관측 코드의 호스트 시험을 통과했다. [시험과 바이너리 해시](../evidence/2026-11-10-button-presses/README.md)
+
 keyring-0.7.2의 BLE 명령 프레임 검사는 같은 세 프로필과 r18·Feather 호스트 시험으로 확인했다. [빌드·시험 로그와 해시](../evidence/2026-11-10-command-wire/README.md)
 
 keyring-0.7.1의 출력 차단 변경은 아래 세 프로필과 호스트 시험 6개에서 확인했다. [빌드·시험 로그와 해시](../evidence/2026-11-10-motor-gate/README.md)

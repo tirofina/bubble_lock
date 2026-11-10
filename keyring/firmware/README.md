@@ -2,7 +2,7 @@
 
 ROLE: KEYRING · DOC-REV: 2.0.0 · 구현 계약: 0.1.0 · 상태: implemented, unverified
 
-ESP32-S3-WROOM-1-N16R8 / r18-hand-solder 보드를 대상으로 작성한 소스다. keyring-0.7.2는 BLE 관측·버튼·배터리·가속도와 진동 명령/receipt, 선택형 ST7789·JD9853 상태 화면·스피커 cue·SD receipt 복사를 포함한다. [전원 계측](POWER_MONITOR.md), [MAX9850 대기 상태](HEADPHONE_STANDBY.md), [프로필과 빌드 기록](BUILD_PROFILES.md)을 함께 본다. 제작 PCB에서의 flash·실물 실행은 수용 시험 단계다.
+ESP32-S3-WROOM-1-N16R8 / r18-hand-solder 보드를 대상으로 작성한 소스다. keyring-0.7.3은 BLE 관측·버튼·배터리·가속도와 진동 명령/receipt, 선택형 ST7789·JD9853 상태 화면·스피커 cue·SD receipt 복사를 포함한다. [전원 계측](POWER_MONITOR.md), [MAX9850 대기 상태](HEADPHONE_STANDBY.md), [프로필과 빌드 기록](BUILD_PROFILES.md)을 함께 본다. 제작 PCB에서의 flash·실물 실행은 수용 시험 단계다.
 
 배송 대기 중에는 Adafruit Feather ESP32 V2와 1.54인치 ST7789에서 화면·버튼·BLE 관측을 [별도 벤치 스케치](feather_probe/README.md)로 시험한다.
 
@@ -61,5 +61,7 @@ MAX17048의 SOC와 VCELL을 읽고 실패 시 battery/voltage를 null로 보낸�
 LIS2DW12 WHO_AM_I를 확인하고 12.5Hz·low-power mode1·±2g·BDU·주소 증가를 설정해 3축을 g 단위로 보낸다. 레지스터와 감도 근거는 [LIS2DW12 제조사 데이터시트](https://www.st.com/resource/en/datasheet/lis2dw12.pdf)다. 초기화/읽기 실패는 accelStatus=unavailable이다. 낙상 판정이나 위치 추정은 구현하지 않았다.
 
 확인/비상 버튼은 active-low, debounce35ms이며 panic을 우선한다. 관측 의도를 전송하며 자체적으로 grant나 보호자 승인을 생성하지 않는다. 관측은2초 주기 또는 버튼/출력/움직임 변화 때 갱신한다. radio controller sleep 요청과 idle yield 외에 선택형 deep sleep·motion/버튼/timer wake 경로를 작성했다. `KEYRING_ENABLE_SLEEP` 기본값은0이며 연결 중에는 절전하지 않는다. 상세 설정·제약·미실행 인수 항목은 [POWER_WAKE.md](POWER_WAKE.md)에 있다. 화면·오디오·microSD는 기본 비활성 옵션으로 소스를 추가했으며 [PERIPHERALS.md](PERIPHERALS.md)에 두 화면 선택, JD9853 패널 초기화 미확인, 공용 전원·SPI와 SD 평문 기록 제약을 설명한다. 실물 주변장치 동작과 배터리 수명·소비전류·깨우기 동작은 미확인이다.
+
+keyring-0.7.3은 `sensorValues.buttonPresses`에 부팅별 확인·비상 누름을 순서대로 담는다. 버튼을 뗀 뒤에도 다음 관측에서 횟수를 읽을 수 있다. 동시에 눌리거나 비상 버튼이 눌린 동안 확인 버튼을 눌렀다면 비상을 우선한다. 누계는 uint32 최댓값에서 유지되며 재부팅하면 새 bootId와 함께 0부터 시작한다. [버튼 프레임 시험](../evidence/2026-11-10-button-presses/README.md)
 
 충전 전류 모드는 USB100 기본값을 유지한다. 충전기·온도 보호·충전 LED는 하드웨어 회로이며 펌웨어가 충전 LED를 제어했다고 표시하지 않는다.
