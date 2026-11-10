@@ -47,6 +47,7 @@ class Store:
                 command_id TEXT
             );
             CREATE INDEX IF NOT EXISTS outbox_due ON outbox(next_attempt, created_at);
+            CREATE INDEX IF NOT EXISTS outbox_core_pending ON outbox(container) WHERE container='@core/telemetry';
             CREATE TABLE IF NOT EXISTS core_sequences (
                 device_id TEXT PRIMARY KEY, wire_sequence INTEGER NOT NULL
             );
@@ -170,7 +171,17 @@ class Store:
                 break
 
     def due(self) -> dict | None:
-        row = self.db.execute("SELECT * FROM outbox WHERE next_attempt<=? ORDER BY created_at,rqi LIMIT 1", (time.time(),)).fetchone()
+        # CORE telemetry updates current state. Only the oldest projection per
+        # device is eligible; other delivery routes keep their own retry timing.
+        row = self.db.execute("""
+            WITH core_heads AS (
+                SELECT MIN(rowid) AS head FROM outbox WHERE container='@core/telemetry'
+                GROUP BY json_extract(CASE WHEN json_valid(payload) THEN payload ELSE '{}' END, '$.deviceId')
+            )
+            SELECT * FROM outbox WHERE next_attempt<=?
+              AND (container<>'@core/telemetry' OR rowid IN (SELECT head FROM core_heads))
+            ORDER BY created_at,rqi LIMIT 1
+        """, (time.time(),)).fetchone()
         if row is None:
             return None
         result = dict(row)

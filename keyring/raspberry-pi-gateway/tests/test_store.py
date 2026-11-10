@@ -83,6 +83,31 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(sorted(frame["sequence"] for frame in frames), [0, 1])
         self.assertFalse(self.store.observation(BINDING["observationContainer"], observation(bootId="boot-new", sequence=0), True))
 
+    def test_core_retry_blocks_only_newer_telemetry_for_the_same_device(self):
+        for payload in (observation(state=True), observation(sequence=2, state=False),
+                        observation(deviceId="kr-other")):
+            self.assertTrue(self.store.observation(BINDING["observationContainer"], payload, True))
+        first = Store.request_id("core-telemetry", "kr-test:boot-test:1")
+        with patch("bubble_gateway.store.time.time", return_value=1000):
+            self.store.retry(first, 0)
+            self.store.close()
+            self.store = self.open_store()
+            sent = []
+            while item := self.store.due():
+                sent.append((item["container"], item["payload"]["deviceId"]))
+                self.store.delivered(item["rqi"])
+        self.assertEqual(sent.count((BINDING["observationContainer"], "kr-test")), 2)
+        self.assertIn(("@core/telemetry", "kr-other"), sent)
+        self.assertNotIn(("@core/telemetry", "kr-test"), sent)
+
+        with patch("bubble_gateway.store.time.time", return_value=2000):
+            for sequence, state in ((0, True), (1, False)):
+                item = self.store.due()
+                self.assertEqual((item["container"], item["payload"]["sequence"], item["payload"]["state"]),
+                                 ("@core/telemetry", sequence, state))
+                self.store.delivered(item["rqi"])
+            self.assertIsNone(self.store.due())
+
     def test_core_sequence_exhaustion_does_not_wrap_or_queue_partial_observation(self):
         self.store.db.execute("INSERT INTO core_sequences VALUES('kr-test',4294967295)")
         self.store.db.commit()

@@ -10,6 +10,7 @@
 - `CORE_BRIDGE_ENABLED=true`는 telemetry와 성공 ACK를 SQLite outbox에 추가하고 팀 MQTT topic으로 보낸다. direct oneM2M cin 원본도 유지한다. CORE projection은 broker PUBACK까지만 확인하며 CORE UPDATE·subscription evidence와 구분한다.
 - batteryPct는 실제 측정 SOC를 정수 반올림한다. battery 또는 RSSI가 없으면 CORE v1이 null을 허용하지 않으므로 projection을 보내지 않는다. 원본 nullable 관측은 cin에 보존한다. 0%나 -127 같은 가짜 측정값으로 채우지 않는다.
 - CORE가 deviceId:sequence로 dedup하므로 device별 uint32 sequence를 SQLite에 따로 유지한다. 원래 bootId/firmwareSequence를 함께 남긴다. sequence 소진 시 오류로 보존하며 자동 wrap하지 않는다. DB를 삭제하면 이 연속성을 잃으므로 일반 복구로 사용하지 않는다.
+- Gateway 0.2.11은 SQLite에서 장치별로 가장 먼저 대기열에 들어간 CORE 관측만 전송 대상으로 삼는다. 그 행이 재시도 대기 중이면 같은 장치의 최신 CORE 관측도 기다린다. 다른 장치의 CORE 관측과 native 관측·영수증은 계속 처리한다. [재시도 순서와 SDT 시험](evidence/2026-11-10-core-retry-order/README.md)
 - 성공 ACK만 READBACK_VERIFIED로 변환하고 measurementScope=gpio-at-application을 함께 보낸다. 실제 모터 작동을 센서로 검증한 값이 아니다. 실패/미확정 결과는 원래 상세 receipt cin에 기록한다.
 
 Gateway0.2.2는 native 영수증과 CORE ACK를 최초 staging 때 한 트랜잭션에서 생성한다. ACK가 전달돼 삭제된 뒤 native 재시도 때문에 다시 생성하지 않는다. 경로별 기존 outbox는 독립 재시도하며 CORE projection 선택은 최초 staging 시 고정한다. 설정을 나중에 켜도 이미 대기 중인 native 영수증을 소급 backfill하지 않는다. [경로 수명·시험](raspberry-pi-gateway/RECEIPT_ROUTING.md)에 기록했다.
@@ -27,6 +28,8 @@ Gateway 0.2.5는 팀 main `715ef58`의 실제 mTLS API에서 명령을 받아 �
 팀 main 원본을 대상으로 이 차이를 재현했다. HTTP 발급 명령의 ACK는 `REVIEW`로 남았고, CORE에 등록된 명령은 ACK의 payloadHash만 바꿔도 `ACK_RECORDED`가 됐다. 중앙 발급·승인 기록, 인증된 Gateway ID, CSE native receipt를 결속하는 KEYRING 후보는 정상 입력 2개와 거절 사례 7개를 검증했다. 운영에서의 원자적 정산과 ACK 수신기 연결은 팀 owner 경계다. [결속 후보](integration-candidate/README.md) · [실행 증거](evidence/2026-11-10-core-ack-binding/README.md)
 
 handover 후에는 이전 epoch뿐 아니라 대상 Gateway도 확인해야 한다. 팀 원본 API는 이전 Gateway가 같은 장치에 등록된 상태에서 현재 epoch의 새 명령을 승인했다. 활성 Edge와 Gateway를 명시적으로 연결한 후보는 발급·조회·승인에서 이전 Gateway를 차단했다. 롤백 뒤 원래 Gateway 복구와 API 재기동 후 판정 유지도 확인했다. 운영 적용은 팀의 정본 Edge → Gateway 매핑과 drain 계약에 따른다. [후보와 입력](integration-candidate/README.md#handover-뒤-활성-gateway-검증) · [mTLS 시험](evidence/2026-11-10-handover-owner/README.md)
+
+CORE 브리지는 Gateway마다 중복 목록을 유지한다. 여러 Gateway가 동일 SDT 상태를 갱신하거나 중앙 UPDATE가 동시에 처리될 때의 최신 상태 판정은 CORE의 수신 정책과 결속해야 한다.
 
 ## 소유권
 
