@@ -105,6 +105,17 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
             await pending
         self.assertFalse(self.peer.ready.is_set())
 
+    async def test_diagnostic_trace_excludes_reads_and_old_connection_notifications(self):
+        events = []
+        self.fleet._trace = events.append
+        old, current = await self.reconnect()
+        self.assertEqual([event["event"] for event in events], ["ready", "lost", "ready"])
+        old.callbacks[self.fleet.observation_uuid](None, bytearray((json.dumps(old.frame(2)) + "\n").encode()))
+        current.callbacks[self.fleet.observation_uuid](None, bytearray((json.dumps(current.frame(2)) + "\n").encode()))
+        self.assertEqual([event["event"] for event in events], ["ready", "lost", "ready", "notification"])
+        self.assertEqual(events[-1]["generation"], events[2]["generation"])
+        self.assertEqual(events[-1]["sequence"], 2)
+
     async def test_observation_ready_without_command_characteristic(self):
         def observation_only(*args, **kwargs):
             client = self.factory(*args, **kwargs)

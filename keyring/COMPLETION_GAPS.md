@@ -21,7 +21,7 @@ Gateway 0.2.5는 Pi 임시 사용자 systemd에서 실제 Feather 관측 27개�
 | Raspberry Pi Gateway daemon | [설치/config/systemd](raspberry-pi-gateway/README.md), 실제 Pi에서 0.2.5 임시 사용자 systemd·BlueZ·시험 mTLS·재시작 | 배포용 systemd unit·실물 명령·운영 인증서/등록 |
 | MQTT/HTTPS transport | 기존 TLS/mTLS·ACL6개와 Mobius4 주소 범위 시험, 실물 Pi 관측의 HTTPS5개씩3회·정상 MQTT5개·broker 중단 후 HTTPS fallback15개와 CSE readback 전체 일치 | 운영 PKI·principal→AE/Originator·ACP/grant·capability 합의. 시험 인증서·개발 mapping과 운영 승인 구분 |
 | queue/dedup/ACK/readback | 기존 SQLite reopen·exit73/WAL 복구·충돌 보존과 Linux CLI10개, 실물 Pi에서 CSE 중단 중 pending5개 보존→복구 전달5개·관측 readback 일치 | 실제 장치 명령 ACK/readback·Pi 전원 손실·운영 DB·중앙 settlement/checkpoint·journal reclaim·복구 승인/활성화 |
-| power/range/reconnect/command 시험 | 모의 BLE·기한/fence/명령 회귀와 실제 로컬 전송 복구 | 실제 전원·BLE 거리·명령·회수·journal 장애·재연결 측정 |
+| power/range/reconnect/command 시험 | 모의 BLE·기한/fence/명령 회귀, 실제 로컬 전송 복구, [Pi 거리·재연결 기록 도구 소스](raspberry-pi-gateway/TESTING.md#실물-ble-거리재연결-기록) | 실제 전원·BLE 거리·명령·회수·journal 장애·재연결 측정 |
 | PCB·Gateway·앱 연동 영상 | 코드/config/로컬 로그·hash와 실제 Feather→Pi→CSE 관측 receipt | 제작 PCB→Pi→CSE→앱/웹·5분 미만 영상·공개/제출 evidence |
 
 헤드폰 playback·OTA/secure boot/flash encryption·중앙 승인 복구 활성화는 미구현 목록에 유지한다. 원래 완료 조건을 이 목록으로 축소하지 않는다.

@@ -34,6 +34,23 @@ MQTT 단독 수신 시험은 목록 조회에만 503 오류를 주입한다. 대
 
 정상 명령 사례는 CSE에서 읽은 영수증과 실행 직전 중앙 승인 응답을 Node의 ACK 결속 검사에도 전달한다. 이 재현은 팀 main `715ef58`의 CORE 동작을 기준으로 한다. [재현 결과](../evidence/2026-11-10-core-ack-binding/README.md)
 
+## 실물 BLE 거리·재연결 기록
+
+Gateway 0.2.16의 `bubble-keyring-ble-characterize`는 Pi의 BlueZ와 기존 Gateway GATT 수신기를 사용하는 현장 기록 도구다. 등록된 장치와 펌웨어를 지정하고 `feather-bench` 또는 `r18-pcb`를 선택한다. 각 선택은 펌웨어 identity의 보드 revision과 대조된다. Gateway와 같은 DB 경로의 프로세스 lock을 사용하므로, 시험 전에 해당 Gateway 서비스와 별도 BLE 관측기를 중지한다. 주소와 DB 경로는 실제 로컬 설정을 사용한다.
+
+```sh
+bubble-keyring-ble-characterize --mode range --hardware feather-bench \
+  --gateway-id gw-feather-bench --device-id keyring-feather-lab --address "$FEATHER_ADDRESS" \
+  --firmware-revision feather-probe-0.1.1 --distance-cm 100 --seconds 90 \
+  --database "$GATEWAY_DATABASE" --output "$PRIVATE_EVIDENCE/feather-range-100cm.json"
+```
+
+거리는 실제 측정값을 입력한다. 거리별로 Pi·장치 위치, 장애물, 방향, 펌웨어와 시간 조건을 맞춘 뒤 새 파일로 기록한다. `--mode reconnect`에서는 첫 알림 표시를 확인한 후 연결을 끊고 복구한다. 도구가 BLE 연결 종료를 감지한 시점에서 새 세션의 첫 알림까지 걸린 시간을 기록한다. 복구 시간에는 실험자가 링크를 복구하는 데 걸린 시간도 포함된다.
+
+JSON에는 최초 READ와 구독 준비 전 데이터가 제외된 알림 수, 세션별 sequence 간격, 새 세션까지의 경과 시간, 같은 부팅인지 여부가 남는다. RSSI는 접속 준비 시점에 남아 있던 광고 RSSI와 그 나이를 기록하고 측정값이 없으면 `null`이다. sequence 간격은 펌웨어 내부 생략과 무선 전달 손실을 따로 식별하지 못한다. 출력에는 BLE 주소, 원래 boot ID, 센서 payload나 비밀값을 담지 않는다. `RECORDED`는 요청한 측정 종류의 관측이 남았음을 나타낸다. CSE 수신이나 생산 합격 판정은 별도 증거로 기록한다.
+
+제작 PCB의 sleep·wake·배터리 입력 전력은 외부 계측과 [전력 측정 지점 설명](../firmware/POWER_MONITOR.md)을 함께 사용한다. 이 도구는 소스와 회귀시험 코드만 준비했다.
+
 ## Feather LED ON/OFF 시험
 
 Feather 명령 펌웨어 0.2.0과 [Pi 벤치 연결 절차](../evidence/2026-11-10-pi-full-daemon/README.md#재현-절차)를 사용한다. PC의 시험 fixture는 새 CA·Mobius4 컨테이너·팀 중앙 API를 열고, Gateway와 Guardian에 별도 인증서를 발급한다. Guardian은 PC에만 두고 Pi에는 Gateway bundle을 전달한다. Pi는 Gateway 0.2.7 이상, 새 SQLite, `FIRMWARE_REVISION_ALLOWLIST=feather-probe-0.2.0`, `MQTT_ENABLED=false`, `CORE_BRIDGE_ENABLED=false`로 시작한다.

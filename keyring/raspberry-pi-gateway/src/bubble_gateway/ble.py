@@ -177,17 +177,30 @@ class BleFleet:
         self._scanner: Any = None
         self._tasks: list[asyncio.Task] = []
         self._callback: Callable[[dict[str, Any]], Awaitable[None]] | None = None
+        self._trace: Callable[[dict[str, Any]], None] | None = None
         self._closed = asyncio.Event()
 
-    async def start(self, observation_callback: Callable[[dict[str, Any]], Awaitable[None]]) -> None:
+    async def start(self, observation_callback: Callable[[dict[str, Any]], Awaitable[None]], *,
+                    trace: Callable[[dict[str, Any]], None] | None = None) -> None:
         if self._tasks:
             raise RuntimeError("BLE fleet already started")
         self._closed.clear()
         self._callback = observation_callback
+        self._trace = trace
         self._tasks.append(asyncio.create_task(self._scan(), name="ble-scan"))
         for peer in self._peers.values():
             self._tasks.append(asyncio.create_task(self._watch(peer), name=f"ble-{peer.device_id}"))
             self._tasks.append(asyncio.create_task(self._deliver(peer), name=f"ble-data-{peer.device_id}"))
+
+    def _trace_event(self, peer: _Peer, event: str, **fields: Any) -> None:
+        if self._trace is None:
+            return
+        try:
+            self._trace({"event": event, "atNs": time.monotonic_ns(), "generation": peer.generation,
+                         "bootId": peer.identity["bootId"], "boardRevision": peer.identity["boardRevision"],
+                         **fields})
+        except Exception:
+            LOG.error("BLE diagnostic trace sink failed")
 
     def _detected(self, device: Any, advertisement: Any) -> None:
         peer = self._by_address.get(device.address.casefold())
@@ -225,6 +238,8 @@ class BleFleet:
     def _lost(self, peer: _Peer, generation: int | None = None) -> None:
         if generation is not None and generation != peer.generation:
             return
+        if peer.ready.is_set():
+            self._trace_event(peer, "lost")
         # Invalidate callbacks immediately, including while handshake/write awaits
         # are still unwinding. A replacement connection gets another generation.
         peer.generation += 1
@@ -304,6 +319,11 @@ class BleFleet:
                     peer.command_writable = command is not None and "write" in command.properties
                     peer.ready.set()
                     peer.last_error = None
+                    if self._trace is not None:
+                        age = None if peer.rssi_monotonic is None else time.monotonic() - peer.rssi_monotonic
+                        fresh = peer.rssi is not None and age is not None and 0 <= age <= 30
+                        self._trace_event(peer, "ready", advertisingRssiDbm=peer.rssi if fresh else None,
+                                          advertisingAgeMs=round(age * 1000) if fresh else None)
                     delay = 1.0
                     await peer.disconnected.wait()
             except asyncio.CancelledError:
@@ -324,11 +344,11 @@ class BleFleet:
             return
         try:
             for frame in peer.observation_frames.feed(data):
-                self._queue_observation(peer, frame)
+                self._queue_observation(peer, frame, notification=True)
         except (BleProtocolError, ValueError, TypeError):
             self._protocol_failure(peer, "invalid_observation")
 
-    def _queue_observation(self, peer: _Peer, frame: dict[str, Any]) -> None:
+    def _queue_observation(self, peer: _Peer, frame: dict[str, Any], *, notification: bool = False) -> None:
         required = {"version", "deviceId", "bootId", "sequence", "uptimeMs", "battery",
                     "buttonState", "sensorValues", "state"}
         if (set(frame) != required or type(frame.get("version")) is not int or frame["version"] != 1
@@ -368,6 +388,9 @@ class BleFleet:
             peer.dropped_observations += 1
             self._protocol_failure(peer, "observation_backpressure")
             LOG.error("BLE observation queue full for %s; session interrupted", peer.device_id)
+        else:
+            if notification and peer.ready.is_set() and self._trace is not None:
+                self._trace_event(peer, "notification", sequence=frame["sequence"])
 
     async def _deliver(self, peer: _Peer) -> None:
         # Keep the current observation in memory until the durable queue accepts

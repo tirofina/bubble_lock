@@ -101,6 +101,8 @@ quit
 
 이번 실행에서는 `bluetoothctl`의 PIN 입력 과정이 취소되어, 정확한 광고 이름·service UUID·장치 object path로 대상을 제한한 임시 `KeyboardOnly` D-Bus agent로 등록했다. 같은 로컬 PIN을 사용했고 `Paired`, `Bonded`, `Trusted`를 확인한 뒤 agent를 해제했다. 펌웨어의 Secure Connections·MITM·bonding 요구는 유지했다. 같은 취소 오류가 나면 PIN 입력과 연결 해제 원인을 확인하며 자동 승인 agent나 인증 해제로 우회하지 않는다.
 
+고정 거리에서의 수신과 의도적으로 링크를 끊은 뒤 재연결 시간을 남길 때는 Gateway 0.2.16의 [실물 BLE 거리·재연결 기록](../../raspberry-pi-gateway/TESTING.md#실물-ble-거리재연결-기록)을 사용한다. 이 도구는 Feather의 보드 ID `feather-esp32-v2`를 확인한 뒤 벤치 결과로 기록한다.
+
 등록 후 같은 가상환경에서 광고와 관측을 확인한다.
 
 ```sh
