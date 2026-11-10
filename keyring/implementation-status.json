@@ -7,7 +7,7 @@
   "date": "2026-11-10",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Gateway 0.2.16 BLE characterization is source-only. Prior Pi/Feather evidence covers observations; controlled distance, reconnect timing, r18 and power acceptance remain.",
+  "verificationStatus": "Firmware 0.7.4 wake preservation and Gateway 0.2.17 wake capture are source-only. Prior Pi/Feather observations do not establish r18 sleep, wake, range or power acceptance.",
   "rubricIds": [
     "R01",
     "R02",
@@ -78,7 +78,8 @@
     "scoped CSE application receipts bound to the original MQTT bytes, exact reply ACLs, and replay from the latest durable APPLIED cursor",
     "serialized scoped owner transitions with pending UPDATE fencing, monotonic rollback and a bench operator command",
     "operator-only retirement of obsolete CORE telemetry after a durable cold archive and exact row fingerprint comparison",
-    "operator-only BlueZ range/reconnect recorder with hardware identity checks, post-handshake notifications and private monotonic evidence"
+    "operator-only BlueZ range/reconnect recorder with hardware identity checks, post-handshake notifications and private monotonic evidence",
+    "wake source and GPIO mask retention in bounded r18 health frames, plus operator-only Pi capture of a newly observed boot"
   ],
   "existingHardware": {
     "status": "source-snapshot-included-unverified",
@@ -132,20 +133,20 @@
   "logSha256": "0c25234a13f2542bb13ff4ed2fd39c8aa015375a435bc6b6156f90cf0b7d6efa",
   "logSha256Scope": "private actual Pi observations.jsonl captured in the HTTPS outage/replay run; digest recorded by actualReceipt",
   "releaseSha": null,
-  "firmwareRevision": "keyring-0.7.3",
+  "firmwareRevision": "keyring-0.7.4",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "30131330493c5f9d6400b5ff5ee63958f789602a",
+    "sourceCommit": "1f89a884683fb13d03f273108b547e55ef206a74",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "30131330493c5f9d6400b5ff5ee63958f789602a",
-    "lastPushedCommit": "30131330493c5f9d6400b5ff5ee63958f789602a",
-    "latestCheckpoint": "Added the Pi BlueZ range/reconnect recorder and a regression source for excluding initial reads and stale generations. No BLE execution.",
-    "lastPushedCommitBeforeThisCheckpoint": "f61a0cea23f528abbae75151cfb65bfb1ef675df"
+    "latestLocalSourceCommit": "1f89a884683fb13d03f273108b547e55ef206a74",
+    "lastPushedCommit": "1f89a884683fb13d03f273108b547e55ef206a74",
+    "latestCheckpoint": "Preserved r18 wake fields in reduced health frames and added a Pi wake capture mode with an idle interval and exact source matching. No BLE execution.",
+    "lastPushedCommitBeforeThisCheckpoint": "e13212eec18012701a14624bc13e09ce5d2af0ca"
   },
-  "gatewayRevision": "0.2.16",
+  "gatewayRevision": "0.2.17",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
@@ -167,7 +168,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Prepare a repeatable physical Pi BLE range and reconnect capture for Feather and r18",
+    "executionRequest": "Preserve r18 wake evidence on BLE health frames and prepare a two-window Pi wake capture",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -175,11 +176,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "30131330493c5f9d6400b5ff5ee63958f789602a",
-    "sourceValidation": "CLI and session regression source only. No build, tests, BLE execution or physical measurements.",
+    "sourceCommit": "1f89a884683fb13d03f273108b547e55ef206a74",
+    "sourceValidation": "Firmware, CLI and regression source only. No build, tests, BLE execution, flash or measurements.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "The physical BLE capture path is ready as source. Pi execution, actual r18 and power evidence, scoped handover/receipt validation and central acceptance remain.",
+    "currentDependencyState": "The physical wake capture path is available as source. Sleep-enabled r18 bring-up, Pi execution, external current/entry evidence and central acceptance remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -694,5 +695,15 @@
     "physicalMeasurementExecuted": false,
     "regressionExecuted": false,
     "sourceCommit": "30131330493c5f9d6400b5ff5ee63958f789602a"
+  },
+  "physicalWakeCapture": {
+    "reference": "raspberry-pi-gateway/TESTING.md",
+    "firmwareVersion": "keyring-0.7.4",
+    "gatewayVersion": "0.2.17",
+    "status": "source-only",
+    "wakeCases": ["confirm", "panic", "motion", "timer"],
+    "physicalMeasurementExecuted": false,
+    "regressionsExecuted": false,
+    "sourceCommit": "1f89a884683fb13d03f273108b547e55ef206a74"
   }
 }

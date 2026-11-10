@@ -602,3 +602,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 이번 체크포인트는 소스 단계다. 빌드·시험, BLE 접속, 거리·재연결·전원 실측은 미실행이다. 전체 goal은 active/progress다.
 
 구현 commit `30131330493c5f9d6400b5ff5ee63958f789602a`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `f61a0ce..3013133`다.
+
+## 2026-11-10 — r18 wake 관측 보존과 Pi 기록
+
+이전 goal turn은 Pi 실물 BLE 거리·재연결 기록 소스를 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- r18 0.7.4는 health 프레임을 줄여도 `wake`, `wakePins`, `power`를 남긴다. 기존 512바이트 검사를 거치며 최소 프레임에서 버튼 누계와 wake 필드를 함께 확인하는 호스트 회귀 소스를 추가했다.
+- Gateway 0.2.17의 `--mode wake`는 BLE를 비운 뒤 초기와 복구 부팅을 대조한다. 첫 복구 부팅의 health 알림에서 확인·비상·움직임·타이머 원인을 구분한다. 실제 절전 진입과 소비전류는 별도 실물 근거가 필요하다. [Pi wake 절차](../keyring/raspberry-pi-gateway/TESTING.md#r18-wake-기록)
+- 이번 변경은 소스 단계다. 빌드·회귀시험, 펌웨어 flash, Pi·r18 wake와 전원 실측은 미실행이다. 전체 goal은 active/progress다.
+
+구현 commit `1f89a884683fb13d03f273108b547e55ef206a74`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `e13212e..1f89a88`다.
