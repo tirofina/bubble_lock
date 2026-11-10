@@ -800,3 +800,12 @@ PostgreSQL 정산 소스 commit `a551e9ee797dfa18b26c85a79c23d5ceccd55df5`를 `o
 - 구현·회귀시험 소스만 반영했다. 실행 중인 격리 작업자 재기동·실제 실패 영수증·빌드·시험·실물 장치 작업은 미실행이다. 이전 Feather/Pi 실물 승인 요청은 대기 중이다. 전체 goal은 active/progress다.
 
 부정 영수증 분류와 복구 commit `f2cc3f90f59c1bb0a28c307b81ea542eefaa7323`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `a6cc9eb..f2cc3f9`다.
+
+## 2026-11-10 — 장치 저널과 격리 중앙 정산 기록 대조
+
+DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 브랜치에 새 변경은 없다.
+
+- 장치·Gateway·CSE 대조 보고서에 장치 기록 파일 SHA256과 CSE 원본 영수증의 ID·생성 시각을 추가했다. 격리 PostgreSQL 조회 도구는 이 보고서로 최대 32개 명령을 한 쿼리에서 비교한다. 정산 일치·누락·불일치와 기존 검토 건을 구분한다. Gateway 전송 미확인은 검토 건수에 남긴다. [운영 절차](../keyring/JOURNAL_RETENTION.md#격리-postgresql-정산-기록-대조)
+- 구현·회귀시험 소스만 반영했다. 새 PostgreSQL 조회, 빌드, 시험, 실물 명령은 미실행이다. 장치 저널 회수에는 중앙 계약이 필요하다. 이전 Feather/Pi 실물 승인 요청은 대기 중이며 goal은 active/progress다.
+
+대조 도구 commit `a2c9976e612bca2c033a13bd7b1cf903d4e5d9ae`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `325ba5b..a2c9976`이다.
