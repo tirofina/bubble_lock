@@ -7,7 +7,7 @@
   "date": "2026-11-11",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Scoped receipt pin routes were provisioned. Both Gateway certificates retrieved only their assigned parent in the recorded GET checks. Firmware 0.7.6 BLE session changes, Gateway 0.2.23 receipt publication and live settlement remain unverified.",
+  "verificationStatus": "Scoped receipt pin routes were provisioned. Both Gateway certificates retrieved only their assigned parent in the recorded GET checks. Firmware 0.7.7 protected GATT reads, Gateway 0.2.23 receipt publication and live settlement remain unverified.",
   "rubricIds": [
     "R01",
     "R02",
@@ -25,6 +25,7 @@
     "LIS2DW12 latched motion events and optional ESP32-S3 deep sleep/button/timer wake",
     "BLE MITM bonding, GATT identity and framed JSON notifications",
     "r18 GATT writes, subscriptions, disconnects and notification fragments bound to the active BLE connection",
+    "r18 identity, observation, receipt and journal GATT reads bound to the active connection with immutable long-read snapshots",
     "bounded NVS command journal, fencing, GPIO readback and timed motor output",
     "r18 startup lockout before Arduino default NVS format and fail-closed slot validation",
     "Raspberry Pi BLE fleet and SQLite durable outbox",
@@ -145,18 +146,18 @@
   "logSha256": "0c25234a13f2542bb13ff4ed2fd39c8aa015375a435bc6b6156f90cf0b7d6efa",
   "logSha256Scope": "private actual Pi observations.jsonl captured in the HTTPS outage/replay run; digest recorded by actualReceipt",
   "releaseSha": null,
-  "firmwareRevision": "keyring-0.7.6",
+  "firmwareRevision": "keyring-0.7.7",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "8c340992d3cde9208338fc24acc3db2a866c2f75",
+    "sourceCommit": "82d76bb80aeb903ea3cad1681e8abe838a99ee47",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "8c340992d3cde9208338fc24acc3db2a866c2f75",
-    "lastPushedCommit": "8c340992d3cde9208338fc24acc3db2a866c2f75",
-    "latestCheckpoint": "Bind r18 GATT writes, subscription state, disconnect handling and notification targets to the active authenticated peer.",
-    "lastPushedCommitBeforeThisCheckpoint": "3681088a074ebf6a4c172f56594618d547a7f5ee"
+    "latestLocalSourceCommit": "82d76bb80aeb903ea3cad1681e8abe838a99ee47",
+    "lastPushedCommit": "82d76bb80aeb903ea3cad1681e8abe838a99ee47",
+    "latestCheckpoint": "Authorize every r18 GATT read and blob fragment against the active peer and serve one snapshot across offsets.",
+    "lastPushedCommitBeforeThisCheckpoint": "2aba11d80f921473b349a14dc0d2c8bad2c19a36"
   },
   "gatewayRevision": "0.2.23",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
@@ -180,7 +181,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Fence r18 BLE command fragments and receipt notifications at the active connection boundary",
+    "executionRequest": "Fence r18 protected reads and long-read snapshots at the active BLE connection boundary",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -188,11 +189,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "8c340992d3cde9208338fc24acc3db2a866c2f75",
-    "sourceValidation": "Read the installed Arduino GATT event dispatcher and notify implementation. Firmware and host regression source only. No build, test, flash or physical BLE session was performed.",
+    "sourceCommit": "82d76bb80aeb903ea3cad1681e8abe838a99ee47",
+    "sourceValidation": "Read the installed Arduino long-read and GATT registration source. Firmware and host regression source only. No build, link check, test, flash or physical BLE session was performed.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "The isolated worker and receipt pin routes are ready. Firmware 0.7.6 link, physical BLE and r18 NVS fault verification, Gateway 0.2.23 build and verification, receipt POST and settlement evidence, a separately authorized Feather 0.2.0 and Pi bench run, authoritative CSE route and journal reclaim contracts, production CORE and r18 bring-up remain.",
+    "currentDependencyState": "The isolated worker and receipt pin routes are ready. Firmware 0.7.7 link, physical BLE long-read and r18 NVS fault verification, Gateway 0.2.23 build and verification, receipt POST and settlement evidence, a separately authorized Feather 0.2.0 and Pi bench run, authoritative CSE route and journal reclaim contracts, production CORE and r18 bring-up remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -961,5 +962,14 @@
     "built": false,
     "physicalBleExecuted": false,
     "sourceCommit": "8c340992d3cde9208338fc24acc3db2a866c2f75"
+  },
+  "firmwareProtectedGattReads": {
+    "reference": "firmware/README.md",
+    "status": "source-only",
+    "firmwareVersion": "keyring-0.7.7",
+    "hostRegressionsExecuted": false,
+    "linkedFirmwareBuilt": false,
+    "physicalLongReadExecuted": false,
+    "sourceCommit": "82d76bb80aeb903ea3cad1681e8abe838a99ee47"
   }
 }

@@ -896,3 +896,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 기존 호스트 회귀시험 코드를 확장했다. 빌드·시험·flash·실물 BLE 세션은 미실행이다. Feather/Pi 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
 
 BLE 세션 commit `8c340992d3cde9208338fc24acc3db2a866c2f75`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `3681088..8c34099`다.
+
+## 2026-11-11 — r18 GATT 읽기와 긴 읽기 사본의 세션 분리
+
+직전 goal turn은 r18 명령·저널 쓰기와 알림을 인증 세션에 결속한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- 설치된 Arduino BLE의 긴 읽기는 공유 characteristic offset을 쓰며 후속 요청에서 read callback을 건너뛴다. `keyring-0.7.7`은 GATT 이벤트 등록을 감싸 identity·관측·영수증·저널의 각 READ를 기본 처리기 전에 인증 연결 ID와 대조한다.
+- 첫 요청에서 최대 512바이트의 사본을 잡고 같은 세션의 후속 offset에 제공한다. 다른 피어, 범위를 벗어난 offset, 재연결 후 예전 offset을 거절한다. 게시 중 값이 바뀌어도 진행 중인 읽기의 바이트는 유지한다. [펌웨어 설명](../keyring/firmware/README.md)
+- 호스트 회귀시험 소스만 확장했다. 빌드·링크·시험·flash·실물 BlueZ 읽기는 미실행이다. Feather/Pi 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
+
+GATT 읽기 commit `82d76bb80aeb903ea3cad1681e8abe838a99ee47`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `2aba11d..82d76bb`다.
