@@ -13,6 +13,7 @@
 #include <stddef.h>
 #include <string>
 #include "board_r18.h"
+#include "command_wire.h"
 #include "firmware_options.h"
 #include "motion_wake.h"
 #include "power_state.h"
@@ -23,7 +24,7 @@
 #include "headphone_standby.h"
 
 namespace {
-constexpr char FirmwareRevision[] = "keyring-0.7.1";
+constexpr char FirmwareRevision[] = "keyring-0.7.2";
 #if defined(KEYRING_LEGACY_GATT) && KEYRING_LEGACY_GATT
 constexpr char ServiceUuid[] = "8b8f0001-8e7a-4f36-a8c2-1c9b5d620001";
 constexpr char IdentityUuid[] = "8b8f0002-8e7a-4f36-a8c2-1c9b5d620001";
@@ -435,37 +436,18 @@ bool hashValid(const char *hash) {
   for (unsigned i = 0; i < 64; ++i) if (!((hash[i] >= '0' && hash[i] <= '9') || (hash[i] >= 'a' && hash[i] <= 'f'))) return false;
   return true;
 }
-bool exactFields(JsonObjectConst object, const char *const *allowed, unsigned count) {
-  if (object.size() != count) return false;
-  for (JsonPairConst field : object) {
-    bool found = false;
-    for (unsigned i = 0; i < count; ++i) if (strcmp(field.key().c_str(), allowed[i]) == 0) found = true;
-    if (!found) return false;
-  }
-  return true;
-}
-
 void processCommand(const Frame &frame) {
   if (!provisioned || !connected || !authenticated || frame.generation != connectionGeneration) return;
   DynamicJsonDocument doc(8192);
-  DeserializationError error = deserializeJson(doc, frame.bytes, DeserializationOption::NestingLimit(4));
+  const size_t length = strlen(frame.bytes);
+  DeserializationError error = deserializeJson(doc, frame.bytes, length, DeserializationOption::NestingLimit(4));
   // Without trustworthy correlation fields, drop malformed traffic instead of inventing an ID/hash.
   if (error || !doc.is<JsonObject>()) return;
-  const char *id = doc["commandId"], *hash = doc["payloadHash"], *target = doc["deviceId"];
+  const char *id = doc["commandId"], *hash = doc["payloadHash"];
   if (!identifier(id) || !hashValid(hash)) return;
-  static const char *const fields[] = {"version", "type", "deviceId", "commandId", "desiredState",
-      "grantRevision", "ownershipEpoch", "payloadHash", "remainingMs"};
-  static const char *const desiredFields[] = {"state"};
-  bool valid = exactFields(doc.as<JsonObjectConst>(), fields, 9) && doc["version"].is<int>() &&
-      doc["version"].as<int>() == 1 && doc["type"].is<const char *>() &&
-      strcmp(doc["type"].as<const char *>(), "command") == 0 && identifier(target) &&
-      strcmp(target, deviceId) == 0 && doc["desiredState"].is<JsonObject>() &&
-      exactFields(doc["desiredState"].as<JsonObjectConst>(), desiredFields, 1) &&
-      doc["desiredState"]["state"].is<bool>() && doc["grantRevision"].is<int32_t>() &&
-      doc["grantRevision"].as<int32_t>() > 0 && doc["ownershipEpoch"].is<int32_t>() &&
-      doc["ownershipEpoch"].as<int32_t>() >= 0 && doc["remainingMs"].is<uint32_t>() &&
-      doc["remainingMs"].as<uint32_t>() >= 1 && doc["remainingMs"].as<uint32_t>() <= 30000;
-  if (!valid) { publishReceipt(id, hash, "INVALID"); return; }
+  if (!commandWire::valid(doc.as<JsonObjectConst>(), deviceId, frame.bytes, length)) {
+    publishReceipt(id, hash, "INVALID"); return;
+  }
   uint32_t epoch = doc["ownershipEpoch"], grant = doc["grantRevision"], remaining = doc["remainingMs"];
   bool desired = doc["desiredState"]["state"];
   int freeSlot = -1;

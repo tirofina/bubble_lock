@@ -19,6 +19,7 @@ CORE v1 canonical contract는 인수했다. 아래 KEYRING identity·receipt 확
 - Observation: `version:1, deviceId, bootId, sequence, uptimeMs, battery`(0..100 또는 null), `buttonState`("released"|"confirm"|"panic"), `sensorValues`(객체), `state`(boolean). RSSI와 UTC observedAt은 Gateway 관측 시 부여한다. BLE RSSI는 실제 scan 값 또는 null이며 거리로 환산하지 않는다.
 - firmware keyring-0.3.0은 sensorValues에 motion/motionEvents/wake/wakePins/power를 추가한다. motionEvents는 해당 부팅의 센서 이벤트 수이고 wakePins는 RTC에 기록된 버튼 mask다. sleep은 명시적 장치 옵션이며 BLE 단절 구간이 생긴다. 512byte 제한에서는 선택 센서 상세값부터 줄이고 실제 battery를 유지한다. 상세 정책과 미실행 인수 항목은 [POWER_WAKE](firmware/POWER_WAKE.md)에 있다.
 - Command: `version:1, type:"command", deviceId, commandId, desiredState:{state:boolean}, grantRevision`(양의 정수), `ownershipEpoch`(0 이상), `payloadHash`(원래 중앙 command의 canonical JSON SHA256), `remainingMs`(1..30000).
+- 명령은 프레임마다 JSON 객체 하나를 담고 각 객체의 키는 한 번씩 나타나야 한다. 디코딩된 NUL과 객체 뒤 공백 외 데이터를 거절한다.
 - firmware keyring-0.4.0은 선택형 주변장치의 sensorValues.audio/display/sd/sdDropped를 추가한다. display는 write-only 소프트웨어 구성 상태(`st7789_unverified`/`jd9853_unverified`)이며 실물 검출 결과가 아니다. SD는 best-effort receipt 복사이고 NVS journal·BLE ackCode 계약을 바꾸지 않는다. 512byte 제한에서 선택 상태 필드가 생략될 수 있다. [주변장치 설정과 남은 확인](firmware/PERIPHERALS.md)을 참조한다.
 - Receipt: `version:1, deviceId, bootId, commandId, payloadHash, ackCode, acceptedUptimeMs, appliedUptimeMs`(null 가능), `readback:{state:boolean}`, `firmwareRevision`.
 - 새 `APPLIED`의 bootId는 현재 GATT identity와 같아야 한다. 장치 journal에서 되돌려 주는 `DUPLICATE`의 bootId와 readback은 최초 적용 당시 기록을 사용한다.

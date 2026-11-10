@@ -1,5 +1,7 @@
 # 빌드용 프로필과 실제 로컬 결과
 
+keyring-0.7.2의 BLE 명령 프레임 검사는 같은 세 프로필과 r18·Feather 호스트 시험으로 확인했다. [빌드·시험 로그와 해시](../evidence/2026-11-10-command-wire/README.md)
+
 keyring-0.7.1의 출력 차단 변경은 아래 세 프로필과 호스트 시험 6개에서 확인했다. [빌드·시험 로그와 해시](../evidence/2026-11-10-motor-gate/README.md)
 
 ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.7.0.

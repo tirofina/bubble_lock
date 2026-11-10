@@ -2,7 +2,7 @@
 
 ROLE: KEYRING · DOC-REV: 2.0.0 · 구현 계약: 0.1.0 · 상태: implemented, unverified
 
-ESP32-S3-WROOM-1-N16R8 / r18-hand-solder 보드를 대상으로 작성한 소스다. keyring-0.7.1은 BLE 관측·버튼·배터리·가속도와 진동 명령/receipt, 선택형 ST7789·JD9853 상태 화면·스피커 cue·SD receipt 복사를 포함한다. [전원 계측](POWER_MONITOR.md), [MAX9850 대기 상태](HEADPHONE_STANDBY.md), [프로필과 빌드 기록](BUILD_PROFILES.md)을 함께 본다. 제작 PCB에서의 flash·실물 실행은 수용 시험 단계다.
+ESP32-S3-WROOM-1-N16R8 / r18-hand-solder 보드를 대상으로 작성한 소스다. keyring-0.7.2는 BLE 관측·버튼·배터리·가속도와 진동 명령/receipt, 선택형 ST7789·JD9853 상태 화면·스피커 cue·SD receipt 복사를 포함한다. [전원 계측](POWER_MONITOR.md), [MAX9850 대기 상태](HEADPHONE_STANDBY.md), [프로필과 빌드 기록](BUILD_PROFILES.md)을 함께 본다. 제작 PCB에서의 flash·실물 실행은 수용 시험 단계다.
 
 배송 대기 중에는 Adafruit Feather ESP32 V2와 1.54인치 ST7789에서 화면·버튼·BLE 관측을 [별도 벤치 스케치](feather_probe/README.md)로 시험한다.
 
@@ -31,6 +31,8 @@ GPIO43은 LCD reset에 연결돼 있으므로 UART0 콘솔을 사용하지 않�
 ## BLE와 출력 의미
 
 UUID와 payload는 [공통 인터페이스](../INTERFACE_NOTES.md)를 따른다. WRITE/NOTIFY는 UTF-8 JSON+LF, 조각당 최대 20byte, 최대 프레임 4096byte다. 조각 간 5초 timeout을 적용하며 송신 알림은 15ms 간격으로 나눈다. Gateway는 명령을 직렬 처리한다. 명령 큐는 4개이며 가득 찼거나 식별할 수 없는 malformed 프레임은 실행하지 않고 버린다. Gateway는 dispatch 이후 TIMEOUT/INDETERMINATE 결과에서 자동 재실행하지 않고 결과 정산 또는 수동 복구로 넘긴다. 펌웨어의 동일 commandId 중복 응답은 다른 Gateway로의 handover나 명시적인 복구 과정에서 사용한다. 수신 callback에서는 조립과 큐 삽입만 수행하고 GPIO·NVS 처리는 주 loop에서 수행한다.
+
+keyring-0.7.2는 원본 명령에 중복 키, 이스케이프된 NUL, JSON 객체 뒤의 추가 데이터가 있는지 검사한 뒤 journal과 출력을 처리한다. 정상 객체의 키 순서, ASCII 이스케이프와 프레임 안의 JSON 공백은 허용한다. [호스트 시험](../evidence/2026-11-10-command-wire/README.md)
 
 Observation은 LF를 포함해 512byte 이하일 때만 게시한다. 초과하면 선택적인 accelerationG·voltage·중복 상태 설명을 먼저 생략하고 truncated=true를 표시한다. 그래도 초과하면 sensorValues를 `{"status":"payload_too_large"}`로 바꾼 최소 관측을 사용하며 실제 battery는 유지한다. 최소 관측도 한도를 넘거나 JSON 저장 공간이 부족하면 게시하지 않는다. Receipt는 NOTIFY의 전체 프레임을 조립해야 한다. 512byte를 넘는 receipt의 READ 값은 빈 값이다.
 
