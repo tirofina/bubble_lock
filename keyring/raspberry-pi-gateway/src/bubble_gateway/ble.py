@@ -390,7 +390,13 @@ class BleFleet:
             LOG.error("BLE observation queue full for %s; session interrupted", peer.device_id)
         else:
             if notification and peer.ready.is_set() and self._trace is not None:
-                self._trace_event(peer, "notification", sequence=frame["sequence"])
+                fields = {"sequence": frame["sequence"]}
+                sensor = frame["sensorValues"]
+                wake, pins = sensor.get("wake"), sensor.get("wakePins")
+                if (sensor.get("detail") == "health" and wake in ("cold", "motion", "button", "timer", "other")
+                        and _integer(pins, maximum=2**64 - 1)):
+                    fields.update(wakeCause=wake, wakePins=pins, deviceUptimeMs=frame["uptimeMs"])
+                self._trace_event(peer, "notification", **fields)
 
     async def _deliver(self, peer: _Peer) -> None:
         # Keep the current observation in memory until the durable queue accepts

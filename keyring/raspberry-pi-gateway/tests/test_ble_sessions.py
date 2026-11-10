@@ -6,8 +6,35 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
 from bubble_gateway.ble import BleFleet, BleUnavailable
+from bubble_gateway.ble_characterize import summarize
 from bubble_gateway.model import payload_hash
 from helpers import command, config, device_receipt
+
+
+class WakeCaptureTests(unittest.TestCase):
+    def test_requires_a_new_boot_and_the_expected_button_mask(self):
+        board = "r18-hand-solder"
+
+        def frame(kind, at, phase, boot, **fields):
+            return dict(event=kind, atNs=at * 1_000_000, phase=phase, generation=1,
+                        bootId=boot, boardRevision=board, **fields)
+
+        ready = {"advertisingRssiDbm": None, "advertisingAgeMs": None}
+        for boot, pins, status in (("boot-after", 64, "RECORDED"), ("boot-before", 64, "INSUFFICIENT"),
+                                   ("boot-after", 128, "INSUFFICIENT"), ("boot-after", 192, "INSUFFICIENT")):
+            with self.subTest(boot=boot, pins=pins):
+                events = [
+                    frame("ready", 1, "baseline", "boot-before", **ready),
+                    frame("notification", 2, "baseline", "boot-before", sequence=1),
+                    frame("ready", 20, "after-wake", boot, **ready),
+                    frame("notification", 21, "after-wake", boot, sequence=2,
+                          wakeCause="button", wakePins=pins, deviceUptimeMs=700),
+                ]
+                report = summarize(events, 0, 30_000_000, board=board, mode="wake", truncated=False,
+                                   dropped=0, expected_wake="confirm", release_ms=5)
+                self.assertEqual(report["status"], status)
+                self.assertEqual(len(report["sessions"]), 2)
+                self.assertEqual(report["wake"]["releaseToFirstNotificationMs"], 16)
 
 
 class SessionTests(unittest.IsolatedAsyncioTestCase):

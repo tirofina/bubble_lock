@@ -25,7 +25,7 @@
 #include "headphone_standby.h"
 
 namespace {
-constexpr char FirmwareRevision[] = "keyring-0.7.3";
+constexpr char FirmwareRevision[] = "keyring-0.7.4";
 #if defined(KEYRING_LEGACY_GATT) && KEYRING_LEGACY_GATT
 constexpr char ServiceUuid[] = "8b8f0001-8e7a-4f36-a8c2-1c9b5d620001";
 constexpr char IdentityUuid[] = "8b8f0002-8e7a-4f36-a8c2-1c9b5d620001";
@@ -349,6 +349,11 @@ void publishObservation() {
     buttonPresses.append(values);
     return values;
   };
+  auto appendWake = [](JsonObject values) {
+    values["wake"] = powerState::wakeCause();
+    values["wakePins"] = powerState::wakePins();
+    values["power"] = powerState::status();
+  };
   JsonObject values = base();
   if (section == 0) {
     values["batteryStatus"] = sensors.fuel ? "ok" : "unavailable";
@@ -379,8 +384,7 @@ void publishObservation() {
     if (storageHealthy) { values["journalUsed"] = used; values["journalPrepared"] = prepared; }
     else { values["journalUsed"] = nullptr; values["journalPrepared"] = nullptr; }
     values["journalCapacity"] = JournalSlots;
-    values["wake"] = powerState::wakeCause(); values["wakePins"] = powerState::wakePins();
-    values["power"] = powerState::status();
+    appendWake(values);
     values["audio"] = headphone.speakerAllowed() ? audio.status() : "blocked_headphone";
     values["headphone"] = headphone.status();
     values["display"] = peripherals.displayStatus(); values["sd"] = peripherals.sdStatus();
@@ -392,8 +396,7 @@ void publishObservation() {
     values.remove("accelerationG"); values.remove("voltage");
     values.remove("batteryStatus"); values.remove("accelStatus");
     if (section == 2) {
-      values.remove("audio"); values.remove("display"); values.remove("sdDropped"); values.remove("wakePins");
-      values.remove("wake");
+      values.remove("audio"); values.remove("display"); values.remove("sdDropped");
     }
     values["truncated"] = true;
     frame = jsonText(doc);
@@ -402,6 +405,7 @@ void publishObservation() {
     // Keep identity, sequence, buttons, state and uptime. Do not invent readings
     // when the full sensor object exceeds the READ attribute budget.
     values = base(); values["status"] = "payload_too_large";
+    if (section == 2) appendWake(values);
     frame = jsonText(doc);
   }
   // Enforce the wire bound at runtime even if a future identity/field expansion

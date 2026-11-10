@@ -119,5 +119,8 @@ int main() {
   assert(fallback["sensorValues"]["status"] == "payload_too_large");
   assert(fallback["sensorValues"]["buttonPresses"][0].as<uint32_t>() == UINT32_MAX);
   assert(fallback["sensorValues"]["buttonPresses"][1].as<uint32_t>() == UINT32_MAX);
-  std::puts("PASS minimal fallback keeps both press counts");
+  assert(fallback["sensorValues"]["wake"] == "button");
+  assert(fallback["sensorValues"]["wakePins"].as<uint64_t>() == UINT64_MAX);
+  assert(fallback["sensorValues"]["power"] == "disabled");
+  std::puts("PASS minimal fallback keeps both press counts and wake fields");
 }
