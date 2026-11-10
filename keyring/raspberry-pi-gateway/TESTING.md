@@ -1,5 +1,7 @@
 # Gateway 로컬 시험
 
+Gateway 0.2.26에는 HTTPS `Retry-After` 회귀시험 소스를 추가했다. 모의 CSE 503 응답 이후 같은 origin의 추가 조회가 보류되고 별도 origin의 중앙 API 요청은 유지되는지, 원래 `rqi`로 재전송하는지, SQLite 재시작 뒤에도 개별 전송의 대기 시각이 남는지를 다룬다. 이 버전의 시험과 빌드는 미실행이다.
+
 Gateway 0.2.11의 CORE 재시도 순서는 기본 75개, 격리 Mobius4 11개, 별도 팀 CORE → SDT 통합 1개에서 검증했다. [실행 기록](../evidence/2026-11-10-core-retry-order/README.md)
 
 `cse_integration_tests/core_retry_order.py`를 별도로 실행하면 팀 CORE → SDT 재시도 순서와 중앙 동시 갱신 후보를 함께 시험한다. `KEYRING_TEST_CENTRAL_TREE`는 팀 main `715ef58`의 `pc-mobius`가 들어 있는 디렉터리로 지정한다. 브리지 메시지 핸들러에 직접 전달한 뒤 격리 Mobius4에서 실제 SDT 상태를 읽는다. [동시 갱신·handover 기록](../evidence/2026-11-10-core-concurrent-order/README.md)

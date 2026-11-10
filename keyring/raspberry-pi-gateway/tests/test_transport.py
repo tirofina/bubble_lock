@@ -2,16 +2,65 @@ import asyncio
 import hashlib
 import json
 import unittest
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
+from email.utils import format_datetime
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, Mock, call
+from unittest.mock import AsyncMock, Mock, call, patch
 
 import httpx
 
 from bubble_gateway.core_bridge import telemetry
 from bubble_gateway.model import iso_time, payload_hash, utc_now
-from bubble_gateway.transport import ReceiptParentMismatch, RemoteResponseError, TransportHub, _mqtt_to
+from bubble_gateway.transport import (MAX_RETRY_AFTER_SECONDS, HttpRetryDeferred, ReceiptParentMismatch,
+                                      RemoteResponseError, TransportHub, _mqtt_to, _retry_after)
 from helpers import command, config, observation
+
+
+class HttpRetryAfterTests(unittest.IsolatedAsyncioTestCase):
+    def test_retry_after_parses_seconds_and_http_date(self):
+        now = datetime(2026, 11, 11, tzinfo=timezone.utc)
+        with patch("bubble_gateway.transport.utc_now", return_value=now):
+            self.assertEqual(_retry_after("00030"), 30)
+            self.assertEqual(_retry_after(format_datetime(now + timedelta(seconds=45), usegmt=True)), 45)
+            self.assertEqual(_retry_after(format_datetime(now - timedelta(seconds=1), usegmt=True)), 0)
+            self.assertEqual(_retry_after("9" * 40), MAX_RETRY_AFTER_SECONDS)
+            self.assertIsNone(_retry_after("unavailable"))
+            self.assertIsNone(_retry_after(None))
+
+    async def test_cse_delay_applies_to_other_paths_without_blocking_the_team_api(self):
+        cfg = config()
+        cfg.api_url, cfg.cse_url = "https://api.invalid", "https://cse.invalid"
+        cfg.request_timeout = 1
+        hub = TransportHub(cfg)
+        requests = []
+
+        def respond(request):
+            requests.append(request)
+            if request.url.host == "api.invalid":
+                return httpx.Response(200, json={"status": "ACTIVE"})
+            if len(requests) == 1:
+                return httpx.Response(503, headers={"Retry-After": "45"}, text="proxy unavailable")
+            return httpx.Response(201, headers={"X-M2M-RI": request.headers["X-M2M-RI"], "X-M2M-RSC": "2001"})
+
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            hub._http = client
+            with patch("bubble_gateway.transport.monotonic", return_value=100.0) as clock:
+                with self.assertRaises(HttpRetryDeferred) as initial:
+                    await hub.publish("request-test", "/test/receipts", {"synthetic": True})
+                self.assertEqual((initial.exception.status_code, initial.exception.retry_after), (503, 45))
+
+                clock.return_value = 120.0
+                with self.assertRaises(HttpRetryDeferred) as gated:
+                    await hub.read_content("different-request", "/test/observations")
+                self.assertEqual(gated.exception.retry_after, 25)
+                self.assertEqual(await hub.credential_status(), {"status": "ACTIVE"})
+
+                clock.return_value = 145.0
+                await hub.publish("request-test", "/test/receipts", {"synthetic": True})
+
+        self.assertEqual([request.url.host for request in requests], ["cse.invalid", "api.invalid", "cse.invalid"])
+        self.assertEqual(requests[0].headers["X-M2M-RI"], requests[-1].headers["X-M2M-RI"])
+        self.assertEqual(requests[0].content, requests[-1].content)
 
 
 class TransportMockTests(unittest.IsolatedAsyncioTestCase):

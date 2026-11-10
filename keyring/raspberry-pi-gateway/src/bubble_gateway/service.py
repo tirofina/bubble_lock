@@ -15,7 +15,7 @@ from .config import GatewayConfig, ID
 from .model import (authorization_deadline, canonical, iso_time, parse_time, payload_hash, utc_now,
                     validate_command, validate_credential_status, validate_observation)
 from .store import CapacityError, Store
-from .transport import TransportHub
+from .transport import HttpRetryDeferred, TransportHub
 
 LOG = logging.getLogger(__name__)
 DEVICE_ACKS = {"APPLIED", "DUPLICATE", "REJECTED_EPOCH", "REJECTED_GRANT", "EXPIRED",
@@ -329,7 +329,8 @@ class Gateway:
                 raise
             except Exception as exc:
                 self.counters["publish_retries"] += 1
-                self.store.retry(item["rqi"], item["attempts"])
+                minimum_delay = exc.retry_after if isinstance(exc, HttpRetryDeferred) else 0.0
+                self.store.retry(item["rqi"], item["attempts"], minimum_delay=minimum_delay)
                 LOG.warning("Gateway delivery deferred (%s)", type(exc).__name__)
             else:
                 self.store.delivered(item["rqi"])

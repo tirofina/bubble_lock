@@ -38,6 +38,19 @@ class StoreTests(unittest.TestCase):
         self.store.observation(BINDING["observationContainer"], observation(), core_enabled=True)
         return cmd, digest
 
+    def test_server_retry_delay_is_preserved_when_database_reopens(self):
+        rqi = self.store.request_id("health", "test-retry")
+        with patch("bubble_gateway.store.time.time", return_value=1000.0):
+            self.store.enqueue("health", "test-retry", BINDING["healthContainer"], {"version": 1})
+            self.store.retry(rqi, 0, minimum_delay=45)
+        self.store.close()
+        self.store = self.open_store()
+
+        with patch("bubble_gateway.store.time.time", return_value=1044.0):
+            self.assertIsNone(self.store.due())
+        with patch("bubble_gateway.store.time.time", return_value=1045.0):
+            self.assertEqual(self.store.due()["rqi"], rqi)
+
     def test_binding_mismatch_refuses_before_data_changes(self):
         before = self.rows()
         with self.assertRaisesRegex(StateIdentityError, "STATE_IDENTITY_MISMATCH"):

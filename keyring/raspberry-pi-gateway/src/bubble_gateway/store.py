@@ -220,10 +220,11 @@ class Store:
                 self.db.execute("UPDATE commands SET receipt_delivered=1 WHERE command_id=?", (row["command_id"],))
             self.db.execute("DELETE FROM outbox WHERE rqi=?", (rqi,))
 
-    def retry(self, rqi: str, attempts: int) -> None:
+    def retry(self, rqi: str, attempts: int, *, minimum_delay: float = 0.0) -> None:
         delay = min(300, 2 ** min(attempts + 1, 8)) * random.uniform(0.8, 1.2)
         with self.db:
-            self.db.execute("UPDATE outbox SET attempts=attempts+1,next_attempt=? WHERE rqi=?", (time.time() + delay, rqi))
+            self.db.execute("UPDATE outbox SET attempts=attempts+1,next_attempt=? WHERE rqi=?",
+                            (time.time() + max(delay, minimum_delay), rqi))
 
     def counts(self) -> tuple[int, int]:
         return (self.db.execute("SELECT COUNT(*) FROM outbox").fetchone()[0],

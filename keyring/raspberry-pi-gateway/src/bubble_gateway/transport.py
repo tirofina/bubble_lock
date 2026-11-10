@@ -10,6 +10,9 @@ import logging
 import math
 import re
 import uuid
+from datetime import timezone
+from email.utils import parsedate_to_datetime
+from time import monotonic
 from typing import Any
 from urllib.parse import quote, urlsplit
 
@@ -22,6 +25,7 @@ from .model import authorization_deadline, parse_time, payload_hash, utc_now
 LOG = logging.getLogger(__name__)
 MAX_BODY = 256 * 1024
 COMMAND_BATCH = 16
+MAX_RETRY_AFTER_SECONDS = 2**31
 CORE_RECEIPT_FIELDS = {"version", "gatewayId", "deviceId", "ownershipEpoch", "sequence",
                        "payloadHash", "cseRequestId", "responseStatus"}
 
@@ -35,6 +39,30 @@ class RemoteResponseError(RuntimeError):
 
 class ReceiptParentMismatch(RemoteResponseError):
     """The authenticated CSE did not confirm the configured receipt resource."""
+
+
+class HttpRetryDeferred(RemoteResponseError):
+    def __init__(self, status_code: int, retry_after: float):
+        super().__init__("HTTPS peer requested a retry delay", status_code=status_code)
+        self.retry_after = retry_after
+
+
+def _retry_after(value: str | None) -> float | None:
+    if value is None:
+        return None
+    value = value.strip()
+    if re.fullmatch(r"[0-9]+", value):
+        digits = value.lstrip("0")
+        if len(digits) > 10:
+            return MAX_RETRY_AFTER_SECONDS
+        return min(int(digits or "0"), MAX_RETRY_AFTER_SECONDS)
+    try:
+        deadline = parsedate_to_datetime(value)
+        if deadline.tzinfo is None:
+            deadline = deadline.replace(tzinfo=timezone.utc)
+        return min(MAX_RETRY_AFTER_SECONDS, max(0.0, (deadline - utc_now()).total_seconds()))
+    except (ValueError, OverflowError):
+        return None
 
 
 def _pairs(items: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -121,6 +149,7 @@ class TransportHub:
         self._core_root = f"privacy-bubble/gateway/{config.gateway_id}"
         self._commands: asyncio.Queue = asyncio.Queue(maxsize=128)
         self._http: httpx.AsyncClient | None = None
+        self._http_retry_until: dict[tuple[str | None, int], tuple[float, int]] = {}
         self._mqtt: mqtt.Client | None = None
         self._loop: asyncio.AbstractEventLoop | None = None
         self._ready = asyncio.Event()
@@ -278,11 +307,27 @@ class TransportHub:
                          body: dict[str, Any] | None = None) -> tuple[int, httpx.Headers, dict[str, Any]]:
         if self._http is None:
             raise RuntimeError("transport is not started")
+        endpoint = urlsplit(url)
+        origin = (endpoint.hostname, endpoint.port or 443)
+        now = monotonic()
+        retry_until, retry_status = self._http_retry_until.get(origin, (now, 0))
+        remaining = retry_until - now
+        if remaining > 0:
+            raise HttpRetryDeferred(retry_status, remaining)
         encoded = _json(body) if body is not None else None
         if encoded is not None and len(encoded) > MAX_BODY:
             raise ValueError("outgoing payload exceeds size limit")
         async with asyncio.timeout(self.config.request_timeout), self._http.stream(
                 method, url, headers=headers, content=encoded) as response:
+            if response.status_code in {429, 503}:
+                retry_after = _retry_after(response.headers.get("Retry-After"))
+                if retry_after is not None:
+                    now = monotonic()
+                    retry_until, retry_status = self._http_retry_until.get(origin, (now, response.status_code))
+                    if now + retry_after >= retry_until:
+                        retry_until, retry_status = now + retry_after, response.status_code
+                        self._http_retry_until[origin] = (retry_until, retry_status)
+                    raise HttpRetryDeferred(retry_status, retry_until - now)
             raw = bytearray()
             async for chunk in response.aiter_bytes():
                 raw.extend(chunk)
