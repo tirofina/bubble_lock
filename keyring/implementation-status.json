@@ -7,7 +7,7 @@
   "date": "2026-11-11",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Scoped receipt pin routes were provisioned. Both Gateway certificates retrieved only their assigned parent in the recorded GET checks. Firmware 0.7.7, Gateway 0.2.26 HTTPS retry handling, r18 BLE power evidence and interrupted Feather evidence reconciliation are source-only. Physical power characterization, live receipt publication and settlement remain unverified.",
+  "verificationStatus": "Scoped receipt pin routes were provisioned. Both Gateway certificates retrieved only their assigned parent in the recorded GET checks. Firmware 0.7.7, Gateway 0.2.27 pinned receipt readback, HTTPS retry handling, r18 BLE power evidence and interrupted Feather evidence reconciliation are source-only. Physical power characterization, live receipt publication and settlement remain unverified.",
   "rubricIds": [
     "R01",
     "R02",
@@ -59,6 +59,7 @@
     "configured Gateway/CSE resource identity binding for persistent SQLite state",
     "configured CSE deployment identity for new Gateway databases and scoped receipt archive comparison",
     "optional native receipt container resource ID binding for MQTT and HTTPS writes and confirmation",
+    "pinned receipt completion requires an HTTPS readback matching the created native resource identity and exact outbox payload",
     "explicit HTTPS-only command route preflight for pinned CSE, Gateway credentials and active command list",
     "offline reconciliation of interrupted scoped Feather command evidence using intent and payload bindings",
     "isolated TLS receipt pin provisioning and optional pin in new Feather command sessions",
@@ -153,17 +154,17 @@
   "firmwareRevision": "keyring-0.7.7",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "3cc69fd9d14a08988475c26e203899f506c478e2",
+    "sourceCommit": "6f61b3920ffb75c5c31efedab492695ed5d6eef4",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "3cc69fd9d14a08988475c26e203899f506c478e2",
-    "lastPushedCommit": "3cc69fd9d14a08988475c26e203899f506c478e2",
-    "latestCheckpoint": "Honor HTTPS Retry-After on the configured CSE and control API, retaining each queued item's retry deadline.",
-    "lastPushedCommitBeforeThisCheckpoint": "237c33a71e4b4fd26f06233dfec90506da23fda6"
+    "latestLocalSourceCommit": "6f61b3920ffb75c5c31efedab492695ed5d6eef4",
+    "lastPushedCommit": "6f61b3920ffb75c5c31efedab492695ed5d6eef4",
+    "latestCheckpoint": "Confirm pinned command receipt storage with matching native CSE resource ID and content before marking the outbox delivered.",
+    "lastPushedCommitBeforeThisCheckpoint": "de4e9e6151a052aa77e3baf2ca0dfead9fee61f7"
   },
-  "gatewayRevision": "0.2.26",
+  "gatewayRevision": "0.2.27",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
@@ -185,7 +186,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Implement the DOC-REV 2.0.0 HTTPS Retry-After requirement in the Pi Gateway",
+    "executionRequest": "Require actual CSE readback of the configured command receipt before completing the Gateway outbox item",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -193,11 +194,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "3cc69fd9d14a08988475c26e203899f506c478e2",
-    "sourceValidation": "Read the current plan, remote team heads, the Gateway HTTPS transport and SQLite outbox. Retry handling and regression source only. No build, test, Gateway execution or hardware verification was performed.",
+    "sourceCommit": "6f61b3920ffb75c5c31efedab492695ed5d6eef4",
+    "sourceValidation": "Read the current plan, remote team heads, scoped CSE ACL source and historical Mobius4 CIN wire logs. Readback handling and regression source only. No build, test, Gateway execution or live receipt observation was performed.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "The isolated worker and receipt pin routes are ready. Firmware 0.7.7 link, physical BLE long-read and r18 NVS fault verification, Gateway 0.2.26 build and Pi preflight, HTTP retry verification, receipt POST and settlement evidence, a separately authorized Feather 0.2.0 and Pi bench run, authoritative CSE route and journal reclaim contracts, production CORE, and r18 bring-up with physical power/range/wake capture and an external supply measurement remain.",
+    "currentDependencyState": "The isolated worker and receipt pin routes were provisioned. Firmware 0.7.7 link, physical BLE long-read and r18 NVS fault verification, Gateway 0.2.27 build and Pi preflight, pinned receipt readback and HTTP retry verification, live receipt POST and settlement evidence, a separately authorized Feather 0.2.0 and Pi bench run, authoritative CSE route and journal reclaim contracts, production CORE, and r18 bring-up with physical power/range/wake capture and an external supply measurement remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -1008,5 +1009,14 @@
     "regressionsExecuted": false,
     "piRuntimeVerified": false,
     "sourceCommit": "3cc69fd9d14a08988475c26e203899f506c478e2"
+  },
+  "gatewayPinnedReceiptReadback": {
+    "reference": "raspberry-pi-gateway/STATE_RECOVERY.md#명령-영수증-컨테이너-id-고정",
+    "status": "source-only",
+    "gatewayVersion": "0.2.27",
+    "regressionsExecuted": false,
+    "isolatedCseVerified": false,
+    "physicalReceiptObserved": false,
+    "sourceCommit": "6f61b3920ffb75c5c31efedab492695ed5d6eef4"
   }
 }

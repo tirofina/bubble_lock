@@ -942,3 +942,12 @@ GATT 읽기 commit `82d76bb80aeb903ea3cad1681e8abe838a99ee47`을 `origin/codex/k
 - HTTP 날짜·초 파싱, 별도 origin 분리, 같은 ID 재시도, SQLite 재개를 다루는 회귀시험 소스를 추가했다. 이번 변경의 빌드·시험·Pi 실행은 미실행이다. Feather/Pi 명령 정산과 r18 실물 인수 시험은 남아 있으며 goal은 active/progress다.
 
 HTTPS 재시도 commit `3cc69fd9d14a08988475c26e203899f506c478e2`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `237c33a..3cc69fd`다.
+
+## 2026-11-11 — 고정 컨테이너의 명령 영수증 저장 확인
+
+직전 goal turn은 Gateway HTTPS 재시도 처리를 올린 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 브랜치 head는 직전과 같다.
+
+- Gateway `0.2.27`은 컨테이너 ID가 고정된 명령 영수증을 CREATE한 뒤 동일한 CSE 자원을 HTTPS GET으로 읽는다. CREATE와 조회의 자원 ID가 같고, 부모 ID·이름·타입·저장 본문이 일치할 때만 완료 처리한다. 조회 실패 시 큐를 보존하며 MQTT 응답 뒤 발생한 조회 실패를 HTTPS CREATE fallback으로 처리하지 않는다. [확인 절차](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#명령-영수증-컨테이너-id-고정)
+- 기존 격리 proxy 소스에서 Gateway별 자식 GET 경로를 확인했다. 모의·격리 CSE 회귀시험 소스를 보강했다. 이번 빌드·시험·Pi 실행·실물 영수증 관측은 미실행이다. 실물 명령 실행·정산과 r18 인수 검증은 남아 있으며 goal은 active/progress다.
+
+영수증 저장 확인 commit `6f61b3920ffb75c5c31efedab492695ed5d6eef4`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `de4e9e6..6f61b39`다.
