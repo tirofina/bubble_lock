@@ -33,6 +33,8 @@ R02/R03/R10에 연결한 KEYRING 제안 ID이며 원래 A01~A26 정의를 대체
 
 Gateway 0.2.35는 중앙 mTLS 상태 API의 검증된 첫 응답과 `ACTIVE`·`LOST`·`REVOKED` 또는 revision 변경을 `credential_receipts`에 기록한다. 첫 관측의 `previous`는 `null`이다. 발급이나 회전의 실제 시점은 중앙 증거를 따르며 Gateway의 `observedAt`은 응답을 관측한 시각이다. 연결 실패로 인한 `UNKNOWN`은 Gateway의 실행 차단·일반 heartbeat에 반영한다. 같은 상태·revision을 계속 읽어도 영수증은 반복 생성하지 않는다.
 
-대기 영수증은 일반 outbox 용량과 별도로 최대 1,024건을 보존한다. 상한에서 새로운 상태를 기록할 수 없으면 기존 영수증을 보존하고 해당 응답으로 명령 실행 권한을 열지 않는다. outbox에 자리가 생기면 전송 대기 중인 가장 오래된 전환만 기존 health 컨테이너에 등록한다. 재시작과 재전송에도 같은 요청 ID·본문을 쓴다. CSE CREATE 승인 또는 중복의 동일 본문 확인 후 SQLite에서 전송 완료 시각을 남기고, 완료된 영수증은 최신 128건을 보관한다. [health 스키마](../../contracts/keyring/health.schema.json)
+대기 영수증은 일반 outbox 용량과 별도로 최대 1,024건을 보존한다. 상한에서 새로운 상태를 기록할 수 없으면 기존 영수증을 보존하고 해당 응답으로 명령 실행 권한을 열지 않는다. outbox에 자리가 생기면 전송 대기 중인 가장 오래된 전환만 기존 health 컨테이너에 등록한다. 재시작과 재전송에도 같은 요청 ID·본문을 쓴다. 완료된 영수증은 최신 128건을 보관한다. [health 스키마](../../contracts/keyring/health.schema.json)
+
+Gateway 0.2.36부터 MQTT·HTTPS의 CREATE 성공과 중복 응답 모두 기존 health 컨테이너의 해당 contentInstance를 HTTPS로 읽어 이름·유형·리소스 ID·부모 ID·본문을 확인한 뒤 전송 완료 시각을 남긴다. CREATE에 인스턴스 정보가 있으면 리소스 ID와 부모 ID도 조회값과 일치해야 한다. 조회 실패나 불일치는 동일 요청 ID로 재시도한다. CSE HTTPS `Retry-After` 중에는 이 영수증을 대기시키며 MQTT가 준비돼 있으면 같은 컨테이너의 일반 heartbeat는 보낼 수 있다. 이미 완료된 0.2.35 행에는 당시 판정 기준이 적용된다.
 
 `credentialTransition.sequence`는 한 Gateway 상태 DB의 수신 순서다. `previous`와 `current`에는 상태·revision만 들어간다. 과거 전환은 최신 상태 조회와 구분하며, 실시간 판단은 `credentialTransition`이 없는 heartbeat를 사용한다. SQLite 보관본은 전환 행과 CSE 전송 완료 시각을 포함한다. [상태 보관](STATE_RECOVERY.md)

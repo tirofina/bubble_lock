@@ -50,6 +50,7 @@ class HttpRetryDeferred(RemoteResponseError):
 class NativeDeliveryHold(NamedTuple):
     all_native: bool = False
     receipt_container: str | None = None
+    credential_receipts: bool = False
 
 
 def _retry_after(value: str | None) -> float | None:
@@ -314,16 +315,22 @@ class TransportHub:
         except asyncio.QueueFull:
             LOG.error("CORE command ingress full; command was not durably accepted or executed")
 
+    def _http_deferral(self, origin: tuple[str | None, int]) -> HttpRetryDeferred | None:
+        hold = self._http_retry_until.get(origin)
+        if hold is not None:
+            remaining = hold[0] - monotonic()
+            if remaining > 0:
+                return HttpRetryDeferred(hold[1], remaining)
+        return None
+
     async def _http_json(self, method: str, url: str, *, headers: dict[str, str],
                          body: dict[str, Any] | None = None) -> tuple[int, httpx.Headers, dict[str, Any]]:
         if self._http is None:
             raise RuntimeError("transport is not started")
         origin = _https_origin(url)
-        now = monotonic()
-        retry_until, retry_status = self._http_retry_until.get(origin, (now, 0))
-        remaining = retry_until - now
-        if remaining > 0:
-            raise HttpRetryDeferred(retry_status, remaining)
+        deferred = self._http_deferral(origin)
+        if deferred is not None:
+            raise deferred
         encoded = _json(body) if body is not None else None
         if encoded is not None and len(encoded) > MAX_BODY:
             raise ValueError("outgoing payload exceeds size limit")
@@ -368,15 +375,13 @@ class TransportHub:
         return self.config.m2m_mqtt_enabled and self._mqtt is not None and self._ready.is_set()
 
     def native_delivery_hold(self) -> NativeDeliveryHold:
-        hold = self._http_retry_until.get(self._cse_origin)
-        if hold is None or hold[0] <= monotonic():
+        if self._http_deferral(self._cse_origin) is None:
             return NativeDeliveryHold()
         if not self._native_mqtt_ready():
             return NativeDeliveryHold(all_native=True)
-        # Pinned receipt delivery requires an HTTPS parent lookup even over MQTT.
-        if self.config.receipt_container_ri is not None:
-            return NativeDeliveryHold(receipt_container=self.config.receipt_container)
-        return NativeDeliveryHold()
+        # These routes require HTTPS verification even when MQTT can create the CIN.
+        receipt_container = self.config.receipt_container if self.config.receipt_container_ri is not None else None
+        return NativeDeliveryHold(receipt_container=receipt_container, credential_receipts=True)
 
     async def _verify_receipt_container(self, path: str, pin: str) -> None:
         rqi = "receipt-parent-" + uuid.uuid4().hex
@@ -395,14 +400,18 @@ class TransportHub:
         return pin
 
     @staticmethod
-    def _pinned_content_id(cin: Any, rn: str, pin: str, rsc: int, status: int | None = None) -> str:
-        if not isinstance(cin, dict) or cin.get("pi") != pin:
+    def _receipt_content_identity(cin: Any, rn: str, rsc: int, status: int | None = None, *,
+                                  pin: str | None = None) -> tuple[str, str]:
+        if pin is not None and (not isinstance(cin, dict) or cin.get("pi") != pin):
             raise ReceiptParentMismatch("oneM2M receipt instance parent mismatch", rsc, status)
-        ri = cin.get("ri")
-        if (cin.get("rn") != rn or type(cin.get("ty")) is not int or cin["ty"] != 4
-                or not isinstance(ri, str) or ID.fullmatch(ri) is None):
+        if not isinstance(cin, dict):
             raise RemoteResponseError("oneM2M receipt instance identity mismatch", rsc, status)
-        return ri
+        ri, parent = cin.get("ri"), cin.get("pi")
+        if (cin.get("rn") != rn or type(cin.get("ty")) is not int or cin["ty"] != 4
+                or not isinstance(ri, str) or ID.fullmatch(ri) is None
+                or not isinstance(parent, str) or ID.fullmatch(parent) is None):
+            raise RemoteResponseError("oneM2M receipt instance identity mismatch", rsc, status)
+        return ri, parent
 
     async def read_content(self, rqi: str, container: str) -> Any:
         """Read the native content instance named by its original request ID."""
@@ -422,17 +431,34 @@ class TransportHub:
             raise RemoteResponseError("unable to establish existing content identity", rsc, status)
         pin = self._receipt_pin(container)
         if pin is not None:
-            self._pinned_content_id(existing, rn, pin, rsc, status)
+            self._receipt_content_identity(existing, rn, rsc, status, pin=pin)
         return existing
 
     async def _confirm_stored(self, rqi: str, container: str, payload: dict[str, Any], *,
-                              created_ri: str | None = None) -> None:
+                              created_identity: tuple[str, str] | None = None,
+                              credential_receipt: bool = False, conflict: bool = False) -> None:
         existing = await self.read_content_instance(rqi, container)
-        if created_ri is not None and existing.get("ri") != created_ri:
-            raise RemoteResponseError("stored receipt resource ID differs from CREATE response", 2000, 200)
+        if credential_receipt:
+            self._receipt_content_identity(existing, existing["rn"], 2000, 200)
+        if created_identity is not None:
+            if existing.get("ri") != created_identity[0]:
+                raise RemoteResponseError("stored receipt resource ID differs from CREATE response", 2000, 200)
+            if existing.get("pi") != created_identity[1]:
+                raise ReceiptParentMismatch("stored receipt parent differs from CREATE response", 2000, 200)
         if _json(existing["con"]) != _json(payload):
-            rsc = 4105 if created_ri is None else 2000
+            rsc = 4105 if conflict else 2000
             raise RemoteResponseError("existing oneM2M resource has different content", rsc, 200)
+
+    async def _confirm_create(self, rqi: str, container: str, payload: dict[str, Any], rn: str,
+                              content: Any, *, pin: str | None, credential_receipt: bool,
+                              status: int | None = None) -> None:
+        if pin is None and not credential_receipt:
+            return
+        cin = content.get("m2m:cin") if isinstance(content, dict) else None
+        identity = (self._receipt_content_identity(cin, rn, 2001, status, pin=pin)
+                    if pin is not None or cin is not None else None)
+        await self._confirm_stored(rqi, container, payload, created_identity=identity,
+                                   credential_receipt=credential_receipt)
 
     async def publish(self, rqi: str, container: str, payload: dict[str, Any]) -> dict[str, Any] | None:
         if container.startswith("@core/"):
@@ -445,6 +471,11 @@ class TransportHub:
         if len(_json(cin)) > MAX_BODY:
             raise ValueError("outgoing content exceeds size limit")
         pin = self._receipt_pin(container)
+        credential_receipt = "credentialTransition" in payload and container == self.config.health_container
+        if credential_receipt:
+            deferred = self._http_deferral(self._cse_origin)
+            if deferred is not None:
+                raise deferred
         target = container
         if pin is not None:
             await self._verify_receipt_container(path, pin)
@@ -469,14 +500,12 @@ class TransportHub:
             else:
                 rsc = response["rsc"]
                 if rsc == 2001:
-                    if pin is not None:
-                        pc = response.get("pc")
-                        representation = pc.get("m2m:cin") if isinstance(pc, dict) else None
-                        ri = self._pinned_content_id(representation, rn, pin, rsc)
-                        await self._confirm_stored(rqi, container, payload, created_ri=ri)
+                    await self._confirm_create(rqi, container, payload, rn, response.get("pc"), pin=pin,
+                                               credential_receipt=credential_receipt)
                     return
                 if rsc == 4105:
-                    await self._confirm_stored(rqi, container, payload)
+                    await self._confirm_stored(rqi, container, payload, credential_receipt=credential_receipt,
+                                               conflict=True)
                     return
                 # A real CSE rejection is terminal for this attempt. HTTPS is a
                 # network fallback, not a second route around permission denial.
@@ -491,12 +520,11 @@ class TransportHub:
             "POST", self._cse_url + path, headers=self._m2m_headers(rqi, create=True), body={"m2m:cin": cin})
         rsc = self._response_rsc(status, headers, rqi)
         if 200 <= status < 300 and rsc == 2001:
-            if pin is not None:
-                ri = self._pinned_content_id(document.get("m2m:cin"), rn, pin, rsc, status)
-                await self._confirm_stored(rqi, container, payload, created_ri=ri)
+            await self._confirm_create(rqi, container, payload, rn, document, pin=pin,
+                                       credential_receipt=credential_receipt, status=status)
             return
         if rsc == 4105:
-            await self._confirm_stored(rqi, container, payload)
+            await self._confirm_stored(rqi, container, payload, credential_receipt=credential_receipt, conflict=True)
             return
         raise RemoteResponseError("oneM2M HTTPS request rejected", rsc, status)
 

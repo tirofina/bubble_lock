@@ -198,6 +198,26 @@ class MobiusCseTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((await self.stored(rqi))["con"], original)
         self.assertEqual(await self.count(), 1)
 
+    async def test_credential_transition_requires_real_cse_readback_on_both_bindings(self):
+        for use_mqtt in (False, True):
+            with self.subTest(use_mqtt=use_mqtt):
+                hub = await self.hub_for(mqtt=True) if use_mqtt else self.hub
+                hub.config.health_container = self.parent
+                rqi = "credential-" + uuid.uuid4().hex
+                payload = {"synthetic": True, "credentialTransition": {
+                    "sequence": 1, "previous": None,
+                    "current": {"status": "LOST", "credentialRevision": "synthetic-rev"},
+                }}
+                await hub.publish(rqi, self.parent, payload)
+                await hub.publish(rqi, self.parent, payload)
+                digest = hashlib.sha256(rqi.encode()).hexdigest()
+                logs = await asyncio.to_thread(self.stack.logs, "proxy")
+                self.assertEqual(logs.count(f"GET {self.parent}/gw-{digest} read-{digest}"), 2)
+                if use_mqtt:
+                    self.assertNotIn(f"POST {self.parent} {rqi}", logs)
+                self.assertEqual((await self.stored(rqi))["con"], payload)
+        self.assertEqual(await self.count(), 2)
+
     async def test_cse_process_restart_preserves_committed_cin(self):
         rqi, payload = "restart-" + uuid.uuid4().hex, {"synthetic": True, "value": 6}
         await self.hub.publish(rqi, self.parent, payload)

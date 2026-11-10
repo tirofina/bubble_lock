@@ -58,9 +58,12 @@ class HttpRetryAfterTests(unittest.IsolatedAsyncioTestCase):
 
                 hub._mqtt = SimpleNamespace()
                 hub._ready.set()
-                self.assertEqual(hub.native_delivery_hold(), NativeDeliveryHold())
+                self.assertEqual(hub.native_delivery_hold(), NativeDeliveryHold(credential_receipts=True))
+                with self.assertRaises(HttpRetryDeferred):
+                    await hub.publish("transition-request", cfg.health_container, {"credentialTransition": {"sequence": 1}})
                 cfg.receipt_container_ri = "cnt-pinned"
-                self.assertEqual(hub.native_delivery_hold(), NativeDeliveryHold(receipt_container=cfg.receipt_container))
+                self.assertEqual(hub.native_delivery_hold(), NativeDeliveryHold(
+                    receipt_container=cfg.receipt_container, credential_receipts=True))
                 hub._mqtt = None
                 cfg.receipt_container_ri = None
 
@@ -184,6 +187,55 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([entry.args for entry in self.hub._http_json.await_args_list],
                          [("GET", "https://cse.invalid/test/receipts"),
                           ("GET", "https://cse.invalid/test/receipts/" + self.rn)])
+        self.assertEqual(self.hub._pending, {})
+
+    def credential_exchange(self, *, readback_changes=None, readback_error=None):
+        self.container = self.hub.config.health_container
+        self.payload = {"credentialTransition": {"sequence": 1, "previous": None,
+                                                "current": {"status": "LOST", "credentialRevision": "rev-2"}}}
+
+        async def exchange(method, url, *, headers, body=None):
+            rsc = "2000" if method == "GET" else "2001"
+            response = httpx.Headers({"X-M2M-RI": headers["X-M2M-RI"], "X-M2M-RSC": rsc})
+            if method == "POST":
+                return 201, response, {}  # Some CREATE responses do not include an instance.
+            self.assertEqual(url, "https://cse.invalid" + self.container + "/" + self.rn)
+            if readback_error is not None:
+                raise readback_error
+            return 200, response, {"m2m:cin": self.pinned_cin() | (readback_changes or {})}
+
+        self.hub._http_json.side_effect = exchange
+
+    async def test_credential_https_create_without_representation_requires_readback(self):
+        self.credential_exchange()
+        await self.hub.publish(self.rqi, self.container, self.payload)
+        self.assertEqual([entry.args[0] for entry in self.hub._http_json.await_args_list], ["POST", "GET"])
+
+    async def test_credential_mqtt_create_and_duplicate_confirm_existing_instance(self):
+        self.credential_exchange()
+        for code in (2001, 4105):
+            self.mqtt(code, target="test/health", confirmation_parent="cnt-original" if code == 2001 else None)
+            await self.hub.publish(self.rqi, self.container, self.payload)
+        self.assertEqual([entry.args[0] for entry in self.hub._http_json.await_args_list], ["GET", "GET"])
+
+    async def test_credential_mqtt_create_rejects_changed_identity_or_body(self):
+        for changes, error in (({"ri": "cin-replaced"}, "resource ID differs"),
+                               ({"pi": "cnt-replaced"}, "parent differs"),
+                               ({"ty": 3}, "identity mismatch"),
+                               ({"con": {"synthetic": False}}, "different content")):
+            with self.subTest(changes=changes):
+                self.credential_exchange(readback_changes=changes)
+                self.mqtt(2001, target="test/health", confirmation_parent="cnt-original")
+                with self.assertRaisesRegex(RemoteResponseError, error):
+                    await self.hub.publish(self.rqi, self.container, self.payload)
+
+    async def test_credential_mqtt_create_does_not_repost_after_readback_failure(self):
+        self.credential_exchange(readback_error=TimeoutError())
+        self.mqtt(2001, target="test/health", confirmation_parent="cnt-original")
+        with self.assertRaises(TimeoutError):
+            await self.hub.publish(self.rqi, self.container, self.payload)
+        self.hub._http_json.assert_awaited_once()
+        self.assertEqual(self.hub._http_json.await_args.args[0], "GET")
         self.assertEqual(self.hub._pending, {})
 
     async def test_scoped_core_requires_the_matching_application_receipt(self):

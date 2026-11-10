@@ -211,3 +211,35 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([call.args[0] for call in gateway.transport.publish.await_args_list],
                          [self.ack_rqi, observation_rqi, self.native_rqi])
         self.assertEqual(self.native_delivered(), 1)
+
+    async def test_http_hold_defers_credential_receipts_but_allows_plain_health(self):
+        health = BINDING["healthContainer"]
+        self.store.enqueue("health", "ordinary", health, {"bootId": "first-boot"})
+        self.store.record_credential_status({"status": "LOST", "credentialRevision": "rev-2"},
+                                            lambda: {"bootId": "first-boot"})
+        credential_rqi = self.store.request_id("credential-transition", "first-boot:1")
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+        gateway.transport = SimpleNamespace(publish=AsyncMock(), native_delivery_hold=Mock(
+            return_value=NativeDeliveryHold(receipt_container=BINDING["receiptContainer"], credential_receipts=True)))
+
+        async def idle(_seconds):
+            gateway.stop.set()
+
+        gateway._pause = idle
+        async with asyncio.timeout(1):
+            await gateway._outbox_loop()
+            attempted = [entry.args[0] for entry in gateway.transport.publish.await_args_list]
+            self.assertEqual(attempted, [self.ack_rqi, self.store.request_id("health", "ordinary")])
+            credential = self.store.db.execute("SELECT attempts,next_attempt FROM outbox WHERE rqi=?",
+                                               (credential_rqi,)).fetchone()
+            self.assertEqual(tuple(credential), (0, 0))
+            self.assertIsNone(self.store.db.execute("SELECT delivered_at FROM credential_receipts").fetchone()[0])
+
+            gateway.stop.clear()
+            gateway.transport.native_delivery_hold.return_value = NativeDeliveryHold()
+            await gateway._outbox_loop()
+
+        self.assertEqual(gateway.transport.publish.await_args.args[0], credential_rqi)
+        self.assertIsNotNone(self.store.db.execute("SELECT delivered_at FROM credential_receipts").fetchone()[0])
