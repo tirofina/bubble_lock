@@ -886,3 +886,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 이번 실행은 격리 설정과 조회 권한 확인까지다. 영수증 POST·정산·빌드·회귀시험·Pi/Feather 실물 명령은 미실행이다. 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
 
 격리 권한 배치 commit `3cb1175e24eb7dc24b102dc47e1962fd625d40dc`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `d6ba576..3cb1175`다.
+
+## 2026-11-11 — r18 BLE 명령·영수증의 피어 세션 결속
+
+직전 goal turn은 격리 프록시의 ID 경로 권한을 배치한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- 설치된 Arduino BLE 소스에서 기존 콜백이 연결 ID를 생략하고 기본 `notify()`가 피어 전체를 순회하는 것을 확인했다. 펌웨어 `keyring-0.7.6`은 현재 인증된 피어의 쓰기·구독만 처리하고 해당 연결 ID로만 알림을 전송한다. 다른 피어의 종료 이벤트는 활성 연결을 끊지 않는다.
+- 연결 교체·재구독 후 이전 부분 프레임을 섞지 않는다. 알림 API 오류 시 같은 조각을 재시도한다. 활성 피어 종료 시 모터를 끄고 영수증 캐시·대기열을 정리한 뒤 새 관측과 광고를 준비한다. [펌웨어 설명](../keyring/firmware/README.md)
+- 기존 호스트 회귀시험 코드를 확장했다. 빌드·시험·flash·실물 BLE 세션은 미실행이다. Feather/Pi 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
+
+BLE 세션 commit `8c340992d3cde9208338fc24acc3db2a866c2f75`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `3681088..8c34099`다.
