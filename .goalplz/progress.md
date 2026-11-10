@@ -439,3 +439,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - Feather 0.2.0 업로드와 실물 Pi·LED 시험, 제작 PCB 수용과 팀 운영 정산은 대기 중이다. 전체 goal은 active/progress다.
 
 시험 절차·코드·증거 commit `a3cf82d8d7c0eb808005a4980fd0410309ed077c`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `f0814e3..a3cf82d`다.
+
+## 2026-11-10 — 현재 부팅의 BLE 적용 영수증
+
+이전 goal turn은 Feather ON/OFF 절차와 로컬 리허설을 완료한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- 수정 전에는 이전 bootId의 `APPLIED`가 현재 연결에서 대기 중인 명령을 성공으로 완료했다. Gateway 0.2.8은 명령 ID와 해시가 맞는 새 `APPLIED`가 현재 bootId를 사용할 때만 수신한다. journal의 과거 `DUPLICATE` readback은 유지한다.
+- 기본 73개와 중앙 연동 5개가 통과했다. 모의 GATT에서 이전 bootId를 주입한 사례는 명령 프레임 1개, 미확정 CSE receipt 1건과 자동 재실행 없음으로 끝났다. 실제 팀 API와 격리 Mobius4를 사용했다. wheel 소스 모듈 13개가 일치했다. [시험 기록](../keyring/evidence/2026-11-10-receipt-boot/README.md)
+- Pi 0.2.8 설치, 실제 장치의 재부팅·영수증과 Feather 0.2.0 출력 검증은 남았다. 제작 PCB와 팀 운영 정산 역시 대기 중이다. 전체 goal은 active/progress다.
+
+구현·시험 증거 commit `37e654b1f9f9074ffc92e26aa4ee9e222e3112dc`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `cbec589..37e654b`다.

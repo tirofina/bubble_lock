@@ -7,7 +7,7 @@
   "date": "2026-11-10",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Gateway 0.2.7: 71 basic tests and 2 operator-driven LED bench rehearsals passed with a software Feather and actual API/CSE. Actual Pi daemon/replay evidence remains at 0.2.5.",
+  "verificationStatus": "Gateway 0.2.8: 73 basic tests and 5 central integration cases passed. A wrong-boot APPLIED notification remained indeterminate in actual CSE with mock GATT. Actual Pi daemon/replay evidence remains at 0.2.5.",
   "rubricIds": [
     "R01",
     "R02",
@@ -64,7 +64,8 @@
     "Opt-in Feather 0.2.0 GPIO13 command/receipt profile with scoped NVS intent journal; observation profile remains 0.1.1",
     "Offline deployment preflight for TLS files and paths beneath systemd STATE_DIRECTORY; checked by ExecStartPre before the daemon",
     "KEYRING handoff candidate for binding native receipt and optional CORE ACK to the authenticated Gateway and historical central issuance/authorization",
-    "Authoritative HTTPS command polling ahead of CORE MQTT and exact current central hash binding before admitting MQTT-only commands"
+    "Authoritative HTTPS command polling ahead of CORE MQTT and exact current central hash binding before admitting MQTT-only commands",
+    "Fresh BLE APPLIED receipt binding to the current GATT boot; historical DUPLICATE readbacks retained"
   ],
   "existingHardware": {
     "status": "source-snapshot-included-unverified",
@@ -119,17 +120,17 @@
   "firmwareRevision": "keyring-0.7.0",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "a3cf82d8d7c0eb808005a4980fd0410309ed077c",
+    "sourceCommit": "37e654b1f9f9074ffc92e26aa4ee9e222e3112dc",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "a3cf82d8d7c0eb808005a4980fd0410309ed077c",
-    "lastPushedCommit": "a3cf82d8d7c0eb808005a4980fd0410309ed077c",
-    "latestCheckpoint": "Rehearsed the two explicit bench commands, actual central issuance, CSE readback and a read-only Pi journal comparator.",
-    "lastPushedCommitBeforeThisCheckpoint": "f0814e37391babe53974b3dfdc7d1c8791b06137"
+    "latestLocalSourceCommit": "37e654b1f9f9074ffc92e26aa4ee9e222e3112dc",
+    "lastPushedCommit": "37e654b1f9f9074ffc92e26aa4ee9e222e3112dc",
+    "latestCheckpoint": "Gateway 0.2.8 binds fresh APPLIED receipts to the current boot and preserves historical DUPLICATE results.",
+    "lastPushedCommitBeforeThisCheckpoint": "cbec58926b9f04fe0ec0a6f6b6cb1fb5a6383c72"
   },
-  "gatewayRevision": "0.2.7",
+  "gatewayRevision": "0.2.8",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
@@ -151,7 +152,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Prepare and rehearse explicit Feather LED ON/OFF issuance and read-only Pi SQLite/CSE evidence comparison",
+    "executionRequest": "Prevent a mismatched boot from settling a fresh BLE apply while preserving journal duplicates",
     "remainingCompletionDependencies": [
       "central deployment, settlement and recovery activation",
       "purchased JD9853 module initialization",
@@ -159,11 +160,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "a3cf82d8d7c0eb808005a4980fd0410309ed077c",
-    "sourceValidation": "71 basic tests and 2 actual API/CSE bench rehearsals passed. Two software-Feather commands matched the Gateway SQLite journal and CSE.",
+    "sourceCommit": "37e654b1f9f9074ffc92e26aa4ee9e222e3112dc",
+    "sourceValidation": "73 basic tests, 5 central integration cases, and wheel/source comparison passed. Wrong-boot mock GATT generated one CSE indeterminate receipt.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "The isolated LED test procedure and journal verifier are ready; actual Pi/Feather output and team CORE publishing/settlement remain.",
+    "currentDependencyState": "The new Gateway and LED bench procedure are ready; actual Pi/Feather output and team CORE publishing/settlement remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -512,5 +513,17 @@
     "matchedCseAndJournalReceipts": 2,
     "actualPiOrLedVerified": false,
     "sourceCommit": "a3cf82d8d7c0eb808005a4980fd0410309ed077c"
+  },
+  "receiptBootValidation": {
+    "evidence": "evidence/2026-11-10-receipt-boot/README.md",
+    "gatewayVersion": "0.2.8",
+    "basicTestsPassed": 73,
+    "centralCasesPassed": 5,
+    "wrongBootFreshApplySettled": false,
+    "historicalDuplicatePreserved": true,
+    "indeterminateCseReceipts": 1,
+    "commandFrames": 1,
+    "physicalDeviceVerified": false,
+    "sourceCommit": "37e654b1f9f9074ffc92e26aa4ee9e222e3112dc"
   }
 }
