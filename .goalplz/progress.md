@@ -876,3 +876,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 모의·격리 CSE 회귀시험 소스를 추가했다. 빌드, 시험, CSE ACL 변경, Pi 배포와 실제 명령은 미실행이다. 현재 격리 프록시에서 이 옵션을 켜려면 컨테이너 GET과 자원 ID CREATE 권한을 준비해야 한다. Feather/Pi 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
 
 자원 ID 고정 commit `19c95a0b37c57b1dd440bbedbb704a9ed95f174f`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `def9f1e..19c95a0`다.
+
+## 2026-11-11 — 격리 영수증 ID 경로 권한 준비
+
+직전 goal turn은 영수증을 CSE 컨테이너 자원 ID에 고정한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- 관리자 인증으로 기존 두 컨테이너를 조회하고 Gateway별 이름 경로 GET과 정확한 자원 ID POST 규칙을 생성했다. 같은 설정으로 재실행할 수 있으며 기존에 저장한 ID가 달라지면 프록시 갱신 전에 중단한다. 새 Pi 명령 세션에 `--receipt-container-ri` 옵션을 추가했다.
+- 발급 명령이 0건인 격리 환경에서 TLS 프록시만 갱신했다. 각 Gateway 인증서의 자기 컨테이너 GET은 HTTP 200·oneM2M 2000 및 RQI 일치, 상대 컨테이너 GET은 HTTP 403을 관찰했다. CSE·DB·broker·소비자·중계 컨테이너 ID는 동일했다. [배치 증거](../keyring/evidence/2026-11-11-scoped-receipt-pin/provisioning.json)
+- 이번 실행은 격리 설정과 조회 권한 확인까지다. 영수증 POST·정산·빌드·회귀시험·Pi/Feather 실물 명령은 미실행이다. 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
+
+격리 권한 배치 commit `3cb1175e24eb7dc24b102dc47e1962fd625d40dc`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `d6ba576..3cb1175`다.
