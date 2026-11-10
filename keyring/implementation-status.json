@@ -116,15 +116,15 @@
   "firmwareRevision": "keyring-0.7.0",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "cd4818b77f2ef05552e4fabe3c096ac9942d739e",
+    "sourceCommit": "f7e917cfbc4a77ddc2e11bac80f7146a363f4986",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "cd4818b77f2ef05552e4fabe3c096ac9942d739e",
-    "lastPushedCommit": "cd4818b77f2ef05552e4fabe3c096ac9942d739e",
-    "latestCheckpoint": "Feather 0.2.0 command profile pushed with two compiler profiles and four native test groups; physical flash and command/ACK pending",
-    "lastPushedCommitBeforeThisCheckpoint": "7b2b295523bc147fae6c2d3f2c3255bc901aea72"
+    "latestLocalSourceCommit": "f7e917cfbc4a77ddc2e11bac80f7146a363f4986",
+    "lastPushedCommit": "f7e917cfbc4a77ddc2e11bac80f7146a363f4986",
+    "latestCheckpoint": "Pi full daemon fixture and 27 observation / 16 health cin evidence pushed. One real pending row replayed across process restart; physical command and production systemd remain.",
+    "lastPushedCommitBeforeThisCheckpoint": "77b5ba846283051e4020c048456eef117d2627ec"
   },
   "gatewayRevision": "0.2.5",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
@@ -156,7 +156,7 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "cd4818b77f2ef05552e4fabe3c096ac9942d739e",
+    "sourceCommit": "f7e917cfbc4a77ddc2e11bac80f7146a363f4986",
     "sourceValidation": "Pi isolated Gateway 0.2.5 installation, both transient units exit0, 27 observations and 16 health cin, exact pending payload replay, final outbox0. Physical command and production systemd pending.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
@@ -449,6 +449,7 @@
     "cseHealth": 16,
     "replayedPendingObservations": 1,
     "productionSystemdVerified": false,
-    "physicalCommandVerified": false
+    "physicalCommandVerified": false,
+    "sourceCommit": "f7e917cfbc4a77ddc2e11bac80f7146a363f4986"
   }
 }

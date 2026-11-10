@@ -384,3 +384,5 @@ Gateway 0.2.5 wheel 로컬 빌드와 Python 모듈 13개 소스 일치를 확인
 - 시험 container/network 잔여 0, 기존 개발 container 4개 실행, 터널 종료와 시험 client 키 복사본 제거를 확인했다. [실행 기록과 해시](../keyring/evidence/2026-11-10-pi-full-daemon/README.md)
 
 전체 goal은 active/progress다. 현재 Feather 0.1.1로 관측·상태만 검증했다. 별도 승인 뒤 0.2.0 실물 명령, 제작 PCB·센서·출력·전력, 배포용 systemd와 운영 권한 등록, CORE 정산·앱/웹·release 검증이 남았다.
+
+fixture와 실물 실행 증거 commit `f7e917cfbc4a77ddc2e11bac80f7146a363f4986`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `77b5ba8..f7e917c`다.
