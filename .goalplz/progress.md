@@ -642,3 +642,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 구현과 회귀시험 소스만 반영했다. 복구 실행·빌드·시험·기존 DB 변경은 미실행이다. 전체 goal은 active/progress다.
 
 구현 commit `36ecd72491f9a70e51f2a6388d78d51820b7d76b`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `913393d..36ecd72`다.
+
+## 2026-11-10 — CSE 명령 영수증의 중앙 정산 후보
+
+DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 중앙의 `gatewayCommands` 발급 레코드 및 `GATEWAY_COMMAND_AUTHORIZED` 승인 이력을 KEYRING 정산 입력으로 연결할 수 있도록 후보를 추가했다.
+
+- 설정에 등록된 Gateway별 CSE receipt 컨테이너에서 원본 cin을 읽는다. Gateway 요청 ID로 자원명을 대조하고, 중앙 발급 해시·과거 승인·GPIO readback·선택 ACK가 일치하는 영수증을 정산한다. CSE 생성 시각의 초 단위 정밀도로 선후를 확정할 수 없는 경우에는 검토로 남긴다.
+- `(gatewayId, commandId)` 고유 키와 영수증 해시로 재전송과 내용 충돌을 구분한다. 격리 POSIX 파일 저장 후보와 재전송·충돌·저장 장애·동시 쓰기 회귀시험 소스를 추가했다. [중앙 정산 후보](../keyring/integration-candidate/README.md#cse-명령-영수증의-중앙-정산-후보)
+- 빌드·회귀시험·Pi/Feather 실행은 미실행이다. 운영 CORE의 인증된 CSE 조회, 중앙 저장소, ACK 수신기 연결과 실제 장치 정산 증거가 남아 있다. 전체 goal은 active/progress다.
+
+구현 commit `4caa505c069dcd0b64b5cac9a30503544e043e5a`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `055bdc3..4caa505`다.

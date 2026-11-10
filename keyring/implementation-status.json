@@ -7,7 +7,7 @@
   "date": "2026-11-10",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Feather scoped recovery is source-only. The earlier isolated SDT readback is available; replay, Pi telemetry, live receipts and hardware acceptance remain untested.",
+  "verificationStatus": "The central command receipt settlement candidate and Feather scoped recovery are source-only. The earlier isolated SDT readback is available. Central wiring, replay, Pi telemetry, live receipts and hardware acceptance remain unverified.",
   "rubricIds": [
     "R01",
     "R02",
@@ -139,15 +139,15 @@
   "firmwareRevision": "keyring-0.7.4",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "36ecd72491f9a70e51f2a6388d78d51820b7d76b",
+    "sourceCommit": "4caa505c069dcd0b64b5cac9a30503544e043e5a",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "36ecd72491f9a70e51f2a6388d78d51820b7d76b",
-    "lastPushedCommit": "36ecd72491f9a70e51f2a6388d78d51820b7d76b",
-    "latestCheckpoint": "Added an explicit Feather scoped recovery mode that replays only original pending rows and persists confirmation evidence before settlement.",
-    "lastPushedCommitBeforeThisCheckpoint": "913393de27a9b43908152dbd5ef481497f0fc404"
+    "latestLocalSourceCommit": "4caa505c069dcd0b64b5cac9a30503544e043e5a",
+    "lastPushedCommit": "4caa505c069dcd0b64b5cac9a30503544e043e5a",
+    "latestCheckpoint": "Added a central settlement candidate for authentic CSE receipts, historical authorization and durable replay detection.",
+    "lastPushedCommitBeforeThisCheckpoint": "055bdc3159f3ce7adfde0f50c04cd07c63169e06"
   },
   "gatewayRevision": "0.2.19",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
@@ -171,7 +171,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Recover interrupted scoped Feather deliveries with exact row identity and separate confirmation evidence",
+    "executionRequest": "Advance command receipt settlement against the current team issuance and authorization records",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -179,11 +179,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "36ecd72491f9a70e51f2a6388d78d51820b7d76b",
-    "sourceValidation": "Recovery and regression source only. No replay, build, test, BLE, Mobius4 writes or existing SQLite changes.",
+    "sourceCommit": "4caa505c069dcd0b64b5cac9a30503544e043e5a",
+    "sourceValidation": "Settlement and regression source only. No build, test, CSE write, BLE or physical device execution.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "The relay can recover pending scoped Feather rows as source. Pi capture/recovery and live receipt evidence, r18 bring-up and central acceptance remain.",
+    "currentDependencyState": "The settlement candidate still needs authenticated CORE ingress and a central unique record store. Pi capture/recovery, live receipt evidence and r18 bring-up remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -737,5 +737,14 @@
     "recoveryExecuted": false,
     "regressionsExecuted": false,
     "sourceCommit": "36ecd72491f9a70e51f2a6388d78d51820b7d76b"
+  },
+  "commandReceiptSettlement": {
+    "reference": "integration-candidate/README.md#cse-명령-영수증의-중앙-정산-후보",
+    "teamMain": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+    "status": "source-only",
+    "authenticatedCseIngressWired": false,
+    "centralUniqueStoreWired": false,
+    "regressionsExecuted": false,
+    "sourceCommit": "4caa505c069dcd0b64b5cac9a30503544e043e5a"
   }
 }
