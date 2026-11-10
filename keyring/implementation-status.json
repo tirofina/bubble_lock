@@ -7,7 +7,7 @@
   "date": "2026-11-10",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Scoped CSE resources and the team command API were provisioned. The PostgreSQL settlement and notification inbox are implemented in source. CORE callback deployment, live commands and hardware acceptance remain unverified.",
+  "verificationStatus": "Scoped CSE resources and the team command API were provisioned. PostgreSQL settlement, the notification inbox and missed notification recovery are implemented in source. CORE deployment, live commands and hardware acceptance remain unverified.",
   "rubricIds": [
     "R01",
     "R02",
@@ -139,15 +139,15 @@
   "firmwareRevision": "keyring-0.7.4",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "b498e396e6aedcc2a4635eee38961f218d1755e7",
+    "sourceCommit": "c078b3193cde2ea25712884854ab0861ea5b3310",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "b498e396e6aedcc2a4635eee38961f218d1755e7",
-    "lastPushedCommit": "b498e396e6aedcc2a4635eee38961f218d1755e7",
-    "latestCheckpoint": "Added the authenticated Mobius4 notification ingress, durable PostgreSQL inbox and retry worker for CSE receipt settlement.",
-    "lastPushedCommitBeforeThisCheckpoint": "00270d005451fbb354651375d16b96749632878e"
+    "latestLocalSourceCommit": "c078b3193cde2ea25712884854ab0861ea5b3310",
+    "lastPushedCommit": "c078b3193cde2ea25712884854ab0861ea5b3310",
+    "latestCheckpoint": "Added a paged recovery sweep that matches committed team issuance and authorization to authenticated CSE originals before enqueueing missing work.",
+    "lastPushedCommitBeforeThisCheckpoint": "8b9c589ce5f3f91a507e3d2dc93658c6bccded21"
   },
   "gatewayRevision": "0.2.19",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
@@ -171,7 +171,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Queue authenticated Mobius4 receipt notifications for durable asynchronous CORE settlement",
+    "executionRequest": "Recover receipt notifications lost before the durable inbox from the authoritative team state and CSE originals",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -179,11 +179,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "b498e396e6aedcc2a4635eee38961f218d1755e7",
-    "sourceValidation": "Notification ingress, inbox migration, worker and regression source only. No database migration, real CSE subscription, test, CORE deployment or device command was performed.",
+    "sourceCommit": "c078b3193cde2ea25712884854ab0861ea5b3310",
+    "sourceValidation": "Recovery sweep and regression source only. No scheduler run, DB migration, CSE recovery, test, CORE deployment or device command was performed.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "The notification and settlement adapters are prepared. CORE callback authentication, migration, subscription, pre-enqueue loss reconciliation, Pi physical receipt evidence and r18 bring-up remain.",
+    "currentDependencyState": "The inbox, settlement and missed-notification recovery are prepared in source. CORE callback authentication, migration, subscription and scheduled recovery, Pi physical receipt evidence and r18 bring-up remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -803,5 +803,14 @@
     "subscriptionCreated": false,
     "regressionsExecuted": false,
     "sourceCommit": "b498e396e6aedcc2a4635eee38961f218d1755e7"
+  },
+  "missedReceiptNotificationRecovery": {
+    "reference": "integration-candidate/README.md#대기열-도달-전-유실-복구",
+    "teamMain": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+    "status": "source-only",
+    "schedulerWired": false,
+    "recoveryExecuted": false,
+    "regressionsExecuted": false,
+    "sourceCommit": "c078b3193cde2ea25712884854ab0861ea5b3310"
   }
 }

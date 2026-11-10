@@ -721,3 +721,13 @@ PostgreSQL 정산 소스 commit `a551e9ee797dfa18b26c85a79c23d5ceccd55df5`를 `o
 - DB 마이그레이션·실제 CSE 구독·CORE 배치·시험·실물 명령은 미실행이다. 대기열에 들어오기 전에 실패한 알림은 중앙 발급 기록과 CSE 원본을 대조할 후속 복구가 필요하다. 전체 goal은 active/progress다.
 
 알림 정산 소스 commit `b498e396e6aedcc2a4635eee38961f218d1755e7`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `00270d0..b498e39`다.
+
+## 2026-11-10 — 대기열 도달 전 유실된 영수증 알림 복구
+
+직전 goal turn은 인증된 CSE 알림 수신과 영속 대기열 후보를 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- 커밋된 팀 상태의 `gatewayCommands`와 실행 승인 이력을 같은 승인 검증 함수로 결속한다. 허용 시각 구간과 커서로 나누어 확인한다. CSE 교체 시에는 중앙이 명령에 배정한 원래 자원 경로를 공급한다. [알림 유실 복구 후보](../keyring/integration-candidate/README.md#대기열-도달-전-유실-복구)
+- 대기열에 행이 없으면 인증된 CSE에서 계산된 native URI를 읽는다. Gateway·명령이 맞는 원본이 있을 때만 기존 고유 키로 넣는다. 기존 검토 기록을 보존하고 미도착·조회 실패·불일치를 보고한다. 콜백과 스윕이 동시에 넣어도 중복 삽입을 막는다.
+- 복구 및 회귀시험 소스를 추가했다. 주기 실행·DB 적용·실제 CSE 알림 유실 복구·회귀시험·실물 장치 명령은 미실행이다. 전체 goal은 active/progress다.
+
+알림 유실 복구 commit `c078b3193cde2ea25712884854ab0861ea5b3310`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8b9c589..c078b31`다.
