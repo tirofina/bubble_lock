@@ -838,3 +838,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 호스트 오류 주입 시험 소스를 추가했다. 빌드·링크 확인·호스트 시험·flash·전원 차단은 미실행이다. Feather/Pi 실물 명령 승인 요청은 대기 중이며 goal은 active/progress다.
 
 저널 보호 commit `da4e29131f92ad03e2ffee9fc75eba5998bace13`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `37d6cac..da4e291`이다.
+
+## 2026-11-10 — Pi BLE 명령의 승인 기한과 자격 상태 검사
+
+직전 goal turn은 r18 NVS 시작 오류에서 저널을 보존하는 펌웨어 변경을 올린 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- Gateway `0.2.21`은 중앙 승인과 명령 기한 중 이른 값을 단조 시계로 고정한다. SQLite 기록, BLE 작업 시작·잠금 대기, 조각 전송에 같은 기한을 적용한다. 각 조각 직전에 현재 인증 세션, 자격 상태·revision과 시계·기한을 확인한다.
+- 실행 의도 기록 전 자격이 바뀌면 다음 승인을 기다린다. 기록 후 BLE 전송 전에는 거절을 남기며, BLE 처리 중 중단은 미확정 또는 시간 초과로 보존한다. 조각 중단 시 해당 세션을 무효화한다. [BLE 경계](../keyring/raspberry-pi-gateway/BLE_SESSIONS.md#승인-기한과-gatt-전송)
+- 회귀시험 소스만 반영했다. 빌드, 시험, Pi 배포와 실물 BLE 명령은 미실행이다. Feather/Pi 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
+
+승인 기한 고정 commit `edd4b6c22ce15dd2988a02d792f7a7ef052d3179`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1e4cb66..edd4b6c`다.
