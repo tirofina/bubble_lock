@@ -781,3 +781,12 @@ PostgreSQL 정산 소스 commit `a551e9ee797dfa18b26c85a79c23d5ceccd55df5`를 `o
 - 이번 실행 범위는 격리 배치다. 명령별 조회 도구 실행·실제 영수증 수신·정산·회귀시험·Pi/Feather 명령은 미실행이다. 전체 goal은 active/progress다.
 
 전달 경로 기록과 배치 commit `7e72b25acc19b84b23c454f4f13245ea4e9350a5`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `d8116cc..7e72b25`다.
+
+## 2026-11-10 — Feather 실물 명령 증거 대조 도구
+
+직전 goal turn은 전달 경로 테이블과 격리 프로세스 배치를 완료한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- ON/OFF 실행 도구는 CSE 원본 receipt의 `ri`와 `ct`를 보존한다. 읽기 전용 검증 도구는 Pi SQLite의 명령·영수증 해시, CSE 원본 ID·시각, 팀 발급·승인, PostgreSQL 정산과 전달 경로를 명령별로 대조한다. 콜백 수신, 중앙 정산과 운영자가 보고한 LED 상태를 별도로 기록한다. [증거 대조 절차](../keyring/raspberry-pi-gateway/TESTING.md#실물-명령-증거-대조)
+- 검증·회귀시험 소스만 추가했다. Feather 명령 프로필 0.2.0 flash, Pi 시험 세션·LED 명령·실제 영수증 확인은 별도 실행 승인과 실제 장치가 필요하다. 전체 goal은 active/progress다.
+
+증거 대조 소스 commit `503f9c9ed2095c29c4d23f47657756500a4be276`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `0d8ebe7..503f9c9`다.
