@@ -1121,3 +1121,12 @@ r18 재연결 기록 commit `ff473c2fd7b834de6b9d1ad239b8f67690006117`을 `origi
 - 늦게 반환한 GATT 쓰기 응답, 나중 관측, 시간 범위 위반, 저널 중복 결과와 수신 시각 보관을 다루는 회귀시험 소스를 추가했다. 빌드·시험·Pi 접속·실물 영수증 검증은 미실행이다. goal은 active/progress다.
 
 영수증 시각 commit `19712ecf9e29430bbc4599eff44b30c8842aa2b8`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `e5f048c..19712ec`다.
+
+## 2026-11-11 — 마지막 GATT 응답 유실 뒤 장치 영수증 보존
+
+직전 goal turn은 BLE 영수증의 수신 시각과 UTC 추정 경계를 구현한 progress다. DOC-REV 2.0.0, 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`와 팀 ACK 계약을 확인했다. 팀 head는 직전과 같다.
+
+- Gateway `0.2.42`는 마지막 GATT 쓰기 시작 이후, 하나의 BLE 기한 안에 해당 세션에서 받은 일치 영수증을 수용한다. 이후 연결 종료·쓰기 응답 오류·내부 타임아웃에도 그 결과와 readback을 SQLite 경로에 전달한다. 새 연결로 조각을 이어 보내지 않는다. [BLE 처리](../keyring/raspberry-pi-gateway/BLE_SESSIONS.md#승인-기한과-gatt-전송)
+- 이른 응답, 기한 이후 응답, 사용자 취소, 기존 연결 교체 방어와 SQLite 정산을 다루는 회귀시험 소스를 추가했다. 빌드·시험·Pi 접속·실물 검증은 미실행이다. goal은 active/progress다.
+
+영수증 보존 commit `2cdc96baae12cb85524488aa5daab0c2f893d627`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `4bde3f7..2cdc96b`다.
