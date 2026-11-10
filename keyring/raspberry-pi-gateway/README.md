@@ -4,7 +4,9 @@ DOC-REV 2.0.0의 팀 CORE 계약을 연결했다. `BLE_GATT_PROFILE=core-v1`이 
 
 Python 3.11 이상과 Linux BlueZ를 사용하는 KEYRING 현장 daemon이다. BLE 관측을 SQLite outbox에 저장하고 MQTT 또는 HTTPS로 oneM2M contentInstance를 생성한다. 중앙에서 받은 명령은 최신 승인·credential·deadline을 확인한 뒤 BLE로 전달한다.
 
-현재 전체 상태는 **implemented / 실물·통합 unverified**다. 2026-10-30 Gateway0.2.2에서 재접속·영수증 대기열 경계를 수정했고, 소스·기존 설치 wheel 각각55개 시험이 통과했다(모의47개·실제 로컬 HTTPS/TLS8개)([범위와 재실행](TESTING.md)). 아래 명령은 Raspberry Pi 배포 절차이며 실제 Pi daemon·BLE·운영 서비스는 실행하지 않았다.
+현재 상태는 **implemented / Feather+Pi BLE 벤치 진행 중**이다. 2026-11-10 실제 Pi Zero 2 W에 Gateway0.2.4를 설치하고 Feather를 인증·bonding한 뒤 90초 연속 수신과 `released/confirm/panic` 버튼 관측을 확인했다. 전체 daemon·CSE 연결·실물 키링 PCB 시험은 미완료다. [Pi 벤치 실행 증거](../evidence/2026-11-10-pi-feather/README.md)와 [단독 BLE 관측 절차](../firmware/feather_probe/README.md#raspberry-pi에서-단독-ble-관측)를 따른다.
+
+2026-10-30 Gateway0.2.2에서 재접속·영수증 대기열 경계를 수정했고, 소스·기존 설치 wheel 각각55개 시험이 통과했다(모의47개·실제 로컬 HTTPS/TLS8개)([범위와 재실행](TESTING.md)). 아래 절차는 중앙 인증서·API와 연결할 전체 Gateway 배포용이다. 이번 Feather 벤치에서는 이 daemon과 운영 서비스를 시작하지 않았다.
 
 [BLE_SESSIONS.md](BLE_SESSIONS.md)에 연결 교체 시 남은 명령 조각 전송 중단·이전 callback 무시·실패한 handshake의 ready 차단을 설명한다. GATT/중앙 wire schema와 DB format은 유지한다.
 
@@ -87,7 +89,7 @@ scan off
 quit
 ```
 
-bonding이 완료된 주소를 `BLE_DEVICES`에 넣는다. `BLE_PAIR=true`는 필수다. daemon 자체는 passkey 입력 UI나 자동 승인 agent를 제공하지 않으므로 새 장치의 첫 등록은 이 과정이 필요하다. 실제 Raspberry Pi 어댑터·BlueZ에서의 scan/connection·bond 동작은 아직 검증하지 않았다.
+bonding이 완료된 주소를 `BLE_DEVICES`에 넣는다. `BLE_PAIR=true`는 필수다. daemon 자체는 passkey 입력 UI나 자동 승인 agent를 제공하지 않으므로 새 장치의 첫 등록은 이 과정이 필요하다. 실제 Raspberry Pi 어댑터·BlueZ의 scan/connection·bond는 Feather 벤치에서 확인했으며, 실물 키링 PCB 등록과 전체 daemon 경로는 추가 시험 대상이다.
 
 ## 수동 실행 또는 systemd 배포
 
@@ -124,4 +126,4 @@ Gateway0.2.0은 DB를 configured Gateway/Originator/CSE 자원 identity에 연�
 
 oneM2M은 같은 `rqi`의 CREATE 성공 응답을 받아야 전송 완료 처리한다. MQTT PUBACK은 완료 근거가 아니다. HTTPS fallback도 동일한 contentInstance 이름을 쓰며, 이름 충돌은 기존 payload가 일치할 때만 완료로 처리한다.
 
-수용 항목과 중앙 인수 조건은 [KEYRING 인수인계](../../docs/keyring-handoff.md)에 있다. 로컬 모의 단위 테스트 결과는 [TESTING.md](TESTING.md)에 있다. Pi 배포·장비·서비스 통합 검증은 미실행이다.
+수용 항목과 중앙 인수 조건은 [KEYRING 인수인계](../../docs/keyring-handoff.md)에 있다. 로컬 모의 단위 테스트 결과는 [TESTING.md](TESTING.md)에 있다. Pi의 Feather BLE 벤치와 전체 daemon·중앙 서비스·실물 키링 PCB 통합시험을 구분하며, 후자의 검증은 미완료다.

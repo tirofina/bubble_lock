@@ -1,0 +1,9 @@
+{
+  "packages": {
+    "privacy-bubble-gateway": "0.2.4",
+    "bleak": "3.1.0",
+    "dbus-fast": "5.2.0"
+  },
+  "installedSourceMismatches": [],
+  "bleSourceSha256Lf": "d6be718687451101d2435d9d95ad1882db65d03345b7062b573bdd5071655dfb"
+}

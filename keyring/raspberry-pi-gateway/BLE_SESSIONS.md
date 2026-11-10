@@ -1,5 +1,11 @@
 # BLE 재접속과 명령 세션
 
+## 2026-11-10 — BlueZ 초기 READ와 알림 버퍼 분리
+
+Gateway0.2.4는 초기 observation READ·검증·큐 등록을 observation 알림 구독 이전에 수행한다. 실제 Pi의 BlueZ가 READ 전체 값을 PropertiesChanged로도 보내면서 LF 알림 버퍼에 섞이는 오류를 재현했다. 같은 재현 시험의 수정 전 FAIL→후 PASS와 기본58개 통과, 실물90초45개 관측·버튼3상태 수신을 확인했다. [실물 Pi 증거](../evidence/2026-11-10-pi-feather/README.md)를 따른다. session generation·인증·JSON/LF 검사는 유지한다.
+
+## 2026-10-30 — 명령 세션 교체
+
 KEYRING / 남호 · DOC-REV 2.0.0 · Gateway0.2.1 · 2026-10-30.
 
 Gateway0.2.0은 GATT 조각을 보낼 때마다 `peer.client`를 다시 조회했다. 첫 조각 전송 중 연결이 교체되면 남은 조각은 새 클라이언트로 흘렀다. 모의 시험에서는 새 연결에12번 추가 WRITE가 발생했다. 이전 연결의 disconnect·observation·receipt 콜백도 동일한 peer를 사용해 새 연결을 끊거나 수신 버퍼를 오염시키거나 현재 pending 명령을 정산했다. handshake 도중 protocol failure가 발생해도 ready를 설정하는 경로가 있었다. [수정 전 실패 로그](../evidence/2026-10-30-ble-sessions/baseline.log)에5개 재현 결과를 보존했다.

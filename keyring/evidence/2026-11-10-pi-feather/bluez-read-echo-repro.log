@@ -1,0 +1,10 @@
+Decoded LF notification: sequence=213
+BlueZ READ value echoed to subscribed callback: sequence=213 bytes=179 LF=false
+REPRODUCED: JSONDecodeError: Extra data: line 1 column 180 (char 179)
+Decoded LF notification: sequence=215
+BlueZ READ value echoed to subscribed callback: sequence=218 bytes=179 LF=false
+REPRODUCED: JSONDecodeError: Expecting value: line 1 column 118 (char 117)
+Decoded LF notification: sequence=219
+BlueZ READ value echoed to subscribed callback: sequence=223 bytes=179 LF=false
+REPRODUCED: JSONDecodeError: Expecting value: line 1 column 118 (char 117)
+Decoded LF notification: sequence=224

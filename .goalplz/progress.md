@@ -327,3 +327,13 @@ Pi Zero 2 W는 USB 데이터 포트에 연결됐고 초록 LED가 계속 켜져 
 ## 2026-11-10 — Feather 실물 교체와 Windows BLE
 
 사용자 승인으로 Feather ESP32 V2·1.54인치 ST7789·A0/A1 구성에 시험용 펌웨어를 올렸다. COM12 업로드 해시 검증, `FEATHER PROBE READY` 부팅 로그, Windows PIN 페어링, Gateway `released` 수신을 확인했다. 180초 관측에서 A0/A1은 수신되지 않아 버튼 입력과 실제 화면 표시 확인이 남았다. 복구 파일 4개와 시험 PIN은 로컬에 보관했다. main/CORE/WEB HEAD는 이전 확인과 같았다. [실물 실행 기록](../keyring/evidence/2026-11-10-feather-device/README.md)
+
+## 2026-11-10 — 화면 유지·실물 Pi 등록·BlueZ 오류 수정
+
+사용자가 현재 구성은 화면·Feather·버튼 두 개임을 확정하고, 순간 표시 현상을 보고해 마지막 입력 화면을 유지하는 `feather-probe-0.1.1`로 수정·빌드·COM12 업로드했다. 해시·부팅 확인 후 사용자가 A0/A1 전환과 해제 후 화면 유지를 확인했다. 실제 BLE 관측 상태는 누름·해제를 유지한다.
+
+사용자가 재설정한 Pi에 제공한 계정으로 SSH 접속했다. Zero 2 W Rev1.0, Debian13.7 aarch64, Python3.13.5, BlueZ5.82를 확인했다. Bluetooth soft block을 해제하고 로컬 PIN으로 한 Feather만 인증·bonding했다. Pi 벤치 가상환경에 Gateway를 설치했다.
+
+실물 Pi에서 initial READ가 BlueZ notify callback에도 전달돼 JSON fragment 버퍼를 오염시키는 오류를 재현했다. 초기 READ를 observation 구독 이전으로 옮기고 모의 회귀시험의 수정 전 FAIL→후 PASS, 전체58개 통과를 확인했다. 보안·형식·generation 검사를 유지한 Gateway0.2.4 wheel을 Pi에 설치하고 소스 일치를 확인했다. 실제90초45개 관측·연결 상태18회 모두 정상, 사용자 버튼 입력으로 released/confirm/panic 수신·observer exit0을 확보했다.
+
+원격 main715ef58/COREd54a43a/WEB80ed37f는 시작 조회에서 이전과 같았다. PIN·SSH 암호·주소·raw BLE 로그는 공개하지 않았다. 전체 daemon/Pi→CSE/실물PCB/앱·웹 통합은 남았고 Docker API는 엔진 pipe 부재로 연결되지 않았다. [실물 Pi 실행 기록](../keyring/evidence/2026-11-10-pi-feather/README.md)

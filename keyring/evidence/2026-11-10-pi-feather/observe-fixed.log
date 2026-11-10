@@ -1,0 +1,6 @@
+{"matchingFeathers": ["[local device]"]}
+Release both buttons, press A0, then press A1. Hold each press for one second.
+{"buttonState": "released", "sequence": 340}
+{"buttonState": "confirm", "sequence": 346}
+{"buttonState": "panic", "sequence": 349}
+Feather button observations passed.

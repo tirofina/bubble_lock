@@ -1,0 +1,8 @@
+Looking in indexes: https://pypi.org/simple, https://www.piwheels.org/simple
+Processing ./privacy_bubble_gateway-0.2.4-py3-none-any.whl
+Installing collected packages: privacy-bubble-gateway
+  Attempting uninstall: privacy-bubble-gateway
+    Found existing installation: privacy-bubble-gateway 0.2.3
+    Uninstalling privacy-bubble-gateway-0.2.3:
+      Successfully uninstalled privacy-bubble-gateway-0.2.3
+Successfully installed privacy-bubble-gateway-0.2.4

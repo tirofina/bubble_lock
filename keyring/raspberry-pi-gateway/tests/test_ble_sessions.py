@@ -139,6 +139,44 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.peer.observations.qsize(), count + 1)
         self.assertTrue(self.peer.ready.is_set())
 
+    async def test_bluez_read_value_does_not_contaminate_notification_fragments(self):
+        original_factory = self.factory
+
+        def bluez_client(*args, **kwargs):
+            client = original_factory(*args, **kwargs)
+            original_read = client.read_gatt_char
+
+            async def read(uuid):
+                value = await original_read(uuid)
+                # BlueZ also emits a Value PropertiesChanged event for READ.
+                # Bleak forwards it when this characteristic is subscribed.
+                callback = client.callbacks.get(uuid)
+                if callback is not None:
+                    callback(None, bytearray(value))
+                return value
+
+            client.read_gatt_char = read
+            return client
+
+        self.peer.discovered = object()
+        self.peer.seen.set()
+        with patch("bubble_gateway.ble.BleakClient", side_effect=bluez_client):
+            self.watcher = asyncio.create_task(self.fleet._watch(self.peer))
+            await self.ready(1)
+            client = self.clients[0]
+            first = self.peer.observations.get_nowait()
+            self.assertEqual(first["sequence"], 1)
+            notification = json.dumps(client.frame(2)).encode() + b"\n"
+            for offset in range(0, len(notification), 20):
+                client.callbacks[self.fleet.observation_uuid](
+                    None, bytearray(notification[offset:offset + 20]))
+            self.assertTrue(self.peer.ready.is_set(), "READ polluted the LF-framed notification stream")
+            self.assertFalse(self.peer.disconnected.is_set())
+            self.assertIsNone(self.peer.last_error)
+            self.assertEqual(self.peer.observations.get_nowait()["sequence"], 2)
+            self.assertTrue(self.peer.observations.empty())
+            self.assertEqual(self.peer.observation_frames.data, bytearray())
+
     async def test_old_receipt_cannot_settle_current_pending_command(self):
         old, current = await self.reconnect()
         cmd = command()

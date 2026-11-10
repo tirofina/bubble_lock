@@ -1,0 +1,18 @@
+{
+  "model": "Raspberry Pi Zero 2 W Rev 1.0",
+  "osRelease": {
+    "NAME": "Debian GNU/Linux",
+    "ID": "debian",
+    "PRETTY_NAME": "Debian GNU/Linux 13 (trixie)",
+    "VERSION_ID": "13",
+    "VERSION": "13 (trixie)",
+    "VERSION_CODENAME": "trixie",
+    "DEBIAN_VERSION_FULL": "13.7",
+    "HOME_URL": "https://www.debian.org/",
+    "SUPPORT_URL": "https://www.debian.org/support",
+    "BUG_REPORT_URL": "https://bugs.debian.org/"
+  },
+  "architecture": "aarch64",
+  "python": "3.13.5",
+  "kernel": "6.18.50+rpt-rpi-v8"
+}

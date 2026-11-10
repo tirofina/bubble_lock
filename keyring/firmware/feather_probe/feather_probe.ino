@@ -185,7 +185,7 @@ void initBle() {
   char identityJson[240];
   snprintf(identityJson, sizeof(identityJson),
       "{\"version\":1,\"deviceId\":\"%s\",\"boardRevision\":\"feather-esp32-v2\","
-      "\"firmwareRevision\":\"feather-probe-0.1.0\",\"bootId\":\"%s\"}", DeviceId, bootId);
+      "\"firmwareRevision\":\"feather-probe-0.1.1\",\"bootId\":\"%s\"}", DeviceId, bootId);
   identity->setValue(String(identityJson));
   constexpr auto readNotify = BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY;
   observation = service->createCharacteristic(ObservationId, readNotify);
@@ -252,19 +252,28 @@ void setup() {
 
 void loop() {
   static ButtonState previous = ButtonState::Released;
+  static ButtonState displayed = ButtonState::Released;
+  static bool confirmWasPressed = false, panicWasPressed = false;
   static bool wasTrusted = false;
   const uint32_t now = millis();
   confirm.update(now);
   panic.update(now);
   const auto button = panic.pressed ? ButtonState::Panic :
                       confirm.pressed ? ButtonState::Confirm : ButtonState::Released;
+  auto nextDisplay = displayed;
+  // Latch press events for the screen; BLE still reports the live button state.
+  if (panic.pressed && !panicWasPressed) nextDisplay = ButtonState::Panic;
+  else if (confirm.pressed && !confirmWasPressed && !panic.pressed) nextDisplay = ButtonState::Confirm;
   const auto session = currentLink();
-  if (button != previous || session.trusted != wasTrusted) render(button, session.trusted);
+  if (nextDisplay != displayed || session.trusted != wasTrusted) render(nextDisplay, session.trusted);
   if (button != previous || now - lastSample >= 2000) {
     sample(button);
     lastSample = now;
   }
   previous = button;
+  displayed = nextDisplay;
+  confirmWasPressed = confirm.pressed;
+  panicWasPressed = panic.pressed;
   wasTrusted = session.trusted;
   pumpObservation(session, now);
   delay(2);

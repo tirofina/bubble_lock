@@ -28,7 +28,7 @@ async def observe(address: str, seconds: int) -> int:
     fleet = BleFleet(SimpleNamespace(
         gateway_id=GATEWAY_ID, ble_gatt_profile="core-v1", ble_devices=devices,
         ble_pair=True, ble_scan_seconds=10.0, request_timeout=5.0,
-        firmware_revision_allowlist=("feather-probe-0.1.0",),
+        firmware_revision_allowlist=("feather-probe-0.1.1",),
     ))
     states: set[str] = set()
     complete = asyncio.Event()
