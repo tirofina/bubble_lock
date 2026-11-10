@@ -1022,3 +1022,12 @@ HTTPS 재시도 commit `3cc69fd9d14a08988475c26e203899f506c478e2`를 `origin/cod
 - CSE 보류 시작·종료, 고정 컨테이너 경로, ACK 독립 송신과 대기 행 보존을 다루는 회귀시험 소스를 추가했다. 빌드·시험·Pi 배포·실물 장애 복구는 미실행이다. goal은 active/progress다.
 
 HTTPS 선택 보류 commit `420c07df34944681f86b763f35765db849bd55ae`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `982321c..420c07d`다.
+
+## 2026-11-11 — r18 가속도계와 움직임 경로 재시도
+
+직전 goal turn은 CSE `Retry-After` 동안 막힌 송신 경로의 선택을 보류한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 브랜치 head는 직전과 같다.
+
+- 펌웨어 `keyring-0.7.11`은 가속도계 초기화 또는 축 읽기가 실패하면 기존 설정으로 재시도한다. 인터럽트 오류만 있으면 해당 경로를 따로 복구하고 부팅 중 누적 움직임 수를 보존한다. 축 샘플과 인터럽트가 모두 정상인 때만 절전을 검토한다. [절전 경계](../keyring/firmware/POWER_WAKE.md)
+- 부팅 시 응답 없음, 축·인터럽트 읽기 장애와 복구, 배터리 경로 독립성을 다루는 호스트 회귀시험 소스를 추가했다. 빌드·시험·flash는 미실행이다. r18 실물 검증은 남아 있으며 goal은 active/progress다.
+
+가속도계 복구 commit `ecbf579e2b80916739af5c07f3c634966ffcd7be`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `e651bc2..ecbf579`다.
