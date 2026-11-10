@@ -396,6 +396,8 @@ class BleFleet:
                 if (sensor.get("detail") == "health" and wake in ("cold", "motion", "button", "timer", "other")
                         and _integer(pins, maximum=2**64 - 1)):
                     fields.update(wakeCause=wake, wakePins=pins, deviceUptimeMs=frame["uptimeMs"])
+                if sensor.get("detail") == "energy" or "ina219" in sensor:
+                    fields.update(ina219=sensor.get("ina219"), deviceUptimeMs=frame["uptimeMs"])
                 self._trace_event(peer, "notification", **fields)
 
     async def _deliver(self, peer: _Peer) -> None:

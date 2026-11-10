@@ -36,6 +36,52 @@ class WakeCaptureTests(unittest.TestCase):
                 self.assertEqual(len(report["sessions"]), 2)
                 self.assertEqual(report["wake"]["releaseToFirstNotificationMs"], 16)
 
+    def test_power_capture_deduplicates_same_boot_and_requires_first_wake_boot(self):
+        board = "r18-hand-solder"
+
+        def frame(kind, at, phase, boot, generation, **fields):
+            return dict(event=kind, atNs=at * 1_000_000, phase=phase, generation=generation,
+                        bootId=boot, boardRevision=board, **fields)
+
+        ready = {"advertisingRssiDbm": None, "advertisingAgeMs": None}
+        sample = dict(status="ok", busVoltageMv=3300, currentUa=-100, loadPowerUw=-330,
+                      shuntVoltageUv=-10, readUptimeMs=700)
+        stale = dict.fromkeys(sample)
+        stale["status"] = "stale"
+        events = [
+            frame("ready", 1, "baseline", "before", 1, **ready),
+            frame("notification", 2, "baseline", "before", 1, sequence=1, ina219=sample, deviceUptimeMs=750),
+            frame("lost", 3, "baseline", "before", 1),
+            frame("ready", 4, "baseline", "before", 2, **ready),
+            frame("notification", 5, "baseline", "before", 2, sequence=2, ina219=sample, deviceUptimeMs=800),
+            frame("ready", 10, "after-wake", "first-after", 1, **ready),
+            frame("notification", 11, "after-wake", "first-after", 1, sequence=1,
+                  wakeCause="button", wakePins=64, deviceUptimeMs=600),
+            frame("notification", 12, "after-wake", "first-after", 1, sequence=2, ina219=None, deviceUptimeMs=650),
+            frame("notification", 13, "after-wake", "first-after", 1, sequence=3, ina219=stale, deviceUptimeMs=690),
+            frame("ready", 20, "after-wake", "later-after", 2, **ready),
+            frame("notification", 21, "after-wake", "later-after", 2, sequence=1, ina219=sample, deviceUptimeMs=750),
+        ]
+        options = dict(board=board, mode="wake", truncated=False, dropped=0, expected_wake="confirm", release_ms=6)
+        baseline = summarize(events, 0, 30_000_000, **options)
+        self.assertEqual(baseline["status"], "RECORDED")
+        self.assertNotIn("power", baseline)
+        self.assertTrue(all("ina219" not in row for row in baseline["events"]))
+
+        missing = summarize(events, 0, 30_000_000, include_power=True, **options)
+        self.assertEqual(missing["status"], "INSUFFICIENT")
+        self.assertEqual(missing["power"], dict(uniqueValidSamples=2, repeatedValidFrames=1,
+                                               invalidFrames=1, missingEnergyFrames=1, missingPhases=["after-wake"]))
+
+        after_power = frame("notification", 14, "after-wake", "first-after", 1,
+                            sequence=4, ina219=sample, deviceUptimeMs=750)
+        complete_events = sorted([*events, after_power], key=lambda event: event["atNs"])
+        complete = summarize(complete_events, 0, 30_000_000, include_power=True, **options)
+        self.assertEqual(complete["status"], "RECORDED")
+        self.assertEqual(complete["power"]["uniqueValidSamples"], 3)
+        self.assertEqual([row["newPowerSample"] for row in complete["events"] if "newPowerSample" in row],
+                         [True, False, True, True])
+
 
 class SessionTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):

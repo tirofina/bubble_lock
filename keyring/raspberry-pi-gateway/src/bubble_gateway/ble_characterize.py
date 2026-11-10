@@ -1,4 +1,4 @@
-"""Capture BLE range, reconnect and wake observations on Linux/BlueZ."""
+"""Capture BLE range, reconnect, wake and optional r18 power observations on Linux/BlueZ."""
 from __future__ import annotations
 
 import argparse
@@ -47,9 +47,45 @@ def wake_result(sessions: list[dict], rows: list[dict], expected: str, release_m
     return report
 
 
+def power_result(sessions: list[dict], rows: list[dict], mode: str) -> dict:
+    by_session = {session["session"]: session for session in sessions}
+    first_boots = {}
+    for session in sessions:
+        if session["notificationCount"]:
+            first_boots.setdefault(session["phase"], session["boot"])
+
+    samples = set()
+    valid_boots = set()
+    valid = invalid = missing = 0
+    for row in rows:
+        if "ina219" not in row:
+            continue
+        reading = row["ina219"]
+        if reading is None:
+            missing += 1
+        elif reading["status"] != "ok":
+            invalid += 1
+        else:
+            session = by_session[row["session"]]
+            boot = session["boot"]
+            sample = (boot, reading["readUptimeMs"])
+            row["newPowerSample"] = sample not in samples
+            valid += 1
+            samples.add(sample)
+            valid_boots.add((session["phase"], boot))
+
+    if mode == "wake":
+        missing_phases = [phase for phase in ("baseline", "after-wake")
+                          if (phase, first_boots.get(phase)) not in valid_boots]
+    else:
+        missing_phases = [] if samples else ["capture"]
+    return {"uniqueValidSamples": len(samples), "repeatedValidFrames": valid - len(samples),
+            "invalidFrames": invalid, "missingEnergyFrames": missing, "missingPhases": missing_phases}
+
+
 def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mode: str,
               truncated: bool, dropped: int, expected_wake: str | None = None,
-              release_ms: int | None = None) -> dict:
+              release_ms: int | None = None, include_power: bool = False) -> dict:
     sessions = {}
     boots = {}
     rows = []
@@ -88,6 +124,8 @@ def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mo
                 if mode == "wake" and "wakeCause" in event:
                     row.update(wakeCause=event["wakeCause"], wakePins=event["wakePins"],
                                deviceUptimeMs=event["deviceUptimeMs"])
+                if include_power and "ina219" in event:
+                    row.update(ina219=event["ina219"], deviceUptimeMs=event["deviceUptimeMs"])
                 if session["notificationCount"] == 0:
                     session["firstNotificationAtMs"] = elapsed
                 else:
@@ -108,11 +146,13 @@ def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mo
                                "lossToNotificationMs": first - lost, "sameBoot": previous["boot"] == current["boot"]})
     notifications = sum(session["notificationCount"] for session in measured)
     wake = wake_result(measured, rows, expected_wake, release_ms) if expected_wake is not None else None
+    power = power_result(measured, rows, mode) if include_power else None
     status = "RECORDED"
     if truncated:
         status = "TRUNCATED"
     elif (not notifications or unexpected_boards or dropped or (mode == "reconnect" and not reconnects)
-          or (mode == "wake" and (wake is None or not wake["matched"]))):
+          or (mode == "wake" and (wake is None or not wake["matched"]))
+          or (power is not None and power["missingPhases"])):
         status = "INSUFFICIENT"
     report = {"status": status, "durationMs": (stop_ns - start_ns) // 1_000_000,
               "notificationCount": notifications, "droppedByReceiver": dropped,
@@ -120,6 +160,8 @@ def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mo
               "reconnects": reconnects, "events": rows}
     if wake is not None:
         report["wake"] = wake
+    if power is not None:
+        report["power"] = power
     return report
 
 
@@ -139,6 +181,7 @@ async def characterize(args: argparse.Namespace) -> dict:
     async def window(phase: str, *, stop_on_first: bool = False) -> tuple[bool, int]:
         fleet = BleFleet(config)
         first = asyncio.Event()
+        first_power = asyncio.Event()
         receiving = set()
         capturing = True
 
@@ -150,17 +193,21 @@ async def characterize(args: argparse.Namespace) -> dict:
                 events.append({**event, "phase": phase})
             else:
                 truncated = True
-            if (event["event"] == "notification" and event["boardRevision"] == board
-                    and event["generation"] not in receiving):
-                receiving.add(event["generation"])
-                first.set()
-                print("First notification received for this BLE session.", flush=True)
+            if event["event"] == "notification" and event["boardRevision"] == board:
+                if event["generation"] not in receiving:
+                    receiving.add(event["generation"])
+                    first.set()
+                    print("First notification received for this BLE session.", flush=True)
+                reading = event.get("ina219")
+                if reading is not None and reading["status"] == "ok":
+                    first_power.set()
 
         await fleet.start(discard_observation, trace=trace)
         try:
             if stop_on_first:
                 try:
-                    await asyncio.wait_for(first.wait(), args.seconds)
+                    baseline_ready = first_power if args.include_power else first
+                    await asyncio.wait_for(baseline_ready.wait(), args.seconds)
                 except TimeoutError:
                     pass
             else:
@@ -190,7 +237,8 @@ async def characterize(args: argparse.Namespace) -> dict:
               "firmwareRevision": args.firmware_revision, "gattProfile": args.gatt_profile,
               "distanceCm": args.distance_cm, "distanceSource": "operator-measured",
               **summarize(events, start_ns, stop_ns, board=board, mode=args.mode,
-                          truncated=truncated, dropped=dropped, expected_wake=args.expect_wake, release_ms=release_ms)}
+                          truncated=truncated, dropped=dropped, expected_wake=args.expect_wake,
+                          release_ms=release_ms, include_power=args.include_power)}
     if args.mode == "wake":
         report["wake"].update(operatorIdleSeconds=args.idle_seconds, releaseAtMs=release_ms)
     return report
@@ -209,6 +257,7 @@ def main() -> None:
     parser.add_argument("--seconds", type=int, default=90)
     parser.add_argument("--idle-seconds", type=int, help="wake mode only; BLE-free idle window")
     parser.add_argument("--expect-wake", choices=tuple(WAKE_CASES), help="wake mode only")
+    parser.add_argument("--include-power", action="store_true", help="include INA219 readings (r18-pcb only)")
     parser.add_argument("--database", type=Path, required=True, help="Gateway state path; used only to find its lock")
     parser.add_argument("--output", type=Path, required=True, help="new private JSON file under an existing directory")
     args = parser.parse_args()
@@ -219,6 +268,8 @@ def main() -> None:
         parser.error("invalid BLE enrollment or revision")
     if not 1 <= args.distance_cm <= 100_000 or not 10 <= args.seconds <= 600:
         parser.error("distance must be 1..100000 cm and duration 10..600 seconds")
+    if args.include_power and args.hardware != "r18-pcb":
+        parser.error("--include-power requires r18-pcb")
     if args.mode == "wake":
         if (args.hardware != "r18-pcb" or args.expect_wake is None or args.idle_seconds is None
                 or not 10 <= args.idle_seconds <= 3600):

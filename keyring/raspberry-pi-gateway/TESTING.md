@@ -47,7 +47,7 @@ bubble-keyring-ble-characterize --mode range --hardware feather-bench \
 
 거리는 실제 측정값을 입력한다. 거리별로 Pi·장치 위치, 장애물, 방향, 펌웨어와 시간 조건을 맞춘 뒤 새 파일로 기록한다. `--mode reconnect`에서는 첫 알림 표시를 확인한 후 연결을 끊고 복구한다. 도구가 BLE 연결 종료를 감지한 시점에서 새 세션의 첫 알림까지 걸린 시간을 기록한다. 복구 시간에는 실험자가 링크를 복구하는 데 걸린 시간도 포함된다.
 
-JSON에는 최초 READ와 구독 준비 전 데이터가 제외된 알림 수, 세션별 sequence 간격, 새 세션까지의 경과 시간, 같은 부팅인지 여부가 남는다. RSSI는 접속 준비 시점에 남아 있던 광고 RSSI와 그 나이를 기록하고 측정값이 없으면 `null`이다. sequence 간격은 펌웨어 내부 생략과 무선 전달 손실을 따로 식별하지 못한다. 출력에는 BLE 주소, 원래 boot ID, 센서 payload나 비밀값을 담지 않는다. `RECORDED`는 요청한 측정 종류의 관측이 남았음을 나타낸다. CSE 수신이나 생산 합격 판정은 별도 증거로 기록한다.
+JSON에는 최초 READ와 구독 준비 전 데이터가 제외된 알림 수, 세션별 sequence 간격, 새 세션까지의 경과 시간, 같은 부팅인지 여부가 남는다. RSSI는 접속 준비 시점에 남아 있던 광고 RSSI와 그 나이를 기록하고 측정값이 없으면 `null`이다. sequence 간격은 펌웨어 내부 생략과 무선 전달 손실을 따로 식별하지 못한다. 기본 출력에는 BLE 주소, 원래 boot ID, 센서 payload나 비밀값을 담지 않는다. `RECORDED`는 요청한 측정 종류의 관측이 남았음을 나타낸다. CSE 수신이나 생산 합격 판정은 별도 증거로 기록한다.
 
 제작 PCB의 sleep·wake·배터리 입력 전력은 외부 계측과 [전력 측정 지점 설명](../firmware/POWER_MONITOR.md)을 함께 사용한다. 이 도구는 소스와 회귀시험 코드만 준비했다.
 
@@ -64,6 +64,14 @@ bubble-keyring-ble-characterize --mode wake --hardware r18-pcb \
 ```
 
 `--expect-wake`는 `confirm`, `panic`, `motion`, `timer`를 선택한다. 최초 복구 알림의 부팅이 이전과 달라야 하고, 같은 부팅의 health 알림에 기대 원인과 핀 마스크가 있어야 한다. 확인 GPIO6은 64, 비상 GPIO7은 128이며 두 핀이 함께 보고되면 개별 버튼 항목에 맞지 않는다. 나중에 다른 부팅에서 받은 원인은 첫 복구 기록에 합치지 않는다. 초기 연결과 복구 수신에 각각 최대 `--seconds`를 사용한다. BLE 해제 후 첫 알림까지의 값에는 의도한 유휴 대기 시간이 포함된다. 실제 절전 진입 시각·소비전류는 외부 계측으로 기록한다.
+
+### r18 BLE 시험의 전원 샘플
+
+Gateway 0.2.25에서 `--hardware r18-pcb --include-power`를 거리·재연결·wake 시험에 사용할 수 있다. JSON의 이벤트에는 검증 형식을 통과한 INA219의 상태와 계측값, 알림 시점의 장치 uptime이 남는다. 이벤트의 세션 번호로 `sessions`의 부팅 번호를 확인한다. `readUptimeMs`는 펌웨어가 계측값을 읽은 시각이다. 같은 부팅과 `readUptimeMs`가 재연결 이후 다시 보고되면 `newPowerSample`이 `false`로 남는다. `power`는 고유 샘플, 반복, `stale` 등 비정상 상태, INA219 객체가 생략된 energy 프레임을 나누어 센다.
+
+wake 모드에서는 BLE를 해제하기 전에 유효 계측값을 최대 `--seconds` 동안 기다린다. wake 판정과 함께 기록을 인정하려면 baseline과 복구 양쪽의 첫 알림 부팅에서 유효 계측값이 있어야 한다. 이후 별도 재부팅에서 온 샘플도 로그에는 남지만 누락된 부팅을 대신하지 못한다. 거리·재연결 시험은 전체 기록에 유효 샘플이 하나 이상 있어야 한다. 부족한 구간은 `power.missingPhases`와 `INSUFFICIENT`로 표시된다.
+
+이 계측은 BLE가 연결된 동안 보드의 3.3V 부하 측을 관측한다. BLE를 해제한 동안의 sleep 소비전류, 배터리 입력 및 충전 전류는 외부 계측으로 기록한다. [전력 측정 지점 설명](../firmware/POWER_MONITOR.md)
 
 ## Feather LED ON/OFF 시험
 
