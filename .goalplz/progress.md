@@ -933,3 +933,12 @@ GATT 읽기 commit `82d76bb80aeb903ea3cad1681e8abe838a99ee47`을 `origin/codex/k
 - 동일 부팅에서의 반복 계측과 후속 부팅의 잘못된 대체를 다루는 회귀시험 소스를 추가했다. 빌드·시험·실물 계측은 미실행이다. BLE 해제 중 sleep 전류와 배터리 입력은 외부 계측이 필요하다. Feather/Pi 명령 시험과 r18 PCB 인수 시험은 남아 있으며 goal은 active/progress다.
 
 전원 기록 commit `b5be18d47436890e2c80a59b3a8367226c718754`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `133183e..b5be18d`다.
+
+## 2026-11-11 — Gateway HTTPS 서버 지정 재시도
+
+직전 goal turn은 r18 전원·BLE 시험 기록 도구를 올린 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 브랜치 head는 직전과 같다.
+
+- Gateway `0.2.26`은 CSE·중앙 API의 HTTPS 429/503 `Retry-After`를 처리한다. 프로세스 안에서는 같은 origin의 새 HTTPS 요청을 보류하며, 개별 outbox 행은 서버 대기 시간과 기존 재시도 간격 중 긴 값을 SQLite에 기록한다. 원래 `rqi`와 payload를 사용해 다시 보낸다. [Gateway 저장과 전송](../keyring/raspberry-pi-gateway/README.md#저장소권한시간-동작)
+- HTTP 날짜·초 파싱, 별도 origin 분리, 같은 ID 재시도, SQLite 재개를 다루는 회귀시험 소스를 추가했다. 이번 변경의 빌드·시험·Pi 실행은 미실행이다. Feather/Pi 명령 정산과 r18 실물 인수 시험은 남아 있으며 goal은 active/progress다.
+
+HTTPS 재시도 commit `3cc69fd9d14a08988475c26e203899f506c478e2`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `237c33a..3cc69fd`다.
