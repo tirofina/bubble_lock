@@ -960,3 +960,12 @@ HTTPS 재시도 commit `3cc69fd9d14a08988475c26e203899f506c478e2`를 `origin/cod
 - 중간 슬롯 유실, fence 역전, commit 뒤 불일치와 읽기 실패를 주입하는 호스트 시험 소스를 추가했다. 이번 빌드·시험·flash는 미실행이다. 끝쪽 기록만 유실된 경우를 식별하려면 독립 체크포인트가 필요하다. r18 실물 장애 시험과 Feather/Pi 명령 정산은 남아 있으며 goal은 active/progress다.
 
 저널 확인 commit `f7a356405c0b6fe26a299e6b3ca1210ea5aff581`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `d38f943..f7a3564`다.
+
+## 2026-11-11 — r18 저널 끝부분 유실 감지
+
+직전 goal turn은 r18 저널 연속성과 쓰기 확인을 올린 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 브랜치 head는 직전과 같다.
+
+- 펌웨어 `keyring-0.7.9`는 기존 NVS 형식 1을 읽고 새 명령부터 같은 namespace의 별도 키에 사용 슬롯 수를 저장한다. 새 PREPARED 기록과 개수가 모두 확인된 뒤 출력을 허용한다. 부팅 때 기록이 줄면 실행을 잠근다. PREPARED 슬롯 하나가 앞선 경우 개수만 복구하고 해당 명령을 미확정으로 유지한다. [저널 경계](../keyring/JOURNAL_RETENTION.md)
+- 기존 기록 도입, PREPARED와 개수 갱신 사이 장애, 마지막 슬롯 누락, 체크포인트 유실·손상을 주입하는 호스트 시험 소스를 추가했다. 빌드·시험·flash는 미실행이다. 전체 NVS 손실이나 기록과 체크포인트의 동시 롤백에는 외부 체크포인트가 필요하다. 실물 장애 시험과 중앙 명령 정산은 남아 있으며 goal은 active/progress다.
+
+저널 끝부분 확인 commit `b38dd6b93e4d537d844624738283e6d366344edf`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `e71f2a6..b38dd6b`다.
