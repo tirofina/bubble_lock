@@ -70,8 +70,12 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
         cfg.request_timeout, cfg.mqtt_wrapped_primitive = 0.02, True
         self.hub = TransportHub(cfg)  # Never start real sockets or load certificates.
         self.payload, self.rqi, self.container = {"synthetic": True}, "request-test", "/test/receipts"
+        self.rn = "gw-" + hashlib.sha256(self.rqi.encode()).hexdigest()
         self.hub._http_json = AsyncMock(return_value=(201, httpx.Headers(
             {"X-M2M-RI": self.rqi, "X-M2M-RSC": "2001"}), {}))
+
+    def pinned_cin(self, parent="cnt-original"):
+        return {"ty": 4, "ri": "cin-original", "pi": parent, "rn": self.rn, "con": self.payload}
 
     def mqtt(self, response=None, *, target="test/receipts", confirmation_parent=None):
         def publish(topic, payload, qos, retain):
@@ -81,7 +85,7 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
             if response is not None:
                 received = dict(rqi=self.rqi, rsc=response)
                 if confirmation_parent is not None:
-                    received["pc"] = {"m2m:cin": {"pi": confirmation_parent}}
+                    received["pc"] = {"m2m:cin": self.pinned_cin(confirmation_parent)}
                 self.hub._receive(received)
             return SimpleNamespace(rc=0)  # Queued / PUBACK alone cannot settle content.
         self.hub._mqtt = SimpleNamespace(publish=Mock(side_effect=publish))
@@ -112,16 +116,21 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(kwargs["body"], mqtt_cin)
         self.assertEqual(self.hub._pending, {})
 
-    def pin_receipt_container(self, observed_ri):
+    def pin_receipt_container(self, observed_ri, *, readback_changes=None, readback_error=None):
         self.hub.config.receipt_container_ri = "cnt-original"
 
-        async def exchange(method, _url, *, headers, body=None):
+        async def exchange(method, url, *, headers, body=None):
             response = httpx.Headers({"X-M2M-RI": headers["X-M2M-RI"]})
             if method == "GET":
                 response["X-M2M-RSC"] = "2000"
-                return 200, response, {"m2m:cnt": {"ty": 3, "ri": observed_ri}}
+                if url.endswith(self.container):
+                    return 200, response, {"m2m:cnt": {"ty": 3, "ri": observed_ri}}
+                self.assertTrue(url.endswith(self.container + "/" + self.rn))
+                if readback_error is not None:
+                    raise readback_error
+                return 200, response, {"m2m:cin": self.pinned_cin() | (readback_changes or {})}
             response["X-M2M-RSC"] = "2001"
-            return 201, response, {"m2m:cin": {"pi": "cnt-original"}}
+            return 201, response, {"m2m:cin": self.pinned_cin()}
 
         self.hub._http_json.side_effect = exchange
 
@@ -139,7 +148,8 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
         self.mqtt(target="cnt-original")
         await self.hub.publish(self.rqi, self.container, self.payload)
         self.assertEqual([entry.args for entry in self.hub._http_json.await_args_list],
-                         [("GET", "https://cse.invalid/test/receipts"), ("POST", "https://cse.invalid/cnt-original")])
+                         [("GET", "https://cse.invalid/test/receipts"), ("POST", "https://cse.invalid/cnt-original"),
+                          ("GET", "https://cse.invalid/test/receipts/" + self.rn)])
 
     async def test_pin_requires_mqtt_confirmation_from_the_expected_parent(self):
         self.pin_receipt_container("cnt-original")
@@ -147,6 +157,24 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(ReceiptParentMismatch):
             await self.hub.publish(self.rqi, self.container, self.payload)
         self.hub._http_json.assert_awaited_once()
+
+    async def test_pinned_create_requires_matching_stored_identity_and_body(self):
+        for changes, error in (({"ri": "cin-replaced"}, "resource ID differs"),
+                               ({"con": {"synthetic": False}}, "different content")):
+            with self.subTest(changes=changes):
+                self.pin_receipt_container("cnt-original", readback_changes=changes)
+                with self.assertRaisesRegex(RemoteResponseError, error):
+                    await self.hub.publish(self.rqi, self.container, self.payload)
+
+    async def test_pinned_mqtt_create_with_readback_timeout_does_not_post_again(self):
+        self.pin_receipt_container("cnt-original", readback_error=TimeoutError())
+        self.mqtt(2001, target="cnt-original", confirmation_parent="cnt-original")
+        with self.assertRaises(TimeoutError):
+            await self.hub.publish(self.rqi, self.container, self.payload)
+        self.assertEqual([entry.args for entry in self.hub._http_json.await_args_list],
+                         [("GET", "https://cse.invalid/test/receipts"),
+                          ("GET", "https://cse.invalid/test/receipts/" + self.rn)])
+        self.assertEqual(self.hub._pending, {})
 
     async def test_scoped_core_requires_the_matching_application_receipt(self):
         self.hub.config.core_telemetry_epochs = {"kr-test": 7}

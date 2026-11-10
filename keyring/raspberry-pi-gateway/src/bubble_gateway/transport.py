@@ -18,7 +18,7 @@ from urllib.parse import quote, urlsplit
 
 import httpx
 import paho.mqtt.client as mqtt
-from .config import tls_context
+from .config import ID, tls_context
 from .core_bridge import command as core_command
 from .model import authorization_deadline, parse_time, payload_hash, utc_now
 
@@ -371,9 +371,14 @@ class TransportHub:
         return pin
 
     @staticmethod
-    def _require_receipt_parent(cin: Any, pin: str | None, rsc: int, status: int | None = None) -> None:
-        if pin is not None and (not isinstance(cin, dict) or cin.get("pi") != pin):
+    def _pinned_content_id(cin: Any, rn: str, pin: str, rsc: int, status: int | None = None) -> str:
+        if not isinstance(cin, dict) or cin.get("pi") != pin:
             raise ReceiptParentMismatch("oneM2M receipt instance parent mismatch", rsc, status)
+        ri = cin.get("ri")
+        if (cin.get("rn") != rn or type(cin.get("ty")) is not int or cin["ty"] != 4
+                or not isinstance(ri, str) or ID.fullmatch(ri) is None):
+            raise RemoteResponseError("oneM2M receipt instance identity mismatch", rsc, status)
+        return ri
 
     async def read_content(self, rqi: str, container: str) -> Any:
         """Read the native content instance named by its original request ID."""
@@ -381,8 +386,9 @@ class TransportHub:
 
     async def read_content_instance(self, rqi: str, container: str) -> dict[str, Any]:
         """Return the native instance envelope for callers that need CSE metadata."""
-        rn = "gw-" + hashlib.sha256(rqi.encode("utf-8")).hexdigest()
-        read_rqi = "read-" + hashlib.sha256(rqi.encode("utf-8")).hexdigest()
+        digest = hashlib.sha256(rqi.encode("utf-8")).hexdigest()
+        rn = "gw-" + digest
+        read_rqi = "read-" + digest
         url = self._cse_url + _resource_path(container) + "/" + rn
         status, headers, document = await self._http_json("GET", url, headers=self._m2m_headers(read_rqi))
         rsc = self._response_rsc(status, headers, read_rqi)
@@ -390,12 +396,19 @@ class TransportHub:
         if (status != 200 or rsc != 2000 or not isinstance(existing, dict)
                 or existing.get("rn") != rn or "con" not in existing):
             raise RemoteResponseError("unable to establish existing content identity", rsc, status)
-        self._require_receipt_parent(existing, self._receipt_pin(container), rsc, status)
+        pin = self._receipt_pin(container)
+        if pin is not None:
+            self._pinned_content_id(existing, rn, pin, rsc, status)
         return existing
 
-    async def _existing(self, rqi: str, container: str, payload: dict[str, Any]) -> None:
-        if _json(await self.read_content(rqi, container)) != _json(payload):
-            raise RemoteResponseError("existing oneM2M resource has different content", 4105, 200)
+    async def _confirm_stored(self, rqi: str, container: str, payload: dict[str, Any], *,
+                              created_ri: str | None = None) -> None:
+        existing = await self.read_content_instance(rqi, container)
+        if created_ri is not None and existing.get("ri") != created_ri:
+            raise RemoteResponseError("stored receipt resource ID differs from CREATE response", 2000, 200)
+        if _json(existing["con"]) != _json(payload):
+            rsc = 4105 if created_ri is None else 2000
+            raise RemoteResponseError("existing oneM2M resource has different content", rsc, 200)
 
     async def publish(self, rqi: str, container: str, payload: dict[str, Any]) -> dict[str, Any] | None:
         if container.startswith("@core/"):
@@ -427,20 +440,23 @@ class TransportHub:
                 if info.rc != mqtt.MQTT_ERR_SUCCESS:
                     raise ConnectionError("MQTT publish was not queued")
                 response = await asyncio.wait_for(future, self.config.request_timeout)
+            except (ConnectionError, OSError, asyncio.TimeoutError):
+                LOG.info("MQTT response unavailable; attempting HTTPS with the same resource name")
+            else:
                 rsc = response["rsc"]
                 if rsc == 2001:
                     if pin is not None:
                         pc = response.get("pc")
-                        self._require_receipt_parent(pc.get("m2m:cin") if isinstance(pc, dict) else None, pin, rsc)
+                        representation = pc.get("m2m:cin") if isinstance(pc, dict) else None
+                        ri = self._pinned_content_id(representation, rn, pin, rsc)
+                        await self._confirm_stored(rqi, container, payload, created_ri=ri)
                     return
                 if rsc == 4105:
-                    await self._existing(rqi, container, payload)
+                    await self._confirm_stored(rqi, container, payload)
                     return
                 # A real CSE rejection is terminal for this attempt. HTTPS is a
                 # network fallback, not a second route around permission denial.
                 raise RemoteResponseError("oneM2M MQTT request rejected", rsc)
-            except (ConnectionError, OSError, asyncio.TimeoutError):
-                LOG.info("MQTT response unavailable; attempting HTTPS with the same resource name")
             finally:
                 self._pending.pop(rqi, None)
                 if not future.done():
@@ -452,10 +468,11 @@ class TransportHub:
         rsc = self._response_rsc(status, headers, rqi)
         if 200 <= status < 300 and rsc == 2001:
             if pin is not None:
-                self._require_receipt_parent(document.get("m2m:cin"), pin, rsc, status)
+                ri = self._pinned_content_id(document.get("m2m:cin"), rn, pin, rsc, status)
+                await self._confirm_stored(rqi, container, payload, created_ri=ri)
             return
         if rsc == 4105:
-            await self._existing(rqi, container, payload)
+            await self._confirm_stored(rqi, container, payload)
             return
         raise RemoteResponseError("oneM2M HTTPS request rejected", rsc, status)
 

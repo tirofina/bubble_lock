@@ -8,6 +8,8 @@ KEYRING / 남호 · DOC-REV2.0.0 · Gateway0.2.2 · 2026-10-30.
 
 각 경로의 전달 상태는 독립적이다. CORE broker 전송만 성공하면 native 영수증은 미전달로 남는다. native 영수증이 먼저 완료돼도 대기 중인 CORE ACK는 계속 재시도한다. broker PUBACK은 CORE 처리나 물리 출력 성공을 입증하지 않으며, native 전달은 matching oneM2M application response로 판정한다. 전송 후 로컬 완료 기록 전 crash·MQTT QoS 중복 전달은 별도 경계다.
 
+Gateway 0.2.27에서 컨테이너 ID를 고정한 배포는 native CREATE 뒤 같은 자원을 HTTPS로 조회해 저장된 영수증을 대조한다. 읽기가 실패하면 native 항목이 대기열에 남고 CORE ACK는 독립 상태를 유지한다. [고정 컨테이너 확인 절차](STATE_RECOVERY.md#명령-영수증-컨테이너-id-고정)
+
 CORE_BRIDGE_ENABLED의 projection 선택은 영수증 최초 staging 시 고정한다. 이미 대기 중인 native 영수증에 설정 변경만으로 CORE ACK를 과거로 소급 생성하지 않는다. 이미 있는 outbox 항목은 유지한다. DB 삭제·수동 outbox 재작성으로 재전송을 유도하지 않는다.
 
 ## 회귀 시험

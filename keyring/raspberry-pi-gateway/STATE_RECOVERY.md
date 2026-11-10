@@ -24,7 +24,7 @@ Gateway 0.2.22에서 새 DB를 만들 때 `M2M_CSE_DEPLOYMENT_ID`에 CSE 데이�
 
 Gateway 0.2.23의 선택 설정 `M2M_RECEIPT_CONTAINER_RI`에는 CSE 관리자가 기존 경로에서 확인한 컨테이너의 `ri`를 지정한다. 새 DB에 배포 ID와 함께 기록하며 이후 pin을 바꾸거나 빼면 `STATE_RECEIPT_CONTAINER_MISMATCH`로 시작을 중단한다. 기존 설정과 DB는 원래 방식으로 유지할 수 있다.
 
-전송 전 Gateway가 mTLS HTTPS로 이름 경로를 조회해 요청 ID, 응답 코드, container 타입과 `ri`를 확인한다. MQTT와 HTTPS fallback은 확인한 자원 ID에 직접 CREATE한다. 최초 응답과 중복 영수증 조회의 `pi`가 같은 ID일 때 발송 완료로 기록한다. 조회 오류와 ID 불일치 때는 큐에 남겨 재시도한다.
+전송 전 Gateway가 mTLS HTTPS로 이름 경로를 조회해 요청 ID, 응답 코드, container 타입과 `ri`를 확인한다. MQTT와 HTTPS fallback은 확인한 자원 ID에 직접 CREATE한다. Gateway 0.2.27부터는 CREATE 응답의 contentInstance 타입·부모 ID·이름·자원 ID를 확인하고, 같은 영수증을 HTTPS GET으로 다시 읽어 자원 ID와 본문이 일치할 때만 전달 완료로 기록한다. 중복 CREATE 응답은 기존 자원의 타입·부모 ID·이름·본문을 대조한다. 조회 오류와 불일치 때는 원래 요청 ID를 큐에 보존한다. MQTT CREATE 성공 뒤 GET이 실패하면 그 시도에서 HTTPS CREATE를 추가로 보내지 않는다.
 
 설정 전 Gateway 자격에 이름 경로 GET, 자원 ID로 contentInstance CREATE, 원래 이름 경로의 자식 GET을 허용한다. 격리 벤치에서는 [컨테이너 권한 준비](../dev/mobius4/README.md#명령-영수증-정산-준비)를 완료한 뒤 새 세션에 해당 Gateway의 ID를 지정한다.
 

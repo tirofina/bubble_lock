@@ -1,5 +1,7 @@
 # Gateway 로컬 시험
 
+Gateway 0.2.27의 고정 컨테이너 회귀시험 소스는 HTTPS fallback 후 저장 확인, 다른 자원 ID와 본문 불일치, MQTT CREATE 성공 후 조회 timeout, 최초 생성·중복 요청에 대한 격리 CSE의 GET 횟수를 다룬다. 이 버전의 빌드와 시험은 미실행이다.
+
 Gateway 0.2.26에는 HTTPS `Retry-After` 회귀시험 소스를 추가했다. 모의 CSE 503 응답 이후 같은 origin의 추가 조회가 보류되고 별도 origin의 중앙 API 요청은 유지되는지, 원래 `rqi`로 재전송하는지, SQLite 재시작 뒤에도 개별 전송의 대기 시각이 남는지를 다룬다. 이 버전의 시험과 빌드는 미실행이다.
 
 Gateway 0.2.11의 CORE 재시도 순서는 기본 75개, 격리 Mobius4 11개, 별도 팀 CORE → SDT 통합 1개에서 검증했다. [실행 기록](../evidence/2026-11-10-core-retry-order/README.md)

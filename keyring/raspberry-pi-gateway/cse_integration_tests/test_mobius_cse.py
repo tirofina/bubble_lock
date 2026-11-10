@@ -182,8 +182,10 @@ class MobiusCseTests(unittest.IsolatedAsyncioTestCase):
             await hub.publish(rqi, self.parent, payload)
             stored = await self.stored(rqi)
             self.assertEqual((stored["pi"], stored["con"]), (parent_ri, payload))
+            digest = hashlib.sha256(rqi.encode()).hexdigest()
+            logs = await asyncio.to_thread(self.stack.logs, "proxy")
+            self.assertEqual(logs.count(f"GET {self.parent}/gw-{digest} read-{digest}"), 2)
             if use_mqtt:
-                logs = await asyncio.to_thread(self.stack.logs, "proxy")
                 self.assertNotIn(f"POST /{parent_ri} {rqi}", logs)
         self.assertEqual(await self.count(), 2)
 
