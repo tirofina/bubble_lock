@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from .ble import BleProtocolError, IDENTIFIER, MAX_UPTIME_MS, _integer, _object
+from .model import parse_time
 
 JOURNAL_UUIDS = {
     "core-v1": "7f8a0006-4b6e-4f4e-9b0a-505249564255",
@@ -197,6 +198,52 @@ def read_archive(directory: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]
     records = [_object(line, 2048) for line in lines]
     _validate_snapshot({"manifest": archive["deviceSnapshot"], "records": records}, archive["identity"])
     return archive, records
+
+
+def compare_archives(baseline: Path, current: Path) -> dict[str, Any]:
+    """Check an append-only device history against an older, trusted archive."""
+    before, before_records = read_archive(baseline)
+    after, after_records = read_archive(current)
+    before_id, after_id = before["identity"], after["identity"]
+    if any(before_id[key] != after_id[key] for key in ("deviceId", "boardRevision")):
+        raise BleProtocolError("journal archives identify different devices or boards")
+    before_snapshot, after_snapshot = before["deviceSnapshot"], after["deviceSnapshot"]
+    if before_snapshot["snapshotId"] == after_snapshot["snapshotId"]:
+        raise BleProtocolError("journal comparison requires two distinct captures")
+    try:
+        before_time, after_time = parse_time(before.get("archivedAt")), parse_time(after.get("archivedAt"))
+    except (ValueError, OverflowError) as exc:
+        raise BleProtocolError("journal archive time is invalid") from exc
+    same_boot = before_id["bootId"] == after_id["bootId"]
+    if after_time <= before_time or (same_boot and after_snapshot["capturedUptimeMs"] < before_snapshot["capturedUptimeMs"]):
+        raise BleProtocolError("current journal archive must be captured after the baseline")
+
+    findings = []
+    for field in ("maxEpoch", "maxGrant"):
+        if after_snapshot[field] < before_snapshot[field]:
+            findings.append({"code": "fence_regressed", "field": field})
+    current_by_id = {record["commandId"]: (index, record) for index, record in enumerate(after_records)}
+    for index, expected in enumerate(before_records):
+        match = current_by_id.get(expected["commandId"])
+        if match is None:
+            findings.append({"code": "record_missing", "baselineIndex": index})
+            continue
+        current_index, actual = match
+        if current_index != index:
+            findings.append({"code": "record_reordered", "baselineIndex": index, "currentIndex": current_index})
+        fields = sorted(field for field in RECORD_FIELDS if expected[field] != actual[field])
+        if fields:
+            findings.append({"code": "record_changed", "baselineIndex": index, "fields": fields})
+
+    return {
+        "version": 1, "deviceId": before_id["deviceId"], "boardRevision": before_id["boardRevision"],
+        "status": "REVIEW_REQUIRED" if findings else "CONTINUOUS", "sameBoot": same_boot,
+        "baselineSnapshotId": before_snapshot["snapshotId"], "currentSnapshotId": after_snapshot["snapshotId"],
+        "baselineRecordsSha256": before["files"][0]["sha256"], "currentRecordsSha256": after["files"][0]["sha256"],
+        "baselineRecordCount": len(before_records), "currentRecordCount": len(after_records),
+        "appendedRecordCount": None if findings else len(after_records) - len(before_records),
+        "settlementStatus": "not-settled", "findings": findings,
+    }
 
 
 def write_archive(snapshot: dict[str, Any], identity: dict[str, Any], profile: str, output: Path) -> Path:

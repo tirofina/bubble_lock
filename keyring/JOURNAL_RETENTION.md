@@ -69,6 +69,18 @@ DB 경로가 다르면 서비스 lock과 협조할 수 없다. 현재 도구의 
 
 daemon의 `BleFleet.capture_journal(device_id)`는 기존 장치 명령 lock으로 직렬화한 같은 capture helper를 제공한다. 자동 호출·파일 저장은 없다. 호출자가 중앙 dispatch와 maintenance 창을 조정해야 한다.
 
+## 이전 장치 보관본과 비교
+
+Gateway 0.2.28의 `bubble-keyring-journal-compare`는 장치 밖에 보관한 신뢰할 수 있는 이전 archive와 같은 장치의 최신 archive를 읽는다. 두 파일의 SHA256, 장치·보드 ID, 서로 다른 snapshot ID와 수집 시각 순서를 확인한다. 같은 부팅에서 수집했다면 장치 uptime 순서도 확인한다. 펌웨어 버전은 달라도 된다.
+
+```sh
+bubble-keyring-journal-compare --baseline "$TRUSTED_OLDER_ARCHIVE" --current "$RECENT_ARCHIVE"
+```
+
+이전 기록이 같은 순서와 내용으로 남고 epoch·grantRevision 상한이 유지되면 `CONTINUOUS`와 추가된 기록 수를 출력한다. 기록 누락, 순서 변경, 내용 변경, 권한 상한 감소는 `REVIEW_REQUIRED`로 구분한다. JSON에는 두 snapshot ID와 파일 해시, 문제가 발견된 슬롯 번호가 남는다. 종료 코드는 정상 비교 0, 검토 필요 2, 읽기·무결성·순서 오류 1이다.
+
+비교에는 두 보관본과 검증된 수집 순서가 필요하다. 기기 전체 NVS가 초기화된 뒤 이전 보관본에 있던 기록이 빠졌을 때 이를 드러낼 수 있다. 두 사본의 provenance와 호스트 시각은 운영자가 확인한다. 장치·CSE·DB를 접속하거나 수정하지 않으며 결과의 정산 상태는 `not-settled`다. 회귀시험 소스는 추가했고 이 버전의 실행과 빌드는 미실행이다.
+
 ## 장치 journal과 Gateway·CSE 영수증 대조
 
 Gateway 0.2.9의 `bubble-keyring-reconcile`은 위 장치 archive와 `bubble-gateway-state snapshot`으로 생성한 Gateway archive를 사용한다. 같은 장치와 Gateway 설정의 보관본을 선택한다. SQLite 사본과 파일 해시, 장치·Gateway·CSE 자원 식별자를 확인한다. CSE에는 설정된 mTLS로 HTTPS GET만 보낸다.

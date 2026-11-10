@@ -12,6 +12,7 @@ dependencies = ["bleak>=1,<4", "httpx>=0.27,<1", "paho-mqtt>=2,<3"]
 [project.scripts]
 bubble-gateway = "bubble_gateway.__main__:main"
 bubble-keyring-journal = "bubble_gateway.journal_cli:main"
+bubble-keyring-journal-compare = "bubble_gateway.journal_cli:compare_main"
 bubble-keyring-reconcile = "bubble_gateway.journal_reconcile:main"
 bubble-gateway-state = "bubble_gateway.state_archive:main"
 bubble-keyring-ble-characterize = "bubble_gateway.ble_characterize:main"

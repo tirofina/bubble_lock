@@ -6,10 +6,12 @@ import asyncio
 import logging
 import os
 import re
+import sys
 from pathlib import Path
 
 from .ble import SERVICE, IDENTITY, CORE_SERVICE, CORE_IDENTITY, IDENTIFIER, BleProtocolError, _object
-from .journal_export import capture, validate_identity, write_archive
+from .journal_export import capture, compare_archives, validate_identity, write_archive
+from .model import canonical
 
 
 async def archive(args: argparse.Namespace) -> Path:
@@ -60,6 +62,24 @@ def main() -> None:
     except Exception as exc:
         logging.getLogger(__name__).error("Journal archive stopped: %s; no device records erased", type(exc).__name__)
         raise SystemExit(1) from None
+
+
+def compare_main() -> None:
+    parser = argparse.ArgumentParser(description="Compare two local Privacy Bubble keyring journal archives")
+    parser.add_argument("--baseline", type=Path, required=True, help="older archive kept outside the device")
+    parser.add_argument("--current", type=Path, required=True, help="later archive from the same device")
+    args = parser.parse_args()
+    try:
+        report = compare_archives(args.baseline, args.current)
+        print(canonical(report))
+    except KeyboardInterrupt:
+        raise SystemExit(130) from None
+    except Exception as exc:
+        detail = str(exc) if isinstance(exc, BleProtocolError) else type(exc).__name__
+        print("Journal comparison stopped: " + detail, file=sys.stderr)
+        raise SystemExit(1) from None
+    if report["findings"]:
+        raise SystemExit(2)
 
 
 if __name__ == "__main__":
