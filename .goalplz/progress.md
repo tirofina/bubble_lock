@@ -479,3 +479,14 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 실제 BLE 명령·Feather flash·Pi/제작 PCB 수용과 팀 운영 정산은 대기 중이다. 전체 goal은 active/progress다.
 
 구현·시험 증거 commit `e6895b1e50838b250859f048185a4bc5d1fc3eaa`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `9e51f82..e6895b1`이다.
+
+## 2026-11-10 — 장치 journal과 원본 CSE 영수증 대조
+
+이전 goal turn은 r18 펌웨어 0.7.2의 명령 원본 검사를 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- Gateway 0.2.9의 `bubble-keyring-reconcile`은 장치 archive와 격리 Gateway SQLite의 해시와 식별자를 검증하고, 설정된 CSE의 영수증을 읽어 저장 당시 bootId·명령 hash·GPIO readback을 대조한다.
+- 합성 장치 기록 10건을 격리 Mobius4에서 대조했다. 로컬 전송 완료 표시가 0이지만 CSE 본문은 일치한 경우를 검토 대상으로 남겼다. 누락·충돌·PREPARED를 따로 분류하고 입력 변조와 다른 자원 결속을 거절했다. 보관본과 CSE 영수증 6건은 그대로였다.
+- 설치본 기본 시험 73개와 실제 CSE 통합 1개가 통과했다. 모듈 14개를 소스와 대조했다. [시험 기록](../keyring/evidence/2026-11-10-journal-reconcile/README.md)
+- 실제 Pi/키링의 journal 수집과 장치 명령, 팀 중앙 정산·reclaim과 제작 PCB 수용은 남았다. 전체 goal은 active/progress다.
+
+구현·시험 증거 commit `42cba320bb6cc8b616c6b8044d2f8e20d008b45f`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `5e8eba8..42cba32`다.
