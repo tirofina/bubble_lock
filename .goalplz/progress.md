@@ -731,3 +731,13 @@ PostgreSQL 정산 소스 commit `a551e9ee797dfa18b26c85a79c23d5ceccd55df5`를 `o
 - 복구 및 회귀시험 소스를 추가했다. 주기 실행·DB 적용·실제 CSE 알림 유실 복구·회귀시험·실물 장치 명령은 미실행이다. 전체 goal은 active/progress다.
 
 알림 유실 복구 commit `c078b3193cde2ea25712884854ab0861ea5b3310`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8b9c589..c078b31`다.
+
+## 2026-11-10 — 격리 정산 프로세스와 PostgreSQL 실제 준비
+
+직전 goal turn은 유실 복구 스윕을 원격에 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- 개발용 `run.mjs`에 팀 상태 스냅샷, scoped mTLS CSE 조회, 복구 스윕과 PostgreSQL 대기열·정산 작업자를 연결했다. 수동 정산은 같은 조회·상태 로더를 사용하며 기존 POSIX ledger를 유지한다. [격리 정산 실행](../keyring/dev/mobius4/README.md#격리-postgresql-정산-실행)
+- PostgreSQL 17.5 전용 프로젝트를 `127.0.0.1:5544`에 준비했다. 최초 Windows SQL 바인드 읽기가 실패해 새 볼륨을 보존한 채 SQL을 `psql`의 한 트랜잭션으로 적용했다. 팀 CORE 스키마와 KEYRING 테이블 두 개를 만들었고 정산·대기열은 각각 0행이다. 기존 scoped·base Mobius4 DB는 같은 인스턴스로 유지됐다. [DB 준비 증거](../keyring/evidence/2026-11-10-receipt-database/provisioning.json)
+- DB 준비와 SQL 적용을 실행했다. Node 의존성 설치·정산 프로세스 실행·실제 CSE 알림·Pi/Feather 명령·회귀시험은 미실행이다. 전체 goal은 active/progress다.
+
+격리 정산 연결과 DB 준비 증거 commit `2224c26a2b68edc7e6a509a50b8475bfe97e8c63`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1f07be0..2224c26`다.
