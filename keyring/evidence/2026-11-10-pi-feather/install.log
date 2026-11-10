@@ -1,0 +1,48 @@
+Looking in indexes: https://pypi.org/simple, https://www.piwheels.org/simple
+Processing ./keyring/raspberry-pi-gateway
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Getting requirements to build wheel: started
+  Getting requirements to build wheel: finished with status 'done'
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Collecting bleak<4,>=1 (from privacy-bubble-gateway==0.2.3)
+  Downloading bleak-3.1.0-py3-none-any.whl.metadata (4.7 kB)
+Collecting httpx<1,>=0.27 (from privacy-bubble-gateway==0.2.3)
+  Downloading https://www.piwheels.org/simple/httpx/httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
+Collecting paho-mqtt<3,>=2 (from privacy-bubble-gateway==0.2.3)
+  Downloading paho_mqtt-2.2.0-py3-none-any.whl.metadata (24 kB)
+Collecting dbus-fast>=4.0.0 (from bleak<4,>=1->privacy-bubble-gateway==0.2.3)
+  Downloading dbus_fast-5.2.0-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl.metadata (11 kB)
+Collecting anyio (from httpx<1,>=0.27->privacy-bubble-gateway==0.2.3)
+  Downloading anyio-4.16.0-py3-none-any.whl.metadata (4.7 kB)
+Collecting certifi (from httpx<1,>=0.27->privacy-bubble-gateway==0.2.3)
+  Downloading https://www.piwheels.org/simple/certifi/certifi-2026.10.23-py3-none-any.whl.metadata (2.5 kB)
+Collecting httpcore==1.* (from httpx<1,>=0.27->privacy-bubble-gateway==0.2.3)
+  Downloading https://www.piwheels.org/simple/httpcore/httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
+Collecting idna (from httpx<1,>=0.27->privacy-bubble-gateway==0.2.3)
+  Downloading https://www.piwheels.org/simple/idna/idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+Collecting h11>=0.16 (from httpcore==1.*->httpx<1,>=0.27->privacy-bubble-gateway==0.2.3)
+  Downloading https://www.piwheels.org/simple/h11/h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+Collecting typing_extensions>=4.16.0 (from anyio->httpx<1,>=0.27->privacy-bubble-gateway==0.2.3)
+  Downloading https://www.piwheels.org/simple/typing-extensions/typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+Downloading bleak-3.1.0-py3-none-any.whl (176 kB)
+Downloading https://www.piwheels.org/simple/httpx/httpx-0.28.1-py3-none-any.whl (73 kB)
+Downloading https://www.piwheels.org/simple/httpcore/httpcore-1.0.9-py3-none-any.whl (78 kB)
+Downloading paho_mqtt-2.2.0-py3-none-any.whl (77 kB)
+Downloading dbus_fast-5.2.0-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl (844 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 844.1/844.1 kB 2.4 MB/s eta 0:00:00
+Downloading https://www.piwheels.org/simple/h11/h11-0.16.0-py3-none-any.whl (37 kB)
+Downloading anyio-4.16.0-py3-none-any.whl (134 kB)
+Downloading https://www.piwheels.org/simple/idna/idna-3.20-py3-none-any.whl (69 kB)
+Downloading https://www.piwheels.org/simple/typing-extensions/typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+Downloading https://www.piwheels.org/simple/certifi/certifi-2026.10.23-py3-none-any.whl (135 kB)
+Building wheels for collected packages: privacy-bubble-gateway
+  Building wheel for privacy-bubble-gateway (pyproject.toml): started
+  Building wheel for privacy-bubble-gateway (pyproject.toml): finished with status 'done'
+  Created wheel for privacy-bubble-gateway: filename=privacy_bubble_gateway-0.2.3-py3-none-any.whl size=40779 sha256=29fd95437131c3cd14f9f65cdbfdfa9df5d90323e7c8cbafffdbe7f4aad93ceb
+  Stored in directory: /home/pi/.cache/pip/wheels/b5/1c/e5/63a6e7d652753483191601d7dccb60d40ae53e9f0fa5978446
+Successfully built privacy-bubble-gateway
+Installing collected packages: typing_extensions, paho-mqtt, idna, h11, dbus-fast, certifi, httpcore, bleak, anyio, httpx, privacy-bubble-gateway
+
+Successfully installed anyio-4.16.0 bleak-3.1.0 certifi-2026.10.23 dbus-fast-5.2.0 h11-0.16.0 httpcore-1.0.9 httpx-0.28.1 idna-3.20 paho-mqtt-2.2.0 privacy-bubble-gateway-0.2.3 typing_extensions-4.16.0

@@ -1,0 +1,113 @@
+{
+  "date": "2026-11-10",
+  "role": "KEYRING",
+  "documentRevision": "2.0.0",
+  "baseCommit": "e2809bc08f2581af0b8a715a7dcc667a64a3059b",
+  "gatewayVersion": "0.2.4",
+  "firmwareRevision": "feather-probe-0.1.1",
+  "physicalHardware": [
+    "Adafruit Feather ESP32 V2",
+    "ST7789 1.54-inch 240x240",
+    "A0 and A1 buttons",
+    "Raspberry Pi Zero 2 W Rev 1.0"
+  ],
+  "firmware": {
+    "compileExitCode": 0,
+    "programBytes": 1160520,
+    "globalVariablesBytes": 44480,
+    "applicationBytes": 1160672,
+    "applicationSha256": "0229ca35d6e8c77b458efc5c1423c709fe159c004034035a384a857006dde047",
+    "flashVerified": true,
+    "bootMarker": "FEATHER PROBE READY",
+    "displayLatchConfirmedByUser": true
+  },
+  "gatewayTests": {
+    "regressionFailedBeforeFix": true,
+    "passed": 58,
+    "exitCode": 0
+  },
+  "pi": {
+    "sshVerified": true,
+    "runtime": {
+      "model": "Raspberry Pi Zero 2 W Rev 1.0",
+      "osRelease": {
+        "NAME": "Debian GNU/Linux",
+        "ID": "debian",
+        "PRETTY_NAME": "Debian GNU/Linux 13 (trixie)",
+        "VERSION_ID": "13",
+        "VERSION": "13 (trixie)",
+        "VERSION_CODENAME": "trixie",
+        "DEBIAN_VERSION_FULL": "13.7",
+        "HOME_URL": "https://www.debian.org/",
+        "SUPPORT_URL": "https://www.debian.org/support",
+        "BUG_REPORT_URL": "https://bugs.debian.org/"
+      },
+      "architecture": "aarch64",
+      "python": "3.13.5",
+      "kernel": "6.18.50+rpt-rpi-v8"
+    },
+    "installed": {
+      "packages": {
+        "privacy-bubble-gateway": "0.2.4",
+        "bleak": "3.1.0",
+        "dbus-fast": "5.2.0"
+      },
+      "installedSourceMismatches": [],
+      "bleSourceSha256Lf": "d6be718687451101d2435d9d95ad1882db65d03345b7062b573bdd5071655dfb"
+    },
+    "paired": true,
+    "bonded": true,
+    "trusted": true,
+    "requestedPairing": "Scoped KeyboardOnly agent with local static PIN; SC/MITM firmware requirement unchanged",
+    "continuousObservationSeconds": 90,
+    "continuousObservationCount": 45,
+    "connectedSnapshots": 18,
+    "snapshotErrors": 0,
+    "buttonObservations": [
+      {
+        "buttonState": "released",
+        "sequence": 340
+      },
+      {
+        "buttonState": "confirm",
+        "sequence": 346
+      },
+      {
+        "buttonState": "panic",
+        "sequence": 349
+      }
+    ],
+    "observerExitCode": 0,
+    "observerStoppedAfterTest": true
+  },
+  "wheelSha256": "5da43a06cfc4430b38bf71d57c5f5531f3a68602c877859c31e500e98333c939",
+  "sourceSha256Lf": {
+    "keyring/firmware/feather_probe/feather_probe.ino": "afb5cef3d99f3e1d93f18953e46726fe51f0bb219b91ec908a67950f8ef43140",
+    "keyring/firmware/feather_probe/observe.py": "dc582e97e072993b8e777d18c3d6a232e8c0dc6cd8b0dd22600219efe10c2918",
+    "keyring/raspberry-pi-gateway/src/bubble_gateway/ble.py": "d6be718687451101d2435d9d95ad1882db65d03345b7062b573bdd5071655dfb",
+    "keyring/raspberry-pi-gateway/tests/test_ble_sessions.py": "4077e717791ebaa3932e0f9e949c56b31019c637c1943899a8c43813402a6f50"
+  },
+  "logsSha256": {
+    "bluez-read-echo-repro.log": "66ade16194cc03277dc42d34ff6c5f554dd118b700983796cb7887330f437e11",
+    "bond-status.log": "0def90a16f370bc9075d82d15fa83489adfc88de210322ff655fc69498e58520",
+    "diagnose-fixed-summary.log": "4b2a0e3f285be4c7d6d9cdcb72b505161e12944a02ee84818257bf10d2dc3c84",
+    "firmware-boot.log": "8720aa577279371667a5c2daf1a029a496c99830de8c0a3fefb804221897a02e",
+    "firmware-build.log": "ba7a0cf70f59b58f033bcc1164bc1b89ca306dca97924b0cd2afd6f0f652678d",
+    "firmware-flash.log": "905cf09ab5c8ddc5376b7d8bbbb9e3dc6875979360db3f7bc7019e2e0478bdf4",
+    "gateway-tests.log": "af7d0e9fdff3c788c69dc589679815d540fd89c8faaa0ce591202c091647fb15",
+    "install.log": "e035e142801e16ab2f958824e030162ab0484aba83e59bb33015e1cae552c367",
+    "observe-fixed.exit": "3247b398b0966fc89d7f2a89ee6e47115b3ca1a29b8f1b44a0acbecd03bba095",
+    "observe-fixed.log": "477f059ded569a4e82ec7a61422f0f3f8f6aa140f553111f79b4fb8638e0847e",
+    "pi-installed.json": "498ea39bb6ee70d33bd92665d10cb63c69455fe90d35440880b4efb8aafea270",
+    "pi-runtime.json": "a0af7dddb67dd5bff92d2e4fa8ba62b271a134797eac3618383ea98d042511a9",
+    "regression-before.log": "ad8a804c1a0d3075a2c087704e22f29d37f2fd36f7efb7ce3bd92ca1ac4cbebd",
+    "update-024.log": "01d7fade6adb257428aa9a0f8a2300d3f56d10d49cf4482a89e09d9181a6f602"
+  },
+  "pending": [
+    "Pi to Mobius4 transport",
+    "full Gateway daemon and central authorization",
+    "production keyring PCB bring-up",
+    "app/web integration"
+  ],
+  "dockerEngineReachable": false
+}

@@ -1,0 +1,49 @@
+{
+  "date": "2026-11-10",
+  "documentRevision": "2.0.0",
+  "sourceCommit": "348a2bc84ecb0cd340c57da78267bdf1f6735e71",
+  "hardware": [
+    "Adafruit Feather ESP32 V2",
+    "ST7789 1.54-inch 240x240",
+    "A0 and A1 buttons"
+  ],
+  "sourcePath": "keyring/firmware/feather_probe/feather_probe.ino",
+  "firmwareSourceSha256Lf": "aff19dc356cb669189fab8713926b65426d854717e72251cd1a2140479350a00",
+  "flash": {
+    "port": "COM12",
+    "arduinoCore": "esp32:esp32@3.3.11",
+    "applicationBytes": 1160592,
+    "applicationSha256": "385b134afb9aedf90d53d97653d73209ffaa4daafbd2ea3eca7628d8cfe2ea97",
+    "verified": true,
+    "bootMarker": "FEATHER PROBE READY",
+    "localDemoRecoverySha256": {
+      "boot_app0_flashed.bin": "f94c5d786a7a8fab06ac5d10e33bf37711a6697636dc037559ea19cc410a17f0",
+      "feather_keyring_test.ino.bootloader_flashed.bin": "74518639a8f83dfb5764705e8d689ba951568d162889bee81baacb236b660d5d",
+      "feather_keyring_test.ino.partitions_flashed.bin": "1d9cca96de0fe07ad7fc0648b9878ddecd9ce565e38b589ad20fea698ed4c80c",
+      "feather_keyring_test.ino_flashed.bin": "230baf860bc2cc2f4429825c84ed8ff3554a969b8079ac81946117f4dad424b0"
+    }
+  },
+  "ble": {
+    "advertisementsMatched": 1,
+    "pairing": "PAIRED",
+    "requestedProtection": "ENCRYPTION_AND_AUTHENTICATION",
+    "durationSeconds": 180,
+    "observations": [
+      {
+        "buttonState": "released",
+        "sequence": 18
+      }
+    ],
+    "observed": [
+      "released"
+    ],
+    "pending": [
+      "confirm",
+      "panic"
+    ],
+    "observerExitCode": 1,
+    "lastError": null
+  },
+  "physicalDisplayConfirmed": false,
+  "logSha256": "3f419f8d901d6129add839af6092122d0d14566e4a26949b6584486d5567c477"
+}

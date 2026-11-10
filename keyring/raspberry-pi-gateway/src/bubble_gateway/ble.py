@@ -287,14 +287,15 @@ class BleFleet:
                     await client.start_notify(self.receipt_uuid,
                         lambda _, data, session=generation: self._receipt_fragment(peer, data, session))
                     self._require_session(peer, client, generation, ready=False)
-                    await client.start_notify(self.observation_uuid,
-                        lambda _, data, session=generation: self._observation_fragment(peer, data, session))
-                    self._require_session(peer, client, generation, ready=False)
-                    # READ supplies the complete current value; NOTIFY supplies LF
-                    # framed fragments. These paths intentionally do not mix buffers.
+                    # BlueZ also publishes READ values through PropertiesChanged.
+                    # Read before subscribing so full JSON cannot enter the LF-
+                    # framed notification buffer through the notify callback.
                     current = _object(await client.read_gatt_char(self.observation_uuid), 512)
                     self._require_session(peer, client, generation, ready=False)
                     self._queue_observation(peer, current)
+                    self._require_session(peer, client, generation, ready=False)
+                    await client.start_notify(self.observation_uuid,
+                        lambda _, data, session=generation: self._observation_fragment(peer, data, session))
                     self._require_session(peer, client, generation, ready=False)
                     peer.ready.set()
                     peer.last_error = None

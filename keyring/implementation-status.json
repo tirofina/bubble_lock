@@ -4,10 +4,10 @@
   "document": "PROJECT_IMPLEMENTATION_RUBRIC_PLAN.md",
   "documentRevision": "2.0.0",
   "contractRevision": "0.1.0-candidate",
-  "date": "2026-10-30",
+  "date": "2026-11-10",
   "branch": "codex/keyring-namho",
   "status": "implemented",
-  "verificationStatus": "local-firmware-builds-unit-TLS-MQTT-real-CSE-outbox-and-POSIX-CLI-tests-passed; Pi/device/central-integration-unverified",
+  "verificationStatus": "local builds and 58 Gateway tests passed; Feather/Pi authenticated BLE buttons verified; full daemon, Pi-to-CSE, central integration and production PCB pending",
   "rubricIds": [
     "R01",
     "R02",
@@ -71,9 +71,9 @@
   },
   "pendingIntegration": [
     "PC-MOBIUS-CORE BLE extension and application receipt acceptance",
-    "PC-MOBIUS-INTEGRATION current authorization APIs and claim/grant fields",
+    "Deployment and end-to-end acceptance of main central authorization APIs and canonical claim/grant fields",
     "AE/container/ACP and broker capability configuration",
-    "device passkeys and BlueZ bond enrollment",
+    "Production PCB passkeys and BlueZ enrollment; Feather bench enrollment verified",
     "central PKI registration and mTLS credential deployment",
     "strict UTC device deadline contract if needed beyond relative BLE budget",
     "central settlement/checkpoint and crash-safe device journal reclaim",
@@ -137,16 +137,16 @@
     "previousAuthorizationGateResolved": true,
     "executionRequest": "continued KEYRING development: actual Linux state operator locking/filesystem/legacy adoption boundaries",
     "remainingCompletionDependencies": [
-      "authoritative central authorization/settlement/recovery contracts",
+      "central deployment, settlement and recovery activation",
       "purchased JD9853 module initialization",
       "named source references",
       "real Pi/device/measurement/CSE integration/video/release evidence"
     ],
-    "latestRemoteCore": "91a281b",
+    "latestRemoteCore": "d54a43a",
     "sourceCommit": "0017edac40815f9d3a812d7f858705496f7aaa3b",
     "sourceValidation": "Linux source/installed POSIX10 passed; prior CSE10 default56 MQTT6 firmware3 retained; full system incomplete",
     "goalComplete": false,
-    "pendingInput": "Pi SSH alias/address + board/panel readiness question still pending; INTEGRATION API contract path/branch/PR newly requested",
+    "pendingInput": "Pi Zero 2 W operator is reconfiguring network. Await hostname/IP and first SSH. Main now contains authoritative commands/authorize/credentials API.",
     "previousGoalTurnClassification": "no-progress",
     "currentGoalTurnClassification": "no-progress",
     "currentConsecutiveBlockedAuditTurns": 3,
@@ -296,6 +296,35 @@
       "Authoritative settlement/checkpoint/recovery contract and panel-specific JD9853 init/reference materials"
     ],
     "independentRequiredImplementationAvailableAtAudit": false,
-    "note": "Third consecutive audit confirms the same missing Pi/board target and authoritative central API/authorization/recovery inputs. main/CORE/web unchanged, no APP/INTEGRATION branch, no independent required implementation available. update_goal returned blocked; full objective not complete."
+    "note": "Third consecutive audit confirms the same missing Pi/board target and authoritative central API/authorization/recovery inputs. main/CORE/web unchanged, no APP/INTEGRATION branch, no independent required implementation available. update_goal returned blocked; full objective not complete.",
+    "supersededByBenchCheckpoint": "2026-11-10"
+  },
+  "benchCheckpoint": {
+    "date": "2026-11-10",
+    "main": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+    "core": "d54a43a95a7ef9748d795fd614114877efa7787c",
+    "featherCompileProfilesPassed": 2,
+    "arm64GatewayTestsPassed": 57,
+    "centralMtlsTestsPassed": 1,
+    "piSshVerified": true,
+    "receipt": "evidence/2026-11-10-feather-arm64/receipt.json",
+    "featherDevice": {
+      "flashVerified": true,
+      "bootReady": true,
+      "pinPairingPassed": true,
+      "buttonStatesObserved": [
+        "released",
+        "confirm",
+        "panic"
+      ],
+      "buttonStatesPending": [],
+      "physicalDisplayConfirmed": true,
+      "receipt": "evidence/2026-11-10-pi-feather/receipt.json",
+      "displayLatchConfirmedByUser": true,
+      "firmwareRevision": "feather-probe-0.1.1"
+    },
+    "gatewayVersion": "0.2.4",
+    "gatewayTestsPassed": 58,
+    "piFeatherReceipt": "evidence/2026-11-10-pi-feather/receipt.json"
   }
 }

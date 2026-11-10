@@ -1,0 +1,20 @@
+test_bluez_read_value_does_not_contaminate_notification_fragments (test_ble_sessions.SessionTests.test_bluez_read_value_does_not_contaminate_notification_fragments) ... FAIL
+
+======================================================================
+FAIL: test_bluez_read_value_does_not_contaminate_notification_fragments (test_ble_sessions.SessionTests.test_bluez_read_value_does_not_contaminate_notification_fragments)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\NH\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\NH\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\base_events.py", line 691, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "<repository>\keyring\raspberry-pi-gateway\tests\test_ble_sessions.py", line 173, in test_bluez_read_value_does_not_contaminate_notification_fragments
+    self.assertTrue(self.peer.ready.is_set(), "READ polluted the LF-framed notification stream")
+AssertionError: False is not true : READ polluted the LF-framed notification stream
+
+----------------------------------------------------------------------
+Ran 1 test in 0.009s
+
+FAILED (failures=1)

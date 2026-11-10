@@ -1,5 +1,7 @@
 # Gateway 로컬 시험
 
+2026-11-10 Gateway 0.2.4의 기본 시험은 **58개 통과**다. BlueZ가 READ 값을 구독 callback에도 전달하는 회귀시험을 추가했고, 수정 전 실패와 수정 후 통과를 확인했다. 실제 Pi Zero 2 W에서도 90초 연속 관측과 A0/A1 입력 수신이 통과했다. [Pi 실행 기록](../evidence/2026-11-10-pi-feather/README.md)을 따른다. 아래 이전 날짜의 실행 수와 CSE·POSIX 결과는 당시 기록이다.
+
 DOC-REV2.0.0 · KEYRING / 남호 · 2026-10-30 · Gateway0.2.3.
 
 현재 실제 CSE suite10개와 별도 Linux POSIX suite10개가 소스·기존0.2.3 설치 wheel에서 각각 통과했다. [영속 큐·프로세스 중단 복구 증거](../evidence/2026-10-30-outbox-cse/README.md)에 로그와 hash를 보존한다. 기본56개·별도 MQTT6개와 firmware0.7.0의3개 프로필 빌드는 변경하지 않았으며 [직전 실행 기록](../evidence/2026-10-30-real-cse/README.md)을 유지한다. skipped0이다.
@@ -73,3 +75,16 @@ docker build --pull=false -t privacy-bubble-keyring-posix-test:local -f keyring/
 runner는 --pull never/network none/UID65532/read-only root로 실행하며 source/wheel만 read-only mount한다. wheel 설치는 --no-index --no-deps다. 새/tmp SQLite와256KiB/limited tmpfs만 사용한다. 새 log path를 요구하며 label/token 일치 자원만 정리한다. 시험 종료 후 host source/wheel은 그대로다.
 
 TLS/env는 시험용 placeholder 파일이다. snapshot/adopt는 새 합성 DB에만 실행한다. daemon entry는 다른 프로세스 lock 때문에 serve 전에 중단되므로 BLE·network·전체 daemon은 실행하지 않는다. API timeout=-1은 이미 경과한 deadline 확인이다. fsync는 tmpfs에서 실행했으며 Pi ARM/SD카드 전원 손실·운영 DB·중앙 복구 승인·실물 시험은 남아 있다. 기본56/MQTT6/CSE10/firmware3은 이번 POSIX checkpoint에서 변경·재실행하지 않았다.
+
+## Docker ARM64 Gateway 실행
+
+2026-11-10 Docker Desktop에서 `python:3.12-slim-bookworm`의 `linux/arm64` 이미지를 실행했다. ARM64 Debian 사용자 공간에 현재 Gateway wheel을 빌드·설치한 뒤 기본 57개 시험이 통과했다. Docker는 Pi Zero 2 W의 SD 부팅, Wi-Fi 및 Bluetooth 어댑터 시험을 별도 실물 단계로 남긴다.
+
+재현할 때 임시 입력 폴더에 이 Gateway의 `pyproject.toml`, `src`, `tests`를 복사한다. PowerShell에서 `$inputDir`를 해당 절대경로로 설정한 후 실행한다.
+
+```powershell
+docker pull --platform linux/arm64 python:3.12-slim-bookworm
+docker run --rm --platform linux/arm64 --mount "type=bind,source=$inputDir,target=/input,readonly" python:3.12-slim-bookworm sh -ec 'uname -m && cp -a /input /tmp/gateway && pip install /tmp/gateway && python -m unittest discover -s /input/tests -v'
+```
+
+빌드와 설치에 Python 공개 패키지 저장소를 사용한다. 시험은 모의 BLE와 테스트용 loopback TLS·SQLite를 사용한다.

@@ -313,3 +313,27 @@ Pi SSH/보드·패널준비답변과INTEGRATION API계약파일/브랜치/PR답�
 동일차단조건의3번째연속no-progress이며liveprocess에대한verified wait가아니다. 독립필수구현을진행할근거가없으므로update_goal(status=blocked)를호출했고실제반환상태blocked를확인했다. 전체목표는완료되지않았다. 새로운code/build/test·실물/운영실행은없다. 이번최종기록upload도구현진전으로세지않는다.
 
 재개입력: 실제Pi SSH별칭/주소와보드·패널준비상태, INTEGRATION의정본commands/authorize/credentials API계약파일/브랜치/PR와이후정산/checkpoint/복구·모듈init/원문자료. 실제비밀번호/개인키는요청하지않는다. 새정보또는외부상태변경을받고재개할때현재원격/계약부터다시확인한다.
+
+
+## 2026-11-10 — Feather ST7789 벤치와 Pi 네트워크 진단
+
+DOC-REV 2.0.0. 원격 main `715ef58`와 CORE `d54a43a` 확인. main의 `413fd31`에서 중앙 명령·승인·자격 상태 API를 찾았고 KEYRING BLE 탐색 취소 수정과 회귀시험을 반영했다. Windows에서 새 인증서로 Node/Python mTLS 교차시험 1개, Docker ARM64 Debian에서 설치 Gateway 시험 57개 통과.
+
+기존 Feather ESP32 V2·1.54인치 ST7789·A0/A1 배선에 맞는 별도 벤치 펌웨어를 추가했다. 기본과 BLE 활성 빌드 2개 통과. Windows의 제한된 벤치 광고 검색 실행은 성공했고 대상 0개. COM12는 Windows 장치 목록에서 확인했다. 실물 업로드와 BLE 연결 시험은 별도 단계다.
+
+Pi Zero 2 W는 USB 데이터 포트에 연결됐고 초록 LED가 계속 켜져 있다. Windows에 Gadget 네트워크 어댑터가 없고 해당 Wi-Fi는 5GHz 채널 153으로 확인됐다. 사용자가 Pi의 네트워크를 재설정 중이다. 다음 단계는 Pi 호스트명/IP와 SSH 확인, Feather 시험 업로드 승인 및 장치 관측이다. [실행 기록](../keyring/evidence/2026-11-10-feather-arm64/README.md)
+
+
+## 2026-11-10 — Feather 실물 교체와 Windows BLE
+
+사용자 승인으로 Feather ESP32 V2·1.54인치 ST7789·A0/A1 구성에 시험용 펌웨어를 올렸다. COM12 업로드 해시 검증, `FEATHER PROBE READY` 부팅 로그, Windows PIN 페어링, Gateway `released` 수신을 확인했다. 180초 관측에서 A0/A1은 수신되지 않아 버튼 입력과 실제 화면 표시 확인이 남았다. 복구 파일 4개와 시험 PIN은 로컬에 보관했다. main/CORE/WEB HEAD는 이전 확인과 같았다. [실물 실행 기록](../keyring/evidence/2026-11-10-feather-device/README.md)
+
+## 2026-11-10 — 화면 유지·실물 Pi 등록·BlueZ 오류 수정
+
+사용자가 현재 구성은 화면·Feather·버튼 두 개임을 확정하고, 순간 표시 현상을 보고해 마지막 입력 화면을 유지하는 `feather-probe-0.1.1`로 수정·빌드·COM12 업로드했다. 해시·부팅 확인 후 사용자가 A0/A1 전환과 해제 후 화면 유지를 확인했다. 실제 BLE 관측 상태는 누름·해제를 유지한다.
+
+사용자가 재설정한 Pi에 제공한 계정으로 SSH 접속했다. Zero 2 W Rev1.0, Debian13.7 aarch64, Python3.13.5, BlueZ5.82를 확인했다. Bluetooth soft block을 해제하고 로컬 PIN으로 한 Feather만 인증·bonding했다. Pi 벤치 가상환경에 Gateway를 설치했다.
+
+실물 Pi에서 initial READ가 BlueZ notify callback에도 전달돼 JSON fragment 버퍼를 오염시키는 오류를 재현했다. 초기 READ를 observation 구독 이전으로 옮기고 모의 회귀시험의 수정 전 FAIL→후 PASS, 전체58개 통과를 확인했다. 보안·형식·generation 검사를 유지한 Gateway0.2.4 wheel을 Pi에 설치하고 소스 일치를 확인했다. 실제90초45개 관측·연결 상태18회 모두 정상, 사용자 버튼 입력으로 released/confirm/panic 수신·observer exit0을 확보했다.
+
+원격 main715ef58/COREd54a43a/WEB80ed37f는 시작 조회에서 이전과 같았다. PIN·SSH 암호·주소·raw BLE 로그는 공개하지 않았다. 전체 daemon/Pi→CSE/실물PCB/앱·웹 통합은 남았고 Docker API는 엔진 pipe 부재로 연결되지 않았다. [실물 Pi 실행 기록](../keyring/evidence/2026-11-10-pi-feather/README.md)
