@@ -1,0 +1,69 @@
+{
+  "role": "KEYRING",
+  "documentRevision": "2.0.0",
+  "localDate": "2026-11-11",
+  "scope": "Feather V2 internal LED, Pi Zero 2 W, isolated Mobius4 and PostgreSQL",
+  "benchSourceCommit": "8694de0fdf59e02e97251e6d8032ea7f2daeaf62",
+  "benchFixCommit": "e6bf4c1b23a8be8cddce4e2d8e2716035995fff2",
+  "teamMain": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+  "gatewayVersion": "0.2.28",
+  "firmwareVersion": "feather-probe-0.2.0",
+  "flashImageSha256": "8ab4fe15b4da4edcba8cc62a7648a68aeada5de2634b6b9772edbd825d0aa75f",
+  "flashWriteHashVerified": true,
+  "preflight": {
+    "strictTls13": true,
+    "pinnedReceiptContainerMatched": true,
+    "credentialStatus": "ACTIVE",
+    "activeCommands": 0
+  },
+  "initialAttempt": {
+    "commandCharacteristicFound": false,
+    "gatewayResult": "REJECTED",
+    "ackCode": "EXPIRED",
+    "nativeReceiptDelivered": true,
+    "deliverySource": "CSE_CALLBACK",
+    "centralInboxState": "REVIEW",
+    "settled": false
+  },
+  "recovery": {
+    "targetFeatherPaired": true,
+    "targetFeatherBonded": true,
+    "commandCharacteristicWriteConfirmed": true
+  },
+  "steps": [
+    {
+      "label": "ON",
+      "before": false,
+      "gpioReadback": true,
+      "after": true,
+      "ackCode": "APPLIED",
+      "receivedAt": "2026-11-10T16:01:10.807Z",
+      "deliverySource": "CSE_CALLBACK",
+      "centralInboxState": "SETTLED"
+    },
+    {
+      "label": "OFF",
+      "before": true,
+      "gpioReadback": false,
+      "after": false,
+      "ackCode": "APPLIED",
+      "receivedAt": "2026-11-10T16:03:00.975Z",
+      "deliverySource": "CSE_CALLBACK",
+      "centralInboxState": "SETTLED"
+    }
+  ],
+  "bothCommandsOnSameFeatherBoot": true,
+  "piCseBindingVerified": true,
+  "centralSettlementVerified": true,
+  "cseCallbackRecorded": true,
+  "physicalLedMatched": null,
+  "piCommandReceiptOutboxRemaining": 0,
+  "piObservationOutboxRemainingAtStop": 1,
+  "piTemporaryDaemonStopped": true,
+  "temporarySshTunnelClosed": true,
+  "privateArtifactHashes": {
+    "ledCycleSha256": "c02d74d2b90a584b05c75ac7288e3144d180baebb0b589fd4316d3f078fcdcf8",
+    "piDatabaseCopySha256": "f0c5ed41ec352e8dcff1b3a32bda33367d5d56232941e80d3c7386711083701f",
+    "bindingReportSha256": "ebb3ba881fe794e6a2755f74c13fcef3759fdbf8e82ff3583859ea572120cf58"
+  }
+}

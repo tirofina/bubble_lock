@@ -978,3 +978,11 @@ HTTPS 재시도 commit `3cc69fd9d14a08988475c26e203899f506c478e2`를 `origin/cod
 - 사용자에게 Feather 명령 프로필 0.2.0 플래시와 Pi·Mobius4 실물 시험 승인을 받았다. 해당 벤치 실행 결과는 별도로 기록한다.
 
 보관본 비교 commit `2ba76bebbbfe2961b6f33637f0491bfb2136b4c8`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `adb68b5..2ba76be`다.
+
+## 2026-11-11 — 실제 Feather·Pi 명령과 격리 정산 검증
+
+- 사용자 승인에 따라 Feather 0.2.0을 빌드해 COM12에 올렸고 플래시 쓰기 해시를 확인했다. Pi Gateway 0.2.28의 격리 사전 점검에서 고정 컨테이너 ID, 활성 자격, 활성 명령 0건을 확인했다. 기존 격리 CA의 `keyUsage` 누락은 같은 격리 CA 키로 보완한 클라이언트용 인증서로 해결했다. 엄격한 TLS 검증은 유지했다.
+- 최초 ON은 Pi의 기존 GATT 캐시에 쓰기 특성이 빠져 `EXPIRED`였다. Mobius4 영수증과 `CSE_CALLBACK`, 중앙 `REVIEW`를 보존했다. Feather만 재등록해 BlueZ의 `write` 특성을 확인한 뒤 새 ON과 OFF를 발급했다.
+- 같은 Feather 부팅에서 두 명령 모두 `APPLIED`였고 GPIO readback과 후속 관측이 각각 true와 false였다. Pi SQLite, Mobius4 원본, 팀 승인, 인증 콜백과 격리 PostgreSQL 정산이 일치했다. 성공 명령을 이전 만료 건으로 지정하면 대조 도구가 거절하는 것도 확인했다. Pi 시험 데몬과 SSH 터널은 종료했고, 명령 영수증 대기열은 0건, 관측 대기열은 1건이었다. LED 육안 확인과 r18 검증은 남아 있다. [증거와 해시](../keyring/evidence/2026-11-11-scoped-feather-led/receipt.json)
+
+벤치 보완 commit `e6bf4c1b23a8be8cddce4e2d8e2716035995fff2`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8694de0..e6bf4c1`이다. goal은 active/progress다.
