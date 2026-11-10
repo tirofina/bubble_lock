@@ -741,3 +741,13 @@ PostgreSQL 정산 소스 commit `a551e9ee797dfa18b26c85a79c23d5ceccd55df5`를 `o
 - DB 준비와 SQL 적용을 실행했다. Node 의존성 설치·정산 프로세스 실행·실제 CSE 알림·Pi/Feather 명령·회귀시험은 미실행이다. 전체 goal은 active/progress다.
 
 격리 정산 연결과 DB 준비 증거 commit `2224c26a2b68edc7e6a509a50b8475bfe97e8c63`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1f07be0..2224c26`다.
+
+## 2026-11-10 — 격리 Node 정산 프로세스 실제 기동
+
+직전 goal turn은 격리 PostgreSQL 준비와 프로세스 연결 소스를 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- 호스트에 npm 명령이 없어 pnpm을 사용했다. 오프라인 캐시에 AJV가 없어 지정된 세 가지 의존성을 레지스트리에서 설치했고 설치 스크립트는 비활성화했다. 정산 PostgreSQL 연결에 전용 `application_name`을 부여했다.
+- 실제 정산 프로세스가 `SCOPED_RECEIPT_PROCESS_READY`를 출력하고 실행을 유지했다. PostgreSQL에서 해당 프로세스의 대기열 조회를 확인했다. 팀 발급 명령은 0건이고 정산·대기열은 각각 0행이다. [기동 증거](../keyring/evidence/2026-11-10-scoped-receipt-runtime/startup.json)
+- 이번 실행은 임시 서버의 기동과 빈 대기열 조회까지다. CSE 명령 영수증 조회·정산·콜백·회귀시험·Pi/Feather 장치 명령은 미실행이다. 전체 goal은 active/progress다.
+
+정산 프로세스 기동 증거 commit `6799b9d934aa3b62d4ce0ea7cd3af84793024a12`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `0f6e0c0..6799b9d`다.
