@@ -14,6 +14,15 @@ from helpers import DEVICES, command, config, device_receipt, observation
 
 
 class ContractTests(unittest.TestCase):
+    def test_optional_battery_alert_requires_known_charge_for_a_boolean(self):
+        for battery, alert in ((None, None), (20, True), (80, False)):
+            frame = observation(battery=battery, sensorValues={"batteryAlert": alert})
+            self.assertEqual(validate_observation(frame, "gw-test", DEVICES), frame)
+        for battery, alert in ((None, True), (None, False), (20, None), (20, 1), (20, "low")):
+            with self.subTest(battery=battery, alert=alert), self.assertRaises(ValueError):
+                validate_observation(observation(battery=battery, sensorValues={"batteryAlert": alert}),
+                                     "gw-test", DEVICES)
+
     def test_optional_button_counts_require_two_uint32_values(self):
         legacy = observation()
         self.assertEqual(validate_observation(legacy, "gw-test", DEVICES), legacy)
@@ -167,3 +176,10 @@ class BleMockTests(unittest.IsolatedAsyncioTestCase):
         result = self.peer.observations.get_nowait()
         self.assertIsNone(result["battery"])
         self.assertIsNone(result["rssi"])
+
+    async def test_ble_rejects_alert_claim_when_battery_is_unavailable(self):
+        frame = dict(version=1, deviceId="kr-test", bootId="boot-test", sequence=1, uptimeMs=100,
+                     battery=None, buttonState="released", sensorValues={"batteryAlert": True}, state=False)
+        with self.assertRaises(BleProtocolError):
+            self.fleet._queue_observation(self.peer, frame)
+        self.assertTrue(self.peer.observations.empty())

@@ -11,6 +11,8 @@ constexpr int HIGH = 1, LOW = 0;
 uint64_t nowMs = 0, lastSensorRead = 0;
 bool observationDirty = false;
 bool accelPresent = false, axesReadable = true, wakeReadable = true, interruptHigh = false;
+bool fuelReadable = true;
+uint8_t fuelSocPercent = 50;
 unsigned idReads = 0;
 uint8_t registers[256] = {};
 MotionWake motion;
@@ -22,8 +24,9 @@ int digitalRead(int pin) {
 }
 bool readRegisters(uint8_t address, uint8_t reg, uint8_t *data, size_t count) {
     if (address == board::FuelAddress) {
-        const uint8_t fuel[] = {0xc0, 0x00, 50, 0};
+        const uint8_t fuel[] = {0xc0, 0x00, fuelSocPercent, 0};
         assert(reg == 0x02 && count == sizeof(fuel));
+        if (!fuelReadable) return false;
         std::memcpy(data, fuel, sizeof(fuel));
         return true;
     }
@@ -89,4 +92,21 @@ int main() {
     recoverAccelerometer(nowMs);
     assert(idReads == 3 && motion.ready() && sensors.accel && motion.events() == 1);
     std::puts("PASS r18 accelerometer and motion route recover independently of fuel reads");
+
+    fuelSocPercent = KEYRING_BATTERY_WARN_PERCENT;
+    sampleSensors();
+    assert(sensors.fuel && sensors.batteryLow);
+    fuelSocPercent = KEYRING_BATTERY_RECOVER_PERCENT - 1;
+    sampleSensors();
+    assert(sensors.fuel && sensors.batteryLow);
+    fuelReadable = false;
+    sampleSensors();
+    assert(!sensors.fuel && sensors.batteryLow);
+    fuelReadable = true;
+    sampleSensors();
+    assert(sensors.fuel && sensors.batteryLow);
+    fuelSocPercent = KEYRING_BATTERY_RECOVER_PERCENT;
+    sampleSensors();
+    assert(sensors.fuel && !sensors.batteryLow);
+    std::puts("PASS low battery state holds through hysteresis and a temporary read failure");
 }

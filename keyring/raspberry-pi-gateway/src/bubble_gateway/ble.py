@@ -20,6 +20,7 @@ from typing import Any, Awaitable, Callable
 
 from bleak import BleakClient, BleakScanner
 from .core_bridge import CORE_SERVICE, CORE_IDENTITY, CORE_OBSERVATION, CORE_COMMAND, CORE_RECEIPT
+from .model import valid_battery_alert
 
 LOG = logging.getLogger(__name__)
 SERVICE = "8b8f0001-8e7a-4f36-a8c2-1c9b5d620001"
@@ -364,6 +365,8 @@ class BleFleet:
         if battery is not None and (type(battery) not in (int, float)
                                     or not 0 <= battery <= 100 or not math.isfinite(battery)):
             raise BleProtocolError("invalid battery reading")
+        if not valid_battery_alert(battery, frame["sensorValues"]):
+            raise BleProtocolError("invalid battery alert for the reported charge")
         if "ina219" in frame["sensorValues"]:
             _power_reading(frame["sensorValues"]["ina219"], frame["uptimeMs"])
         if frame["sequence"] <= peer.last_sequence:

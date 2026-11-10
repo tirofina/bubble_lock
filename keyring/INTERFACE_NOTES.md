@@ -16,6 +16,7 @@ CORE v1 canonical contract는 인수했다. 아래 KEYRING identity·receipt 확
 - 옛 UUID는 명시적 `keyring-v01` profile에서만 사용한다. [CORE 연동·미합의 항목](CORE_INTEGRATION.md)을 함께 적용한다.
 - UTF-8 JSON + LF. WRITE/NOTIFY는 기본 ATT MTU 23에서도 동작하도록 최대 20 byte fragment. 한 프레임 최대 4096 byte, 조각 사이 timeout 5초. READ는 마지막 전체 JSON(최대 512 byte identity/observation, receipt는 NOTIFY 우선). command write는 한 장치당 직렬화.
 - Identity: `version:1, deviceId, firmwareRevision, boardRevision, bootId`.
+- keyring-0.7.12의 `sensorValues.batteryAlert`는 모든 관측 detail에 들어간다. 알려진 잔량에는 boolean을, `battery:null`에는 `null`을 보낸다. Gateway 0.2.32는 두 값을 함께 검사하고 native oneM2M 관측에 전달한다. 구형 펌웨어처럼 필드가 생략된 관측도 받는다.
 - Observation: `version:1, deviceId, bootId, sequence, uptimeMs, battery`(0..100 또는 null), `buttonState`("released"|"confirm"|"panic"), `sensorValues`(객체), `state`(boolean). RSSI와 UTC observedAt은 Gateway 관측 시 부여한다. BLE RSSI는 실제 scan 값 또는 null이며 거리로 환산하지 않는다.
 - 선택형 `sensorValues.buttonPresses`는 같은 bootId의 `[확인 누름, 비상 누름]` 누계다. `buttonState`는 현재 상태다. 누계 차이는 동일 장치·bootId의 sequence 순으로 확인하고, 필드가 없는 이전 펌웨어에서는 값을 미확인으로 처리한다. Gateway는 native cin에 누계를 보존한다.
 - firmware keyring-0.3.0은 sensorValues에 motion/motionEvents/wake/wakePins/power를 추가한다. motionEvents는 해당 부팅의 센서 이벤트 수이고 wakePins는 RTC에 기록된 버튼 mask다. sleep은 명시적 장치 옵션이며 BLE 단절 구간이 생긴다. 512byte 제한에서는 선택 센서 상세값부터 줄이고 실제 battery를 유지한다. 상세 정책과 미실행 인수 항목은 [POWER_WAKE](firmware/POWER_WAKE.md)에 있다.

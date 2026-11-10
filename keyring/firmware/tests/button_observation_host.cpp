@@ -6,6 +6,7 @@
 #include <string>
 #include "board_r18.h"
 #include "button_presses.h"
+#include "gatt_read_value.h"
 
 #ifdef NDEBUG
 #error Keep assertions enabled for the button observation test
@@ -22,14 +23,26 @@ uint32_t sequence = UINT32_MAX - 10;
 uint8_t detailSection = 0;
 uint64_t lastObservation = 0;
 bool connected = true, authenticated = true, storageHealthy = true, observationDirty = true;
+bool linkMux = false;
+uint16_t peerConnection = 1;
+uint32_t connectionGeneration = 1;
 struct { bool pressed = false; } confirm, panic;
 ButtonPresses buttonPresses;
-struct { bool fuel = true, accel = true; float battery = 99.12345f, volts = 4.2f, xyz[3] = {1, 2, 3}; } sensors;
-struct BLECharacteristic {
-  void setValue(const std::string &) {}
-  void setValue(uint8_t *, size_t) {}
-  void notify() {}
-} attribute;
+struct {
+  bool fuel = true, accel = true, batteryLow = false;
+  float battery = 99.12345f, volts = 4.2f, xyz[3] = {1, 2, 3};
+} sensors;
+struct BLECharacteristic { uint16_t getHandle() const { return 1; } } attribute;
+struct BLE2902 {};
+struct BLEServer { uint8_t getGattsIf() const { return 1; } } fixtureServer, *server = &fixtureServer;
+struct Frame { uint32_t generation, subscription; };
+using esp_gatt_if_t = uint8_t;
+constexpr esp_gatt_if_t ESP_GATT_IF_NONE = 255;
+constexpr int ESP_OK = 0;
+void portENTER_CRITICAL(bool *lock) { assert(!*lock); *lock = true; }
+void portEXIT_CRITICAL(bool *lock) { assert(*lock); *lock = false; }
+bool commandChannelOpen(uint32_t generation, uint32_t subscription);
+int esp_ble_gatts_send_indicate(esp_gatt_if_t, uint16_t, uint16_t, uint16_t, uint8_t *, bool) { return ESP_OK; }
 uint64_t uptime() { return UINT64_C(9007199254740991); }
 bool readState() { return false; }
 int digitalRead(int) { return 1; }
@@ -92,6 +105,8 @@ int main() {
   assert(released["buttonState"] == "released");
   assert(released["sensorValues"]["buttonPresses"][0].as<uint32_t>() == 1);
   assert(released["sensorValues"]["buttonPresses"][1].as<uint32_t>() == 0);
+  assert(released["sensorValues"]["batteryAlert"].is<bool>());
+  assert(!released["sensorValues"]["batteryAlert"].as<bool>());
   std::puts("PASS released replacement frame retains the earlier press count");
 
   buttonPresses.record(true, true, true);
@@ -104,19 +119,26 @@ int main() {
   buttonPresses.record(true, false, false);
   buttonPresses.record(false, true, true);
   assert(buttonPresses.confirm == UINT32_MAX && buttonPresses.panic == UINT32_MAX);
+  sensors.battery = 20;
+  sensors.batteryLow = true;
   detailSection = 1;
   publishObservation();
   auto energy = readFrame(1);
   assert(energy["sensorValues"]["ina219"]["status"] == "ok");
+  assert(energy["sensorValues"]["batteryAlert"].as<bool>());
   assert(energy["sensorValues"]["buttonPresses"][0].as<uint32_t>() == UINT32_MAX);
   assert(energy["sensorValues"]["buttonPresses"][1].as<uint32_t>() == UINT32_MAX);
   std::printf("PASS saturated counters and INA219 fit in %zu bytes\n", observationTx.sections[1].size());
 
   headphone.state.assign(600, 'x'); // Force the real bounded-frame fallback.
+  sensors.fuel = false;
   detailSection = 2;
   publishObservation();
   auto fallback = readFrame(2);
   assert(fallback["sensorValues"]["status"] == "payload_too_large");
+  assert(fallback["battery"].isNull());
+  assert(fallback["sensorValues"].as<JsonObjectConst>().containsKey("batteryAlert"));
+  assert(fallback["sensorValues"]["batteryAlert"].isNull());
   assert(fallback["sensorValues"]["buttonPresses"][0].as<uint32_t>() == UINT32_MAX);
   assert(fallback["sensorValues"]["buttonPresses"][1].as<uint32_t>() == UINT32_MAX);
   assert(fallback["sensorValues"]["wake"] == "button");

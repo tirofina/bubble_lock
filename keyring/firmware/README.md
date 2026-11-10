@@ -70,6 +70,8 @@ keyring-0.7.9는 기존 슬롯을 읽고 첫 새 명령부터 `journal-tail`에 
 
 MAX17048의 SOC와 VCELL을 읽고 실패 시 battery/voltage를 null로 보낸다. 전압·SOC 레지스터 형식은 [MAX17048 제조사 데이터시트](https://www.analog.com/media/en/technical-documentation/data-sheets/MAX17048-MAX17049.pdf)를 따른다. 배터리별 모델 보정과 실측 잔량 정확도는 미확인이다.
 
+keyring-0.7.12의 잔량 경보는 기본 20% 이하에서 켜지고 25% 이상에서 해제된다. `KEYRING_BATTERY_WARN_PERCENT`, `KEYRING_BATTERY_RECOVER_PERCENT`는 로컬 설정으로 조정할 수 있다. `sensorValues.batteryAlert`는 저잔량 `true`, 정상 `false`, 센서 미확인 `null`을 전송한다. 읽기 실패 뒤에도 마지막 정상 샘플의 경보 상태를 보존해 다음 정상 샘플에 같은 경계값을 적용한다. LCD가 켜져 있으면 낮은 잔량을 빨간색과 `LOW`로 표시한다. 이 경보는 표시·관측용이다. 호스트 회귀시험 소스를 추가했고 빌드와 실물 확인은 미실행이다.
+
 LIS2DW12 WHO_AM_I를 확인하고 12.5Hz·low-power mode1·±2g·BDU·주소 증가를 설정해 3축을 g 단위로 보낸다. 레지스터와 감도 근거는 [LIS2DW12 제조사 데이터시트](https://www.st.com/resource/en/datasheet/lis2dw12.pdf)다. 초기화/읽기 실패는 accelStatus=unavailable이다. 낙상 판정이나 위치 추정은 구현하지 않았다.
 
 keyring-0.7.11은 가속도계 초기화나 축 읽기가 실패하면 약 5초 간격으로 기존 센서 설정을 다시 적용한다. 축 읽기는 정상이고 움직임 인터럽트만 실패하면 인터럽트 설정을 별도로 복구한다. 축 읽기 실패 시 관측은 `unavailable`로 바뀌고 절전 진입을 보류한다. 인터럽트와 새 축 샘플이 모두 확인된 뒤 절전을 검토한다. [호스트 시험 소스](tests/run_sensor_recovery_host.py)를 추가했으며 이번 빌드·시험·실물 검증은 미실행이다.

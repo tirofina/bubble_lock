@@ -90,6 +90,13 @@ def validate_credential_status(raw: Any, gateway_id: str) -> dict:
     return raw
 
 
+def valid_battery_alert(battery: Any, sensor_values: dict) -> bool:
+    if "batteryAlert" not in sensor_values:
+        return True
+    alert = sensor_values["batteryAlert"]
+    return alert is None if battery is None else type(alert) is bool
+
+
 def validate_observation(raw: Any, gateway_id: str, devices: dict[str, str]) -> dict:
     keys = {"version", "gatewayId", "deviceId", "bootId", "sequence", "observedAt", "receivedAt",
             "rssi", "battery", "buttonState", "sensorValues", "state", "firmwareRevision", "timestampSource"}
@@ -113,6 +120,8 @@ def validate_observation(raw: Any, gateway_id: str, devices: dict[str, str]) -> 
         raise ValueError("Invalid observation state")
     if not isinstance(raw["sensorValues"], dict) or len(raw["sensorValues"]) > 32:
         raise ValueError("Invalid sensor values")
+    if not valid_battery_alert(raw["battery"], raw["sensorValues"]):
+        raise ValueError("Invalid battery alert for the reported charge")
     if any(not isinstance(key, str) or not 1 <= len(key) <= 64 for key in raw["sensorValues"]):
         raise ValueError("Invalid sensor name")
     if "buttonPresses" in raw["sensorValues"]:

@@ -81,6 +81,10 @@
         "maxLength": 64
       },
       "properties": {
+        "batteryAlert": {
+          "description": "true는 저잔량, false는 정상, null은 배터리 잔량 미확인 상태",
+          "type": ["boolean", "null"]
+        },
         "buttonPresses": {
           "description": "부팅별 [확인, 비상] 누름 누계",
           "type": "array",
@@ -112,6 +116,13 @@
       "const": "gateway-received"
     }
   },
+  "allOf": [
+    {
+      "if": {"properties": {"battery": {"type": "null"}}},
+      "then": {"properties": {"sensorValues": {"properties": {"batteryAlert": {"type": "null"}}}}},
+      "else": {"properties": {"sensorValues": {"properties": {"batteryAlert": {"type": "boolean"}}}}}
+    }
+  ],
   "required": [
     "version",
     "gatewayId",

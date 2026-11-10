@@ -12,6 +12,9 @@
 // Sensor threshold in FS/64 units and duration in ODR cycles; tune on real hardware.
 // #define KEYRING_WAKE_THRESHOLD 8
 // #define KEYRING_WAKE_DURATION 1
+// Optional state-of-charge display and telemetry alert thresholds in percent.
+// #define KEYRING_BATTERY_WARN_PERCENT 20
+// #define KEYRING_BATTERY_RECOVER_PERCENT 25
 // Optional MAX98357A cue accompanying an already-authorized motor pulse.
 // #define KEYRING_ENABLE_AUDIO 1
 // #define KEYRING_AUDIO_FREQUENCY 880

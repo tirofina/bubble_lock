@@ -40,7 +40,7 @@ extern "C" esp_err_t __wrap_nvs_flash_init() {
 }
 
 namespace {
-constexpr char FirmwareRevision[] = "keyring-0.7.11";
+constexpr char FirmwareRevision[] = "keyring-0.7.12";
 #if defined(KEYRING_LEGACY_GATT) && KEYRING_LEGACY_GATT
 constexpr char ServiceUuid[] = "8b8f0001-8e7a-4f36-a8c2-1c9b5d620001";
 constexpr char IdentityUuid[] = "8b8f0002-8e7a-4f36-a8c2-1c9b5d620001";
@@ -357,7 +357,10 @@ bool configureAccelerometer() {
          writeRegister(board::AccelAddress, 0x25, 0x00) &&
          writeRegister(board::AccelAddress, 0x20, 0x20);
 }
-struct Sensors { bool fuel = false, accel = false; float battery = 0, volts = 0, xyz[3] = {}; } sensors;
+struct Sensors {
+  bool fuel = false, accel = false, batteryLow = false;
+  float battery = 0, volts = 0, xyz[3] = {};
+} sensors;
 void recoverAccelerometer(uint64_t now) {
   if ((accelReady && motion.ready()) || now < nextAccelRetry) return;
   const bool configureAxes = !accelReady;
@@ -373,6 +376,8 @@ void sampleSensors() {
     uint16_t v = (data[0] << 8) | data[1], soc = (data[2] << 8) | data[3];
     sensors.volts = v * 0.000078125f;
     sensors.battery = min(100.0f, soc / 256.0f);
+    sensors.batteryLow = sensors.battery <= KEYRING_BATTERY_WARN_PERCENT ||
+        (sensors.batteryLow && sensors.battery < KEYRING_BATTERY_RECOVER_PERCENT);
   }
   sensors.accel = accelReady && readRegisters(board::AccelAddress, 0x28, data, 6);
   if (sensors.accel) {
@@ -505,6 +510,7 @@ void publishObservation() {
     JsonObject values = doc.createNestedObject("sensorValues");
     values["detail"] = detail; values["fault"] = fault;
     values["journal"] = storageHealthy ? "ready" : "error";
+    if (sensors.fuel) values["batteryAlert"] = sensors.batteryLow; else values["batteryAlert"] = nullptr;
     buttonPresses.append(values);
     return values;
   };
@@ -1051,7 +1057,7 @@ void loop() {
   if (now >= nextScreenAt) {
     KeyringScreen screen;
     screen.linked = connected; screen.authenticated = authenticated;
-    screen.batteryValid = sensors.fuel; screen.battery = sensors.battery;
+    screen.batteryValid = sensors.fuel; screen.battery = sensors.battery; screen.batteryLow = sensors.batteryLow;
     screen.confirm = confirm.pressed; screen.panic = panic.pressed;
     screen.motor = readState(); screen.fault = digitalRead(board::MainFaultN) == LOW;
     screen.journal = storageHealthy; screen.motionEvents = motion.events();
