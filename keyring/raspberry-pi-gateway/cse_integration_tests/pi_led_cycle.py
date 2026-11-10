@@ -161,7 +161,7 @@ def verify_step(step, state, boot_id, *, gateway_id=GATEWAY):
     return command
 
 
-def verify_database(evidence, database, *, gateway_id=GATEWAY):
+def verify_database(evidence, database, *, gateway_id=GATEWAY, prior_expired_commands=()):
     steps = evidence["steps"]
     if len(steps) != len(STEPS):
         raise RuntimeError("LED evidence must contain one ON and one OFF command")
@@ -169,8 +169,26 @@ def verify_database(evidence, database, *, gateway_id=GATEWAY):
     confirmed = []
     with closing(sqlite3.connect(database.resolve().as_uri() + "?mode=ro", uri=True)) as db:
         db.execute("BEGIN")
-        if db.execute("SELECT COUNT(*) FROM commands").fetchone()[0] != len(STEPS):
-            raise RuntimeError("Expected a dedicated database with exactly two bench commands")
+        if db.execute("SELECT COUNT(*) FROM commands").fetchone()[0] != len(STEPS) + len(prior_expired_commands):
+            raise RuntimeError("Pi database has commands outside the declared bench evidence")
+        first_issued_at = parse_time(steps[0]["command"]["issuedAt"])
+        for command_id in prior_expired_commands:
+            row = db.execute("SELECT payload_hash,payload,status,receipt,receipt_delivered FROM commands "
+                             "WHERE command_id=?", (command_id,)).fetchone()
+            if row is None or row[2] != "REJECTED" or row[4] != 1:
+                raise RuntimeError("Declared prior attempt is not a delivered rejection")
+            previous = validate_command(json.loads(row[1]), gateway_id, {DEVICE: ""})
+            receipt = json.loads(row[3])
+            expected = {key: previous[key] for key in ("commandId", "gatewayId", "deviceId", "grantRevision", "ownershipEpoch")}
+            expected.update(payloadHash=payload_hash(previous), status="REJECTED", ackCode="EXPIRED",
+                            firmwareRevision=None, bootId=None, readback=None, acceptedAt=None, appliedAt=None,
+                            timestampSource="unavailable")
+            if (previous["commandId"] != command_id or row[0] != expected["payloadHash"] or row[1] != canonical(previous)
+                    or not isinstance(receipt, dict)
+                    or canonical({key: receipt[key] for key in expected if key in receipt}) != canonical(expected)
+                    or not parse_time(previous["deadline"]) <= parse_time(receipt["receivedAt"]) < first_issued_at
+                    or db.execute("SELECT 1 FROM outbox WHERE rqi=?", (Store.request_id("receipt", command_id),)).fetchone()):
+                raise RuntimeError("Declared prior attempt does not establish expiration before the LED cycle")
         for step, (_, state) in zip(steps, STEPS):
             command = verify_step(step, state, boot_id, gateway_id=gateway_id)
             receipt = step["cseReceipt"]

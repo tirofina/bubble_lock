@@ -4,7 +4,7 @@ cd /output
 test ! -e ca.key && test ! -e ca.pem
 umask 077
 openssl req -x509 -newkey rsa:3072 -nodes -days 90 -keyout ca.key -out ca.pem \
-  -subj /CN=Privacy-Bubble-Scoped-Dev-CA >/dev/null 2>&1
+  -subj /CN=Privacy-Bubble-Scoped-Dev-CA -addext 'keyUsage=critical,keyCertSign,cRLSign' >/dev/null 2>&1
 
 issue() {
   filename=$1

@@ -81,6 +81,8 @@ wake 모드에서는 BLE를 해제하기 전에 유효 계측값을 최대 `--se
 
 Feather 명령 펌웨어 0.2.0과 [Pi 벤치 연결 절차](../evidence/2026-11-10-pi-full-daemon/README.md#재현-절차)를 사용한다. PC의 시험 fixture는 새 CA·Mobius4 컨테이너·팀 중앙 API를 열고, Gateway와 Guardian에 별도 인증서를 발급한다. Guardian은 PC에만 두고 Pi에는 Gateway bundle을 전달한다. Pi는 Gateway 0.2.7 이상, 새 SQLite, `FIRMWARE_REVISION_ALLOWLIST=feather-probe-0.2.0`, `MQTT_ENABLED=false`, `CORE_BRIDGE_ENABLED=false`로 시작한다.
 
+관측 펌웨어에서 명령 펌웨어로 바꾼 직후에는 Pi에서 명령 특성 `7f8a0003-4b6e-4f4e-9b0a-505249564255`에 `write`가 표시되는지 확인한다. 새 identity와 관측이 들어와도 BlueZ가 이전 GATT 목록을 유지할 수 있다. 특성이 빠져 있으면 Pi 시험 데몬을 멈추고 해당 Feather만 등록 해제한 뒤, 필요하면 Feather를 재부팅하고 기존 PIN으로 다시 등록한다. 새 서비스 목록에서 `write`를 확인한 뒤 새 명령 ID로 시험한다.
+
 ```powershell
 $bench = '<저장소 밖의 새 절대 경로>'
 python keyring/raspberry-pi-gateway/cse_integration_tests/pi_daemon_fixture.py --team-ref 715ef58 --output $bench --led-cycle
@@ -133,6 +135,8 @@ python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_evidenc
 ```
 
 도구는 Pi SQLite의 명령·영수증 해시와 CSE 원본의 `ri`·`ct`를 팀 발급·승인 기록과 PostgreSQL 정산에 대조한다. 정산 행에는 격리 CSE 키와 원본 경로도 필요하므로 시험 전에 최신 격리 작업자를 준비한다. `centralSettlementVerified`, `cseCallbackRecorded`, `physicalLedMatched`를 분리한다. 운영자가 실제 LED를 기록하지 않으면 물리 항목은 `null`이다. 승인과 CSE 보관 순서를 판정할 수 없어 정산이 `REVIEW`라면 원래 검토 상태를 보고한다.
+
+같은 Pi DB에서 재시도한 경우 이전 기한 만료 명령의 정확한 ID를 `--prior-expired-command`로 명시한다. 비교 도구는 성공한 ON/OFF 두 건과 명시한 이전 거절만 허용한다. 이전 거절의 명령 해시와 영수증, 기한 만료 순서, 전달 완료, 장치 ACK 및 readback 필드가 비어 있는지를 확인한다.
 
 #### Pi 명령 세션
 

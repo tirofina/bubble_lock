@@ -185,6 +185,8 @@ ssh -N -T -o ExitOnForwardFailure=yes `
 
 Pi에는 scoped CA의 `ca.pem`, `gateway-a.pem`, `gateway-a.key`를 소유자 전용 폴더에 둔다. `gw-a`의 mTLS 인증서를 검증한 임시 프록시가 CSE originator를 매핑하므로 `CSE_ADMIN`은 PC에 둔다. Gateway 설정과 SQLite 생성은 [Pi 명령 세션](../../raspberry-pi-gateway/TESTING.md#pi-명령-세션) 절차를 따른다.
 
+새 scoped CA에는 `keyCertSign`과 `cRLSign`이 담긴 critical `keyUsage`가 포함된다. 이전 격리 CA를 쓰는 환경에서는 Pi의 엄격한 TLS 검증이 이 확장을 요구할 수 있다. 보완한 격리 CA로 인증서 검증과 Pi 사전 점검을 다시 수행한다.
+
 명령 프로필의 관측은 `gw-a` 전용 `command-observations-a`에, 영수증은 `command-receipts-a`에 보낸다. 이미 시작한 scoped 프로필에서는 발행을 마친 뒤 `prepare-scoped-command-receipts.ps1 -FeatherObservationsOnly`로 관측 컨테이너만 준비한다. [관측 컨테이너 배치 증거](../../evidence/2026-11-10-scoped-feather-led-cycle/provisioning.json)
 
 정산 명령의 `--team-root`에는 `.local/scoped/command-api/team-source`, `--state`에는 같은 폴더의 `runtime.json`을 넣는다. 다른 연결 설정은 [Feather 명령 프로필](../../firmware/feather_probe/README.md#내장-led를-쓰는-명령-프로필)과 [Scoped LED 시험 절차](../../raspberry-pi-gateway/TESTING.md#기존-scoped-mobius4에서-feather-led-시험)를 따른다. 2026-11-10에는 로컬 API 리스너와 장치 등록까지 준비했다. [API 배치 증거](../../evidence/2026-11-10-scoped-command-api/provisioning.json)

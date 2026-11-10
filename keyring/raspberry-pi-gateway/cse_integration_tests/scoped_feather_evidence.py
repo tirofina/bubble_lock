@@ -108,15 +108,18 @@ def physical_observations(steps, observations):
     return report
 
 
-def verify_scoped_evidence(cycle, database, inspections, team_state, observed_led=None):
+def verify_scoped_evidence(cycle, database, inspections, team_state, observed_led=None, *, prior_expired_commands=()):
     steps = cycle["steps"]
-    proof = verify_database(cycle, database, gateway_id=GATEWAY)
+    if len(set(prior_expired_commands)) != len(prior_expired_commands):
+        raise ValueError("Specify each prior expired command once")
+    proof = verify_database(cycle, database, gateway_id=GATEWAY, prior_expired_commands=prior_expired_commands)
     if len(inspections) != len(steps):
         raise ValueError("Provide one PostgreSQL inspection for each command")
     commands = [inspect_command(step, pi_proof, inspection, team_state)
                 for step, pi_proof, inspection in zip(steps, proof["commands"], inspections)]
     observations = physical_observations(steps, observed_led)
     return {"piCseBindingVerified": True,
+            "priorExpiredCommandCount": len(prior_expired_commands),
             "centralSettlementVerified": all(row["settlementVerified"] for row in commands),
             "cseCallbackRecorded": all("CSE_CALLBACK" in row["deliverySources"] for row in commands),
             "physicalLedObserved": observations,
@@ -265,10 +268,13 @@ if __name__ == "__main__":
     parser.add_argument("--off-inspection", type=Path)
     parser.add_argument("--team-state", required=True, type=Path)
     parser.add_argument("--operator-observations", type=Path)
+    parser.add_argument("--prior-expired-command", action="append", default=[],
+                        help="Exact command ID of an earlier, delivered pre-device expiration in the same Pi database")
     args = parser.parse_args()
     if args.cycle and not (args.database and args.on_inspection and args.off_inspection):
         parser.error("--cycle requires --database, --on-inspection and --off-inspection")
-    if args.interrupted_output and (args.on_inspection or args.off_inspection or args.operator_observations):
+    if args.interrupted_output and (args.on_inspection or args.off_inspection or args.operator_observations
+                                    or args.prior_expired_command):
         parser.error("Settlement and operator inputs require a completed --cycle")
     try:
         team_state = read_json(args.team_state)
@@ -278,7 +284,8 @@ if __name__ == "__main__":
             result = verify_scoped_evidence(read_json(args.cycle), args.database,
                                             [read_json(args.on_inspection), read_json(args.off_inspection)],
                                             team_state,
-                                            read_json(args.operator_observations) if args.operator_observations else None)
+                                            read_json(args.operator_observations) if args.operator_observations else None,
+                                            prior_expired_commands=args.prior_expired_command)
     except (AttributeError, KeyError, TypeError, OSError, ValueError, RuntimeError, sqlite3.Error) as error:
         parser.exit(1, f"Evidence could not be bound ({type(error).__name__}).\n")
     print(json.dumps(result, indent=2))
