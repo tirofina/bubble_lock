@@ -417,3 +417,14 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 0.2.7 Pi 설치와 실제 broker 명령 수신 시험은 남아 있다. 다음 실물 관문은 Feather 명령 프로필과 Pi를 이용한 출력·receipt·CSE 대조다. 운영 CORE 정산·제작 PCB 수용은 별도 관문이다. 전체 goal은 active/progress다.
 
 소스 및 시험 증거 commit `cbef49eb88999dc173f4455666da45c789e073e3`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `058355f..cbef49e`다.
+
+## 2026-11-10 — 실제 MQTT 명령과 ACK 전송
+
+이전 goal turn은 Gateway 0.2.7의 명령 수신 변경을 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- 테스트 전용 CORE/Gateway 인증서와 ACL로 실제 Mosquitto 명령·ACK 토픽을 사용했다. Gateway 인증서의 명령 발행은 ACL이 막았다. CORE 인증서가 보낸 같은 ID의 변조본은 실제 팀 중앙 API가 거절했고 SQLite 명령 행이 생기지 않았다.
+- 정확한 원본은 목록 조회 오류를 주입한 상태에서 MQTT로 수신됐다. 장치 연결 후 재승인했고 모의 GATT 명령 프레임 1개, CSE receipt 1건, 수신한 QoS 1 ACK의 CSE 영수증 일치를 확인했다.
+- 기본 71개, 중앙 4개, 별도 MQTT 6개가 통과했다. 시험 컨테이너와 네트워크 잔여는 0개다. [시험 기록](../keyring/evidence/2026-11-10-mqtt-command-wire/README.md)
+- 팀 CORE 발행기와 운영 ACK 정산, Pi 0.2.7 실물 실행, Feather 출력·제작 PCB 수용은 남았다. 전체 goal은 active/progress다.
+
+시험 코드와 증거 commit `9b0f412adde512a1f28e10fe3f0814e7d13d1290`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `7d44bf2..9b0f412`다.

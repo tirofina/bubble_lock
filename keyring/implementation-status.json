@@ -7,7 +7,7 @@
   "date": "2026-11-10",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Gateway 0.2.7 command ingress: 71 basic tests and 3 team-central mTLS integration cases passed. Actual Pi transient daemon/replay evidence remains at 0.2.5. Physical command and production deployment remain.",
+  "verificationStatus": "Gateway 0.2.7: 71 basic tests, 4 central integration cases and 6 standalone MQTT cases passed. Actual broker command and ACK were verified with fake GATT and disposable Mobius4. Pi daemon/replay evidence remains at 0.2.5.",
   "rubricIds": [
     "R01",
     "R02",
@@ -119,15 +119,15 @@
   "firmwareRevision": "keyring-0.7.0",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "cbef49eb88999dc173f4455666da45c789e073e3",
+    "sourceCommit": "9b0f412adde512a1f28e10fe3f0814e7d13d1290",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "cbef49eb88999dc173f4455666da45c789e073e3",
-    "lastPushedCommit": "cbef49eb88999dc173f4455666da45c789e073e3",
-    "latestCheckpoint": "Gateway 0.2.7 protects authoritative command admission from unverified CORE copies; verified locally and against the team mTLS API.",
-    "lastPushedCommitBeforeThisCheckpoint": "058355f2e31997d0ccffad3da0b615abe0f98307"
+    "latestLocalSourceCommit": "9b0f412adde512a1f28e10fe3f0814e7d13d1290",
+    "lastPushedCommit": "9b0f412adde512a1f28e10fe3f0814e7d13d1290",
+    "latestCheckpoint": "Verified actual MQTT command and ACK traffic through the Gateway, team central mTLS API and disposable CSE, with fake GATT.",
+    "lastPushedCommitBeforeThisCheckpoint": "7d44bf23fc998bb7cd0a90ecfc7a0fa89cc3234b"
   },
   "gatewayRevision": "0.2.7",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
@@ -151,7 +151,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Preserve central HTTPS issuance under CORE MQTT load and require exact authorization before MQTT-only durable admission",
+    "executionRequest": "Verify exact command admission and receipt binding over the actual CORE MQTT command and ACK topics",
     "remainingCompletionDependencies": [
       "central deployment, settlement and recovery activation",
       "purchased JD9853 module initialization",
@@ -159,11 +159,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "cbef49eb88999dc173f4455666da45c789e073e3",
-    "sourceValidation": "71 basic tests, 3 real central mTLS integration cases and wheel/source comparison passed. 0.2.7 physical deployment and command verification remain.",
+    "sourceCommit": "9b0f412adde512a1f28e10fe3f0814e7d13d1290",
+    "sourceValidation": "71 basic tests, 4 central integration cases and 6 standalone MQTT cases passed. Actual broker ACK matched the CSE receipt for one fake-GATT command.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "Ingress and ACK binding evidence are available; team settlement integration and physical command flash approval remain.",
+    "currentDependencyState": "The isolated broker command/ACK path is verified; team CORE publishing/settlement integration and physical command flash approval remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -482,5 +482,22 @@
     "actualBrokerCommandIngressVerified": false,
     "physicalDeploymentPerformed": false,
     "sourceCommit": "cbef49eb88999dc173f4455666da45c789e073e3"
+  },
+  "mqttCommandWireValidation": {
+    "evidence": "evidence/2026-11-10-mqtt-command-wire/README.md",
+    "gatewayVersion": "0.2.7",
+    "teamMain": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+    "basicTestsPassed": 71,
+    "centralCasesPassed": 4,
+    "standaloneMqttCasesPassed": 6,
+    "mqttVersion": "3.1.1",
+    "tlsVersion": "1.3",
+    "qos": 1,
+    "gatewayCommandPublishDenied": true,
+    "forgedPayloadDenied": true,
+    "coreAckMatchesCseReceipt": true,
+    "mockGATT": true,
+    "productionCoreSettlementVerified": false,
+    "sourceCommit": "9b0f412adde512a1f28e10fe3f0814e7d13d1290"
   }
 }
