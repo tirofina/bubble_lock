@@ -4,12 +4,16 @@ map $ssl_client_s_dn $keyring_identity_allowed {
     "CN=scoped-gateway-a" 1;
     "CN=scoped-gateway-b" 1;
 }
-map "$ssl_client_s_dn:$request_method:$uri" $scoped_cse_allowed {
+map "$ssl_client_s_dn:$request_method:$request_uri" $scoped_cse_allowed {
     default 0;
     ~^CN=scoped-core: 1;
     ~^CN=scoped-gateway-a:GET:/Mobius/privacy-bubble-test-ae/featherState$ 1;
     "~^CN=scoped-gateway-[ab]:POST:/Mobius/privacy-bubble-test-ae/(observations|receipts|health)$" 1;
     "~^CN=scoped-gateway-[ab]:GET:/Mobius/privacy-bubble-test-ae/(observations|receipts|health)/gw-[a-f0-9]{64}$" 1;
+    ~^CN=scoped-gateway-a:POST:/Mobius/privacy-bubble-test-ae/command-receipts-a$ 1;
+    ~^CN=scoped-gateway-b:POST:/Mobius/privacy-bubble-test-ae/command-receipts-b$ 1;
+    "~^CN=scoped-gateway-a:GET:/Mobius/privacy-bubble-test-ae/command-receipts-a/gw-[a-f0-9]{64}$" 1;
+    "~^CN=scoped-gateway-b:GET:/Mobius/privacy-bubble-test-ae/command-receipts-b/gw-[a-f0-9]{64}$" 1;
 }
 server {
     listen 8759 ssl;

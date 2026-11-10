@@ -18,6 +18,12 @@ function cseCreatedAt(value) {
 
 export class InvalidNativeReceipt extends Error {}
 
+export function commandReceiptName(commandId) {
+  if (!exact(id, commandId)) throw new InvalidNativeReceipt('INVALID_COMMAND_ID');
+  const originalRequestId = `kr-${sha256(`receipt:${commandId}`).slice(0, 48)}`;
+  return `gw-${sha256(originalRequestId)}`;
+}
+
 /** retrieve(path) uses a fixed authenticated CSE, verifies response RQI and returns { status, rsc, body }. */
 export function createNativeReceiptReader({ receiptContainers, retrieve }) {
   const gatewayByContainer = new Map();
@@ -47,8 +53,7 @@ export function createNativeReceiptReader({ receiptContainers, retrieve }) {
     if (cin?.ty !== 4 || cin.rn !== name || !exact(id, cin.ri) || !storedAt || !exact(id, receipt?.commandId)) {
       throw new InvalidNativeReceipt('INVALID_NATIVE_CONTENT_INSTANCE');
     }
-    const originalRequestId = `kr-${sha256(`receipt:${receipt.commandId}`).slice(0, 48)}`;
-    if (name !== `gw-${sha256(originalRequestId)}`) throw new InvalidNativeReceipt('NATIVE_RECEIPT_NAME_BINDING');
+    if (name !== commandReceiptName(receipt.commandId)) throw new InvalidNativeReceipt('NATIVE_RECEIPT_NAME_BINDING');
     return { gatewayId, resourceId: cin.ri, storedAt, receipt };
   };
 }

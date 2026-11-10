@@ -74,6 +74,37 @@ Gateway 0.2.14는 적용 영수증을 기다린다. 새 ACL은 해당 Gateway에
 
 Gateway에서는 위 포트와 해당 Gateway 인증서를 사용한다. `MQTT_ENABLED=true`, `M2M_MQTT_ENABLED=false`, `CORE_BRIDGE_ENABLED=true`를 지정한다. `CORE_TELEMETRY_EPOCHS`에는 현재 배정된 `kr-handover`의 epoch를 지정하고 `BLE_DEVICES`에는 같은 장치 ID를 쓴다. native cin은 HTTPS를 사용한다. 명령 승인 API는 503을 반환한다.
 
+### 명령 영수증 정산 준비
+
+Scoped bootstrap은 명령 영수증 정산 전용 빈 컨테이너도 준비한다. A와 B는 각자 인증서로 자기 컨테이너에만 생성하고 이름으로 조회할 수 있다. 기존 관측·상태·공용 영수증 경로도 유지한다. Gateway HTTPS 경로는 쿼리나 이스케이프 없이 정해진 그대로 사용한다.
+
+| `GATEWAY_ID` | 새 명령 벤치의 `M2M_RECEIPT_CONTAINER` |
+|---|---|
+| `gw-a` | `/Mobius/privacy-bubble-test-ae/command-receipts-a` |
+| `gw-b` | `/Mobius/privacy-bubble-test-ae/command-receipts-b` |
+
+이미 시작한 scoped 서버에 적용할 때는 발행 작업이 끝난 뒤 TLS 프록시만 교체하고 scoped bootstrap으로 빈 자원을 준비한다. 새 경로는 새 명령 벤치의 전용 SQLite 설정에 지정한다. 기존 DB의 대기 중인 영수증은 원래 경로에서 처리한다. 명령 발급·승인에는 별도의 실제 팀 INTEGRATION mTLS API를 설정한다.
+
+```powershell
+$dev = './keyring/dev/mobius4'
+docker compose --project-name privacy-bubble-keyring-scoped --env-file "$dev/.local/scoped/compose.env" `
+  -f "$dev/compose.yaml" -f "$dev/compose.scoped.yaml" up -d --no-deps --no-build --pull never --force-recreate tls
+if ($LASTEXITCODE -ne 0) { throw 'Scoped TLS route refresh failed.' }
+node "$dev/bootstrap.mjs" --scoped
+```
+
+정산 명령은 CSE loopback 포트에 접근할 수 있는 중앙 측 POSIX 환경에서 실행한다. Node 22 이상, 팀 main `715ef58` 소스, 같은 팀 API가 명령 발급·승인에 사용한 `pc-mobius/integration/state/runtime.json` 또는 그 시점의 로컬 스냅샷이 필요하다. `.local/scoped`에서 CORE 인증서와 CSE 포트를 읽는다. WSL에서 실행할 경우 PC의 해당 loopback 포트에 접근할 수 있어야 하며 정산 디렉터리는 Linux 파일시스템에 둔다.
+
+```sh
+tool=./keyring/dev/mobius4/receipt-settlement
+npm install --prefix "$tool" --ignore-scripts --no-package-lock
+install -d -m 700 "$ledger"
+node "$tool/settle.mjs" --team-root "$team_root" --state "$team_state" \
+  --ledger "$ledger" --gateway gw-a --command "$issued_command_id"
+```
+
+`--ack`에 같은 명령의 CORE MQTT ACK 본문을 담은 로컬 JSON을 선택적으로 지정할 수 있다. 조회는 CSE의 TLS·요청 ID를 검증하고 팀 스냅샷을 한 번만 읽는다. 결과는 JSON 한 줄이다. 신규·중복 정산은 종료 코드 0, 원본 도착 대기는 2, 불일치 검토는 3, 연결·설정·저장 실패는 1이다. 정산 결과는 별도 디렉터리에 저장한다. [정산 계약](../../integration-candidate/README.md#cse-명령-영수증의-중앙-정산-후보)
+
 ### 격리 소유권 전환
 
 새 소비자와 ACL을 배치한 뒤 아래 명령을 쓴다. `Forward`는 A의 epoch 7에서 B의 8로, `Rollback`은 B의 8에서 A의 9로 전환한다. 이전 epoch 토픽은 지연 관측 재현을 위해 격리 ACL에 남긴다. 실제 활성 소유권은 소비자가 대조한다.

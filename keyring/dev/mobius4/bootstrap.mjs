@@ -3,6 +3,7 @@ import https from 'node:https';
 import {readFile, writeFile} from 'node:fs/promises';
 import {setTimeout as delay} from 'node:timers/promises';
 import {randomUUID} from 'node:crypto';
+import {scopedCommandReceiptContainers} from './scoped-command-receipts.mjs';
 
 const args = process.argv.slice(2);
 if (args.length && (args.length !== 1 || args[0] !== '--scoped')) {
@@ -32,6 +33,12 @@ const resources = [
   }}},
 ];
 if (args.length) {
+  for (const container of Object.values(scopedCommandReceiptContainers)) {
+    const slash = container.lastIndexOf('/');
+    resources.push({path: container.slice(0, slash), ty: 3, body: {
+      'm2m:cnt': {rn: container.slice(slash + 1), mni: 10000},
+    }});
+  }
   resources.push({path: `/Mobius/${ae}`, ty: 28, body: {'pb:binarySwitch': {
     rn: 'featherState', cnd: 'org.onem2m.common.moduleclass.binarySwitch',
     state: false, lbl: ['dev-bootstrap', 'feather-bench'],
