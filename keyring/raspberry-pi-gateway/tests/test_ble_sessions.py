@@ -216,6 +216,88 @@ class BringupCaptureTests(unittest.TestCase):
                          {"commandReady", "outputActive", "mainFault", "journalEnabled", "buttonCounterRegressed"})
 
 
+class ReconnectContinuityTests(unittest.TestCase):
+    board = "r18-hand-solder"
+
+    def events(self, *, intermediate_boot=None, recovered_boot="original-boot"):
+        events = []
+
+        def add(kind, generation, boot, **fields):
+            events.append(dict(event=kind, generation=generation, atNs=len(events) * 1_000_000,
+                               bootId=boot, boardRevision=self.board, **fields))
+
+        def ready(generation, boot):
+            add("ready", generation, boot, advertisingRssiDbm=None, advertisingAgeMs=None)
+
+        def notify(generation, boot, sequence, uptime, presses):
+            add("notification", generation, boot, sequence=sequence, observation={
+                "uptimeMs": uptime, "buttonState": "released",
+                "sensorValues": {"buttonPresses": presses, "unselected": "private-payload"},
+            })
+
+        ready(1, "original-boot")
+        notify(1, "original-boot", 9, 900, [1, 2])
+        notify(1, "original-boot", 12, 1200, [2, 3])
+        add("lost", 1, "original-boot")
+        generation = 2
+        if intermediate_boot is not None:
+            ready(generation, intermediate_boot)
+            add("lost", generation, intermediate_boot)
+            generation += 1
+        ready(generation, recovered_boot)
+        notify(generation, recovered_boot, 17, 1900, [2, 4])
+        return events
+
+    def report(self, events, *, verify=True):
+        return summarize(events, 0, len(events) * 1_000_000, board=self.board, mode="reconnect",
+                         truncated=False, dropped=0, verify_button_continuity=verify)
+
+    def test_boundary_uses_last_before_and_first_recovered_notifications_across_empty_session(self):
+        events = self.events(intermediate_boot="original-boot")
+        report = self.report(events)
+        self.assertEqual(report["status"], "RECORDED")
+        self.assertEqual(report["reconnects"], [dict(fromSession=1, toSession=3, lossToNotificationMs=4, sameBoot=True)])
+        evidence = report["buttonContinuity"]
+        self.assertEqual((evidence["before"]["sequence"], evidence["after"]["sequence"]), (12, 17))
+        self.assertEqual(evidence["sequenceGap"], 4)
+        self.assertEqual(evidence["buttonDelta"], [0, 1])
+        serialized = json.dumps(report)
+        self.assertNotIn("original-boot", serialized)
+        self.assertNotIn("private-payload", serialized)
+        ordinary = self.report(events, verify=False)
+        self.assertNotIn("buttonContinuity", ordinary)
+        self.assertTrue(all("buttonPresses" not in row for row in ordinary["events"]))
+
+    def test_new_boot_is_not_button_continuity_even_if_numbers_increase(self):
+        for events in (self.events(recovered_boot="replacement-boot"),
+                       self.events(intermediate_boot="replacement-boot")):
+            with self.subTest(events=events):
+                report = self.report(events)
+                self.assertEqual(report["status"], "MISMATCH")
+                self.assertEqual(report["buttonContinuity"]["mismatches"], ["bootChanged"])
+                self.assertIsNone(report["buttonContinuity"]["buttonDelta"])
+
+    def test_regression_at_first_recovery_is_not_hidden_by_later_good_sample(self):
+        events = self.events()
+        recovered = events[-1]
+        later = {**recovered, "sequence": 18, "atNs": len(events) * 1_000_000}
+        recovered["sequence"] = 12
+        recovered["observation"] = dict(uptimeMs=1000, buttonState="released", sensorValues={"buttonPresses": [1, 3]})
+        report = self.report([*events, later])
+        self.assertEqual(report["status"], "MISMATCH")
+        self.assertEqual(report["buttonContinuity"]["mismatches"],
+                         ["sequenceDidNotAdvance", "uptimeRegressed", "buttonCounterRegressed"])
+
+    def test_missing_baseline_or_recovered_button_counts_are_insufficient(self):
+        events = self.events()
+        events[2]["observation"]["sensorValues"]["buttonPresses"] = [2, 0]
+        events[-1]["observation"]["sensorValues"]["buttonPresses"] = [False, 4]
+        report = self.report(events)
+        self.assertEqual(report["status"], "INSUFFICIENT")
+        self.assertEqual(report["buttonContinuity"]["missing"], ["buttonBaseline", "recoveredButtons"])
+        self.assertEqual(self.report(events[:-1])["buttonContinuity"]["missing"], ["recovery"])
+
+
 class SessionTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         cfg = config()

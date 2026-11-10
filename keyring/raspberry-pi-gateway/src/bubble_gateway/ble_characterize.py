@@ -133,19 +133,23 @@ def battery_result(rows: list[dict], warn: int, recover: int) -> dict:
             "missingAlertFrames": missing, "unknownFrames": unknown, "mismatchedFrames": mismatched}
 
 
+def button_fields(frame: dict) -> dict:
+    presses = frame["sensorValues"].get("buttonPresses")
+    return {"deviceUptimeMs": frame["uptimeMs"], "buttonState": frame["buttonState"],
+            "buttonPresses": presses if valid_button_presses(presses) else None}
+
+
 def bringup_fields(frame: dict) -> dict:
     sensors = frame["sensorValues"]
     axes = sensors.get("accelerationG")
     axes_valid = (isinstance(axes, list) and len(axes) == 3
                   and all(type(value) in (int, float) and -float("inf") < value < float("inf") for value in axes))
-    presses = sensors.get("buttonPresses")
     fault = sensors.get("fault")
     battery_status, accel_status, motion = (sensors.get(key) for key in ("batteryStatus", "accelStatus", "motion"))
     journal = sensors.get("journal")
     return {
+        **button_fields(frame),
         "state": frame["state"], "mainFault": fault if type(fault) is bool else None,
-        "deviceUptimeMs": frame["uptimeMs"],
-        "buttonState": frame["buttonState"], "buttonPresses": presses if valid_button_presses(presses) else None,
         "batteryPercent": frame["battery"], "accelerationG": axes if axes_valid else None,
         "batteryStatus": battery_status if battery_status in ("ok", "unavailable") else None,
         "accelStatus": accel_status if accel_status in ("ok", "unavailable") else None,
@@ -207,10 +211,68 @@ def bringup_result(sessions: list[dict], rows: list[dict]) -> dict:
             "powerSequence": power, "healthSequence": health, "missing": missing, "mismatches": mismatches}
 
 
+def reconnect_results(sessions: list[dict]) -> list[dict]:
+    results = []
+    previous = None
+    for current in sessions:
+        first = current["firstNotificationAtMs"]
+        if first is None:
+            continue
+        if previous is not None and previous["lostAtMs"] is not None:
+            results.append({"fromSession": previous["session"], "toSession": current["session"],
+                            "lossToNotificationMs": first - previous["lostAtMs"],
+                            "sameBoot": previous["boot"] == current["boot"]})
+        previous = current
+    return results
+
+
+def button_continuity_result(sessions: list[dict], reconnects: list[dict], rows: list[dict]) -> dict:
+    report = {"before": None, "after": None, "buttonDelta": None, "sequenceGap": None,
+              "missing": [], "mismatches": []}
+    missing, mismatches = report["missing"], report["mismatches"]
+    if not reconnects:
+        missing.append("recovery")
+        return report
+    boundary = reconnects[0]
+    from_session, to_session = boundary["fromSession"], boundary["toSession"]
+    notifications = [row for row in rows if row["event"] == "notification"]
+    before = next(row for row in reversed(notifications) if row["session"] == from_session)
+    after = next(row for row in notifications if row["session"] == to_session)
+    fields = ("session", "atMs", "sequence", "deviceUptimeMs", "buttonState", "buttonPresses")
+    report.update(before={key: before.get(key) for key in fields}, after={key: after.get(key) for key in fields})
+    boots = {session["boot"] for session in sessions if from_session <= session["session"] <= to_session}
+    if len(boots) != 1:
+        mismatches.append("bootChanged")
+        return report
+
+    sequence_delta = after["sequence"] - before["sequence"]
+    if sequence_delta <= 0:
+        mismatches.append("sequenceDidNotAdvance")
+    else:
+        report["sequenceGap"] = sequence_delta - 1
+    before_uptime, after_uptime = before.get("deviceUptimeMs"), after.get("deviceUptimeMs")
+    if before_uptime is None or after_uptime is None:
+        missing.append("uptime")
+    elif after_uptime < before_uptime:
+        mismatches.append("uptimeRegressed")
+    before_presses, after_presses = before.get("buttonPresses"), after.get("buttonPresses")
+    if before_presses is None or not all(before_presses) or before.get("buttonState") != "released":
+        missing.append("buttonBaseline")
+    if after_presses is None:
+        missing.append("recoveredButtons")
+    if before_presses is not None and after_presses is not None:
+        deltas = [current - earlier for current, earlier in zip(after_presses, before_presses)]
+        report["buttonDelta"] = deltas
+        if any(delta < 0 for delta in deltas):
+            mismatches.append("buttonCounterRegressed")
+    return report
+
+
 def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mode: str,
               truncated: bool, dropped: int, expected_wake: str | None = None,
               release_ms: int | None = None, include_power: bool = False,
-              battery_thresholds: tuple[int, int] = BATTERY_THRESHOLDS) -> dict:
+              battery_thresholds: tuple[int, int] = BATTERY_THRESHOLDS,
+              verify_button_continuity: bool = False) -> dict:
     sessions = {}
     boots = {}
     rows = []
@@ -257,6 +319,8 @@ def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mo
                     row.update(batteryPercent=event["batteryPercent"], batteryAlert=event["batteryAlert"])
                 if mode == "bringup" and "observation" in event:
                     row.update(bringup_fields(event["observation"]))
+                elif verify_button_continuity and "observation" in event:
+                    row.update(button_fields(event["observation"]))
                 if session["notificationCount"] == 0:
                     session["firstNotificationAtMs"] = elapsed
                 else:
@@ -268,28 +332,25 @@ def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mo
         rows.append({**row, "session": sessions[key]["session"]})
 
     measured = list(sessions.values())
-    reconnects = []
-    for previous, current in zip(measured, measured[1:]):
-        lost = previous["lostAtMs"]
-        first = current["firstNotificationAtMs"]
-        if previous["notificationCount"] and lost is not None and first is not None:
-            reconnects.append({"fromSession": previous["session"], "toSession": current["session"],
-                               "lossToNotificationMs": first - lost, "sameBoot": previous["boot"] == current["boot"]})
+    reconnects = reconnect_results(measured)
     notifications = sum(session["notificationCount"] for session in measured)
     wake = wake_result(measured, rows, expected_wake, release_ms) if expected_wake is not None else None
     power = power_result(measured, rows, mode) if include_power else None
     battery = battery_result(rows, *battery_thresholds) if mode == "battery" else None
     bringup = bringup_result(measured, rows) if mode == "bringup" else None
+    continuity = button_continuity_result(measured, reconnects, rows) if verify_button_continuity else None
     status = "RECORDED"
     if truncated:
         status = "TRUNCATED"
-    elif (battery is not None and battery["mismatchedFrames"]) or (bringup is not None and bringup["mismatches"]):
+    elif ((battery is not None and battery["mismatchedFrames"]) or (bringup is not None and bringup["mismatches"])
+          or (continuity is not None and continuity["mismatches"])):
         status = "MISMATCH"
     elif (not notifications or unexpected_boards or dropped or (mode == "reconnect" and not reconnects)
           or (mode == "wake" and (wake is None or not wake["matched"]))
           or (power is not None and power["missingPhases"])
           or (battery is not None and (battery["matchedCycle"] is None or battery["missingAlertFrames"]))
-          or (bringup is not None and bringup["missing"])):
+          or (bringup is not None and bringup["missing"])
+          or (continuity is not None and continuity["missing"])):
         status = "INSUFFICIENT"
     report = {"status": status, "durationMs": (stop_ns - start_ns) // 1_000_000,
               "notificationCount": notifications, "droppedByReceiver": dropped,
@@ -303,6 +364,8 @@ def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mo
         report["battery"] = battery
     if bringup is not None:
         report["bringup"] = bringup
+    if continuity is not None:
+        report["buttonContinuity"] = continuity
     return report
 
 
@@ -324,10 +387,12 @@ async def characterize(args: argparse.Namespace) -> dict:
         first = asyncio.Event()
         first_power = asyncio.Event()
         receiving = set()
+        initial_generation = None
+        baseline_announced = False
         capturing = True
 
         def trace(event: dict) -> None:
-            nonlocal truncated
+            nonlocal truncated, initial_generation, baseline_announced
             if not capturing:
                 return
             if len(events) < MAX_EVENTS:
@@ -335,6 +400,8 @@ async def characterize(args: argparse.Namespace) -> dict:
             else:
                 truncated = True
             if event["event"] == "notification" and event["boardRevision"] == board:
+                if initial_generation is None:
+                    initial_generation = event["generation"]
                 if event["generation"] not in receiving:
                     receiving.add(event["generation"])
                     if args.mode == "bringup" and not first.is_set():
@@ -342,11 +409,18 @@ async def characterize(args: argparse.Namespace) -> dict:
                               flush=True)
                     first.set()
                     print("First notification received for this BLE session.", flush=True)
+                if args.verify_button_continuity and event["generation"] == initial_generation and not baseline_announced:
+                    buttons = button_fields(event["observation"])
+                    if buttons["buttonState"] == "released" and buttons["buttonPresses"] and all(buttons["buttonPresses"]):
+                        baseline_announced = True
+                        print("Both button counts recorded. Interrupt and restore BLE while keeping the keyring powered.",
+                              flush=True)
                 reading = event.get("ina219")
                 if reading is not None and reading["status"] == "ok":
                     first_power.set()
 
-        await fleet.start(discard_observation, trace=trace, trace_observation=args.mode == "bringup")
+        await fleet.start(discard_observation, trace=trace,
+                          trace_observation=args.mode == "bringup" or args.verify_button_continuity)
         try:
             if stop_on_first:
                 try:
@@ -383,7 +457,8 @@ async def characterize(args: argparse.Namespace) -> dict:
               **summarize(events, start_ns, stop_ns, board=board, mode=args.mode,
                           truncated=truncated, dropped=dropped, expected_wake=args.expect_wake,
                           release_ms=release_ms, include_power=args.include_power,
-                          battery_thresholds=tuple(args.battery_thresholds or BATTERY_THRESHOLDS))}
+                          battery_thresholds=tuple(args.battery_thresholds or BATTERY_THRESHOLDS),
+                          verify_button_continuity=args.verify_button_continuity)}
     if args.mode == "wake":
         report["wake"].update(operatorIdleSeconds=args.idle_seconds, releaseAtMs=release_ms)
     if args.mode == "battery":
@@ -405,6 +480,7 @@ def main() -> None:
     parser.add_argument("--idle-seconds", type=int, help="wake mode only; BLE-free idle window")
     parser.add_argument("--expect-wake", choices=tuple(WAKE_CASES), help="wake mode only")
     parser.add_argument("--include-power", action="store_true", help="include INA219 readings (r18-pcb only)")
+    parser.add_argument("--verify-button-continuity", action="store_true", help="require same-boot r18 reconnect evidence")
     parser.add_argument("--battery-source", choices=("physical-pack", "gauge-fixture"), help="battery mode only")
     parser.add_argument("--battery-thresholds", nargs=2, type=int, metavar=("WARN", "RECOVER"),
                         help="battery mode only; firmware percentages (default: 20 25)")
@@ -421,6 +497,8 @@ def main() -> None:
         parser.error(f"distance must be 1..100000 cm and duration 10..{max_seconds} seconds")
     if args.include_power and args.hardware != "r18-pcb":
         parser.error("--include-power requires r18-pcb")
+    if args.verify_button_continuity and (args.mode != "reconnect" or args.hardware != "r18-pcb"):
+        parser.error("--verify-button-continuity requires reconnect mode and r18-pcb")
     if args.mode == "wake":
         if (args.hardware != "r18-pcb" or args.expect_wake is None or args.idle_seconds is None
                 or not 10 <= args.idle_seconds <= 3600):
@@ -449,6 +527,9 @@ def main() -> None:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
             if args.mode == "bringup":
                 print("BLE capture started. Keep both buttons released until the first notification.", flush=True)
+            elif args.verify_button_continuity:
+                print("BLE capture started. If no baseline is announced after the first notification, press and release each button.",
+                      flush=True)
             else:
                 print("BLE capture started. For reconnect mode, wait for observations, interrupt the link and restore it.",
                       flush=True)

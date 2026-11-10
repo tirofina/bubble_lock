@@ -78,6 +78,21 @@ JSON에는 최초 READ와 구독 준비 전 데이터가 제외된 알림 수, �
 
 제작 PCB의 sleep·wake·배터리 입력 전력은 외부 계측과 [전력 측정 지점 설명](../firmware/POWER_MONITOR.md)을 함께 사용한다. 이 도구는 소스와 회귀시험 코드만 준비했다.
 
+### r18 재연결 전후 버튼 누계 기록
+
+Gateway 0.2.39의 `--verify-button-continuity`는 첫 알림이 있던 연결의 마지막 알림과, 연결을 잃은 뒤 처음 알림이 온 세션의 첫 알림을 대조한다. 중간에 연결만 됐다가 알림 없이 끝난 세션도 `sessions`에 남는다. 복구 시간의 끝은 실제로 첫 알림을 받은 시점이다.
+
+```sh
+bubble-keyring-ble-characterize --mode reconnect --hardware r18-pcb --verify-button-continuity \
+  --gateway-id "$GATEWAY_ID" --device-id "$KEYRING_ID" --address "$KEYRING_ADDRESS" \
+  --firmware-revision keyring-0.7.13-bringup --distance-cm "$MEASURED_DISTANCE_CM" --seconds 90 \
+  --database "$GATEWAY_DATABASE" --output "$PRIVATE_EVIDENCE/r18-reconnect.json"
+```
+
+첫 알림 뒤 확인·비상 버튼을 각각 누르고 뗀다. 두 누계가 모두 기록됐다는 안내를 확인한 뒤 키링 전원을 유지한 채 BLE 링크를 끊었다가 복구한다. 이미 두 누계가 0보다 크고 버튼을 뗀 상태면 안내가 바로 나온다.
+
+같은 부팅에서 sequence가 증가하고 uptime과 두 버튼 누계가 줄지 않아야 `RECORDED`다. 중간 세션을 포함해 다른 부팅을 확인하거나 sequence·uptime·누계가 역행하면 `MISMATCH`다. 경계 알림, 이전의 유효한 누계 또는 복구 누계가 빠지면 `INSUFFICIENT`다. 결과는 `buttonContinuity`에 두 알림의 위치와 누계 차이를 남긴다. 수신하지 못한 구간 안에서 버튼이 눌린 정확한 시각은 별도 기록으로 확인한다. 빌드·회귀시험·실물 재연결 기록은 미실행이다.
+
 ### r18 wake 기록
 
 Gateway 0.2.17의 `--mode wake`는 r18 전용이다. 로컬 provisioning에서 sleep을 켠 keyring-0.7.4를 대상으로 한다. 먼저 연결해서 알림을 받은 뒤 BLE를 닫고 `--idle-seconds` 동안 기다린다. 다른 BLE 클라이언트가 붙어 있거나 움직임이 감지되면 실제 절전 진입이 늦어질 수 있다. 도구의 wake 안내가 나오면 해당 자극을 가한다. 버튼·움직임 시험은 장치가 실제로 절전한 뒤 타이머로 먼저 깨기 전에 진행한다. 타이머 시험은 안내 후 장치를 움직이지 않는다.
