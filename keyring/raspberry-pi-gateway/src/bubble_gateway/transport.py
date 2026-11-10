@@ -165,7 +165,7 @@ class TransportHub:
         if reason_code != 0:
             LOG.warning("MQTT connection rejected")
             return
-        subscriptions = [(self._response_topic, 1)]
+        subscriptions = [(self._response_topic, 1)] if self.config.m2m_mqtt_enabled else []
         if self.config.core_bridge_enabled:
             subscriptions.append((self._core_root + "/command", 1))
         result, mid = client.subscribe(subscriptions)
@@ -291,7 +291,7 @@ class TransportHub:
         cin = {"rn": rn, "cnf": "application/json:0", "con": payload}
         if len(_json(cin)) > MAX_BODY:
             raise ValueError("outgoing content exceeds size limit")
-        if self._mqtt is not None and self._ready.is_set():
+        if self.config.m2m_mqtt_enabled and self._mqtt is not None and self._ready.is_set():
             if rqi in self._pending:
                 raise RuntimeError("request ID already in flight")
             future = asyncio.get_running_loop().create_future()

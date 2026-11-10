@@ -33,6 +33,8 @@ handover 후에는 이전 epoch뿐 아니라 대상 Gateway도 확인해야 한�
 
 Gateway 0.2.12와 KEYRING 수신 후보는 발행 시점의 epoch를 SQLite와 별도 MQTT 토픽에 보존한다. 중앙이 장치·epoch별 토픽의 쓰기 권한을 해당 Gateway 인증서에만 부여하면 수신 후보가 원래 소유권을 복원할 수 있다. 팀 CORE v1 본문은 유지한다. ACL, 중앙 라우팅, handover drain과 실제 CSE 적용 연결이 필요하다. [입력·ACL·전환 계약](integration-candidate/README.md#발행-당시-epoch를-보존하는-mqtt-수신-후보)
 
+격리 프로필에 전용 브로커와 중앙 소비자를 연결했다. Gateway 0.2.13의 native HTTPS 설정을 사용하면 epoch MQTT와 분리할 수 있다. 이번에는 빈 자원 생성·재조회와 소비자 구독까지 확인했다. 실제 토픽 거절과 handover 후 SDT 적용은 별도 시험 범위다. [서버 준비 기록](evidence/2026-11-10-core-scoped-stack/README.md)
+
 ## 소유권
 
 CORE: oneM2M resource/SDT/namespace, RVI, broker topic/ACL, native bridge/DB.

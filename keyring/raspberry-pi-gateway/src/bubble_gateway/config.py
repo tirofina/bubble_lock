@@ -63,6 +63,7 @@ class GatewayConfig:
     core_bridge_enabled: bool
     ble_gatt_profile: str
     core_telemetry_epochs: dict[str, int] | None = None
+    m2m_mqtt_enabled: bool = True
 
     @classmethod
     def from_env(cls) -> "GatewayConfig":
@@ -127,9 +128,15 @@ class GatewayConfig:
         if not pair:
             raise ValueError("Secure pairing is required; BLE_PAIR=false is not supported")
         revisions = tuple(v.strip() for v in os.getenv("FIRMWARE_REVISION_ALLOWLIST", "").split(",") if v.strip())
+        mqtt_enabled = boolean("MQTT_ENABLED", "true")
+        m2m_mqtt_enabled = boolean("M2M_MQTT_ENABLED", str(mqtt_enabled).lower())
         core_bridge = boolean("CORE_BRIDGE_ENABLED", "false")
-        if core_bridge and not boolean("MQTT_ENABLED", "true"):
+        if core_bridge and not mqtt_enabled:
             raise ValueError("CORE_BRIDGE_ENABLED requires MQTT_ENABLED=true")
+        if m2m_mqtt_enabled and not mqtt_enabled:
+            raise ValueError("M2M_MQTT_ENABLED requires MQTT_ENABLED=true")
+        if mqtt_enabled and not (core_bridge or m2m_mqtt_enabled):
+            raise ValueError("MQTT_ENABLED requires a CORE or oneM2M MQTT route")
         epochs = None
         if "CORE_TELEMETRY_EPOCHS" in os.environ:
             epochs = json.loads(required("CORE_TELEMETRY_EPOCHS"))
@@ -144,9 +151,9 @@ class GatewayConfig:
             cse_id=identifier("M2M_CSE_ID"), cse_url=endpoint("M2M_CSE_URL", True),
             api_url=endpoint("PC_API_URL"), ca_file=secret_file("TLS_CA_FILE"),
             cert_file=secret_file("TLS_CERT_FILE"), key_file=secret_file("TLS_KEY_FILE"),
-            mqtt_host=required("MQTT_HOST") if boolean("MQTT_ENABLED", "true") else "",
+            mqtt_host=required("MQTT_HOST") if mqtt_enabled else "",
             mqtt_port=int(number("MQTT_PORT", "8883", 1, 65535)),
-            mqtt_enabled=boolean("MQTT_ENABLED", "true"),
+            mqtt_enabled=mqtt_enabled, m2m_mqtt_enabled=m2m_mqtt_enabled,
             mqtt_wrapped_primitive=boolean("MQTT_WRAPPED_PRIMITIVE", "false"),
             mqtt_keepalive=int(number("MQTT_KEEPALIVE", "60", 10, 600)),
             request_timeout=number("REQUEST_TIMEOUT", "10", 1, 60), rvi=required("M2M_RVI"),

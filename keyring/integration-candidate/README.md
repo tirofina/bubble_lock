@@ -62,4 +62,4 @@ topic read privacy-bubble/gateway/+/telemetry-epoch/+/+
 
 익명 listener, 브리지나 다른 경로에서도 같은 namespace에 발행할 수 없어야 한다. 현재 Mobius4 개발 프로필의 내부 익명 listener에는 이 수신 후보를 연결하지 않는다. 브로커가 retained publish도 차단해야 하며, 같은 SDT를 갱신하는 기존 unscoped 구독 경로는 전환 전에 종료한다. 중앙이 이전 writer의 전송을 종료하고 미확정 UPDATE를 처리한 뒤 새 ACL과 소유권을 배정한다. 기존 메시지에 새 epoch를 다시 붙이지 않는다.
 
-이 변경의 Gateway·수신 후보는 소스 단계다. 실제 두 인증서로 토픽 ACL 격리, 교체 전 지연 메시지, SQLite 재기동과 CSE readback을 이어서 확인해야 한다. 앞선 동시 갱신 시험에는 시험용 소유권을 공급했다.
+[격리 개발 프로필](../dev/mobius4/README.md#epoch-전용-mqtt-프로필)에서 중앙 소비자를 mTLS 브로커에 연결했다. 실제 두 Gateway 인증서의 토픽 ACL 격리, 교체 전 지연 메시지, SQLite 재기동과 CSE readback은 별도 시험으로 확인해야 한다. 앞선 동시 갱신 시험에는 시험용 소유권을 공급했다.

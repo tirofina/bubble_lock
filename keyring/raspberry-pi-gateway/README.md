@@ -4,6 +4,8 @@ DOC-REV 2.0.0의 팀 CORE 계약을 연결했다. `BLE_GATT_PROFILE=core-v1`이 
 
 Gateway 0.2.12의 선택 설정 `CORE_TELEMETRY_EPOCHS`는 `BLE_DEVICES`에 등록한 모든 장치의 epoch를 담은 JSON 객체다. 각 epoch는 중앙 배정값이며 0부터 2147483647 사이의 정수여야 한다. `CORE_BRIDGE_ENABLED=true`에서만 쓸 수 있다. 전환 후 이전 epoch와 기존 unscoped 전송 행은 SQLite에 보류된다. 설정을 생략하면 기존 CORE 토픽을 사용하며 epoch가 저장된 행은 보류된다. 배포 전 [정확한 토픽 ACL과 중앙 수신 조건](../integration-candidate/README.md#발행-당시-epoch를-보존하는-mqtt-수신-후보)을 충족해야 한다.
 
+Gateway 0.2.13에서는 `M2M_MQTT_ENABLED=false`로 native cin을 HTTPS에 고정한 채 CORE MQTT를 별도로 사용할 수 있다. 생략하면 native MQTT는 `MQTT_ENABLED`를 따른다. 이 설정은 oneM2M listener가 없는 [격리 epoch 브로커](../dev/mobius4/README.md#epoch-전용-mqtt-프로필)에 사용한다.
+
 Python 3.11 이상과 Linux BlueZ를 사용하는 KEYRING 현장 daemon이다. BLE 관측을 SQLite outbox에 저장하고 MQTT 또는 HTTPS로 oneM2M contentInstance를 생성한다. 중앙에서 받은 명령은 최신 승인·credential·deadline을 확인한 뒤 BLE로 전달한다.
 
 Pi Zero 2 W의 별도 시험 폴더에 Gateway 0.2.5를 설치했다. 임시 사용자 systemd 서비스로 전체 데몬을 실행해 실제 Feather 관측 27개와 Gateway 상태 16개를 격리 Mobius4에서 확인했다. 재시작 뒤 SQLite에 남은 관측 한 건의 원본 해시도 CSE와 일치했다. 0.2.4에서 수행한 버튼 관측과 PC 모의 GATT 명령 시험은 각각 별도 증거다. 실물 명령과 배포용 systemd 설정 시험이 남아 있다. [Pi 전체 데몬](../evidence/2026-11-10-pi-full-daemon/README.md) · [버튼 관측](../evidence/2026-11-10-pi-feather/README.md) · [명령 통합 시험](../evidence/2026-11-10-central-dispatch/README.md)

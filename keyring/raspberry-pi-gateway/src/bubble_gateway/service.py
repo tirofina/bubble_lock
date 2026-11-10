@@ -50,6 +50,7 @@ class Gateway:
             "cseId": self.config.cse_id, "cseUrl": self.config.cse_url,
             "apiUrl": self.config.api_url, "rvi": self.config.rvi,
             "mqttEnabled": self.config.mqtt_enabled, "mqttHost": self.config.mqtt_host,
+            "m2mMqttEnabled": self.config.m2m_mqtt_enabled,
             "mqttWrappedPrimitive": self.config.mqtt_wrapped_primitive,
             "coreBridgeEnabled": self.config.core_bridge_enabled,
             "coreTelemetryEpochs": self.config.core_telemetry_epochs,

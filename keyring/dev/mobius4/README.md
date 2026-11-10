@@ -42,3 +42,32 @@ docker compose --env-file ./keyring/dev/mobius4/.local/compose.env -f ./keyring/
 관측/receipt/health container와 binarySwitch 자원은 CORE owner가 준비해야 한다. 포함한 specialization registry는 `pb:binarySwitch`를 위한 로컬 설정이며 팀의 공통 파일을 변경하지 않는다. CORE 제공 하니스의 `create-state`는 현재 ty=4로 기록돼 있어 flexContainer ty=28과 불일치한다. 이 차이는 [인수 메모](../../CORE_INTEGRATION.md)에 기록했고 팀 원본은 보존했다.
 
 나중에 실제 Mobius 서버로 바꿀 때는 `M2M_CSE_URL`/RVI/Originator/container/CA·credential과 `PC_API_URL`을 교체한다. dev CA·관리자 매핑·local DB를 운영 환경에 이관하지 않는다.
+
+## Epoch 전용 MQTT 프로필
+
+`privacy-bubble-keyring-scoped`는 같은 Mobius4 이미지와 SDT 정의를 사용하고 별도 Compose network·DB·CSE identity·cursor volume을 만든다. MQTT는 `127.0.0.1:8884`, CSE HTTPS는 `https://localhost:8760`에 바인딩한다. 브로커는 TLS 1.3/mTLS listener 하나를 열고 익명 접속·retained publish를 막도록 구성한다. 기존 개발 프로필은 별도 포트와 볼륨을 사용한다.
+
+| 임시 인증서 | 허용된 epoch 발행 | CSE HTTPS |
+|---|---|---|
+| `gateway-a.pem` | `gw-a/telemetry-epoch/kr-handover/7` | native 관측·영수증·health 컨테이너 |
+| `gateway-b.pem` | `gw-b/telemetry-epoch/kr-handover/8` | native 관측·영수증·health 컨테이너 |
+| `client.pem` | epoch 토픽 구독 전용 | 자원 준비와 `bubbleState` UPDATE |
+
+브로커 ACL은 표의 발행 경로 앞에 `privacy-bubble/gateway/`를 붙여 사용한다. Nginx는 두 Gateway의 직접 SDT 갱신을 제한한다. 중앙 소비자가 장치의 활성 Gateway와 epoch를 확인하고, oneM2M의 응답 RSC 2004와 일치하는 요청 ID를 받은 뒤에만 SDT cursor를 적용 완료로 저장한다. 브로커 세션은 메모리에 있으며 디스크에 저장되는 cursor와 별개다.
+
+기존 개발 이미지가 로컬에 있는 상태에서 역할 저장소 루트 기준으로 실행한다. `$teamCoreRoot`는 팀 main `715ef58`의 `pc-mobius`가 들어 있는 경로이고, `$mobius4Root`는 위에 고정한 upstream checkout이다.
+
+```powershell
+./keyring/dev/mobius4/prepare-scoped.ps1 -Mobius4Root $mobius4Root -TeamCoreRoot $teamCoreRoot
+./keyring/dev/mobius4/start-scoped.ps1
+```
+
+두 번째 명령은 격리 서버와 소비자를 기동하고 빈 oneM2M 자원을 준비한다. 기존 scoped 자원이 있으면 RQI·타입·이름·SDT specialization을 조회해 재사용한다. TLS 키, 임시 관리자 값과 `config/owner.json`은 `.local/scoped/`에만 생성된다. 최초 소유권은 `gw-a`·`kr-handover`·epoch 7이다. 소비자는 이 파일에서 시험용 소유권을 읽는다. 운영 전환에는 중앙 정본과 이전 writer의 drain이 필요하다.
+
+Gateway에서는 위 포트와 해당 Gateway 인증서를 사용한다. `MQTT_ENABLED=true`, `M2M_MQTT_ENABLED=false`, `CORE_BRIDGE_ENABLED=true`를 지정한다. `CORE_TELEMETRY_EPOCHS`에는 `{"kr-handover":7}` 또는 `{"kr-handover":8}`을 해당 Gateway에 지정하고 `BLE_DEVICES`에는 같은 장치 ID를 쓴다. native cin은 HTTPS를 사용한다. 명령 승인 API는 503을 반환한다.
+
+```powershell
+docker compose --project-name privacy-bubble-keyring-scoped --env-file ./keyring/dev/mobius4/.local/scoped/compose.env -f ./keyring/dev/mobius4/compose.yaml -f ./keyring/dev/mobius4/compose.scoped.yaml down
+```
+
+[격리 프로필 준비 기록](../../evidence/2026-11-10-core-scoped-stack/README.md)

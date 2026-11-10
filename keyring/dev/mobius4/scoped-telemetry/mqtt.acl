@@ -1,0 +1,12 @@
+user scoped-gateway-a
+topic write privacy-bubble/gateway/gw-a/telemetry-epoch/kr-handover/7
+topic write privacy-bubble/gateway/gw-a/ack
+topic read privacy-bubble/gateway/gw-a/command
+
+user scoped-gateway-b
+topic write privacy-bubble/gateway/gw-b/telemetry-epoch/kr-handover/8
+topic write privacy-bubble/gateway/gw-b/ack
+topic read privacy-bubble/gateway/gw-b/command
+
+user scoped-core
+topic read privacy-bubble/gateway/+/telemetry-epoch/+/+
