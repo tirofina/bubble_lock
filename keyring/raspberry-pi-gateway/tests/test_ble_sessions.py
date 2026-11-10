@@ -402,7 +402,8 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.peer.observations.qsize(), 2)
         self.assertEqual(self.peer.observation_watermark, ("boot-1", 6, 600))
         cmd = command()
-        receipt = device_receipt(cmd, payload_hash(cmd), bootId="boot-1", acceptedUptimeMs=610, appliedUptimeMs=620)
+        receipt = device_receipt(cmd, payload_hash(cmd), bootId="boot-1", ackCode="DUPLICATE",
+                                 acceptedUptimeMs=610, appliedUptimeMs=620)
         self.assertEqual(self.fleet._receipt_times(self.peer, receipt)["timestampSource"], "unavailable")
 
         self.notify_observation(current, 7, 700)
@@ -662,7 +663,7 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
         self.peer.pending_command, self.peer.pending_hash = cmd["commandId"], digest
         receipt = device_receipt(cmd, digest, bootId=old.identity["bootId"], ackCode="DUPLICATE")
         current.callbacks[self.fleet.receipt_uuid](None, bytearray(json.dumps(receipt).encode() + b"\n"))
-        result = self.fleet._receipt_times(self.peer, await pending)
+        result = await pending
         self.assertEqual(result["bootId"], "boot-1")
         self.assertEqual(result["readback"], {"state": True})
         self.assertEqual(result["timestampSource"], "unavailable")

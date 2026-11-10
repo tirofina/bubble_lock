@@ -234,6 +234,33 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
         await self.dispatch()
         self.assertEqual(self.gateway.ble.execute.await_count, 1)
 
+    async def test_dispatch_preserves_ble_receipt_arrival_time(self):
+        received = utc_now() - timedelta(milliseconds=30)
+        arrived = iso_time(received)
+        applied = iso_time(received - timedelta(milliseconds=10))
+        accepted = iso_time(received - timedelta(milliseconds=20))
+        self.gateway.ble.execute.return_value = device_receipt(
+            self.cmd, self.digest, receivedAt=arrived, acceptedAt=accepted, appliedAt=applied,
+            timestampSource="gateway-estimated")
+        status, receipt = await self.dispatch()
+        self.assertEqual(status, "APPLIED")
+        self.assertEqual((receipt["receivedAt"], receipt["acceptedAt"], receipt["appliedAt"]),
+                         (arrived, accepted, applied))
+
+    async def test_clock_step_after_write_keeps_device_result_without_estimates(self):
+        arrived = iso_time()
+
+        async def execute(*args, **kwargs):
+            self.gateway.clock_anchor += 10
+            return device_receipt(self.cmd, self.digest, receivedAt=arrived, acceptedAt=arrived, appliedAt=arrived,
+                                  timestampSource="gateway-estimated")
+
+        self.gateway.ble.execute.side_effect = execute
+        status, receipt = await self.dispatch()
+        self.assertEqual((status, receipt["readback"], receipt["receivedAt"]), ("APPLIED", {"state": True}, arrived))
+        self.assertEqual((receipt["acceptedAt"], receipt["appliedAt"], receipt["timestampSource"]),
+                         (None, None, "unavailable"))
+
     async def test_gpio_mismatch_is_uncertain_not_success(self):
         self.gateway.ble.execute.return_value = device_receipt(self.cmd, self.digest, readback={"state": False})
         status, receipt = await self.dispatch()

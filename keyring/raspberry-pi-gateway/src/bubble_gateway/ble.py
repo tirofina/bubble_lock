@@ -15,12 +15,12 @@ import random
 import re
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Any, Awaitable, Callable
 
 from bleak import BleakClient, BleakScanner
 from .core_bridge import CORE_SERVICE, CORE_IDENTITY, CORE_OBSERVATION, CORE_COMMAND, CORE_RECEIPT
-from .model import valid_battery_alert
+from .model import iso_time, utc_now, valid_battery_alert
 
 LOG = logging.getLogger(__name__)
 SERVICE = "8b8f0001-8e7a-4f36-a8c2-1c9b5d620001"
@@ -32,6 +32,8 @@ MAX_FRAME = 4096
 FRAME_TIMEOUT = 5.0
 IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,63}\Z")
 MAX_UPTIME_MS = 9007199254740991
+RECEIPT_ANCHOR_MAX_AGE = 60.0
+RECEIPT_CLOCK_STEP_TOLERANCE = 2.0
 ACK_CODES = frozenset({
     "APPLIED", "DUPLICATE", "REJECTED_EPOCH", "REJECTED_GRANT", "EXPIRED",
     "CONFLICT", "INVALID", "JOURNAL_FULL", "STORAGE_ERROR", "INDETERMINATE",
@@ -48,10 +50,6 @@ class BleUnavailable(ConnectionError):
 
 def _r18_bringup(identity: dict[str, Any]) -> bool:
     return identity["boardRevision"] == "r18-hand-solder" and identity["firmwareRevision"].endswith("-bringup")
-
-
-def _utc(value: datetime) -> str:
-    return value.isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
 def _pairs(items: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -158,6 +156,7 @@ class _Peer:
     pending: asyncio.Future | None = None
     pending_command: str | None = None
     pending_hash: str | None = None
+    pending_final_write_at: float | None = None
     anchor: tuple[str, int, datetime, float] | None = None
     # The latest queued boot, sequence and uptime survive a BLE reconnect.
     observation_watermark: tuple[str, int, int | None] | None = None
@@ -389,14 +388,14 @@ class BleFleet:
                 return
             if previous[2] is not None and device_uptime < previous[2]:
                 raise BleProtocolError("observation uptime regressed within the same boot")
-        received = datetime.now(timezone.utc)
+        received = utc_now()
         received_monotonic = time.monotonic()
         rssi_fresh = (peer.rssi_monotonic is not None
                       and received_monotonic - peer.rssi_monotonic <= 30.0)
         normalized = {
             "version": 1, "gatewayId": self.config.gateway_id, "deviceId": peer.device_id,
             "bootId": frame["bootId"], "sequence": frame["sequence"],
-            "observedAt": _utc(received), "receivedAt": _utc(received),
+            "observedAt": iso_time(received), "receivedAt": iso_time(received),
             "rssi": peer.rssi if rssi_fresh else None, "battery": battery,
             "buttonState": frame["buttonState"], "sensorValues": frame["sensorValues"],
             "state": frame["state"], "firmwareRevision": peer.identity["firmwareRevision"],
@@ -475,22 +474,42 @@ class BleFleet:
                         # Fresh applies use the current boot. Journal replays use their original boot and result code.
                         self._protocol_failure(peer, "receipt_boot_mismatch")
                         return
-                    peer.pending.set_result(frame)
+                    # BlueZ can return from the final WRITE after delivering this notification.
+                    peer.pending.set_result(self._receipt_times(peer, frame))
         except (BleProtocolError, ValueError, TypeError):
             self._protocol_failure(peer, "invalid_receipt")
 
     def _receipt_times(self, peer: _Peer, receipt: dict[str, Any]) -> dict[str, Any]:
+        received_monotonic, received = time.monotonic(), utc_now()
         result = dict(receipt)
-        result.update(acceptedAt=None, appliedAt=None, timestampSource="unavailable")
+        result.update(receivedAt=iso_time(received), acceptedAt=None, appliedAt=None, timestampSource="unavailable")
         anchor = peer.anchor
-        if anchor is None or anchor[0] != receipt["bootId"] or time.monotonic() - anchor[3] > 60:
+        accepted, applied = receipt["acceptedUptimeMs"], receipt["appliedUptimeMs"]
+        if anchor is None or anchor[0] != receipt["bootId"] or accepted is None:
             return result
-        for source, target in (("acceptedUptimeMs", "acceptedAt"), ("appliedUptimeMs", "appliedAt")):
-            value = receipt[source]
-            if value is not None and abs(value - anchor[1]) <= 60_000:
-                result[target] = _utc(anchor[2] + timedelta(milliseconds=value - anchor[1]))
-        if result["acceptedAt"] is not None or result["appliedAt"] is not None:
-            result["timestampSource"] = "gateway-estimated"
+        _, anchor_uptime, anchor_wall, anchor_monotonic = anchor
+        age = received_monotonic - anchor_monotonic
+        if (not 0 <= age <= RECEIPT_ANCHOR_MAX_AGE
+                or abs((received - anchor_wall).total_seconds() - age) > RECEIPT_CLOCK_STEP_TOLERANCE):
+            return result
+        offsets = [(accepted - anchor_uptime) / 1000]
+        if applied is not None:
+            if applied < accepted:
+                return result
+            offsets.append((applied - anchor_uptime) / 1000)
+        if any(abs(offset) > RECEIPT_ANCHOR_MAX_AGE for offset in offsets):
+            return result
+        elapsed = [offset - age for offset in offsets]
+        if elapsed[-1] > 0:
+            return result
+        # A fresh apply can only be accepted after the last command fragment starts.
+        # Journal replays can report earlier device times.
+        if receipt["ackCode"] == "APPLIED" and (peer.pending_final_write_at is None
+                or elapsed[0] < peer.pending_final_write_at - received_monotonic):
+            return result
+        result.update(acceptedAt=iso_time(received + timedelta(seconds=elapsed[0])),
+                      appliedAt=iso_time(received + timedelta(seconds=elapsed[1])) if applied is not None else None,
+                      timestampSource="gateway-estimated")
         return result
 
     def command_session(self, device_id: str) -> int | None:
@@ -539,18 +558,22 @@ class BleFleet:
                 pending = asyncio.get_running_loop().create_future()
                 peer.pending = pending
                 peer.pending_command, peer.pending_hash = command_dict["commandId"], payload_hash
+                peer.pending_final_write_at = None
                 try:
                     for offset in range(0, len(raw), 20):
                         self._require_session(peer, client, generation)
                         if before_write is not None:
                             before_write()
-                        if time.monotonic() >= expires:
+                        write_at = time.monotonic()
+                        if write_at >= expires:
                             raise asyncio.TimeoutError("dispatch deadline elapsed during BLE")
+                        if offset + 20 >= len(raw):
+                            peer.pending_final_write_at = write_at
                         await client.write_gatt_char(self.command_uuid, raw[offset:offset + 20], response=True)
                         self._require_session(peer, client, generation)
                     receipt = await pending
                     self._require_session(peer, client, generation)
-                    return self._receipt_times(peer, receipt)
+                    return receipt
                 except BaseException:
                     # An interrupted partial frame must never be joined to a later
                     # command. Reconnect clears the firmware RX frame state.
@@ -564,6 +587,7 @@ class BleFleet:
                     if peer.pending is pending:
                         peer.pending = None
                         peer.pending_command = peer.pending_hash = None
+                        peer.pending_final_write_at = None
 
     async def capture_journal(self, device_id: str) -> dict[str, Any]:
         """Explicit read-only maintenance capture, serialized with device commands."""

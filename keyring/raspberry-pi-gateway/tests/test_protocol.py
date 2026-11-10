@@ -3,7 +3,7 @@ import json
 import time
 import unittest
 from copy import deepcopy
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
@@ -130,6 +130,67 @@ class BleMockTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(0 < wire["remainingMs"] <= 1000)
         self.assertEqual(result["ackCode"], "APPLIED")
         self.assertIsNone(self.peer.pending)
+
+    async def test_receipt_timing_is_frozen_before_final_write_ack_returns(self):
+        cmd = command()
+        digest = payload_hash(cmd)
+        wall = datetime(2026, 11, 11, tzinfo=timezone.utc)
+        now = 100.0
+        self.peer.anchor = ("boot-test", 1000, wall, now)
+
+        async def write(_uuid, data, *, response):
+            nonlocal now
+            self.assertTrue(response)
+            if data.endswith(b"\n"):
+                now = 100.5
+                receipt = device_receipt(cmd, digest, acceptedUptimeMs=1100, appliedUptimeMs=1200)
+                self.fleet._receipt_fragment(self.peer, bytearray((json.dumps(receipt) + "\n").encode()))
+                # A later BLE observation must not move the matched receipt's times.
+                now = 101.25
+                self.peer.anchor = ("boot-test", 1300, wall + timedelta(seconds=1.25), now)
+
+        self.peer.client = SimpleNamespace(is_connected=True, write_gatt_char=AsyncMock(side_effect=write))
+        with (patch("bubble_gateway.ble.time", SimpleNamespace(monotonic=lambda: now)),
+              patch("bubble_gateway.ble.utc_now", side_effect=lambda: wall + timedelta(seconds=now - 100))):
+            result = await self.fleet.execute(cmd, 2000, digest)
+        self.assertEqual((result["acceptedAt"], result["appliedAt"], result["receivedAt"]), (
+            "2026-11-11T00:00:00.100Z", "2026-11-11T00:00:00.200Z", "2026-11-11T00:00:00.500Z"))
+        self.assertEqual(result["timestampSource"], "gateway-estimated")
+        self.assertIsNone(self.peer.pending_final_write_at)
+
+    async def test_receipt_timing_omits_impossible_estimates_but_preserves_readback(self):
+        cmd = command()
+        digest = payload_hash(cmd)
+        wall = datetime(2026, 11, 11, tzinfo=timezone.utc)
+        self.peer.anchor = ("boot-test", 1000, wall, 100.0)
+        cases = (
+            (100.0, 1100, 1600, 0.5),  # Applied estimate is after notification receipt.
+            (100.3, 1100, 1200, 0.5),  # Fresh acceptance would precede final write.
+            (None, 1100, 1200, 0.5),   # No final write recorded for a fresh apply.
+            (100.0, 1100, 1200, 5.5),  # Wall clock stepped during the interval.
+        )
+        for final_write, accepted, applied, wall_delta in cases:
+            with self.subTest(final_write=final_write, accepted=accepted, applied=applied, wall_delta=wall_delta):
+                self.peer.pending_final_write_at = final_write
+                receipt = device_receipt(cmd, digest, acceptedUptimeMs=accepted, appliedUptimeMs=applied)
+                with (patch("bubble_gateway.ble.time", SimpleNamespace(monotonic=lambda: 100.5)),
+                      patch("bubble_gateway.ble.utc_now", return_value=wall + timedelta(seconds=wall_delta))):
+                    result = self.fleet._receipt_times(self.peer, receipt)
+                self.assertEqual((result["acceptedAt"], result["appliedAt"], result["timestampSource"]),
+                                 (None, None, "unavailable"))
+                self.assertEqual((result["ackCode"], result["readback"]), ("APPLIED", {"state": True}))
+
+    async def test_same_boot_duplicate_can_predate_the_current_write(self):
+        cmd = command()
+        wall = datetime(2026, 11, 11, tzinfo=timezone.utc)
+        self.peer.anchor = ("boot-test", 1000, wall, 100.0)
+        self.peer.pending_final_write_at = 100.3
+        receipt = device_receipt(cmd, payload_hash(cmd), ackCode="DUPLICATE", acceptedUptimeMs=900, appliedUptimeMs=950)
+        with (patch("bubble_gateway.ble.time", SimpleNamespace(monotonic=lambda: 100.5)),
+              patch("bubble_gateway.ble.utc_now", return_value=wall + timedelta(seconds=0.5))):
+            result = self.fleet._receipt_times(self.peer, receipt)
+        self.assertEqual((result["acceptedAt"], result["appliedAt"], result["timestampSource"]),
+                         ("2026-11-10T23:59:59.900Z", "2026-11-10T23:59:59.950Z", "gateway-estimated"))
 
     async def test_partial_write_failure_invalidates_session(self):
         self.peer.client = type("FakeClient", (), {"is_connected": True})()

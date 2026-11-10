@@ -101,7 +101,9 @@ class Gateway:
         }
         if device:
             receipt.update(readback=device["readback"], firmwareRevision=device["firmwareRevision"], bootId=device["bootId"])
-            if device.get("timestampSource") == "gateway-estimated":
+            if "receivedAt" in device:
+                receipt["receivedAt"] = device["receivedAt"]
+            if device.get("timestampSource") == "gateway-estimated" and self._clock_ok():
                 accepted, applied = device.get("acceptedAt"), device.get("appliedAt")
                 for timestamp in (accepted, applied):
                     if timestamp is not None:
@@ -216,6 +218,8 @@ class Gateway:
             raise ValueError("Applied receipt has no acceptance time")
         if raw.get("appliedUptimeMs") is not None and raw["appliedUptimeMs"] < raw["acceptedUptimeMs"]:
             raise ValueError("Device receipt times are reversed")
+        if "receivedAt" in raw:
+            parse_time(raw["receivedAt"])
 
     async def _dispatch_one(self, command: dict, digest: str) -> None:
         if not self._clock_ok():
