@@ -7,7 +7,7 @@
   "date": "2026-11-10",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Gateway 0.2.9 read-only journal comparison: installed wheel passed 73 basic tests and one real disposable Mobius4 integration with 10 synthetic device records. Physical archive collection and settlement remain.",
+  "verificationStatus": "r18 firmware 0.7.3 and Gateway 0.2.10 preserve boot-local press counts. Three firmware builds, four host groups, 74 basic Gateway tests and 11 disposable Mobius4 cases passed. Physical acceptance remains.",
   "rubricIds": [
     "R01",
     "R02",
@@ -69,7 +69,8 @@
     "r18 motor timer armed before AUX and GPIO, with final deadline, fault and BLE session checks",
     "KEYRING handover candidate binding device epoch and active edge to the enrolled gateway",
     "r18 raw BLE command validation for duplicate members, decoded NUL and trailing data before NVS and GPIO",
-    "operator-only device and Gateway archive verification with native CSE receipt comparison and explicit unresolved outcomes"
+    "operator-only device and Gateway archive verification with native CSE receipt comparison and explicit unresolved outcomes",
+    "boot-local confirm/panic press counts retained through observation replacement and native CSE storage"
   ],
   "existingHardware": {
     "status": "source-snapshot-included-unverified",
@@ -122,20 +123,20 @@
   "logSha256": "0c25234a13f2542bb13ff4ed2fd39c8aa015375a435bc6b6156f90cf0b7d6efa",
   "logSha256Scope": "private actual Pi observations.jsonl captured in the HTTPS outage/replay run; digest recorded by actualReceipt",
   "releaseSha": null,
-  "firmwareRevision": "keyring-0.7.2",
+  "firmwareRevision": "keyring-0.7.3",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "42cba320bb6cc8b616c6b8044d2f8e20d008b45f",
+    "sourceCommit": "534379bc39c5f4afd272865e22d315de7fda3c99",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "42cba320bb6cc8b616c6b8044d2f8e20d008b45f",
-    "lastPushedCommit": "42cba320bb6cc8b616c6b8044d2f8e20d008b45f",
-    "latestCheckpoint": "Gateway 0.2.9 compares quarantined Gateway snapshots and exported device journals to native Mobius4 receipts without writes.",
-    "lastPushedCommitBeforeThisCheckpoint": "5e8eba800afa4dd3cc459b70472f62ba2b6d9b5b"
+    "latestLocalSourceCommit": "534379bc39c5f4afd272865e22d315de7fda3c99",
+    "lastPushedCommit": "534379bc39c5f4afd272865e22d315de7fda3c99",
+    "latestCheckpoint": "Boot-local confirm and panic counts survive coalesced observations and are retained by the Gateway's native oneM2M path.",
+    "lastPushedCommitBeforeThisCheckpoint": "45b1c5d4a6446aa32102e4e82fd6cd0f44e28d97"
   },
-  "gatewayRevision": "0.2.9",
+  "gatewayRevision": "0.2.10",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
@@ -157,7 +158,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Compare device journal, private Gateway snapshot and authenticated CSE receipts without changing settlement or recovery state",
+    "executionRequest": "Preserve short confirmed and panic presses when a newer released observation replaces the pending BLE frame",
     "remainingCompletionDependencies": [
       "central deployment, settlement and recovery activation",
       "purchased JD9853 module initialization",
@@ -165,11 +166,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "42cba320bb6cc8b616c6b8044d2f8e20d008b45f",
-    "sourceValidation": "Installed wheel matched 14 source modules and passed 73 basic tests and one CSE integration with 10 comparison records, 9 review results and 6 unchanged CSE instances.",
+    "sourceCommit": "534379bc39c5f4afd272865e22d315de7fda3c99",
+    "sourceValidation": "Three compile profiles, four host observation groups, 74 Gateway tests, 11 real CSE tests and both JSON schemas passed.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "Archive/CSE comparison is implemented and tested. Actual BLE journal capture, Pi/r18 tests and team settlement/checkpoint remain.",
+    "currentDependencyState": "Button counts are implemented and tested in the native observation path. Actual r18/Pi acceptance and team app/CORE event integration remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -574,5 +575,17 @@
     "physicalJournalCaptured": false,
     "settlementPerformed": false,
     "sourceCommit": "42cba320bb6cc8b616c6b8044d2f8e20d008b45f"
+  },
+  "buttonPressValidation": {
+    "evidence": "evidence/2026-11-10-button-presses/README.md",
+    "firmwareVersion": "keyring-0.7.3",
+    "gatewayVersion": "0.2.10",
+    "unprovisionedProfilesBuilt": 3,
+    "hostGroupsPassed": 4,
+    "basicTestsPassed": 74,
+    "realCseTestsPassed": 11,
+    "largestExercisedEnergyFrameBytes": 505,
+    "physicalButtonsVerified": false,
+    "sourceCommit": "534379bc39c5f4afd272865e22d315de7fda3c99"
   }
 }

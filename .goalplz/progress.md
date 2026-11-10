@@ -490,3 +490,14 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 실제 Pi/키링의 journal 수집과 장치 명령, 팀 중앙 정산·reclaim과 제작 PCB 수용은 남았다. 전체 goal은 active/progress다.
 
 구현·시험 증거 commit `42cba320bb6cc8b616c6b8044d2f8e20d008b45f`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `5e8eba8..42cba32`다.
+
+## 2026-11-10 — 짧은 확인·비상 입력의 관측 보존
+
+이전 goal turn은 장치 journal과 CSE 영수증 대조를 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- r18 0.7.3은 현재 상태 외에 같은 부팅의 확인·비상 누계를 보낸다. 기존 대기열에서 누름 프레임이 해제로 교체되거나 센서 상세가 최소 프레임으로 줄어도 누계를 포함한다. 비상 우선과 uint32 상한을 적용한다.
+- Gateway 0.2.10은 누계 필드의 타입·길이·범위를 검증한다. 실제 격리 Mobius4의 native cin에서 합성 BLE 입력의 해제 상태와 누계 `[1,2]`를 SQLite 재열기 뒤 확인했다. 두 스키마는 기존 프레임도 허용한다.
+- 세 펌웨어 프로필, 호스트 4개 그룹, 기본 74개와 CSE 11개 시험이 통과했다. [시험과 해시](../keyring/evidence/2026-11-10-button-presses/README.md)
+- 실제 r18/Pi 버튼 및 명령, 앱 알림, 중앙 정산과 제작 PCB 수용은 대기 중이다. 전체 goal은 active/progress다.
+
+구현·시험 증거 commit `534379bc39c5f4afd272865e22d315de7fda3c99`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `45b1c5d..534379b`다.
