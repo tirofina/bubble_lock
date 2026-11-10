@@ -40,7 +40,7 @@ extern "C" esp_err_t __wrap_nvs_flash_init() {
 }
 
 namespace {
-constexpr char FirmwareRevision[] = "keyring-0.7.9";
+constexpr char FirmwareRevision[] = "keyring-0.7.10";
 #if defined(KEYRING_LEGACY_GATT) && KEYRING_LEGACY_GATT
 constexpr char ServiceUuid[] = "8b8f0001-8e7a-4f36-a8c2-1c9b5d620001";
 constexpr char IdentityUuid[] = "8b8f0002-8e7a-4f36-a8c2-1c9b5d620001";
@@ -104,7 +104,7 @@ void initializeAudioWhenQuiet() {
   }
 }
 
-struct Frame { char bytes[MaxFrame + 1]; uint64_t firstAt, completedAt; uint32_t generation; };
+struct Frame { char bytes[MaxFrame + 1]; uint64_t firstAt, completedAt; uint32_t generation, subscription; };
 Frame processingFrame = {};
 struct Record {
   uint32_t magic;
@@ -267,13 +267,14 @@ void motorExpired(void *) {
   motorTimerCleaning = false;
   portEXIT_CRITICAL(&linkMux);
 }
-bool motorGateOpen(uint32_t generation, uint64_t stopAtUs) {
+bool commandChannelOpen(uint32_t generation, uint32_t subscription);
+bool motorGateOpen(uint32_t generation, uint32_t subscription, uint64_t stopAtUs) {
   // Caller holds linkMux, shared with disconnect and timer expiry.
-  return connected && authenticated && generation == connectionGeneration && !motorTimerFired &&
+  return commandChannelOpen(generation, subscription) && !motorTimerFired &&
       gpio_get_level(static_cast<gpio_num_t>(board::MainFaultN)) != 0 &&
       static_cast<uint64_t>(esp_timer_get_time()) < stopAtUs;
 }
-bool startMotor(uint64_t commandDeadlineUs, uint32_t generation) {
+bool startMotor(uint64_t commandDeadlineUs, uint32_t generation, uint32_t subscription) {
   if (!motorTimer) return false;
   portENTER_CRITICAL(&linkMux);
   const bool idle = !motorTimerCleaning;
@@ -287,8 +288,8 @@ bool startMotor(uint64_t commandDeadlineUs, uint32_t generation) {
 
   portENTER_CRITICAL(&linkMux);
   // Enabling the rail may consume some of the remaining budget.
-  const bool started = motorGateOpen(generation, stopAtUs) && auxRail::alert(true) &&
-      motorGateOpen(generation, stopAtUs) && gpio_set_level(static_cast<gpio_num_t>(board::Motor), 1) == ESP_OK;
+  const bool started = motorGateOpen(generation, subscription, stopAtUs) && auxRail::alert(true) &&
+      motorGateOpen(generation, subscription, stopAtUs) && gpio_set_level(static_cast<gpio_num_t>(board::Motor), 1) == ESP_OK;
   portEXIT_CRITICAL(&linkMux);
   if (started) motorStopAt = stopAtUs / 1000;
   return started;
@@ -384,10 +385,13 @@ void setGattReadValue(GattReadValue &value, const std::string &frame) {
 GattReadValue identityRead, journalRead;
 
 struct Tx {
+  explicit Tx(bool scoped = false) : scopedReceipt(scoped) {}
+  const bool scopedReceipt;
   BLECharacteristic *characteristic = nullptr;
   BLE2902 *cccd = nullptr;
   bool subscribed = false; // Protected by linkMux.
   uint32_t subscription = 0, activeSubscription = 0;
+  uint32_t queuedGeneration = 0, queuedSubscription = 0;
   std::string pending, active;
   GattReadValue readValue;
   std::string sections[3];
@@ -395,9 +399,19 @@ struct Tx {
   size_t offset = 0;
   uint64_t nextAt = 0;
   void setSubscribed(bool enabled) { // Caller holds linkMux.
-    if (subscribed != enabled) { subscribed = enabled; ++subscription; }
+    if (subscribed != enabled) {
+      subscribed = enabled; ++subscription;
+      if (scopedReceipt) readValue.reset();
+    }
   }
-  void queue(const std::string &frame) { pending = frame; setGattReadValue(readValue, frame); }
+  void queueReceipt(const std::string &frame, uint32_t generation, uint32_t subscriptionId) {
+    portENTER_CRITICAL(&linkMux);
+    const bool current = commandChannelOpen(generation, subscriptionId);
+    if (current) readValue.replace(frame.data(), frame.size());
+    portEXIT_CRITICAL(&linkMux);
+    if (!current) return;
+    pending = frame; queuedGeneration = generation; queuedSubscription = subscriptionId;
+  }
   void queueSection(uint8_t section, const std::string &frame) {
     sections[section] = frame; sectionOrder[section] = ++enqueueOrder;
     setGattReadValue(readValue, frame);
@@ -411,8 +425,12 @@ struct Tx {
     portENTER_CRITICAL(&linkMux);
     const bool ready = connected && authenticated && subscribed;
     const uint16_t connection = peerConnection;
+    const uint32_t generation = connectionGeneration;
     const uint32_t currentSubscription = subscription;
     portEXIT_CRITICAL(&linkMux);
+    if (scopedReceipt && (queuedGeneration != generation || queuedSubscription != currentSubscription)) {
+      pending.clear(); active.clear(); offset = 0;
+    }
     if (activeSubscription != currentSubscription) { offset = 0; activeSubscription = currentSubscription; }
     if (!ready || now < nextAt) return;
     if (active.empty()) {
@@ -429,6 +447,12 @@ struct Tx {
     if (active.empty()) return;
     const auto count = static_cast<uint16_t>(min(static_cast<size_t>(20), active.size() - offset));
     const auto interfaceId = static_cast<esp_gatt_if_t>(server->getGattsIf());
+    if (scopedReceipt) {
+      portENTER_CRITICAL(&linkMux);
+      const bool current = commandChannelOpen(queuedGeneration, queuedSubscription);
+      portEXIT_CRITICAL(&linkMux);
+      if (!current) return;
+    }
     nextAt = now + 15;
     if (interfaceId == ESP_GATT_IF_NONE ||
         esp_ble_gatts_send_indicate(interfaceId, connection, characteristic->getHandle(), count,
@@ -437,7 +461,18 @@ struct Tx {
     if (offset == active.size()) active.clear();
   }
 };
-Tx observationTx, receiptTx;
+Tx observationTx, receiptTx(true);
+
+bool commandChannelOpen(uint32_t generation, uint32_t subscription) { // Caller holds linkMux.
+  return connected && authenticated && generation == connectionGeneration &&
+      receiptTx.subscribed && subscription == receiptTx.subscription;
+}
+bool commandChannelReady(const Frame &frame) {
+  portENTER_CRITICAL(&linkMux);
+  const bool ready = commandChannelOpen(frame.generation, frame.subscription);
+  portEXIT_CRITICAL(&linkMux);
+  return ready;
+}
 
 void publishObservation() {
   StaticJsonDocument<1536> doc;
@@ -524,7 +559,7 @@ void publishObservation() {
   observationDirty = false; lastObservation = uptime();
 }
 
-void publishReceipt(const char *commandId, const char *hash, const char *code,
+void publishReceipt(const Frame &request, const char *commandId, const char *hash, const char *code,
                     const Record *record = nullptr, uint64_t acceptedAt = 0) {
   StaticJsonDocument<1536> doc;
   doc["version"] = 1; doc["deviceId"] = deviceId;
@@ -538,7 +573,7 @@ void publishReceipt(const char *commandId, const char *hash, const char *code,
   doc["readback"]["state"] = record && record->phase == Completed ? record->readback != 0 : readState();
   doc["firmwareRevision"] = FirmwareRevision;
   const std::string frame = jsonText(doc);
-  receiptTx.queue(frame);
+  receiptTx.queueReceipt(frame, request.generation, request.subscription);
   peripherals.logReceipt(frame.data(), frame.size()); // Optional best-effort copy; NVS is canonical.
 }
 bool identifier(const char *value) {
@@ -554,7 +589,7 @@ bool hashValid(const char *hash) {
   return true;
 }
 void processCommand(const Frame &frame) {
-  if (!provisioned || !connected || !authenticated || frame.generation != connectionGeneration) return;
+  if (!provisioned || !commandChannelReady(frame)) return;
   DynamicJsonDocument doc(8192);
   const size_t length = strlen(frame.bytes);
   DeserializationError error = deserializeJson(doc, frame.bytes, length, DeserializationOption::NestingLimit(4));
@@ -563,9 +598,9 @@ void processCommand(const Frame &frame) {
   const char *id = doc["commandId"], *hash = doc["payloadHash"];
   if (!identifier(id) || !hashValid(hash)) return;
   if (!commandWire::valid(doc.as<JsonObjectConst>(), deviceId, frame.bytes, length)) {
-    publishReceipt(id, hash, "INVALID"); return;
+    publishReceipt(frame, id, hash, "INVALID"); return;
   }
-  if (!storageHealthy) { publishReceipt(id, hash, "STORAGE_ERROR"); return; }
+  if (!storageHealthy) { publishReceipt(frame, id, hash, "STORAGE_ERROR"); return; }
   uint32_t epoch = doc["ownershipEpoch"], grant = doc["grantRevision"], remaining = doc["remainingMs"];
   bool desired = doc["desiredState"]["state"];
   int freeSlot = -1;
@@ -574,34 +609,34 @@ void processCommand(const Frame &frame) {
     const Record &r = journal[slot];
     if (strcmp(id, r.commandId) != 0) continue;
     if (strcmp(hash, r.hash) != 0 || desired != (r.desired != 0) || epoch != r.epoch || grant != r.grant) {
-      publishReceipt(id, hash, "CONFLICT"); return;
+      publishReceipt(frame, id, hash, "CONFLICT"); return;
     }
     const char *result = r.phase == Prepared ? "INDETERMINATE" :
       r.result == static_cast<uint8_t>(Result::Applied) ? "DUPLICATE" : "READBACK_MISMATCH";
-    publishReceipt(id, hash, result, &r); return;
+    publishReceipt(frame, id, hash, result, &r); return;
   }
-  if (epoch < maxEpoch) { publishReceipt(id, hash, "REJECTED_EPOCH"); return; }
-  if (grant < maxGrant) { publishReceipt(id, hash, "REJECTED_GRANT"); return; }
-  if (uptime() - frame.firstAt >= remaining) { publishReceipt(id, hash, "EXPIRED"); return; }
-  if (freeSlot < 0) { publishReceipt(id, hash, "JOURNAL_FULL"); return; }
+  if (epoch < maxEpoch) { publishReceipt(frame, id, hash, "REJECTED_EPOCH"); return; }
+  if (grant < maxGrant) { publishReceipt(frame, id, hash, "REJECTED_GRANT"); return; }
+  if (uptime() - frame.firstAt >= remaining) { publishReceipt(frame, id, hash, "EXPIRED"); return; }
+  if (freeSlot < 0) { publishReceipt(frame, id, hash, "JOURNAL_FULL"); return; }
   if (desired && (digitalRead(board::MainFaultN) == LOW || !motorTimer)) {
-    publishReceipt(id, hash, "READBACK_MISMATCH"); return;
+    publishReceipt(frame, id, hash, "READBACK_MISMATCH"); return;
   }
+  if (!commandChannelReady(frame)) return;
   Record r = {};
   r.magic = JournalMagic; r.phase = Prepared;
   strlcpy(r.commandId, id, sizeof(r.commandId)); strlcpy(r.hash, hash, sizeof(r.hash));
   strlcpy(r.bootId, bootId, sizeof(r.bootId)); r.epoch = epoch; r.grant = grant;
   r.desired = desired; r.acceptedAt = frame.completedAt;
   // Durable intent before GPIO. A reset after this point must never repeat the actuation.
-  if (!storeRecord(freeSlot, r)) { stopMotor(); publishReceipt(id, hash, "STORAGE_ERROR"); return; }
+  if (!storeRecord(freeSlot, r)) { stopMotor(); publishReceipt(frame, id, hash, "STORAGE_ERROR"); return; }
   maxEpoch = max(maxEpoch, epoch); maxGrant = max(maxGrant, grant);
-  if (!connected || !authenticated || frame.generation != connectionGeneration ||
-      uptime() - frame.firstAt >= remaining) {
-    stopMotor(); publishReceipt(id, hash, "INDETERMINATE", &r); return;
+  if (!commandChannelReady(frame) || uptime() - frame.firstAt >= remaining) {
+    stopMotor(); publishReceipt(frame, id, hash, "INDETERMINATE", &r); return;
   }
   stopMotor();
-  if (desired && !startMotor((frame.firstAt + remaining) * 1000, frame.generation)) {
-    stopMotor(); publishReceipt(id, hash, "INDETERMINATE", &r); return;
+  if (desired && !startMotor((frame.firstAt + remaining) * 1000, frame.generation, frame.subscription)) {
+    stopMotor(); publishReceipt(frame, id, hash, "INDETERMINATE", &r); return;
   }
   r.appliedAt = uptime(); r.readback = readState(); r.phase = Completed;
   r.result = static_cast<uint8_t>(r.readback == r.desired ? Result::Applied : Result::ReadbackMismatch);
@@ -609,12 +644,12 @@ void processCommand(const Frame &frame) {
   if (!storeRecord(freeSlot, r)) {
     stopMotor();
     // Keep the last verified PREPARED copy in RAM. The flash result is uncertain.
-    publishReceipt(id, hash, "INDETERMINATE", &journal[freeSlot]); return;
+    publishReceipt(frame, id, hash, "INDETERMINATE", &journal[freeSlot]); return;
   }
-  if (desired && connected && authenticated && frame.generation == connectionGeneration &&
+  if (desired && commandChannelReady(frame) &&
       r.result == static_cast<uint8_t>(Result::Applied) && readState())
     audio.startUntil(motorStopAt);
-  publishReceipt(id, hash, r.result == static_cast<uint8_t>(Result::Applied) ? "APPLIED" : "READBACK_MISMATCH", &r);
+  publishReceipt(frame, id, hash, r.result == static_cast<uint8_t>(Result::Applied) ? "APPLIED" : "READBACK_MISMATCH", &r);
   observationDirty = true;
 }
 
@@ -699,13 +734,12 @@ class CommandInput {
   Frame assembled = {}; // BLE task stack is too small for a 4KiB automatic frame.
   uint64_t last = 0;
   size_t used = 0;
-  uint32_t subscription = 0;
   bool discarding = false;
  public:
   void receive(const uint8_t *bytes, size_t size, uint32_t generation, uint32_t currentSubscription) {
     const uint64_t now = uptime();
-    if (assembled.generation != generation || subscription != currentSubscription || now - last > 5000) {
-      used = 0; discarding = false; assembled.generation = generation; subscription = currentSubscription;
+    if (assembled.generation != generation || assembled.subscription != currentSubscription || now - last > 5000) {
+      used = 0; discarding = false; assembled.generation = generation; assembled.subscription = currentSubscription;
     }
     last = now;
     if (!size || size > 20) { used = 0; discarding = true; return; }

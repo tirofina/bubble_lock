@@ -12,6 +12,12 @@ class GattReadValue {
     if (length) memcpy(value, data, length);
   }
 
+  void reset() {
+    length = 0;
+    snapshotLength = 0;
+    started = false;
+  }
+
   bool chunk(uint32_t generation, uint16_t offset, uint16_t maximum,
              uint8_t *output, uint16_t &written) {
     written = 0;

@@ -42,6 +42,8 @@ keyring-0.7.6은 현재 인증된 연결 ID에서 온 명령·저널 쓰기와 �
 
 keyring-0.7.7은 identity·관측·영수증·저널의 READ와 후속 Read Blob 요청을 현재 인증된 연결에만 제공한다. 첫 읽기에서 최대 512바이트의 사본을 만들고 같은 연결의 후속 offset에 사용한다. 읽는 도중 새 관측이 생겨도 기존 조각과 섞이지 않으며, 재연결 뒤 이전 offset은 거절한다. Arduino GATT 등록을 감싸 이 네 특성의 READ를 기본 처리기보다 먼저 받는다. 펌웨어 링크와 실제 BlueZ의 긴 읽기는 수용 시험에서 확인한다.
 
+keyring-0.7.10은 완성된 명령과 BLE 영수증도 수신 당시의 영수증 알림 구독에 묶는다. 같은 연결에서 구독을 껐다 켜도 이전에 대기 중이던 명령은 모터를 시작할 수 없다. 이전 구독에서 대기하던 영수증 조각과 READ 사본은 폐기하며, 이미 NVS에 기록한 결과는 저널에 남긴다. 무선 스택에 제출된 조각과 이미 시작한 모터 펄스에는 기존 전송·종료 조건을 적용한다. 호스트 회귀시험 소스를 추가했고 빌드와 실물 시험은 미실행이다.
+
 `desiredState.state=true`는 진동 GPIO를 켠다. keyring-0.7.1은 **1000ms와 명령에 남은 시간 중 작은 값**으로 ESP 차단 타이머를 먼저 시작한다. AUX 준비 전후 기한·인증 세션·전원 이상을 확인한 뒤 GPIO를 켠다. BLE 종료 콜백은 GPIO를 즉시 내리고, 타이머 만료 콜백은 GPIO와 AUX의 경보 소유권을 정리한다. ESP timer의 task 콜백에는 지연이 생길 수 있어 실물에서 차단 시간과 출력 파형을 측정해야 한다. [Espressif 타이머 동작](https://docs.espressif.com/projects/esp-idf/en/v4.4.8/esp32s3/api-reference/system/esp_timer.html)
 
 자동 해제 이후 observation에 현재 `state=false`를 보낸다. `APPLIED`의 readback은 적용 순간 GPIO pad에서 읽은 값이다. 실제 모터 회전과 진동은 별도로 측정한다. 동일 명령 재수신으로 진동 시간을 늘리지 않는다.

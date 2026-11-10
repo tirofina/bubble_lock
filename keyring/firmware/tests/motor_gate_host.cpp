@@ -91,7 +91,7 @@ struct BLE2902 {
     uint16_t handle = 0;
     uint16_t getHandle() const { return handle; }
 };
-struct Frame { char bytes[MaxFrame + 1]; uint64_t firstAt, completedAt; uint32_t generation; };
+struct Frame { char bytes[MaxFrame + 1]; uint64_t firstAt, completedAt; uint32_t generation, subscription; };
 struct JournalRequest { uint32_t id, generation; uint8_t operation, index, part; };
 BLEServer fixtureServer, *server = &fixtureServer;
 BLECharacteristic fixtureCommand, fixtureJournal, fixtureReceipt, fixtureObservation, fixtureIdentity;
@@ -163,6 +163,16 @@ void read(uint16_t connection, uint16_t handle, uint16_t offset = 0) {
     registeredGatts(ESP_GATTS_READ_EVT, 4, &event);
 }
 
+void subscribeReceipt(bool enabled) {
+    portENTER_CRITICAL(&linkMux);
+    receiptTx.setSubscribed(enabled);
+    portEXIT_CRITICAL(&linkMux);
+}
+
+bool startCurrentMotor(uint64_t deadline) {
+    return startMotor(deadline, connectionGeneration, receiptTx.subscription);
+}
+
 void reset() {
     connected = authenticated = faultHealthy = true;
     disconnected = motorTimerFired = motorTimerCleaning = padHigh = railOn = observationDirty = linkMux = false;
@@ -175,42 +185,43 @@ void reset() {
     timerResult = ESP_OK;
     events.clear();
     duringTimerArm = duringRailEnable = duringAudioStop = {};
+    subscribeReceipt(true);
 }
 
 int main() {
     reset();
     timerResult = 1;
-    assert(!startMotor(120000, 7));
+    assert(!startCurrentMotor(120000));
     assert(events == std::vector<std::string>{"arm"} && !padHigh && !railOn);
     std::puts("PASS timer failure leaves rail and motor off");
 
     reset();
-    assert(startMotor(120000, 7));
+    assert(startCurrentMotor(120000));
     assert((events == std::vector<std::string>{"arm", "rail-on", "motor-on"}));
     assert(timerDelay == 20000 && motorStopAt == 120 && padHigh);
     motorExpired(nullptr);
     assert(!padHigh && !railOn && motorTimerFired);
     reset();
-    assert(startMotor(3000000, 7));
+    assert(startCurrentMotor(3000000));
     assert(timerDelay == board::MotorMaxOnMs * 1000 && motorStopAt == 1100);
     std::puts("PASS timer precedes rail and motor, obeys the shorter bound, and clears output");
 
     reset();
-    assert(!startMotor(nowUs, 7) && events.empty());
+    assert(!startCurrentMotor(nowUs) && events.empty());
     duringTimerArm = [] { nowUs = 120000; };
-    assert(!startMotor(120000, 7) && !padHigh && !railOn);
+    assert(!startCurrentMotor(120000) && !padHigh && !railOn);
     reset();
     duringRailEnable = [] { nowUs = 120000; };
-    assert(!startMotor(120000, 7) && !padHigh);
+    assert(!startCurrentMotor(120000) && !padHigh);
     stopMotor();
     assert(!railOn);
     std::puts("PASS elapsed deadline blocks GPIO before or after rail preparation");
 
     reset();
     duringTimerArm = [] { disconnect(peerConnection); };
-    assert(!startMotor(120000, 7) && disconnected && connectionGeneration == 8 && !padHigh && !railOn);
+    assert(!startCurrentMotor(120000) && disconnected && connectionGeneration == 8 && !padHigh && !railOn);
     reset();
-    assert(startMotor(120000, 7) && padHigh);
+    assert(startCurrentMotor(120000) && padHigh);
     disconnect(8);
     assert(padHigh && connected && authenticated && connectionGeneration == 7 && !disconnected);
     disconnect(peerConnection);
@@ -218,8 +229,13 @@ int main() {
     std::puts("PASS disconnect blocks stale starts and turns an active GPIO off immediately");
 
     reset();
+    duringTimerArm = [] { subscribeReceipt(false); subscribeReceipt(true); };
+    assert(!startCurrentMotor(120000) && connected && authenticated && !padHigh && !railOn);
+    std::puts("PASS resubscription during timer arm fences the previous command");
+
+    reset();
     duringRailEnable = [] { faultHealthy = false; };
-    assert(!startMotor(120000, 7) && !padHigh);
+    assert(!startCurrentMotor(120000) && !padHigh);
     stopMotor();
     assert(!railOn);
     std::puts("PASS fault is rechecked after rail preparation");
@@ -227,9 +243,9 @@ int main() {
     reset();
     duringTimerArm = [] { motorExpired(nullptr); };
     duringAudioStop = [] {
-        assert(motorTimerCleaning && !startMotor(120000, 7));
+        assert(motorTimerCleaning && !startCurrentMotor(120000));
     };
-    assert(!startMotor(120000, 7) && !padHigh && !railOn);
+    assert(!startCurrentMotor(120000) && !padHigh && !railOn);
     std::puts("PASS expiration fences reactivation during callback cleanup");
 
     reset();
@@ -238,6 +254,9 @@ int main() {
     receiptTx.characteristic = &fixtureReceipt;
     receiptTx.cccd = &fixtureCccd;
     receiptTx.clear();
+    subscribeReceipt(false);
+    assert(__wrap_esp_ble_gatts_register_callback(
+        [](esp_gatts_cb_event_t, esp_gatt_if_t, esp_ble_gatts_cb_param_t *) { ++forwardedEvents; }) == ESP_OK);
     const std::string enable("\1\0", 2);
     write(8, fixtureCccd.handle, enable);
     write(peerConnection, fixtureCommand.handle, "before subscribe\n");
@@ -249,9 +268,12 @@ int main() {
     write(8, fixtureJournal.handle, std::string("\1\1\0\0\0\0\0\0", 8));
     write(peerConnection, fixtureCommand.handle, " frame\n");
     assert(commandCount == 1 && journalCount == 0 && queuedCommand.generation == 7 &&
-           std::strcmp(queuedCommand.bytes, "good frame") == 0);
+           queuedCommand.subscription == receiptTx.subscription && std::strcmp(queuedCommand.bytes, "good frame") == 0);
 
-    receiptTx.queue(std::string(22, 'a'));
+    const auto originalSubscription = queuedCommand.subscription;
+    receiptTx.queueReceipt(std::string(24, 'a'), queuedCommand.generation, originalSubscription);
+    read(peerConnection, fixtureReceipt.handle);
+    assert(lastReadStatus == ESP_GATT_OK && lastReadValue == std::string(22, 'a'));
     notifyResult = 1;
     receiptTx.tick(100);
     assert(notifications.size() == 1 && receiptTx.offset == 0);
@@ -261,15 +283,19 @@ int main() {
     write(peerConnection, fixtureCommand.handle, "before re-subscribe");
     write(peerConnection, fixtureCccd.handle, std::string(2, '\0'));
     write(peerConnection, fixtureCccd.handle, enable);
+    assert(!commandChannelReady(queuedCommand));
+    receiptTx.queueReceipt("obsolete", connectionGeneration, originalSubscription);
     write(peerConnection, fixtureCommand.handle, "after\n");
-    assert(commandCount == 2 && std::strcmp(queuedCommand.bytes, "after") == 0);
+    assert(commandCount == 2 && commandChannelReady(queuedCommand) && std::strcmp(queuedCommand.bytes, "after") == 0);
     receiptTx.tick(130);
-    assert(notifications.back() == notifications.front() && receiptTx.offset == 20);
-    receiptTx.clear();
-    assert(__wrap_esp_ble_gatts_register_callback(
-        [](esp_gatts_cb_event_t, esp_gatt_if_t, esp_ble_gatts_cb_param_t *) { ++forwardedEvents; }) == ESP_OK);
+    assert(notifications.size() == 2 && receiptTx.active.empty() && receiptTx.pending.empty());
+    read(peerConnection, fixtureReceipt.handle, 22);
+    assert(lastReadStatus == ESP_GATT_INVALID_OFFSET && lastReadValue.empty());
     read(peerConnection, fixtureReceipt.handle);
     assert(lastReadStatus == ESP_GATT_OK && lastReadValue.empty());
+    receiptTx.queueReceipt("new receipt\n", queuedCommand.generation, queuedCommand.subscription);
+    receiptTx.tick(145);
+    assert(notifications.size() == 3 && notifications.back() == "new receipt\n");
 
     write(peerConnection, fixtureCommand.handle, "stale");
     disconnect(peerConnection);
