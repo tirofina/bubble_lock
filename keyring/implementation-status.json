@@ -7,7 +7,7 @@
   "date": "2026-11-11",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Scoped receipt pin routes were provisioned. Both Gateway certificates retrieved only their assigned parent in the recorded GET checks. Firmware 0.7.9 local journal tail checkpoint, Gateway 0.2.27 pinned receipt readback, HTTPS retry handling, r18 BLE power evidence and interrupted Feather evidence reconciliation are source-only. Physical power characterization, live receipt publication and settlement remain unverified.",
+  "verificationStatus": "Scoped receipt pin routes were provisioned. Both Gateway certificates retrieved only their assigned parent in the recorded GET checks. Firmware 0.7.9 local journal tail checkpoint, Gateway 0.2.28 offline journal history comparison and earlier Gateway source checkpoints remain unverified. Physical power characterization, live receipt publication and settlement remain unverified.",
   "rubricIds": [
     "R01",
     "R02",
@@ -30,6 +30,7 @@
     "r18 startup lockout before Arduino default NVS format and fail-closed slot validation",
     "r18 journal boot continuity and nondecreasing fences plus exact post-commit NVS readback",
     "r18 NVS journal tail count checkpoint, legacy adoption, and metadata-only recovery of an interrupted PREPARED append",
+    "offline comparison of a trusted older device archive and a later capture for journal continuity",
     "Raspberry Pi BLE fleet and SQLite durable outbox",
     "bounded staging of unstaged command receipts across persisted retry backlogs",
     "mTLS current authorization, credential status and deadline gating",
@@ -156,17 +157,17 @@
   "firmwareRevision": "keyring-0.7.9",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "b38dd6b93e4d537d844624738283e6d366344edf",
+    "sourceCommit": "2ba76bebbbfe2961b6f33637f0491bfb2136b4c8",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "b38dd6b93e4d537d844624738283e6d366344edf",
-    "lastPushedCommit": "b38dd6b93e4d537d844624738283e6d366344edf",
-    "latestCheckpoint": "Persist a separate local count before actuation so boot can detect a lost journal tail or finish a verified PREPARED append without replay.",
-    "lastPushedCommitBeforeThisCheckpoint": "e71f2a63ff6c8f62d5770e13fed9388cd177d276"
+    "latestLocalSourceCommit": "2ba76bebbbfe2961b6f33637f0491bfb2136b4c8",
+    "lastPushedCommit": "2ba76bebbbfe2961b6f33637f0491bfb2136b4c8",
+    "latestCheckpoint": "Detect lost, reordered or changed device journal history with a trusted earlier archive and a later capture.",
+    "lastPushedCommitBeforeThisCheckpoint": "adb68b58e322e3ddd1392b92bd010dbb0081bef7"
   },
-  "gatewayRevision": "0.2.27",
+  "gatewayRevision": "0.2.28",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
@@ -188,7 +189,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Detect trailing r18 NVS slot loss after the first checkpointed command and preserve interrupted PREPARED intent without GPIO replay",
+    "executionRequest": "Compare independently preserved device journal history and proceed with the separately authorized Feather and Pi bench",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -196,11 +197,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "b38dd6b93e4d537d844624738283e6d366344edf",
-    "sourceValidation": "Read the current plan, remote team heads, NVS journal and BLE archive format. Local checkpoint and fault-injection regression source only. No firmware build, host test, flash or physical verification was performed.",
+    "sourceCommit": "2ba76bebbbfe2961b6f33637f0491bfb2136b4c8",
+    "sourceValidation": "Read the current plan, remote team heads and existing journal archive validation. Offline comparison and regression source only. This CLI and its tests were not run.",
     "goalComplete": false,
-    "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "The isolated worker and receipt pin routes were provisioned. Firmware 0.7.9 build, physical BLE long-read and r18 NVS fault verification, Gateway 0.2.27 build and Pi preflight, pinned receipt readback and HTTP retry verification, live receipt POST and settlement evidence, a separately authorized Feather 0.2.0 and Pi bench run, authoritative CSE routes, approved journal reclaim and external rollback detection contracts, production CORE, and r18 bring-up with physical power/range/wake capture and an external supply measurement remain.",
+    "pendingInput": null,
+    "currentDependencyState": "The user authorized the Feather 0.2.0 and Pi bench. The isolated worker and receipt pin routes were provisioned. Firmware 0.7.9 build, physical BLE long-read and r18 NVS fault verification, Gateway 0.2.28 archive comparison execution, Pi bench and live settlement evidence, authoritative CSE routes, approved journal reclaim and automatic external rollback detection contracts, production CORE, and r18 bring-up with physical power/range/wake capture and an external supply measurement remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -1039,5 +1040,13 @@
     "firmwareBuilt": false,
     "physicalFaultInjectionExecuted": false,
     "sourceCommit": "b38dd6b93e4d537d844624738283e6d366344edf"
+  },
+  "gatewayJournalHistoryComparison": {
+    "reference": "JOURNAL_RETENTION.md#이전-장치-보관본과-비교",
+    "status": "source-only",
+    "gatewayVersion": "0.2.28",
+    "regressionsExecuted": false,
+    "physicalArchiveCompared": false,
+    "sourceCommit": "2ba76bebbbfe2961b6f33637f0491bfb2136b4c8"
   }
 }

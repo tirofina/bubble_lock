@@ -969,3 +969,12 @@ HTTPS 재시도 commit `3cc69fd9d14a08988475c26e203899f506c478e2`를 `origin/cod
 - 기존 기록 도입, PREPARED와 개수 갱신 사이 장애, 마지막 슬롯 누락, 체크포인트 유실·손상을 주입하는 호스트 시험 소스를 추가했다. 빌드·시험·flash는 미실행이다. 전체 NVS 손실이나 기록과 체크포인트의 동시 롤백에는 외부 체크포인트가 필요하다. 실물 장애 시험과 중앙 명령 정산은 남아 있으며 goal은 active/progress다.
 
 저널 끝부분 확인 commit `b38dd6b93e4d537d844624738283e6d366344edf`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `e71f2a6..b38dd6b`다.
+
+## 2026-11-11 — 장치 밖 저널 보관본 대조
+
+직전 goal turn은 r18 저널 끝부분 감지의 구현과 업로드로 진행됐다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 브랜치 head는 직전과 같다.
+
+- Gateway `0.2.28`의 `bubble-keyring-journal-compare`는 같은 장치의 이전·최신 보관본 두 개를 읽어 해시·수집 순서·기록의 순서와 내용·권한 상한을 대조한다. 누락이나 변경은 `REVIEW_REQUIRED`로 반환한다. 도구는 로컬 파일만 읽으며 정산 상태는 `not-settled`다. 회귀시험 소스를 추가했고 비교 도구와 시험 실행은 미실행이다. [보관본 비교](../keyring/JOURNAL_RETENTION.md#이전-장치-보관본과-비교)
+- 사용자에게 Feather 명령 프로필 0.2.0 플래시와 Pi·Mobius4 실물 시험 승인을 받았다. 해당 벤치 실행 결과는 별도로 기록한다.
+
+보관본 비교 commit `2ba76bebbbfe2961b6f33637f0491bfb2136b4c8`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `adb68b5..2ba76be`다.
