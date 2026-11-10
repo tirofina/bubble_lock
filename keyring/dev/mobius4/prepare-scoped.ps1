@@ -18,6 +18,7 @@ if (Test-Path -LiteralPath $stateRoot) { throw 'Scoped profile exists; keep its 
 New-Item -ItemType Directory -Path $stateRoot | Out-Null
 $tlsDir = New-Item -ItemType Directory -Path (Join-Path $stateRoot 'tls')
 $configDir = New-Item -ItemType Directory -Path (Join-Path $stateRoot 'config')
+New-Item -ItemType Directory -Path (Join-Path $stateRoot 'receipt-routes') | Out-Null
 @{gatewayId='gw-a'; deviceId='kr-handover'; ownershipEpoch=7} | ConvertTo-Json -Compress |
   Set-Content -LiteralPath (Join-Path $configDir.FullName 'owner.json') -Encoding utf8NoBOM
 $issuer = Join-Path $PSScriptRoot 'scoped-telemetry/generate-certificates.sh'

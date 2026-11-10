@@ -1,18 +1,21 @@
 // Provision empty development resources. No synthetic sensor events or device commands.
 import https from 'node:https';
-import {readFile, writeFile} from 'node:fs/promises';
+import {link, mkdir, readFile, unlink, writeFile} from 'node:fs/promises';
 import {setTimeout as delay} from 'node:timers/promises';
 import {randomUUID} from 'node:crypto';
 import {scopedCommandReceiptContainers, scopedFeatherCommandObservationContainer} from './scoped-command-receipts.mjs';
+import {receiptIdentifier} from '../../integration-candidate/receipt-authorization.mjs';
 
 const args = process.argv.slice(2);
-if (args.length && (args.length !== 1 || !['--scoped', '--scoped-command-receipts', '--scoped-feather-command-observation'].includes(args[0]))) {
-  throw new Error('Usage: node bootstrap.mjs [--scoped | --scoped-command-receipts | --scoped-feather-command-observation]');
+if (args.length && (args.length !== 1 || !['--scoped', '--scoped-command-receipts',
+  '--scoped-feather-command-observation', '--scoped-pin-command-receipts'].includes(args[0]))) {
+  throw new Error('Usage: node bootstrap.mjs [--scoped | --scoped-command-receipts | --scoped-feather-command-observation | --scoped-pin-command-receipts]');
 }
 const scoped = args.length === 1;
 const commandReceiptsOnly = args[0] === '--scoped-command-receipts';
 const commandObservationOnly = args[0] === '--scoped-feather-command-observation';
-const fullProfile = !commandReceiptsOnly && !commandObservationOnly;
+const pinReceiptRoutes = args[0] === '--scoped-pin-command-receipts';
+const fullProfile = !commandReceiptsOnly && !commandObservationOnly && !pinReceiptRoutes;
 const root = new URL(scoped ? './.local/scoped/' : './.local/', import.meta.url);
 const environment = Object.fromEntries((await readFile(new URL('compose.env', root), 'utf8'))
   .split(/\r?\n/).filter(line => line && !line.startsWith('#')).map(line => {
@@ -36,7 +39,7 @@ const resources = fullProfile ? [
     state: false, lbl: ['dev-bootstrap', 'unobserved'],
   }}},
 ] : [];
-if (scoped) {
+if (scoped && !pinReceiptRoutes) {
   const commandContainers = [
     ...(commandObservationOnly ? [] : Object.values(scopedCommandReceiptContainers)),
     ...(commandReceiptsOnly ? [] : [scopedFeatherCommandObservationContainer]),
@@ -112,16 +115,67 @@ async function provision(resource) {
   return {...response, status: response.rsc === 2001 ? 'CREATED' : 'EXISTS_UNCHANGED'};
 }
 
-const receipts = [];
-for (const [index, resource] of resources.entries()) {
-  if (index) await delay(7000);
-  const {requestId, status, httpStatus, rsc, rqi} = await provision(resource);
-  const resourceName = Object.values(resource.body)[0].rn;
-  receipts.push({requestId, parent: resource.path, resourceName, ty: resource.ty, httpStatus, rsc, rqi, status,
-    timestamp: new Date().toISOString(), evidenceScope: 'empty-resource-provisioning'});
-  console.log(`${status} ${resource.path}/${resourceName} ty=${resource.ty} HTTP=${httpStatus} rsc=${rsc}`);
+async function preparePinnedReceiptRoutes() {
+  const pins = new Map();
+  for (const [gateway, path] of Object.entries(scopedCommandReceiptContainers)) {
+    if (pins.size) await delay(7000);
+    const observed = await exchange('GET', path);
+    if (observed.httpStatus !== 200 || observed.rsc !== 2000 || observed.rqi !== observed.requestId) {
+      throw new Error('Scoped receipt container lookup failed.');
+    }
+    const parent = JSON.parse(observed.content)['m2m:cnt'];
+    if (parent?.ty !== 3 || parent.rn !== path.split('/').at(-1) || !receiptIdentifier(parent.ri)
+        || [...pins.values()].includes(parent.ri)) {
+      throw new Error('Scoped receipt container identity mismatch.');
+    }
+    pins.set(gateway, parent.ri);
+  }
+
+  const lines = [];
+  for (const [gateway, ri] of pins) {
+    const identity = `CN=scoped-gateway-${gateway.slice(3)}`;
+    const path = scopedCommandReceiptContainers[gateway];
+    lines.push(`"~^${identity}:GET:${path}$" 1;`);
+    lines.push(`"~^${identity}:POST:/${ri.replaceAll('.', '[.]')}$" 1;`);
+  }
+  const directory = new URL('receipt-routes/', root);
+  const routes = new URL('receipt-routes.conf', directory);
+  const content = lines.join('\n') + '\n';
+  await mkdir(directory, {recursive: true});
+  const previous = await readFile(routes, 'utf8').catch(error => {
+    if (error.code === 'ENOENT') return null;
+    throw error;
+  });
+  if (previous !== null && previous !== content) {
+    throw new Error('Existing scoped receipt pins differ. Keep the old routes and prepare a separate deployment.');
+  }
+  if (previous === null) {
+    const staged = new URL(`.${randomUUID()}.tmp`, directory);
+    await writeFile(staged, content, {flag: 'wx', mode: 0o600, flush: true});
+    try {
+      await link(staged, routes);
+    } finally {
+      await unlink(staged);
+    }
+  }
+  for (const [gateway, ri] of pins) console.log(`SCOPED_RECEIPT_PIN ${gateway} ${ri}`);
 }
-const receiptName = commandReceiptsOnly ? 'command-receipts-provisioning.json'
-  : commandObservationOnly ? 'feather-command-observation-provisioning.json' : 'resource-provisioning.json';
-await writeFile(new URL(receiptName, root), JSON.stringify(receipts, null, 2) + '\n');
-console.log('Empty resources prepared. No BLE, device command, observation or end-to-end test was run.');
+
+async function provisionEmptyResources() {
+  const receipts = [];
+  for (const [index, resource] of resources.entries()) {
+    if (index) await delay(7000);
+    const {requestId, status, httpStatus, rsc, rqi} = await provision(resource);
+    const resourceName = Object.values(resource.body)[0].rn;
+    receipts.push({requestId, parent: resource.path, resourceName, ty: resource.ty, httpStatus, rsc, rqi, status,
+      timestamp: new Date().toISOString(), evidenceScope: 'empty-resource-provisioning'});
+    console.log(`${status} ${resource.path}/${resourceName} ty=${resource.ty} HTTP=${httpStatus} rsc=${rsc}`);
+  }
+  const receiptName = commandReceiptsOnly ? 'command-receipts-provisioning.json'
+    : commandObservationOnly ? 'feather-command-observation-provisioning.json' : 'resource-provisioning.json';
+  await writeFile(new URL(receiptName, root), JSON.stringify(receipts, null, 2) + '\n');
+  console.log('Empty resources prepared. No BLE, device command, observation or end-to-end test was run.');
+}
+
+if (pinReceiptRoutes) await preparePinnedReceiptRoutes();
+else await provisionEmptyResources();

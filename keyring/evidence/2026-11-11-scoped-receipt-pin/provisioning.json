@@ -1,0 +1,23 @@
+{
+  "documentRevision": "2.0.0",
+  "scope": "isolated-receipt-container-pin-provisioning",
+  "observedAt": "2026-11-10T15:00:40.505Z",
+  "composeProject": "privacy-bubble-keyring-scoped",
+  "endpoint": "https://127.0.0.1:8760",
+  "issuedCommandsBefore": 0,
+  "teamReceiptsBefore": 0,
+  "proxyBefore": "253bd8652348",
+  "proxyAfter": "14790a551d16",
+  "proxyHealthyAfter": true,
+  "unchangedContainers": ["postgres", "mobius4", "broker", "scoped-consumer", "receipt-relay"],
+  "mountedRules": 4,
+  "rulesSha256": "ede8fb791454a837999d122c23a4fdf60585fdd6cafeaf35710fbe96148cf6fe",
+  "readOnlyGatewayRequests": [
+    { "peer": "gw-a", "target": "gw-a", "httpStatus": 200, "rsc": 2000, "rqiMatched": true, "receiptContainerRi": "1jdp2uyqhi" },
+    { "peer": "gw-a", "target": "gw-b", "httpStatus": 403 },
+    { "peer": "gw-b", "target": "gw-a", "httpStatus": 403 },
+    { "peer": "gw-b", "target": "gw-b", "httpStatus": 200, "rsc": 2000, "rqiMatched": true, "receiptContainerRi": "z1n8p2u8z7" }
+  ],
+  "receiptPostExecuted": false,
+  "piOrFeatherUsed": false
+}

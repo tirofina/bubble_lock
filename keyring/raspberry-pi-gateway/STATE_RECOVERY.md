@@ -26,7 +26,7 @@ Gateway 0.2.23의 선택 설정 `M2M_RECEIPT_CONTAINER_RI`에는 CSE 관리자�
 
 전송 전 Gateway가 mTLS HTTPS로 이름 경로를 조회해 요청 ID, 응답 코드, container 타입과 `ri`를 확인한다. MQTT와 HTTPS fallback은 확인한 자원 ID에 직접 CREATE한다. 최초 응답과 중복 영수증 조회의 `pi`가 같은 ID일 때 발송 완료로 기록한다. 조회 오류와 ID 불일치 때는 큐에 남겨 재시도한다.
 
-설정 전 Gateway 자격에 이름 경로 GET, 자원 ID로 contentInstance CREATE, 원래 이름 경로의 자식 GET을 허용한다. 현재 격리 프록시의 Gateway ACL은 이름 경로의 CREATE와 자식 조회를 허용한다. 해당 벤치에서 이 옵션을 켜기 전에는 컨테이너 GET과 자원 ID CREATE의 정확한 경로 권한을 준비해야 한다.
+설정 전 Gateway 자격에 이름 경로 GET, 자원 ID로 contentInstance CREATE, 원래 이름 경로의 자식 GET을 허용한다. 격리 벤치에서는 [컨테이너 권한 준비](../dev/mobius4/README.md#명령-영수증-정산-준비)를 완료한 뒤 새 세션에 해당 Gateway의 ID를 지정한다.
 
 ## 수동 snapshot
 

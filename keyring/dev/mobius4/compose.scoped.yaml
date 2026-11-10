@@ -12,6 +12,7 @@ services:
   tls:
     volumes:
       - ./scoped-telemetry/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./.local/scoped/receipt-routes:/etc/nginx/keyring-receipt-routes:ro
       - ./.local/scoped/tls/ca.pem:/etc/nginx/keyring-tls/ca.pem:ro
       - ./.local/scoped/tls/server.pem:/etc/nginx/keyring-tls/server.pem:ro
       - ./.local/scoped/tls/server.key:/etc/nginx/keyring-tls/server.key:ro

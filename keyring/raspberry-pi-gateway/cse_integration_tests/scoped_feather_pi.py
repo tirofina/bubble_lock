@@ -59,6 +59,12 @@ def gateway_environment(profile, session):
         if profile["cseDeploymentId"] != CSE_DEPLOYMENT:
             raise ValueError("Expected the scoped Mobius4 deployment")
         environment["M2M_CSE_DEPLOYMENT_ID"] = profile["cseDeploymentId"]
+    if "receiptContainerRi" in profile:
+        ri = profile["receiptContainerRi"]
+        if (profile.get("cseDeploymentId") != CSE_DEPLOYMENT or not isinstance(ri, str)
+                or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,63}", ri)):
+            raise ValueError("Expected a verified scoped receipt container ID")
+        environment["M2M_RECEIPT_CONTAINER_RI"] = ri
     return environment
 
 
@@ -70,6 +76,8 @@ def prepare(args, session):
             raise ValueError("The address file must contain only one paired Feather address")
     profile = {"version": 1, "address": address, "tlsDirectory": str(args.tls_dir.absolute()),
                "csePort": args.cse_port, "apiPort": args.api_port, "cseDeploymentId": CSE_DEPLOYMENT}
+    if args.receipt_container_ri is not None:
+        profile["receiptContainerRi"] = args.receipt_container_ri
     gateway_environment(profile, session)
     session.mkdir(mode=0o700)
     with (session / "profile.json").open("x", encoding="utf-8") as stream:
@@ -88,7 +96,8 @@ def run(root, session):
     with profile_path.open(encoding="utf-8") as stream:
         profile = json.loads(stream.read(8193))
     fields = {"version", "address", "tlsDirectory", "csePort", "apiPort"}
-    if not isinstance(profile, dict) or profile.keys() not in (fields, fields | {"cseDeploymentId"}):
+    if (not isinstance(profile, dict) or not fields <= profile.keys()
+            or profile.keys() - fields - {"cseDeploymentId", "receiptContainerRi"}):
         raise ValueError("Expected a prepared Feather command session")
     environment = gateway_environment(profile, session)
     with os.fdopen(os.open(root / "gateway.lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600), "rb") as lock:
@@ -106,6 +115,7 @@ def main():
     setup.add_argument("--tls-dir", type=Path, required=True)
     setup.add_argument("--cse-port", type=int, default=8760)
     setup.add_argument("--api-port", type=int, default=8787)
+    setup.add_argument("--receipt-container-ri", help="Use the scoped gw-a receipt pin in a fresh session")
     start = modes.add_parser("run", help="Start the Gateway for an explicitly prepared session")
     for mode in (setup, start):
         mode.add_argument("--session", required=True)

@@ -125,6 +125,8 @@ tool=keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_pi.py
 
 `prepare`는 로컬 TLS 파일을 읽고 `~/.local/state/privacy-bubble-feather-command/<세션>/profile.json`을 만든다. Pi 포워딩 포트가 8760과 8787과 다르면 `--cse-port`와 `--api-port`를 함께 지정한다. 실행 단계에서 상속된 Gateway 환경변수를 사용하지 않는다.
 
+격리 TLS 프록시에 컨테이너 권한을 준비한 경우, 새 세션의 `prepare`에 `--receipt-container-ri "$gw_a_receipt_ri"`를 추가한다. 이 값에는 PC 준비 도구의 `SCOPED_RECEIPT_PIN gw-a` 출력에서 읽은 ID를 넣는다.
+
 Feather 명령 프로필 `0.2.0`과 두 SSH 포워딩이 준비되면 같은 Feather를 쓰는 관측 프로세스를 종료한 뒤 아래 명령을 실행한다. 실행한 Gateway는 해당 세션의 `gateway.sqlite3`를 사용한다. Pi 사용자당 명령 벤치 한 개가 실행되며, 기본 Gateway의 SQLite 잠금도 유지한다.
 
 ```sh
