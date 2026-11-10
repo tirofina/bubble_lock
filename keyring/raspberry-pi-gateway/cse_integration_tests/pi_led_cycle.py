@@ -146,6 +146,21 @@ async def run_led_cycle(operator_post, cse, paths, output, *, gateway_id=GATEWAY
     write_new_json(output / "led-cycle.json", {"steps": results, "physicalLedObserved": None})
 
 
+def verify_step(step, state, boot_id, *, gateway_id=GATEWAY):
+    command = validate_command(step["command"], gateway_id, {DEVICE: ""})
+    baseline, observation = step["baseline"], step["observation"]
+    if (command["desiredState"]["state"] is not state or observation["state"] is not state
+            or baseline["state"] is not (not state)
+            or baseline["bootId"] != boot_id or observation["bootId"] != boot_id
+            or baseline["sequence"] == observation["sequence"]
+            or step["cseReceiptName"] != receipt_name(command["commandId"])
+            or parse_time(observation["receivedAt"]) < parse_time(baseline["receivedAt"])
+            or parse_time(observation["receivedAt"]) < parse_time(step["cseReceipt"]["receivedAt"])):
+        raise RuntimeError("Bench command, observation, or CSE identity mismatch")
+    verify_receipt(command, step["cseReceipt"], boot_id, state)
+    return command
+
+
 def verify_database(evidence, database, *, gateway_id=GATEWAY):
     steps = evidence["steps"]
     if len(steps) != len(STEPS):
@@ -157,20 +172,9 @@ def verify_database(evidence, database, *, gateway_id=GATEWAY):
         if db.execute("SELECT COUNT(*) FROM commands").fetchone()[0] != len(STEPS):
             raise RuntimeError("Expected a dedicated database with exactly two bench commands")
         for step, (_, state) in zip(steps, STEPS):
-            command = validate_command(step["command"], gateway_id, {DEVICE: ""})
+            command = verify_step(step, state, boot_id, gateway_id=gateway_id)
             receipt = step["cseReceipt"]
             command_id = command["commandId"]
-            baseline = step["baseline"]
-            observation = step["observation"]
-            prior_state = not state
-            if (command["desiredState"]["state"] is not state or observation["state"] is not state
-                    or baseline["state"] is not prior_state
-                    or baseline["bootId"] != boot_id or observation["bootId"] != boot_id
-                    or baseline["sequence"] == observation["sequence"] or step["cseReceiptName"] != receipt_name(command_id)
-                    or parse_time(observation["receivedAt"]) < parse_time(baseline["receivedAt"])
-                    or parse_time(observation["receivedAt"]) < parse_time(receipt["receivedAt"])):
-                raise RuntimeError("Bench command, observation, or CSE identity mismatch")
-            verify_receipt(command, receipt, boot_id, state)
             row = db.execute("SELECT payload_hash,payload,status,receipt,receipt_delivered FROM commands "
                              "WHERE command_id=?", (command_id,)).fetchone()
             expected = (payload_hash(command), canonical(command), "APPLIED", canonical(receipt), 1)
