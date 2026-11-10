@@ -33,6 +33,8 @@ def configured_binding(config: Any) -> dict[str, Any]:
     }
     if config.cse_deployment_id is not None:
         binding.update(bindingVersion=2, cseDeploymentId=config.cse_deployment_id)
+    if config.receipt_container_ri is not None:
+        binding["receiptContainerRi"] = config.receipt_container_ri
     return binding
 
 
@@ -44,8 +46,15 @@ def _valid_binding(binding: Any) -> bool:
     if binding["bindingVersion"] == 1:
         return binding.keys() == BINDING_KEYS
     deployment = binding.get("cseDeploymentId")
-    return (binding["bindingVersion"] == 2 and binding.keys() == (BINDING_KEYS | {"cseDeploymentId"})
-            and isinstance(deployment, str) and ID.fullmatch(deployment) is not None)
+    v2_keys = BINDING_KEYS | {"cseDeploymentId"}
+    if (binding["bindingVersion"] != 2 or not isinstance(deployment, str)
+            or ID.fullmatch(deployment) is None):
+        return False
+    if "receiptContainerRi" not in binding:
+        return binding.keys() == v2_keys
+    receipt_ri = binding["receiptContainerRi"]
+    return (binding.keys() == (v2_keys | {"receiptContainerRi"})
+            and isinstance(receipt_ri, str) and ID.fullmatch(receipt_ri) is not None)
 
 
 def readonly(path: Path) -> sqlite3.Connection:
@@ -93,6 +102,8 @@ def counts(db: sqlite3.Connection, names: set[str] | None = None) -> dict[str, i
 def match(record: dict, expected: dict, *, require_live: bool = True) -> None:
     if record["binding"].get("cseDeploymentId") != expected.get("cseDeploymentId"):
         raise StateIdentityError("STATE_CSE_DEPLOYMENT_MISMATCH")
+    if record["binding"].get("receiptContainerRi") != expected.get("receiptContainerRi"):
+        raise StateIdentityError("STATE_RECEIPT_CONTAINER_MISMATCH")
     if canonical(record["binding"]) != canonical(expected):
         raise StateIdentityError("STATE_IDENTITY_MISMATCH")
     if require_live and record["recovery_state"] != "LIVE":

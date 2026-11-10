@@ -65,6 +65,7 @@ class GatewayConfig:
     core_telemetry_epochs: dict[str, int] | None = None
     m2m_mqtt_enabled: bool = True
     cse_deployment_id: str | None = None
+    receipt_container_ri: str | None = None
 
     @classmethod
     def from_env(cls) -> "GatewayConfig":
@@ -147,6 +148,10 @@ class GatewayConfig:
         profile = os.getenv("BLE_GATT_PROFILE", "core-v1")
         if profile not in {"core-v1", "keyring-v01"}:
             raise ValueError("BLE_GATT_PROFILE must be core-v1 or keyring-v01")
+        deployment = identifier("M2M_CSE_DEPLOYMENT_ID") if "M2M_CSE_DEPLOYMENT_ID" in os.environ else None
+        receipt_ri = identifier("M2M_RECEIPT_CONTAINER_RI") if "M2M_RECEIPT_CONTAINER_RI" in os.environ else None
+        if receipt_ri is not None and deployment is None:
+            raise ValueError("M2M_RECEIPT_CONTAINER_RI requires M2M_CSE_DEPLOYMENT_ID")
         return cls(
             gateway_id=identifier("GATEWAY_ID"), originator=identifier("M2M_ORIGINATOR"),
             cse_id=identifier("M2M_CSE_ID"), cse_url=endpoint("M2M_CSE_URL", True),
@@ -173,7 +178,7 @@ class GatewayConfig:
             max_outbox_bytes=int(number("MAX_OUTBOX_BYTES", "33554432", 1048576, 1073741824)),
             max_commands=int(number("MAX_COMMANDS", "100000", 100, 10000000)),
             core_bridge_enabled=core_bridge, ble_gatt_profile=profile, core_telemetry_epochs=epochs,
-            cse_deployment_id=(identifier("M2M_CSE_DEPLOYMENT_ID") if "M2M_CSE_DEPLOYMENT_ID" in os.environ else None),
+            cse_deployment_id=deployment, receipt_container_ri=receipt_ri,
         )
 
 

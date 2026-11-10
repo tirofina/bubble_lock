@@ -166,6 +166,27 @@ class MobiusCseTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((await self.stored(rqi))["con"], payload)
         self.assertEqual(await self.count(), 1)
 
+    async def test_pinned_receipt_parent_for_https_mqtt_and_duplicate_readback(self):
+        rqi = "parent-" + uuid.uuid4().hex
+        status, headers, body = await self.hub._http_json(
+            "GET", self.stack.origin + self.parent, headers=self.hub._m2m_headers(rqi))
+        self.assertEqual((status, self.hub._response_rsc(status, headers, rqi)), (200, 2000))
+        parent_ri = body["m2m:cnt"]["ri"]
+        for use_mqtt in (False, True):
+            hub = await self.hub_for(mqtt=True) if use_mqtt else self.hub
+            hub.config.receipt_container = self.parent
+            hub.config.receipt_container_ri = parent_ri
+            rqi = "pinned-" + uuid.uuid4().hex
+            payload = {"synthetic": True, "value": rqi}
+            await hub.publish(rqi, self.parent, payload)
+            await hub.publish(rqi, self.parent, payload)
+            stored = await self.stored(rqi)
+            self.assertEqual((stored["pi"], stored["con"]), (parent_ri, payload))
+            if use_mqtt:
+                logs = await asyncio.to_thread(self.stack.logs, "proxy")
+                self.assertNotIn(f"POST /{parent_ri} {rqi}", logs)
+        self.assertEqual(await self.count(), 2)
+
     async def test_same_rqi_different_payload_is_rejected_and_original_preserved(self):
         rqi, original = "conflict-" + uuid.uuid4().hex, {"synthetic": True, "value": 4}
         await self.hub.publish(rqi, self.parent, original)

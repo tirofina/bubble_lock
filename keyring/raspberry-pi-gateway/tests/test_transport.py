@@ -10,7 +10,7 @@ import httpx
 
 from bubble_gateway.core_bridge import telemetry
 from bubble_gateway.model import iso_time, payload_hash, utc_now
-from bubble_gateway.transport import RemoteResponseError, TransportHub, _mqtt_to
+from bubble_gateway.transport import ReceiptParentMismatch, RemoteResponseError, TransportHub, _mqtt_to
 from helpers import command, config, observation
 
 
@@ -24,13 +24,16 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
         self.hub._http_json = AsyncMock(return_value=(201, httpx.Headers(
             {"X-M2M-RI": self.rqi, "X-M2M-RSC": "2001"}), {}))
 
-    def mqtt(self, response=None):
+    def mqtt(self, response=None, *, target="test/receipts", confirmation_parent=None):
         def publish(topic, payload, qos, retain):
             wire = json.loads(payload)["m2m:rqp"]
             self.assertEqual(wire["rqi"], self.rqi)
-            self.assertEqual(wire["to"], "test/receipts")
+            self.assertEqual(wire["to"], target)
             if response is not None:
-                self.hub._receive(dict(rqi=self.rqi, rsc=response))
+                received = dict(rqi=self.rqi, rsc=response)
+                if confirmation_parent is not None:
+                    received["pc"] = {"m2m:cin": {"pi": confirmation_parent}}
+                self.hub._receive(received)
             return SimpleNamespace(rc=0)  # Queued / PUBACK alone cannot settle content.
         self.hub._mqtt = SimpleNamespace(publish=Mock(side_effect=publish))
         self.hub._ready.set()
@@ -59,6 +62,42 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
         mqtt_cin = json.loads(self.hub._mqtt.publish.call_args.kwargs["payload"])["m2m:rqp"]["pc"]
         self.assertEqual(kwargs["body"], mqtt_cin)
         self.assertEqual(self.hub._pending, {})
+
+    def pin_receipt_container(self, observed_ri):
+        self.hub.config.receipt_container_ri = "cnt-original"
+
+        async def exchange(method, _url, *, headers, body=None):
+            response = httpx.Headers({"X-M2M-RI": headers["X-M2M-RI"]})
+            if method == "GET":
+                response["X-M2M-RSC"] = "2000"
+                return 200, response, {"m2m:cnt": {"ty": 3, "ri": observed_ri}}
+            response["X-M2M-RSC"] = "2001"
+            return 201, response, {"m2m:cin": {"pi": "cnt-original"}}
+
+        self.hub._http_json.side_effect = exchange
+
+    async def test_pin_blocks_create_when_named_container_is_recreated(self):
+        self.pin_receipt_container("cnt-recreated")
+        self.mqtt(2001)
+        with self.assertRaises(ReceiptParentMismatch):
+            await self.hub.publish(self.rqi, self.container, self.payload)
+        self.hub._mqtt.publish.assert_not_called()
+        self.assertEqual([entry.args for entry in self.hub._http_json.await_args_list],
+                         [("GET", "https://cse.invalid/test/receipts")])
+
+    async def test_pin_uses_same_native_target_on_mqtt_timeout_and_https_fallback(self):
+        self.pin_receipt_container("cnt-original")
+        self.mqtt(target="cnt-original")
+        await self.hub.publish(self.rqi, self.container, self.payload)
+        self.assertEqual([entry.args for entry in self.hub._http_json.await_args_list],
+                         [("GET", "https://cse.invalid/test/receipts"), ("POST", "https://cse.invalid/cnt-original")])
+
+    async def test_pin_requires_mqtt_confirmation_from_the_expected_parent(self):
+        self.pin_receipt_container("cnt-original")
+        self.mqtt(2001, target="cnt-original", confirmation_parent="cnt-recreated")
+        with self.assertRaises(ReceiptParentMismatch):
+            await self.hub.publish(self.rqi, self.container, self.payload)
+        self.hub._http_json.assert_awaited_once()
 
     async def test_scoped_core_requires_the_matching_application_receipt(self):
         self.hub.config.core_telemetry_epochs = {"kr-test": 7}

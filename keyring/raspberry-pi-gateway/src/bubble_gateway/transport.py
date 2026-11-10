@@ -33,6 +33,10 @@ class RemoteResponseError(RuntimeError):
         self.status_code = status_code
 
 
+class ReceiptParentMismatch(RemoteResponseError):
+    """The authenticated CSE did not confirm the configured receipt resource."""
+
+
 def _pairs(items: list[tuple[str, Any]]) -> dict[str, Any]:
     result = {}
     for key, value in items:
@@ -302,6 +306,23 @@ class TransportHub:
             raise RemoteResponseError("oneM2M HTTP response has no valid result code", status_code=status) from exc
         return rsc
 
+    def _receipt_pin(self, container: str) -> str | None:
+        return self.config.receipt_container_ri if container == self.config.receipt_container else None
+
+    async def _verify_receipt_container(self, path: str, pin: str) -> None:
+        rqi = "receipt-parent-" + uuid.uuid4().hex
+        status, headers, document = await self._http_json("GET", self._cse_url + path, headers=self._m2m_headers(rqi))
+        rsc = self._response_rsc(status, headers, rqi)
+        parent = document.get("m2m:cnt")
+        if (status != 200 or rsc != 2000 or not isinstance(parent, dict)
+                or type(parent.get("ty")) is not int or parent["ty"] != 3 or parent.get("ri") != pin):
+            raise ReceiptParentMismatch("oneM2M receipt container identity mismatch", rsc, status)
+
+    @staticmethod
+    def _require_receipt_parent(cin: Any, pin: str | None, rsc: int, status: int | None = None) -> None:
+        if pin is not None and (not isinstance(cin, dict) or cin.get("pi") != pin):
+            raise ReceiptParentMismatch("oneM2M receipt instance parent mismatch", rsc, status)
+
     async def read_content(self, rqi: str, container: str) -> Any:
         """Read the native content instance named by its original request ID."""
         return (await self.read_content_instance(rqi, container))["con"]
@@ -317,6 +338,7 @@ class TransportHub:
         if (status != 200 or rsc != 2000 or not isinstance(existing, dict)
                 or existing.get("rn") != rn or "con" not in existing):
             raise RemoteResponseError("unable to establish existing content identity", rsc, status)
+        self._require_receipt_parent(existing, self._receipt_pin(container), rsc, status)
         return existing
 
     async def _existing(self, rqi: str, container: str, payload: dict[str, Any]) -> None:
@@ -333,12 +355,19 @@ class TransportHub:
         cin = {"rn": rn, "cnf": "application/json:0", "con": payload}
         if len(_json(cin)) > MAX_BODY:
             raise ValueError("outgoing content exceeds size limit")
+        pin = self._receipt_pin(container)
+        target = container
+        if pin is not None:
+            await self._verify_receipt_container(path, pin)
+            # Write to the verified resource itself even if its name is later rebound.
+            target = f"/{pin}"
+            path = _resource_path(target)
         if self.config.m2m_mqtt_enabled and self._mqtt is not None and self._ready.is_set():
             if rqi in self._pending:
                 raise RuntimeError("request ID already in flight")
             future = asyncio.get_running_loop().create_future()
             self._pending[rqi] = future
-            primitive = {"op": 1, "to": _mqtt_to(container), "fr": self.config.originator,
+            primitive = {"op": 1, "to": _mqtt_to(target), "fr": self.config.originator,
                          "rqi": rqi, "ty": 4, "rvi": self.config.rvi, "pc": {"m2m:cin": cin}}
             try:
                 wire = {"m2m:rqp": primitive} if self.config.mqtt_wrapped_primitive else primitive
@@ -348,6 +377,9 @@ class TransportHub:
                 response = await asyncio.wait_for(future, self.config.request_timeout)
                 rsc = response["rsc"]
                 if rsc == 2001:
+                    if pin is not None:
+                        pc = response.get("pc")
+                        self._require_receipt_parent(pc.get("m2m:cin") if isinstance(pc, dict) else None, pin, rsc)
                     return
                 if rsc == 4105:
                     await self._existing(rqi, container, payload)
@@ -363,10 +395,12 @@ class TransportHub:
                     future.cancel()
                 elif not future.cancelled():
                     future.exception()
-        status, headers, _ = await self._http_json(
+        status, headers, document = await self._http_json(
             "POST", self._cse_url + path, headers=self._m2m_headers(rqi, create=True), body={"m2m:cin": cin})
         rsc = self._response_rsc(status, headers, rqi)
         if 200 <= status < 300 and rsc == 2001:
+            if pin is not None:
+                self._require_receipt_parent(document.get("m2m:cin"), pin, rsc, status)
             return
         if rsc == 4105:
             await self._existing(rqi, container, payload)

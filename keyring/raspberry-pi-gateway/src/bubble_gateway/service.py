@@ -54,6 +54,7 @@ class Gateway:
             "gatewayId": self.config.gateway_id, "originator": self.config.originator,
             "cseId": self.config.cse_id, "cseUrl": self.config.cse_url,
             "cseDeploymentId": self.config.cse_deployment_id,
+            "receiptContainerRi": self.config.receipt_container_ri,
             "apiUrl": self.config.api_url, "rvi": self.config.rvi,
             "mqttEnabled": self.config.mqtt_enabled, "mqttHost": self.config.mqtt_host,
             "m2mMqttEnabled": self.config.m2m_mqtt_enabled,

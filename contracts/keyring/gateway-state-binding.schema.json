@@ -37,6 +37,10 @@
       "type": "string",
       "pattern": "^/"
     },
+    "receiptContainerRi": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$"
+    },
     "healthContainer": {
       "type": "string",
       "pattern": "^/"
@@ -54,6 +58,6 @@
   ],
   "if": { "properties": { "bindingVersion": { "const": 2 } } },
   "then": { "required": ["cseDeploymentId"] },
-  "else": { "not": { "required": ["cseDeploymentId"] } },
+  "else": { "not": { "anyOf": [{ "required": ["cseDeploymentId"] }, { "required": ["receiptContainerRi"] }] } },
   "additionalProperties": false
 }
