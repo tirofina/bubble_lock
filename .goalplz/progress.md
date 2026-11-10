@@ -322,3 +322,8 @@ DOC-REV 2.0.0. 원격 main `715ef58`와 CORE `d54a43a` 확인. main의 `413fd31`
 기존 Feather ESP32 V2·1.54인치 ST7789·A0/A1 배선에 맞는 별도 벤치 펌웨어를 추가했다. 기본과 BLE 활성 빌드 2개 통과. Windows의 제한된 벤치 광고 검색 실행은 성공했고 대상 0개. COM12는 Windows 장치 목록에서 확인했다. 실물 업로드와 BLE 연결 시험은 별도 단계다.
 
 Pi Zero 2 W는 USB 데이터 포트에 연결됐고 초록 LED가 계속 켜져 있다. Windows에 Gadget 네트워크 어댑터가 없고 해당 Wi-Fi는 5GHz 채널 153으로 확인됐다. 사용자가 Pi의 네트워크를 재설정 중이다. 다음 단계는 Pi 호스트명/IP와 SSH 확인, Feather 시험 업로드 승인 및 장치 관측이다. [실행 기록](../keyring/evidence/2026-11-10-feather-arm64/README.md)
+
+
+## 2026-11-10 — Feather 실물 교체와 Windows BLE
+
+사용자 승인으로 Feather ESP32 V2·1.54인치 ST7789·A0/A1 구성에 시험용 펌웨어를 올렸다. COM12 업로드 해시 검증, `FEATHER PROBE READY` 부팅 로그, Windows PIN 페어링, Gateway `released` 수신을 확인했다. 180초 관측에서 A0/A1은 수신되지 않아 버튼 입력과 실제 화면 표시 확인이 남았다. 복구 파일 4개와 시험 PIN은 로컬에 보관했다. main/CORE/WEB HEAD는 이전 확인과 같았다. [실물 실행 기록](../keyring/evidence/2026-11-10-feather-device/README.md)

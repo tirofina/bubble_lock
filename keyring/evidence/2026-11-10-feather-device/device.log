@@ -1,0 +1,16 @@
+Wrote 23488 bytes (15091 compressed) at 0x00001000 in 0.4 seconds (433.2 kbit/s).
+Hash of data verified.
+Wrote 3072 bytes (146 compressed) at 0x00008000 in 0.0 seconds (524.5 kbit/s).
+Hash of data verified.
+Wrote 8192 bytes (47 compressed) at 0x0000e000 in 0.1 seconds (787.7 kbit/s).
+Hash of data verified.
+Wrote 1160592 bytes (743276 compressed) at 0x00010000 in 10.5 seconds (884.1 kbit/s).
+Hash of data verified.
+Hard resetting via RTS pin...
+New upload port: COM12 (serial)
+rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+FEATHER PROBE READY
+Feather adverts: 1
+Pairing status: PAIRED
+{"buttonState": "released", "sequence": 18}
+{"observed": ["released"], "missing": ["confirm", "panic"], "lastError": null}

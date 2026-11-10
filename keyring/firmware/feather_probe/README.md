@@ -26,4 +26,4 @@ python keyring/firmware/feather_probe/observe.py --scan-only
 python keyring/firmware/feather_probe/observe.py --seconds 90
 ```
 
-첫 명령은 해당 광고만 검색한다. 두 번째는 등록한 벤치에 연결하며, Windows 페어링 창이 열리면 로컬 시험용 PIN을 입력한다. 버튼을 뗀 상태, A0, A1을 차례로 확인한다. 이 도구는 결과를 콘솔에 출력한다.
+첫 명령은 해당 광고만 검색한다. Windows에서는 `keyring-feather-lab`을 먼저 PIN으로 페어링한 뒤 두 번째 명령을 실행한다. 이번 벤치에서는 Windows의 PIN 페어링 API에서 암호화와 인증을 요구해 등록했다. 버튼을 뗀 상태, A0, A1을 차례로 확인하며 도구는 결과를 콘솔에 출력한다.

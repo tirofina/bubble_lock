@@ -307,6 +307,20 @@
     "arm64GatewayTestsPassed": 57,
     "centralMtlsTestsPassed": 1,
     "piSshVerified": false,
-    "receipt": "evidence/2026-11-10-feather-arm64/receipt.json"
+    "receipt": "evidence/2026-11-10-feather-arm64/receipt.json",
+    "featherDevice": {
+      "flashVerified": true,
+      "bootReady": true,
+      "pinPairingPassed": true,
+      "buttonStatesObserved": [
+        "released"
+      ],
+      "buttonStatesPending": [
+        "confirm",
+        "panic"
+      ],
+      "physicalDisplayConfirmed": false,
+      "receipt": "evidence/2026-11-10-feather-device/receipt.json"
+    }
   }
 }
