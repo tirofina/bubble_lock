@@ -152,7 +152,7 @@ class CentralDispatchTests(unittest.IsolatedAsyncioTestCase):
             method, self.stack.origin + path, headers=headers, body=body)
         return status, self.reader._response_rsc(status, response, rqi), document
 
-    async def exercise(self, *, revoke_before_connect, core_peer=None):
+    async def exercise(self, *, revoke_before_connect, core_peer=None, wrong_receipt_boot=False):
         gateway = Gateway(self.config)
         connect = asyncio.Event()
         writes = []
@@ -223,7 +223,8 @@ class CentralDispatchTests(unittest.IsolatedAsyncioTestCase):
                 if self.buffer.endswith(b"\n"):
                     frames.append(json.loads(self.buffer))
                     self.buffer.clear()
-                    ack = json.dumps(device_receipt(test.command, test.digest)).encode() + b"\n"
+                    receipt_boot = "boot-prior" if wrong_receipt_boot else identity["bootId"]
+                    ack = json.dumps(device_receipt(test.command, test.digest, bootId=receipt_boot)).encode() + b"\n"
                     for offset in range(0, len(ack), 20):
                         self.callbacks[fleet.receipt_uuid](None, bytearray(ack[offset:offset + 20]))
 
@@ -277,7 +278,12 @@ class CentralDispatchTests(unittest.IsolatedAsyncioTestCase):
                 connect.set()
                 await wait_for(lambda: command_row()["receipt_delivered"] == 1, runner)
                 local = json.loads(command_row()["receipt"])
-                expected = ("REJECTED", "NOT_AUTHORIZED") if revoke_before_connect else ("APPLIED", "APPLIED")
+                if revoke_before_connect:
+                    expected = ("REJECTED", "NOT_AUTHORIZED")
+                elif wrong_receipt_boot:
+                    expected = ("INDETERMINATE", "DEVICE_UNAVAILABLE")
+                else:
+                    expected = ("APPLIED", "APPLIED")
                 self.assertEqual((local["status"], local["ackCode"]), expected)
                 self.assertEqual(local["payloadHash"], self.digest)
                 if revoke_before_connect:
@@ -289,7 +295,11 @@ class CentralDispatchTests(unittest.IsolatedAsyncioTestCase):
                     for key in ("commandId", "deviceId", "desiredState", "grantRevision", "ownershipEpoch"):
                         self.assertEqual(frames[0][key], self.command[key])
                     self.assertEqual(frames[0]["payloadHash"], self.digest)
-                    self.assertEqual(local["readback"], {"state": True})
+                    if wrong_receipt_boot:
+                        self.assertIsNone(local["readback"])
+                        self.assertIsNone(acknowledgement(local))
+                    else:
+                        self.assertEqual(local["readback"], {"state": True})
                 rqi = Store.request_id("receipt", self.command["commandId"])
                 parent = self.config.receipt_container
                 rn = "gw-" + hashlib.sha256(rqi.encode()).hexdigest()
@@ -314,7 +324,7 @@ class CentralDispatchTests(unittest.IsolatedAsyncioTestCase):
                     facts.update(mqttVersion="3.1.1", mqttTls="1.3", coreAckQos=1,
                                  forgedPayloadDenied=True, gatewayCommandPublishDenied=True,
                                  exactMqttCopyReceived=True, coreAckMatchesCin=True)
-                elif not revoke_before_connect:
+                elif not revoke_before_connect and not wrong_receipt_boot:
                     approval, = approvals
                     facts["coreAckBinding"] = await self.check_core_binding(cin["m2m:cin"]["con"], approval)
             finally:
@@ -342,6 +352,9 @@ class CentralDispatchTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_grant_revoked_after_poll_is_rejected_without_gatt_write(self):
         await self.exercise(revoke_before_connect=True)
+
+    async def test_wrong_boot_applied_receipt_stays_indeterminate_without_replay(self):
+        await self.exercise(revoke_before_connect=False, wrong_receipt_boot=True)
 
     async def test_core_fallback_requires_the_real_central_command_hash(self):
         api = self.reader._api

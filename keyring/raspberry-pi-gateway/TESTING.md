@@ -1,5 +1,7 @@
 # Gateway 로컬 시험
 
+Gateway 0.2.8은 기본 73개와 중앙 명령 통합 5개 시험이 통과했다. 현재 부팅과 다른 `APPLIED`를 미확정으로 처리하고 과거 `DUPLICATE` readback은 보존한다. [부팅 ID 시험](../evidence/2026-11-10-receipt-boot/README.md)
+
 Gateway 0.2.7은 기본 71개, 중앙 명령 통합 4개, 별도 MQTT 6개 시험이 통과했다. 중앙 명령 통합은 실제 Mosquitto의 명령·ACK 전송과 Mobius4 영수증 대조를 포함한다. [수신 시험](../evidence/2026-11-10-command-ingress/README.md) · [브로커 시험](../evidence/2026-11-10-mqtt-command-wire/README.md)
 
 Gateway 0.2.6은 로컬 기본 시험 67개와 실제 Ubuntu systemd의 시작 전 검사 3개가 통과했다. systemd 시험은 배포 unit의 격리 설정을 복사한 임시 unit에서 wheel의 `--check-config`를 실행하고, 성공한 경우에만 본 실행 표시를 남긴다. [실행 범위와 재현 절차](../evidence/2026-11-10-deployment-preflight/README.md)
@@ -26,7 +28,7 @@ MQTT 단독 수신 시험은 목록 조회에만 503 오류를 주입한다. 대
 
 ## Feather LED ON/OFF 시험
 
-Feather 명령 펌웨어 0.2.0과 [Pi 벤치 연결 절차](../evidence/2026-11-10-pi-full-daemon/README.md#재현-절차)를 사용한다. PC의 시험 fixture는 새 CA·Mobius4 컨테이너·팀 중앙 API를 열고, Gateway와 Guardian에 별도 인증서를 발급한다. Guardian은 PC에만 두고 Pi에는 Gateway bundle을 전달한다. Pi는 Gateway 0.2.7, 새 SQLite, `FIRMWARE_REVISION_ALLOWLIST=feather-probe-0.2.0`, `MQTT_ENABLED=false`, `CORE_BRIDGE_ENABLED=false`로 시작한다.
+Feather 명령 펌웨어 0.2.0과 [Pi 벤치 연결 절차](../evidence/2026-11-10-pi-full-daemon/README.md#재현-절차)를 사용한다. PC의 시험 fixture는 새 CA·Mobius4 컨테이너·팀 중앙 API를 열고, Gateway와 Guardian에 별도 인증서를 발급한다. Guardian은 PC에만 두고 Pi에는 Gateway bundle을 전달한다. Pi는 Gateway 0.2.7 이상, 새 SQLite, `FIRMWARE_REVISION_ALLOWLIST=feather-probe-0.2.0`, `MQTT_ENABLED=false`, `CORE_BRIDGE_ENABLED=false`로 시작한다.
 
 ```powershell
 $bench = '<저장소 밖의 새 절대 경로>'

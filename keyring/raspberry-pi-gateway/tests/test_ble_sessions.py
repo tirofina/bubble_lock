@@ -218,6 +218,38 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
         current.callbacks[self.fleet.receipt_uuid](None, bytearray(json.dumps(receipt).encode() + b"\n"))
         self.assertEqual((await pending)["bootId"], "boot-2")
 
+    async def test_applied_from_a_different_boot_cannot_settle_current_command(self):
+        old, current = await self.reconnect()
+        cmd = command()
+        digest = payload_hash(cmd)
+        pending = self.peer.pending = asyncio.get_running_loop().create_future()
+        self.peer.pending_command, self.peer.pending_hash = cmd["commandId"], digest
+        receipt = device_receipt(cmd, digest, bootId=old.identity["bootId"])
+        notify = current.callbacks[self.fleet.receipt_uuid]
+        unrelated = dict(receipt, commandId="unrelated")
+        notify(None, bytearray(json.dumps(unrelated).encode() + b"\n"))
+        self.assertFalse(pending.done())
+        self.assertTrue(self.peer.ready.is_set())
+        notify(None, bytearray(json.dumps(receipt).encode() + b"\n"))
+        with self.assertRaises(BleUnavailable):
+            await pending
+        self.assertEqual(self.peer.last_error, "receipt_boot_mismatch")
+        self.assertFalse(self.peer.ready.is_set())
+
+    async def test_duplicate_from_a_different_boot_preserves_historical_readback(self):
+        old, current = await self.reconnect()
+        cmd = command()
+        digest = payload_hash(cmd)
+        pending = self.peer.pending = asyncio.get_running_loop().create_future()
+        self.peer.pending_command, self.peer.pending_hash = cmd["commandId"], digest
+        receipt = device_receipt(cmd, digest, bootId=old.identity["bootId"], ackCode="DUPLICATE")
+        current.callbacks[self.fleet.receipt_uuid](None, bytearray(json.dumps(receipt).encode() + b"\n"))
+        result = self.fleet._receipt_times(self.peer, await pending)
+        self.assertEqual(result["bootId"], "boot-1")
+        self.assertEqual(result["readback"], {"state": True})
+        self.assertEqual(result["timestampSource"], "unavailable")
+        self.assertTrue(self.peer.ready.is_set())
+
     async def test_partial_command_never_continues_on_replacement_client(self):
         replacement = SimpleNamespace(is_connected=True, write_gatt_char=AsyncMock())
 

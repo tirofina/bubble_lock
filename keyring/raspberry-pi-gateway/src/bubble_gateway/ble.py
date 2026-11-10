@@ -414,6 +414,10 @@ class BleFleet:
                     # An old notification cannot settle the current command.
                     continue
                 if peer.pending is not None and not peer.pending.done():
+                    if frame["ackCode"] == "APPLIED" and frame["bootId"] != peer.identity.get("bootId"):
+                        # Fresh applies use the current boot. Journal replays use their original boot and result code.
+                        self._protocol_failure(peer, "receipt_boot_mismatch")
+                        return
                     peer.pending.set_result(frame)
         except (BleProtocolError, ValueError, TypeError):
             self._protocol_failure(peer, "invalid_receipt")

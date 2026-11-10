@@ -1,5 +1,9 @@
 # BLE 재접속과 명령 세션
 
+## 현재 부팅과 새 적용 영수증
+
+Gateway 0.2.8은 대기 중인 commandId와 payloadHash가 일치하는 `APPLIED`에 현재 GATT identity의 bootId를 요구한다. 부팅 ID가 다르면 세션을 끊고 명령 결과를 미확정으로 기록한다. 이미 전송한 명령은 자동 재실행하지 않는다. 과거 journal의 `DUPLICATE`는 원래 bootId와 적용 당시 readback을 유지하며, 현재 부팅의 관측 시각으로 환산하지 않는다.
+
 ## 2026-11-10 — BlueZ 초기 READ와 알림 버퍼 분리
 
 Gateway0.2.4는 초기 observation READ·검증·큐 등록을 observation 알림 구독 이전에 수행한다. 실제 Pi의 BlueZ가 READ 전체 값을 PropertiesChanged로도 보내면서 LF 알림 버퍼에 섞이는 오류를 재현했다. 같은 재현 시험의 수정 전 FAIL→후 PASS와 기본58개 통과, 실물90초45개 관측·버튼3상태 수신을 확인했다. [실물 Pi 증거](../evidence/2026-11-10-pi-feather/README.md)를 따른다. session generation·인증·JSON/LF 검사는 유지한다.
@@ -18,7 +22,7 @@ Gateway0.2.0은 GATT 조각을 보낼 때마다 `peer.client`를 다시 조회�
 4. 오래된 명령의 예외 처리와 future 정리는 새 연결을 종료하거나 다른 pending 상태를 지우지 않는다. 실패 결과는 기존 Gateway receipt 처리에서 미확정 상태로 남기며 자동 재실행하지 않는다.
 5. identity 확인·notify 등록·최초 observation READ가 끝날 때까지 세션을 확인한다. 도중에 연결 또는 프로토콜이 실패하면 ready로 승격하지 않는다. journal capture의 마지막 identity 확인도 generation을 확인한다.
 
-장치 journal의 과거 boot receipt는 같은 현재 연결을 통해 다시 조회할 수 있다. 과거 bootId라는 이유만으로 거절하지 않는다. 콜백이 속한 연결과 장치가 보관한 명령의 bootId는 서로 다른 검사 대상이다.
+현재 연결을 통해 장치 journal의 과거 결과를 받을 수 있다. 과거 결과의 bootId와 알림 콜백이 속한 연결을 각각 확인한다.
 
 ## 회귀 시험
 
