@@ -43,6 +43,7 @@ class Gateway:
         self.credential_status = "UNKNOWN"
         self.credential_revision: str | None = None
         self.credential_checked = float("-inf")
+        self.credential_generation = 0
         self.counters: Counter = Counter()
         self.runtime_digest = self._runtime_digest()
 
@@ -82,9 +83,10 @@ class Gateway:
             self.clock_trusted = False
         return self.clock_trusted
 
-    def _credentials_active(self) -> bool:
+    def _credentials_active(self, generation: int | None = None) -> bool:
         return (self.credential_status == "ACTIVE"
-                and time.monotonic() - self.credential_checked <= self.config.credential_ttl)
+                and time.monotonic() - self.credential_checked <= self.config.credential_ttl
+                and (generation is None or generation == self.credential_generation))
 
     def _receipt(self, command: dict, digest: str, status: str, code: str,
                  detail: str | None = None, device: dict | None = None) -> dict:
@@ -129,23 +131,35 @@ class Gateway:
             self.counters["observations_invalid"] += 1
             LOG.warning("Rejected invalid observation")
 
+    async def _refresh_credentials(self) -> None:
+        requested_at = time.monotonic()
+        try:
+            result = validate_credential_status(await self.transport.credential_status(), self.config.gateway_id)
+            previous = (self.credential_status, self.credential_revision)
+            current = (result["status"], result["credentialRevision"])
+            changed = previous != current
+            expired = self.credential_status == "ACTIVE" and not self._credentials_active()
+            if changed or expired:
+                self.credential_generation += 1
+            self.credential_status, self.credential_revision = current
+            # The server may have read the status at any point during the request.
+            self.credential_checked = requested_at
+            if changed:
+                self.counters["credential_changes"] += 1
+                self._enqueue_health()
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            if self.credential_status != "UNKNOWN":
+                self.credential_generation += 1
+            self.credential_status = "UNKNOWN"
+            self.credential_checked = float("-inf")
+            self.counters["credential_errors"] += 1
+            LOG.warning("Credential status unavailable (%s); new execution fenced", type(exc).__name__)
+
     async def _credentials_loop(self) -> None:
         while not self.stop.is_set():
-            try:
-                result = validate_credential_status(await self.transport.credential_status(), self.config.gateway_id)
-                previous = (self.credential_status, self.credential_revision)
-                self.credential_status = result["status"]
-                self.credential_revision = result["credentialRevision"]
-                self.credential_checked = time.monotonic()
-                if previous != (self.credential_status, self.credential_revision):
-                    self.counters["credential_changes"] += 1
-                    self._enqueue_health()
-            except asyncio.CancelledError:
-                raise
-            except Exception as exc:
-                self.credential_status = "UNKNOWN"
-                self.counters["credential_errors"] += 1
-                LOG.warning("Credential status unavailable (%s); new execution fenced", type(exc).__name__)
+            await self._refresh_credentials()
             await self._pause(self.config.credential_check_interval)
 
     async def _poll_loop(self) -> None:
@@ -214,7 +228,7 @@ class Gateway:
             return
         if not self._credentials_active():
             return  # Persisted pending; retry until credential recovery or command expiry.
-        credential_revision = self.credential_revision
+        credential_generation = self.credential_generation
         device_id = command["deviceId"]
         generation = self.ble.command_session(device_id)
         if generation is None:
@@ -228,8 +242,7 @@ class Gateway:
             self.counters["authorization_unavailable"] += 1
             LOG.warning("Authorization unavailable (%s); execution deferred", type(exc).__name__)
             return
-        if (not self._credentials_active() or self.credential_revision != credential_revision
-                or not self._clock_ok()):
+        if not self._credentials_active(credential_generation) or not self._clock_ok():
             return
         try:
             deadline = authorization_deadline(command, digest, response)
@@ -251,7 +264,7 @@ class Gateway:
         def require_write_authority() -> None:
             if not self._clock_ok():
                 raise DispatchBlocked("CLOCK_UNTRUSTED")
-            if not self._credentials_active() or self.credential_revision != credential_revision:
+            if not self._credentials_active(credential_generation):
                 raise DispatchBlocked("CREDENTIAL_CHANGED")
             if deadline - utc_now() <= margin:
                 raise DispatchBlocked("EXPIRED")

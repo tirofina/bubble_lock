@@ -7,7 +7,7 @@ from collections import Counter
 from datetime import timedelta
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock, Mock, patch
 
 from bubble_gateway.model import iso_time, payload_hash, utc_now
 from bubble_gateway.service import Gateway
@@ -31,6 +31,8 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
         self.gateway.credential_status = "ACTIVE"
         self.gateway.credential_revision = "rev-1"
         self.gateway.credential_checked = time.monotonic()
+        self.gateway.credential_generation = 0
+        self.gateway._enqueue_health = Mock()
         self.gateway.counters = Counter()
         self.gateway.stop = asyncio.Event()
         self.cmd = command()
@@ -40,6 +42,9 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
                               ("commandId", "deviceId", "claimId", "grantRevision", "ownershipEpoch")}
         self.authorization.update(allowed=True, payloadHash=self.digest, expiresAt=self.cmd["deadline"])
         self.gateway.transport = SimpleNamespace(authorize=AsyncMock(return_value=self.authorization),
+                                                 credential_status=AsyncMock(return_value=dict(
+                                                     gatewayId=self.gateway.config.gateway_id,
+                                                     status="ACTIVE", credentialRevision="rev-1")),
                                                  publish=AsyncMock(), native_delivery_hold=NativeDeliveryHold)
         self.gateway.ble = SimpleNamespace(command_session=Mock(return_value=1),
                                            execute=AsyncMock(return_value=device_receipt(self.cmd, self.digest)))
@@ -88,13 +93,67 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_credential_rotation_during_authorization_defers_for_fresh_decision(self):
         async def authorize(_command, _digest):
-            self.gateway.credential_revision = "rev-2"
+            status_api = self.gateway.transport.credential_status
+            status_api.return_value["credentialRevision"] = "rev-2"
+            await self.gateway._refresh_credentials()
             return self.authorization
 
         self.gateway.transport.authorize.side_effect = authorize
         self.assertEqual(await self.dispatch(), ("RECEIVED", None))
         self.gateway.ble.execute.assert_not_awaited()
         self.assertEqual(self.store.interrupted(), [])
+
+    async def recover_after_credential_failure(self):
+        status_api = self.gateway.transport.credential_status
+        status_api.side_effect = ConnectionError("synthetic status outage")
+        await self.gateway._refresh_credentials()
+        self.assertEqual(self.gateway.credential_status, "UNKNOWN")
+        status_api.side_effect = None
+        await self.gateway._refresh_credentials()
+        self.assertTrue(self.gateway._credentials_active())
+        self.assertEqual(self.gateway.credential_revision, "rev-1")
+
+    async def test_same_revision_recovery_during_authorize_requires_a_new_decision(self):
+        async def authorize(_command, _digest):
+            await self.recover_after_credential_failure()
+            return self.authorization
+
+        self.gateway.transport.authorize.side_effect = authorize
+        self.assertEqual(await self.dispatch(), ("RECEIVED", None))
+        self.gateway.ble.execute.assert_not_awaited()
+        self.assertEqual(self.store.interrupted(), [])
+
+        self.gateway.transport.authorize.side_effect = None
+        self.assertEqual((await self.dispatch())[0], "APPLIED")
+        self.assertEqual(self.gateway.transport.authorize.await_count, 2)
+
+    async def test_ttl_gap_during_authorize_requires_a_new_decision(self):
+        async def authorize(_command, _digest):
+            self.gateway.credential_checked -= self.gateway.config.credential_ttl + 1
+            await self.gateway._refresh_credentials()
+            self.assertTrue(self.gateway._credentials_active())
+            return self.authorization
+
+        self.gateway.transport.authorize.side_effect = authorize
+        self.assertEqual(await self.dispatch(), ("RECEIVED", None))
+        self.gateway.ble.execute.assert_not_awaited()
+
+    async def test_continuous_same_revision_refresh_preserves_authority(self):
+        async def authorize(_command, _digest):
+            await self.gateway._refresh_credentials()
+            return self.authorization
+
+        self.gateway.transport.authorize.side_effect = authorize
+        self.assertEqual((await self.dispatch())[0], "APPLIED")
+        self.assertEqual(self.gateway.credential_generation, 0)
+
+    async def test_credential_ttl_is_measured_from_request_start(self):
+        self.gateway.credential_status = "UNKNOWN"
+        clock = SimpleNamespace(monotonic=Mock(side_effect=[100, 100 + self.gateway.config.credential_ttl + 1]))
+        with patch("bubble_gateway.service.time", clock):
+            await self.gateway._refresh_credentials()
+            self.assertFalse(self.gateway._credentials_active())
+        self.assertEqual(self.gateway.credential_checked, 100)
 
     async def test_clock_jump_during_intent_recording_blocks_ble(self):
         begin_dispatch = self.store.begin_dispatch
@@ -112,7 +171,19 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
     async def test_credential_change_after_ble_starts_is_terminal_and_uncertain(self):
         async def execute(_command, _budget, _digest, *, before_write, **_session):
             before_write()
-            self.gateway.credential_status = "REVOKED"
+            self.gateway.transport.credential_status.return_value["status"] = "REVOKED"
+            await self.gateway._refresh_credentials()
+            before_write()
+
+        self.gateway.ble.execute.side_effect = execute
+        status, receipt = await self.dispatch()
+        self.assertEqual((status, receipt["ackCode"]), ("INDETERMINATE", "CREDENTIAL_CHANGED"))
+        self.assertEqual(self.store.pending(), [])
+
+    async def test_same_revision_recovery_cannot_resume_partial_ble_write(self):
+        async def execute(_command, _budget, _digest, *, before_write, **_session):
+            before_write()
+            await self.recover_after_credential_failure()
             before_write()
 
         self.gateway.ble.execute.side_effect = execute

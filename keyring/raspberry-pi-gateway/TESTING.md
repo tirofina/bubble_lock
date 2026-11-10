@@ -1,5 +1,7 @@
 # Gateway 로컬 시험
 
+Gateway 0.2.34의 `test_dispatch.py` 회귀시험 소스는 중앙 승인 응답 대기 및 BLE 조각 전송 중의 동일 credential revision 복구, TTL 단절, 단절 없는 갱신, 느린 조회 응답의 freshness를 다룬다. 이번 버전의 시험과 실물 실행은 미수행이다.
+
 Gateway 0.2.27의 고정 컨테이너 회귀시험 소스는 HTTPS fallback 후 저장 확인, 다른 자원 ID와 본문 불일치, MQTT CREATE 성공 후 조회 timeout, 최초 생성·중복 요청에 대한 격리 CSE의 GET 횟수를 다룬다. 이 버전의 빌드와 시험은 미실행이다.
 
 Gateway 0.2.26에는 HTTPS `Retry-After` 회귀시험 소스를 추가했다. 모의 CSE 503 응답 이후 같은 origin의 추가 조회가 보류되고 별도 origin의 중앙 API 요청은 유지되는지, 원래 `rqi`로 재전송하는지, SQLite 재시작 뒤에도 개별 전송의 대기 시각이 남는지를 다룬다. 이 버전의 시험과 빌드는 미실행이다.
