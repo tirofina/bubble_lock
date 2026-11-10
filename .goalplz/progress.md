@@ -761,3 +761,13 @@ PostgreSQL 정산 소스 commit `a551e9ee797dfa18b26c85a79c23d5ceccd55df5`를 `o
 - 이번 실행은 임시 콜백 준비까지다. 실제 Mobius4 발신과 mTLS 중계 연결·구독 등록·콜백 요청·회귀시험·Pi/Feather 명령은 미실행이다. 전체 goal은 active/progress다.
 
 콜백 수신기 소스와 기동 증거 commit `f64bb1f3354793794aa15612d7857f0a50db23b7`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `e45a36a..f64bb1f`다.
+
+## 2026-11-10 — Mobius4 영수증 중계와 구독 실제 등록
+
+직전 goal turn은 격리 mTLS 콜백 리스너를 실제 준비한 progress다. DOC-REV 2.0.0, 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- scoped Mobius4의 네트워크 공간 내부 루프백에서만 요청을 받는 전용 중계를 추가했다. 호스트 포트를 게시하지 않고 기존 CSE 인스턴스를 유지했다. 중계의 HEAD 준비 요청은 PC 콜백에서 mTLS를 거쳐 HTTP 405·RSC 4005를 받았다.
+- `gw-a`와 `gw-b`의 전용 영수증 컨테이너에 직접 자식 cin 생성 구독 `keyring-settlement`를 등록했다. 두 요청은 HTTP 201·RSC 2001이고 RQI가 일치했다. 현재 Mobius4의 직접 URL 구독은 등록 때 알림 발신을 검증하지 않는다. [준비 증거](../keyring/evidence/2026-11-10-scoped-receipt-relay/provisioning.json)
+- 이번에는 임시 중계 연결과 구독 등록까지 실행했다. 수신 대기열과 정산은 각각 0행이며 실제 영수증 알림·정산·회귀시험·Pi/Feather 명령은 미실행이다. 전체 goal은 active/progress다.
+
+중계와 구독 준비 commit `3d78e2d53beb16a462d6703b51556875356a2216`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `55df99a..3d78e2d`다.
