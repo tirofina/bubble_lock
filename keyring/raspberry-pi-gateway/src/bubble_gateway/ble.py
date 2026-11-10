@@ -159,9 +159,10 @@ class _Peer:
     pending_command: str | None = None
     pending_hash: str | None = None
     anchor: tuple[str, int, datetime, float] | None = None
+    # The latest queued boot, sequence and uptime survive a BLE reconnect.
+    observation_watermark: tuple[str, int, int | None] | None = None
     rssi: int | None = None
     rssi_monotonic: float | None = None
-    last_sequence: int = -1
     last_error: str | None = None
     dropped_observations: int = 0
 
@@ -187,15 +188,19 @@ class BleFleet:
 
     async def start(self, observation_callback: Callable[[dict[str, Any]], Awaitable[None]], *,
                     trace: Callable[[dict[str, Any]], None] | None = None,
-                    trace_observation: bool = False) -> None:
+                    trace_observation: bool = False,
+                    observation_heads: dict[str, tuple[str, int]] | None = None) -> None:
         if self._tasks:
             raise RuntimeError("BLE fleet already started")
         self._closed.clear()
         self._callback = observation_callback
         self._trace = trace
         self._trace_observation = trace_observation
+        committed = observation_heads or {}
         self._tasks.append(asyncio.create_task(self._scan(), name="ble-scan"))
         for peer in self._peers.values():
+            head = committed.get(peer.device_id)
+            peer.observation_watermark = (*head, None) if head is not None else None
             self._tasks.append(asyncio.create_task(self._watch(peer), name=f"ble-{peer.device_id}"))
             self._tasks.append(asyncio.create_task(self._deliver(peer), name=f"ble-data-{peer.device_id}"))
 
@@ -252,6 +257,7 @@ class BleFleet:
         peer.generation += 1
         peer.ready.clear()
         peer.command_writable = False
+        peer.anchor = None
         peer.disconnected.set()
         if peer.pending is not None and not peer.pending.done():
             peer.pending.set_exception(BleUnavailable("BLE disconnected before a matching receipt"))
@@ -280,8 +286,6 @@ class BleFleet:
                     await peer.seen.wait()
                 peer.disconnected.clear()
                 peer.identity = {}
-                peer.anchor = None
-                peer.last_sequence = -1
                 peer.observation_frames = _Frames()
                 peer.receipt_frames = _Frames()
                 client = BleakClient(peer.discovered, pair=self.config.ble_pair,
@@ -378,13 +382,17 @@ class BleFleet:
             raise BleProtocolError("invalid battery alert for the reported charge")
         if "ina219" in frame["sensorValues"]:
             _power_reading(frame["sensorValues"]["ina219"], frame["uptimeMs"])
-        if frame["sequence"] <= peer.last_sequence:
-            return
+        boot_id, sequence, device_uptime = frame["bootId"], frame["sequence"], frame["uptimeMs"]
+        previous = peer.observation_watermark
+        if previous is not None and previous[0] == boot_id:
+            if sequence <= previous[1]:
+                return
+            if previous[2] is not None and device_uptime < previous[2]:
+                raise BleProtocolError("observation uptime regressed within the same boot")
         received = datetime.now(timezone.utc)
-        peer.last_sequence = frame["sequence"]
-        peer.anchor = (frame["bootId"], frame["uptimeMs"], received, time.monotonic())
+        received_monotonic = time.monotonic()
         rssi_fresh = (peer.rssi_monotonic is not None
-                      and time.monotonic() - peer.rssi_monotonic <= 30.0)
+                      and received_monotonic - peer.rssi_monotonic <= 30.0)
         normalized = {
             "version": 1, "gatewayId": self.config.gateway_id, "deviceId": peer.device_id,
             "bootId": frame["bootId"], "sequence": frame["sequence"],
@@ -401,6 +409,8 @@ class BleFleet:
             self._protocol_failure(peer, "observation_backpressure")
             LOG.error("BLE observation queue full for %s; session interrupted", peer.device_id)
         else:
+            peer.observation_watermark = (boot_id, sequence, device_uptime)
+            peer.anchor = (boot_id, device_uptime, received, received_monotonic)
             if notification and peer.ready.is_set() and self._trace is not None:
                 fields = {"sequence": frame["sequence"]}
                 sensor = frame["sensorValues"]

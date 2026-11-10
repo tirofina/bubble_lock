@@ -1,5 +1,7 @@
 # Gateway 로컬 시험
 
+Gateway 0.2.40의 회귀시험 소스는 재연결의 이전 READ·알림, 같은 부팅의 uptime 역행, 새 부팅의 번호 초기화, 큐 포화, SQLite 커서 복구와 영수증 시각 추정을 다룬다. 이번 빌드·시험·실물 확인은 미실행이다.
+
 Gateway 0.2.37의 회귀시험 소스는 BlueZ가 쓰기 특성을 캐시한 상황에서 r18 관측 전용 revision의 관측은 받고 명령·저널 쓰기는 거절하는지 다룬다. [PCB 초기 구동](../pcb/BRING_UP.md)의 실물 실행은 미수행이다.
 
 ## r18 초기 구동 기록
@@ -91,7 +93,7 @@ bubble-keyring-ble-characterize --mode reconnect --hardware r18-pcb --verify-but
 
 첫 알림 뒤 확인·비상 버튼을 각각 누르고 뗀다. 두 누계가 모두 기록됐다는 안내를 확인한 뒤 키링 전원을 유지한 채 BLE 링크를 끊었다가 복구한다. 이미 두 누계가 0보다 크고 버튼을 뗀 상태면 안내가 바로 나온다.
 
-같은 부팅에서 sequence가 증가하고 uptime과 두 버튼 누계가 줄지 않아야 `RECORDED`다. 중간 세션을 포함해 다른 부팅을 확인하거나 sequence·uptime·누계가 역행하면 `MISMATCH`다. 경계 알림, 이전의 유효한 누계 또는 복구 누계가 빠지면 `INSUFFICIENT`다. 결과는 `buttonContinuity`에 두 알림의 위치와 누계 차이를 남긴다. 수신하지 못한 구간 안에서 버튼이 눌린 정확한 시각은 별도 기록으로 확인한다. 빌드·회귀시험·실물 재연결 기록은 미실행이다.
+같은 부팅에서 sequence가 증가하고 uptime과 두 버튼 누계가 줄지 않아야 `RECORDED`다. 중간 세션을 포함해 다른 부팅을 확인하거나 수용된 알림 사이에서 sequence·uptime·누계가 역행하면 `MISMATCH`다. 경계 알림, 이전의 유효한 누계 또는 복구 누계가 빠지면 `INSUFFICIENT`다. 0.2.40부터 이 판정에는 Gateway가 [수신 단계에서 수용한 알림](BLE_SESSIONS.md#재연결과-관측-시각-기준)을 사용한다. 결과는 `buttonContinuity`에 두 알림의 위치와 누계 차이를 남긴다. 수신하지 못한 구간 안에서 버튼이 눌린 정확한 시각은 별도 기록으로 확인한다. 빌드·회귀시험·실물 재연결 기록은 미실행이다.
 
 ### r18 wake 기록
 

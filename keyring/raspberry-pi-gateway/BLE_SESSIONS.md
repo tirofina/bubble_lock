@@ -10,6 +10,14 @@ Gateway 0.2.21은 중앙 응답의 `expiresAt`과 명령 `deadline` 중 이른 �
 
 Gateway 0.2.8은 대기 중인 commandId와 payloadHash가 일치하는 `APPLIED`에 현재 GATT identity의 bootId를 요구한다. 부팅 ID가 다르면 세션을 끊고 명령 결과를 미확정으로 기록한다. 이미 전송한 명령은 자동 재실행하지 않는다. 과거 journal의 `DUPLICATE`는 원래 bootId와 적용 당시 readback을 유지하며, 현재 부팅의 관측 시각으로 환산하지 않는다.
 
+## 재연결과 관측 시각 기준
+
+Gateway 0.2.40은 장치별 마지막으로 큐에 넣은 관측의 부팅 ID·sequence·uptime을 BLE 재연결 뒤에도 사용한다. 같은 부팅에서 이미 받은 번호 이하의 READ나 알림은 버린다. 번호가 증가해도 uptime이 이전보다 낮으면 프로토콜 오류로 연결을 해제한다. 새로 인증된 부팅은 낮은 번호로 시작할 수 있다.
+
+Gateway 프로세스가 다시 시작하면 기존 SQLite의 마지막 부팅 ID와 sequence로 중복 수신을 차단한다. SQLite의 기존 관측 커서는 uptime을 저장하지 않으므로 uptime 비교는 프로세스에서 새 관측을 받은 뒤 시작한다. 큐가 가득 차서 등록에 실패한 관측은 커서를 전진시키지 않는다.
+
+영수증 UTC 추정에 쓰는 시각 기준은 연결이 끝날 때 지운다. 새 연결에서 큐에 등록된 같은 부팅의 관측이 들어올 때 다시 잡는다. 그 전에는 영수증에 장치 결과를 유지하고 추정 시각은 `null`로 남긴다. 이 변경의 시험과 Pi 실물 확인은 미실행이다.
+
 ## 2026-11-10 — BlueZ 초기 READ와 알림 버퍼 분리
 
 Gateway0.2.4는 초기 observation READ·검증·큐 등록을 observation 알림 구독 이전에 수행한다. 실제 Pi의 BlueZ가 READ 전체 값을 PropertiesChanged로도 보내면서 LF 알림 버퍼에 섞이는 오류를 재현했다. 같은 재현 시험의 수정 전 FAIL→후 PASS와 기본58개 통과, 실물90초45개 관측·버튼3상태 수신을 확인했다. [실물 Pi 증거](../evidence/2026-11-10-pi-feather/README.md)를 따른다. session generation·인증·JSON/LF 검사는 유지한다.

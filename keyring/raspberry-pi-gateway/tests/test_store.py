@@ -175,7 +175,7 @@ class StoreTests(unittest.TestCase):
         self.store.max_rows = 1  # Ordinary traffic has no slots; critical receipts retain reservation.
         with self.assertRaises(CapacityError):
             self.store.observation(BINDING["observationContainer"], observation(), True)
-        self.assertEqual(self.store.db.execute("SELECT COUNT(*) FROM observations").fetchone()[0], 0)
+        self.assertEqual(self.store.observation_heads(), {})
         self.assertEqual(self.store.db.execute("SELECT COUNT(*) FROM core_sequences").fetchone()[0], 0)
         self.store.enqueue("receipt", "synthetic", BINDING["receiptContainer"], {}, critical=True)
         self.assertEqual(self.store.counts()[0], 1)
@@ -198,7 +198,9 @@ class StoreTests(unittest.TestCase):
         self.store.observation(BINDING["observationContainer"], observation(sequence=99), True)
         self.store.close()
         self.store = self.open_store()
+        self.assertEqual(self.store.observation_heads(), {"kr-test": ("boot-test", 99)})
         self.store.observation(BINDING["observationContainer"], observation(bootId="boot-new", sequence=0), True)
+        self.assertEqual(self.store.observation_heads(), {"kr-test": ("boot-new", 0)})
         frames = [json.loads(row[0]) for row in self.store.db.execute(
             "SELECT payload FROM outbox WHERE container='@core/telemetry'")]
         self.assertEqual(sorted(frame["sequence"] for frame in frames), [0, 1])

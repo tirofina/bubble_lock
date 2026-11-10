@@ -52,7 +52,7 @@ Gateway0.2.1은 각 GATT 연결에 프로세스 내부 generation을 할당해 �
 - 기본 JSON은 flat primitive다. PC capability probe에서 legacy wrapper가 필요하다고 확정하면 `MQTT_WRAPPED_PRIMITIVE=true`로 `{"m2m:rqp":primitive}`를 사용한다. 실패 시 임의 형식 전환은 없다. response의 fr은 설정한 CSE topic ID 또는 그 앞에 `/`를 붙인 정식 ID만 허용한다. 요청/응답 필드 근거: [oneM2M Recipes](https://recipes.onem2m.org/introduction/What-are-oneM2M-Requests/).
 - HTTPS fallback: CSE container URI에 POST, 동일 rqi/rn, `X-M2M-Origin`, `X-M2M-RI`, `X-M2M-RVI`, `Content-Type:application/json;ty=4`.
 - MQTT PUBACK만으로 완료 처리하지 않는다. matching rqi의 oneM2M 성공 rsc를 기다린다. 4105 충돌은 같은 rn을 GET하고 con이 일치할 때만 기존 성공으로 인정한다.
-- 중앙 receipt는 acceptedAt/appliedAt에 실제 펌웨어 uptime을 Gateway 시간 anchor로 변환한 값과 `timestampSource:"gateway-estimated"`를 기록한다. 재부팅/중복 등으로 UTC를 확정할 수 없으면 null을 기록한다.
+- 중앙 receipt는 acceptedAt/appliedAt에 실제 펌웨어 uptime을 현재 BLE 연결의 유효한 관측 기준으로 변환한 값과 `timestampSource:"gateway-estimated"`를 기록한다. 해당 부팅의 유효한 기준이 없으면 null을 기록한다. [재연결 시 관측 기준](raspberry-pi-gateway/BLE_SESSIONS.md#재연결과-관측-시각-기준)
 - PC가 Group/member 결과와 `pb:binarySwitch/state`를 집계한다. Gateway는 중앙 정책·자원 owner를 대신하지 않는다.
 
 ## 구현 모듈 연결

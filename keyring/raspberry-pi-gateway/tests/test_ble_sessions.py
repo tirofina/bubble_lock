@@ -355,14 +355,14 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
     async def ready(self, number):
         async with asyncio.timeout(1):
             while not (len(self.clients) == number and self.peer.ready.is_set()
-                       and self.peer.identity.get("bootId") == f"boot-{number}"):
-                if self.watcher.done():
+                       and self.peer.client is self.clients[number - 1]):
+                if self.watcher is not None and self.watcher.done():
                     self.watcher.result()
                     self.fail("fake connection watcher stopped before readiness")
                 await asyncio.sleep(0)
 
-    async def reconnect(self):
-        self.patch_client = patch("bubble_gateway.ble.BleakClient", side_effect=self.factory)
+    async def reconnect(self, *, factory=None, before_disconnect=None):
+        self.patch_client = patch("bubble_gateway.ble.BleakClient", side_effect=factory or self.factory)
         self.patch_client.start()
         self.addCleanup(self.patch_client.stop)
 
@@ -376,9 +376,72 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
         self.watcher = asyncio.create_task(self.fleet._watch(self.peer))
         await self.ready(1)
         old = self.clients[0]
+        if before_disconnect is not None:
+            before_disconnect(old)
         old.disconnect_callback(old)
         await self.ready(2)
         return old, self.clients[1]
+
+    def same_boot_factory(self, *args, **kwargs):
+        client = self.factory(*args, **kwargs)
+        client.identity["bootId"] = "boot-1"
+        return client
+
+    def notify_observation(self, client, sequence, uptime_ms):
+        frame = dict(client.frame(sequence), uptimeMs=uptime_ms)
+        client.callbacks[self.fleet.observation_uuid](None, bytearray((json.dumps(frame) + "\n").encode()))
+
+    async def test_same_boot_reconnect_ignores_stale_read_and_notify_until_new_observation(self):
+        events = []
+        self.fleet._trace = events.append
+        _, current = await self.reconnect(factory=self.same_boot_factory,
+                                          before_disconnect=lambda client: self.notify_observation(client, 6, 600))
+        self.assertEqual(self.peer.observations.qsize(), 2)  # First READ and the last notification of session one.
+        self.assertIsNone(self.peer.anchor)
+        self.notify_observation(current, 6, 600)
+        self.assertEqual(self.peer.observations.qsize(), 2)
+        self.assertEqual(self.peer.observation_watermark, ("boot-1", 6, 600))
+        cmd = command()
+        receipt = device_receipt(cmd, payload_hash(cmd), bootId="boot-1", acceptedUptimeMs=610, appliedUptimeMs=620)
+        self.assertEqual(self.fleet._receipt_times(self.peer, receipt)["timestampSource"], "unavailable")
+
+        self.notify_observation(current, 7, 700)
+        self.assertEqual(self.peer.observations.qsize(), 3)
+        self.assertEqual([event["sequence"] for event in events if event["event"] == "notification"], [6, 7])
+        self.assertEqual(self.fleet._receipt_times(self.peer, receipt)["timestampSource"], "gateway-estimated")
+
+    async def test_higher_sequence_cannot_hide_an_uptime_regression_on_same_boot(self):
+        _, current = await self.reconnect(factory=self.same_boot_factory)
+        self.notify_observation(current, 2, 99)
+        self.assertEqual(self.peer.observations.qsize(), 1)
+        self.assertEqual(self.peer.observation_watermark, ("boot-1", 1, 100))
+        self.assertIsNone(self.peer.anchor)
+        self.assertFalse(self.peer.ready.is_set())
+        self.assertEqual(self.peer.last_error, "invalid_observation")
+
+    async def test_new_boot_admits_its_lower_sequence_and_uptime(self):
+        await self.reconnect(before_disconnect=lambda client: self.notify_observation(client, 6, 600))
+        self.assertEqual(self.peer.observations.qsize(), 3)
+        self.assertEqual(self.peer.observation_watermark, ("boot-2", 1, 100))
+        self.assertEqual(self.peer.anchor[:2], ("boot-2", 100))
+
+    async def test_start_uses_committed_sequence_without_reusing_a_clock_anchor(self):
+        self.peer.discovered = object()
+        self.peer.seen.set()
+        deliver = AsyncMock()
+        with (patch("bubble_gateway.ble.BleakClient", side_effect=self.factory),
+              patch.object(self.fleet, "_scan", new_callable=AsyncMock)):
+            await self.fleet.start(deliver, observation_heads={"kr-test": ("boot-1", 6)})
+            try:
+                await self.ready(1)
+                self.assertEqual(self.peer.observation_watermark, ("boot-1", 6, None))
+                deliver.assert_not_awaited()
+                self.assertIsNone(self.peer.anchor)
+                self.notify_observation(self.clients[0], 7, 700)
+                self.assertEqual(self.peer.observation_watermark, ("boot-1", 7, 700))
+                self.assertEqual(self.peer.anchor[:2], ("boot-1", 700))
+            finally:
+                await self.fleet.close()
 
     async def test_old_disconnect_does_not_disconnect_replacement(self):
         old, current = await self.reconnect()

@@ -46,9 +46,11 @@ class SoftwareFeather:
         self.state = False
         self.applied = []
 
-    async def start(self, callback):
+    async def start(self, callback, *, observation_heads=None):
+        head = (observation_heads or {}).get(DEVICE)
+
         async def observe():
-            sequence = 0
+            sequence = head[1] if head is not None and head[0] == "boot-test" else 0
             while True:
                 sequence += 1
                 await callback(observation(gatewayId=GATEWAY, deviceId=DEVICE, sequence=sequence,

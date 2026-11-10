@@ -394,7 +394,7 @@ class Gateway:
                 self._finish(item["command"], item["digest"], "INDETERMINATE", "RESTART_INTERRUPTED",
                              "Previous process ended during dispatch; journal preserved and command not replayed")
             await self.transport.start()
-            await self.ble.start(self.observation)
+            await self.ble.start(self.observation, observation_heads=self.store.observation_heads())
             tasks = [asyncio.create_task(worker(), name=worker.__name__) for worker in (
                 self._credentials_loop, self._poll_loop, self._dispatch_loop, self._outbox_loop, self._health_loop)]
             if self.config.core_telemetry_epochs is not None:

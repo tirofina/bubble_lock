@@ -178,6 +178,19 @@ class BleMockTests(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(result["battery"])
         self.assertIsNone(result["rssi"])
 
+    async def test_full_queue_does_not_advance_observation_watermark(self):
+        self.peer.observations = asyncio.Queue(maxsize=1)
+        frame = dict(version=1, deviceId="kr-test", bootId="boot-test", sequence=1, uptimeMs=100,
+                     battery=None, buttonState="released", sensorValues={}, state=False)
+        self.fleet._queue_observation(self.peer, frame)
+        next_frame = dict(frame, sequence=2, uptimeMs=200)
+        self.fleet._queue_observation(self.peer, next_frame)
+        self.assertEqual(self.peer.observation_watermark, ("boot-test", 1, 100))
+        self.assertIsNone(self.peer.anchor)
+        self.assertEqual(self.peer.observations.get_nowait()["sequence"], 1)
+        self.fleet._queue_observation(self.peer, next_frame)
+        self.assertEqual(self.peer.observations.get_nowait()["sequence"], 2)
+
     async def test_ble_rejects_alert_claim_when_battery_is_unavailable(self):
         frame = dict(version=1, deviceId="kr-test", bootId="boot-test", sequence=1, uptimeMs=100,
                      battery=None, buttonState="released", sensorValues={"batteryAlert": True}, state=False)

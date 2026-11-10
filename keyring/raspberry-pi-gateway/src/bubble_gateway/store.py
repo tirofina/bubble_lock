@@ -198,6 +198,10 @@ class Store:
                             (payload["deviceId"], payload["bootId"], payload["sequence"]))
         return True
 
+    def observation_heads(self) -> dict[str, tuple[str, int]]:
+        return {row["device_id"]: (row["boot_id"], row["sequence"])
+                for row in self.db.execute("SELECT device_id,boot_id,sequence FROM observations")}
+
     def stage_receipts(self, container: str, core_enabled: bool = False) -> None:
         """Choose both routes atomically on first staging, not on every retry."""
         # Already staged native receipts can remain undelivered during backoff.
