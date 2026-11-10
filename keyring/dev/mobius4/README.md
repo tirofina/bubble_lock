@@ -66,7 +66,7 @@ Gateway 0.2.14는 적용 영수증을 기다린다. 새 ACL은 해당 Gateway에
 
 두 번째 명령은 격리 서버와 소비자를 기동하고 빈 oneM2M 자원을 준비한다. 기존 scoped 자원이 있으면 RQI·타입·이름·SDT specialization을 조회해 재사용한다. TLS 키, 임시 관리자 값과 `config/owner.json`은 `.local/scoped/`에만 생성된다. 기본 초기 소유권은 `gw-a`·`kr-handover`·epoch 7이다. 새 소비자는 이 파일을 최초 등록에만 사용하고 이후에는 cursor 저장소의 소유권을 사용한다. 운영 전환에는 중앙 정본과 이전 writer의 drain이 필요하다.
 
-실행 중인 이 임시 프로필에서 ACL과 소비자만 갱신할 때는 시험용 발행자를 멈춘 뒤 아래 명령을 사용한다. 소비자가 정상 종료한 다음 브로커와 소비자만 교체한다. PostgreSQL·Mobius4·TLS proxy와 저장된 cursor는 계속 사용한다. 소비자 로그의 `SCOPED_SUBSCRIBED receipts=1 handover=1`은 새 버전의 구독 준비 상태다.
+실행 중인 이 임시 프로필에서 ACL과 소비자만 갱신할 때는 시험용 발행자를 멈춘 뒤 아래 명령을 사용한다. 소비자가 정상 종료한 다음 브로커와 소비자만 교체한다. PostgreSQL·Mobius4·TLS proxy와 저장된 cursor는 계속 사용한다. 시작·갱신 명령은 현재 소비자가 `SCOPED_SUBSCRIBED receipts=1 handover=1`을 기록한 뒤 반환한다. 대기 시간이 초과되면 현재 컨테이너 상태와 로그를 확인한다.
 
 ```powershell
 ./keyring/dev/mobius4/start-scoped.ps1 -RefreshIngress
@@ -84,7 +84,7 @@ Gateway에서는 위 포트와 해당 Gateway 인증서를 사용한다. `MQTT_E
 ./keyring/dev/mobius4/handover-scoped.ps1 -Direction Rollback
 ```
 
-전환 요청은 SDT 갱신과 같은 대기열에서 처리된다. `PENDING` cursor, 이전 소유권 불일치, 저장 결과 불확실 상태에서는 전환 완료를 반환하지 않는다. 명령 대기 시간이 초과되면 `-Status`로 영속 소유권과 cursor 상태를 읽는다. 이번 변경은 소스 단계다. 이전 [영수증 배치 기록](../../evidence/2026-11-10-core-scoped-receipt-rollout/README.md)은 handover 버전의 배치를 증명하지 않는다.
+전환 요청은 SDT 갱신과 같은 대기열에서 처리된다. `PENDING` cursor, 이전 소유권 불일치, 저장 결과 불확실 상태에서는 전환 완료를 반환하지 않는다. 명령 대기 시간이 초과되면 `-Status`로 영속 소유권과 cursor 상태를 읽는다. 격리 프로필에 handover 소비자·ACL을 배치하고 `-Status`로 초기 A7을 확인했다. [배치 기록](../../evidence/2026-11-10-core-scoped-handover-rollout/README.md)
 
 ```powershell
 docker compose --project-name privacy-bubble-keyring-scoped --env-file ./keyring/dev/mobius4/.local/scoped/compose.env -f ./keyring/dev/mobius4/compose.yaml -f ./keyring/dev/mobius4/compose.scoped.yaml down

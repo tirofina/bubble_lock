@@ -37,7 +37,7 @@ Gateway 0.2.12와 KEYRING 수신 후보는 발행 시점의 epoch를 SQLite와 �
 
 Gateway 0.2.14는 epoch 관측과 일치하는 CSE 적용 영수증을 받아야 해당 outbox 행을 완료한다. 중앙 소비자는 확인한 최신 cursor의 영수증을 재전송할 수 있다. Gateway, 소비자, 응답 ACL을 함께 적용해야 한다. [적용 영수증 계약](integration-candidate/README.md#epoch-관측의-적용-영수증)
 
-KEYRING 전환 후보는 SDT UPDATE와 활성 Gateway 교체를 같은 자원 대기열에서 처리한다. 팀 handover가 새 epoch를 활성화하기 전에 이 경계에서 미확정 UPDATE를 보류하도록 연결할 수 있다. 격리 프로필은 A7 → B8 → A9 전환 소스를 제공한다. [전환 계약](integration-candidate/README.md#sdt-적용과-소유권-전환)
+KEYRING 전환 후보는 SDT UPDATE와 활성 Gateway 교체를 같은 자원 대기열에서 처리한다. 팀 handover가 새 epoch를 활성화하기 전에 이 경계에서 미확정 UPDATE를 보류하도록 연결할 수 있다. 격리 프로필에서 전환용 소비자가 구독했고 초기 A7 소유권을 조회했다. B8 전환과 A9 롤백 실행은 별도 시험 범위다. [전환 계약](integration-candidate/README.md#sdt-적용과-소유권-전환) · [배치 기록](evidence/2026-11-10-core-scoped-handover-rollout/README.md)
 
 ## 소유권
 

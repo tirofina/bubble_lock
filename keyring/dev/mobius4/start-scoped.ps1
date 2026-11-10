@@ -8,6 +8,30 @@ foreach ($key in @('MOBIUS4_ROOT', 'SCOPED_TEAM_STORE', 'DB_PW', 'CSE_ADMIN', 'K
 }
 $compose = @('--project-name', 'privacy-bubble-keyring-scoped', '--env-file', $environmentPath,
   '-f', (Join-Path $PSScriptRoot 'compose.yaml'), '-f', (Join-Path $PSScriptRoot 'compose.scoped.yaml'))
+
+function Wait-ScopedSubscription {
+  $consumerId = docker compose @compose ps --all --quiet scoped-consumer
+  if ($LASTEXITCODE -ne 0 -or -not $consumerId) { throw 'Could not identify the scoped consumer after start.' }
+  $timer = [Diagnostics.Stopwatch]::StartNew()
+  while ($timer.Elapsed.TotalSeconds -lt 30) {
+    $state = docker inspect --format '{{.State.Status}}|{{.State.StartedAt}}' $consumerId
+    if ($LASTEXITCODE -ne 0) { throw 'Could not inspect scoped consumer state.' }
+    $status, $startedAt = $state -split '\|', 2
+    if ($status -in @('exited', 'dead')) { throw 'Scoped consumer exited before subscribing. Inspect its logs.' }
+    if ($status -eq 'running') {
+      $ready = docker logs --since $startedAt --tail 80 $consumerId 2>&1 |
+        Select-String -CaseSensitive -Pattern '^SCOPED_SUBSCRIBED receipts=1 handover=1$'
+      if ($LASTEXITCODE -ne 0) { throw 'Could not read scoped consumer startup logs.' }
+      if ($ready) {
+        Write-Host 'Scoped consumer subscribed with receipts and handover enabled.'
+        return
+      }
+    }
+    Start-Sleep -Milliseconds 500
+  }
+  throw 'Scoped consumer readiness is unconfirmed. Inspect the running instance before retrying.'
+}
+
 $operatorLock = [IO.File]::Open((Join-Path $PSScriptRoot '.local/scoped/config/handover.lock'),
   [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
 try {
@@ -29,7 +53,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Scoped broker refresh failed; the consumer remains stopped.' }
     docker compose @compose up -d --no-deps --no-build --pull never --force-recreate scoped-consumer
     if ($LASTEXITCODE -ne 0) { throw 'Scoped consumer refresh failed.' }
-    Write-Host 'Scoped broker and consumer refresh requested.'
+    Wait-ScopedSubscription
     return
   }
   docker compose @compose up -d --no-build --pull never --wait --wait-timeout 120 postgres broker mobius4 tls
@@ -38,7 +62,7 @@ try {
   if ($LASTEXITCODE -ne 0) { throw 'Scoped CSE resource provisioning stopped before the consumer was started.' }
   docker compose @compose up -d --no-build --pull never --no-deps scoped-consumer
   if ($LASTEXITCODE -ne 0) { throw 'Scoped consumer startup failed.' }
-  Write-Host 'Scoped resources provisioned and consumer start requested.'
+  Wait-ScopedSubscription
 } finally {
   $operatorLock.Dispose()
 }
