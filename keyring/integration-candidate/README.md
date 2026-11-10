@@ -33,6 +33,23 @@ CORE/INTEGRATION의 실제 연결은 발급 기록과 실행 승인 기록을 �
 
 인증·전송·중앙 저장소 장애는 호출자에 전달하며 정산 성공을 반환하지 않는다. CORE MQTT ACK를 함께 받았으면 안에 포함된 영수증까지 원본과 대조한다. CSE 원본을 계기로 먼저 정산하는 호출도 지원한다. [격리 POSIX 파일 구현](receipt-settlement-files.mjs)은 운영자가 지정한 소유자 전용 로컬 디렉터리에서 파일 동기화와 덮어쓰기 없는 링크로 한 기록을 확정한다. 운영 CORE는 `(gatewayId, commandId)` 고유 제약과 원자적 저장을 제공하고 ACK 수신기 또는 CSE 알림 소비자를 이 함수에 연결해야 한다.
 
+### PostgreSQL 정산 저장 후보
+
+[정산 테이블](sql/001_command_receipt_settlement.sql)은 팀 companion DB의 `privacy_bubble` 스키마에 추가한다. 팀 `receipt_journal`은 `(receipt_type, correlation_id, receipt_hash)`로 감사 행을 구분한다. KEYRING 정산 테이블은 `(gateway_id, command_id)`당 한 행을 보관한다. 정산 소비자에는 이 테이블의 `SELECT`·`INSERT`와 스키마 사용 권한을 부여한다. 기록은 같은 키로 수정하거나 삭제하지 않는다.
+
+[저장 어댑터](receipt-settlement-postgres.mjs)는 팀이 관리하는 PostgreSQL 연결 풀을 받아 다음과 같이 결합한다.
+
+```js
+const settle = createCommandReceiptSettlement({
+  ...authenticatedReceiptAdapters,
+  commitIfAbsent: createPostgresSettlementCommit(pgPool),
+});
+```
+
+경합에서 삽입되지 않은 요청은 `READ COMMITTED` 트랜잭션의 다음 조회로 먼저 커밋된 행을 읽는다. 정산 함수는 기존 해시와 대조해 동일 영수증과 내용 충돌을 구분한다. 커밋 응답을 받지 못하면 같은 키로 다시 처리한다. [PostgreSQL 트랜잭션 격리](https://www.postgresql.org/docs/17/transaction-iso.html#XACT-READ-COMMITTED)
+
+현재는 후보 SQL과 어댑터 소스가 있다. 실제 PostgreSQL에 적용하고 두 연결의 동시 저장·재시작을 확인하는 단계와 CORE의 인증된 ACK 또는 CSE 알림 연결이 남아 있다.
+
 ## Handover 뒤 활성 Gateway 검증
 
 팀 main `715ef58`은 전환 전 epoch의 명령을 거절한다. 같은 장치를 가진 두 Gateway 등록이 모두 유효하면 전환 뒤 이전 Gateway에도 현재 epoch의 새 명령을 발급하고 승인할 수 있다.
