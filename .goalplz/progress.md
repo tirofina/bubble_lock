@@ -562,3 +562,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 이번 실행은 임시 서버 구성 반영까지다. 관측·영수증 발행, ACL 차단, Gateway 빌드, handover readback과 실물 시험은 미실행이다. 전체 goal은 active/progress다.
 
 구현·배치 증거 commit `e615f54752bf1edcd487bc4ccf4a21eb37ea8186`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `98ad8cd..e615f54`다.
+
+## 2026-11-10 — SDT 갱신과 소유권 전환 결속
+
+이전 goal turn은 격리 소비자와 영수증 ACL을 배치한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- SDT 갱신과 소유권 전환을 같은 자원 대기열에 넣는다. 이전 UPDATE가 미확정이면 전환을 보류한다. 현재 소유권과 expected epoch가 맞을 때만 새 소유권을 저장하고, 저장 결과가 불확실한 자원은 후속 갱신도 보류한다.
+- 격리 소비자의 소유권은 첫 기동에 설정을 읽고 이후에는 영속 저장소를 사용한다. 운영 명령 소스는 A7 → B8과 B8 → A9 및 상태 조회를 지원한다. 중앙 정본의 원자적 전환 연결은 팀 담당 경계다. [격리 명령](../keyring/dev/mobius4/README.md#격리-소유권-전환)
+- 회귀시험 소스를 추가했다. handover 소비자·ACL 배치, 실제 소유권 변경, 빌드·시험·실물 검증은 미실행이다. 전체 goal은 active/progress다.
+
+구현 commit `fa62263120786dddac752efb89808c998ac94d6f`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `3cb9dbf..fa62263`다.

@@ -7,7 +7,7 @@
   "date": "2026-11-10",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "The scoped receipt consumer and ACL are deployed in the isolated profile and subscription was observed. Gateway 0.2.14 build, live receipt execution, handover readback and physical acceptance remain.",
+  "verificationStatus": "Scoped owner transitions are source-only. The earlier receipt consumer and ACL are deployed. Gateway 0.2.14 build, live receipt execution, handover readback and physical acceptance remain.",
   "rubricIds": [
     "R01",
     "R02",
@@ -75,7 +75,8 @@
     "KEYRING CORE telemetry ordering candidate with a per-resource queue, source epoch checks and a durable pending update cursor",
     "opt-in immutable CORE telemetry epoch in SQLite, epoch-specific MQTT publish and topic-bound central ingress candidate",
     "separate scoped Mobius4 profile with exclusive broker ACLs, dedicated TLS identities, a persisted CSE consumer cursor, and optional native HTTPS routing",
-    "scoped CSE application receipts bound to the original MQTT bytes, exact reply ACLs, and replay from the latest durable APPLIED cursor"
+    "scoped CSE application receipts bound to the original MQTT bytes, exact reply ACLs, and replay from the latest durable APPLIED cursor",
+    "serialized scoped owner transitions with pending UPDATE fencing, monotonic rollback and a bench operator command"
   ],
   "existingHardware": {
     "status": "source-snapshot-included-unverified",
@@ -132,15 +133,15 @@
   "firmwareRevision": "keyring-0.7.3",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "e615f54752bf1edcd487bc4ccf4a21eb37ea8186",
+    "sourceCommit": "fa62263120786dddac752efb89808c998ac94d6f",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "e615f54752bf1edcd487bc4ccf4a21eb37ea8186",
-    "lastPushedCommit": "e615f54752bf1edcd487bc4ccf4a21eb37ea8186",
-    "latestCheckpoint": "Refreshed only the scoped broker and receipt consumer. Mounted sources and ACL matched, and the updated consumer subscribed.",
-    "lastPushedCommitBeforeThisCheckpoint": "98ad8cd2ba094c616c0d713ccbfa502b705f57b0"
+    "latestLocalSourceCommit": "fa62263120786dddac752efb89808c998ac94d6f",
+    "lastPushedCommit": "fa62263120786dddac752efb89808c998ac94d6f",
+    "latestCheckpoint": "Staged same-lane SDT owner transitions and the isolated operator command. The running consumer has the prior receipt release.",
+    "lastPushedCommitBeforeThisCheckpoint": "3cb9dbf1da6319a6bd8940e807989cb10824a76a"
   },
   "gatewayRevision": "0.2.14",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
@@ -164,7 +165,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Deploy the scoped application receipt consumer and ACL to the isolated Mobius4 profile",
+    "executionRequest": "Bind scoped handover and rollback to the SDT update queue and a persisted compare-and-set owner",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -172,11 +173,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "e615f54752bf1edcd487bc4ccf4a21eb37ea8186",
-    "sourceValidation": "Local scoped configuration deployment only: mounted bytes matched and receipt consumer subscribed. No telemetry publication, Gateway build or functional tests.",
+    "sourceCommit": "fa62263120786dddac752efb89808c998ac94d6f",
+    "sourceValidation": "Handover source and regression source only. No scoped rollout, owner transition, telemetry publication, build or tests.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "The receipt consumer and ACL are running in the scoped profile. Positive and negative receipt cases, handover readback and actual Pi/r18 command acceptance remain.",
+    "currentDependencyState": "The earlier receipt consumer is running. The handover consumer and rollback ACL need rollout and live tests; central authoritative integration and physical acceptance remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -655,5 +656,13 @@
     "cursorUnchanged": true,
     "telemetryPublished": false,
     "sourceCommit": "e615f54752bf1edcd487bc4ccf4a21eb37ea8186"
+  },
+  "coreScopedOwnerTransition": {
+    "reference": "dev/mobius4/README.md",
+    "status": "source-only",
+    "stagedSequence": ["gw-a:7", "gw-b:8", "gw-a:9"],
+    "deployed": false,
+    "transitionExecuted": false,
+    "sourceCommit": "fa62263120786dddac752efb89808c998ac94d6f"
   }
 }
