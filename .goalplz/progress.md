@@ -906,3 +906,12 @@ BLE 세션 commit `8c340992d3cde9208338fc24acc3db2a866c2f75`를 `origin/codex/ke
 - 호스트 회귀시험 소스만 확장했다. 빌드·링크·시험·flash·실물 BlueZ 읽기는 미실행이다. Feather/Pi 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
 
 GATT 읽기 commit `82d76bb80aeb903ea3cad1681e8abe838a99ee47`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `2aba11d..82d76bb`다.
+
+## 2026-11-11 — Pi 명령 시험의 mTLS 경로 사전 점검
+
+직전 goal turn은 r18 GATT의 읽기와 긴 읽기 사본을 세션에 묶은 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- Gateway `0.2.24`와 격리 Pi 명령 세션에 명시적 `preflight`를 추가했다. Pi 인증서로 영수증 컨테이너 ID, 팀 API의 현재 자격, 활성 명령 목록을 HTTPS GET으로 확인한다. 성공 JSON은 확인한 컨테이너 ID·자격 상태·활성 명령 수·시각을 포함한다. [Pi 사용 절차](../keyring/raspberry-pi-gateway/TESTING.md#pi-명령-세션)
+- 모의 시험 소스를 추가했다. 이번 변경의 실행·빌드·시험과 Pi 배포는 미실행이다. Gateway/장치 준비는 이후 실제 BLE 관측으로 별도 확인해야 한다. Feather/Pi 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
+
+사전 점검 commit `1cb9e6988103f1d3419bf385e8acfd17c2c14c6d`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `02baf23..1cb9e69`다.
