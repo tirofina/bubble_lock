@@ -7,7 +7,7 @@
   "date": "2026-11-10",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Gateway 0.2.7: 71 basic tests, 4 central integration cases and 6 standalone MQTT cases passed. Actual broker command and ACK were verified with fake GATT and disposable Mobius4. Pi daemon/replay evidence remains at 0.2.5.",
+  "verificationStatus": "Gateway 0.2.7: 71 basic tests and 2 operator-driven LED bench rehearsals passed with a software Feather and actual API/CSE. Actual Pi daemon/replay evidence remains at 0.2.5.",
   "rubricIds": [
     "R01",
     "R02",
@@ -119,15 +119,15 @@
   "firmwareRevision": "keyring-0.7.0",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "9b0f412adde512a1f28e10fe3f0814e7d13d1290",
+    "sourceCommit": "a3cf82d8d7c0eb808005a4980fd0410309ed077c",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "9b0f412adde512a1f28e10fe3f0814e7d13d1290",
-    "lastPushedCommit": "9b0f412adde512a1f28e10fe3f0814e7d13d1290",
-    "latestCheckpoint": "Verified actual MQTT command and ACK traffic through the Gateway, team central mTLS API and disposable CSE, with fake GATT.",
-    "lastPushedCommitBeforeThisCheckpoint": "7d44bf23fc998bb7cd0a90ecfc7a0fa89cc3234b"
+    "latestLocalSourceCommit": "a3cf82d8d7c0eb808005a4980fd0410309ed077c",
+    "lastPushedCommit": "a3cf82d8d7c0eb808005a4980fd0410309ed077c",
+    "latestCheckpoint": "Rehearsed the two explicit bench commands, actual central issuance, CSE readback and a read-only Pi journal comparator.",
+    "lastPushedCommitBeforeThisCheckpoint": "f0814e37391babe53974b3dfdc7d1c8791b06137"
   },
   "gatewayRevision": "0.2.7",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
@@ -151,7 +151,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Verify exact command admission and receipt binding over the actual CORE MQTT command and ACK topics",
+    "executionRequest": "Prepare and rehearse explicit Feather LED ON/OFF issuance and read-only Pi SQLite/CSE evidence comparison",
     "remainingCompletionDependencies": [
       "central deployment, settlement and recovery activation",
       "purchased JD9853 module initialization",
@@ -159,11 +159,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "9b0f412adde512a1f28e10fe3f0814e7d13d1290",
-    "sourceValidation": "71 basic tests, 4 central integration cases and 6 standalone MQTT cases passed. Actual broker ACK matched the CSE receipt for one fake-GATT command.",
+    "sourceCommit": "a3cf82d8d7c0eb808005a4980fd0410309ed077c",
+    "sourceValidation": "71 basic tests and 2 actual API/CSE bench rehearsals passed. Two software-Feather commands matched the Gateway SQLite journal and CSE.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "The isolated broker command/ACK path is verified; team CORE publishing/settlement integration and physical command flash approval remain.",
+    "currentDependencyState": "The isolated LED test procedure and journal verifier are ready; actual Pi/Feather output and team CORE publishing/settlement remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -499,5 +499,18 @@
     "mockGATT": true,
     "productionCoreSettlementVerified": false,
     "sourceCommit": "9b0f412adde512a1f28e10fe3f0814e7d13d1290"
+  },
+  "ledCycleRehearsal": {
+    "evidence": "evidence/2026-11-10-pi-led-rehearsal/README.md",
+    "gatewayVersion": "0.2.7",
+    "teamMain": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+    "basicTestsPassed": 71,
+    "rehearsalCasesPassed": 2,
+    "actualCentralApi": true,
+    "actualDisposableCse": true,
+    "softwareFeather": true,
+    "matchedCseAndJournalReceipts": 2,
+    "actualPiOrLedVerified": false,
+    "sourceCommit": "a3cf82d8d7c0eb808005a4980fd0410309ed077c"
   }
 }

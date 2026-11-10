@@ -428,3 +428,14 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 팀 CORE 발행기와 운영 ACK 정산, Pi 0.2.7 실물 실행, Feather 출력·제작 PCB 수용은 남았다. 전체 goal은 active/progress다.
 
 시험 코드와 증거 commit `9b0f412adde512a1f28e10fe3f0814e7d13d1290`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `7d44bf2..9b0f412`다.
+
+## 2026-11-10 — Feather ON/OFF 현장 시험 절차
+
+이전 goal turn은 실제 MQTT 명령·ACK 경로를 검증한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- 기존 Pi fixture에 명시적인 ON/OFF 옵션을 추가했다. 기본 실행은 중앙 명령이 0개다. opt-in에서만 PC 시험 Guardian 인증서를 등록하며, 보드의 최근 관측이 맞고 각각의 입력 파일을 만들면 기한이 있는 명령을 한 번 발급한다.
+- 부팅 ID, GPIO readback, 후속 관측, CSE receipt를 묶어 기록한다. 읽기 전용 CLI가 SQLite 사본의 명령 본문·해시·전송 완료를 대조한다. 단계가 중단돼도 기록된 발급/관측 증거는 각각 남는다.
+- 기본 71개와 리허설 2개가 통과했다. 실제 팀 mTLS와 새 CSE에서 소프트웨어 Feather의 ON/OFF 영수증 2건과 SQLite가 일치했고 변조 영수증은 거절됐다. 시험 컨테이너와 네트워크 잔여 0개다. [시험 기록](../keyring/evidence/2026-11-10-pi-led-rehearsal/README.md)
+- Feather 0.2.0 업로드와 실물 Pi·LED 시험, 제작 PCB 수용과 팀 운영 정산은 대기 중이다. 전체 goal은 active/progress다.
+
+시험 절차·코드·증거 commit `a3cf82d8d7c0eb808005a4980fd0410309ed077c`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `f0814e3..a3cf82d`다.
