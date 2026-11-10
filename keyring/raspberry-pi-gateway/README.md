@@ -4,7 +4,7 @@ DOC-REV 2.0.0의 팀 CORE 계약을 연결했다. `BLE_GATT_PROFILE=core-v1`이 
 
 Python 3.11 이상과 Linux BlueZ를 사용하는 KEYRING 현장 daemon이다. BLE 관측을 SQLite outbox에 저장하고 MQTT 또는 HTTPS로 oneM2M contentInstance를 생성한다. 중앙에서 받은 명령은 최신 승인·credential·deadline을 확인한 뒤 BLE로 전달한다.
 
-Pi Zero 2 W에는 Gateway 0.2.4를 설치했다. 인증·bonding한 Feather에서 90초 연속 수신과 `released/confirm/panic` 관측을 확인했고, 별도 relay로 실제 관측을 격리 CSE에 저장했다. Gateway 0.2.5 소스는 PC에서 팀 mTLS API·모의 GATT·격리 CSE와 함께 전체 worker를 실행했다. Pi의 0.2.5 배포와 실물 명령 시험이 남아 있다. [Pi 벤치](../evidence/2026-11-10-pi-feather/README.md) · [관측 전송](../evidence/2026-11-10-pi-cse/README.md) · [명령 통합 시험](../evidence/2026-11-10-central-dispatch/README.md)
+Pi Zero 2 W의 별도 시험 폴더에 Gateway 0.2.5를 설치했다. 임시 사용자 systemd 서비스로 전체 데몬을 실행해 실제 Feather 관측 27개와 Gateway 상태 16개를 격리 Mobius4에서 확인했다. 재시작 뒤 SQLite에 남은 관측 한 건의 원본 해시도 CSE와 일치했다. 0.2.4에서 수행한 버튼 관측과 PC 모의 GATT 명령 시험은 각각 별도 증거다. 실물 명령과 배포용 systemd 설정 시험이 남아 있다. [Pi 전체 데몬](../evidence/2026-11-10-pi-full-daemon/README.md) · [버튼 관측](../evidence/2026-11-10-pi-feather/README.md) · [명령 통합 시험](../evidence/2026-11-10-central-dispatch/README.md)
 
 2026-10-30 Gateway0.2.2에서 재접속·영수증 대기열 경계를 수정했고, 소스·기존 설치 wheel 각각55개 시험이 통과했다(모의47개·실제 로컬 HTTPS/TLS8개)([범위와 재실행](TESTING.md)). 아래 절차는 중앙 인증서·API와 연결할 전체 Gateway 배포용이다. 이번 Feather 벤치에서는 이 daemon과 운영 서비스를 시작하지 않았다.
 

@@ -7,7 +7,7 @@
   "date": "2026-11-10",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Gateway 0.2.5 source: 63 unit/regression and 2 full worker tests with team mTLS, fake GATT and disposable CSE passed. Physical Feather/Pi 0.2.4 evidence includes BLE buttons and 35 CSE observation readbacks. Physical command/systemd, CORE settlement, production enrollment and PCB pending.",
+  "verificationStatus": "Gateway 0.2.5 on actual Pi: transient systemd, 27 observation and 16 health cin in isolated Mobius4, same-row replay after restart verified. Physical command, production systemd and settlement remain. PC mock-GATT command tests retained.",
   "rubricIds": [
     "R01",
     "R02",
@@ -97,7 +97,7 @@
     "full app/web/central authorization integration demo",
     "video evidence",
     "production PCB to production-authorized CSE end-to-end acceptance; actual Feather/Pi to isolated CSE HTTPS observation relay verified",
-    "Gateway 0.2.5 deployment and full daemon execution on Pi with physical command/ACK/readback and production central grants",
+    "Production systemd installation on Pi and physical command/ACK/readback with production central grants",
     "Pi-deployed state operator CLI and existing operational database snapshot/adoption"
   ],
   "actualReceipt": "evidence/2026-11-10-pi-cse/receipt.json",
@@ -127,7 +127,7 @@
     "lastPushedCommitBeforeThisCheckpoint": "7b2b295523bc147fae6c2d3f2c3255bc901aea72"
   },
   "gatewayRevision": "0.2.5",
-  "pendingValidationScope": "Pi deployment of 0.2.5 and physical command/systemd, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
+  "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
     "supersededBy": "2026-11-10 benchCheckpoint for current execution and verification state",
@@ -148,7 +148,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "prepare physical Feather command/ACK path using built-in LED and Gateway 0.2.5",
+    "executionRequest": "Verify Gateway 0.2.5 complete worker lifecycle and durable restart on actual Pi with existing Feather 0.1.1",
     "remainingCompletionDependencies": [
       "central deployment, settlement and recovery activation",
       "purchased JD9853 module initialization",
@@ -157,10 +157,10 @@
     ],
     "latestRemoteCore": "d54a43a",
     "sourceCommit": "cd4818b77f2ef05552e4fabe3c096ac9942d739e",
-    "sourceValidation": "Feather 0.1.1 observation and 0.2.0 command profiles compiled; native command code passed four test groups with stub NVS/GPIO. Physical command/ACK pending. Previous Gateway 0.2.5 and physical observation evidence retained.",
+    "sourceValidation": "Pi isolated Gateway 0.2.5 installation, both transient units exit0, 27 observations and 16 health cin, exact pending payload replay, final outbox0. Physical command and production systemd pending.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "Feather 0.2.0 is prepared for isolated LED command verification; a flash decision and subsequent Pi/Mobius4 execution are pending, plus production PCB and CORE settlement.",
+    "currentDependencyState": "Pi full daemon and CSE observation/health path verified. Feather command profile flash decision and physical command/ACK, production PCB and CORE settlement pending.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -439,5 +439,16 @@
     "physicalCommandVerified": false,
     "receipt": "evidence/2026-11-10-feather-command/receipt.json",
     "sourceCommit": "cd4818b77f2ef05552e4fabe3c096ac9942d739e"
+  },
+  "piFullDaemonValidation": {
+    "receipt": "evidence/2026-11-10-pi-full-daemon/receipt.json",
+    "gatewayVersion": "0.2.5",
+    "actualPi": true,
+    "transientUnitsPassed": 2,
+    "cseObservations": 27,
+    "cseHealth": 16,
+    "replayedPendingObservations": 1,
+    "productionSystemdVerified": false,
+    "physicalCommandVerified": false
   }
 }

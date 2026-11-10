@@ -373,3 +373,14 @@ Gateway 0.2.5 wheel 로컬 빌드와 Python 모듈 13개 소스 일치를 확인
 - 합성 PIN 빌드 산출물은 로컬에 보관했다. 실물 업로드와 Pi 명령·LED·CSE 영수증은 대기 중이다. 실제 LED 시험이 제작 PCB의 센서·모터·전력 수용이나 CORE 정산을 대체하지 않는다.
 
 구현·빌드·시험 증거 commit `cd4818b77f2ef05552e4fabe3c096ac9942d739e`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `7b2b295..cd4818b`다. 전체 goal은 active/progress다.
+
+## 2026-11-10 — 실제 Pi의 Gateway 전체 데몬과 재시작
+
+이전 goal turn은 Feather 명령 프로필 소스·빌드·호스트 시험을 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 다시 확인했다. 팀 HEAD는 이전과 같다.
+
+- 팀 중앙 API와 Mobius4를 별도 시험 PKI·새 PostgreSQL로 실행하는 fixture를 추가했다. 팀 main의 API 원본은 임시 폴더에 추출해 사용했다. Pi에는 Gateway 0.2.5 wheel을 새 target에 설치했고 소스 파일 13개가 wheel과 바이트 일치했다.
+- Pi의 임시 사용자 systemd 두 unit에서 전체 worker를 실행했다. 첫 실행 BLE timeout 1회 뒤 연결됐고 시험 credential `ACTIVE` 상태에서 실물 관측 27개와 health 16개가 CSE에 저장됐다. 마지막 시퀀스 2284와 장치·부팅 ID가 Pi SQLite와 일치했다.
+- 첫 종료 직전 대기 관측 2230은 CSE에서 404/4004였다. 같은 DB로 재시작한 뒤 200/2000으로 조회됐고 원본 해시가 일치했다. 최종 outbox 0, 두 unit exit 0 및 종료 뒤 `not-found`를 확인했다.
+- 시험 container/network 잔여 0, 기존 개발 container 4개 실행, 터널 종료와 시험 client 키 복사본 제거를 확인했다. [실행 기록과 해시](../keyring/evidence/2026-11-10-pi-full-daemon/README.md)
+
+전체 goal은 active/progress다. 현재 Feather 0.1.1로 관측·상태만 검증했다. 별도 승인 뒤 0.2.0 실물 명령, 제작 PCB·센서·출력·전력, 배포용 systemd와 운영 권한 등록, CORE 정산·앱/웹·release 검증이 남았다.

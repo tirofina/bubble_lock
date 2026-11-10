@@ -2,7 +2,7 @@
 
 ROLE KEYRING / 남호 · DOC-REV2.0.0 · 2026-11-10.
 
-Gateway 0.2.5 소스의 기본 63개와 팀 mTLS API→Gateway 전체 worker→모의 GATT→격리 Mobius4 통합 2개가 통과했다. 연결 뒤 정상 명령 영수증 1건, 연결 전 권한 회수 명령의 거절 영수증 1건을 검증했다. 아래 Pi 설치 0.2.4와 실제 관측 기록은 앞선 물리 벤치의 증거다. Pi 전체 daemon·물리 출력·CORE/앱/웹 정산은 남아 있다. [중앙 명령 시험](evidence/2026-11-10-central-dispatch/README.md)
+Gateway 0.2.5는 Pi 임시 사용자 systemd에서 실제 Feather 관측 27개와 상태 16개를 격리 Mobius4에 저장했다. 재시작 전 대기 관측 한 건의 payload도 CSE에서 일치했다. 기본 63개와 모의 GATT 명령 통합 2개는 앞선 별도 시험 결과다. 실제 명령·물리 출력, 배포용 systemd, CORE/앱/웹 정산은 남아 있다. [Pi 전체 데몬](evidence/2026-11-10-pi-full-daemon/README.md) · [중앙 명령 시험](evidence/2026-11-10-central-dispatch/README.md)
 
 최신 루트 계획서의 담당 산출물·7개 완료 자료·첫 통합 조건을 ESP32-S3 firmware0.7.0, Feather 벤치0.1.1, Gateway0.2.4의 소스와 실행 evidence에 대조했다. 2026-11-10 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 화면·Feather·버튼 두 개와 실물 Pi의 BLE 연결, 버튼 입력·화면 유지, 90초간45개 관측 수신을 확인하고 `686f7b4`로 업로드했다. 실물 관측의 Pi→격리 Mobius4 저장·readback도 확보했으며 제작 PCB·전체 daemon·중앙 명령과 앱/웹·release는 미완료다.
 
@@ -18,7 +18,7 @@ Gateway 0.2.5 소스의 기본 63개와 팀 mTLS API→Gateway 전체 worker→�
 | firmware source/build/flash 명령 | [소스](firmware/README.md), [기본/ST7789/JD9853 빌드3개](firmware/BUILD_PROFILES.md), Feather0.1.1 실제 flash·부팅·버튼·화면 유지 | 제작 PCB의 provisioning·flash·동작 결과. ESP32-S3의 기존3개는 unprovisioned compile |
 | GATT/profile/payload schema | [인터페이스](INTERFACE_NOTES.md), [schema](../contracts/keyring/README.md), [BLE 세션 회귀](evidence/2026-10-30-ble-sessions/README.md), 실제 Pi/Feather pairing·identity·fragment 수신과90초45개 관측 | 제작 PCB의 CORE 확장 수용·명령·재연결 수용시험 |
 | sensor/button/LED/battery/charger | Feather의 두 버튼 입력·ST7789 화면 전환/유지 확인, [센서/GPIO](firmware/README.md), [INA219](firmware/POWER_MONITOR.md), [주변장치](firmware/PERIPHERALS.md), [DAC standby](firmware/HEADPHONE_STANDBY.md) | 제작 PCB의 센서 calibration/오류/wake/출력·전력 측정·구매 JD9853 init/geometry. LED·충전·온도 gate는 하드웨어 경로 |
-| Raspberry Pi Gateway daemon | [설치/config/systemd](raspberry-pi-gateway/README.md), Pi 설치 0.2.4의 실제 BlueZ 관측 relay와 PC의 0.2.5 전체 worker 통합 | Pi의 0.2.5 배포·systemd·실물 명령·운영 인증서/등록 |
+| Raspberry Pi Gateway daemon | [설치/config/systemd](raspberry-pi-gateway/README.md), 실제 Pi에서 0.2.5 임시 사용자 systemd·BlueZ·시험 mTLS·재시작 | 배포용 systemd unit·실물 명령·운영 인증서/등록 |
 | MQTT/HTTPS transport | 기존 TLS/mTLS·ACL6개와 Mobius4 주소 범위 시험, 실물 Pi 관측의 HTTPS5개씩3회·정상 MQTT5개·broker 중단 후 HTTPS fallback15개와 CSE readback 전체 일치 | 운영 PKI·principal→AE/Originator·ACP/grant·capability 합의. 시험 인증서·개발 mapping과 운영 승인 구분 |
 | queue/dedup/ACK/readback | 기존 SQLite reopen·exit73/WAL 복구·충돌 보존과 Linux CLI10개, 실물 Pi에서 CSE 중단 중 pending5개 보존→복구 전달5개·관측 readback 일치 | 실제 장치 명령 ACK/readback·Pi 전원 손실·운영 DB·중앙 settlement/checkpoint·journal reclaim·복구 승인/활성화 |
 | power/range/reconnect/command 시험 | 모의 BLE·기한/fence/명령 회귀와 실제 로컬 전송 복구 | 실제 전원·BLE 거리·명령·회수·journal 장애·재연결 측정 |
