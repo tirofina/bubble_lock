@@ -24,7 +24,12 @@ const owners = new Map(paths.map((path) => [path, ownerA]));
 function makeGate(storage, maxPending = 32, readOwner = (path) => owners.get(path)) {
   return createTelemetryOrder({ maxPending, readOwner,
     readCursor: (path) => storage.get('coreTelemetryCursors', path),
-    writeCursor: (path, cursor) => storage.put('coreTelemetryCursors', path, cursor) });
+    writeCursor: (path, cursor) => storage.put('coreTelemetryCursors', path, cursor),
+    compareAndSetOwner: (path, expected, next) => {
+      assert.deepEqual(owners.get(path), expected);
+      owners.set(path, next);
+      return true;
+    } });
 }
 
 function delayedFirst(path) {
@@ -70,14 +75,26 @@ const instanceA = bridge(handoverPath, gatewayA);
 const instanceB = bridge(handoverPath, gatewayB);
 const applyA = (payload) => deliver(instanceA, payload);
 const applyB = (payload) => deliver(instanceB, payload);
-assert.equal((await gate(handoverPath, ownerA, older, applyA)).status, 'APPLIED');
-owners.set(handoverPath, ownerB);
+const oldUpdateStarted = Promise.withResolvers();
+const allowOldUpdate = Promise.withResolvers();
+const oldUpdate = gate(handoverPath, ownerA, older, async (payload) => {
+  oldUpdateStarted.resolve();
+  await allowOldUpdate.promise;
+  assert.deepEqual(owners.get(handoverPath), ownerA);
+  return applyA(payload);
+});
+await oldUpdateStarted.promise;
+const switchOwner = gate.transition(handoverPath, ownerA, ownerB);
+allowOldUpdate.resolve();
+assert.equal((await oldUpdate).status, 'APPLIED');
+assert.equal((await switchOwner).status, 'OWNER_SWITCHED');
 assert.equal((await gate(handoverPath, ownerA, newer, applyA)).status, 'NOT_OWNER');
 assert.equal((await gate(handoverPath, ownerB, newer, applyB)).status, 'INVALID_TELEMETRY_BINDING');
 const bFirst = { ...message(1, gatewayB), sequence: 0 };
 assert.equal((await gate(handoverPath, ownerB, bFirst, applyB)).status, 'APPLIED');
 const ownerAfterRollback = source(gatewayA, 3);
-owners.set(handoverPath, ownerAfterRollback);
+assert.equal((await gate.transition(handoverPath, ownerB, ownerAfterRollback)).status, 'OWNER_SWITCHED');
+assert.equal((await gate.transition(handoverPath, ownerAfterRollback, ownerA)).status, 'INVALID_OWNER_TRANSITION');
 assert.equal((await gate(handoverPath, ownerA, newer, applyA)).status, 'NOT_OWNER');
 assert.equal((await gate(handoverPath, ownerAfterRollback, newer, applyA)).status, 'APPLIED');
 
@@ -92,6 +109,7 @@ assert.equal(reopened.get('coreTelemetryCursors', uncertainPath).phase, 'PENDING
 const resumed = makeGate(reopened);
 assert.equal((await resumed(uncertainPath, ownerA, newer, () => assert.fail('unresolved UPDATE dispatched'))).status,
   'REVIEW_PENDING');
+assert.equal((await resumed.transition(uncertainPath, ownerA, ownerB)).status, 'REVIEW_PENDING');
 assert.equal((await resumed(orderedPath, ownerA, older, () => assert.fail('stale UPDATE dispatched'))).status,
   'STALE_SEQUENCE');
 
@@ -130,4 +148,5 @@ console.log(JSON.stringify({
   oldOwnerAndOldEpochRejected: true, rollbackAccepted: true, unresolvedPreservedOnReload: true,
   staleAfterReloadRejected: true, ownerChangeBeforeDispatchBlocked: true, queueBoundEnforced: true,
   matchingReceiptReplayed: true, conflictingReceiptRejected: true,
+  ownershipTransitionSerialized: true, unresolvedTransitionBlocked: true,
 }));

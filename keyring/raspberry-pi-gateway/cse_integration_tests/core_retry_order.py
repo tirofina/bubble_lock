@@ -92,6 +92,7 @@ class CoreRetryOrderTests(MobiusCseTests):
             "oldOwnerAndOldEpochRejected": True, "rollbackAccepted": True, "unresolvedPreservedOnReload": True,
             "staleAfterReloadRejected": True, "ownerChangeBeforeDispatchBlocked": True, "queueBoundEnforced": True,
             "matchingReceiptReplayed": True, "conflictingReceiptRejected": True,
+            "ownershipTransitionSerialized": True, "unresolvedTransitionBlocked": True,
         })
         readback = [await self.switch_state(path) for path in paths]
         self.assertEqual(readback, [True, False, False, True])

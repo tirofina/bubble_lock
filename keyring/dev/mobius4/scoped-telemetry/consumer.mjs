@@ -7,9 +7,34 @@ import { IntegrationStore } from './integration-store.mjs';
 const { connect } = createRequire('/app/package.json')('mqtt');
 const deviceId = 'kr-handover';
 const path = '/Mobius/privacy-bubble-test-ae/bubbleState';
+const owners = 'coreTelemetryOwners';
+const owner = (gatewayId, ownershipEpoch) => ({ gatewayId, deviceId, ownershipEpoch });
+const initialOwner = owner('gw-a', 7);
+const targetOwner = owner('gw-b', 8);
+const rollbackOwner = owner('gw-a', 9);
+const allowedOwners = [initialOwner, targetOwner, rollbackOwner];
+const transitions = new Map([
+  ['Forward', [initialOwner, targetOwner]],
+  ['Rollback', [targetOwner, rollbackOwner]],
+]);
+const sameOwner = (current, expected) => current?.gatewayId === expected.gatewayId
+  && current.deviceId === expected.deviceId && current.ownershipEpoch === expected.ownershipEpoch;
 const cseAdmin = process.env.CSE_ADMIN;
 if (!cseAdmin) throw new Error('Scoped CSE admin identity is required');
 const store = await new IntegrationStore('/var/lib/mobius4/scoped-cursor.json').init();
+const persistedOwner = store.get(owners, path);
+if (persistedOwner === undefined) {
+  const seed = JSON.parse(await readFile('/scoped/config/owner.json', 'utf8'));
+  const initial = allowedOwners.find((candidate) => sameOwner(seed, candidate));
+  const cursor = store.get('coreTelemetryCursors', path);
+  if (!initial || (cursor && (cursor.deviceId !== deviceId || cursor.ownershipEpoch > initial.ownershipEpoch
+      || (cursor.ownershipEpoch === initial.ownershipEpoch && cursor.gatewayId !== initial.gatewayId)))) {
+    throw new Error('Scoped initial owner conflicts with the allowed assignments or persisted cursor');
+  }
+  await store.put(owners, path, initial);
+} else if (!allowedOwners.some((candidate) => sameOwner(persistedOwner, candidate))) {
+  throw new Error('Invalid scoped persisted owner');
+}
 const tls = {
   ca: await readFile('/scoped/tls/ca.pem'),
   cert: await readFile('/scoped/tls/client.pem'),
@@ -42,7 +67,12 @@ function apply({ resource, requestId, payload }) {
 
 const ingest = createScopedTelemetryIngress({
   resolveResource: (device) => device === deviceId ? path : null,
-  readOwner: async () => JSON.parse(await readFile('/scoped/config/owner.json', 'utf8')),
+  readOwner: (resource) => store.get(owners, resource),
+  compareAndSetOwner: async (resource, expected, replacement) => {
+    if (!sameOwner(store.get(owners, resource), expected)) return false;
+    await store.put(owners, resource, replacement);
+    return true;
+  },
   readCursor: (resource) => store.get('coreTelemetryCursors', resource),
   writeCursor: (resource, cursor) => store.put('coreTelemetryCursors', resource, cursor),
   apply,
@@ -54,6 +84,10 @@ const mqtt = connect('mqtts://broker:8883', {
 const subscription = 'privacy-bubble/gateway/+/telemetry-epoch/+/+';
 const pending = new Set();
 let stopping = false;
+function track(job) {
+  pending.add(job);
+  job.finally(() => pending.delete(job));
+}
 mqtt.on('connect', () => {
   mqtt.subscribe(subscription, { qos: 1 }, (error, granted) => {
     if (error || granted?.[0]?.qos !== 1) {
@@ -62,7 +96,7 @@ mqtt.on('connect', () => {
       mqtt.end(true);
       return;
     }
-    console.log('SCOPED_SUBSCRIBED receipts=1');
+    console.log('SCOPED_SUBSCRIBED receipts=1 handover=1');
   });
 });
 mqtt.on('error', () => console.error('SCOPED_BROKER_ERROR'));
@@ -78,8 +112,25 @@ mqtt.on('message', (topic, bytes, packet) => {
         });
     }
   }).catch(() => console.error('SCOPED_INGRESS_ERROR'));
-  pending.add(job);
-  job.finally(() => pending.delete(job));
+  track(job);
+});
+process.on('SIGUSR2', () => {
+  if (stopping) return;
+  track((async () => {
+    const input = JSON.parse(await readFile('/scoped/config/handover-request.json', 'utf8'));
+    const requestId = input?.requestId;
+    const transition = transitions.get(input?.direction);
+    if (typeof requestId !== 'string' || requestId.length !== 32 || !/^[a-f0-9]{32}$/.test(requestId) || !transition) {
+      console.error('SCOPED_HANDOVER_REQUEST_INVALID');
+      return;
+    }
+    try {
+      const { status } = await ingest.transition(...transition);
+      console.log(`SCOPED_HANDOVER ${requestId} ${status}`);
+    } catch {
+      console.error(`SCOPED_HANDOVER ${requestId} REVIEW_ERROR`);
+    }
+  })().catch(() => console.error('SCOPED_HANDOVER_REQUEST_INVALID')));
 });
 function stop() {
   if (stopping) return;

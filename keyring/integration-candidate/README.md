@@ -71,3 +71,9 @@ Gateway 0.2.14는 `privacy-bubble/gateway/{gatewayId}/telemetry-result/{deviceId
 Gateway는 기다리는 토픽·식별자·sequence·해시가 일치하는 영수증을 받아야 outbox 행을 완료한다. 응답 유실과 timeout은 SQLite 재시도로 이어진다. 중앙에 같은 epoch·sequence·해시의 적용 기록이 있으면 UPDATE를 다시 보내지 않고 영수증을 재발행한다. 같은 sequence의 다른 본문, 이전 epoch, 해시가 없는 이전 형식의 cursor, `PENDING` cursor에는 적용 영수증을 발행하지 않는다. 새 cursor가 저장된 뒤 이전 기록에 대한 개별 조회나 재발행은 제공하지 않는다.
 
 Scoped 관측 전송 작업자는 일반 관측과 명령 영수증 작업자와 분리된다. 격리 프로필에는 중앙 소비자와 응답 ACL을 배치했다. Gateway 0.2.14 빌드와 영수증 발행 시험은 아직 실행하지 않았다. [배치 기록](../evidence/2026-11-10-core-scoped-receipt-rollout/README.md)
+
+## SDT 적용과 소유권 전환
+
+`receive.transition(expected, replacement)`는 원래·새 Gateway의 장치 ID와 단조 증가 epoch를 확인한 뒤 해당 SDT의 갱신과 같은 대기열에 들어간다. 앞서 접수한 갱신이 끝나야 전환을 검토한다. 저장된 cursor가 `PENDING`이면 보류하고, 현재 소유권이 예상값과 일치할 때만 `compareAndSetOwner`가 교체 값을 영속 저장한다. 저장 결과가 불확실하면 해당 자원의 다음 관측도 보류한다.
+
+운영에서는 동일 자원의 모든 UPDATE와 소유권 변경이 이 전환 경계를 공유해야 한다. `compareAndSetOwner`는 중앙 저장소에서 이전 소유권을 원자적으로 비교하고 커밋해야 한다. 여러 writer·Edge에서 공유하는 정본의 fencing, grant 및 구독 복원은 팀 handover coordinator가 맡는다. 격리 프로필은 단일 소비자와 팀 파일 저장소를 사용하며 컨테이너 재기동 이후에도 소유권을 읽는 구조다. 전원 차단 복구와 실제 전환은 별도 검증 범위다. [격리 전환 명령](../dev/mobius4/README.md#격리-소유권-전환)

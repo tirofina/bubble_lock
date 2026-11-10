@@ -9,7 +9,7 @@ const boundedInt = (value, min, max) => Number.isInteger(value) && value >= min 
 export function createScopedTelemetryIngress({ resolveResource, apply, ...ordering }) {
   const submit = createTelemetryOrder(ordering);
 
-  return async function receive(topic, bytes, packet) {
+  async function receive(topic, bytes, packet) {
     const match = typeof topic === 'string' ? topicPattern.exec(topic) : null;
     if (!match || match[0] !== topic || !boundedInt(Number(match[3]), 0, 2147483647)) {
       return { status: 'INVALID_TELEMETRY_TOPIC' };
@@ -45,5 +45,12 @@ export function createScopedTelemetryIngress({ resolveResource, apply, ...orderi
     return { ...result, receipt: {
       version: 1, ...source, sequence: payload.sequence, ...binding, responseStatus: 2004,
     } };
+  }
+
+  receive.transition = async (expected, replacement) => {
+    const resource = await resolveResource(expected?.deviceId);
+    if (!resource) return { status: 'UNKNOWN_TELEMETRY_RESOURCE' };
+    return submit.transition(resource, expected, replacement);
   };
+  return receive;
 }
