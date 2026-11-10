@@ -848,3 +848,12 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 회귀시험 소스만 반영했다. 빌드, 시험, Pi 배포와 실물 BLE 명령은 미실행이다. Feather/Pi 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
 
 승인 기한 고정 commit `edd4b6c22ce15dd2988a02d792f7a7ef052d3179`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1e4cb66..edd4b6c`다.
+
+## 2026-11-10 — Pi·Feather 명령 시험용 격리 정산 작업자 갱신
+
+직전 goal turn은 BLE 조각 전송의 승인 기한과 자격 검사를 올린 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- 발급 명령과 영수증이 없는 격리 팀 상태와 전용 PostgreSQL의 대기열·전달·정산 각 0행을 확인한 뒤 정산 작업자만 교체했다. 새 프로세스는 checkout `806416b`의 경로로 실행했고 `SCOPED_RECEIPT_PROCESS_READY`, stderr 0바이트, 전용 DB 작업자 연결 1개를 관찰했다. 전후 네 개 격리 리스너의 프로세스 소유자가 일치했다. [기동 증거](../keyring/evidence/2026-11-10-scoped-receipt-worker-refresh/startup.json)
+- 이번 실행은 격리 작업자 배치와 읽기 전용 DB 확인까지다. 이후 대기열·전달·정산은 여전히 각 0행이다. 명령 발급·CSE 실물 영수증·빌드·회귀시험·Pi 및 Feather 장치 작업은 미실행이다. 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
+
+기동 증거 commit `558dafb4159ea289ec1589a275adf3f42f6389ca`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `806416b..558dafb`다.

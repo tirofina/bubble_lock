@@ -7,7 +7,7 @@
   "date": "2026-11-10",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "The scoped receipt stack is provisioned. Firmware 0.7.5 NVS protection, Gateway 0.2.21 BLE dispatch guards and the latest central settlement changes are source-only. Live command settlement and hardware acceptance remain unverified.",
+  "verificationStatus": "The refreshed scoped receipt worker reached readiness and connected to the empty isolated database. Firmware 0.7.5 and Gateway 0.2.21 changes are source-only. Live command settlement and hardware acceptance remain unverified.",
   "rubricIds": [
     "R01",
     "R02",
@@ -150,9 +150,9 @@
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
     "latestLocalSourceCommit": "edd4b6c22ce15dd2988a02d792f7a7ef052d3179",
-    "lastPushedCommit": "edd4b6c22ce15dd2988a02d792f7a7ef052d3179",
-    "latestCheckpoint": "Keep the authorized deadline across durable intent, BLE scheduling and every fragment, with credential revision checks.",
-    "lastPushedCommitBeforeThisCheckpoint": "1e4cb664c97d39483a0cbbe99f47675d2c724c69"
+    "lastPushedCommit": "558dafb4159ea289ec1589a275adf3f42f6389ca",
+    "latestCheckpoint": "Refreshed the isolated receipt worker and observed readiness and its connection to the empty isolated database.",
+    "lastPushedCommitBeforeThisCheckpoint": "806416bfdf148645c29ca62e708cccb3e652acab"
   },
   "gatewayRevision": "0.2.21",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
@@ -176,7 +176,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Keep time and credential authority current through BLE command transmission",
+    "executionRequest": "Provision the latest receipt worker for the isolated Pi and Feather command bench",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -184,11 +184,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "edd4b6c22ce15dd2988a02d792f7a7ef052d3179",
-    "sourceValidation": "BLE deadline and credential guards plus regression source only. No build, test, Pi deployment or physical BLE command was performed.",
+    "sourceCommit": "806416bfdf148645c29ca62e708cccb3e652acab",
+    "sourceValidation": "Isolated worker startup and database connection observed. No command issuance, CSE receipt settlement, build, test, Pi deployment or physical BLE command was performed.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "The isolated stack is provisioned. Firmware 0.7.5 link and r18 NVS fault verification, Gateway 0.2.21 build and verification, latest isolated settlement deployment, a separately authorized Feather 0.2.0 and Pi bench run, authoritative CSE route and journal reclaim contracts, production CORE and r18 bring-up remain.",
+    "currentDependencyState": "The isolated worker is refreshed. Firmware 0.7.5 link and r18 NVS fault verification, Gateway 0.2.21 build and verification, observed receipt settlement, a separately authorized Feather 0.2.0 and Pi bench run, authoritative CSE route and journal reclaim contracts, production CORE and r18 bring-up remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -830,7 +830,9 @@
   "scopedReceiptRuntime": {
     "reference": "dev/mobius4/README.md#격리-postgresql-정산-실행",
     "startupEvidence": "evidence/2026-11-10-scoped-receipt-runtime/startup.json",
-    "status": "empty-inbox-poll-observed",
+    "latestRefreshEvidence": "evidence/2026-11-10-scoped-receipt-worker-refresh/startup.json",
+    "latestWorkerCheckout": "806416bfdf148645c29ca62e708cccb3e652acab",
+    "status": "refreshed-worker-ready-with-empty-inbox",
     "cseReceiptReadObserved": false,
     "physicalReceiptObserved": false,
     "sourceCommit": "6799b9d934aa3b62d4ce0ea7cd3af84793024a12"
@@ -871,8 +873,8 @@
   },
   "negativeCommandReceiptOutcomes": {
     "reference": "integration-candidate/README.md#cse-명령-영수증의-중앙-정산-후보",
-    "status": "source-only",
-    "isolatedWorkerReloaded": false,
+    "status": "isolated-worker-loaded-no-receipt",
+    "isolatedWorkerReloaded": true,
     "regressionsExecuted": false,
     "sourceCommit": "f2cc3f90f59c1bb0a28c307b81ea542eefaa7323"
   },
@@ -886,8 +888,8 @@
   },
   "settlementNativeOrigin": {
     "reference": "integration-candidate/README.md#cse-명령-영수증의-중앙-정산-후보",
-    "status": "source-only",
-    "isolatedWorkerReloaded": false,
+    "status": "isolated-worker-loaded-no-receipt",
+    "isolatedWorkerReloaded": true,
     "regressionsExecuted": false,
     "legacyRecordsRewritten": false,
     "authoritativeCommandRouteContractAvailable": false,
