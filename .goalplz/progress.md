@@ -396,3 +396,12 @@ fixture와 실물 실행 증거 commit `f7e917cfbc4a77ddc2e11bac80f7146a363f4986
 - 시험 unit과 임시 경로를 정리했다. Pi의 0.2.5 실물 관측 증거와 이 0.2.6 로컬 배포 검사는 범위가 다르다. 배포 unit 운영 설치·중앙 운영 PKI·실물 명령·제작 PCB·정산은 남아 있다. [시험 기록](../keyring/evidence/2026-11-10-deployment-preflight/README.md)
 
 구현·시험 증거 commit `106050ae31a087268ad38d9bf406348dedd9cd29`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8fdbaec..106050a`다. 전체 goal은 active/progress다.
+
+## 2026-11-10 — 중앙 HTTP 명령과 CORE ACK 결속
+
+이전 goal turn은 Gateway 0.2.6 배포 시작 검사와 실제 WSL systemd 시험을 완료한 progress다. DOC-REV 2.0.0, main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 다시 확인했다. 팀 HEAD는 이전과 같다.
+
+- 팀 mTLS API에서 발급한 명령, Gateway 전체 worker와 모의 GATT, 실제 격리 Mobius4로 native receipt를 저장·조회했다. 실제 실행 전 승인 응답과 CSE readback을 Node 시험에 전달했다.
+- 팀 CORE 원본은 HTTP 발급 ACK를 `REVIEW`로 분류했다. CORE 등록 뒤 ACK hash만 바꾼 사례는 `ACK_RECORDED`로 기록됐다. 이 결과는 합성 MQTT를 사용한 원본 handler 직접 호출 범위다.
+- KEYRING 결속 후보는 인증된 Gateway·발급 명령·승인 응답과 native receipt를 비교한다. 정상 2개와 변조/거절 7개를 확인했다. 별도 권한 회수 실행은 BLE 쓰기 0회, 거절 receipt 1개였다. 시험 container/network 잔여 0을 확인했다. [증거](../keyring/evidence/2026-11-10-core-ack-binding/README.md)
+- 운영 ACK 수신기 연결과 원자적 정산은 팀 owner 단계다. Feather 0.2.0 플래시·실물 명령과 제작 PCB 수용이 남았다. 전체 goal은 active/progress다.

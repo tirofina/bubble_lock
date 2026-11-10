@@ -14,6 +14,7 @@ import uuid
 
 import httpx
 from bubble_gateway.config import GatewayConfig
+from bubble_gateway.core_bridge import acknowledgement
 from bubble_gateway.model import payload_hash
 from bubble_gateway.service import Gateway
 from bubble_gateway.store import Store
@@ -107,8 +108,15 @@ class CentralDispatchTests(unittest.IsolatedAsyncioTestCase):
         connect = asyncio.Event()
         writes = []
         frames = []
+        approvals = []
         test = self
         fleet = gateway.ble
+        authorize = gateway.transport.authorize
+
+        async def capture_authorization(command, digest):
+            result = await authorize(command, digest)
+            approvals.append(result)
+            return result
         identity = dict(version=1, deviceId="kr-test", bootId="boot-test",
                         boardRevision="r18", firmwareRevision="keyring-0.7.0")
 
@@ -176,7 +184,8 @@ class CentralDispatchTests(unittest.IsolatedAsyncioTestCase):
                 "SELECT status, receipt, receipt_delivered FROM commands WHERE command_id=?",
                 (self.command["commandId"],)).fetchone()
 
-        with patch("bubble_gateway.ble.BleakScanner", Scanner), patch("bubble_gateway.ble.BleakClient", Client):
+        with (patch("bubble_gateway.ble.BleakScanner", Scanner), patch("bubble_gateway.ble.BleakClient", Client),
+              patch.object(gateway.transport, "authorize", capture_authorization)):
             runner = asyncio.create_task(gateway.run())
             try:
                 await wait_for(lambda: gateway.counters["dispatch_deferred_ble"] > 0, runner)
@@ -212,10 +221,28 @@ class CentralDispatchTests(unittest.IsolatedAsyncioTestCase):
                 facts = {"status": local["status"], "ackCode": local["ackCode"],
                          "gattWrites": len(writes), "commandFrames": len(frames),
                          "cinCount": 1, "readbackMatchesJournal": True}
+                if not revoke_before_connect:
+                    approval, = approvals
+                    facts["coreAckBinding"] = await self.check_core_binding(cin["m2m:cin"]["con"], approval)
             finally:
                 gateway.stop.set()
                 await asyncio.wait_for(runner, 10)
         print(json.dumps(facts | {"gracefulStop": True}), flush=True)
+
+    async def check_core_binding(self, receipt, approval):
+        process = await asyncio.create_subprocess_exec(
+            "node", str(Path(__file__).with_name("check_core_ack.mjs")), os.environ["KEYRING_TEST_CENTRAL_TREE"],
+            stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+        data = json.dumps(dict(command=self.command, authorization=approval,
+                               receipt=receipt, ack=acknowledgement(receipt))).encode()
+        try:
+            stdout, stderr = await asyncio.wait_for(process.communicate(data), 8)
+        except TimeoutError:
+            process.kill()
+            await process.wait()
+            raise
+        self.assertEqual(process.returncode, 0, stderr.decode())
+        return json.loads(stdout)
 
     async def test_central_command_waits_for_gatt_and_stores_one_receipt(self):
         await self.exercise(revoke_before_connect=False)

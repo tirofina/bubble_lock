@@ -62,7 +62,8 @@
     "Opt-in real Feather/Pi relay harness with explicit env isolation, fresh private SQLite outbox, native HTTPS CSE readback and successful-channel MQTT/HTTPS accounting",
     "GATT command readiness deferral, current authorization for the same BLE generation, bounded fair pending batches, and graceful Gateway stop",
     "Opt-in Feather 0.2.0 GPIO13 command/receipt profile with scoped NVS intent journal; observation profile remains 0.1.1",
-    "Offline deployment preflight for TLS files and paths beneath systemd STATE_DIRECTORY; checked by ExecStartPre before the daemon"
+    "Offline deployment preflight for TLS files and paths beneath systemd STATE_DIRECTORY; checked by ExecStartPre before the daemon",
+    "KEYRING handoff candidate for binding native receipt and optional CORE ACK to the authenticated Gateway and historical central issuance/authorization"
   ],
   "existingHardware": {
     "status": "source-snapshot-included-unverified",
@@ -149,7 +150,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Validate the production-style Gateway startup boundary without a production install",
+    "executionRequest": "Reproduce the team HTTP-to-CORE ACK gap with real CSE readback and prepare the KEYRING binding candidate",
     "remainingCompletionDependencies": [
       "central deployment, settlement and recovery activation",
       "purchased JD9853 module initialization",
@@ -158,10 +159,10 @@
     ],
     "latestRemoteCore": "d54a43a",
     "sourceCommit": "106050ae31a087268ad38d9bf406348dedd9cd29",
-    "sourceValidation": "Gateway 0.2.6 wheel, 67 regression tests, 3 WSL systemd preflight cases. Earlier 0.2.5 Pi transient daemon/replay evidence retained.",
+    "sourceValidation": "Team main CORE handler gap reproduced; 2 real API/CSE integration cases, 2 positive and 7 rejected binding-candidate inputs passed. Physical GATT command and production settlement remain.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "Local deployment preflight and Pi observation/replay are verified in their separate scopes. Physical Feather command and production deployment/CORE settlement remain.",
+    "currentDependencyState": "The handoff candidate and reproducible CORE/central binding evidence are ready; team owner integration and physical command flash approval remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -460,5 +461,13 @@
     "productionDeploymentPerformed": false,
     "receipt": "evidence/2026-11-10-deployment-preflight/receipt.json",
     "sourceCommit": "106050ae31a087268ad38d9bf406348dedd9cd29"
+  },
+  "coreAckBindingValidation": {
+    "receipt": "evidence/2026-11-10-core-ack-binding/receipt.json",
+    "teamMain": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+    "isolatedCseCasesPassed": 2,
+    "candidateValidCases": 2,
+    "candidateRejectedCases": 7,
+    "productionSettlementVerified": false
   }
 }
