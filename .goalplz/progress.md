@@ -1058,3 +1058,12 @@ Pi 배터리 기록 commit `3e4185bf9ecdc6c542686c65bd6bb5134c5a033e`을 `origin
 - 동일 revision 복구, TTL 공백, 지연된 응답, 정상 연속 갱신과 부분 전송 중단을 다루는 회귀시험 소스를 추가했다. 빌드·시험·Pi 배포·실물 명령은 미실행이다. goal은 active/progress다.
 
 자격 단절 commit `723342f7ad6cc2b28cc70fa0cf82ac23d530db97`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `9095f64..723342f`다.
+
+## 2026-11-11 — 자격 상태 전환 영수증 보관과 재전송
+
+직전 goal turn은 자격 단절 후 기존 명령 승인 재사용을 막은 progress다. DOC-REV 2.0.0, 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`와 팀 자격 상태 응답 계약을 확인했다. 팀 head는 직전과 같다.
+
+- Gateway `0.2.35`는 중앙 mTLS의 첫 자격 관측과 상태·revision 전환을 SQLite에 저장한다. 일반 outbox 포화 중에도 별도 대기 한도까지 보존하고, 기존 health 컨테이너로 같은 요청 ID와 본문을 순서대로 전송한다. 전송 완료 시각과 최근 완료 128건을 로컬에 남긴다. [전환 영수증](../keyring/raspberry-pi-gateway/RECEIPT_ROUTING.md#자격-상태-전환-영수증)
+- 기존 DB의 추가 테이블, 보관본, 큐 포화·재시작·동일 ID, 완료 이력 제한, 저장 실패 시 실행 차단과 벤치 heartbeat 분리를 다루는 회귀시험 소스를 추가했다. 빌드·시험·Pi 배포·실제 CSE 전송은 미실행이다. 중앙의 실제 발급·회전 시각 증거와 실물 연결은 남아 있다. goal은 active/progress다.
+
+자격 전환 영수증 commit `bf1e4a947b00064687277e91e3f917d5ac667755`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `9ff2ad9..bf1e4a9`다.
