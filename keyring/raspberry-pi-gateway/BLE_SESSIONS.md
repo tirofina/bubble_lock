@@ -6,6 +6,8 @@ Gateway 0.2.21은 중앙 응답의 `expiresAt`과 명령 `deadline` 중 이른 �
 
 승인 요청 중 자격 revision이 바뀌면 새 승인까지 대기한다. SQLite 기록 후 전송 전에 상태가 바뀌면 거절 영수증을 남긴다. BLE 처리 중 중단은 `TIMEOUT` 또는 `INDETERMINATE`로 보존한다. BlueZ에 넘긴 조각은 장치의 `remainingMs`와 저널 규칙에 따라 처리된다. 새 사례는 모의 시험 소스로 추가했으며 실행은 남아 있다.
 
+Gateway 0.2.42는 마지막 GATT 쓰기 시작 뒤 한 번 정한 BLE 기한 안에 현재 연결에서 받은 일치 영수증을 보존한다. 그 뒤 연결이 종료되거나 마지막 쓰기가 오류·타임아웃으로 끝나도 먼저 수용한 결과와 readback을 SQLite에 전달한다. 영수증은 마지막 조각보다 이르거나 기한에 도달한 뒤에는 수용하지 않는다. 이 경로에서 명령을 재전송하지 않으며, 사용자 취소와 일치 영수증이 없는 종료는 기존 처리를 따른다.
+
 ## 현재 부팅과 새 적용 영수증
 
 Gateway 0.2.8은 대기 중인 commandId와 payloadHash가 일치하는 `APPLIED`에 현재 GATT identity의 bootId를 요구한다. 부팅 ID가 다르면 세션을 끊고 명령 결과를 미확정으로 기록한다. 이미 전송한 명령은 자동 재실행하지 않는다. 과거 journal의 `DUPLICATE`는 원래 bootId와 적용 당시 readback을 유지하며, 현재 부팅의 관측 시각으로 환산하지 않는다.
@@ -34,8 +36,8 @@ Gateway0.2.0은 GATT 조각을 보낼 때마다 `peer.client`를 다시 조회�
 
 1. 연결 시도마다 프로세스 내부 generation을 할당한다. 연결 상실·protocol failure·명령 중단 시 즉시 무효화한다. generation은 중앙 `ownershipEpoch`와 별개이며 wire/schema/DB에는 추가하지 않는다.
 2. disconnect와 두 notification 콜백은 생성된 연결의 generation을 캡처한다. 오래된 콜백은 수신 버퍼·pending future·연결 상태를 변경하지 않는다.
-3. 명령은 시작 시 클라이언트와 generation을 고정한다. 각20byte WRITE 전후와 결과 반환 전에 같은 인증 세션인지 확인한다. 교체되면 중단하고 다음 연결에 이어 보내지 않는다.
-4. 오래된 명령의 예외 처리와 future 정리는 새 연결을 종료하거나 다른 pending 상태를 지우지 않는다. 실패 결과는 기존 Gateway receipt 처리에서 미확정 상태로 남기며 자동 재실행하지 않는다.
+3. 명령은 시작 시 클라이언트와 generation을 고정한다. 각 20바이트 WRITE 전과 중간 조각 응답 뒤에 같은 인증 세션인지 확인한다. 마지막 조각 이후에는 그 세션에서 기한 안에 수용한 영수증이 결과를 확정한다. 연결이 교체되면 다음 연결에 이어 보내지 않는다.
+4. 오래된 명령의 예외 처리와 future 정리는 새 연결을 종료하거나 다른 pending 상태를 지우지 않는다. 기한 안에 일치 영수증이 들어오지 않은 실패 결과는 기존 Gateway receipt 처리에서 미확정으로 남기며 자동 재실행하지 않는다.
 5. identity 확인·notify 등록·최초 observation READ가 끝날 때까지 세션을 확인한다. 도중에 연결 또는 프로토콜이 실패하면 ready로 승격하지 않는다. journal capture의 마지막 identity 확인도 generation을 확인한다.
 
 현재 연결을 통해 장치 journal의 과거 결과를 받을 수 있다. 과거 결과의 bootId와 알림 콜백이 속한 연결을 각각 확인한다.

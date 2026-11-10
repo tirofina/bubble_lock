@@ -9,6 +9,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
+from bubble_gateway.ble import BleFleet
 from bubble_gateway.model import iso_time, payload_hash, utc_now
 from bubble_gateway.service import Gateway
 from bubble_gateway.store import Store
@@ -246,6 +247,25 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(status, "APPLIED")
         self.assertEqual((receipt["receivedAt"], receipt["acceptedAt"], receipt["appliedAt"]),
                          (arrived, accepted, applied))
+
+    async def test_dispatch_keeps_confirmed_receipt_when_final_gatt_response_is_lost(self):
+        fleet = self.gateway.ble = BleFleet(self.gateway.config)
+        peer = fleet._peers[self.cmd["deviceId"]]
+        result = device_receipt(self.cmd, self.digest)
+        peer.identity = {"bootId": result["bootId"], "firmwareRevision": result["firmwareRevision"]}
+        peer.ready.set()
+        peer.command_writable = True
+
+        async def write(_uuid, data, *, response):
+            if data.endswith(b"\n"):
+                fleet._receipt_fragment(peer, bytearray((json.dumps(result) + "\n").encode()), peer.generation)
+                fleet._lost(peer)
+                raise OSError("synthetic lost GATT response")
+
+        peer.client = SimpleNamespace(is_connected=True, write_gatt_char=AsyncMock(side_effect=write))
+        status, receipt = await self.dispatch()
+        self.assertEqual((status, receipt["ackCode"], receipt["readback"]), ("APPLIED", "APPLIED", {"state": True}))
+        self.assertEqual(self.store.pending(), [])
 
     async def test_clock_step_after_write_keeps_device_result_without_estimates(self):
         arrived = iso_time()

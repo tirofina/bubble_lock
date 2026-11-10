@@ -131,6 +131,97 @@ class BleMockTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["ackCode"], "APPLIED")
         self.assertIsNone(self.peer.pending)
 
+    async def execute_with_final_write(self, on_final):
+        cmd = command()
+        digest = payload_hash(cmd)
+        wire_receipt = bytearray((json.dumps(device_receipt(cmd, digest)) + "\n").encode())
+
+        async def write(_uuid, data, *, response):
+            self.assertTrue(response)
+            if data.endswith(b"\n"):
+                await on_final(wire_receipt)
+
+        self.peer.client = SimpleNamespace(is_connected=True, write_gatt_char=AsyncMock(side_effect=write))
+        return await self.fleet.execute(cmd, 1000, digest)
+
+    async def test_matching_receipt_survives_disconnect_before_final_write_returns(self):
+        async def disconnect(receipt):
+            self.fleet._receipt_fragment(self.peer, receipt)
+            self.fleet._lost(self.peer)
+
+        result = await self.execute_with_final_write(disconnect)
+        self.assertEqual((result["ackCode"], result["readback"]), ("APPLIED", {"state": True}))
+        self.assertFalse(self.peer.ready.is_set())
+
+    async def test_matching_receipt_survives_final_write_transport_error(self):
+        async def fail(receipt):
+            self.fleet._receipt_fragment(self.peer, receipt)
+            raise OSError("synthetic lost GATT response")
+
+        result = await self.execute_with_final_write(fail)
+        self.assertEqual(result["ackCode"], "APPLIED")
+        self.assertFalse(self.peer.ready.is_set())
+        self.assertIsNone(self.peer.pending_receipt_deadline)
+
+    async def test_matching_receipt_survives_internal_timeout_of_final_write(self):
+        self.fleet.config.ble_command_timeout = 0.1
+
+        async def stall(receipt):
+            self.fleet._receipt_fragment(self.peer, receipt)
+            await asyncio.Future()
+
+        with patch("bubble_gateway.ble.time", SimpleNamespace(monotonic=lambda: 100.0)):
+            result = await self.execute_with_final_write(stall)
+        self.assertEqual(result["ackCode"], "APPLIED")
+        self.assertFalse(self.peer.ready.is_set())
+
+    async def test_receipt_at_deadline_cannot_settle_even_if_timeout_has_not_run(self):
+        async def late(receipt):
+            deadline = self.peer.pending_receipt_deadline
+            with patch("bubble_gateway.ble.time", SimpleNamespace(monotonic=lambda: deadline)):
+                self.fleet._receipt_fragment(self.peer, receipt)
+            self.assertFalse(self.peer.pending.done())
+            self.fleet._lost(self.peer)
+
+        with self.assertRaises(BleUnavailable):
+            await self.execute_with_final_write(late)
+
+    async def test_matching_receipt_cannot_settle_before_final_write(self):
+        cmd = command()
+        digest = payload_hash(cmd)
+        receipt = bytearray((json.dumps(device_receipt(cmd, digest)) + "\n").encode())
+
+        async def write(_uuid, data, *, response):
+            self.assertFalse(data.endswith(b"\n"))
+            self.fleet._receipt_fragment(self.peer, receipt)
+            self.assertFalse(self.peer.pending.done())
+            self.fleet._lost(self.peer)
+
+        self.peer.client = SimpleNamespace(is_connected=True, write_gatt_char=AsyncMock(side_effect=write))
+        with self.assertRaises(BleUnavailable):
+            await self.fleet.execute(cmd, 1000, digest)
+        self.peer.client.write_gatt_char.assert_awaited_once()
+
+    async def test_external_cancellation_still_propagates(self):
+        received = asyncio.Event()
+
+        async def stall(receipt):
+            self.fleet._receipt_fragment(self.peer, receipt)
+            received.set()
+            await asyncio.Future()
+
+        task = asyncio.create_task(self.execute_with_final_write(stall))
+        try:
+            async with asyncio.timeout(1):
+                await received.wait()
+            task.cancel()
+            with self.assertRaises(asyncio.CancelledError):
+                await task
+        finally:
+            if not task.done():
+                task.cancel()
+                await asyncio.gather(task, return_exceptions=True)
+
     async def test_receipt_timing_is_frozen_before_final_write_ack_returns(self):
         cmd = command()
         digest = payload_hash(cmd)

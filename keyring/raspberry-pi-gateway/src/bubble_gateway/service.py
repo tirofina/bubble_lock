@@ -292,9 +292,8 @@ class Gateway:
             self._finish(command, digest, "REJECTED", "EXPIRED", "Deadline elapsed during durable intent recording; BLE not sent")
             return
         try:
-            raw = await asyncio.wait_for(self.ble.execute(command, budget_ms, digest, expected_generation=generation,
-                                                          deadline_monotonic=expires, before_write=require_write_authority),
-                                         timeout=min(budget_ms / 1000, self.config.ble_command_timeout))
+            raw = await self.ble.execute(command, budget_ms, digest, expected_generation=generation,
+                                         deadline_monotonic=expires, before_write=require_write_authority)
             self._validate_device_result(raw, command, digest)
             code = raw["ackCode"]
             if code in {"APPLIED", "DUPLICATE"}:

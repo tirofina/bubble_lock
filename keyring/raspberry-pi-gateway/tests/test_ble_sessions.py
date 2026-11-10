@@ -1,6 +1,7 @@
 """Connection replacement races using fake GATT clients; no scanner or radio."""
 import asyncio
 import json
+import time
 import unittest
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
@@ -624,12 +625,18 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(self.peer.observations.empty())
             self.assertEqual(self.peer.observation_frames.data, bytearray())
 
+    def wait_for_receipt(self, cmd, digest):
+        pending = self.peer.pending = asyncio.get_running_loop().create_future()
+        self.peer.pending_command, self.peer.pending_hash = cmd["commandId"], digest
+        self.peer.pending_final_write_at = time.monotonic()
+        self.peer.pending_receipt_deadline = self.peer.pending_final_write_at + 1
+        return pending
+
     async def test_old_receipt_cannot_settle_current_pending_command(self):
         old, current = await self.reconnect()
         cmd = command()
         digest = payload_hash(cmd)
-        pending = self.peer.pending = asyncio.get_running_loop().create_future()
-        self.peer.pending_command, self.peer.pending_hash = cmd["commandId"], digest
+        pending = self.wait_for_receipt(cmd, digest)
         receipt = device_receipt(cmd, digest, bootId=old.identity["bootId"])
         old.callbacks[self.fleet.receipt_uuid](None, bytearray(json.dumps(receipt).encode() + b"\n"))
         self.assertFalse(pending.done())
@@ -641,8 +648,7 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
         old, current = await self.reconnect()
         cmd = command()
         digest = payload_hash(cmd)
-        pending = self.peer.pending = asyncio.get_running_loop().create_future()
-        self.peer.pending_command, self.peer.pending_hash = cmd["commandId"], digest
+        pending = self.wait_for_receipt(cmd, digest)
         receipt = device_receipt(cmd, digest, bootId=old.identity["bootId"])
         notify = current.callbacks[self.fleet.receipt_uuid]
         unrelated = dict(receipt, commandId="unrelated")
@@ -659,8 +665,7 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
         old, current = await self.reconnect()
         cmd = command()
         digest = payload_hash(cmd)
-        pending = self.peer.pending = asyncio.get_running_loop().create_future()
-        self.peer.pending_command, self.peer.pending_hash = cmd["commandId"], digest
+        pending = self.wait_for_receipt(cmd, digest)
         receipt = device_receipt(cmd, digest, bootId=old.identity["bootId"], ackCode="DUPLICATE")
         current.callbacks[self.fleet.receipt_uuid](None, bytearray(json.dumps(receipt).encode() + b"\n"))
         result = await pending

@@ -157,6 +157,7 @@ class _Peer:
     pending_command: str | None = None
     pending_hash: str | None = None
     pending_final_write_at: float | None = None
+    pending_receipt_deadline: float | None = None
     anchor: tuple[str, int, datetime, float] | None = None
     # The latest queued boot, sequence and uptime survive a BLE reconnect.
     observation_watermark: tuple[str, int, int | None] | None = None
@@ -446,6 +447,7 @@ class BleFleet:
     def _receipt_fragment(self, peer: _Peer, data: bytearray, generation: int | None = None) -> None:
         if generation is not None and generation != peer.generation:
             return
+        received_at = time.monotonic()
         try:
             for frame in peer.receipt_frames.feed(data):
                 required = {"version", "deviceId", "bootId", "commandId", "payloadHash", "ackCode",
@@ -470,17 +472,23 @@ class BleFleet:
                     # An old notification cannot settle the current command.
                     continue
                 if peer.pending is not None and not peer.pending.done():
+                    if (peer.pending_final_write_at is None or peer.pending_receipt_deadline is None
+                            or received_at >= peer.pending_receipt_deadline):
+                        continue
                     if frame["ackCode"] == "APPLIED" and frame["bootId"] != peer.identity.get("bootId"):
                         # Fresh applies use the current boot. Journal replays use their original boot and result code.
                         self._protocol_failure(peer, "receipt_boot_mismatch")
                         return
                     # BlueZ can return from the final WRITE after delivering this notification.
-                    peer.pending.set_result(self._receipt_times(peer, frame))
+                    peer.pending.set_result(self._receipt_times(peer, frame, received_monotonic=received_at))
         except (BleProtocolError, ValueError, TypeError):
             self._protocol_failure(peer, "invalid_receipt")
 
-    def _receipt_times(self, peer: _Peer, receipt: dict[str, Any]) -> dict[str, Any]:
-        received_monotonic, received = time.monotonic(), utc_now()
+    def _receipt_times(self, peer: _Peer, receipt: dict[str, Any], *,
+                       received_monotonic: float | None = None) -> dict[str, Any]:
+        if received_monotonic is None:
+            received_monotonic = time.monotonic()
+        received = utc_now()
         result = dict(receipt)
         result.update(receivedAt=iso_time(received), acceptedAt=None, appliedAt=None, timestampSource="unavailable")
         anchor = peer.anchor
@@ -536,8 +544,10 @@ class BleFleet:
             expires = min(expires, deadline_monotonic)
         if expires <= now:
             raise asyncio.TimeoutError("dispatch deadline elapsed before BLE")
-        async with asyncio.timeout(min(self.config.ble_command_timeout, expires - now)):
-            async with peer.lock:
+        timeout = min(self.config.ble_command_timeout, expires - now)
+        pending = asyncio.get_running_loop().create_future()
+        try:
+            async with asyncio.timeout(timeout), peer.lock:
                 client = peer.client
                 generation = peer.generation if expected_generation is None else expected_generation
                 self._require_session(peer, client, generation)
@@ -555,10 +565,10 @@ class BleFleet:
                 raw = json.dumps(wire, ensure_ascii=True, allow_nan=False, separators=(",", ":")).encode("utf-8") + b"\n"
                 if len(raw) > MAX_FRAME:
                     raise ValueError("command exceeds BLE frame size")
-                pending = asyncio.get_running_loop().create_future()
                 peer.pending = pending
                 peer.pending_command, peer.pending_hash = command_dict["commandId"], payload_hash
                 peer.pending_final_write_at = None
+                peer.pending_receipt_deadline = now + timeout
                 try:
                     for offset in range(0, len(raw), 20):
                         self._require_session(peer, client, generation)
@@ -567,13 +577,13 @@ class BleFleet:
                         write_at = time.monotonic()
                         if write_at >= expires:
                             raise asyncio.TimeoutError("dispatch deadline elapsed during BLE")
-                        if offset + 20 >= len(raw):
+                        final = offset + 20 >= len(raw)
+                        if final:
                             peer.pending_final_write_at = write_at
                         await client.write_gatt_char(self.command_uuid, raw[offset:offset + 20], response=True)
-                        self._require_session(peer, client, generation)
-                    receipt = await pending
-                    self._require_session(peer, client, generation)
-                    return receipt
+                        if not final or not pending.done():
+                            self._require_session(peer, client, generation)
+                    return await pending
                 except BaseException:
                     # An interrupted partial frame must never be joined to a later
                     # command. Reconnect clears the firmware RX frame state.
@@ -588,6 +598,13 @@ class BleFleet:
                         peer.pending = None
                         peer.pending_command = peer.pending_hash = None
                         peer.pending_final_write_at = None
+                        peer.pending_receipt_deadline = None
+        except Exception as exc:
+            # The notification confirms the result even if the last GATT response is lost.
+            if pending.done() and not pending.cancelled() and pending.exception() is None:
+                LOG.info("BLE transport ended after a matching receipt (%s)", type(exc).__name__)
+                return pending.result()
+            raise
 
     async def capture_journal(self, device_id: str) -> dict[str, Any]:
         """Explicit read-only maintenance capture, serialized with device commands."""
