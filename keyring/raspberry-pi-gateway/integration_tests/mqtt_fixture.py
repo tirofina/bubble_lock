@@ -24,7 +24,8 @@ def docker(*args, check=True):
 class DockerBroker:
     label = "privacy-bubble.test-token"
 
-    def __init__(self, pki, *, network=None, originator="Ctest", cse_id="test-cse", internal_listener=False):
+    def __init__(self, pki, *, network=None, originator="Ctest", cse_id="test-cse", internal_listener=False,
+                 core_gateway_id=None):
         self.token, self.container = uuid.uuid4().hex, None
         image = os.environ.get("KEYRING_TEST_MQTT_IMAGE", "eclipse-mosquitto:2")
         # Resolve the cached image before starting; --pull never forbids network installs.
@@ -33,11 +34,18 @@ class DockerBroker:
             raise RuntimeError("cached Mosquitto image identity unavailable")
         self.config = pki.root / f"broker-{self.token}.conf"
         self.acl = pki.root / f"acl-{self.token}.txt"
-        if any(re.fullmatch(r"[A-Za-z0-9._:-]+", value) is None for value in (originator, cse_id)):
+        identities = (originator, cse_id) if core_gateway_id is None else (originator, cse_id, core_gateway_id)
+        if any(re.fullmatch(r"[A-Za-z0-9._:-]+", value) is None for value in identities):
             raise ValueError("test broker identities must be safe topic segments")
         request, response = f"/oneM2M/req/{originator}/{cse_id}/json", f"/oneM2M/resp/{originator}/{cse_id}/json"
-        self.acl.write_text("user gw-test\n" + f"topic write {request}\ntopic read {response}\n"
-                            "user cse-test\ntopic read /oneM2M/req/#\n" + f"topic write {RESPONSE}\n", encoding="ascii")
+        gateway_acl = f"user gw-test\ntopic write {request}\ntopic read {response}\n"
+        cse_acl = f"user cse-test\ntopic read /oneM2M/req/#\ntopic write {RESPONSE}\n"
+        core_acl = ""
+        if core_gateway_id is not None:
+            core_root = f"privacy-bubble/gateway/{core_gateway_id}"
+            gateway_acl += f"topic read {core_root}/command\ntopic write {core_root}/ack\n"
+            core_acl = f"user core-test\ntopic write {core_root}/command\ntopic read {core_root}/ack\n"
+        self.acl.write_text(gateway_acl + cse_acl + core_acl, encoding="ascii")
         uid = os.getuid() if hasattr(os, "getuid") else 0
         # Container root is used only when the private temporary PKI is root-owned
         # (including Docker Desktop). No deployment credentials are mounted.

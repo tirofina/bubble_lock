@@ -1,6 +1,6 @@
 # Gateway 로컬 시험
 
-Gateway 0.2.7은 기본 시험 71개와 중앙 명령 통합 시험 3개가 통과했다. MQTT 대기열 포화, 같은 ID의 변조 사본, 목록 조회 실패 중 실제 중앙 mTLS 해시 확인을 검증했다. [수신 시험 기록](../evidence/2026-11-10-command-ingress/README.md)
+Gateway 0.2.7은 기본 71개, 중앙 명령 통합 4개, 별도 MQTT 6개 시험이 통과했다. 중앙 명령 통합은 실제 Mosquitto의 명령·ACK 전송과 Mobius4 영수증 대조를 포함한다. [수신 시험](../evidence/2026-11-10-command-ingress/README.md) · [브로커 시험](../evidence/2026-11-10-mqtt-command-wire/README.md)
 
 Gateway 0.2.6은 로컬 기본 시험 67개와 실제 Ubuntu systemd의 시작 전 검사 3개가 통과했다. systemd 시험은 배포 unit의 격리 설정을 복사한 임시 unit에서 wheel의 `--check-config`를 실행하고, 성공한 경우에만 본 실행 표시를 남긴다. [실행 범위와 재현 절차](../evidence/2026-11-10-deployment-preflight/README.md)
 
@@ -20,7 +20,7 @@ python keyring/raspberry-pi-gateway/cse_integration_tests/central_dispatch.py -v
 
 실행마다 새 시험 PKI·중앙 등록·Gateway SQLite와 격리 CSE 자원을 쓴다. 정상 명령의 중복 poll, 연결 전 grant 회수, receipt의 CSE readback, 정상 종료를 검증한다. 하드웨어는 모의 GATT 경계다.
 
-MQTT 단독 수신 시험은 합성 CORE 명령을 Gateway 대기열에 넣고 목록 조회에만 503 오류를 주입한다. 팀 Node API의 mTLS 승인 요청은 실제로 수행한다.
+MQTT 단독 수신 시험은 목록 조회에만 503 오류를 주입한다. 대기열에 직접 넣는 사례와 실제 Mosquitto의 QoS 1 토픽으로 보내는 사례가 있다. 두 사례에서 팀 Node API의 mTLS 승인을 실제로 요청한다. 브로커 사례는 인증서별 명령 발행 권한, 승인 전후 처리, 모의 GATT 프레임, CORE ACK와 CSE 영수증 일치를 확인한다.
 
 정상 명령 사례는 CSE에서 읽은 영수증과 실행 직전 중앙 승인 응답을 Node의 ACK 결속 검사에도 전달한다. 이 재현은 팀 main `715ef58`의 CORE 동작을 기준으로 한다. [재현 결과](../evidence/2026-11-10-core-ack-binding/README.md)
 

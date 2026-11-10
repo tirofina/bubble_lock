@@ -1,5 +1,6 @@
-"""Opt-in: team mTLS API, Gateway workers, fake GATT and disposable Mobius4."""
+"""Opt-in: team mTLS API, real MQTT, Gateway workers, fake GATT and disposable Mobius4."""
 import asyncio
+from dataclasses import replace
 import hashlib
 import json
 import os
@@ -13,7 +14,9 @@ from unittest.mock import patch
 import uuid
 
 import httpx
-from bubble_gateway.config import GatewayConfig
+import paho.mqtt.client as mqtt
+
+from bubble_gateway.config import GatewayConfig, tls_context
 from bubble_gateway.core_bridge import acknowledgement
 from bubble_gateway.model import payload_hash
 from bubble_gateway.service import Gateway
@@ -24,16 +27,62 @@ from mobius_fixture import DisposableMobius
 from tls_fixture import TestPki
 
 
+class CoreCommandPeer:
+    def __init__(self, config):
+        self.loop = asyncio.get_running_loop()
+        self.subscribed = self.loop.create_future()
+        self.acks = asyncio.Queue()
+        self.command_topic = f"privacy-bubble/gateway/{config.gateway_id}/command"
+        self.ack_topic = f"privacy-bubble/gateway/{config.gateway_id}/ack"
+        self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="core-test-" + uuid.uuid4().hex,
+                                  clean_session=True, protocol=mqtt.MQTTv311)
+        self.client.tls_set_context(tls_context(config))
+        self.client.connect_timeout = 3
+        self.client.on_connect = self.on_connect
+        self.client.on_subscribe = self.on_subscribe
+        self.client.on_message = self.on_message
+
+    def on_connect(self, client, _userdata, _flags, reason, _properties):
+        if reason == 0:
+            client.subscribe(self.ack_topic, qos=1)
+
+    def on_subscribe(self, _client, _userdata, _mid, reasons, _properties):
+        def complete():
+            if not self.subscribed.done():
+                self.subscribed.set_result(len(reasons) == 1 and reasons[0] == 1)
+        self.loop.call_soon_threadsafe(complete)
+
+    def on_message(self, _client, _userdata, message):
+        self.loop.call_soon_threadsafe(self.acks.put_nowait, message)
+
+    async def start(self, port):
+        await asyncio.to_thread(self.client.connect, "127.0.0.1", port, 10)
+        self.client.loop_start()
+        if not await asyncio.wait_for(self.subscribed, 5):
+            raise RuntimeError("CORE test peer did not receive a QoS 1 subscription")
+
+    async def publish(self, command):
+        packet = self.client.publish(self.command_topic, json.dumps(command), qos=1, retain=False)
+        await asyncio.to_thread(packet.wait_for_publish, timeout=3)
+        if not packet.is_published():
+            raise TimeoutError("CORE test command did not receive PUBACK")
+
+    async def close(self):
+        await asyncio.to_thread(self.client.disconnect)
+        await asyncio.to_thread(self.client.loop_stop)
+
+
 class CentralDispatchTests(unittest.IsolatedAsyncioTestCase):
     @classmethod
     def setUpClass(cls):
         cls.pki = TestPki()
         cls.addClassCleanup(cls.pki.close)
+        cls.pki.leaf("core", "trusted", 7, "clientAuth", subject="core-test")
         server = cls.pki.root / "server-only"
         server.mkdir()
         for name in ("trusted.pem", "server.pem", "server.key"):
             shutil.copyfile(cls.pki.root / name, server / name)
-        cls.stack = DisposableMobius(SimpleNamespace(root=server))
+        cls.stack = DisposableMobius(SimpleNamespace(root=server), core_gateway_id="gw-test")
         cls.addClassCleanup(cls.stack.close)
 
     async def asyncSetUp(self):
@@ -103,7 +152,7 @@ class CentralDispatchTests(unittest.IsolatedAsyncioTestCase):
             method, self.stack.origin + path, headers=headers, body=body)
         return status, self.reader._response_rsc(status, response, rqi), document
 
-    async def exercise(self, *, revoke_before_connect):
+    async def exercise(self, *, revoke_before_connect, core_peer=None):
         gateway = Gateway(self.config)
         connect = asyncio.Event()
         writes = []
@@ -112,6 +161,13 @@ class CentralDispatchTests(unittest.IsolatedAsyncioTestCase):
         test = self
         fleet = gateway.ble
         authorize = gateway.transport.authorize
+        api = gateway.transport._api
+        poll_available = core_peer is None
+
+        async def control_poll(method, suffix, *args):
+            if not poll_available and (method, suffix) == ("GET", "/commands?limit=16"):
+                raise RemoteResponseError("synthetic poll outage", status_code=503)
+            return await api(method, suffix, *args)
 
         async def capture_authorization(command, digest):
             result = await authorize(command, digest)
@@ -185,13 +241,35 @@ class CentralDispatchTests(unittest.IsolatedAsyncioTestCase):
                 (self.command["commandId"],)).fetchone()
 
         with (patch("bubble_gateway.ble.BleakScanner", Scanner), patch("bubble_gateway.ble.BleakClient", Client),
+              patch.object(gateway.transport, "_api", control_poll),
               patch.object(gateway.transport, "authorize", capture_authorization)):
             runner = asyncio.create_task(gateway.run())
             try:
+                if core_peer is not None:
+                    await asyncio.wait_for(gateway.transport._ready.wait(), 5)
+                    self.assertEqual(gateway.transport._mqtt.socket().version(), "TLSv1.3")
+                    denied = gateway.transport._mqtt.publish(core_peer.command_topic, json.dumps(self.command), qos=1)
+                    await asyncio.to_thread(denied.wait_for_publish, timeout=3)
+                    self.assertTrue(denied.is_published())
+                    desired = self.command["desiredState"]["state"]
+                    altered = dict(self.command, desiredState={"state": not desired})
+                    await core_peer.publish(altered)
+                    await wait_for(lambda: approvals, runner)
+                    self.assertFalse(approvals[0]["allowed"])
+                    self.assertEqual(approvals[0]["payloadHash"], payload_hash(altered))
+                    self.assertIsNone(command_row())
+                    alias = {key: self.command[key] for key in
+                             ("deviceId", "commandId", "claimId", "grantRevision", "issuedAt", "deadline")}
+                    alias.update(desiredState=desired, epoch=self.command["ownershipEpoch"])
+                    await core_peer.publish(alias)
                 await wait_for(lambda: gateway.counters["dispatch_deferred_ble"] > 0, runner)
                 self.assertEqual(tuple(command_row()), ("RECEIVED", None, 0))
                 self.assertEqual(gateway.store.interrupted(), [])
                 self.assertEqual(writes, [])
+                if core_peer is not None:
+                    self.assertEqual([approval["allowed"] for approval in approvals], [False, True])
+                    self.assertEqual(approvals[1]["payloadHash"], self.digest)
+                    poll_available = True
                 if revoke_before_connect:
                     self.process.stdin.write(b"revoke\n")
                     await self.process.stdin.drain()
@@ -221,7 +299,22 @@ class CentralDispatchTests(unittest.IsolatedAsyncioTestCase):
                 facts = {"status": local["status"], "ackCode": local["ackCode"],
                          "gattWrites": len(writes), "commandFrames": len(frames),
                          "cinCount": 1, "readbackMatchesJournal": True}
-                if not revoke_before_connect:
+                if core_peer is not None:
+                    self.assertEqual([approval["allowed"] for approval in approvals], [False, True, True])
+                    message = await asyncio.wait_for(core_peer.acks.get(), 5)
+                    self.assertEqual((message.topic, message.qos, message.retain), (core_peer.ack_topic, 1, False))
+                    self.assertEqual(json.loads(message.payload), acknowledgement(cin["m2m:cin"]["con"]))
+                    self.assertEqual(gateway.counters["ingress_conflict"], 0)
+                    broker_log = await asyncio.to_thread(self.stack.broker.logs)
+                    self.assertIn("Denied PUBLISH from pb-gateway-gw-test", broker_log)
+                    self.assertRegex(broker_log, rf"Sending PUBLISH to pb-gateway-gw-test \(d0, q1, r0, [^\n]+"
+                                                 rf"'{re.escape(core_peer.command_topic)}'")
+                    self.assertRegex(broker_log, rf"Sending PUBLISH to core-test-[0-9a-f]+ \(d0, q1, r0, [^\n]+"
+                                                 rf"'{re.escape(core_peer.ack_topic)}'")
+                    facts.update(mqttVersion="3.1.1", mqttTls="1.3", coreAckQos=1,
+                                 forgedPayloadDenied=True, gatewayCommandPublishDenied=True,
+                                 exactMqttCopyReceived=True, coreAckMatchesCin=True)
+                elif not revoke_before_connect:
                     approval, = approvals
                     facts["coreAckBinding"] = await self.check_core_binding(cin["m2m:cin"]["con"], approval)
             finally:
@@ -267,6 +360,15 @@ class CentralDispatchTests(unittest.IsolatedAsyncioTestCase):
             self.reader._queue_command(wrong)
             self.reader._queue_command(self.command)
             self.assertEqual(await self.reader.poll_commands(), [self.command])
+
+    async def test_real_mqtt_command_and_core_ack_match_the_cse_receipt(self):
+        self.config = replace(self.config, mqtt_enabled=True, core_bridge_enabled=True,
+                              mqtt_host="127.0.0.1", mqtt_port=self.stack.broker.port)
+        peer = CoreCommandPeer(replace(self.config, cert_file=self.pki.path("core"),
+                                       key_file=self.pki.path("core", "key")))
+        self.addAsyncCleanup(peer.close)
+        await peer.start(self.config.mqtt_port)
+        await self.exercise(revoke_before_connect=False, core_peer=peer)
 
 
 if __name__ == "__main__":
