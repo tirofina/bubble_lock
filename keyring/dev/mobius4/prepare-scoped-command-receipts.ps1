@@ -1,3 +1,5 @@
+param([switch]$FeatherObservationsOnly)
+
 $ErrorActionPreference = 'Stop'
 $environmentPath = Join-Path $PSScriptRoot '.local/scoped/compose.env'
 if (-not (Test-Path -LiteralPath $environmentPath)) { throw 'Run prepare-scoped.ps1 first.' }
@@ -11,12 +13,13 @@ $operatorLock = [IO.File]::Open((Join-Path $PSScriptRoot '.local/scoped/config/h
 try {
   $running = docker compose @compose ps --status running --services
   if ($LASTEXITCODE -ne 0 -or $running -notcontains 'postgres' -or $running -notcontains 'mobius4') {
-    throw 'Start the scoped database and CSE before preparing command receipts.'
+    throw 'Start the scoped database and CSE before preparing command resources.'
   }
   docker compose @compose up -d --no-deps --no-build --pull never --force-recreate --wait --wait-timeout 30 tls
   if ($LASTEXITCODE -ne 0) { throw 'Scoped TLS route refresh failed.' }
-  node (Join-Path $PSScriptRoot 'bootstrap.mjs') --scoped-command-receipts
-  if ($LASTEXITCODE -ne 0) { throw 'Scoped command receipt provisioning stopped. Existing CSE data was retained.' }
+  $scope = if ($FeatherObservationsOnly) { '--scoped-feather-command-observation' } else { '--scoped-command-receipts' }
+  node (Join-Path $PSScriptRoot 'bootstrap.mjs') $scope
+  if ($LASTEXITCODE -ne 0) { throw 'Scoped command resource provisioning stopped. Existing CSE data was retained.' }
 } finally {
   $operatorLock.Dispose()
 }

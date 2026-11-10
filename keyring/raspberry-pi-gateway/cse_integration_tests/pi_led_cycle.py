@@ -5,6 +5,7 @@ from contextlib import closing
 from datetime import timedelta
 import hashlib
 import json
+import os
 from pathlib import Path
 import sqlite3
 import uuid
@@ -29,6 +30,8 @@ def write_new_json(path, data):
     with path.open("x", encoding="utf-8") as stream:
         json.dump(data, stream, indent=2)
         stream.write("\n")
+        stream.flush()
+        os.fsync(stream.fileno())
 
 
 def verify_receipt(command, receipt, boot_id, state):
@@ -41,7 +44,7 @@ def verify_receipt(command, receipt, boot_id, state):
     parse_time(receipt["receivedAt"])
 
 
-async def run_led_cycle(guardian, cse, paths, output):
+async def run_led_cycle(operator_post, cse, paths, output, *, gateway_id=GATEWAY, subject_id=SUBJECT):
     async def wait_for(check):
         while not (output / "STOP").exists():
             result = await check()
@@ -63,7 +66,7 @@ async def run_led_cycle(guardian, cse, paths, output):
         if current is None:
             return None
         observed = parse_time(current["receivedAt"])
-        if (current["gatewayId"] == GATEWAY and current["deviceId"] == DEVICE
+        if (current["gatewayId"] == gateway_id and current["deviceId"] == DEVICE
                 and current["firmwareRevision"] == FIRMWARE and current["state"] is state
                 and abs((utc_now() - observed).total_seconds()) <= 15
                 and (boot_id is None or current["bootId"] == boot_id)
@@ -71,18 +74,14 @@ async def run_led_cycle(guardian, cse, paths, output):
             return {key: current[key] for key in ("bootId", "sequence", "receivedAt", "state")}
         return None
 
-    async def post(path, body):
-        status, _, result = await guardian._http_json("POST", guardian.config.api_url + path, headers={
-            "Accept": "application/json", "Content-Type": "application/json", "Cache-Control": "no-store",
-        }, body=body)
-        if status != 201:
+    async def post(path, body, expected_status=201):
+        status, result = await operator_post(path, body)
+        if status != expected_status:
             raise RuntimeError(f"Bench Guardian request failed with HTTP {status} at {path}")
         return result
 
     scope = ["bubble:command"]
-    consent = await post("/v1/consents", {"subjectId": SUBJECT, "purpose": "keyring-led-bench",
-                                         "scopes": scope, "ttlSec": 1830})
-    grant = await post("/v1/grants", {"consentId": consent["consentId"], "scopes": scope, "ttlSec": 1830})
+    consent = None
     results = []
     boot_id = None
     for label, state in STEPS:
@@ -102,32 +101,49 @@ async def run_led_cycle(guardian, cse, paths, output):
         baseline = await wait_for(current_trigger)
         if (output / "STOP").exists():
             raise RuntimeError("Stopped before issuing the next LED command")
-        command_id = f"feather-led-{label.lower()}-{uuid.uuid4().hex}"
-        issued = await post(f"/api/v1/gateways/{GATEWAY}/commands", {
-            "deviceId": DEVICE, "commandId": command_id, "grantId": grant["grantId"],
-            "desiredState": {"state": state}, "deadline": iso_time(utc_now() + timedelta(seconds=25)),
-        })
-        command = validate_command(issued, GATEWAY, {DEVICE: ""})
-        if command["commandId"] != command_id or command["desiredState"]["state"] is not state:
-            raise RuntimeError("Bench central issued a different command")
-        rn = receipt_name(command_id)
-        write_new_json(output / f"led-{label.lower()}-issued.json", {"command": command, "cseReceiptName": rn})
-        async with asyncio.timeout(35):
-            receipt = await wait_for(lambda: read_cin("receipt", rn))
-            verify_receipt(command, receipt, boot_id, state)
-            observed = await wait_for(lambda: observation(state, boot_id=boot_id,
-                                                           after=parse_time(receipt["receivedAt"])))
-        if observed["sequence"] == baseline["sequence"]:
-            raise RuntimeError("Post-command observation must use a new device sequence")
-        step = {"command": command, "cseReceiptName": rn, "cseReceipt": receipt,
-                "baseline": baseline, "observation": observed}
-        write_new_json(output / f"led-{label.lower()}-readback.json", step)
+        if consent is None:
+            consent = await post("/v1/consents", {"subjectId": subject_id, "purpose": "keyring-led-bench",
+                                                  "scopes": scope, "ttlSec": 1830})
+        grant = await post("/v1/grants", {"consentId": consent["consentId"], "scopes": scope, "ttlSec": 60})
+        grant_id = grant["grantId"]
+        try:
+            baseline = await observation(prior_state, boot_id=boot_id)
+            if baseline is None:
+                raise RuntimeError("Feather baseline changed before the LED command")
+            if (output / "STOP").exists():
+                raise RuntimeError("Stopped before issuing the next LED command")
+            command_id = f"feather-led-{label.lower()}-{uuid.uuid4().hex}"
+            intent = {"deviceId": DEVICE, "commandId": command_id, "grantId": grant_id,
+                      "desiredState": {"state": state}, "deadline": iso_time(utc_now() + timedelta(seconds=25))}
+            rn = receipt_name(command_id)
+            write_new_json(output / f"led-{label.lower()}-intent.json",
+                           {"gatewayId": gateway_id, "request": intent, "cseReceiptName": rn})
+            issued = await post(f"/api/v1/gateways/{gateway_id}/commands", intent)
+            command = validate_command(issued, gateway_id, {DEVICE: ""})
+            if command["commandId"] != command_id or command["desiredState"]["state"] is not state:
+                raise RuntimeError("Bench central issued a different command")
+            write_new_json(output / f"led-{label.lower()}-issued.json", {"command": command, "cseReceiptName": rn})
+            async with asyncio.timeout(35):
+                receipt = await wait_for(lambda: read_cin("receipt", rn))
+                verify_receipt(command, receipt, boot_id, state)
+                observed = await wait_for(lambda: observation(state, boot_id=boot_id,
+                                                               after=parse_time(receipt["receivedAt"])))
+            if observed["sequence"] == baseline["sequence"]:
+                raise RuntimeError("Post-command observation must use a new device sequence")
+            step = {"command": command, "cseReceiptName": rn, "cseReceipt": receipt,
+                    "baseline": baseline, "observation": observed}
+            write_new_json(output / f"led-{label.lower()}-readback.json", step)
+        finally:
+            revoked = await post("/v1/grants/revoke", {"grantId": grant_id, "reason": "keyring-led-bench-step-ended"}, 200)
+            if revoked.get("grantId") != grant_id or revoked.get("status") != "REVOKED":
+                raise RuntimeError("Bench API did not confirm revocation of the step grant")
+            write_new_json(output / f"led-{label.lower()}-grant-revoked.json", revoked)
         results.append(step)
         print(f"LED_{label}_RECORDED", flush=True)
     write_new_json(output / "led-cycle.json", {"steps": results, "physicalLedObserved": None})
 
 
-def verify_database(evidence, database):
+def verify_database(evidence, database, *, gateway_id=GATEWAY):
     steps = evidence["steps"]
     if len(steps) != len(STEPS):
         raise RuntimeError("LED evidence must contain one ON and one OFF command")
@@ -138,7 +154,7 @@ def verify_database(evidence, database):
         if db.execute("SELECT COUNT(*) FROM commands").fetchone()[0] != len(STEPS):
             raise RuntimeError("Expected a dedicated database with exactly two bench commands")
         for step, (_, state) in zip(steps, STEPS):
-            command = validate_command(step["command"], GATEWAY, {DEVICE: ""})
+            command = validate_command(step["command"], gateway_id, {DEVICE: ""})
             receipt = step["cseReceipt"]
             command_id = command["commandId"]
             baseline = step["baseline"]
@@ -167,5 +183,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Compare a dedicated Pi SQLite snapshot to LED cycle evidence.")
     parser.add_argument("--evidence", required=True, type=Path)
     parser.add_argument("--database", required=True, type=Path)
+    parser.add_argument("--gateway", choices=(GATEWAY, "gw-a"), default=GATEWAY)
     args = parser.parse_args()
-    print(json.dumps(verify_database(json.loads(args.evidence.read_text(encoding="utf-8")), args.database), indent=2))
+    print(json.dumps(verify_database(json.loads(args.evidence.read_text(encoding="utf-8")), args.database,
+                                    gateway_id=args.gateway), indent=2))

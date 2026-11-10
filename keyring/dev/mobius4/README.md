@@ -120,13 +120,16 @@ GATEWAY_ID=gw-a
 FIRMWARE_REVISION_ALLOWLIST=feather-probe-0.2.0
 BLE_GATT_PROFILE=core-v1
 M2M_CSE_URL=https://127.0.0.1:8760
+M2M_OBSERVATION_CONTAINER=/Mobius/privacy-bubble-test-ae/command-observations-a
 M2M_RECEIPT_CONTAINER=/Mobius/privacy-bubble-test-ae/command-receipts-a
 PC_API_URL=https://127.0.0.1:8787
 MQTT_ENABLED=false
 CORE_BRIDGE_ENABLED=false
 ```
 
-정산 명령의 `--team-root`에는 `.local/scoped/command-api/team-source`, `--state`에는 같은 폴더의 `runtime.json`을 넣는다. 다른 연결 설정은 [Feather 명령 프로필](../../firmware/feather_probe/README.md#내장-led를-쓰는-명령-프로필)을 따른다. 2026-11-10에는 로컬 API 리스너와 장치 등록까지 준비했다. [배치 증거](../../evidence/2026-11-10-scoped-command-api/provisioning.json)
+명령 프로필의 관측은 `gw-a` 전용 컨테이너로 보낸다. 이미 시작한 scoped 프로필에서는 발행을 마친 뒤 `prepare-scoped-command-receipts.ps1 -FeatherObservationsOnly`로 이 컨테이너만 준비한다. 기존 명령 영수증 컨테이너는 계속 사용한다. [관측 컨테이너 배치 증거](../../evidence/2026-11-10-scoped-feather-led-cycle/provisioning.json)
+
+정산 명령의 `--team-root`에는 `.local/scoped/command-api/team-source`, `--state`에는 같은 폴더의 `runtime.json`을 넣는다. 다른 연결 설정은 [Feather 명령 프로필](../../firmware/feather_probe/README.md#내장-led를-쓰는-명령-프로필)과 [Scoped LED 시험 절차](../../raspberry-pi-gateway/TESTING.md#기존-scoped-mobius4에서-feather-led-시험)를 따른다. 2026-11-10에는 로컬 API 리스너와 장치 등록까지 준비했다. [API 배치 증거](../../evidence/2026-11-10-scoped-command-api/provisioning.json)
 
 ### 격리 소유권 전환
 

@@ -88,6 +88,19 @@ python keyring/raspberry-pi-gateway/cse_integration_tests/pi_led_cycle.py `
 
 출력의 `dataBindingsVerified`는 데이터 대조 결과다. `physicalLedObserved`는 비워 두며 실제 LED 확인 기록은 따로 남긴다. [로컬 리허설 기록](../evidence/2026-11-10-pi-led-rehearsal/README.md)
 
+### 기존 Scoped Mobius4에서 Feather LED 시험
+
+[격리 명령 API와 Pi 설정](../dev/mobius4/README.md#feather-벤치-명령-api)을 사용한다. Feather 명령 프로필과 실제 Pi 데몬이 준비되면 PC에서 기존 Gateway 가상환경으로 아래 도구를 실행한다. `$bench`는 아직 없는 로컬 비공개 디렉터리이며, 부모 디렉터리는 먼저 준비한다.
+
+```powershell
+$env:PYTHONPATH = Join-Path $PWD 'keyring/raspberry-pi-gateway/src'
+python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_led_cycle.py --output $bench
+```
+
+`LED_ON_READY`, `LED_OFF_READY`가 각각 출력된 뒤에만 `$bench`에 해당 이름의 `LED_ON`, `LED_OFF` 파일을 만든다. 각 단계는 같은 부팅 세션의 명령 전 관측을 읽고, 팀 API에서 60초 grant를 받은 뒤 25초 기한의 명령을 발급한다. 실제 LED를 눈으로 확인한 결과는 따로 기록한다. 도구는 Mobius4 원본 영수증과 명령 후 관측을 확인하고 단계별 grant 회수 응답을 로컬에 저장한다.
+
+명령 발급 요청 전의 `led-*-intent.json`에 command ID와 CSE 자원명이 있다. 응답을 받기 전에 중단되면 새 명령을 보내기 전에 이 ID로 팀 상태와 원본 영수증을 대조한다. 전체가 끝난 뒤 Pi SQLite 대조에 `pi_led_cycle.py --gateway gw-a --evidence <led-cycle.json> --database <Pi SQLite 사본>`을 쓴다. 중앙 정산은 각 command ID로 [정산 명령](../dev/mobius4/README.md#명령-영수증-정산-준비)을 별도로 실행한다. 중간에 중단하려면 `STOP` 파일을 만들고 실제 LED 상태를 확인한다.
+
 ## 이전 시험 기록
 
 2026-11-10 Gateway 0.2.4의 기본 시험은 **58개 통과**다. BlueZ가 READ 값을 구독 callback에도 전달하는 회귀시험을 추가했고, 수정 전 실패와 수정 후 통과를 확인했다. 실제 Pi Zero 2 W에서도 90초 연속 관측과 A0/A1 입력 수신이 통과했다. [Pi 실행 기록](../evidence/2026-11-10-pi-feather/README.md)을 따른다. 아래 이전 날짜의 실행 수와 CSE·POSIX 결과는 당시 기록이다.

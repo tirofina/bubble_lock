@@ -133,6 +133,15 @@ class PiLedCycleTests(unittest.IsolatedAsyncioTestCase):
             await asyncio.wait_for(runner, 10)
         await self.stop_fixture()
         evidence_path = self.output / "led-cycle.json"
+        grant_ids = set()
+        for label, step in zip(("on", "off"), json.loads(evidence_path.read_text())["steps"]):
+            intent = json.loads((self.output / f"led-{label}-intent.json").read_text())["request"]
+            revoked = json.loads((self.output / f"led-{label}-grant-revoked.json").read_text())
+            self.assertEqual(intent["commandId"], step["command"]["commandId"])
+            self.assertEqual(intent["grantId"], revoked["grantId"])
+            self.assertEqual(revoked["status"], "REVOKED")
+            grant_ids.add(revoked["grantId"])
+        self.assertEqual(len(grant_ids), 2)
         verifier = await asyncio.create_subprocess_exec(
             sys.executable, str(Path(__file__).with_name("pi_led_cycle.py")),
             "--evidence", str(evidence_path), "--database", str(cfg.database),

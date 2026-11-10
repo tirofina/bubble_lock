@@ -43,7 +43,7 @@ def start_api(cleanup, pki, team, output, *, led_cycle=False):
     principals = [{"principalId": GATEWAY, "mtlsFingerprint": fingerprint, "scopes": []}]
     if led_cycle:
         principals.append({"principalId": GUARDIAN, "mtlsFingerprint": certificate_fingerprint(pki.path("guardian")),
-                           "scopes": ["consent:write", "grant:write", "bubble:command"]})
+                           "scopes": ["consent:write", "grant:write", "grant:revoke", "bubble:command"]})
     config_path = pki.root / "central.json"
     write_json(config_path, {
         "tls": {"key": str(pki.path("server", "key")), "cert": str(pki.path("server")),
@@ -138,7 +138,14 @@ async def exercise(pki, stack, process, api, output, seconds, *, led_cycle=False
                     guardian_cfg.cert_file, guardian_cfg.key_file = pki.path("guardian"), pki.path("guardian", "key")
                     guardian = TransportHub(guardian_cfg)
                     await guardian.start()
-                    await run_led_cycle(guardian, cse, paths, output)
+
+                    async def operator_post(path, body):
+                        status, _, result = await guardian._http_json("POST", api + path, headers={
+                            "Accept": "application/json", "Content-Type": "application/json", "Cache-Control": "no-store",
+                        }, body=body)
+                        return status, result
+
+                    await run_led_cycle(operator_post, cse, paths, output)
                     cycle_complete = True
                 while not (output / "STOP").exists():
                     if process.poll() is not None:

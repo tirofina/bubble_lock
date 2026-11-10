@@ -1,0 +1,19 @@
+{
+  "documentRevision": "2.0.0",
+  "scope": "isolated-feather-command-observation-empty-resource-provisioning",
+  "endpoint": "https://localhost:8760",
+  "path": "/Mobius/privacy-bubble-test-ae/command-observations-a",
+  "status": "CREATED",
+  "resourceType": 3,
+  "httpStatus": 201,
+  "rsc": 2001,
+  "rqiMatched": true,
+  "timestamp": "2026-11-10T13:23:58.198Z",
+  "localProvisioningLogSha256": "f7ba54674443ee80891eb429a8927eb8b604fc9a8cf3e96b12f1f37cfc774e41",
+  "proxyScopedObservationRulesPresent": true,
+  "mobiusContainerPreserved": true,
+  "postgresContainerPreserved": true,
+  "gatewayAclExercised": false,
+  "ledCycleExecuted": false,
+  "physicalLedObserved": null
+}

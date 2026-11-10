@@ -10,9 +10,9 @@ map "$ssl_client_s_dn:$request_method:$request_uri" $scoped_cse_allowed {
     ~^CN=scoped-gateway-a:GET:/Mobius/privacy-bubble-test-ae/featherState$ 1;
     "~^CN=scoped-gateway-[ab]:POST:/Mobius/privacy-bubble-test-ae/(observations|receipts|health)$" 1;
     "~^CN=scoped-gateway-[ab]:GET:/Mobius/privacy-bubble-test-ae/(observations|receipts|health)/gw-[a-f0-9]{64}$" 1;
-    ~^CN=scoped-gateway-a:POST:/Mobius/privacy-bubble-test-ae/command-receipts-a$ 1;
+    ~^CN=scoped-gateway-a:POST:/Mobius/privacy-bubble-test-ae/(command-receipts-a|command-observations-a)$ 1;
     ~^CN=scoped-gateway-b:POST:/Mobius/privacy-bubble-test-ae/command-receipts-b$ 1;
-    "~^CN=scoped-gateway-a:GET:/Mobius/privacy-bubble-test-ae/command-receipts-a/gw-[a-f0-9]{64}$" 1;
+    "~^CN=scoped-gateway-a:GET:/Mobius/privacy-bubble-test-ae/(command-receipts-a|command-observations-a)/gw-[a-f0-9]{64}$" 1;
     "~^CN=scoped-gateway-b:GET:/Mobius/privacy-bubble-test-ae/command-receipts-b/gw-[a-f0-9]{64}$" 1;
 }
 server {
