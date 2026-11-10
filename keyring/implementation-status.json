@@ -60,7 +60,8 @@
     "Opt-in unprivileged Linux POSIX state CLI container runner: actual flock/fsync/permissions, committed WAL, ENOSPC, guarded adoption and concurrent-write rejection",
     "Feather0.1.1 latched display and authenticated Pi BLE observations with BlueZ READ-before-NOTIFY handling in Gateway0.2.4",
     "Opt-in real Feather/Pi relay harness with explicit env isolation, fresh private SQLite outbox, native HTTPS CSE readback and successful-channel MQTT/HTTPS accounting",
-    "GATT command readiness deferral, current authorization for the same BLE generation, bounded fair pending batches, and graceful Gateway stop"
+    "GATT command readiness deferral, current authorization for the same BLE generation, bounded fair pending batches, and graceful Gateway stop",
+    "Opt-in Feather 0.2.0 GPIO13 command/receipt profile with scoped NVS intent journal; observation profile remains 0.1.1"
   ],
   "existingHardware": {
     "status": "source-snapshot-included-unverified",
@@ -147,7 +148,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "KEYRING integration with the team mTLS authorization API and real isolated Mobius4 command receipt storage",
+    "executionRequest": "prepare physical Feather command/ACK path using built-in LED and Gateway 0.2.5",
     "remainingCompletionDependencies": [
       "central deployment, settlement and recovery activation",
       "purchased JD9853 module initialization",
@@ -156,10 +157,10 @@
     ],
     "latestRemoteCore": "d54a43a",
     "sourceCommit": "2014b18bb44ce5e9304cb9494de743313f3bf1e2",
-    "sourceValidation": "Gateway 0.2.5 basic63 and isolated full worker central dispatch2 passed. Fake GATT boundary. Existing 0.2.4 real Feather/Pi observations retained.",
+    "sourceValidation": "Feather 0.1.1 observation and 0.2.0 command profiles compiled; native command code passed four test groups with stub NVS/GPIO. Physical command/ACK pending. Previous Gateway 0.2.5 and physical observation evidence retained.",
     "goalComplete": false,
     "pendingInput": null,
-    "currentDependencyState": "Pi SSH, authenticated BlueZ enrollment, physical buttons and isolated HTTPS/MQTT CSE observation paths available; production PCB delivery and central production integration remain",
+    "currentDependencyState": "Feather 0.2.0 is prepared for isolated LED command verification; a flash decision and subsequent Pi/Mobius4 execution are pending, plus production PCB and CORE settlement.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -428,5 +429,14 @@
     "physicalGatts": false,
     "coreAckSettlementVerified": false,
     "sourceCommit": "2014b18bb44ce5e9304cb9494de743313f3bf1e2"
+  },
+  "featherCommandValidation": {
+    "sourceStatus": "implemented",
+    "firmwareRevision": "feather-probe-0.2.0",
+    "compiledProfilesPassed": 2,
+    "nativeTestGroupsPassed": 4,
+    "flashPerformed": false,
+    "physicalCommandVerified": false,
+    "receipt": "evidence/2026-11-10-feather-command/receipt.json"
   }
 }

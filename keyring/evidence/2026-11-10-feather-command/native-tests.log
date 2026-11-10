@@ -1,0 +1,5 @@
+feather_commands_test.cpp
+PASS apply, restart duplicate, conflict, fences, JSON and session rejection, deadline
+PASS deadline crossed during durable intent and restart does not reapply
+PASS intent and completion commit failures fence execution and replay
+PASS bounded journal and corrupt record rejection

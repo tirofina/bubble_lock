@@ -16,7 +16,28 @@ arduino-cli compile --fqbn esp32:esp32:adafruit_feather_esp32_v2 keyring/firmwar
 
 BLE 등록에는 이 스케치 폴더의 Git 제외 파일 `provisioning.h`에 시험용 6자리 숫자를 `KEYRING_FEATHER_PASSKEY`로 정의한다. 기본 빌드는 화면·버튼만 시작하고 `BLE LOCKED`를 표시한다. 비밀값은 등록하는 PC나 Pi에서 로컬로 관리한다.
 
-BLE를 활성화한 후 시험 Gateway에 `keyring-feather-lab` 장치 ID와 실제 BLE 주소를 등록하고 `core-v1`을 선택한다. 펌웨어 허용 목록을 쓰는 설정에는 `feather-probe-0.1.1`을 넣는다. 격리된 시험 Gateway와 관측 컨테이너에서 A0의 `confirm`, A1의 `panic`, 떼었을 때 `released`를 확인한다. 배터리는 `null`이므로 native oneM2M 관측 경로에서 확인한다. 벤치 범위는 관측이며 모터나 명령 실행 시험은 실물 키링에서 진행한다.
+기본 관측 프로필의 시험 Gateway에 `keyring-feather-lab` 장치 ID와 실제 BLE 주소를 등록하고 `core-v1`을 선택한다. 펌웨어 허용 목록에는 `feather-probe-0.1.1`을 넣는다. 격리된 시험 Gateway와 관측 컨테이너에서 A0의 `confirm`, A1의 `panic`, 떼었을 때 `released`를 확인한다. 배터리는 `null`이므로 native oneM2M 관측 경로에서 확인한다.
+
+## 내장 LED를 쓰는 명령 프로필
+
+`KEYRING_FEATHER_ENABLE_COMMANDS=1`로 컴파일하면 BLE identity가 `feather-probe-0.2.0`으로 바뀐다. 이 프로필의 `desiredState.state`는 보드의 빨간 내장 LED GPIO13을 제어한다. `true`는 다음 OFF 명령·연결 해제·재부팅까지 켜지고 `false`는 즉시 끈다. 영수증의 readback은 적용 시점의 GPIO 입력값, 관측의 state는 현재 입력값이다. A0/A1의 화면 표시는 별도로 유지한다. [Adafruit 보드 핀 설명](https://learn.adafruit.com/adafruit-esp32-feather-v2/pinouts)
+
+명령과 영수증은 CORE v1 GATT의 `...0003...` WRITE와 `...0004...` NOTIFY를 쓴다. 기존 Secure Connections·MITM·bonding을 적용한다. 세션·영수증 구독·기한을 대조하고, 명령 ID·hash·epoch·grant를 별도 NVS journal에 먼저 저장한 후 GPIO를 변경한다. 같은 ID와 같은 내용은 저장한 결과를 반환한다. 저장 의도만 남은 명령은 `INDETERMINATE`로 응답한다. 16개를 보관하며 손상된 journal과 만석에는 각각 `STORAGE_ERROR`, `JOURNAL_FULL`을 반환한다. 자동 삭제는 하지 않는다.
+
+명령 프로필의 빌드에는 ArduinoJson 6.21.5가 필요하다. 기존 로컬 `provisioning.h`에 등록용 PIN을 설정하고, 시험용 산출물에는 새 출력 경로를 지정한다. 실제 PIN은 명령줄·로그·Git 밖의 provisioning 파일에만 둔다.
+
+```powershell
+arduino-cli compile --fqbn esp32:esp32:adafruit_feather_esp32_v2 `
+  --library '<ArduinoJson 6.21.5 라이브러리 폴더>' `
+  --build-property 'compiler.cpp.extra_flags=-DKEYRING_FEATHER_ENABLE_COMMANDS=1' `
+  --output-dir '<새 로컬 빌드 폴더>' keyring/firmware/feather_probe
+```
+
+실물 시험에서는 Gateway 0.2.5의 `FIRMWARE_REVISION_ALLOWLIST=feather-probe-0.2.0`, `BLE_PAIR=true`, `CORE_BRIDGE_ENABLED=false`를 사용한다. 새 시험 CA와 별도 SQLite, 관측·receipt·health 컨테이너를 준비한다. Pi의 `PC_API_URL`에는 팀 mTLS API, `M2M_CSE_URL`에는 임시 Mobius4를 지정한다. PC의 loopback 서비스에 연결할 때는 서버 인증서 SAN과 일치하는 주소로 SSH reverse tunnel을 사용한다. Gateway와 guardian의 인증서를 각각 등록하고 guardian이 받은 실제 시험 grant에서 명령을 발급한다. [중앙 API 연동 범위](../../CORE_INTEGRATION.md#중앙-api와-남은-통합-시험)
+
+Pi에서 시험 환경 파일로 `bubble-gateway --env-file <시험 env 파일>`을 실행한다. ON과 OFF를 별도 commandId로 발급해 LED와 같은 commandId의 receipt, payloadHash, readback, oneM2M 저장값을 맞춘다. `Store.request_id("receipt", commandId)`로 rqi를 구하면 receipt container에서 `gw-<SHA256(rqi)>`의 `m2m:cin.con`을 읽을 수 있다. 다른 명령은 연결 전에 조회된 뒤 grant를 회수해 거절 receipt와 GPIO 변동 0회를 확인한다. 재연결·재부팅 시험은 최초 성공 때 저장한 ID/hash의 중복 실행 방지를 확인한다. 이 절차로 Feather LED를 시험하고 제작 PCB의 모터 펄스·센서·전력은 PCB 수용 단계에서 다룬다.
+
+아래 단독 관측과 relay 도구는 기존 0.1.1 프로필용이다. 명령 프로필은 전체 Gateway로 실행한다. [명령 프로필 빌드·로컬 시험 기록](../../evidence/2026-11-10-feather-command/README.md)
 
 Pi 연결 전에는 Gateway 의존성이 설치된 Windows Python으로 같은 BLE 수신기를 쓸 수 있다. 저장소 루트에서 실행한다.
 

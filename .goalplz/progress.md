@@ -363,3 +363,11 @@ Pi Zero 2 W는 USB 데이터 포트에 연결됐고 초록 LED가 계속 켜져 
 - 전체 goal은 active/progress다. 실물 GATT 명령·출력, 제작 PCB, Pi systemd, CORE의 HTTP 발급 명령과 ACK 결속, 운영 principal/AE/ACP/grant, 앱/웹·전력/거리·영상/release가 남았다.
 
 Gateway 0.2.5 wheel 로컬 빌드와 Python 모듈 13개 소스 일치를 확인했다. 구현·시험 증거 commit `2014b18bb44ce5e9304cb9494de743313f3bf1e2`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `615de79..2014b18`이다.
+
+## 2026-11-10 — 실물 명령을 위한 Feather 내장 LED 프로필
+
+이전 goal turn은 중앙 mTLS·Gateway 전체 worker·모의 GATT·실제 CSE의 명령 영수증 시험 2개를 확보한 progress다. DOC-REV 2.0.0과 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 재확인했으며 팀 HEAD가 같았다.
+
+- 기존 배선의 Feather V2 GPIO13 내장 LED를 시험 출력으로 선택했다. opt-in 명령 프로필 0.2.0이 CORE v1 WRITE/NOTIFY, 인증·구독·세션 확인, 상대 기한, 16개 NVS intent/완료 journal, epoch·grant, GPIO readback을 처리한다. 실제 핀 값을 관측과 ACK로 보낸다. 기존 0.1.1 관측 프로필과 버튼 화면 동작은 이어간다.
+- 실제 보드용 컴파일은 관측·명령 두 프로필 exit 0이다. 첫 컴파일에서 sample 내부 변수 위치를 잘못 넣어 실패했고 위치를 수정한 최종 소스로 다시 빌드했다. MSVC에서 실제 명령 코드와 모의 NVS·GPIO를 실행한 네 그룹도 통과했다. [빌드·시험 로그와 해시](../keyring/evidence/2026-11-10-feather-command/README.md)
+- 합성 PIN 빌드 산출물은 로컬에 보관했다. 실물 업로드와 Pi 명령·LED·CSE 영수증은 대기 중이다. 실제 LED 시험이 제작 PCB의 센서·모터·전력 수용이나 CORE 정산을 대체하지 않는다.
