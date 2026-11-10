@@ -24,6 +24,8 @@ selector는 정확히8byte이며 ATT MTU23의 단일 WRITE에 들어간다.
 
 WRITE ACK는 selector 전달을 뜻한다. Gateway는 READ에서 같은 requestId의 JSON을 기다린다. attribute가 잠시 selector나 이전 응답을 담을 수 있어 한 번에 하나씩 요청한다. queue full·잘못된 selector는 timeout이다.
 
+keyring-0.7.7은 현재 인증된 연결의 READ에만 응답을 제공한다. 유효한 selector를 받으면 공개할 값을 비우고, Gateway는 같은 requestId의 응답이 올라올 때까지 조회한다. 한 번 시작한 긴 READ는 최초 응답의 사본을 이어서 읽는다.
+
 operation1은 [manifest schema](../contracts/keyring/ble-journal-manifest.schema.json)의 frozen manifest를 반환한다. deviceId/bootId, snapshotId, capturedUptimeMs, capacity32, recordCount/preparedCount, format1, maxEpoch/maxGrant를 포함한다. 이후 신규 명령으로 원본 journal이 늘어도 snapshot은 유지된다. snapshot은 연결 generation과120초 TTL에 묶이며 close·disconnect·새 capture로 해제/교체해도 NVS는 유지한다.
 
 operation2는 [record part schema](../contracts/keyring/ble-journal-record-part.schema.json)에 따라 record를 두 조각으로 반환한다. snapshotId/index/part/parts·requestId를 맞춰야 한다. 응답은 LF 포함512byte 이하이며 초과는 overflow다. operation3은 volatile capture를 닫고 type:closed를 반환한다. 오류 응답은 version/requestId/status만 가진다. status는 storage_error/busy/expired/invalid_index/overflow다.

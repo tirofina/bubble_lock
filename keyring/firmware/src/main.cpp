@@ -6,6 +6,7 @@
 #include <Wire.h>
 #include <driver/gpio.h>
 #include <esp_bt.h>
+#include <esp_gatts_api.h>
 #include <esp_timer.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
@@ -16,6 +17,7 @@
 #include "button_presses.h"
 #include "command_wire.h"
 #include "firmware_options.h"
+#include "gatt_read_value.h"
 #include "motion_wake.h"
 #include "power_state.h"
 #include "audio_alert.h"
@@ -38,7 +40,7 @@ extern "C" esp_err_t __wrap_nvs_flash_init() {
 }
 
 namespace {
-constexpr char FirmwareRevision[] = "keyring-0.7.6";
+constexpr char FirmwareRevision[] = "keyring-0.7.7";
 #if defined(KEYRING_LEGACY_GATT) && KEYRING_LEGACY_GATT
 constexpr char ServiceUuid[] = "8b8f0001-8e7a-4f36-a8c2-1c9b5d620001";
 constexpr char IdentityUuid[] = "8b8f0002-8e7a-4f36-a8c2-1c9b5d620001";
@@ -76,6 +78,7 @@ volatile bool sleepPreparing = false;
 volatile uint32_t connectionGeneration = 0;
 uint8_t peerAddress[6] = {};
 uint16_t peerConnection = 0;
+uint16_t peerMtu = 23; // Protected by linkMux.
 portMUX_TYPE linkMux = portMUX_INITIALIZER_UNLOCKED;
 uint32_t maxEpoch = 0, maxGrant = 0, sequence = 0;
 uint64_t motorStopAt = 0, lastObservation = 0;
@@ -316,12 +319,20 @@ void sampleSensors() {
 std::string jsonText(JsonDocument &doc) {
   std::string output; serializeJson(doc, output); output.push_back('\n'); return output;
 }
+void setGattReadValue(GattReadValue &value, const std::string &frame) {
+  portENTER_CRITICAL(&linkMux);
+  value.replace(frame.data(), frame.size());
+  portEXIT_CRITICAL(&linkMux);
+}
+GattReadValue identityRead, journalRead;
+
 struct Tx {
   BLECharacteristic *characteristic = nullptr;
   BLE2902 *cccd = nullptr;
   bool subscribed = false; // Protected by linkMux.
   uint32_t subscription = 0, activeSubscription = 0;
-  std::string pending, active, full;
+  std::string pending, active;
+  GattReadValue readValue;
   std::string sections[3];
   uint64_t sectionOrder[3] = {}, enqueueOrder = 0;
   size_t offset = 0;
@@ -329,21 +340,15 @@ struct Tx {
   void setSubscribed(bool enabled) { // Caller holds linkMux.
     if (subscribed != enabled) { subscribed = enabled; ++subscription; }
   }
-  void restoreReadValue() {
-    // ATT attribute values are at most 512 bytes. Oversized receipt frames remain
-    // complete on NOTIFY; an empty READ means the peer must await those fragments.
-    if (full.size() <= 512) characteristic->setValue(full);
-    else characteristic->setValue(std::string());
-  }
-  void queue(const std::string &frame) { pending = frame; full = frame; restoreReadValue(); }
+  void queue(const std::string &frame) { pending = frame; setGattReadValue(readValue, frame); }
   void queueSection(uint8_t section, const std::string &frame) {
     sections[section] = frame; sectionOrder[section] = ++enqueueOrder;
-    full = frame; restoreReadValue();
+    setGattReadValue(readValue, frame);
   }
   void clear() {
-    pending.clear(); active.clear(); full.clear(); offset = 0; nextAt = 0;
+    pending.clear(); active.clear(); offset = 0; nextAt = 0;
     for (unsigned i = 0; i < 3; ++i) { sections[i].clear(); sectionOrder[i] = 0; }
-    restoreReadValue();
+    setGattReadValue(readValue, {});
   }
   void tick(uint64_t now) {
     portENTER_CRITICAL(&linkMux);
@@ -616,7 +621,7 @@ void processJournalRequest(const JournalRequest &request) {
     doc.clear(); doc["version"] = 1; doc["requestId"] = requestId; doc["status"] = "overflow";
     frame = jsonText(doc);
   }
-  journalChar->setValue(frame);
+  setGattReadValue(journalRead, frame);
 }
 
 void receiveJournalSelector(const uint8_t *bytes, size_t size, uint32_t generation) {
@@ -629,6 +634,7 @@ void receiveJournalSelector(const uint8_t *bytes, size_t size, uint32_t generati
   request.generation = generation;
   for (unsigned byte = 0; byte < 4; ++byte) request.id |= static_cast<uint32_t>(bytes[2 + byte]) << (byte * 8);
   // Selector writes affect only volatile capture state; never NVS or an output.
+  setGattReadValue(journalRead, {});
   xQueueSend(journalRequests, &request, 0);
 }
 
@@ -665,6 +671,13 @@ class CommandInput {
 } commandInput;
 
 void onGattsEvent(esp_gatts_cb_event_t event, esp_gatt_if_t, esp_ble_gatts_cb_param_t *param) {
+  if (event == ESP_GATTS_MTU_EVT) {
+    portENTER_CRITICAL(&linkMux);
+    if (connected && peerConnection == param->mtu.conn_id && param->mtu.mtu >= 23)
+      peerMtu = param->mtu.mtu;
+    portEXIT_CRITICAL(&linkMux);
+    return;
+  }
   if (event != ESP_GATTS_WRITE_EVT || param->write.is_prep || param->write.offset != 0) return;
   const auto &write = param->write;
   portENTER_CRITICAL(&linkMux);
@@ -685,6 +698,38 @@ void onGattsEvent(esp_gatts_cb_event_t event, esp_gatt_if_t, esp_ble_gatts_cb_pa
     receiveJournalSelector(write.value, write.len, generation);
 }
 
+bool handleProtectedGattRead(esp_gatt_if_t interfaceId, const esp_ble_gatts_cb_param_t &event) {
+  const auto &request = event.read;
+  GattReadValue *value = nullptr;
+  if (identityChar && identityChar->getHandle() == request.handle) value = &identityRead;
+  else if (observationChar && observationChar->getHandle() == request.handle) value = &observationTx.readValue;
+  else if (receiptChar && receiptChar->getHandle() == request.handle) value = &receiptTx.readValue;
+  else if (journalChar && journalChar->getHandle() == request.handle) value = &journalRead;
+  if (!value) return false;
+  if (!request.need_rsp) return true;
+
+  esp_gatt_rsp_t response = {};
+  response.attr_value.handle = request.handle;
+  response.attr_value.offset = request.offset;
+  response.attr_value.auth_req = ESP_GATT_AUTH_REQ_NONE;
+  esp_gatt_status_t status = ESP_GATT_INSUF_AUTHORIZATION;
+  portENTER_CRITICAL(&linkMux);
+  if (provisioned && connected && authenticated && peerConnection == request.conn_id) {
+    const bool ok = value->chunk(connectionGeneration, request.offset, peerMtu - 1,
+                                 response.attr_value.value, response.attr_value.len);
+    status = ok ? ESP_GATT_OK : ESP_GATT_INVALID_OFFSET;
+  }
+  portEXIT_CRITICAL(&linkMux);
+  esp_ble_gatts_send_response(interfaceId, request.conn_id, request.trans_id, status, &response);
+  return true;
+}
+
+esp_gatts_cb_t arduinoGattEvents = nullptr;
+void dispatchGattEvents(esp_gatts_cb_event_t event, esp_gatt_if_t interfaceId, esp_ble_gatts_cb_param_t *param) {
+  if (event == ESP_GATTS_READ_EVT && handleProtectedGattRead(interfaceId, *param)) return;
+  arduinoGattEvents(event, interfaceId, param);
+}
+
 class ServerCallbacks : public BLEServerCallbacks {
   void onConnect(BLEServer *instance, esp_ble_gatts_cb_param_t *param) override {
     portENTER_CRITICAL(&linkMux);
@@ -694,7 +739,8 @@ class ServerCallbacks : public BLEServerCallbacks {
       instance->disconnect(param->connect.conn_id); return;
     }
     connected = true; authenticated = false; ++connectionGeneration;
-    peerConnection = param->connect.conn_id; memcpy(peerAddress, param->connect.remote_bda, 6);
+    peerConnection = param->connect.conn_id; peerMtu = 23;
+    memcpy(peerAddress, param->connect.remote_bda, sizeof(peerAddress));
     portEXIT_CRITICAL(&linkMux);
     if (esp_ble_set_encryption(param->connect.remote_bda, ESP_BLE_SEC_ENCRYPT_MITM) != ESP_OK)
       instance->disconnect(param->connect.conn_id);
@@ -752,7 +798,6 @@ void initBle() {
   receiptChar->setAccessPermissions(ESP_GATT_PERM_READ_ENC_MITM);
   commandChar->setAccessPermissions(ESP_GATT_PERM_WRITE_ENC_MITM);
   journalChar->setAccessPermissions(ESP_GATT_PERM_READ_ENC_MITM | ESP_GATT_PERM_WRITE_ENC_MITM);
-  journalChar->setValue(std::string());
   observationTx.characteristic = observationChar; receiptTx.characteristic = receiptChar;
   for (Tx *stream : {&observationTx, &receiptTx}) {
     stream->cccd = new BLE2902();
@@ -762,7 +807,7 @@ void initBle() {
   StaticJsonDocument<512> doc;
   doc["version"] = 1; doc["deviceId"] = deviceId; doc["firmwareRevision"] = FirmwareRevision;
   doc["boardRevision"] = board::Revision; doc["bootId"] = bootId;
-  identityChar->setValue(jsonText(doc));
+  setGattReadValue(identityRead, jsonText(doc));
   service->start();
   BLEAdvertising *advertising = BLEDevice::getAdvertising();
   advertising->addServiceUUID(ServiceUuid); advertising->setScanResponse(true);
@@ -771,6 +816,15 @@ void initBle() {
   radioSleepEnabled = esp_bt_sleep_enable() == ESP_OK;
 }
 } // namespace
+
+extern "C" esp_err_t __real_esp_ble_gatts_register_callback(esp_gatts_cb_t callback);
+extern "C" esp_err_t __wrap_esp_ble_gatts_register_callback(esp_gatts_cb_t callback) {
+  if (!callback) return __real_esp_ble_gatts_register_callback(callback);
+  // Arduino responds to long reads before its custom handler runs.
+  // Keep its dispatcher for every other event and handle protected reads first.
+  arduinoGattEvents = callback;
+  return __real_esp_ble_gatts_register_callback(dispatchGattEvents);
+}
 
 namespace {
 void considerSleep(uint64_t now) {
@@ -854,7 +908,7 @@ void loop() {
     stopMotor(); observationTx.clear(); receiptTx.clear();
     xQueueReset(commandQueue);
     xQueueReset(journalRequests); memset(&journalCapture, 0, sizeof(journalCapture));
-    journalChar->setValue(std::string());
+    setGattReadValue(journalRead, {});
     publishObservation(); // The next authenticated peer reads before it subscribes.
     portENTER_CRITICAL(&linkMux); disconnected = false; portEXIT_CRITICAL(&linkMux);
     BLEDevice::startAdvertising();
@@ -881,7 +935,7 @@ void loop() {
   if (xQueueReceive(journalRequests, &journalRequest, 0) == pdTRUE) processJournalRequest(journalRequest);
   if (journalCapture.active && uptime() - journalCapture.capturedAt >= 120000) {
     memset(&journalCapture, 0, sizeof(journalCapture));
-    journalChar->setValue(std::string());
+    setGattReadValue(journalRead, {});
   }
   supply.poll(uptime());
   if (uptime() - lastSensorRead >= board::ObserveMs) { sampleSensors(); observationDirty = true; }

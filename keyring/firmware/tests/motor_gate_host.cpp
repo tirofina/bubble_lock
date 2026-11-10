@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include "board_r18.h"
+#include "gatt_read_value.h"
 
 using std::min;
 using gpio_num_t = int;
@@ -63,21 +64,28 @@ bool alert(bool enabled) {
 constexpr unsigned JournalSlots = 32, MaxFrame = 4096;
 using esp_gatt_if_t = uint8_t;
 constexpr esp_gatt_if_t ESP_GATT_IF_NONE = 255;
-enum esp_gatts_cb_event_t { ESP_GATTS_WRITE_EVT };
+enum esp_gatts_cb_event_t { ESP_GATTS_WRITE_EVT, ESP_GATTS_READ_EVT, ESP_GATTS_MTU_EVT };
+enum esp_gatt_status_t { ESP_GATT_OK, ESP_GATT_INVALID_OFFSET, ESP_GATT_INSUF_AUTHORIZATION };
+constexpr int ESP_GATT_AUTH_REQ_NONE = 0;
+using esp_err_t = int;
+struct esp_gatt_rsp_t {
+    struct { uint16_t handle, offset, len; int auth_req; uint8_t value[600]; } attr_value;
+};
 struct esp_ble_gatts_cb_param_t {
     struct { uint16_t conn_id; } disconnect;
+    struct { uint16_t conn_id, handle, offset; uint32_t trans_id; bool need_rsp; } read;
+    struct { uint16_t conn_id, mtu; } mtu;
     struct {
         uint16_t conn_id, handle, offset, len;
         const uint8_t *value;
         bool is_prep, need_rsp;
     } write;
 };
+using esp_gatts_cb_t = void (*)(esp_gatts_cb_event_t, esp_gatt_if_t, esp_ble_gatts_cb_param_t *);
 struct BLEServer { uint16_t getGattsIf() const { return 4; } };
 struct BLECharacteristic {
     uint16_t handle = 0;
-    std::string readValue;
     uint16_t getHandle() const { return handle; }
-    void setValue(const std::string &value) { readValue = value; }
 };
 struct BLE2902 {
     uint16_t handle = 0;
@@ -86,15 +94,20 @@ struct BLE2902 {
 struct Frame { char bytes[MaxFrame + 1]; uint64_t firstAt, completedAt; uint32_t generation; };
 struct JournalRequest { uint32_t id, generation; uint8_t operation, index, part; };
 BLEServer fixtureServer, *server = &fixtureServer;
-BLECharacteristic fixtureCommand, fixtureJournal, fixtureReceipt;
+BLECharacteristic fixtureCommand, fixtureJournal, fixtureReceipt, fixtureObservation, fixtureIdentity;
 BLECharacteristic *commandChar = &fixtureCommand, *journalChar = &fixtureJournal;
+BLECharacteristic *receiptChar = &fixtureReceipt, *observationChar = &fixtureObservation, *identityChar = &fixtureIdentity;
 BLE2902 fixtureCccd;
-uint16_t peerConnection = 7;
+uint16_t peerConnection = 7, peerMtu = 23;
 bool provisioned = true;
 Frame queuedCommand;
 unsigned commandCount = 0, journalCount = 0;
 int commandQueue = 1, journalRequests = 2, notifyResult = ESP_OK;
 std::vector<std::string> notifications;
+esp_gatts_cb_t registeredGatts;
+unsigned forwardedEvents = 0;
+esp_gatt_status_t lastReadStatus = ESP_GATT_OK;
+std::string lastReadValue;
 uint64_t uptime() { return nowUs / 1000; }
 void xQueueSend(int queue, const void *value, int) {
     if (queue == commandQueue) {
@@ -110,6 +123,17 @@ int esp_ble_gatts_send_indicate(esp_gatt_if_t interfaceId, uint16_t connection, 
     assert(interfaceId == 4 && connection == peerConnection && attribute == fixtureReceipt.handle && !confirm);
     notifications.emplace_back(reinterpret_cast<const char *>(bytes), length);
     return notifyResult;
+}
+esp_err_t esp_ble_gatts_send_response(esp_gatt_if_t interfaceId, uint16_t, uint32_t,
+                                    esp_gatt_status_t status, esp_gatt_rsp_t *response) {
+    assert(interfaceId == 4 && response);
+    lastReadStatus = status;
+    lastReadValue.assign(reinterpret_cast<const char *>(response->attr_value.value), response->attr_value.len);
+    return ESP_OK;
+}
+extern "C" esp_err_t __real_esp_ble_gatts_register_callback(esp_gatts_cb_t callback) {
+    registeredGatts = callback;
+    return ESP_OK;
 }
 #include "motor_session_subject.inc"
 
@@ -133,11 +157,18 @@ void write(uint16_t connection, uint16_t handle, const std::string &bytes, bool 
     onGattsEvent(ESP_GATTS_WRITE_EVT, 4, &event);
 }
 
+void read(uint16_t connection, uint16_t handle, uint16_t offset = 0) {
+    esp_ble_gatts_cb_param_t event{};
+    event.read = {connection, handle, offset, 1, true};
+    registeredGatts(ESP_GATTS_READ_EVT, 4, &event);
+}
+
 void reset() {
     connected = authenticated = faultHealthy = true;
     disconnected = motorTimerFired = motorTimerCleaning = padHigh = railOn = observationDirty = linkMux = false;
     connectionGeneration = 7;
     peerConnection = 7;
+    peerMtu = 23;
     nowUs = 100000;
     motorStopAt = timerDelay = 0;
     motorTimer = &timerHandle;
@@ -203,6 +234,7 @@ int main() {
 
     reset();
     fixtureCommand.handle = 1; fixtureJournal.handle = 2; fixtureReceipt.handle = 3; fixtureCccd.handle = 4;
+    fixtureIdentity.handle = 5; fixtureObservation.handle = 6;
     receiptTx.characteristic = &fixtureReceipt;
     receiptTx.cccd = &fixtureCccd;
     receiptTx.clear();
@@ -234,7 +266,10 @@ int main() {
     receiptTx.tick(130);
     assert(notifications.back() == notifications.front() && receiptTx.offset == 20);
     receiptTx.clear();
-    assert(fixtureReceipt.readValue.empty());
+    assert(__wrap_esp_ble_gatts_register_callback(
+        [](esp_gatts_cb_event_t, esp_gatt_if_t, esp_ble_gatts_cb_param_t *) { ++forwardedEvents; }) == ESP_OK);
+    read(peerConnection, fixtureReceipt.handle);
+    assert(lastReadStatus == ESP_GATT_OK && lastReadValue.empty());
 
     write(peerConnection, fixtureCommand.handle, "stale");
     disconnect(peerConnection);
@@ -247,4 +282,26 @@ int main() {
     assert(commandCount == 3 && queuedCommand.generation == 9 &&
            std::strcmp(queuedCommand.bytes, "fresh") == 0);
     std::puts("PASS command and receipt streams stay bound to the current subscribed connection");
+
+    const std::string firstChunk(22, 'x');
+    setGattReadValue(observationTx.readValue, firstChunk + "end");
+    read(peerConnection, fixtureObservation.handle);
+    assert(lastReadStatus == ESP_GATT_OK && lastReadValue == firstChunk);
+    setGattReadValue(observationTx.readValue, "new");
+    read(8, fixtureObservation.handle);
+    assert(lastReadStatus == ESP_GATT_INSUF_AUTHORIZATION && lastReadValue.empty());
+    read(8, fixtureObservation.handle, 22);
+    assert(lastReadStatus == ESP_GATT_INSUF_AUTHORIZATION && lastReadValue.empty());
+    read(peerConnection, fixtureObservation.handle, 22);
+    assert(lastReadStatus == ESP_GATT_OK && lastReadValue == "end");
+    read(peerConnection, fixtureObservation.handle, 26);
+    assert(lastReadStatus == ESP_GATT_INVALID_OFFSET && lastReadValue.empty());
+    ++connectionGeneration;
+    read(peerConnection, fixtureObservation.handle, 22);
+    assert(lastReadStatus == ESP_GATT_INVALID_OFFSET);
+    read(peerConnection, fixtureObservation.handle);
+    assert(lastReadStatus == ESP_GATT_OK && lastReadValue == "new");
+    read(peerConnection, fixtureCccd.handle);
+    assert(forwardedEvents == 1);
+    std::puts("PASS protected long reads are frozen and fenced by the authenticated connection");
 }
