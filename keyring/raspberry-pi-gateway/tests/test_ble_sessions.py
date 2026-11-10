@@ -83,6 +83,66 @@ class WakeCaptureTests(unittest.TestCase):
                          [True, False, True, True])
 
 
+class BatteryCaptureTests(unittest.TestCase):
+    def capture(self, samples, *, split_at=None, thresholds=(20, 25), mode="battery"):
+        board = "r18-hand-solder"
+        events = []
+
+        def event(kind, generation, **fields):
+            events.append(dict(event=kind, generation=generation, atNs=len(events) * 1_000_000,
+                               bootId="same-boot", boardRevision=board, **fields))
+
+        def ready(generation):
+            event("ready", generation, advertisingRssiDbm=None, advertisingAgeMs=None)
+
+        generation = 1
+        ready(generation)
+        for sequence, sample in enumerate(samples, start=1):
+            if sequence == split_at:
+                event("lost", generation)
+                generation += 1
+                ready(generation)
+            fields = {} if sample is None else dict(batteryPercent=sample[0], batteryAlert=sample[1])
+            event("notification", generation, sequence=sequence, **fields)
+        return summarize(events, 0, len(events) * 1_000_000, board=board, mode=mode,
+                         truncated=False, dropped=0, battery_thresholds=thresholds)
+
+    def test_both_in_band_states_and_boundary_samples_in_one_session(self):
+        report = self.capture([(26, False), (22, False), (20, True), (None, None), (22, True), (25, False)])
+        self.assertEqual(report["status"], "RECORDED")
+        self.assertEqual(report["battery"]["unknownFrames"], 1)
+        cycle = report["battery"]["matchedCycle"]
+        self.assertEqual([marker["stage"] for marker in cycle],
+                         ["initialClear", "clearInBand", "lowAlert", "alertInBand", "recovered"])
+        self.assertEqual([marker["sequence"] for marker in cycle], [1, 2, 3, 5, 6])
+        self.assertEqual({marker["session"] for marker in cycle}, {1})
+
+    def test_incomplete_sweeps_and_sessions_are_not_combined(self):
+        samples = [(25, False), (22, False), (20, True), (22, True), (25, False)]
+        for report in (self.capture(samples, split_at=4), self.capture(samples[:3] + samples[4:]),
+                       self.capture(samples[:3] + [(22, False)] + samples[3:])):
+            self.assertEqual(report["status"], "INSUFFICIENT")
+            self.assertIsNone(report["battery"]["matchedCycle"])
+
+    def test_mismatch_or_missing_field_prevents_recorded_status(self):
+        samples = [(25, False), (22, False), (20, True), (22, True), (25, False)]
+        for mismatch in ((20, False), (25, True)):
+            report = self.capture([*samples, mismatch])
+            self.assertEqual(report["status"], "MISMATCH")
+            self.assertEqual(report["battery"]["mismatchedFrames"], 1)
+        missing = self.capture([*samples, None])
+        self.assertEqual(missing["status"], "INSUFFICIENT")
+        self.assertEqual(missing["battery"]["missingAlertFrames"], 1)
+
+    def test_custom_thresholds_and_battery_data_omitted_from_range_report(self):
+        samples = [(35, False), (32, False), (30, True), (32, True), (35, False)]
+        self.assertEqual(self.capture(samples, thresholds=(30, 35))["status"], "RECORDED")
+        self.assertEqual(self.capture(samples)["status"], "MISMATCH")
+        report = self.capture(samples, mode="range")
+        self.assertNotIn("battery", report)
+        self.assertTrue(all("batteryAlert" not in row and "batteryPercent" not in row for row in report["events"]))
+
+
 class SessionTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         cfg = config()
@@ -188,6 +248,23 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([event["event"] for event in events], ["ready", "lost", "ready", "notification"])
         self.assertEqual(events[-1]["generation"], events[2]["generation"])
         self.assertEqual(events[-1]["sequence"], 2)
+
+    async def test_diagnostic_trace_distinguishes_missing_unknown_and_known_battery_alerts(self):
+        events = []
+        self.fleet._trace = events.append
+        _, current = await self.reconnect()
+        callback = current.callbacks[self.fleet.observation_uuid]
+        for sequence, battery, sensor in ((2, 55, {}), (3, None, {"batteryAlert": None}),
+                                          (4, 18, {"batteryAlert": True})):
+            frame = dict(current.frame(sequence), battery=battery, sensorValues=sensor)
+            callback(None, bytearray((json.dumps(frame) + "\n").encode()))
+        notifications = [event for event in events if event["event"] == "notification"]
+        self.assertEqual(len(notifications), 3)
+        self.assertNotIn("batteryAlert", notifications[0])
+        self.assertIsNone(notifications[1]["batteryAlert"])
+        self.assertIsNone(notifications[1]["batteryPercent"])
+        self.assertIs(notifications[2]["batteryAlert"], True)
+        self.assertEqual(notifications[2]["batteryPercent"], 18)
 
     async def test_observation_ready_without_command_characteristic(self):
         def observation_only(*args, **kwargs):

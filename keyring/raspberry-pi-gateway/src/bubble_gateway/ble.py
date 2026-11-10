@@ -395,6 +395,8 @@ class BleFleet:
             if notification and peer.ready.is_set() and self._trace is not None:
                 fields = {"sequence": frame["sequence"]}
                 sensor = frame["sensorValues"]
+                if "batteryAlert" in sensor:
+                    fields.update(batteryPercent=battery, batteryAlert=sensor["batteryAlert"])
                 wake, pins = sensor.get("wake"), sensor.get("wakePins")
                 if (sensor.get("detail") == "health" and wake in ("cold", "motion", "button", "timer", "other")
                         and _integer(pins, maximum=2**64 - 1)):

@@ -1,4 +1,4 @@
-"""Capture BLE range, reconnect, wake and optional r18 power observations on Linux/BlueZ."""
+"""Capture BLE range, reconnect, wake, battery alerts and r18 power on Linux/BlueZ."""
 from __future__ import annotations
 
 import argparse
@@ -21,6 +21,8 @@ BOARD_REVISIONS = {"feather-bench": "feather-esp32-v2", "r18-pcb": "r18-hand-sol
 # Confirm/Panic are GPIO6/7 in firmware/include/board_r18.h.
 WAKE_CASES = {"confirm": ("button", 1 << 6), "panic": ("button", 1 << 7),
               "motion": ("motion", 0), "timer": ("timer", 0)}
+BATTERY_THRESHOLDS = (20, 25)
+BATTERY_STAGES = ("initialClear", "clearInBand", "lowAlert", "alertInBand", "recovered")
 
 
 def wake_result(sessions: list[dict], rows: list[dict], expected: str, release_ms: int | None) -> dict:
@@ -83,9 +85,57 @@ def power_result(sessions: list[dict], rows: list[dict], mode: str) -> dict:
             "invalidFrames": invalid, "missingEnergyFrames": missing, "missingPhases": missing_phases}
 
 
+def battery_result(rows: list[dict], warn: int, recover: int) -> dict:
+    cycle = []
+    matched = None
+    missing = unknown = mismatched = 0
+    for row in rows:
+        if row["event"] != "notification":
+            cycle.clear()
+            continue
+        if "batteryAlert" not in row:
+            missing += 1
+            cycle.clear()
+            continue
+        percent, alert = row["batteryPercent"], row["batteryAlert"]
+        if percent is None:
+            unknown += 1
+            continue
+        if percent >= recover:
+            expected = False
+            step = 4 if len(cycle) == 4 else 0
+        elif percent <= warn:
+            expected = True
+            step = 2
+        else:
+            expected = alert
+            step = 3 if alert else 1
+        if alert is not expected:
+            mismatched += 1
+            cycle.clear()
+            continue
+        marker = {"stage": BATTERY_STAGES[step], "session": row["session"],
+                  "atMs": row["atMs"], "sequence": row["sequence"],
+                  "batteryPercent": percent, "batteryAlert": alert}
+        if step == 4:
+            if matched is None:
+                matched = [*cycle, marker]
+            cycle = [{**marker, "stage": BATTERY_STAGES[0]}]
+        elif step == len(cycle):
+            cycle.append(marker)
+        elif step == 0 or (step == 2 and len(cycle) == 4):
+            # Re-entering an outer band starts that part of the sweep again.
+            cycle[step:] = [marker]
+        elif step != len(cycle) - 1:
+            cycle.clear()
+    return {"warnPercent": warn, "recoverPercent": recover, "matchedCycle": matched,
+            "missingAlertFrames": missing, "unknownFrames": unknown, "mismatchedFrames": mismatched}
+
+
 def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mode: str,
               truncated: bool, dropped: int, expected_wake: str | None = None,
-              release_ms: int | None = None, include_power: bool = False) -> dict:
+              release_ms: int | None = None, include_power: bool = False,
+              battery_thresholds: tuple[int, int] = BATTERY_THRESHOLDS) -> dict:
     sessions = {}
     boots = {}
     rows = []
@@ -126,6 +176,8 @@ def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mo
                                deviceUptimeMs=event["deviceUptimeMs"])
                 if include_power and "ina219" in event:
                     row.update(ina219=event["ina219"], deviceUptimeMs=event["deviceUptimeMs"])
+                if mode == "battery" and "batteryAlert" in event:
+                    row.update(batteryPercent=event["batteryPercent"], batteryAlert=event["batteryAlert"])
                 if session["notificationCount"] == 0:
                     session["firstNotificationAtMs"] = elapsed
                 else:
@@ -147,12 +199,16 @@ def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mo
     notifications = sum(session["notificationCount"] for session in measured)
     wake = wake_result(measured, rows, expected_wake, release_ms) if expected_wake is not None else None
     power = power_result(measured, rows, mode) if include_power else None
+    battery = battery_result(rows, *battery_thresholds) if mode == "battery" else None
     status = "RECORDED"
     if truncated:
         status = "TRUNCATED"
+    elif battery is not None and battery["mismatchedFrames"]:
+        status = "MISMATCH"
     elif (not notifications or unexpected_boards or dropped or (mode == "reconnect" and not reconnects)
           or (mode == "wake" and (wake is None or not wake["matched"]))
-          or (power is not None and power["missingPhases"])):
+          or (power is not None and power["missingPhases"])
+          or (battery is not None and (battery["matchedCycle"] is None or battery["missingAlertFrames"]))):
         status = "INSUFFICIENT"
     report = {"status": status, "durationMs": (stop_ns - start_ns) // 1_000_000,
               "notificationCount": notifications, "droppedByReceiver": dropped,
@@ -162,6 +218,8 @@ def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mo
         report["wake"] = wake
     if power is not None:
         report["power"] = power
+    if battery is not None:
+        report["battery"] = battery
     return report
 
 
@@ -238,15 +296,18 @@ async def characterize(args: argparse.Namespace) -> dict:
               "distanceCm": args.distance_cm, "distanceSource": "operator-measured",
               **summarize(events, start_ns, stop_ns, board=board, mode=args.mode,
                           truncated=truncated, dropped=dropped, expected_wake=args.expect_wake,
-                          release_ms=release_ms, include_power=args.include_power)}
+                          release_ms=release_ms, include_power=args.include_power,
+                          battery_thresholds=tuple(args.battery_thresholds or BATTERY_THRESHOLDS))}
     if args.mode == "wake":
         report["wake"].update(operatorIdleSeconds=args.idle_seconds, releaseAtMs=release_ms)
+    if args.mode == "battery":
+        report["battery"].update(inputSource=args.battery_source, inputSourceAttestedBy="operator")
     return report
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--mode", choices=("range", "reconnect", "wake"), required=True)
+    parser.add_argument("--mode", choices=("range", "reconnect", "wake", "battery"), required=True)
     parser.add_argument("--hardware", choices=tuple(BOARD_REVISIONS), required=True)
     parser.add_argument("--gateway-id", required=True)
     parser.add_argument("--device-id", required=True)
@@ -258,6 +319,9 @@ def main() -> None:
     parser.add_argument("--idle-seconds", type=int, help="wake mode only; BLE-free idle window")
     parser.add_argument("--expect-wake", choices=tuple(WAKE_CASES), help="wake mode only")
     parser.add_argument("--include-power", action="store_true", help="include INA219 readings (r18-pcb only)")
+    parser.add_argument("--battery-source", choices=("physical-pack", "gauge-fixture"), help="battery mode only")
+    parser.add_argument("--battery-thresholds", nargs=2, type=int, metavar=("WARN", "RECOVER"),
+                        help="battery mode only; firmware percentages (default: 20 25)")
     parser.add_argument("--database", type=Path, required=True, help="Gateway state path; used only to find its lock")
     parser.add_argument("--output", type=Path, required=True, help="new private JSON file under an existing directory")
     args = parser.parse_args()
@@ -266,8 +330,9 @@ def main() -> None:
     if (any(ID.fullmatch(value) is None for value in (args.gateway_id, args.device_id, args.firmware_revision))
             or re.fullmatch(r"(?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}", args.address) is None):
         parser.error("invalid BLE enrollment or revision")
-    if not 1 <= args.distance_cm <= 100_000 or not 10 <= args.seconds <= 600:
-        parser.error("distance must be 1..100000 cm and duration 10..600 seconds")
+    max_seconds = 7200 if args.mode == "battery" else 600
+    if not 1 <= args.distance_cm <= 100_000 or not 10 <= args.seconds <= max_seconds:
+        parser.error(f"distance must be 1..100000 cm and duration 10..{max_seconds} seconds")
     if args.include_power and args.hardware != "r18-pcb":
         parser.error("--include-power requires r18-pcb")
     if args.mode == "wake":
@@ -276,6 +341,12 @@ def main() -> None:
             parser.error("wake mode requires r18-pcb, --expect-wake and --idle-seconds 10..3600")
     elif args.expect_wake is not None or args.idle_seconds is not None:
         parser.error("idle seconds and expected wake require wake mode")
+    if args.mode == "battery":
+        warn, recover = args.battery_thresholds or BATTERY_THRESHOLDS
+        if args.hardware != "r18-pcb" or args.battery_source is None or not 0 <= warn < recover <= 100:
+            parser.error("battery mode requires r18-pcb, --battery-source and thresholds 0 <= WARN < RECOVER <= 100")
+    elif args.battery_source is not None or args.battery_thresholds is not None:
+        parser.error("battery source and thresholds require battery mode")
     lock_path = args.database.with_suffix(".lock")
     if (args.output.exists() or args.output.is_symlink() or not args.output.parent.is_dir()
             or args.output.resolve() in {args.database.resolve(), lock_path.resolve()}):

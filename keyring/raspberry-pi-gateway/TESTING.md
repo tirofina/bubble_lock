@@ -77,6 +77,30 @@ wake 모드에서는 BLE를 해제하기 전에 유효 계측값을 최대 `--se
 
 이 계측은 BLE가 연결된 동안 보드의 3.3V 부하 측을 관측한다. BLE를 해제한 동안의 sleep 소비전류, 배터리 입력 및 충전 전류는 외부 계측으로 기록한다. [전력 측정 지점 설명](../firmware/POWER_MONITOR.md)
 
+### r18 배터리 경보 기록
+
+Gateway 0.2.33의 `--mode battery`는 Pi에서 인증된 r18 GATT 알림만 기록한다. r18 경보가 있는 펌웨어와 보드에 맞는 기존 등록 정보를 사용한다. 입력 조건은 실제 팩을 사용했으면 `physical-pack`, 계측 IC 응답을 시험 장치에서 재현했으면 `gauge-fixture`로 표시한다. 시험 전 시작 잔량을 해제 임계값 근처에서 준비하고 보드의 정격 동작 범위 안에서 낮췄다가 올린다.
+
+```sh
+bubble-keyring-ble-characterize --mode battery --hardware r18-pcb \
+  --gateway-id "$GATEWAY_ID" --device-id "$KEYRING_ID" --address "$KEYRING_ADDRESS" \
+  --firmware-revision keyring-0.7.12 --distance-cm "$MEASURED_DISTANCE_CM" \
+  --battery-source physical-pack --battery-thresholds 20 25 --seconds 3600 \
+  --database "$GATEWAY_DATABASE" --output "$PRIVATE_EVIDENCE/r18-battery-alert.json"
+```
+
+기본 임계값은 20%와 25%다. 로컬 펌웨어에서 임계값을 바꿨으면 같은 값으로 실행한다. 기본값 기준으로 다음 다섯 상태가 **한 BLE 연결**에서 순서대로 수신돼야 `RECORDED`가 된다.
+
+1. 25% 이상에서 경보 꺼짐
+2. 방전 중 20% 초과·25% 미만에서 꺼짐 유지
+3. 20% 이하에서 경보 켜짐
+4. 충전 중 20% 초과·25% 미만에서 켜짐 유지
+5. 25% 이상에서 경보 해제
+
+단계마다 Pi에 알림이 도착할 시간을 둔다. 각 단계의 sequence, Pi 기준 경과 시간, 잔량 및 경보 상태는 `battery.matchedCycle`에 남는다. 잔량을 읽지 못한 프레임은 `unknownFrames`에 따로 세고 단계를 진행시키지 않는다. 임계 범위 밖에서 반대 경보 상태가 하나라도 들어오면 `MISMATCH`다. 필요한 단계나 경보 필드가 빠지면 `INSUFFICIENT`다. 기록 상한을 넘으면 `TRUNCATED`다. 최대 측정 시간은 7,200초다.
+
+LCD의 `LOW` 표시와 해제, 실제 충전 표시는 측정 단계의 시각과 함께 별도로 기록한다. Mobius 수신은 Gateway를 가동한 별도 실행에서 Gateway가 저장한 관측과 CSE 원본의 sequence를 대조한다. 현재 도구의 기록 범위는 Pi의 BLE 수신이며, 소스의 시험과 실물 실행은 미수행이다.
+
 ## Feather LED ON/OFF 시험
 
 2026-11-11에 Feather 0.2.0과 실제 Pi의 ON/OFF 두 건을 같은 부팅에서 실행했다. GPIO readback·Pi SQLite·Mobius4 원본·인증 콜백·격리 PostgreSQL 정산을 대조했다. 실제 LED 육안 확인은 증거에서 별도로 관리한다. [실행 결과와 해시](../evidence/2026-11-11-scoped-feather-led/receipt.json)
