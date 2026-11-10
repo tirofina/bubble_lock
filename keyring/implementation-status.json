@@ -117,15 +117,15 @@
   "firmwareRevision": "keyring-0.7.0",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "f7e917cfbc4a77ddc2e11bac80f7146a363f4986",
+    "sourceCommit": "106050ae31a087268ad38d9bf406348dedd9cd29",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "f7e917cfbc4a77ddc2e11bac80f7146a363f4986",
-    "lastPushedCommit": "f7e917cfbc4a77ddc2e11bac80f7146a363f4986",
-    "latestCheckpoint": "Pi full daemon fixture and 27 observation / 16 health cin evidence pushed. One real pending row replayed across process restart; physical command and production systemd remain.",
-    "lastPushedCommitBeforeThisCheckpoint": "77b5ba846283051e4020c048456eef117d2627ec"
+    "latestLocalSourceCommit": "106050ae31a087268ad38d9bf406348dedd9cd29",
+    "lastPushedCommit": "106050ae31a087268ad38d9bf406348dedd9cd29",
+    "latestCheckpoint": "Gateway 0.2.6 deploy preflight pushed. 67 basic and 3 transient systemd cases passed. Real Pi daemon evidence remains 0.2.5; physical command and production deployment pending.",
+    "lastPushedCommitBeforeThisCheckpoint": "8fdbaec6135bd99e85705c209813c2a4e813a8b8"
   },
   "gatewayRevision": "0.2.6",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
@@ -157,7 +157,7 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "f7e917cfbc4a77ddc2e11bac80f7146a363f4986",
+    "sourceCommit": "106050ae31a087268ad38d9bf406348dedd9cd29",
     "sourceValidation": "Gateway 0.2.6 wheel, 67 regression tests, 3 WSL systemd preflight cases. Earlier 0.2.5 Pi transient daemon/replay evidence retained.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
@@ -458,6 +458,7 @@
     "basicTestsPassed": 67,
     "systemdCasesPassed": 3,
     "productionDeploymentPerformed": false,
-    "receipt": "evidence/2026-11-10-deployment-preflight/receipt.json"
+    "receipt": "evidence/2026-11-10-deployment-preflight/receipt.json",
+    "sourceCommit": "106050ae31a087268ad38d9bf406348dedd9cd29"
   }
 }
