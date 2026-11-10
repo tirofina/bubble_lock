@@ -828,3 +828,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - wheel 빌드, 시험, 기존 DB 접근과 Pi 배포는 미실행이다. 이전 Feather/Pi 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
 
 큐 수정 commit `d584caad89ef9dc04f12462b9240dad986baff5d`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `448cd2a..d584caa`다.
+
+## 2026-11-10 — r18 NVS 시작 오류에서 명령 저널 보존
+
+직전 goal turn은 Pi 영수증 큐와 Gateway 버전의 수정 사항을 올린 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- 설치된 Arduino 코어의 `esp32-hal-misc.c`는 `NO_FREE_PAGES`와 `NEW_VERSION_FOUND`에서 기본 NVS 파티션을 자동 삭제한다. r18 펌웨어 `keyring-0.7.5`는 이 자동 삭제 분기를 막고 두 상태에서 BLE 시작 전에 잠근다. 기존 파티션·namespace·record format 1을 사용한다.
+- 슬롯 읽기는 NVS API 상태를 그대로 받는다. 명시적 미존재만 빈 슬롯으로 취급한다. 읽기 오류·중복 명령·기록 모순은 저장 오류로 분류해 정상 영수증 재발행과 새 명령 실행을 차단한다. [펌웨어 복구 경계](../keyring/firmware/README.md)
+- 호스트 오류 주입 시험 소스를 추가했다. 빌드·링크 확인·호스트 시험·flash·전원 차단은 미실행이다. Feather/Pi 실물 명령 승인 요청은 대기 중이며 goal은 active/progress다.
+
+저널 보호 commit `da4e29131f92ad03e2ffee9fc75eba5998bace13`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `37d6cac..da4e291`이다.
