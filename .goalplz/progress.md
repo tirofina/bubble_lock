@@ -1112,3 +1112,12 @@ r18 재연결 기록 commit `ff473c2fd7b834de6b9d1ad239b8f67690006117`을 `origi
 - 이전 READ·알림, 새 부팅, uptime 역행, 큐 포화와 SQLite 재시작 커서를 다루는 회귀시험 소스를 추가했다. 빌드·시험·Pi 접속·실물 재연결은 미실행이다. goal은 active/progress다.
 
 이전 관측 차단 commit `1536b05139a6613cf2e2774f5910ef8fa748d4c5`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `7217401..1536b05`다.
+
+## 2026-11-11 — BLE 영수증 수신 시각과 UTC 추정 경계
+
+직전 goal turn은 BLE 재연결·Gateway 재시작 때 이전 관측을 차단한 progress다. DOC-REV 2.0.0, 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`와 영수증 연동 계약을 확인했다. 팀 head는 직전과 같다.
+
+- Gateway `0.2.41`은 일치하는 BLE 영수증의 수신 시점에 관측 기준과 UTC 추정값을 확정한다. 새 `APPLIED`가 마지막 조각 전송 이전으로 추정되거나 적용이 수신 이후로 추정되면 수락·적용 추정값을 비운다. 시계 이동에도 같은 처리를 하고 장치 결과·readback·수신 시각을 보존한다. [영수증 시각 경계](../keyring/raspberry-pi-gateway/BLE_SESSIONS.md#재연결과-관측-시각-기준)
+- 늦게 반환한 GATT 쓰기 응답, 나중 관측, 시간 범위 위반, 저널 중복 결과와 수신 시각 보관을 다루는 회귀시험 소스를 추가했다. 빌드·시험·Pi 접속·실물 영수증 검증은 미실행이다. goal은 active/progress다.
+
+영수증 시각 commit `19712ecf9e29430bbc4599eff44b30c8842aa2b8`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `e5f048c..19712ec`다.
