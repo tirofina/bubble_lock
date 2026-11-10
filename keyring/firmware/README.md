@@ -2,7 +2,7 @@
 
 ROLE: KEYRING · DOC-REV: 2.0.0 · 구현 계약: 0.1.0 · 상태: implemented, unverified
 
-ESP32-S3-WROOM-1-N16R8 / r18-hand-solder 보드를 대상으로 작성한 소스다. keyring-0.7.0에서 BLE 관측·버튼·배터리·가속도 수집과 진동 명령/receipt, 선택형 ST7789·JD9853 상태 화면·스피커 cue·SD receipt 복사를 구현한다. INA219 공급 전원 계측과 sensorValues detail별 전송도 추가했다. [POWER_MONITOR.md](POWER_MONITOR.md)에 전원 측정 영역·정수 단위·오류/null·전송 구분을 설명한다. [MAX9850 대기 상태](HEADPHONE_STANDBY.md)에 종료 요청/공유 I2S guard를, [BUILD_PROFILES](BUILD_PROFILES.md)에 로컬 provisioning을 제외한 컴파일 구성을 기록했다. 2026-10-29 사용자 허가로 로컬 compile profile 빌드를 진행했다. [빌드 기록](BUILD_PROFILES.md)에 실제 결과·오류 수정을 연결한다. flash·COM·실물 실행·별도 lint는 수행하지 않았다.
+ESP32-S3-WROOM-1-N16R8 / r18-hand-solder 보드를 대상으로 작성한 소스다. keyring-0.7.1은 BLE 관측·버튼·배터리·가속도와 진동 명령/receipt, 선택형 ST7789·JD9853 상태 화면·스피커 cue·SD receipt 복사를 포함한다. [전원 계측](POWER_MONITOR.md), [MAX9850 대기 상태](HEADPHONE_STANDBY.md), [프로필과 빌드 기록](BUILD_PROFILES.md)을 함께 본다. 제작 PCB에서의 flash·실물 실행은 수용 시험 단계다.
 
 배송 대기 중에는 Adafruit Feather ESP32 V2와 1.54인치 ST7789에서 화면·버튼·BLE 관측을 [별도 벤치 스케치](feather_probe/README.md)로 시험한다.
 
@@ -36,7 +36,9 @@ Observation은 LF를 포함해 512byte 이하일 때만 게시한다. 초과하�
 
 암호화된 Secure Connections + MITM + bonding을 요구한다. 읽기·쓰기와 알림 구독 descriptor에도 MITM 접근 권한을 설정한다. 인증 완료되지 않은 연결에서 명령을 처리하지 않는다. passkey를 가진 등록 Gateway를 신뢰하는 구조이며 장치가 중앙 OIDC/grant를 독립 검증하는 구조는 아니다.
 
-`desiredState.state=true`는 진동 GPIO를 켠다. 최대 ON 시간은 **1000ms 또는 명령에 남은 시간 중 작은 값**이다. 별도 ESP timer가 GPIO와 AUX 전원을 끈다. 기한·연결 해제·fault도 OFF로 처리한다. 자동 해제 이후 observation에 현재 `state=false`를 보낸다. APPLIED receipt의 readback은 적용 시점의 GPIO input-enabled pad 수준이고 실제 모터 회전·진동을 측정한 값이 아니다. 동일 명령 재수신으로 진동 시간을 늘리지 않는다.
+`desiredState.state=true`는 진동 GPIO를 켠다. keyring-0.7.1은 **1000ms와 명령에 남은 시간 중 작은 값**으로 ESP 차단 타이머를 먼저 시작한다. AUX 준비 전후 기한·인증 세션·전원 이상을 확인한 뒤 GPIO를 켠다. BLE 종료 콜백은 GPIO를 즉시 내리고, 타이머 만료 콜백은 GPIO와 AUX의 경보 소유권을 정리한다. ESP timer의 task 콜백에는 지연이 생길 수 있어 실물에서 차단 시간과 출력 파형을 측정해야 한다. [Espressif 타이머 동작](https://docs.espressif.com/projects/esp-idf/en/v4.4.8/esp32s3/api-reference/system/esp_timer.html)
+
+자동 해제 이후 observation에 현재 `state=false`를 보낸다. `APPLIED`의 readback은 적용 순간 GPIO pad에서 읽은 값이다. 실제 모터 회전과 진동은 별도로 측정한다. 동일 명령 재수신으로 진동 시간을 늘리지 않는다.
 
 `acceptedUptimeMs`는 LF로 프레임 수신이 완료된 시점이다. 기한은 **첫 fragment부터** 계산하므로 조립·큐 대기·NVS 기록에 소요된 시간도 포함한다. uptime은 부팅별 64bit millisecond이고 UTC가 아니다. UTC 환산은 Gateway가 같은 bootId의 관측 anchor가 있을 때만 수행한다.
 

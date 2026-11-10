@@ -1,5 +1,7 @@
 # 빌드용 프로필과 실제 로컬 결과
 
+keyring-0.7.1의 출력 차단 변경은 아래 세 프로필과 호스트 시험 6개에서 확인했다. [빌드·시험 로그와 해시](../evidence/2026-11-10-motor-gate/README.md)
+
 ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.7.0.
 
 2026-10-29 사용자 명시 허가로 개발 dependency 설치와 세 프로필의 로컬 빌드를 수행했고 모두 통과했다. 실제 flash/COM·장비 시험은 실행하지 않았다. source commit은3c27f4d이며 [원본 로그·receipt·SHA256](../evidence/2026-10-29-local-validation/README.md)에 실제 환경과 실패·수정 이력도 보존했다.

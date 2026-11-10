@@ -23,7 +23,7 @@
 #include "headphone_standby.h"
 
 namespace {
-constexpr char FirmwareRevision[] = "keyring-0.7.0";
+constexpr char FirmwareRevision[] = "keyring-0.7.1";
 #if defined(KEYRING_LEGACY_GATT) && KEYRING_LEGACY_GATT
 constexpr char ServiceUuid[] = "8b8f0001-8e7a-4f36-a8c2-1c9b5d620001";
 constexpr char IdentityUuid[] = "8b8f0002-8e7a-4f36-a8c2-1c9b5d620001";
@@ -65,7 +65,7 @@ uint32_t maxEpoch = 0, maxGrant = 0, sequence = 0;
 uint64_t motorStopAt = 0, lastObservation = 0;
 bool observationDirty = true;
 esp_timer_handle_t motorTimer = nullptr;
-volatile bool motorTimerFired = false;
+bool motorTimerFired = false, motorTimerCleaning = false; // Protected by linkMux.
 MotionWake motion;
 AudioAlert audio;
 Peripherals peripherals;
@@ -152,19 +152,51 @@ void loadJournal() {
 void output(int pin, int level) { digitalWrite(pin, level); pinMode(pin, OUTPUT); }
 bool readState() { return gpio_get_level(static_cast<gpio_num_t>(board::Motor)) != 0; }
 void stopMotor() {
-  audio.stop();
   gpio_set_level(static_cast<gpio_num_t>(board::Motor), 0);
+  audio.stop();
   auxRail::alert(false);
   motorStopAt = 0;
   if (motorTimer) esp_timer_stop(motorTimer);
   observationDirty = true;
 }
 void motorExpired(void *) {
-  // GPIO mute uses a short lock; no I2S, JSON, BLE, I2C, or flash operation runs here.
-  audio.stop();
+  // Serialize motor disable with the final enable check. Driver/rail cleanup follows.
+  portENTER_CRITICAL(&linkMux);
   gpio_set_level(static_cast<gpio_num_t>(board::Motor), 0);
-  auxRail::alert(false);
   motorTimerFired = true;
+  motorTimerCleaning = true;
+  portEXIT_CRITICAL(&linkMux);
+  audio.stop();
+  auxRail::alert(false);
+  portENTER_CRITICAL(&linkMux);
+  motorTimerCleaning = false;
+  portEXIT_CRITICAL(&linkMux);
+}
+bool motorGateOpen(uint32_t generation, uint64_t stopAtUs) {
+  // Caller holds linkMux, shared with disconnect and timer expiry.
+  return connected && authenticated && generation == connectionGeneration && !motorTimerFired &&
+      gpio_get_level(static_cast<gpio_num_t>(board::MainFaultN)) != 0 &&
+      static_cast<uint64_t>(esp_timer_get_time()) < stopAtUs;
+}
+bool startMotor(uint64_t commandDeadlineUs, uint32_t generation) {
+  if (!motorTimer) return false;
+  portENTER_CRITICAL(&linkMux);
+  const bool idle = !motorTimerCleaning;
+  if (idle) motorTimerFired = false;
+  portEXIT_CRITICAL(&linkMux);
+  if (!idle) return false;
+  const uint64_t now = esp_timer_get_time();
+  if (now >= commandDeadlineUs) return false;
+  const uint64_t stopAtUs = min(commandDeadlineUs, now + static_cast<uint64_t>(board::MotorMaxOnMs) * 1000);
+  if (esp_timer_start_once(motorTimer, stopAtUs - now) != ESP_OK) return false;
+
+  portENTER_CRITICAL(&linkMux);
+  // Enabling the rail may consume some of the remaining budget.
+  const bool started = motorGateOpen(generation, stopAtUs) && auxRail::alert(true) &&
+      motorGateOpen(generation, stopAtUs) && gpio_set_level(static_cast<gpio_num_t>(board::Motor), 1) == ESP_OK;
+  portEXIT_CRITICAL(&linkMux);
+  if (started) motorStopAt = stopAtUs / 1000;
+  return started;
 }
 void safePins() {
   output(board::Motor, LOW);
@@ -469,19 +501,8 @@ void processCommand(const Frame &frame) {
     stopMotor(); publishReceipt(id, hash, "INDETERMINATE", &r); return;
   }
   stopMotor();
-  if (desired) {
-    uint64_t elapsed = uptime() - frame.firstAt;
-    if (elapsed >= remaining) { publishReceipt(id, hash, "INDETERMINATE", &r); return; }
-    uint64_t budget = remaining - elapsed;
-    uint64_t pulse = min(static_cast<uint64_t>(board::MotorMaxOnMs), budget);
-    motorTimerFired = false;
-    if (!auxRail::alert(true)) { publishReceipt(id, hash, "INDETERMINATE", &r); return; }
-    gpio_set_level(static_cast<gpio_num_t>(board::Motor), 1);
-    // A failed start immediately clears both outputs. The timer task is independent of BLE/flash.
-    motorStopAt = uptime() + pulse;
-    if (esp_timer_start_once(motorTimer, pulse * 1000) != ESP_OK) {
-      stopMotor(); publishReceipt(id, hash, "INDETERMINATE", &r); return;
-    }
+  if (desired && !startMotor((frame.firstAt + remaining) * 1000, frame.generation)) {
+    stopMotor(); publishReceipt(id, hash, "INDETERMINATE", &r); return;
   }
   r.appliedAt = uptime(); r.readback = readState(); r.phase = Completed;
   r.result = static_cast<uint8_t>(r.readback == r.desired ? Result::Applied : Result::ReadbackMismatch);
@@ -626,6 +647,7 @@ class ServerCallbacks : public BLEServerCallbacks {
   void onDisconnect(BLEServer *) override {
     portENTER_CRITICAL(&linkMux);
     connected = false; authenticated = false; disconnected = true; ++connectionGeneration;
+    gpio_set_level(static_cast<gpio_num_t>(board::Motor), 0);
     portEXIT_CRITICAL(&linkMux);
     audio.stop();
   }
@@ -767,9 +789,13 @@ void loop() {
     xQueueReset(journalRequests); memset(&journalCapture, 0, sizeof(journalCapture));
     journalChar->setValue(std::string());
   }
-  if (motorTimerFired || (motorStopAt && now >= motorStopAt) ||
+  portENTER_CRITICAL(&linkMux);
+  const bool motorExpiredNow = motorTimerFired;
+  motorTimerFired = false;
+  portEXIT_CRITICAL(&linkMux);
+  if (motorExpiredNow || (motorStopAt && now >= motorStopAt) ||
       (!authenticated && readState()) || (digitalRead(board::MainFaultN) == LOW && readState())) {
-    motorTimerFired = false; stopMotor();
+    stopMotor();
   }
   bool changedConfirm = confirm.update(now), changedPanic = panic.update(now);
   if ((changedConfirm && confirm.pressed) || (changedPanic && panic.pressed)) peripherals.show();
