@@ -9,6 +9,7 @@ public:
   bool begin(bool accelerometerReady, Read read, Write write);
   bool poll(uint64_t now);
   bool clearForSleep();
+  void invalidate() { configured = false; }
   bool ready() const { return configured; }
   uint32_t events() const { return count; }
 private:

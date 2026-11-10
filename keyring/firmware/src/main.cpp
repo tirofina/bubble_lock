@@ -40,7 +40,7 @@ extern "C" esp_err_t __wrap_nvs_flash_init() {
 }
 
 namespace {
-constexpr char FirmwareRevision[] = "keyring-0.7.10";
+constexpr char FirmwareRevision[] = "keyring-0.7.11";
 #if defined(KEYRING_LEGACY_GATT) && KEYRING_LEGACY_GATT
 constexpr char ServiceUuid[] = "8b8f0001-8e7a-4f36-a8c2-1c9b5d620001";
 constexpr char IdentityUuid[] = "8b8f0002-8e7a-4f36-a8c2-1c9b5d620001";
@@ -342,20 +342,30 @@ bool writeRegister16(uint8_t address, uint8_t reg, uint16_t value) {
   Wire.write(static_cast<uint8_t>(value >> 8)); Wire.write(static_cast<uint8_t>(value));
   return Wire.endTransmission() == 0;
 }
-bool accelReady = false;
 void initSensors() {
   Wire.begin(board::I2cSda, board::I2cScl, 100000);
   Wire.setTimeOut(20);
+}
+constexpr uint64_t AccelRetryMs = 5000;
+bool accelReady = false;
+uint64_t nextAccelRetry = 0;
+bool configureAccelerometer() {
   uint8_t id = 0;
-  accelReady = readRegisters(board::AccelAddress, 0x0f, &id, 1) && id == 0x44;
-  if (accelReady) {
-    // CTRL2: BDU + address increment; CTRL6: +/-2g; CTRL1: 12.5Hz, LP mode1.
-    accelReady = writeRegister(board::AccelAddress, 0x21, 0x0c) &&
-                 writeRegister(board::AccelAddress, 0x25, 0x00) &&
-                 writeRegister(board::AccelAddress, 0x20, 0x20);
-  }
+  if (!readRegisters(board::AccelAddress, 0x0f, &id, 1) || id != 0x44) return false;
+  // CTRL2: BDU + address increment; CTRL6: +/-2g; CTRL1: 12.5Hz, LP mode1.
+  return writeRegister(board::AccelAddress, 0x21, 0x0c) &&
+         writeRegister(board::AccelAddress, 0x25, 0x00) &&
+         writeRegister(board::AccelAddress, 0x20, 0x20);
 }
 struct Sensors { bool fuel = false, accel = false; float battery = 0, volts = 0, xyz[3] = {}; } sensors;
+void recoverAccelerometer(uint64_t now) {
+  if ((accelReady && motion.ready()) || now < nextAccelRetry) return;
+  const bool configureAxes = !accelReady;
+  if (configureAxes) accelReady = configureAccelerometer();
+  const bool motionRestored = motion.begin(accelReady, readRegisters, writeRegister);
+  nextAccelRetry = uptime() + AccelRetryMs;
+  if ((configureAxes && accelReady) || motionRestored) observationDirty = true;
+}
 void sampleSensors() {
   uint8_t data[6] = {};
   sensors.fuel = readRegisters(board::FuelAddress, 0x02, data, 4);
@@ -370,6 +380,10 @@ void sampleSensors() {
       int16_t raw = static_cast<int16_t>((data[i * 2 + 1] << 8) | data[i * 2]);
       sensors.xyz[i] = (raw / 16) * 0.000976f; // 12-bit left-aligned, +/-2g LP1, units g.
     }
+  } else if (accelReady) {
+    accelReady = false;
+    motion.invalidate();
+    nextAccelRetry = uptime() + AccelRetryMs;
   }
   lastSensorRead = uptime();
 }
@@ -919,7 +933,7 @@ extern "C" esp_err_t __wrap_esp_ble_gatts_register_callback(esp_gatts_cb_t callb
 
 namespace {
 void considerSleep(uint64_t now) {
-  if (!powerState::idle(now) || connected || !storageHealthy || !motion.ready() ||
+  if (!powerState::idle(now) || connected || !storageHealthy || !motion.ready() || !sensors.accel ||
       motorStopAt || readState() || audio.busy() || auxRail::busy() || peripherals.busy() || supply.busy() ||
       uxQueueMessagesWaiting(commandQueue) != 0 || uxQueueMessagesWaiting(journalRequests) != 0 ||
       !receiptTx.active.empty() || !receiptTx.pending.empty() ||
@@ -970,7 +984,7 @@ void setup() {
   loadJournal(); initSensors();
   headphone.begin(readRegisters, writeRegister);
   supply.begin(readRegisters, writeRegister16);
-  motion.begin(accelReady, readRegisters, writeRegister);
+  recoverAccelerometer(uptime());
   esp_timer_create_args_t timerArgs = {};
   timerArgs.callback = motorExpired; timerArgs.name = "motor-stop";
   if (esp_timer_create(&timerArgs, &motorTimer) != ESP_OK) motorTimer = nullptr;
@@ -1029,6 +1043,7 @@ void loop() {
     setGattReadValue(journalRead, {});
   }
   supply.poll(uptime());
+  recoverAccelerometer(uptime());
   if (uptime() - lastSensorRead >= board::ObserveMs) { sampleSensors(); observationDirty = true; }
   if (uptime() - lastObservation >= board::ObserveMs) observationDirty = true;
   if (observationDirty) publishObservation();
