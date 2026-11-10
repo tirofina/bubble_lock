@@ -790,3 +790,13 @@ PostgreSQL 정산 소스 commit `a551e9ee797dfa18b26c85a79c23d5ceccd55df5`를 `o
 - 검증·회귀시험 소스만 추가했다. Feather 명령 프로필 0.2.0 flash, Pi 시험 세션·LED 명령·실제 영수증 확인은 별도 실행 승인과 실제 장치가 필요하다. 전체 goal은 active/progress다.
 
 증거 대조 소스 commit `503f9c9ed2095c29c4d23f47657756500a4be276`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `0d8ebe7..503f9c9`다.
+
+## 2026-11-10 — 명령 거절·시간 초과·불확정 영수증 분류
+
+직전 goal turn은 실물 명령 증거 대조 도구를 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- 발급 기록과 결속된 `REJECTED`, `TIMEOUT`, `INDETERMINATE` 원본은 실제 ACK 코드와 함께 검토 사유로 보존한다. 긍정 승인 이력이 필요한 성공 정산과 분리하며, 모순되는 성공 ACK는 거절한다. CSE `ct` 초 안에서 승인과 보관의 선후를 확정할 수 없는 건 `AUTHORIZATION_ORDER_UNCERTAIN`으로 남긴다.
+- 복구 스윕은 승인 이력이 없는 발급 명령도 마감 시각이 범위에 들어오면 확인한다. 인증 CSE에서 원래 영수증이 존재해야 대기열에 넣으며 원본 부재를 실패 영수증으로 만들지 않는다. [정산과 복구](../keyring/integration-candidate/README.md#cse-명령-영수증의-중앙-정산-후보)
+- 구현·회귀시험 소스만 반영했다. 실행 중인 격리 작업자 재기동·실제 실패 영수증·빌드·시험·실물 장치 작업은 미실행이다. 이전 Feather/Pi 실물 승인 요청은 대기 중이다. 전체 goal은 active/progress다.
+
+부정 영수증 분류와 복구 commit `f2cc3f90f59c1bb0a28c307b81ea542eefaa7323`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `a6cc9eb..f2cc3f9`다.
