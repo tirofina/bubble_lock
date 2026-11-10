@@ -58,6 +58,8 @@ keyring-0.7.7은 identity·관측·영수증·저널의 READ와 후속 Read Blob
 
 keyring-0.7.5는 Arduino 코어의 `nvs_flash_init` 호출을 감싼다. `ESP_ERR_NVS_NO_FREE_PAGES` 또는 `ESP_ERR_NVS_NEW_VERSION_FOUND`에서 자동 포맷 경로를 막고, 출력을 안전 상태로 둔 채 BLE 시작 전에 잠근다. USB 직렬 로그에 `default NVS needs recovery`가 남는다. 초기화에 성공하면 기존 `keyring-v1` namespace와 record format 1을 읽는다. 명시적 `ESP_ERR_NVS_NOT_FOUND`만 빈 슬롯으로 취급하며, 읽기 오류·중복 명령 ID·모순된 record가 있으면 정상 영수증 재발행과 신규 실행을 차단한다. [호스트 오류 주입 시험 소스](tests/run_journal_nvs_host.py)는 추가됐으며 링크·실물 전원 장애 검증은 남아 있다.
 
+keyring-0.7.8은 부팅 시 빈 슬롯 뒤에 기록이 있거나 저장 순서에서 epoch 또는 grantRevision이 낮아지면 `storage_error`로 처리한다. `keyring-v1`의 슬롯 형식은 유지한다. PREPARED와 COMPLETED는 commit 뒤 같은 키의 blob을 다시 읽어 원래 바이트와 맞아야 RAM에 반영한다. PREPARED 확인 실패는 출력 시작을 차단하고, COMPLETED 확인 실패는 출력을 끄고 `INDETERMINATE`를 반환한다. 이번 빌드와 호스트·실물 장애 시험은 미실행이다.
+
 현재 grant의 회수/만료 여부는 Gateway가 매 실행 직전에 중앙 authorize API로 확인한다. 펌웨어의 숫자 fencing은 이미 본 revision보다 오래된 명령을 막는 기능이다. 더 최신의 중앙 권한 상태를 장치가 추측하지 않는다. Secure Boot·flash encryption·attestation·서명 검증·OTA·원격 인증서 발급은 이 구현의 범위에 포함되지 않는다.
 
 ## 센서·버튼·저전력

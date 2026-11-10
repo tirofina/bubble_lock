@@ -36,6 +36,8 @@ storageCrc32는 native NVS record의 CRC metadata다. JSON에서 재계산 가�
 
 keyring-0.7.5에서 record 읽기 오류나 중복 ID는 저널 전체를 `storage_error`로 처리한다. 기본 NVS 자체에 복구가 필요한 두 SDK 오류에서는 Arduino의 자동 삭제를 막고 BLE 시작 전에 잠근다. 이 상태에서는 USB 직렬 로그와 파티션 보존 절차로 상태를 확인한다. [펌웨어 복구 경계](firmware/README.md)
 
+keyring-0.7.8은 앞에서부터 채운 연속 슬롯과 감소하지 않는 epoch·grantRevision만 정상으로 복구한다. 중간 슬롯 누락과 새 기록의 쓰기 후 읽기 불일치는 저널을 잠근다. 끝쪽 기록만 유실된 경우까지 식별하려면 외부에 보존한 마지막 기록 위치나 중앙 체크포인트가 필요하다.
+
 관측 sensorValues에 journalUsed/journalPrepared/journalCapacity를 추가했다. NVS 불건전 시 앞의 두 값은 null이며 512byte 한도로 생략될 수도 있다. 누락을 빈 journal로 해석하지 않는다. 실제 보관 목록은 export manifest에 따른다.
 
 ## Raspberry Pi 수동 보관

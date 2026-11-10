@@ -40,7 +40,7 @@ extern "C" esp_err_t __wrap_nvs_flash_init() {
 }
 
 namespace {
-constexpr char FirmwareRevision[] = "keyring-0.7.7";
+constexpr char FirmwareRevision[] = "keyring-0.7.8";
 #if defined(KEYRING_LEGACY_GATT) && KEYRING_LEGACY_GATT
 constexpr char ServiceUuid[] = "8b8f0001-8e7a-4f36-a8c2-1c9b5d620001";
 constexpr char IdentityUuid[] = "8b8f0002-8e7a-4f36-a8c2-1c9b5d620001";
@@ -158,6 +158,13 @@ bool storeRecord(unsigned slot, Record &record) {
     storageHealthy = false;
     return false;
   }
+  Record stored;
+  size_t size = sizeof(stored);
+  if (nvs_get_blob(journalNvs, key, &stored, &size) != ESP_OK || size != sizeof(stored) ||
+      memcmp(&stored, &record, sizeof(stored)) != 0) {
+    storageHealthy = false;
+    return false;
+  }
   journal[slot] = record;
   occupied[slot] = true;
   return true;
@@ -165,13 +172,19 @@ bool storeRecord(unsigned slot, Record &record) {
 void loadJournal() {
   storageHealthy = nvs_open("keyring-v1", NVS_READWRITE, &journalNvs) == ESP_OK;
   if (!storageHealthy) return;
+  bool seenEmpty = false;
   for (unsigned slot = 0; slot < JournalSlots; ++slot) {
     char key[8]; slotKey(slot, key);
     Record &r = journal[slot];
     size_t size = sizeof(r);
     const esp_err_t status = nvs_get_blob(journalNvs, key, &r, &size);
-    if (status == ESP_ERR_NVS_NOT_FOUND) continue;
-    if (status != ESP_OK || size != sizeof(r) || !validRecord(r)) {
+    if (status == ESP_ERR_NVS_NOT_FOUND) {
+      seenEmpty = true;
+      continue;
+    }
+    // Every writer appends at the first free slot and never lowers either fence.
+    if (seenEmpty || status != ESP_OK || size != sizeof(r) || !validRecord(r) ||
+        (slot > 0 && (r.epoch < journal[slot - 1].epoch || r.grant < journal[slot - 1].grant))) {
       storageHealthy = false;
       return; // A corrupt slot is never silently erased or reused.
     }
@@ -551,7 +564,7 @@ void processCommand(const Frame &frame) {
   if (r.readback != r.desired) stopMotor();
   if (!storeRecord(freeSlot, r)) {
     stopMotor();
-    // Keep the durable PREPARED copy in RAM. Do not claim completed storage.
+    // Keep the last verified PREPARED copy in RAM. The flash result is uncertain.
     publishReceipt(id, hash, "INDETERMINATE", &journal[freeSlot]); return;
   }
   if (desired && connected && authenticated && frame.generation == connectionGeneration &&
