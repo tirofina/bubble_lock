@@ -1094,3 +1094,12 @@ r18 초기 구동 commit `b63c795ef872099372191021e846cc3f79571f93`을 `origin/c
 - 관측 성공, 세션 분리, 유효하지 않은 누계, 위험 상태 및 원본 프레임 제외 회귀시험 소스를 추가했다. 빌드·시험·Pi 접속·실물 캡처는 미실행이다. 전원 레일·외부 입력 및 충전 전류 실측은 별도다. goal은 active/progress다.
 
 r18 Pi 기록 commit `815d89ce6879af204c21f9cfdd9cbef1724cf679`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `2302da3..815d89c`다.
+
+## 2026-11-11 — r18 BLE 재연결 전후 버튼 누계 기록
+
+직전 goal turn은 r18 초기 구동의 한 세션 기록을 구현한 progress다. DOC-REV 2.0.0, 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`와 팀 BLE 계약을 확인했다. 팀 head는 직전과 같다.
+
+- Gateway `0.2.39`는 재연결 전 마지막 알림과 복구 직후 첫 알림의 부팅·sequence·uptime·두 버튼 누계를 대조한다. 알림이 없던 중간 세션은 복구 시간의 끝으로 쓰지 않고, 중간에 관측된 부팅 변경은 별도로 검출한다. [Pi 재연결 기록 절차](../keyring/raspberry-pi-gateway/TESTING.md#r18-재연결-전후-버튼-누계-기록)
+- 중간 세션, 부팅 변경, 첫 복구 알림의 역행, 증거 누락과 원본 제외를 다루는 회귀시험 소스를 추가했다. 빌드·시험·Pi 접속·실물 재연결 기록은 미실행이다. goal은 active/progress다.
+
+r18 재연결 기록 commit `ff473c2fd7b834de6b9d1ad239b8f67690006117`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `b4e7cd6..ff473c2`다.
