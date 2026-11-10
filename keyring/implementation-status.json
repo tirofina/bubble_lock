@@ -7,7 +7,7 @@
   "date": "2026-11-10",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Firmware 0.7.1 motor gate: three unprovisioned profiles and six host checks passed. Physical motor cutoff remains unmeasured. Gateway 0.2.8 and Pi 0.2.5 evidence are tracked separately.",
+  "verificationStatus": "Reproduced the team handover ownership gap over TLS 1.3 mTLS; the KEYRING candidate passed cutover, rollback and restart checks. Operating integration and physical trials remain.",
   "rubricIds": [
     "R01",
     "R02",
@@ -66,7 +66,8 @@
     "KEYRING handoff candidate for binding native receipt and optional CORE ACK to the authenticated Gateway and historical central issuance/authorization",
     "Authoritative HTTPS command polling ahead of CORE MQTT and exact current central hash binding before admitting MQTT-only commands",
     "Fresh BLE APPLIED receipt binding to the current GATT boot; historical DUPLICATE readbacks retained",
-    "r18 motor timer armed before AUX and GPIO, with final deadline, fault and BLE session checks"
+    "r18 motor timer armed before AUX and GPIO, with final deadline, fault and BLE session checks",
+    "KEYRING handover candidate binding device epoch and active edge to the enrolled gateway"
   ],
   "existingHardware": {
     "status": "source-snapshot-included-unverified",
@@ -86,7 +87,8 @@
     "central PKI registration and mTLS credential deployment",
     "strict UTC device deadline contract if needed beyond relative BLE budget",
     "central settlement/checkpoint and crash-safe device journal reclaim",
-    "authoritative recovery checkpoint and fenced Gateway snapshot activation"
+    "authoritative recovery checkpoint and fenced Gateway snapshot activation",
+    "authoritative per-device Edge-to-Gateway mapping and atomic handover drain/approval binding"
   ],
   "notImplemented": [
     "purchased JD9853 module-specific power/gamma initialization confirmation",
@@ -121,15 +123,15 @@
   "firmwareRevision": "keyring-0.7.1",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "aa0874f818d9629bc752335835fdcaba849c5613",
+    "sourceCommit": "96faff50f71bdf29adae1bc0259ee6a1b7fc04ae",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "aa0874f818d9629bc752335835fdcaba849c5613",
-    "lastPushedCommit": "aa0874f818d9629bc752335835fdcaba849c5613",
-    "latestCheckpoint": "Firmware 0.7.1 now arms the cutoff timer before motor enable and guards the final output against expiry, fault and disconnect.",
-    "lastPushedCommitBeforeThisCheckpoint": "3de5360776d83788c4f13e84626f32e5205a0f63"
+    "latestLocalSourceCommit": "96faff50f71bdf29adae1bc0259ee6a1b7fc04ae",
+    "lastPushedCommit": "96faff50f71bdf29adae1bc0259ee6a1b7fc04ae",
+    "latestCheckpoint": "Reproduced former-gateway authorization at the new epoch and tested an explicit ownership guard with the actual team API.",
+    "lastPushedCommitBeforeThisCheckpoint": "6255e974c831be4f66c1292a258e5dbe9183db08"
   },
   "gatewayRevision": "0.2.8",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
@@ -153,7 +155,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Harden the production r18 motor cutoff and verify timer-first sequencing before hardware acceptance",
+    "executionRequest": "Reproduce former Gateway authorization after handover and validate an owner binding candidate",
     "remainingCompletionDependencies": [
       "central deployment, settlement and recovery activation",
       "purchased JD9853 module initialization",
@@ -161,11 +163,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "aa0874f818d9629bc752335835fdcaba849c5613",
-    "sourceValidation": "The minimal, ST7789 and JD9853 profiles built successfully. Six host tests exercised the actual output functions with simulated timers, GPIO and disconnect.",
+    "sourceCommit": "96faff50f71bdf29adae1bc0259ee6a1b7fc04ae",
+    "sourceValidation": "Team loopback TLS 1.3 API reproduced former Gateway authorization. Candidate blocked issue/poll/authorize and preserved the rollback owner after runtime restart.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "r18 cutoff software is built; physical r18 timing, Pi/Feather output and team CORE publishing/settlement remain.",
+    "currentDependencyState": "Handover owner binding is a verified candidate. Team ownership mapping, atomic drain and actual Pi/Feather/r18 tests remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -535,5 +537,16 @@
     "physicalMotorWaveformMeasured": false,
     "flashPerformed": false,
     "sourceCommit": "aa0874f818d9629bc752335835fdcaba849c5613"
+  },
+  "handoverOwnerValidation": {
+    "evidence": "evidence/2026-11-10-handover-owner/README.md",
+    "teamMain": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+    "transport": "loopback-mtls-tls1.3",
+    "formerGatewayAllowedByUnmodifiedTeamApiAtNewEpoch": true,
+    "candidateBlockedIssuePollAndAuthorize": true,
+    "rollbackOwnerSurvivedRuntimeRestart": true,
+    "invalidOwnershipInputsRejected": 5,
+    "productionIntegrationVerified": false,
+    "sourceCommit": "96faff50f71bdf29adae1bc0259ee6a1b7fc04ae"
   }
 }

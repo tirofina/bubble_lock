@@ -459,3 +459,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 실제 r18 모터 파형·차단 시간·진동, Feather 명령 flash·Pi 실물 검증과 팀 운영 정산은 대기 중이다. 전체 goal은 active/progress다.
 
 구현·시험 증거 commit `aa0874f818d9629bc752335835fdcaba849c5613`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `3de5360..aa0874f`다.
+
+## 2026-11-10 — Handover 활성 Gateway 결속
+
+이전 goal turn은 r18 펌웨어 0.7.1을 빌드하고 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- 팀 main의 실제 mTLS API에서 전환 전 epoch는 거절됐다. 그러나 등록을 유지한 이전 Gateway에 현재 epoch로 새 명령을 발급하면 기존 API가 승인했다.
+- KEYRING 후보는 대상 장치·현재 epoch와 설정에 지정된 활성 Edge/Gateway를 결속한다. 테스트 런타임의 발급·목록·실행 승인에서 이전 Gateway를 차단했다. 대상 Gateway와 롤백 후 재기동한 원래 Gateway는 승인됐다. 누락과 불일치 입력 5개를 거절했다. [실행 기록](../keyring/evidence/2026-11-10-handover-owner/README.md)
+- 실제 중앙 정본 매핑·원자적 drain/승인·운영 정산과 Pi/Feather 및 제작 PCB 검증은 남았다. 전체 goal은 active/progress다.
+
+후보·시험 증거 commit `96faff50f71bdf29adae1bc0259ee6a1b7fc04ae`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `6255e97..96faff5`다.
