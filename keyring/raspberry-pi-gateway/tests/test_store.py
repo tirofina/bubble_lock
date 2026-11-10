@@ -51,6 +51,71 @@ class StoreTests(unittest.TestCase):
         with patch("bubble_gateway.store.time.time", return_value=1045.0):
             self.assertEqual(self.store.due()["rqi"], rqi)
 
+    def test_credential_receipts_survive_full_outbox_restart_and_replay_in_order(self):
+        initial = {"status": "ACTIVE", "credentialRevision": "rev-1"}
+        rotated = {"status": "ACTIVE", "credentialRevision": "rev-2"}
+        lost = {"status": "LOST", "credentialRevision": "rev-2"}
+        snapshot = lambda: {"bootId": "first-boot"}
+        self.store.max_rows = 2  # One ordinary slot.
+        self.store.enqueue("observation", "existing", BINDING["observationContainer"], {"sequence": 1})
+        ordinary = self.store.due()["rqi"]
+        for state in (initial, rotated, lost):
+            self.assertTrue(self.store.record_credential_status(state, snapshot))
+        self.store.stage_credential_receipt()
+        self.assertEqual(self.store.counts()[0], 1)
+        self.store.close()
+        self.store = self.open_store()
+        self.assertFalse(self.store.record_credential_status(lost, lambda: {"bootId": "new-boot"}))
+        self.store.delivered(ordinary)
+
+        self.store.stage_credential_receipt()
+        first = self.store.due()
+        self.assertEqual(first["container"], BINDING["healthContainer"])
+        with patch("bubble_gateway.store.time.time", return_value=1000):
+            self.store.retry(first["rqi"], 0, minimum_delay=45)
+            self.store.stage_credential_receipt()
+            self.assertIsNone(self.store.due())
+            self.assertEqual(self.store.counts()[0], 1)
+        self.store.close()
+        self.store = self.open_store()
+        with patch("bubble_gateway.store.time.time", return_value=1045):
+            replay = self.store.due()
+            self.assertEqual((replay["rqi"], replay["payload"]), (first["rqi"], first["payload"]))
+            self.store.delivered(first["rqi"])
+
+        previous = initial
+        for sequence, state in ((2, rotated), (3, lost)):
+            self.store.stage_credential_receipt()
+            item = self.store.due()
+            self.assertEqual(item["payload"]["credentialTransition"],
+                             dict(sequence=sequence, previous=previous, current=state))
+            self.store.delivered(item["rqi"])
+            previous = state
+        self.assertEqual(first["payload"]["credentialTransition"], dict(sequence=1, previous=None, current=initial))
+        self.assertEqual([tuple(row) for row in self.store.db.execute(
+            "SELECT sequence,delivered_at IS NOT NULL FROM credential_receipts ORDER BY sequence")],
+            [(1, 1), (2, 1), (3, 1)])
+        self.assertEqual(self.store.counts()[0], 0)
+
+    def test_credential_retention_trims_only_delivered_entries(self):
+        for revision in ("rev-1", "rev-2", "rev-3"):
+            self.store.record_credential_status({"status": "ACTIVE", "credentialRevision": revision},
+                                                lambda: {"bootId": "first-boot"})
+        with patch("bubble_gateway.store.RETAIN_DELIVERED_CREDENTIAL_RECEIPTS", 1):
+            for _ in range(2):
+                self.store.stage_credential_receipt()
+                self.store.delivered(self.store.due()["rqi"])
+        self.assertEqual([tuple(row) for row in self.store.db.execute(
+            "SELECT sequence,delivered_at IS NOT NULL FROM credential_receipts ORDER BY sequence")], [(2, 1), (3, 0)])
+
+    def test_credential_receipt_table_is_added_to_existing_bound_database(self):
+        self.populate()
+        self.store.db.execute("DROP TABLE credential_receipts")
+        self.store.close()
+        self.store = self.open_store()
+        self.assertEqual(self.store.db.execute("SELECT COUNT(*) FROM credential_receipts").fetchone()[0], 0)
+        self.assertEqual(self.store.counts(), (2, 1))
+
     def test_binding_mismatch_refuses_before_data_changes(self):
         before = self.rows()
         with self.assertRaisesRegex(StateIdentityError, "STATE_IDENTITY_MISMATCH"):
@@ -195,6 +260,8 @@ class StoreTests(unittest.TestCase):
 
     def test_wal_archive_preserves_rows_and_cannot_launch_as_live_state(self):
         self.populate()
+        self.store.record_credential_status({"status": "ACTIVE", "credentialRevision": "rev-1"},
+                                            lambda: {"bootId": "first-boot"})
         before = self.rows()
         manifest_path = self.archive()
         manifest = json.loads(manifest_path.read_text())
@@ -205,6 +272,7 @@ class StoreTests(unittest.TestCase):
             self.assertEqual(metadata(db)["recovery_state"], "QUARANTINED")
         self.assertEqual(self.rows(), before)
         self.assertEqual(manifest["commandStatuses"], {"DISPATCHING": 1})
+        self.assertEqual(manifest["tableCounts"]["credential_receipts"], 1)
         self.assertEqual(manifest["files"][0]["sha256"], hashlib.sha256(target.read_bytes()).hexdigest())
         with self.assertRaisesRegex(StateIdentityError, "STATE_RECOVERY_QUARANTINED"):
             Store(target, 100, 100000, 20, BINDING)

@@ -7,10 +7,14 @@ import random
 import sqlite3
 import time
 from pathlib import Path
+from typing import Callable
 
 from .model import canonical, iso_time
 from .core_bridge import telemetry, measurable, acknowledgement
 from .state_identity import preflight, install
+
+MAX_PENDING_CREDENTIAL_RECEIPTS = 1024
+RETAIN_DELIVERED_CREDENTIAL_RECEIPTS = 128
 
 
 class CapacityError(RuntimeError):
@@ -54,6 +58,10 @@ class Store:
             CREATE TABLE IF NOT EXISTS core_sequences (
                 device_id TEXT PRIMARY KEY, wire_sequence INTEGER NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS credential_receipts (
+                sequence INTEGER PRIMARY KEY, rqi TEXT NOT NULL UNIQUE,
+                payload TEXT NOT NULL, delivered_at TEXT
+            );
         """)
         try:
             with self.db:
@@ -62,6 +70,7 @@ class Store:
         except Exception:
             self.db.close()
             raise
+        self._health_container = binding["healthContainer"]
 
     @staticmethod
     def request_id(kind: str, identity: str) -> str:
@@ -134,6 +143,37 @@ class Store:
     def enqueue(self, kind: str, identity: str, container: str, payload: dict, critical: bool = False) -> None:
         with self.db:
             self._enqueue(self.request_id(kind, identity), container, payload, critical)
+
+    def record_credential_status(self, current: dict, health_snapshot: Callable[[], dict]) -> bool:
+        """Record an authenticated central status before relying on it locally."""
+        with self.db:
+            self.db.execute("BEGIN IMMEDIATE")
+            last = self.db.execute("SELECT sequence,payload FROM credential_receipts ORDER BY sequence DESC LIMIT 1").fetchone()
+            previous = json.loads(last["payload"])["credentialTransition"]["current"] if last else None
+            if current == previous:
+                return False
+            count = self.db.execute("SELECT COUNT(*) FROM credential_receipts WHERE delivered_at IS NULL").fetchone()[0]
+            if count >= MAX_PENDING_CREDENTIAL_RECEIPTS:
+                raise CapacityError("Credential receipt journal full")
+            sequence = last["sequence"] + 1 if last else 1
+            payload = health_snapshot() | {
+                "credentialTransition": {"sequence": sequence, "previous": previous, "current": current},
+            }
+            rqi = self.request_id("credential-transition", f"{payload['bootId']}:{sequence}")
+            self.db.execute("INSERT INTO credential_receipts(sequence,rqi,payload) VALUES(?,?,?)",
+                            (sequence, rqi, canonical(payload)))
+        return True
+
+    def stage_credential_receipt(self) -> None:
+        """Keep later transitions behind the oldest unconfirmed transition."""
+        row = self.db.execute("SELECT rqi,payload FROM credential_receipts "
+                              "WHERE delivered_at IS NULL ORDER BY sequence LIMIT 1").fetchone()
+        if row is not None:
+            try:
+                with self.db:
+                    self._enqueue(row["rqi"], self._health_container, json.loads(row["payload"]))
+            except CapacityError:
+                pass  # Still in the independent journal; retry after outbox space opens.
 
     def observation(self, container: str, payload: dict, core_enabled: bool = False, *,
                     core_epochs: dict[str, int] | None = None) -> bool:
@@ -221,8 +261,17 @@ class Store:
     def delivered(self, rqi: str) -> None:
         with self.db:
             row = self.db.execute("SELECT command_id FROM outbox WHERE rqi=?", (rqi,)).fetchone()
-            if row and row["command_id"]:
-                self.db.execute("UPDATE commands SET receipt_delivered=1 WHERE command_id=?", (row["command_id"],))
+            if row:
+                if row["command_id"]:
+                    self.db.execute("UPDATE commands SET receipt_delivered=1 WHERE command_id=?", (row["command_id"],))
+                elif self.db.execute("UPDATE credential_receipts SET delivered_at=? "
+                                     "WHERE rqi=? AND delivered_at IS NULL", (iso_time(), rqi)).rowcount:
+                    self.db.execute("""
+                        DELETE FROM credential_receipts WHERE delivered_at IS NOT NULL AND sequence NOT IN (
+                            SELECT sequence FROM credential_receipts WHERE delivered_at IS NOT NULL
+                            ORDER BY sequence DESC LIMIT ?
+                        )
+                    """, (RETAIN_DELIVERED_CREDENTIAL_RECEIPTS,))
             self.db.execute("DELETE FROM outbox WHERE rqi=?", (rqi,))
 
     def retry(self, rqi: str, attempts: int, *, minimum_delay: float = 0.0) -> None:

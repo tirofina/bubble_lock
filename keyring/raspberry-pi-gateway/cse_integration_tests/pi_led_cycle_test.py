@@ -32,6 +32,7 @@ class PiCommandReadinessTests(unittest.TestCase):
             self.assertIsNone(ready_heartbeat(health, GATEWAY, "different-boot", since))
             self.assertIsNone(ready_heartbeat(health, GATEWAY, "device-boot", now + timedelta(milliseconds=1)))
             self.assertIsNone(ready_heartbeat(health | {"credentialStatus": "UNKNOWN"}, GATEWAY, "device-boot", since))
+            self.assertIsNone(ready_heartbeat(health | {"credentialTransition": {}}, GATEWAY, "device-boot", since))
             for old_health in ({key: value for key, value in device.items() if key != "commandReady"},
                                device | {"commandReady": False}, device | {"connected": False}):
                 with self.subTest(device=old_health):

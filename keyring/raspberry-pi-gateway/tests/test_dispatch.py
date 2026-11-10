@@ -33,6 +33,7 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
         self.gateway.credential_checked = time.monotonic()
         self.gateway.credential_generation = 0
         self.gateway._enqueue_health = Mock()
+        self.gateway._health_payload = Mock(return_value={"bootId": "dispatch-test"})
         self.gateway.counters = Counter()
         self.gateway.stop = asyncio.Event()
         self.cmd = command()
@@ -154,6 +155,16 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
             await self.gateway._refresh_credentials()
             self.assertFalse(self.gateway._credentials_active())
         self.assertEqual(self.gateway.credential_checked, 100)
+
+    async def test_unsaved_credential_transition_fences_dispatch(self):
+        self.gateway.transport.credential_status.return_value["credentialRevision"] = "rev-2"
+        with patch("bubble_gateway.store.MAX_PENDING_CREDENTIAL_RECEIPTS", 0):
+            await self.gateway._refresh_credentials()
+        self.assertEqual(self.gateway.credential_status, "UNKNOWN")
+        self.assertEqual(self.gateway.counters["credential_receipt_capacity"], 1)
+        self.assertEqual(await self.dispatch(), ("RECEIVED", None))
+        self.gateway.transport.authorize.assert_not_awaited()
+        self.gateway.ble.execute.assert_not_awaited()
 
     async def test_clock_jump_during_intent_recording_blocks_ble(self):
         begin_dispatch = self.store.begin_dispatch

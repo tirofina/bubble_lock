@@ -47,7 +47,7 @@ def verify_receipt(command, receipt, boot_id, state):
 
 def ready_heartbeat(health, gateway_id, device_boot, not_before):
     gateway_boot = health.get("bootId")
-    if (health.get("gatewayId") != gateway_id or health.get("credentialStatus") != "ACTIVE"
+    if ("credentialTransition" in health or health.get("gatewayId") != gateway_id or health.get("credentialStatus") != "ACTIVE"
             or not isinstance(gateway_boot, str) or ID.fullmatch(gateway_boot) is None):
         return None
     observed = parse_time(health["observedAt"])

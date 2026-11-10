@@ -13,7 +13,8 @@ from typing import Any
 from .model import canonical, iso_time, payload_hash
 from .config import ID
 
-DATA_TABLES = ("commands", "fences", "observations", "outbox", "core_sequences")
+BASE_TABLES = ("commands", "fences", "observations", "outbox", "core_sequences")
+DATA_TABLES = (*BASE_TABLES, "credential_receipts")
 META = "gateway_state"
 BINDING_KEYS = {"bindingVersion", "gatewayId", "originator", "cseId", "rvi",
                 "observationContainer", "receiptContainer", "healthContainer"}
@@ -119,7 +120,7 @@ def preflight(path: Path, expected: dict) -> None:
         record = metadata(db, names)
         if record is not None:
             match(record, expected)
-            if not set(DATA_TABLES) <= names:
+            if not set(BASE_TABLES) <= names:
                 raise StateIdentityError("STATE_INCOMPLETE_SCHEMA")
         elif any(counts(db, names).values()):
             raise StateIdentityError("STATE_LEGACY_ADOPTION_REQUIRED")
@@ -163,6 +164,8 @@ def legacy_ownership(db: sqlite3.Connection, expected: dict) -> None:
     names = tables(db)
     if not {"commands", "fences", "observations", "outbox"} <= names:
         raise StateIdentityError("STATE_INCOMPLETE_SCHEMA")
+    if "credential_receipts" in names and db.execute("SELECT 1 FROM credential_receipts LIMIT 1").fetchone():
+        raise StateIdentityError("STATE_UNBOUND_CREDENTIAL_RECEIPTS")
     for name in ("fences", "observations", "core_sequences"):
         if name in names:
             for row in db.execute(f"SELECT device_id FROM {name}"):

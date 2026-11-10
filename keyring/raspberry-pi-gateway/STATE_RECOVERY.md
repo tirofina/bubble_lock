@@ -8,6 +8,8 @@ SQLite journal/outbox/fence/dedup/CORE sequence를 보관하고 다른 Gateway �
 
 새 빈 DB는 gateway_state metadata에 configured Gateway ID/Originator/CSE ID/RVI/관측·receipt·health container path를 기록한다. 시작할 때 같은 binding인지 확인하며 다른 설정이거나 archive quarantine이면 BLE·전송을 시작하지 않는다. 신원이 있는 DB에서 필수 data table이 빠져도 조용히 새로 만들어 실행하지 않는다.
 
+Gateway 0.2.35는 기존 binding과 기본 테이블을 확인한 뒤 `credential_receipts`를 추가한다. 보관본에는 이 테이블과 행 수가 포함된다. 이전 버전의 보관 도구로 열려면 0.2.35 적용 전 보관본을 사용한다. [자격 전환 영수증](RECEIPT_ROUTING.md#자격-상태-전환-영수증)
+
 이 binding은 **로컬 설정·파일 일관성**이다. 중앙 신원 인증·grant·lease·attestation이나 rollback 방지 checkpoint가 아니다. mTLS·credential status·실행 직전 authorize·장치 NVS journal은 계속 필요하다. 동일한 CSE ID를 다른 서버에서 재사용하면 이 metadata만으로 같은 실제 서버라고 확인할 수 없다.
 
 endpoint URL·broker 주소·인증서 경로는 binding에 넣지 않아 주소/credential 교체는 설정으로 가능하다. Gateway principal/CSE 자원 경로를 바꾸는 경우에는 이전 state를 그대로 새 정체성에 연결하지 않는다. 새로운 realm에는 새 DB 경로를 사용하고 이전 파일·fence·미정산 자료를 보존한다. 테스트 서버의 데이터·credential을 운영 환경에 자동 이관하지 않는다.

@@ -28,3 +28,11 @@ R02/R03/R10에 연결한 KEYRING 제안 ID이며 원래 A01~A26 정의를 대체
 | KR-RECEIPT-ROUTE-06 | test_due_receipts_jump_older_observations_without_starving_them | 도래한 영수증을 먼저 시도하고 네 번 뒤 관측 전송. 대기 중인 영수증은 보존 |
 
 수정 전5개 중3개 실패·2개 통과, 수정 후 전체47개 통과다. wheel build와 설치한 패키지의47개 시험도 통과했다. [실제 로그·hash](../evidence/2026-10-30-receipt-routing/README.md)에 연결한다. 합성 명령·모의 전송·새 임시 SQLite만 사용했으며 기존 DB·실제 broker/CSE·장비·운영 서비스는 실행하지 않았다.
+
+## 자격 상태 전환 영수증
+
+Gateway 0.2.35는 중앙 mTLS 상태 API의 검증된 첫 응답과 `ACTIVE`·`LOST`·`REVOKED` 또는 revision 변경을 `credential_receipts`에 기록한다. 첫 관측의 `previous`는 `null`이다. 발급이나 회전의 실제 시점은 중앙 증거를 따르며 Gateway의 `observedAt`은 응답을 관측한 시각이다. 연결 실패로 인한 `UNKNOWN`은 Gateway의 실행 차단·일반 heartbeat에 반영한다. 같은 상태·revision을 계속 읽어도 영수증은 반복 생성하지 않는다.
+
+대기 영수증은 일반 outbox 용량과 별도로 최대 1,024건을 보존한다. 상한에서 새로운 상태를 기록할 수 없으면 기존 영수증을 보존하고 해당 응답으로 명령 실행 권한을 열지 않는다. outbox에 자리가 생기면 전송 대기 중인 가장 오래된 전환만 기존 health 컨테이너에 등록한다. 재시작과 재전송에도 같은 요청 ID·본문을 쓴다. CSE CREATE 승인 또는 중복의 동일 본문 확인 후 SQLite에서 전송 완료 시각을 남기고, 완료된 영수증은 최신 128건을 보관한다. [health 스키마](../../contracts/keyring/health.schema.json)
+
+`credentialTransition.sequence`는 한 Gateway 상태 DB의 수신 순서다. `previous`와 `current`에는 상태·revision만 들어간다. 과거 전환은 최신 상태 조회와 구분하며, 실시간 판단은 `credentialTransition`이 없는 heartbeat를 사용한다. SQLite 보관본은 전환 행과 CSE 전송 완료 시각을 포함한다. [상태 보관](STATE_RECOVERY.md)

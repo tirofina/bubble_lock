@@ -146,6 +146,9 @@ class Gateway:
             self.credential_checked = requested_at
             if changed:
                 self.counters["credential_changes"] += 1
+            state = {"status": result["status"], "credentialRevision": result["credentialRevision"]}
+            self.store.record_credential_status(state, self._health_payload)
+            if changed:
                 self._enqueue_health()
         except asyncio.CancelledError:
             raise
@@ -155,6 +158,8 @@ class Gateway:
             self.credential_status = "UNKNOWN"
             self.credential_checked = float("-inf")
             self.counters["credential_errors"] += 1
+            if isinstance(exc, CapacityError):
+                self.counters["credential_receipt_capacity"] += 1
             LOG.warning("Credential status unavailable (%s); new execution fenced", type(exc).__name__)
 
     async def _credentials_loop(self) -> None:
@@ -334,6 +339,7 @@ class Gateway:
         while not self.stop.is_set():
             if not scoped:
                 self.store.stage_receipts(self.config.receipt_container, self.config.core_bridge_enabled)
+                self.store.stage_credential_receipt()
             prefer_receipts = None if scoped else receipt_attempts < RECEIPT_BURST
             hold = NativeDeliveryHold() if scoped else self.transport.native_delivery_hold()
             item = self.store.due(core_epochs=epochs, scoped_only=scoped, prefer_receipts=prefer_receipts,
@@ -357,19 +363,21 @@ class Gateway:
                 if scoped:
                     self.counters["core_applied_confirmed"] += 1
 
-    def _enqueue_health(self) -> None:
+    def _health_payload(self) -> dict:
         outbox, commands = self.store.counts()
-        now = iso_time()
-        payload = {
+        return {
             "version": 1, "gatewayId": self.config.gateway_id, "bootId": self.boot_id,
-            "observedAt": now, "uptimeSeconds": int(time.monotonic() - self.started),
+            "observedAt": iso_time(), "uptimeSeconds": int(time.monotonic() - self.started),
             "runtimeDigest": self.runtime_digest,
             "credentialStatus": self.credential_status if self._credentials_active() or self.credential_status in {"LOST", "REVOKED"} else "UNKNOWN",
             "credentialRevision": self.credential_revision, "outboxDepth": outbox,
             "commandCount": commands, "devices": self.ble.snapshot(), "counters": dict(self.counters),
         }
+
+    def _enqueue_health(self) -> None:
+        payload = self._health_payload()
         try:
-            self.store.enqueue("health", f"{self.boot_id}:{now}", self.config.health_container, payload)
+            self.store.enqueue("health", f"{self.boot_id}:{payload['observedAt']}", self.config.health_container, payload)
         except CapacityError:
             self.counters["health_dropped_capacity"] += 1
 
