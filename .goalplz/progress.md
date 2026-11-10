@@ -682,3 +682,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 실행 범위는 임시 API 준비와 등록까지다. API 요청·실제 발급·정산·Pi 터널/BLE·장비 명령·빌드·회귀시험은 미실행이다. 운영 CORE 자동 수신과 중앙 DB 연결은 남아 있다. 전체 goal은 active/progress다.
 
 명령 API 준비 commit `7383facdfaf670996931a55d1c15fa62ab9eaf82`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1233b97..7383fac`다.
+
+## 2026-11-10 — Feather ON/OFF와 scoped 영수증 증거 절차 연결
+
+직전 goal turn은 팀 원본 명령 API와 벤치 장치 등록을 실제 준비한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- 기존 LED 흐름을 팀 API와 scoped CSE의 별도 mTLS 연결에 연결했다. 단계별 명시적 파일 신호, 같은 부팅 세션의 전후 관측, 명령 ID에서 계산한 원본 영수증을 대조한다. 요청 전 intent 파일을 동기화하고 ON/OFF 각각 60초 grant를 사용해 단계 종료 시 회수한다. 기존 독립 fixture와 Pi SQLite 대조 도구도 같은 절차를 사용한다. [실행 절차](../keyring/raspberry-pi-gateway/TESTING.md#기존-scoped-mobius4에서-feather-led-시험)
+- 임시 CSE의 `command-observations-a`와 Gateway A 경로 설정을 실제 준비했다. 빈 컨테이너 생성 응답은 HTTP 201·RSC 2001이고 RQI가 일치했다. Mobius4와 PostgreSQL은 같은 인스턴스를 유지했다. [배치 증거](../keyring/evidence/2026-11-10-scoped-feather-led-cycle/provisioning.json)
+- ON/OFF 도구·회귀시험·실제 API 발급·BLE·장비 시험·중앙 정산은 미실행이다. 전용 Pi 데몬의 관측, 실제 LED 확인과 영수증 대조가 남아 있다. 전체 goal은 active/progress다.
+
+LED 절차와 준비 증거 commit `47697ec03421b9b0b708797ed254752c3a8d0300`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `29a1150..47697ec`다.
