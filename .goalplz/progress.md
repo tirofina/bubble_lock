@@ -692,3 +692,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - ON/OFF 도구·회귀시험·실제 API 발급·BLE·장비 시험·중앙 정산은 미실행이다. 전용 Pi 데몬의 관측, 실제 LED 확인과 영수증 대조가 남아 있다. 전체 goal은 active/progress다.
 
 LED 절차와 준비 증거 commit `47697ec03421b9b0b708797ed254752c3a8d0300`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `29a1150..47697ec`다.
+
+## 2026-11-10 — Pi의 Feather 명령 세션 분리
+
+직전 goal turn은 scoped LED 흐름을 연결하고 전용 CSE 관측 컨테이너를 실제 준비한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- `scoped_feather_pi.py`에 `prepare`와 `run`을 추가했다. Pi에서 기존 BLE 등록을 지정하고 Gateway A의 로컬 mTLS 파일을 읽어 소유자 전용 세션 프로필을 만든다. `run`은 고정된 Feather 명령 프로필과 두 loopback HTTPS 연결, 별도 SQLite와 명령 세션 잠금을 사용한다. 같은 세션 재개는 기존 SQLite를 유지한다.
+- SSH 역방향 포워딩과 Pi 명령 세션의 사용 절차를 연결했다. 임시 프록시가 mTLS 주체의 CSE originator를 매핑하므로 CSE 관리자 값은 PC에 둔다. [Pi 명령 세션](../keyring/raspberry-pi-gateway/TESTING.md#pi-명령-세션)
+- PC에서 격리 CSE와 팀 API loopback 리스너가 열려 있음을 관찰했다. Pi 접속·설정 실행·인증서 복사·빌드·시험·장치 명령·정산은 미실행이다. 전체 goal은 active/progress다.
+
+Pi 세션 소스 commit `6f20aaf67838a245892f6987fb1dea560ebdd841`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1499805..6f20aaf`다.
