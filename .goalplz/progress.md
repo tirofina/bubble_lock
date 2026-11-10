@@ -542,3 +542,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 실행은 임시 서버 준비 범위다. 관측 발행, Gateway 빌드, ACL 거절, handover SDT readback 및 실물 시험은 미실행이다. 전체 goal은 active/progress다.
 
 구현·준비 증거 commit `8b2081f1d4d4e9299bae8a4292e35e8523b94151`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `786c306..8b2081f`다.
+
+## 2026-11-10 — Scoped CORE 관측의 CSE 적용 영수증
+
+이전 goal turn은 전용 mTLS 브로커·소비자·Mobius4 자원을 준비한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- Gateway 0.2.14의 scoped 작업자는 토픽·장치·epoch·sequence·본문 해시가 일치하는 CSE 적용 영수증을 받아 SQLite 행을 완료한다. 일반 관측과 명령 영수증은 별도 작업자에서 전송한다.
+- 중앙 소비자는 oneM2M 응답 2004와 RQI를 확인해 cursor를 저장한 뒤 영수증을 보낸다. 동일한 최신 적용 기록은 재전송에 응답하고 본문이 다른 같은 sequence에는 완료 응답을 내지 않는다. 중앙 쓰기·해당 Gateway 읽기 ACL과 JSON 계약을 추가했다. [연동 조건](../keyring/integration-candidate/README.md#epoch-관측의-적용-영수증)
+- 회귀시험 소스를 추가했다. 새 Gateway 빌드, 시험 실행, scoped 브로커·소비자 재배치, handover readback과 실물 연동은 대기 중이다. 전체 goal은 active/progress다.
+
+구현 commit `935847a4a1fd8260530e804bb5018b31a590ee8c`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `4211af6..935847a`다.

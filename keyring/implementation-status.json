@@ -7,7 +7,7 @@
   "date": "2026-11-10",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "The isolated scoped Mobius4 profile provisioned five resources and completed the consumer MQTT subscription. Gateway 0.2.13 is source-only; ACL rejection, handover SDT readback and physical acceptance remain.",
+  "verificationStatus": "Gateway 0.2.14 and scoped CSE application receipts are source-only. The isolated profile has earlier provisioning and subscription evidence. New receipt execution, handover readback and physical acceptance remain.",
   "rubricIds": [
     "R01",
     "R02",
@@ -74,7 +74,8 @@
     "per-device ordering of CORE telemetry retries with independent native and receipt delivery",
     "KEYRING CORE telemetry ordering candidate with a per-resource queue, source epoch checks and a durable pending update cursor",
     "opt-in immutable CORE telemetry epoch in SQLite, epoch-specific MQTT publish and topic-bound central ingress candidate",
-    "separate scoped Mobius4 profile with exclusive broker ACLs, dedicated TLS identities, a persisted CSE consumer cursor, and optional native HTTPS routing"
+    "separate scoped Mobius4 profile with exclusive broker ACLs, dedicated TLS identities, a persisted CSE consumer cursor, and optional native HTTPS routing",
+    "scoped CSE application receipts bound to the original MQTT bytes, exact reply ACLs, and replay from the latest durable APPLIED cursor"
   ],
   "existingHardware": {
     "status": "source-snapshot-included-unverified",
@@ -96,7 +97,7 @@
     "central settlement/checkpoint and crash-safe device journal reclaim",
     "authoritative recovery checkpoint and fenced Gateway snapshot activation",
     "authoritative per-device Edge-to-Gateway mapping and atomic handover drain/approval binding",
-    "production broker ACL and live scoped ACL rejection testing, authoritative handover fencing and pending cursor reconciliation"
+    "production broker ACL, live scoped application receipt and ACL rejection testing, authoritative handover fencing and pending cursor reconciliation"
   ],
   "notImplemented": [
     "purchased JD9853 module-specific power/gamma initialization confirmation",
@@ -131,17 +132,17 @@
   "firmwareRevision": "keyring-0.7.3",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "8b2081f1d4d4e9299bae8a4292e35e8523b94151",
+    "sourceCommit": "935847a4a1fd8260530e804bb5018b31a590ee8c",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "8b2081f1d4d4e9299bae8a4292e35e8523b94151",
-    "lastPushedCommit": "8b2081f1d4d4e9299bae8a4292e35e8523b94151",
-    "latestCheckpoint": "A separate Mobius4, mTLS MQTT listener and scoped consumer were provisioned. Five empty resources were created and read back. No telemetry was sent.",
-    "lastPushedCommitBeforeThisCheckpoint": "786c306b76eba8ee8f33d36a8d111d2dc2bcfa42"
+    "latestLocalSourceCommit": "935847a4a1fd8260530e804bb5018b31a590ee8c",
+    "lastPushedCommit": "935847a4a1fd8260530e804bb5018b31a590ee8c",
+    "latestCheckpoint": "The scoped Gateway outbox waits for a matching CSE application receipt. The scoped consumer replays receipts from a durable cursor. No new execution.",
+    "lastPushedCommitBeforeThisCheckpoint": "4211af6a1666c0f466c25dc313c8b80729e99eca"
   },
-  "gatewayRevision": "0.2.13",
+  "gatewayRevision": "0.2.14",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
@@ -163,7 +164,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Provision a dedicated mTLS MQTT listener, real Mobius4 resources and a scoped consumer, with a native HTTPS option in the Gateway",
+    "executionRequest": "Bind scoped Gateway outbox settlement to a confirmed and replayable Mobius4 application receipt",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -171,11 +172,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "8b2081f1d4d4e9299bae8a4292e35e8523b94151",
-    "sourceValidation": "Temporary server provisioning only: five empty CSE resources created and retrieved, mTLS MQTT QoS 1 subscription observed. Gateway builds and functional tests not run.",
+    "sourceCommit": "935847a4a1fd8260530e804bb5018b31a590ee8c",
+    "sourceValidation": "Regression source added. No new build, test, analysis or execution. Existing scoped runtime has the prior startup configuration.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "Scoped ingress is running in the isolated profile. Cross-certificate denial, handover telemetry readback, operational ownership and actual Pi/r18 command acceptance remain.",
+    "currentDependencyState": "The scoped receipt source and ACL update are published. Runtime rollout, positive and negative receipt cases, handover readback and actual Pi/r18 command acceptance remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -636,5 +637,14 @@
     "telemetryPublished": false,
     "gatewayBuildOrTestExecuted": false,
     "sourceCommit": "8b2081f1d4d4e9299bae8a4292e35e8523b94151"
+  },
+  "coreScopedApplicationReceipt": {
+    "reference": "integration-candidate/README.md",
+    "gatewayVersion": "0.2.14",
+    "status": "source-only",
+    "legacyTopicUnchanged": true,
+    "scopedConsumerAndAclRolledOut": false,
+    "regressionsExecuted": false,
+    "sourceCommit": "935847a4a1fd8260530e804bb5018b31a590ee8c"
   }
 }
