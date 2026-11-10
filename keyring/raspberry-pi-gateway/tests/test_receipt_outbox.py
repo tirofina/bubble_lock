@@ -62,6 +62,40 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.queued(BINDING["receiptContainer"]), 1)
         self.assertEqual(self.native_delivered(), 0)
 
+    async def test_backed_off_receipts_do_not_hide_later_unstaged_receipts_after_restart(self):
+        self.store.max_rows = 300
+        self.store.max_commands = 140
+        for index in range(127):
+            cmd = command(commandId=f"backlog-{index}")
+            digest = payload_hash(cmd)
+            self.store.accept(cmd, digest)
+            self.store.finish(cmd["commandId"], dict(self.receipt, commandId=cmd["commandId"],
+                                                      payloadHash=digest, status="TIMEOUT", ackCode="TIMEOUT",
+                                                      readback=None))
+        self.stage()
+        self.assertEqual(self.queued(BINDING["receiptContainer"]), 128)
+        self.store.delivered(self.ack_rqi)
+        with self.store.db:
+            self.store.db.execute("UPDATE outbox SET next_attempt=2000 WHERE command_id IS NOT NULL")
+
+        newer = command(commandId="later")
+        digest = payload_hash(newer)
+        self.store.accept(newer, digest)
+        self.store.finish(newer["commandId"], dict(self.receipt, commandId=newer["commandId"], payloadHash=digest))
+        self.store.close()
+        self.store = Store(self.path, 300, 100000, 140, BINDING)
+
+        self.stage()
+        self.assertEqual(self.queued(BINDING["receiptContainer"]), 129)
+        self.assertEqual(self.queued("@core/ack"), 1)
+        with patch("bubble_gateway.store.time.time", return_value=1000):
+            for _ in range(2):
+                item = self.store.due()
+                self.assertEqual(item["payload"]["commandId"], newer["commandId"])
+                self.store.delivered(item["rqi"])
+            self.assertIsNone(self.store.due())
+        self.assertEqual(self.queued(BINDING["receiptContainer"]), 128)
+
     async def test_native_confirmation_keeps_pending_core_ack_for_its_own_retry(self):
         self.stage()
         self.store.retry(self.ack_rqi, 0)

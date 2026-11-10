@@ -48,6 +48,9 @@ class Store:
             );
             CREATE INDEX IF NOT EXISTS outbox_due ON outbox(next_attempt, created_at);
             CREATE INDEX IF NOT EXISTS outbox_core_pending ON outbox(container) WHERE container='@core/telemetry';
+            CREATE INDEX IF NOT EXISTS outbox_native_receipt ON outbox(command_id) WHERE command_id IS NOT NULL;
+            CREATE INDEX IF NOT EXISTS commands_pending_receipt ON commands(receipt_delivered)
+                WHERE receipt IS NOT NULL AND receipt_delivered=0;
             CREATE TABLE IF NOT EXISTS core_sequences (
                 device_id TEXT PRIMARY KEY, wire_sequence INTEGER NOT NULL
             );
@@ -157,7 +160,14 @@ class Store:
 
     def stage_receipts(self, container: str, core_enabled: bool = False) -> None:
         """Choose both routes atomically on first staging, not on every retry."""
-        rows = self.db.execute("SELECT command_id,receipt FROM commands WHERE receipt IS NOT NULL AND receipt_delivered=0 LIMIT 128").fetchall()
+        # Already staged native receipts can remain undelivered during backoff.
+        # They must not consume slots in the batch of receipts that still need staging.
+        rows = self.db.execute("""
+            SELECT command_id,receipt FROM commands
+            WHERE receipt IS NOT NULL AND receipt_delivered=0
+              AND NOT EXISTS (SELECT 1 FROM outbox WHERE outbox.command_id=commands.command_id)
+            ORDER BY commands.rowid LIMIT 128
+        """).fetchall()
         for row in rows:
             try:
                 with self.db:
