@@ -857,3 +857,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 이번 실행은 격리 작업자 배치와 읽기 전용 DB 확인까지다. 이후 대기열·전달·정산은 여전히 각 0행이다. 명령 발급·CSE 실물 영수증·빌드·회귀시험·Pi 및 Feather 장치 작업은 미실행이다. 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
 
 기동 증거 commit `558dafb4159ea289ec1589a275adf3f42f6389ca`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `806416b..558dafb`다.
+
+## 2026-11-10 — Mobius4 배포별 Gateway DB 분리
+
+직전 goal turn은 Pi·Feather 시험용 격리 작업자를 갱신한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- 새 Gateway DB는 설정의 `M2M_CSE_DEPLOYMENT_ID`를 저장한다. 같은 배포에서 주소만 바뀌면 계속 사용할 수 있고, 다른 ID 또는 ID 누락으로 열면 기존 큐의 쓰기와 전송 전에 중단한다. 배포 ID 없는 원본은 기존 설정으로 계속 사용할 수 있다. [전환 절차](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#cse-배포-전환)
+- 새 Feather 시험 프로필은 격리 ID를 설정한다. Gateway 보관 계약과 중앙 저널 대조에도 배포 구분을 반영했다. 배포 ID는 운영자 배정값이며, 실제 서버 확인에는 mTLS와 중앙 자원 확인이 필요하다.
+- 회귀시험 소스만 반영했다. 빌드·시험·기존 DB 변경·서버 전환·Pi 배포는 미실행이다. Feather/Pi 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
+
+배포 구분 commit `3f954cef262aec7741913dad69af1fe645159dd0`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `10dfa3e..3f954ce`다.
