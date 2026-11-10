@@ -120,6 +120,8 @@ node "$tool/run.mjs"
 
 이 개발 프로세스의 입력은 팀 상태와 CSE 원본 조회다. CORE 콜백 인증·구독은 운영 연동에서 별도로 구성한다. 2026-11-10에 전용 DB와 두 빈 KEYRING 테이블을 준비하고, Node 프로세스의 시작과 PostgreSQL 대기열 조회를 확인했다. 실제 명령 영수증의 조회·정산은 남아 있다. [전용 DB 준비 증거](../../evidence/2026-11-10-receipt-database/provisioning.json) · [정산 프로세스 시작 증거](../../evidence/2026-11-10-scoped-receipt-runtime/startup.json)
 
+같은 날 부정 영수증 분류와 CSE 원본 출처 검사가 포함된 코드로 격리 작업자를 다시 시작했다. 준비 로그와 전용 PostgreSQL 연결을 확인했고 전후 대기열·전달·정산은 각 0행이었다. [작업자 갱신 증거](../../evidence/2026-11-10-scoped-receipt-worker-refresh/startup.json)
+
 #### 격리 영수증 콜백 수신
 
 전용 PostgreSQL과 Node 의존성을 준비한 뒤 scoped CA로 단기 중계 인증서를 발급하고 콜백 수신기를 시작한다. 수신기는 등록한 중계 인증서의 SHA-256 지문을 사용한다. 중계 개인키는 PC의 정산 도구 `.local/callback-peer/`에 둔다.
