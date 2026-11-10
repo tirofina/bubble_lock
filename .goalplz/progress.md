@@ -512,3 +512,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 중앙 동시 UPDATE 순서와 다중 Gateway handover, 실제 Pi/r18·Feather 명령은 대기 중이다. 전체 goal은 active/progress다.
 
 구현·시험 증거 commit `02ed4d367ad1f6a3a77d08b753890ebb545130ea`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `22f312e..02ed4d3`다.
+
+## 2026-11-10 — CORE 관측 동시 갱신 후보
+
+이전 goal turn은 Gateway의 CORE 재시도 순서를 검증한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- 팀 원본 CORE가 두 UPDATE를 동시에 처리하면 최신 OFF가 저장된 뒤 지연된 옛 ON이 덮었다. 후보를 거치면 동일 자원의 완료 순서가 ON → OFF가 됐고 실제 격리 Mobius4에서 최신 OFF를 읽었다.
+- 시험용 소유권을 공급해 이전 Gateway와 epoch, 불일치 payload를 차단했다. CSE 반영 직후 응답 유실을 주입해 파일 저장소를 다시 열었고 후속 갱신이 보류됐다. 재시도 순서를 포함한 통합 시험 2개가 통과했다. [실행 기록](../keyring/evidence/2026-11-10-core-concurrent-order/README.md)
+- 운영에는 원래 epoch를 결속하는 인증된 CORE 수신, 중복 판정 범위, 중앙 handover drain과 미확정 갱신 복구가 남아 있다. 실제 Pi·Feather 명령과 r18 PCB 수용은 대기 중이다. 전체 goal은 active/progress다.
+
+구현·시험 증거 commit `b945b15dc38f7df39ba3c7739029b8e8ddef4f65`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `7220fec..b945b15`다.
