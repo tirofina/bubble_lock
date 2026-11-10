@@ -2,6 +2,8 @@
 
 Gateway 0.2.11의 CORE 재시도 순서는 기본 75개, 격리 Mobius4 11개, 별도 팀 CORE → SDT 통합 1개에서 검증했다. [실행 기록](../evidence/2026-11-10-core-retry-order/README.md)
 
+`cse_integration_tests/core_retry_order.py`를 별도로 실행하면 팀 CORE → SDT 재시도 순서와 중앙 동시 갱신 후보를 함께 시험한다. `KEYRING_TEST_CENTRAL_TREE`는 팀 main `715ef58`의 `pc-mobius`가 들어 있는 디렉터리로 지정한다. 브리지 메시지 핸들러에 직접 전달한 뒤 격리 Mobius4에서 실제 SDT 상태를 읽는다. [동시 갱신·handover 기록](../evidence/2026-11-10-core-concurrent-order/README.md)
+
 Gateway 0.2.10의 부팅별 버튼 누계는 기본 74개, 실제 격리 Mobius4 통합 11개를 통과했다. [버튼 관측 시험](../evidence/2026-11-10-button-presses/README.md)
 
 Gateway 0.2.9의 읽기 전용 journal 대조는 최종 wheel에서 기본 73개와 격리 Mobius4 통합 시험을 통과했다. [시험과 재현 명령](../evidence/2026-11-10-journal-reconcile/README.md)

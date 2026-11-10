@@ -27,3 +27,19 @@ CORE/INTEGRATION의 실제 연결은 발급 기록과 실행 승인 기록을 �
 후보는 중앙 `GatewayControl.active`의 현재 grant·인증서·기한 검사에 추가하는 조건이다. 이 위치에서 발급·목록·실행 직전 승인에 같은 소유권 검사가 적용된다. 시험은 별도 Edge 이름 두 개와 Gateway 인증서 두 개를 사용하고, Edge마다 활성 Gateway 한 대를 명시했다. 운영 연결에서는 팀이 정본 매핑과 초기 소유권을 공급해야 한다. 이미 내려간 승인과 전송 중 BLE 명령의 처리에는 중앙의 drain·원자적 승인 계약이 필요하다.
 
 [mTLS 재현 기록](../evidence/2026-11-10-handover-owner/README.md)
+
+## CORE 관측의 동시 갱신
+
+팀 main `715ef58`의 CORE 브리지는 같은 장치의 서로 다른 sequence를 동시에 처리한다. 먼저 받은 ON 요청이 지연되면 최신 OFF가 CSE에 저장된 뒤 옛 ON이 덮어쓸 수 있다. [관측 순서 후보](core-telemetry-order.mjs)는 동일한 SDT 경로의 갱신을 하나씩 실행하고, 현재 소유권과 영속 sequence를 확인한다. 이전 epoch와 적용된 sequence 이하를 차단한다. 전송 전 `PENDING`을 저장하고 CSE 적용이 확인된 뒤 `APPLIED`로 전환한다. 응답이나 저장 결과가 불명확하면 해당 자원의 후속 갱신을 보류한다.
+
+| 연결 입력 | 정본 |
+|---|---|
+| `resource` | 서버 라우팅 설정에서 확정한 정규 SDT 경로 |
+| `source` | 인증된 Gateway와 원래 수신 경로에 결속된 장치 ID·소유권 epoch |
+| `readOwner` | 중앙의 현재 활성 Gateway·장치·epoch |
+| `readCursor` / `writeCursor` | 자원별 영속 순서 기록. 저장 완료와 불명확한 결과를 구분해야 함 |
+| `apply` | CSE 적용 결과를 확인하는 호출. MQTT PUBACK은 적용 확인으로 쓰지 않음 |
+
+운영 연결에는 같은 자원을 갱신하는 단일 실행 주체와 handover drain, 또는 여러 실행 주체를 조정하는 중앙 차단 장치가 필요하다. 기존 CORE v1 메시지에는 epoch가 없으므로 대기 메시지에 현재 epoch를 붙이면 이전 소유자의 관측을 구별할 수 없다. 발행자와 원래 epoch를 수신 경로에서 함께 확인하고, 기존 CORE의 중복 키도 epoch와 자원 범위에 맞춰야 한다. 미확정 갱신은 CSE와 영속 기록을 대조한 뒤 같은 자원의 처리 재개 여부를 결정한다.
+
+[격리 Mobius4 재현](../evidence/2026-11-10-core-concurrent-order/README.md)
