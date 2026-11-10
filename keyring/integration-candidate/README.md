@@ -70,4 +70,4 @@ Gateway 0.2.14는 `privacy-bubble/gateway/{gatewayId}/telemetry-result/{deviceId
 
 Gateway는 기다리는 토픽·식별자·sequence·해시가 일치하는 영수증을 받아야 outbox 행을 완료한다. 응답 유실과 timeout은 SQLite 재시도로 이어진다. 중앙에 같은 epoch·sequence·해시의 적용 기록이 있으면 UPDATE를 다시 보내지 않고 영수증을 재발행한다. 같은 sequence의 다른 본문, 이전 epoch, 해시가 없는 이전 형식의 cursor, `PENDING` cursor에는 적용 영수증을 발행하지 않는다. 새 cursor가 저장된 뒤 이전 기록에 대한 개별 조회나 재발행은 제공하지 않는다.
 
-Scoped 관측 전송 작업자는 일반 관측과 명령 영수증 작업자와 분리된다. Gateway·중앙 소비자·응답 ACL을 함께 배치해야 하며, 기존 브로커와 중앙 소비자를 실행 중인 경우 새 설정을 적용해야 한다. 이 영수증 경로의 빌드와 실제 발행 시험은 아직 실행하지 않았다.
+Scoped 관측 전송 작업자는 일반 관측과 명령 영수증 작업자와 분리된다. 격리 프로필에는 중앙 소비자와 응답 ACL을 배치했다. Gateway 0.2.14 빌드와 영수증 발행 시험은 아직 실행하지 않았다. [배치 기록](../evidence/2026-11-10-core-scoped-receipt-rollout/README.md)

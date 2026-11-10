@@ -62,7 +62,7 @@ mqtt.on('connect', () => {
       mqtt.end(true);
       return;
     }
-    console.log('SCOPED_SUBSCRIBED');
+    console.log('SCOPED_SUBSCRIBED receipts=1');
   });
 });
 mqtt.on('error', () => console.error('SCOPED_BROKER_ERROR'));

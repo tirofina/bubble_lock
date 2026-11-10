@@ -55,7 +55,7 @@ docker compose --env-file ./keyring/dev/mobius4/.local/compose.env -f ./keyring/
 
 브로커 ACL은 표의 발행 경로 앞에 `privacy-bubble/gateway/`를 붙여 사용한다. Nginx는 두 Gateway의 직접 SDT 갱신을 제한한다. 중앙 소비자가 장치의 활성 Gateway와 epoch를 확인하고, oneM2M의 응답 RSC 2004와 일치하는 요청 ID를 받은 뒤에만 SDT cursor를 적용 완료로 저장한다. 브로커 세션은 메모리에 있으며 디스크에 저장되는 cursor와 별개다.
 
-Gateway 0.2.14는 적용 영수증을 기다린다. 새 ACL은 해당 Gateway에만 `telemetry-result/{deviceId}/{epoch}` 읽기를, 중앙 소비자에만 쓰기를 부여한다. 이전 프로필을 실행 중이면 새 ACL과 소비자 소스를 함께 적용해야 한다. [적용 영수증 계약](../../integration-candidate/README.md#epoch-관측의-적용-영수증)
+Gateway 0.2.14는 적용 영수증을 기다린다. 새 ACL은 해당 Gateway에만 `telemetry-result/{deviceId}/{epoch}` 읽기를, 중앙 소비자에만 쓰기를 부여한다. 이전 프로필을 실행 중이면 새 ACL과 소비자 소스를 함께 적용한다. [적용 영수증 계약](../../integration-candidate/README.md#epoch-관측의-적용-영수증)
 
 기존 개발 이미지가 로컬에 있는 상태에서 역할 저장소 루트 기준으로 실행한다. `$teamCoreRoot`는 팀 main `715ef58`의 `pc-mobius`가 들어 있는 경로이고, `$mobius4Root`는 위에 고정한 upstream checkout이다.
 
@@ -66,10 +66,16 @@ Gateway 0.2.14는 적용 영수증을 기다린다. 새 ACL은 해당 Gateway에
 
 두 번째 명령은 격리 서버와 소비자를 기동하고 빈 oneM2M 자원을 준비한다. 기존 scoped 자원이 있으면 RQI·타입·이름·SDT specialization을 조회해 재사용한다. TLS 키, 임시 관리자 값과 `config/owner.json`은 `.local/scoped/`에만 생성된다. 최초 소유권은 `gw-a`·`kr-handover`·epoch 7이다. 소비자는 이 파일에서 시험용 소유권을 읽는다. 운영 전환에는 중앙 정본과 이전 writer의 drain이 필요하다.
 
+실행 중인 이 임시 프로필에서 ACL과 소비자만 갱신할 때는 시험용 발행자를 멈춘 뒤 아래 명령을 사용한다. 소비자가 정상 종료한 다음 브로커와 소비자만 교체한다. PostgreSQL·Mobius4·TLS proxy와 저장된 cursor는 계속 사용한다. 새 소비자 로그의 `SCOPED_SUBSCRIBED receipts=1`은 구독 준비 상태다.
+
+```powershell
+./keyring/dev/mobius4/start-scoped.ps1 -RefreshIngress
+```
+
 Gateway에서는 위 포트와 해당 Gateway 인증서를 사용한다. `MQTT_ENABLED=true`, `M2M_MQTT_ENABLED=false`, `CORE_BRIDGE_ENABLED=true`를 지정한다. `CORE_TELEMETRY_EPOCHS`에는 `{"kr-handover":7}` 또는 `{"kr-handover":8}`을 해당 Gateway에 지정하고 `BLE_DEVICES`에는 같은 장치 ID를 쓴다. native cin은 HTTPS를 사용한다. 명령 승인 API는 503을 반환한다.
 
 ```powershell
 docker compose --project-name privacy-bubble-keyring-scoped --env-file ./keyring/dev/mobius4/.local/scoped/compose.env -f ./keyring/dev/mobius4/compose.yaml -f ./keyring/dev/mobius4/compose.scoped.yaml down
 ```
 
-[격리 프로필 준비 기록](../../evidence/2026-11-10-core-scoped-stack/README.md)
+[격리 프로필 준비 기록](../../evidence/2026-11-10-core-scoped-stack/README.md) · [영수증 ACL·소비자 배치 기록](../../evidence/2026-11-10-core-scoped-receipt-rollout/README.md)
