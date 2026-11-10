@@ -1,0 +1,75 @@
+GET /Mobius ready-7690b70b7c9b4b92b0fae7013c7f18dd
+POST /Mobius setup-5205a82fa45a4fd79ed167e2677e83c2
+POST /Mobius/cse-test-3940b80657bc restart-269838c6972546efb555b7d256ba0d0a
+GET /Mobius ready-7a4fa4cbd664427b8d6868564fbef58f
+GET /Mobius ready-7e25cbd2ea2e4bff9d6c898e46c9f1be
+GET /Mobius/cse-test-3940b80657bc/gw-23b667812d55a6e4ae36ad528d1b894ca7ef08c6ba9389c6c6f457488c90f709 check-dda60b20c455484fb0ff5b96196db536
+GET /Mobius/cse-test-3940b80657bc count-076f973c3b5242b1bcd9ebdf71e5a97c
+GET /Mobius ready-64d62a3049fa481893dec4d943845938
+POST /Mobius setup-5d6599312878477fa9b00f6838d06aa1
+POST /Mobius/cse-test-de5cc83f4cba duplicate-2698992910734a9ea5f237115ed79e9f
+POST /Mobius/cse-test-de5cc83f4cba duplicate-2698992910734a9ea5f237115ed79e9f
+GET /Mobius/cse-test-de5cc83f4cba/gw-5fa66e7b8878e7e55008f4d62dd8c59eb4bfb13430db18da3063ba2d9b659fc7 read-5fa66e7b8878e7e55008f4d62dd8c59eb4bfb13430db18da3063ba2d9b659fc7
+GET /Mobius/cse-test-de5cc83f4cba/gw-5fa66e7b8878e7e55008f4d62dd8c59eb4bfb13430db18da3063ba2d9b659fc7 check-9009ba45317a4419b27622d4d9f0b59c
+GET /Mobius/cse-test-de5cc83f4cba count-12c4adebebb440838b1c802d725791a7
+GET /Mobius ready-aa3fd516538a4b02bf37c407467ae96d
+POST /Mobius setup-05e1943b3cd74542b6354a0d960d37a4
+POST /Mobius/cse-test-393cb8249e12 https-f96e580ad00a451a94c0391d37755c16
+GET /Mobius/cse-test-393cb8249e12/gw-29557863b0407994e85a317a62aa906ccc50ec7e7371bef9271596c469a1b269 check-4b9acbe6976b4ccaa95e553cf441b4fa
+GET /Mobius/cse-test-393cb8249e12 count-f5f626a6c706450c8ce22836acc4e088
+GET /Mobius ready-db32f9be17244d23925e3f5a51c457a9
+POST /Mobius setup-8d406c8368d64d6ea28fc7e3ab3447b3
+GET /Mobius/cse-test-c288c01ecbae/gw-e4e76ae5067ea44b278512e95dfcd5ce8c917847d59babe0b7d46f6719dbb21b check-ce5f5d41de1c49f28f709a3fc0bbf27a
+GET /Mobius/cse-test-c288c01ecbae/gw-996d5a7df986b3a885b729b28abf7e8694cba5c56b407f286c39bba2dd79fd9f check-92e3d2f5bbf34eed95defdda7cc5666b
+GET /Mobius/cse-test-c288c01ecbae/gw-e73b0277598fb3c6d470208d0cbff80d3d9cb8d54e1d05842790dfc711c40f1e check-a09179f5c2f64315bd77ce98998193c2
+GET /Mobius/cse-test-c288c01ecbae count-068a974933bd4c36b29b0b2dd47e6936
+GET /Mobius ready-e1749e22ba4e4d5787bebb9add24edd1
+POST /Mobius setup-6274ba0bdaa1415fa56846ed42f32670
+POST /Mobius/cse-test-c2a00cd9b4a8 kr-0006c1e536598569b477c8940f2a049dd2398a9d0b0ef7a7
+POST /Mobius/cse-test-c2a00cd9b4a8 kr-0006c1e536598569b477c8940f2a049dd2398a9d0b0ef7a7
+GET /Mobius/cse-test-c2a00cd9b4a8/gw-95c057ff95965a773d4a713763679784d4482cf3d3a6179caf9ed29cb819ba84 read-95c057ff95965a773d4a713763679784d4482cf3d3a6179caf9ed29cb819ba84
+GET /Mobius/cse-test-c2a00cd9b4a8/gw-95c057ff95965a773d4a713763679784d4482cf3d3a6179caf9ed29cb819ba84 check-4d3fbc3aa31446f18e84835c2c140f5f
+GET /Mobius/cse-test-c2a00cd9b4a8 count-3fa04d8d07814ad7a72408cbb1a3a25a
+GET /Mobius ready-a099b595c9c14ebea05911815d5f8f0f
+POST /Mobius setup-95933bf1857348b2b1ee2ed287648f54
+POST /Mobius/cse-test-f41ae01cb0f2 kr-5083673402c019954aa86f9aa1f04e354a97b0facbdc615c
+GET /Mobius ready-d7c6069677ae4f41835ea1fc78251189
+GET /Mobius ready-83a1cbf624aa49809876bdea73ecdff0
+GET /Mobius ready-f346092ec1de4098b60bd27fd30472f3
+POST /Mobius/cse-test-f41ae01cb0f2 kr-5083673402c019954aa86f9aa1f04e354a97b0facbdc615c
+GET /Mobius/cse-test-f41ae01cb0f2/gw-324c0f8d3291f0236902b0e3a96c3cd3bf3c8527634b7551ea89ea17a814a4af check-5c59309b759643c3beb48438e5f7c453
+GET /Mobius/cse-test-f41ae01cb0f2 count-d4ad2e21187d49d6ab55d3e3b4ed1166
+GET /Mobius ready-e70233f500014985aaee424c8dd4192c
+POST /Mobius setup-d46e07cc5d334cf69a60d82633fd207f
+POST /Mobius/cse-test-81af100f9279 kr-5083673402c019954aa86f9aa1f04e354a97b0facbdc615c
+GET /Mobius/cse-test-81af100f9279/gw-324c0f8d3291f0236902b0e3a96c3cd3bf3c8527634b7551ea89ea17a814a4af check-3f47b4be898d46fd92b06e65d5d29ea7
+GET /Mobius/cse-test-81af100f9279 count-7697cc01f543499ab88b5ee9a3cf7ec3
+2026/10/30 02:55:23 [notice] 1#1: using the "epoll" event method
+2026/10/30 02:55:23 [notice] 1#1: nginx/1.28.3
+2026/10/30 02:55:23 [notice] 1#1: built by gcc 15.2.0 (Alpine 15.2.0) 
+2026/10/30 02:55:23 [notice] 1#1: OS: Linux 6.6.87.2-microsoft-standard-WSL2
+2026/10/30 02:55:23 [notice] 1#1: getrlimit(RLIMIT_NOFILE): 1048576:1048576
+2026/10/30 02:55:23 [notice] 1#1: start worker processes
+2026/10/30 02:55:23 [notice] 1#1: start worker process 7
+2026/10/30 02:55:23 [notice] 1#1: start worker process 8
+2026/10/30 02:55:23 [notice] 1#1: start worker process 9
+2026/10/30 02:55:23 [notice] 1#1: start worker process 10
+2026/10/30 02:55:23 [notice] 1#1: start worker process 11
+2026/10/30 02:55:23 [notice] 1#1: start worker process 12
+2026/10/30 02:55:23 [notice] 1#1: start worker process 13
+2026/10/30 02:55:23 [notice] 1#1: start worker process 14
+2026/10/30 02:55:23 [notice] 1#1: start worker process 15
+2026/10/30 02:55:23 [notice] 1#1: start worker process 16
+2026/10/30 02:55:23 [notice] 1#1: start worker process 17
+2026/10/30 02:55:23 [notice] 1#1: start worker process 18
+2026/10/30 02:55:23 [notice] 1#1: start worker process 19
+2026/10/30 02:55:23 [notice] 1#1: start worker process 20
+2026/10/30 02:55:23 [notice] 1#1: start worker process 21
+2026/10/30 02:55:23 [notice] 1#1: start worker process 22
+2026/10/30 02:55:23 [notice] 1#1: start worker process 23
+2026/10/30 02:55:23 [notice] 1#1: start worker process 24
+2026/10/30 02:55:23 [notice] 1#1: start worker process 25
+2026/10/30 02:55:23 [notice] 1#1: start worker process 26
+2026/10/30 02:55:24 [error] 7#7: *1 connect() failed (111: Connection refused) while connecting to upstream, client: 172.19.0.1, server: localhost, request: "GET /Mobius HTTP/1.1", upstream: "http://172.19.0.4:7599/Mobius", host: "127.0.0.1:59683"
+2026/10/30 02:55:37 [error] 13#13: *42 connect() failed (111: Connection refused) while connecting to upstream, client: 172.19.0.1, server: localhost, request: "GET /Mobius HTTP/1.1", upstream: "http://172.19.0.4:7599/Mobius", host: "127.0.0.1:59683"
+2026/10/30 02:55:37 [error] 13#13: *42 connect() failed (111: Connection refused) while connecting to upstream, client: 172.19.0.1, server: localhost, request: "GET /Mobius HTTP/1.1", upstream: "http://172.19.0.4:7599/Mobius", host: "127.0.0.1:59683"

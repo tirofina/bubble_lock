@@ -1,0 +1,10 @@
+{
+  "childExitCode": 73,
+  "childMarker": {
+    "phase": "remote-confirmed-before-local-confirmation",
+    "rqi": "kr-5083673402c019954aa86f9aa1f04e354a97b0facbdc615c"
+  },
+  "unconfirmedLocalRowRecovered": true,
+  "remainingOutbox": 0,
+  "remoteCinCount": 1
+}

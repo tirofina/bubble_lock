@@ -1,0 +1,36 @@
+GET /Mobius ready-83a0116c9aa0420cb1e7be6a18f5bcee
+POST /Mobius setup-8ee05a6f33054278ae25232463cd4698
+POST /Mobius/cse-test-6110e3cded93 restart-33439a2792c040ebb84ad881f93b69aa
+GET /Mobius ready-7c1edd34424d4e0586debdf5e5f32f2a
+GET /Mobius ready-c47b9e1fdaaf45e4bd44ecbdeceab751
+GET /Mobius ready-52c17bb21ed94f6097bf4460fe8af485
+GET /Mobius/cse-test-6110e3cded93/gw-0e889e2498d9f72c6129de8d5fc188395819e93e95f9d91c313f301994ee9c93 check-014a18f1adc5407d971b61c875fc9dc2
+GET /Mobius/cse-test-6110e3cded93 count-3d00b395124a4eacb411798838bce427
+2026/10/30 02:48:21 [notice] 1#1: using the "epoll" event method
+2026/10/30 02:48:21 [notice] 1#1: nginx/1.28.3
+2026/10/30 02:48:21 [notice] 1#1: built by gcc 15.2.0 (Alpine 15.2.0) 
+2026/10/30 02:48:21 [notice] 1#1: OS: Linux 6.6.87.2-microsoft-standard-WSL2
+2026/10/30 02:48:21 [notice] 1#1: getrlimit(RLIMIT_NOFILE): 1048576:1048576
+2026/10/30 02:48:21 [notice] 1#1: start worker processes
+2026/10/30 02:48:21 [notice] 1#1: start worker process 7
+2026/10/30 02:48:21 [notice] 1#1: start worker process 8
+2026/10/30 02:48:21 [notice] 1#1: start worker process 9
+2026/10/30 02:48:21 [notice] 1#1: start worker process 10
+2026/10/30 02:48:21 [notice] 1#1: start worker process 11
+2026/10/30 02:48:21 [notice] 1#1: start worker process 12
+2026/10/30 02:48:21 [notice] 1#1: start worker process 13
+2026/10/30 02:48:21 [notice] 1#1: start worker process 14
+2026/10/30 02:48:21 [notice] 1#1: start worker process 15
+2026/10/30 02:48:21 [notice] 1#1: start worker process 16
+2026/10/30 02:48:21 [notice] 1#1: start worker process 17
+2026/10/30 02:48:21 [notice] 1#1: start worker process 18
+2026/10/30 02:48:21 [notice] 1#1: start worker process 19
+2026/10/30 02:48:21 [notice] 1#1: start worker process 20
+2026/10/30 02:48:21 [notice] 1#1: start worker process 21
+2026/10/30 02:48:21 [notice] 1#1: start worker process 22
+2026/10/30 02:48:21 [notice] 1#1: start worker process 23
+2026/10/30 02:48:21 [notice] 1#1: start worker process 24
+2026/10/30 02:48:21 [notice] 1#1: start worker process 25
+2026/10/30 02:48:21 [notice] 1#1: start worker process 26
+2026/10/30 02:48:22 [error] 7#7: *1 connect() failed (111: Connection refused) while connecting to upstream, client: 172.19.0.1, server: localhost, request: "GET /Mobius HTTP/1.1", upstream: "http://172.19.0.4:7599/Mobius", host: "127.0.0.1:50873"
+2026/10/30 02:48:22 [error] 7#7: *1 connect() failed (111: Connection refused) while connecting to upstream, client: 172.19.0.1, server: localhost, request: "GET /Mobius HTTP/1.1", upstream: "http://172.19.0.4:7599/Mobius", host: "127.0.0.1:50873"

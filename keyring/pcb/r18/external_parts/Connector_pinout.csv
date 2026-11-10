@@ -1,0 +1,38 @@
+﻿Reference,Pin,Pin_name,Net,Assembly
+J2,1,Pin_1,/VBAT,"PHR-2 mating housing, check battery polarity"
+J2,2,Pin_2,/GND,"PHR-2 mating housing, check battery polarity"
+J3,1,Pin_1,/+3V3,"SHR-08V-S-B, 8-pin 1.0mm harness; LCD end soldered by signal name"
+J3,2,Pin_2,/GND,"SHR-08V-S-B, 8-pin 1.0mm harness; LCD end soldered by signal name"
+J3,3,Pin_3,/LCD_MOSI,"SHR-08V-S-B, 8-pin 1.0mm harness; LCD end soldered by signal name"
+J3,4,Pin_4,/LCD_SCK,"SHR-08V-S-B, 8-pin 1.0mm harness; LCD end soldered by signal name"
+J3,5,Pin_5,/LCD_CS,"SHR-08V-S-B, 8-pin 1.0mm harness; LCD end soldered by signal name"
+J3,6,Pin_6,/LCD_DC_BRIDGE,"SHR-08V-S-B, 8-pin 1.0mm harness; LCD end soldered by signal name"
+J3,7,Pin_7,/LCD_RST,"SHR-08V-S-B, 8-pin 1.0mm harness; LCD end soldered by signal name"
+J3,8,Pin_8,/LCD_BL_SUPPLY,"SHR-08V-S-B, 8-pin 1.0mm harness; LCD end soldered by signal name"
+J4,1,Pin_1,/SPK_P,direct solder wires
+J4,2,Pin_2,/SPK_N,direct solder wires
+J5,1,Pin_1,/BAT_TS,direct solder wires
+J5,2,Pin_2,/GND,direct solder wires
+J6,1,Pin_1,/AUX3V3,direct solder wires
+J6,2,Pin_2,/VIB_LOW,direct solder wires
+J7,1,Pin_1,/+3V3,PCB socket / debug pad
+J7,2,Pin_2,/GND,PCB socket / debug pad
+J7,3,Pin_3,/UART_TX,PCB socket / debug pad
+J7,4,Pin_4,/UART_RX,PCB socket / debug pad
+J9,1,Pin_1,/PWR_SW,direct solder wires
+J9,2,Pin_2,/REG_EN,direct solder wires
+J9,3,Pin_3,/GND,direct solder wires
+J10,1,DAT2,/SD_DAT2_PULL,PCB socket / debug pad
+J10,10,DET_A,unconnected-(J10-DET_A-Pad10),PCB socket / debug pad
+J10,2,DAT3/CD,/SD_CS,PCB socket / debug pad
+J10,3,CMD,/LCD_MOSI,PCB socket / debug pad
+J10,4,VDD,/+3V3,PCB socket / debug pad
+J10,5,CLK,/LCD_SCK,PCB socket / debug pad
+J10,6,VSS,/GND,PCB socket / debug pad
+J10,7,DAT0,/SD_MISO,PCB socket / debug pad
+J10,8,DAT1,/SD_DAT1_PULL,PCB socket / debug pad
+J10,9,DET_B,unconnected-(J10-DET_B-Pad9),PCB socket / debug pad
+J11,1,1,/HP_AGND,PCB socket / debug pad
+J11,2,2,/HP_AGND,PCB socket / debug pad
+J11,3,3,/HP_R,PCB socket / debug pad
+J11,4,4,/HP_L,PCB socket / debug pad

@@ -1,0 +1,227 @@
+{
+  "evidenceVersion": 1,
+  "generatedAt": "2026-10-30T02:25:35.013762+00:00",
+  "role": "KEYRING",
+  "owner": "남호",
+  "documentRevision": "2.0.0",
+  "sourceCommit": "76253ceecfc2edb8c66b4c31b8fae035f32e8d21",
+  "sourcePushConfirmed": true,
+  "remoteBranch": "codex/keyring-namho",
+  "remoteCore": "91a281b",
+  "gatewayRevision": "0.2.2",
+  "runtimeCodeCommit": "3dd2e20",
+  "productionCodeChanged": false,
+  "scope": "local HTTPS/TLS handshake and real HTTP on generated test-only PKI; not operational CSE",
+  "rubricIds": [
+    "R02",
+    "R10"
+  ],
+  "gate": "G-SEC",
+  "gateStatus": "partial-local-evidence",
+  "approver": null,
+  "testIds": [
+    "KR-HTTPS-TLS-01",
+    "KR-HTTPS-TLS-02",
+    "KR-HTTPS-TLS-03",
+    "KR-HTTPS-TLS-04",
+    "KR-HTTPS-TLS-05",
+    "KR-HTTPS-TLS-06",
+    "KR-HTTPS-TLS-07",
+    "KR-HTTPS-TLS-08"
+  ],
+  "tests": {
+    "https-tls-tests.log": {
+      "tests": 8,
+      "seconds": 1.765,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    "source-tests.log": {
+      "tests": 55,
+      "seconds": 2.45,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    "installed-tests.log": {
+      "tests": 55,
+      "seconds": 2.481,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exitCode": 0
+    }
+  },
+  "host": {
+    "system": "Windows",
+    "release": "11",
+    "python": "3.12.14",
+    "pythonOpenSsl": "OpenSSL 3.5.8 25 Aug 2026",
+    "certificateTool": "OpenSSL 3.5.5 27 Jan 2026 (Library: OpenSSL 3.5.5 27 Jan 2026)"
+  },
+  "packages": {
+    "httpx": "0.28.1",
+    "bleak": "3.0.2",
+    "paho-mqtt": "2.1.0"
+  },
+  "package": {
+    "rebuilt": false,
+    "artifact": "privacy_bubble_gateway-0.2.2-py3-none-any.whl",
+    "localPath": "C:\\Users\\NH\\Documents\\ChatGPT\\mobius 해커톤\\github_upload\\_local\\keyring-gateway-022-wheel\\privacy_bubble_gateway-0.2.2-py3-none-any.whl",
+    "sha256": "88c5efa07fd2f376d005f2665478baa14cf44f055e57874ce3952ee0ebb1eca3",
+    "buildReceipt": "../2026-10-30-receipt-routing/receipt.json",
+    "installedPythonModulesMatchSource": true
+  },
+  "network": {
+    "connections": "owned IPv4 loopback test sockets only",
+    "httpsServers": "ephemeral ThreadingHTTPServer requiring client certificates",
+    "operationalEndpointsAccessed": false,
+    "mqttStarted": false,
+    "bleStarted": false,
+    "gatewayDaemonStarted": false
+  },
+  "testPki": {
+    "generatedEachRun": true,
+    "expiresAfterDays": 1,
+    "privateMaterialCommitted": false,
+    "temporaryDirectoriesCleanedAfterTests": true
+  },
+  "verifiedLocalBoundaries": [
+    "TLS1.3 and test client certificate plus actual oneM2M headers/body",
+    "untrusted server CA rejected",
+    "untrusted client rejected",
+    "missing client certificate rejected",
+    "TLS1.2-only peer rejected",
+    "server IP/SAN mismatch rejected",
+    "HTTP redirect not followed",
+    "proxy/CA environment does not override configured transport"
+  ],
+  "notVerified": [
+    "operational principal-to-Originator mapping",
+    "MQTT TLS/ACL",
+    "central grant/ACP/settlement",
+    "real CSE/BlueZ/Pi/devices",
+    "physical measurements/video/release"
+  ],
+  "firmwareChangedOrRebuilt": false,
+  "existingDatabaseAccessed": false,
+  "goalComplete": false,
+  "logs": [
+    {
+      "path": "https-tls-tests.log",
+      "bytes": 1851,
+      "sha256": "91050f88f43611c8cb8e9077d375ee883bddc182eee8b4358805f7f93956d6e6"
+    },
+    {
+      "path": "source-tests.log",
+      "bytes": 8363,
+      "sha256": "30b58200ba3a38eacd0474415cddf11f0d1aba406f79f658e9de270813f9a4be"
+    },
+    {
+      "path": "installed-tests.log",
+      "bytes": 8551,
+      "sha256": "76b719f1b54da280c793e936763c5717be126ae3afdea128175f31291195a906"
+    }
+  ],
+  "sources": [
+    {
+      "path": "keyring/raspberry-pi-gateway/pyproject.toml",
+      "sha256LfNormalized": "0f9a95edf7e4f4afba2e225e77e7025336b147e4d55b819d11f690e3fc4ea13f"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/__init__.py",
+      "sha256LfNormalized": "dc47a6ed28f6404598131518648fc2efca20e5d4626ea8009350c7f7c8f8a79a"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/__main__.py",
+      "sha256LfNormalized": "36dcb434b1343f6cdedb174c9f68e372141d27de327e94f54e958bd9719c4219"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/ble.py",
+      "sha256LfNormalized": "0a09b9f4b66ca63c7763e38058812dc848388d2ae446d86263b404a106f37d5f"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/config.py",
+      "sha256LfNormalized": "aaa913c289848cfbce6aad544d19b0d705f0bcbef3574435a96866489c2c54f2"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/core_bridge.py",
+      "sha256LfNormalized": "eddb76e43b823c8c53d351544f0132bc64f3321f3b6778fbdec7842209c49fa9"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/journal_cli.py",
+      "sha256LfNormalized": "a22dac2ddbf6142f8c0665e5efe460827721e502bb40453fde4d366783bff1fe"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/journal_export.py",
+      "sha256LfNormalized": "02ee7f74547656a650b3dbaebec6e1e7b1378d041825ff1937dbd05dba99d046"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/model.py",
+      "sha256LfNormalized": "964b4c982d94177f251bcbaec430e18edb36106300db45d79b094c0eca8c7fa6"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/service.py",
+      "sha256LfNormalized": "e6649210103decb3e02dfe81a576c2b09ede3f8c9130d8c842a0014329a3ebf1"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/state_archive.py",
+      "sha256LfNormalized": "be49b0c2cb336a69153aed777184bc038db398a480ad3f99bd1f421a60e93e97"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/state_identity.py",
+      "sha256LfNormalized": "aac06ec93f0c0e3ca22e67d0d4e8a7b605890d3aecc5aa1710a5a9cbd04f6ef0"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/store.py",
+      "sha256LfNormalized": "82c811e448779005545287699a9bcb9f5827f6dc4273e0a0ff87c98bec4afe1c"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/transport.py",
+      "sha256LfNormalized": "62b4c42dea5437882b4b69f79418e4f8e64387d2aa83a3eb570ae698707f0a13"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/helpers.py",
+      "sha256LfNormalized": "eee17a8b5cd175dc3e92c55adae0a88a5923b0331046a15f317b1f31fd6ff82e"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_ble_sessions.py",
+      "sha256LfNormalized": "d164b9c2f3733dde6b7aecd3b76aefc1c5a505f8e50aa309cccd2dd7aab97c18"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_dispatch.py",
+      "sha256LfNormalized": "193b158d20e019f7f75348be0c31908323a7a7a63e7be56b9935d167a645d668"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_https_tls.py",
+      "sha256LfNormalized": "12a2f50c007805b74615ad52993c5fd45ba97bdcde151fec7b4b4640ae6b6870"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_journal.py",
+      "sha256LfNormalized": "262b3baa8af2b985dfb14c46bbeabe9898fb1064343d74b0dcf20c0b42273858"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_protocol.py",
+      "sha256LfNormalized": "e75220ddb7b92e2bc50edd465c8777acc65829c8dd1c91c5c184f3f8f61332a2"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_receipt_outbox.py",
+      "sha256LfNormalized": "fb9dd0e7439f9c493668abfa42e23b5a72022787adfb163dbe71ceae6df96847"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_store.py",
+      "sha256LfNormalized": "e740d04e4a8349fce6ec2a6439093c4f450b7f67ca27837f99b8e2e810c590a6"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_transport.py",
+      "sha256LfNormalized": "773d8e4fb0cbdb7f339590da7903249f002ae0bc042306c8f727d7afa7dc63ae"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/tls_fixture.py",
+      "sha256LfNormalized": "e76ebb3d629f1462f8589b7d490b5c764cc600a5fc2b9eb9c54332f1c5cbc69e"
+    }
+  ]
+}

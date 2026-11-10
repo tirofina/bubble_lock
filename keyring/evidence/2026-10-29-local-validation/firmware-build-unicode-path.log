@@ -1,0 +1,323 @@
+Processing keyring_compile_minimal (platform: espressif32@6.9.0; board: esp32-s3-devkitc-1; framework: arduino)
+--------------------------------------------------------------------------------
+Removing unused dependencies...
+Library Manager: Removing GFX Library for Arduino @ 1.6.9+sha.f71dbf6
+Library Manager: GFX Library for Arduino@1.6.9+sha.f71dbf6 has been removed!
+Library Manager: Installing git+https://github.com/moononournation/Arduino_GFX.git#3cc08c4e9ab6d85807e49b657d73fae10871616e
+git version 2.53.0.windows.3
+Cloning into 'C:\Users\NH\.platformio\.cache\tmp\pkg-installing-zf0m9sj_'...
+HEAD is now at 3cc08c4 v1.4.9
+Library Manager: GFX Library for Arduino@1.4.9+sha.3cc08c4 has been installed!
+Verbose mode can be enabled via `-v, --verbose` option
+CONFIGURATION: https://docs.platformio.org/page/boards/espressif32/esp32-s3-devkitc-1.html
+PLATFORM: Espressif 32 (6.9.0) > Espressif ESP32-S3-DevKitC-1-N8 (8 MB QD, No PSRAM)
+HARDWARE: ESP32S3 240MHz, 320KB RAM, 8MB Flash
+DEBUG: Current (esp-builtin) On-board (esp-builtin) External (cmsis-dap, esp-bridge, esp-prog, iot-bus-jtag, jlink, minimodule, olimex-arm-usb-ocd, olimex-arm-usb-ocd-h, olimex-arm-usb-tiny-h, olimex-jtag-tiny, tumpa)
+PACKAGES: 
+ - framework-arduinoespressif32 @ 3.20017.241212+sha.dcc1105b 
+ - tool-esptoolpy @ 1.40501.0 (4.5.1) 
+ - toolchain-riscv32-esp @ 8.4.0+2021r2-patch5 
+ - toolchain-xtensa-esp32s3 @ 8.4.0+2021r2-patch5
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Found 35 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- ArduinoJson @ 6.21.5
+|-- GFX Library for Arduino @ 1.4.9+sha.3cc08c4
+|-- ESP32 BLE Arduino @ 2.0.0
+|-- Preferences @ 2.0.0
+|-- Wire @ 2.0.0
+|-- SD @ 2.0.0
+|-- SPI @ 2.0.0
+Building in release mode
+Compiling .pio\build\keyring_compile_minimal\src\audio_alert.cpp.o
+Compiling .pio\build\keyring_compile_minimal\src\aux_rail.cpp.o
+Compiling .pio\build\keyring_compile_minimal\src\headphone_standby.cpp.o
+Compiling .pio\build\keyring_compile_minimal\src\jd9853_display.cpp.o
+Compiling .pio\build\keyring_compile_minimal\src\main.cpp.o
+Compiling .pio\build\keyring_compile_minimal\src\motion_wake.cpp.o
+Compiling .pio\build\keyring_compile_minimal\src\peripherals.cpp.o
+Compiling .pio\build\keyring_compile_minimal\src\power_state.cpp.o
+Compiling .pio\build\keyring_compile_minimal\src\supply_monitor.cpp.o
+Building .pio\build\keyring_compile_minimal\bootloader.bin
+Generating partitions .pio\build\keyring_compile_minimal\partitions.bin
+Compiling .pio\build\keyring_compile_minimal\lib054\SPI\SPI.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib535\Wire\Wire.cpp.o
+esptool.py v4.5.1
+Creating esp32s3 image...
+Merged 1 ELF section
+Successfully created esp32s3 image.
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\Arduino_DataBus.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\Arduino_G.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\Arduino_GFX.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\Arduino_GFX_Library.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\Arduino_TFT.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\Arduino_TFT_18bit.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\canvas\Arduino_Canvas.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\canvas\Arduino_Canvas_3bit.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\canvas\Arduino_Canvas_Indexed.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\canvas\Arduino_Canvas_Mono.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_AVRPAR16.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_AVRPAR8.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_DUEPAR16.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_ESP32LCD16.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_ESP32LCD8.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_ESP32PAR16.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_ESP32PAR16Q.cpp.o
+Archiving .pio\build\keyring_compile_minimal\lib054\libSPI.a
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_ESP32PAR16QQ.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_ESP32PAR8.cpp.o
+Archiving .pio\build\keyring_compile_minimal\lib535\libWire.a
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_ESP32PAR8Q.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_ESP32PAR8QQ.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_ESP32PAR8QQQ.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_ESP32QSPI.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_ESP32RGBPanel.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_ESP32S2PAR16.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_ESP32S2PAR16Q.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_ESP32S2PAR8.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_ESP32S2PAR8Q.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_ESP32SPI.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_ESP32SPIDMA.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_ESP8266SPI.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_HWSPI.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_NRFXSPI.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_RPiPicoPAR16.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_RPiPicoPAR8.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_RPiPicoSPI.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_RTLPAR8.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_STM32PAR8.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_SWPAR16.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_SWPAR8.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_SWSPI.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_UNOPAR8.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_Wire.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_XCA9554SWSPI.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_XL9535SWSPI.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\databus\Arduino_mbedSPI.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_AXS15231B.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_CO5300.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_GC9106.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_GC9107.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_GC9A01.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_HX8347C.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_HX8347D.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_HX8352C.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_HX8357A.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_HX8357B.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_HX8369A.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_ILI9225.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_ILI9331.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_ILI9341.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_ILI9342.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_ILI9481_18bit.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_ILI9486.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_ILI9486_18bit.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_ILI9488.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_ILI9488_18bit.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_ILI9488_3bit.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_ILI9806.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_JBT6K71.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_JD9613.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_NT35310.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_NT35510.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_NT39125.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_NV3023.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_NV3041A.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_OTM8009A.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_R61529.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_RGB_Display.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_RM67162.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_RM690B0.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_SEPS525.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_SH1106.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_SSD1283A.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_SSD1306.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_SSD1331.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_SSD1351.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_ST7735.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_ST7789.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_ST77916.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_ST7796.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib9f0\GFX Library for Arduino\display\Arduino_WEA2012.cpp.o
+Compiling .pio\build\keyring_compile_minimal\libdaa\BLE\BLE2902.cpp.o
+Compiling .pio\build\keyring_compile_minimal\libdaa\BLE\BLE2904.cpp.o
+Compiling .pio\build\keyring_compile_minimal\libdaa\BLE\BLEAddress.cpp.o
+Compiling .pio\build\keyring_compile_minimal\libdaa\BLE\BLEAdvertisedDevice.cpp.o
+Compiling .pio\build\keyring_compile_minimal\libdaa\BLE\BLEAdvertising.cpp.o
+Compiling .pio\build\keyring_compile_minimal\libdaa\BLE\BLEBeacon.cpp.o
+Compiling .pio\build\keyring_compile_minimal\libdaa\BLE\BLECharacteristic.cpp.o
+Compiling .pio\build\keyring_compile_minimal\libdaa\BLE\BLECharacteristicMap.cpp.o
+Compiling .pio\build\keyring_compile_minimal\libdaa\BLE\BLEClient.cpp.o
+Compiling .pio\build\keyring_compile_minimal\libdaa\BLE\BLEDescriptor.cpp.o
+Compiling .pio\build\keyring_compile_minimal\libdaa\BLE\BLEDescriptorMap.cpp.o
+Compiling .pio\build\keyring_compile_minimal\libdaa\BLE\BLEDevice.cpp.o
+Compiling .pio\build\keyring_compile_minimal\libdaa\BLE\BLEEddystoneTLM.cpp.o
+Compiling .pio\build\keyring_compile_minimal\libdaa\BLE\BLEEddystoneURL.cpp.o
+Compiling .pio\build\keyring_compile_minimal\libdaa\BLE\BLEExceptions.cpp.o
+Compiling .pio\build\keyring_compile_minimal\libdaa\BLE\BLEHIDDevice.cpp.o
+Compiling .pio\build\keyring_compile_minimal\libdaa\BLE\BLERemoteCharacteristic.cpp.o
+Compiling .pio\build\keyring_compile_minimal\libdaa\BLE\BLERemoteDescriptor.cpp.o
+Compiling .pio\build\keyring_compile_minimal\libdaa\BLE\BLERemoteService.cpp.o
+Compiling .pio\build\keyring_compile_minimal\libdaa\BLE\BLEScan.cpp.o
+Compiling .pio\build\keyring_compile_minimal\libdaa\BLE\BLESecurity.cpp.o
+Compiling .pio\build\keyring_compile_minimal\libdaa\BLE\BLEServer.cpp.o
+Compiling .pio\build\keyring_compile_minimal\libdaa\BLE\BLEService.cpp.o
+Compiling .pio\build\keyring_compile_minimal\libdaa\BLE\BLEServiceMap.cpp.o
+Compiling .pio\build\keyring_compile_minimal\libdaa\BLE\BLEUUID.cpp.o
+Archiving .pio\build\keyring_compile_minimal\lib9f0\libGFX Library for Arduino.a
+Compiling .pio\build\keyring_compile_minimal\libdaa\BLE\BLEUtils.cpp.o
+Compiling .pio\build\keyring_compile_minimal\libdaa\BLE\BLEValue.cpp.o
+Compiling .pio\build\keyring_compile_minimal\libdaa\BLE\FreeRTOS.cpp.o
+Compiling .pio\build\keyring_compile_minimal\libdaa\BLE\GeneralUtils.cpp.o
+Compiling .pio\build\keyring_compile_minimal\libdef\Preferences\Preferences.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib2e8\FS\FS.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib2e8\FS\vfs_api.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib082\SD\SD.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib082\SD\sd_diskio.cpp.o
+Compiling .pio\build\keyring_compile_minimal\lib082\SD\sd_diskio_crc.c.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\Esp.cpp.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\FirmwareMSC.cpp.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\FunctionalInterrupt.cpp.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\HWCDC.cpp.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\HardwareSerial.cpp.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\IPAddress.cpp.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\IPv6Address.cpp.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\MD5Builder.cpp.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\Print.cpp.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\Stream.cpp.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\StreamString.cpp.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\Tone.cpp.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\USB.cpp.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\USBCDC.cpp.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\USBMSC.cpp.o
+Archiving .pio\build\keyring_compile_minimal\libdef\libPreferences.a
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\WMath.cpp.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\WString.cpp.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\base64.cpp.o
+Archiving .pio\build\keyring_compile_minimal\libdaa\libBLE.a
+Archiving .pio\build\keyring_compile_minimal\lib2e8\libFS.a
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\cbuf.cpp.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\esp32-hal-adc.c.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\esp32-hal-bt.c.o
+Archiving .pio\build\keyring_compile_minimal\lib082\libSD.a
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\esp32-hal-cpu.c.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\esp32-hal-dac.c.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\esp32-hal-gpio.c.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\esp32-hal-i2c-slave.c.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\esp32-hal-i2c.c.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\esp32-hal-ledc.c.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\esp32-hal-matrix.c.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\esp32-hal-misc.c.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\esp32-hal-psram.c.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\esp32-hal-rgb-led.c.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\esp32-hal-rmt.c.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\esp32-hal-sigmadelta.c.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\esp32-hal-spi.c.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\esp32-hal-time.c.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\esp32-hal-timer.c.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\esp32-hal-tinyusb.c.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\esp32-hal-touch.c.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\esp32-hal-uart.c.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\firmware_msc_fat.c.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\libb64\cdecode.c.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\libb64\cencode.c.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\main.cpp.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\stdlib_noniso.c.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\wiring_pulse.c.o
+Compiling .pio\build\keyring_compile_minimal\FrameworkArduino\wiring_shift.c.o
+Archiving .pio\build\keyring_compile_minimal\libFrameworkArduino.a
+Linking .pio\build\keyring_compile_minimal\firmware.elf
+c:/users/nh/.platformio/packages/toolchain-xtensa-esp32s3/bin/../lib/gcc/xtensa-esp32s3-elf/8.4.0/../../../../xtensa-esp32s3-elf/bin/ld.exe: cannot open map file C:/Users/NH/Documents/ChatGPT/mobius 해커톤/github_upload/bubble_lock/keyring/firmware/.pio/build/keyring_compile_minimal/firmware.map: Invalid argument
+collect2.exe: error: ld returned 1 exit status
+*** [.pio\build\keyring_compile_minimal\firmware.elf] Error 1
+========================= [FAILED] Took 127.62 seconds =========================
+
+Processing keyring_compile_st7789 (platform: espressif32@6.9.0; board: esp32-s3-devkitc-1; framework: arduino)
+--------------------------------------------------------------------------------
+Removing unused dependencies...
+Library Manager: Removing GFX Library for Arduino @ 1.6.9+sha.f71dbf6
+Library Manager: GFX Library for Arduino@1.6.9+sha.f71dbf6 has been removed!
+Library Manager: Installing git+https://github.com/moononournation/Arduino_GFX.git#3cc08c4e9ab6d85807e49b657d73fae10871616e
+git version 2.53.0.windows.3
+Cloning into 'C:\Users\NH\.platformio\.cache\tmp\pkg-installing-gt6wxtdw'...
+HEAD is now at 3cc08c4 v1.4.9
+Library Manager: GFX Library for Arduino@1.4.9+sha.3cc08c4 has been installed!
+Verbose mode can be enabled via `-v, --verbose` option
+CONFIGURATION: https://docs.platformio.org/page/boards/espressif32/esp32-s3-devkitc-1.html
+PLATFORM: Espressif 32 (6.9.0) > Espressif ESP32-S3-DevKitC-1-N8 (8 MB QD, No PSRAM)
+HARDWARE: ESP32S3 240MHz, 320KB RAM, 8MB Flash
+DEBUG: Current (esp-builtin) On-board (esp-builtin) External (cmsis-dap, esp-bridge, esp-prog, iot-bus-jtag, jlink, minimodule, olimex-arm-usb-ocd, olimex-arm-usb-ocd-h, olimex-arm-usb-tiny-h, olimex-jtag-tiny, tumpa)
+PACKAGES: 
+ - framework-arduinoespressif32 @ 3.20017.241212+sha.dcc1105b 
+ - tool-esptoolpy @ 1.40501.0 (4.5.1) 
+ - toolchain-riscv32-esp @ 8.4.0+2021r2-patch5 
+ - toolchain-xtensa-esp32s3 @ 8.4.0+2021r2-patch5
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ chain, Compatibility ~ soft
+Found 35 compatible libraries
+Scanning dependencies...
+Dependency Graph
+|-- ArduinoJson @ 6.21.5
+|-- GFX Library for Arduino @ 1.4.9+sha.3cc08c4
+|-- ESP32 BLE Arduino @ 2.0.0
+|-- Preferences @ 2.0.0
+|-- Wire @ 2.0.0
+|-- SD @ 2.0.0
+|-- SPI @ 2.0.0
+Building in release mode
+Compiling .pio\build\keyring_compile_st7789\src\audio_alert.cpp.o
+Compiling .pio\build\keyring_compile_st7789\src\aux_rail.cpp.o
+Compiling .pio\build\keyring_compile_st7789\src\headphone_standby.cpp.o
+Compiling .pio\build\keyring_compile_st7789\src\jd9853_display.cpp.o
+Compiling .pio\build\keyring_compile_st7789\src\main.cpp.o
+Compiling .pio\build\keyring_compile_st7789\src\motion_wake.cpp.o
+Compiling .pio\build\keyring_compile_st7789\src\peripherals.cpp.o
+Compiling .pio\build\keyring_compile_st7789\src\power_state.cpp.o
+Compiling .pio\build\keyring_compile_st7789\src\supply_monitor.cpp.o
+Building .pio\build\keyring_compile_st7789\bootloader.bin
+Generating partitions .pio\build\keyring_compile_st7789\partitions.bin
+Compiling .pio\build\keyring_compile_st7789\lib054\SPI\SPI.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib535\Wire\Wire.cpp.o
+esptool.py v4.5.1
+Creating esp32s3 image...
+Merged 1 ELF section
+Successfully created esp32s3 image.
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\Arduino_DataBus.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\Arduino_G.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\Arduino_GFX.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\Arduino_GFX_Library.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\Arduino_TFT.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\Arduino_TFT_18bit.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\canvas\Arduino_Canvas.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\canvas\Arduino_Canvas_3bit.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\canvas\Arduino_Canvas_Indexed.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\canvas\Arduino_Canvas_Mono.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\databus\Arduino_AVRPAR16.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\databus\Arduino_AVRPAR8.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\databus\Arduino_DUEPAR16.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\databus\Arduino_ESP32LCD16.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\databus\Arduino_ESP32LCD8.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\databus\Arduino_ESP32PAR16.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\databus\Arduino_ESP32PAR16Q.cpp.o
+Archiving .pio\build\keyring_compile_st7789\lib054\libSPI.a
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\databus\Arduino_ESP32PAR16QQ.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\databus\Arduino_ESP32PAR8.cpp.o
+Archiving .pio\build\keyring_compile_st7789\lib535\libWire.a
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\databus\Arduino_ESP32PAR8Q.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\databus\Arduino_ESP32PAR8QQ.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\databus\Arduino_ESP32PAR8QQQ.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\databus\Arduino_ESP32QSPI.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\databus\Arduino_ESP32RGBPanel.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\databus\Arduino_ESP32S2PAR16.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\databus\Arduino_ESP32S2PAR16Q.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\databus\Arduino_ESP32S2PAR8.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\databus\Arduino_ESP32S2PAR8Q.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\databus\Arduino_ESP32SPI.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\databus\Arduino_ESP32SPIDMA.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\databus\Arduino_ESP8266SPI.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\databus\Arduino_HWSPI.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\databus\Arduino_NRFXSPI.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\databus\Arduino_RPiPicoPAR16.cpp.o
+Compiling .pio\build\keyring_compile_st7789\lib387\GFX Library for Arduino\databus\Arduino_RPiPicoPAR8.cpp.o

@@ -1,0 +1,42 @@
+﻿Module_pad,Pin_name,Net,Usage
+1,GND,/GND,connected
+2,3V3,/+3V3,connected
+3,EN,/MCU_EN,connected
+4,IO4,/AUX_EN,connected
+5,IO5,unconnected-(U1-IO5-Pad5),unconnected
+6,IO6,/BTN_CONFIRM,connected
+7,IO7,/BTN_PANIC,connected
+8,IO15,unconnected-(U1-IO15-Pad8),unconnected
+9,IO16,/AMP_GATE,connected
+10,IO17,/ACCEL_INT,connected
+11,IO18,/LCD_CS,connected
+12,IO8,/LCD_DC,connected
+13,USB_D-,/USB_DM_MCU,connected
+14,USB_D+,/USB_DP_MCU,connected
+15,IO3,/VIB_PWM,connected
+16,IO46,unconnected-(U1-IO46-Pad16),unconnected
+17,IO9,/USB_LIMIT_EN2,connected
+18,IO10,/SD_CS,connected
+19,IO11,/SD_MISO,connected
+20,IO12,unconnected-(U1-IO12-Pad20),unconnected
+21,IO13,/HP_MCLK_RAW,connected
+22,IO14,/I2C_SDA,connected
+23,IO21,/I2C_SCL,connected
+24,IO47,/USB_500_EN,connected
+25,IO48,unconnected-(U1-IO48-Pad25),unconnected
+26,IO45,unconnected-(U1-IO45-Pad26),unconnected
+27,IO0,/BOOT0,connected
+28,IO35,unconnected-(U1-IO35-Pad28),reserved by octal PSRAM
+29,IO36,unconnected-(U1-IO36-Pad29),reserved by octal PSRAM
+30,IO37,unconnected-(U1-IO37-Pad30),reserved by octal PSRAM
+31,IO38,/LCD_MOSI_RAW,connected
+32,IO39,/LCD_SCK_RAW,connected
+33,IO40,/I2S_LRCLK_RAW,connected
+34,IO41,/I2S_BCLK_RAW,connected
+35,IO42,/I2S_DOUT_RAW,connected
+36,RXD0,/UART_RX,connected
+37,TXD0,/UART_TX,connected
+38,IO2,/LCD_BL_PWM,connected
+39,IO1,/MAIN_FAULT_N,connected
+40,GND,/GND,connected
+41,GND,/GND,connected

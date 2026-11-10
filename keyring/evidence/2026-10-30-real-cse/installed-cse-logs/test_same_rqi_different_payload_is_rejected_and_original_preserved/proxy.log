@@ -1,0 +1,59 @@
+GET /Mobius ready-c7b0f3652e7c4dd9b069865beba09b63
+POST /Mobius setup-3355fe9fd4764dd69685869baf773701
+POST /Mobius/cse-test-c977930b27cf restart-14d71ebc6d6f4aaf9e5b8c7b7a493602
+GET /Mobius ready-8d9ac786ad0e4bc3aed081c77b21febb
+GET /Mobius ready-f0e6a64f59f54d2aa796d3bd695933e1
+GET /Mobius/cse-test-c977930b27cf/gw-c306eb3113c24a63f16220d4417dfee5749ab4666286af80af1c6e5046062019 check-e6c07df9b65b49edaa8c08f08138984c
+GET /Mobius/cse-test-c977930b27cf count-ba74687a0106432f80c09d0eccbcdafc
+GET /Mobius ready-2f005da68dee4215811dfec552d4183e
+POST /Mobius setup-082acb41c8e147e6b5a4f54a94155925
+POST /Mobius/cse-test-c71e9deca1d8 duplicate-d10221bc6dcd49f38859679dd4e9c70f
+POST /Mobius/cse-test-c71e9deca1d8 duplicate-d10221bc6dcd49f38859679dd4e9c70f
+GET /Mobius/cse-test-c71e9deca1d8/gw-61890025c9f18f252466f315736c06e1a5f93a6b9866f27408ee1a6913daa862 read-61890025c9f18f252466f315736c06e1a5f93a6b9866f27408ee1a6913daa862
+GET /Mobius/cse-test-c71e9deca1d8/gw-61890025c9f18f252466f315736c06e1a5f93a6b9866f27408ee1a6913daa862 check-d04509a94138412690c397d256de4ae7
+GET /Mobius/cse-test-c71e9deca1d8 count-381b26ce5e3c4262b43939d7d85595f0
+GET /Mobius ready-2e527e5736ff4bc985bec81a42a6cf04
+POST /Mobius setup-3aea75ed3a3a473ab639aba87b7dd0e6
+POST /Mobius/cse-test-3a14eaaa7244 https-cff03ce6dec944f3ae620fbfb3230742
+GET /Mobius/cse-test-3a14eaaa7244/gw-9f37408bcb01cb3748c9df5d9c7704d651229eb8449b116fe15ee0c5de4b1395 check-90742d456de44b228510e6a91579eadc
+GET /Mobius/cse-test-3a14eaaa7244 count-381e6480b2064193a2d3bc8ce4506ec6
+GET /Mobius ready-a8a16c70f4db4e608177a4ce635b799d
+POST /Mobius setup-0c978e158139411ab5ca2f0f651b7105
+GET /Mobius/cse-test-fb2b6f2166a7/gw-c2775033ad4bc394287a429bac9078fc2a00df051651bcd92ee775101a49bdfa check-2bf7ddf39a7541be9e70e4a9239508c4
+GET /Mobius/cse-test-fb2b6f2166a7/gw-4d38d622563c47d3f5c30f17196e2193f48e3f97fe14a638533e8af85c779c5f check-1a96d850ae9a4426948a025b63bd27ed
+GET /Mobius/cse-test-fb2b6f2166a7/gw-7df53c731905eec2e63ac561f80de8a65eeb7a497fd2c0af36bdda11b34f51cc check-3d9afbb1ec48475ea564505999af802f
+GET /Mobius/cse-test-fb2b6f2166a7 count-a1d92bef4b604b56ae3b1c901345f8cd
+GET /Mobius ready-82697d312167429f87dd89e88cca6ab6
+POST /Mobius setup-986098dac3704c72802c3e0c67a58e36
+POST /Mobius/cse-test-d69610105aee conflict-f20a867af984458abf07a57f9ea45afc
+POST /Mobius/cse-test-d69610105aee conflict-f20a867af984458abf07a57f9ea45afc
+GET /Mobius/cse-test-d69610105aee/gw-ad13dbf10a3435bbc9b24248c90fcd9aa3baebec784679bc2fad22d9389ca362 read-ad13dbf10a3435bbc9b24248c90fcd9aa3baebec784679bc2fad22d9389ca362
+GET /Mobius/cse-test-d69610105aee/gw-ad13dbf10a3435bbc9b24248c90fcd9aa3baebec784679bc2fad22d9389ca362 check-5ef1cc0f28a24729a874881436a1e8a0
+GET /Mobius/cse-test-d69610105aee count-3ff55a11235c4b2f8d76150d30776b51
+2026/10/30 02:50:51 [notice] 1#1: using the "epoll" event method
+2026/10/30 02:50:51 [notice] 1#1: nginx/1.28.3
+2026/10/30 02:50:51 [notice] 1#1: built by gcc 15.2.0 (Alpine 15.2.0) 
+2026/10/30 02:50:51 [notice] 1#1: OS: Linux 6.6.87.2-microsoft-standard-WSL2
+2026/10/30 02:50:51 [notice] 1#1: getrlimit(RLIMIT_NOFILE): 1048576:1048576
+2026/10/30 02:50:51 [notice] 1#1: start worker processes
+2026/10/30 02:50:51 [notice] 1#1: start worker process 7
+2026/10/30 02:50:51 [notice] 1#1: start worker process 8
+2026/10/30 02:50:51 [notice] 1#1: start worker process 9
+2026/10/30 02:50:51 [notice] 1#1: start worker process 10
+2026/10/30 02:50:51 [notice] 1#1: start worker process 11
+2026/10/30 02:50:51 [notice] 1#1: start worker process 12
+2026/10/30 02:50:51 [notice] 1#1: start worker process 13
+2026/10/30 02:50:51 [notice] 1#1: start worker process 14
+2026/10/30 02:50:51 [notice] 1#1: start worker process 15
+2026/10/30 02:50:51 [notice] 1#1: start worker process 16
+2026/10/30 02:50:51 [notice] 1#1: start worker process 17
+2026/10/30 02:50:51 [notice] 1#1: start worker process 18
+2026/10/30 02:50:51 [notice] 1#1: start worker process 19
+2026/10/30 02:50:51 [notice] 1#1: start worker process 20
+2026/10/30 02:50:51 [notice] 1#1: start worker process 21
+2026/10/30 02:50:51 [notice] 1#1: start worker process 22
+2026/10/30 02:50:51 [notice] 1#1: start worker process 23
+2026/10/30 02:50:51 [notice] 1#1: start worker process 24
+2026/10/30 02:50:51 [notice] 1#1: start worker process 25
+2026/10/30 02:50:51 [notice] 1#1: start worker process 26
+2026/10/30 02:50:53 [error] 7#7: *1 connect() failed (111: Connection refused) while connecting to upstream, client: 172.19.0.1, server: localhost, request: "GET /Mobius HTTP/1.1", upstream: "http://172.19.0.4:7599/Mobius", host: "127.0.0.1:52400"

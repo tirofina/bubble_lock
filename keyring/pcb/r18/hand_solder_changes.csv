@@ -1,0 +1,130 @@
+﻿reference,status,method,old,new
+C1,changed,outward toe extension; original inner edge / width retained,Sourced:Capacitor_SMD_C_0603_1608Metric,HandSolder:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder_C1_HandSolder
+C10,changed,outward toe extension; original inner edge / width retained,Sourced:Capacitor_SMD_C_0805_2012Metric,HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C10_HandSolder
+C15,changed,outward toe extension; original inner edge / width retained,Sourced:C_0402_1005Metric,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C15_HandSolder
+C16,changed,outward toe extension; original inner edge / width retained,Sourced:C_0402_1005Metric,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C16_HandSolder
+C17,changed,outward toe extension; original inner edge / width retained,Sourced:Capacitor_SMD_C_0603_1608Metric,HandSolder:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder_C17_HandSolder
+C18,changed,outward toe extension; original inner edge / width retained,Sourced:Capacitor_SMD_C_0603_1608Metric,HandSolder:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder_C18_HandSolder
+C19,changed,KiCad HandSolder land pattern,Sourced:Capacitor_SMD_C_0805_2012Metric,HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C19_HandSolder
+C2,changed,KiCad HandSolder land pattern,Sourced:Capacitor_SMD_C_0805_2012Metric,HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C2_HandSolder
+C20,changed,KiCad HandSolder land pattern,Sourced:C_0402_1005Metric,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C20_HandSolder
+C21,changed,outward toe extension; original inner edge / width retained,Sourced:Capacitor_SMD_C_0603_1608Metric,HandSolder:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder_C21_HandSolder
+C22,changed,outward toe extension; original inner edge / width retained,Sourced:Capacitor_SMD_C_0805_2012Metric,HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C22_HandSolder
+C23,retained,existing land retained: via ,Sourced:Capacitor_SMD_C_0805_2012Metric,Sourced:Capacitor_SMD_C_0805_2012Metric
+C24,changed,outward toe extension; original inner edge / width retained,Sourced:Capacitor_SMD_C_0402_1005Metric,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C24_HandSolder
+C25,changed,KiCad HandSolder land pattern,Sourced:Capacitor_SMD_C_0402_1005Metric,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C25_HandSolder
+C26,changed,KiCad HandSolder land pattern,Sourced:Capacitor_SMD_C_0402_1005Metric,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C26_HandSolder
+C27,changed,outward toe extension; original inner edge / width retained,Sourced:C_0402_1005Metric,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C27_HandSolder
+C28,changed,outward toe extension; original inner edge / width retained,Sourced:C_0805_2012Metric,HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C28_HandSolder
+C29,changed,outward toe extension; original inner edge / width retained,Sourced:C_0402_1005Metric,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C29_HandSolder
+C3,changed,KiCad HandSolder land pattern,Sourced:Capacitor_SMD_C_0603_1608Metric,HandSolder:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder_C3_HandSolder
+C30,retained,existing land retained: track ,Sourced:C_0402_1005Metric,Sourced:C_0402_1005Metric
+C31,changed,outward toe extension; original inner edge / width retained,Sourced:C_0402_1005Metric,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C31_HandSolder
+C32,changed,outward toe extension; original inner edge / width retained,Sourced:C_0402_1005Metric,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C32_HandSolder
+C33,changed,outward toe extension; original inner edge / width retained,Sourced:C_0805_2012Metric,HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C33_HandSolder
+C35,changed,outward toe extension; original inner edge / width retained,Sourced:C_0402_1005Metric,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C35_HandSolder
+C36,changed,partial HandSolder: pad 1 original to preserve C49 ground neck; pad 2 extended,Sourced:C_0402_1005Metric,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C36_HandSolder
+C37,changed,outward toe extension; original inner edge / width retained,Sourced:CP_EIA-7343-31_Kemet-D,HandSolder:CP_EIA-7343-31_Kemet-D_C37_HandSolder
+C38,changed,KiCad HandSolder land pattern,Sourced:C_0402_1005Metric,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C38_HandSolder
+C39,changed,outward toe extension; original inner edge / width retained,Sourced:C_0402_1005Metric,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C39_HandSolder
+C4,changed,KiCad HandSolder land pattern,Sourced:Capacitor_SMD_C_0805_2012Metric,HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C4_HandSolder
+C40,changed,KiCad HandSolder land pattern,Sourced:C_0402_1005Metric,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C40_HandSolder
+C41,changed,outward toe extension; original inner edge / width retained,Sourced:C_0402_1005Metric,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C41_HandSolder
+C42,changed,outward toe extension; original inner edge / width retained,Sourced:C_0402_1005Metric,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C42_HandSolder
+C43,changed,outward toe extension; original inner edge / width retained,Sourced:C_0402_1005Metric,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C43_HandSolder
+C44,retained,existing land retained: courtyard C45,Sourced:C_0402_1005Metric,Sourced:C_0402_1005Metric
+C45,retained,existing land retained: track ,Sourced:C_0603_1608Metric,Sourced:C_0603_1608Metric
+C46,changed,outward toe extension; original inner edge / width retained,Sourced:CP_EIA-7343-43_Kemet-X,HandSolder:CP_EIA-7343-43_Kemet-X_C46_HandSolder
+C47,changed,outward toe extension; original inner edge / width retained,Sourced:CP_EIA-7343-43_Kemet-X,HandSolder:CP_EIA-7343-43_Kemet-X_C47_HandSolder
+C48,changed,outward toe extension; original inner edge / width retained,Sourced:C_0402_1005Metric,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C48_HandSolder
+C49,retained,existing land retained: track ,Sourced:Capacitor_SMD_C_0805_2012Metric,Sourced:Capacitor_SMD_C_0805_2012Metric
+C5,changed,outward toe extension; original inner edge / width retained,Sourced:Capacitor_SMD_C_0805_2012Metric,HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C5_HandSolder
+C50,changed,outward toe extension; original inner edge / width retained,Sourced:CP_EIA-7343-31_Kemet-D,HandSolder:CP_EIA-7343-31_Kemet-D_C50_HandSolder
+C6,changed,outward toe extension; original inner edge / width retained,Sourced:Capacitor_SMD_C_0805_2012Metric,HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C6_HandSolder
+C7,retained,existing land retained: track ,Sourced:Capacitor_SMD_C_0603_1608Metric,Sourced:Capacitor_SMD_C_0603_1608Metric
+C8,changed,KiCad HandSolder land pattern,Sourced:Capacitor_SMD_C_0805_2012Metric,HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C8_HandSolder
+C9,changed,KiCad HandSolder land pattern,Sourced:Capacitor_SMD_C_0805_2012Metric,HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C9_HandSolder
+D1,changed,outward toe extension; original inner edge / width retained,Sourced:Diode_SMD_Nexperia_CFP3_SOD-123W,HandSolder:D_Diode_SMD_Nexperia_CFP3_SOD-123W_D1_HandSolder
+D2,changed,outward toe extension; original inner edge / width retained,Sourced:LED_SMD_LED_0603_1608Metric,HandSolder:LED_0603_1608Metric_Pad1.05x0.95mm_HandSolder_D2_HandSolder
+L1,changed,outward toe extension; original inner edge / width retained,Sourced:Inductor_SMD_L_Coilcraft_XxL4020,HandSolder:Inductor_SMD_L_Coilcraft_XxL4020_L1_HandSolder
+R1,changed,KiCad HandSolder land pattern,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R1_HandSolder
+R10,changed,KiCad HandSolder land pattern,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R10_HandSolder
+R11,changed,KiCad HandSolder land pattern,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R11_HandSolder
+R12,changed,KiCad HandSolder land pattern,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R12_HandSolder
+R13,changed,KiCad HandSolder land pattern,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R13_HandSolder
+R14,changed,outward toe extension; original inner edge / width retained,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R14_HandSolder
+R15,changed,outward toe extension; original inner edge / width retained,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R15_HandSolder
+R18,changed,outward toe extension; original inner edge / width retained,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R18_HandSolder
+R19,changed,outward toe extension; original inner edge / width retained,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R19_HandSolder
+R2,changed,outward toe extension; original inner edge / width retained,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R2_HandSolder
+R20,changed,outward toe extension; original inner edge / width retained,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R20_HandSolder
+R3,changed,outward toe extension; original inner edge / width retained,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R3_HandSolder
+R31,changed,KiCad HandSolder land pattern,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R31_HandSolder
+R32,changed,KiCad HandSolder land pattern,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R32_HandSolder
+R33,changed,KiCad HandSolder land pattern,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R33_HandSolder
+R34,changed,KiCad HandSolder land pattern,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R34_HandSolder
+R35,retained,existing land retained: track ,Sourced:Resistor_SMD_R_0402_1005Metric,Sourced:Resistor_SMD_R_0402_1005Metric
+R36,changed,outward toe extension; original inner edge / width retained,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R36_HandSolder
+R37,changed,outward toe extension; original inner edge / width retained,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R37_HandSolder
+R38,changed,outward toe extension; original inner edge / width retained,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R38_HandSolder
+R39,changed,KiCad HandSolder land pattern,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R39_HandSolder
+R4,changed,outward toe extension; original inner edge / width retained,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R4_HandSolder
+R40,changed,outward toe extension; original inner edge / width retained,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R40_HandSolder
+R41,changed,outward toe extension; original inner edge / width retained,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R41_HandSolder
+R42,changed,outward toe extension; original inner edge / width retained,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R42_HandSolder
+R43,changed,outward toe extension; original inner edge / width retained,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R43_HandSolder
+R44,changed,KiCad HandSolder land pattern,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R44_HandSolder
+R45,retained,existing land retained: track ,Sourced:Resistor_SMD_R_0402_1005Metric,Sourced:Resistor_SMD_R_0402_1005Metric
+R46,retained,existing land retained: track ,Sourced:Resistor_SMD_R_0402_1005Metric,Sourced:Resistor_SMD_R_0402_1005Metric
+R47,changed,outward toe extension; original inner edge / width retained,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R47_HandSolder
+R48,changed,KiCad HandSolder land pattern,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R48_HandSolder
+R49,changed,KiCad HandSolder land pattern,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R49_HandSolder
+R5,changed,outward toe extension; original inner edge / width retained,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R5_HandSolder
+R50,changed,KiCad HandSolder land pattern,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R50_HandSolder
+R51,changed,outward toe extension; original inner edge / width retained,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R51_HandSolder
+R52,changed,KiCad HandSolder land pattern,Sourced:R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R52_HandSolder
+R53,changed,outward toe extension; original inner edge / width retained,Sourced:R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R53_HandSolder
+R54,changed,KiCad HandSolder land pattern,Sourced:R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R54_HandSolder
+R55,changed,KiCad HandSolder land pattern,Sourced:R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R55_HandSolder
+R56,changed,KiCad HandSolder land pattern,Sourced:R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R56_HandSolder
+R57,changed,outward toe extension; original inner edge / width retained,Sourced:R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R57_HandSolder
+R58,retained,existing land retained: track ,Sourced:R_0402_1005Metric,Sourced:R_0402_1005Metric
+R59,retained,existing land retained: track ,Sourced:R_0402_1005Metric,Sourced:R_0402_1005Metric
+R6,changed,outward toe extension; original inner edge / width retained,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R6_HandSolder
+R60,changed,KiCad HandSolder land pattern,Sourced:R_0805_2012Metric,HandSolder:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder_R60_HandSolder
+R61,changed,outward toe extension; original inner edge / width retained,Sourced:R_0805_2012Metric,HandSolder:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder_R61_HandSolder
+R62,changed,KiCad HandSolder land pattern,Sourced:R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R62_HandSolder
+R63,changed,KiCad HandSolder land pattern,Sourced:R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R63_HandSolder
+R64,changed,outward toe extension; original inner edge / width retained,Sourced:R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R64_HandSolder
+R65,changed,outward toe extension; original inner edge / width retained,Sourced:R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R65_HandSolder
+R66,changed,outward toe extension; original inner edge / width retained,Sourced:R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R66_HandSolder
+R67,changed,KiCad HandSolder land pattern,Sourced:R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R67_HandSolder
+R68,changed,outward toe extension; original inner edge / width retained,Sourced:R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R68_HandSolder
+R69,changed,KiCad HandSolder land pattern,Sourced:R_0603_1608Metric_UART,HandSolder:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder_R69_HandSolder
+R7,changed,outward toe extension; original inner edge / width retained,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R7_HandSolder
+R71,changed,outward toe extension; original inner edge / width retained,Sourced:R_0805_2012Metric,HandSolder:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder_R71_HandSolder
+R8,changed,outward toe extension; original inner edge / width retained,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R8_HandSolder
+R9,changed,KiCad HandSolder land pattern,Sourced:Resistor_SMD_R_0402_1005Metric,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R9_HandSolder
+J1,changed,outward toe extension; original inner edge / width retained,Sourced:Connector_USB_USB_C_Receptacle_HRO_TYPE-C-31-M-12,HandSolder:USB_C_Receptacle_HRO_TYPE-C-31-M-12_J1_HandSolder
+J10,changed,outward toe extension; original inner edge / width retained,Sourced:microSD_HC_Hirose_DM3AT-SF-PEJM5,HandSolder:microSD_HC_Hirose_DM3AT-SF-PEJM5_J10_HandSolder
+J11,retained,existing land retained: board edge,Sourced:AUDIO-SMD_PJ-320D,Sourced:AUDIO-SMD_PJ-320D
+J2,retained,existing land retained: track ,Sourced:Connector_JST_JST_PH_S2B-PH-SM4-TB_1x02-1MP_P2.00mm_Horizontal,Sourced:Connector_JST_JST_PH_S2B-PH-SM4-TB_1x02-1MP_P2.00mm_Horizontal
+J3,changed,outward toe extension; original inner edge / width retained,Sourced:Connector_JST_JST_SH_SM08B-SRSS-TB_1x08-1MP_P1.00mm_Horizontal,Connector_HandSolder:Connector_JST_JST_SH_SM08B-SRSS-TB_1x08_1MP_P1.00mm_Horizontal_J3_HandSolder
+Q1,changed,outward toe extension; original inner edge / width retained,Sourced:Package_TO_SOT_SMD_SOT-23,HandSolder:SOT-23_Handsoldering_Q1_HandSolder
+Q2,changed,outward toe extension; original inner edge / width retained,Sourced:Package_TO_SOT_SMD_SOT-23,HandSolder:SOT-23_Handsoldering_Q2_HandSolder
+Q3,changed,outward toe extension; original inner edge / width retained,Sourced:SOT-23,HandSolder:SOT-23_Handsoldering_Q3_HandSolder
+Q4,changed,outward toe extension; original inner edge / width retained,Sourced:SOT-23,HandSolder:SOT-23_Handsoldering_Q4_HandSolder
+U1,retained,底面端子 / thermal / LGA land and paste unchanged,Sourced:RF_Module_ESP32-S3-WROOM-1_JLC030,Sourced:RF_Module_ESP32-S3-WROOM-1_JLC030
+U10,changed,outward toe extension; original inner edge / width retained,Sourced:Package_TO_SOT_SMD_SOT-23-6,HandSolder:SOT-23-6_Handsoldering_U10_HandSolder
+U11,changed,outward toe extension; original inner edge / width retained,Sourced:SOT-23-6,HandSolder:SOT-23-6_Handsoldering_U11_HandSolder
+U12,changed,outward toe extension; original inner edge / width retained,Sourced:SOT-23-6,HandSolder:SOT-23-6_Handsoldering_U12_HandSolder
+U13,changed,outward toe extension; original inner edge / width retained,Sourced:SOT-23-6,HandSolder:SOT-23-6_Handsoldering_U13_HandSolder
+U15,changed,outward toe extension; original inner edge / width retained,Sourced:SOT-23-8,HandSolder:SOT-23-8_Handsoldering_U15_HandSolder
+U16,retained,底面端子 / thermal / LGA land and paste unchanged,Sourced:TQFN-28-1EP_5x5mm_P0.5mm_EP3.25x3.25mm,Sourced:TQFN-28-1EP_5x5mm_P0.5mm_EP3.25x3.25mm
+U17,changed,outward toe extension; original inner edge / width retained,Sourced:SOT-23,HandSolder:SOT-23_Handsoldering_U17_HandSolder
+U3,retained,底面端子 / thermal / LGA land and paste unchanged,Sourced:Package_DFN_QFN_VQFN-16-1EP_3x3mm_P0.5mm_EP1.6x1.6mm,Sourced:Package_DFN_QFN_VQFN-16-1EP_3x3mm_P0.5mm_EP1.6x1.6mm
+U4,retained,底面端子 / thermal / LGA land and paste unchanged,Sourced:Package_SON_Texas_DRC0010J_ThermalVias_JLC030,Sourced:Package_SON_Texas_DRC0010J_ThermalVias_JLC030
+U6,retained,底面端子 / thermal / LGA land and paste unchanged,Sourced:Package_LGA_LGA-12_2x2mm_P0.5mm,Sourced:Package_LGA_LGA-12_2x2mm_P0.5mm
+U7,retained,底面端子 / thermal / LGA land and paste unchanged,Sourced:Package_DFN_QFN_TDFN-8-1EP_2x2mm_P0.5mm_EP0.8x1.2mm,Sourced:Package_DFN_QFN_TDFN-8-1EP_2x2mm_P0.5mm_EP0.8x1.2mm
+U8,retained,底面端子 / thermal / LGA land and paste unchanged,Sourced:Package_DFN_QFN_TQFN-16-1EP_3x3mm_P0.5mm_EP1.23x1.23mm,Sourced:Package_DFN_QFN_TQFN-16-1EP_3x3mm_P0.5mm_EP1.23x1.23mm
+U9,changed,outward toe extension; original inner edge / width retained,Sourced:Package_TO_SOT_SMD_SOT-23-6,HandSolder:SOT-23-6_Handsoldering_U9_HandSolder

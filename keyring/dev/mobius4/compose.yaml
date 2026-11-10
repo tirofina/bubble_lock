@@ -1,0 +1,69 @@
+name: privacy-bubble-keyring-dev
+services:
+  postgres:
+    image: postgis/postgis:17-3.5
+    environment:
+      POSTGRES_DB: keyring_mobius4
+      POSTGRES_USER: keyring_dev
+      POSTGRES_PASSWORD: ${DB_PW:?Run prepare.ps1 first}
+    volumes: ["pgdata_v2:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keyring_dev -d keyring_mobius4"]
+      interval: 5s
+      retries: 20
+    restart: on-failure
+  broker:
+    image: eclipse-mosquitto:2
+    ports: ["127.0.0.1:${KEYRING_MQTT_TLS_PORT:-8883}:8883"]
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./.local/tls/ca.pem:/mosquitto/tls/ca.pem:ro
+      - ./.local/tls/server.pem:/mosquitto/tls/server.pem:ro
+      - ./.local/tls/server.key:/mosquitto/tls/server.key:ro
+      - ./.local/mqtt.acl:/mosquitto/config/keyring.acl:ro
+    restart: on-failure
+  mobius4:
+    build:
+      context: ${MOBIUS4_ROOT:?Set external Mobius4 checkout path}
+    image: privacy-bubble-keyring-mobius4:local
+    depends_on:
+      postgres: {condition: service_healthy}
+      broker: {condition: service_started}
+    environment:
+      CSE_ADMIN: ${CSE_ADMIN:?Run prepare.ps1 first}
+      CSE_ID: /Mobius4
+      CSE_BASE_RN: Mobius
+      CSE_POA: https://localhost:${KEYRING_CSE_TLS_PORT:-8759}
+      HTTP_PORT: 7599
+      HTTPS_ENABLED: "false"
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: keyring_mobius4
+      DB_USER: keyring_dev
+      DB_PW: ${DB_PW:?Run prepare.ps1 first}
+      MQTT_ENABLED: "true"
+      MQTT_HOST: broker
+      MQTT_PORT: 1883
+      HELMET_ENABLED: "true"
+      RATELIMIT_ENABLED: "true"
+      RATELIMIT_MAX: 500
+    volumes:
+      - identity_v2:/var/lib/mobius4
+      - ./specializations.json:/app/config/specializations.json:ro
+    restart: on-failure
+  tls:
+    image: nginx:1.28-alpine
+    depends_on: [mobius4]
+    ports: ["127.0.0.1:${KEYRING_CSE_TLS_PORT:-8759}:8759"]
+    environment:
+      CSE_ADMIN: ${CSE_ADMIN:?Run prepare.ps1 first}
+      NGINX_ENVSUBST_FILTER: ^CSE_ADMIN$$
+    volumes:
+      - ./nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./.local/tls/ca.pem:/etc/nginx/keyring-tls/ca.pem:ro
+      - ./.local/tls/server.pem:/etc/nginx/keyring-tls/server.pem:ro
+      - ./.local/tls/server.key:/etc/nginx/keyring-tls/server.key:ro
+    restart: on-failure
+volumes:
+  pgdata_v2:
+  identity_v2:

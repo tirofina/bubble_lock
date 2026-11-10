@@ -1,0 +1,17 @@
+test_cse_process_restart_preserves_committed_cin (test_mobius_cse.MobiusCseTests.test_cse_process_restart_preserves_committed_cin) ... ok
+test_duplicate_request_reuses_single_cin (test_mobius_cse.MobiusCseTests.test_duplicate_request_reuses_single_cin) ... ok
+test_https_publish_is_stored_and_read_back_from_real_cse (test_mobius_cse.MobiusCseTests.test_https_publish_is_stored_and_read_back_from_real_cse) ... ok
+test_mqtt_application_receipt_and_storage_without_https_post (test_mobius_cse.MobiusCseTests.test_mqtt_application_receipt_and_storage_without_https_post) ... ok
+test_outbox_content_conflict_retains_row_and_remote_original (test_mobius_cse.MobiusCseTests.test_outbox_content_conflict_retains_row_and_remote_original) ... oneM2M delivery deferred (RemoteResponseError)
+ok
+test_outbox_cse_outage_retains_backoff_across_reopen_then_recovers (test_mobius_cse.MobiusCseTests.test_outbox_cse_outage_retains_backoff_across_reopen_then_recovers) ... oneM2M delivery deferred (TimeoutError)
+ok
+test_outbox_observation_restart_and_dedup_with_real_cse (test_mobius_cse.MobiusCseTests.test_outbox_observation_restart_and_dedup_with_real_cse) ... ok
+test_outbox_process_death_after_remote_commit_retries_one_cin (test_mobius_cse.MobiusCseTests.test_outbox_process_death_after_remote_commit_retries_one_cin) ... ok
+test_outbox_receipt_flag_requires_real_mqtt_application_response (test_mobius_cse.MobiusCseTests.test_outbox_receipt_flag_requires_real_mqtt_application_response) ... ok
+test_same_rqi_different_payload_is_rejected_and_original_preserved (test_mobius_cse.MobiusCseTests.test_same_rqi_different_payload_is_rejected_and_original_preserved) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 33.083s
+
+OK

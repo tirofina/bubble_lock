@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:privacy-bubble:keyring:0.1.0:ble-journal-manifest",
+  "title": "KEYRING ble-journal-manifest",
+  "description": "DOC-REV 2.0.0 KEYRING extension candidate; implemented, unverified. Capture is not settlement or permission to erase. Cross-field time/count/order checks also apply at runtime.",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
+    "requestId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}$"
+    },
+    "status": {
+      "const": "ok"
+    },
+    "type": {
+      "const": "manifest"
+    },
+    "snapshotId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$"
+    },
+    "deviceId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "bootId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "capturedUptimeMs": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "recordCount": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 32
+    },
+    "preparedCount": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 32
+    },
+    "capacity": {
+      "type": "integer",
+      "const": 32
+    },
+    "format": {
+      "type": "integer",
+      "const": 1
+    },
+    "maxEpoch": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "maxGrant": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    }
+  },
+  "required": [
+    "version",
+    "requestId",
+    "status",
+    "type",
+    "snapshotId",
+    "deviceId",
+    "bootId",
+    "capturedUptimeMs",
+    "recordCount",
+    "preparedCount",
+    "capacity",
+    "format",
+    "maxEpoch",
+    "maxGrant"
+  ],
+  "additionalProperties": false
+}

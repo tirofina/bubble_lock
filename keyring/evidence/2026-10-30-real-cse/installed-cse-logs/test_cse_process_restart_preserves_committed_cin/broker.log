@@ -1,0 +1,87 @@
+1793328647: mosquitto version 2.1.2 starting
+1793328647: Config loaded from /mosquitto/test/broker-5c0181c38a0e476cbd68e330d6cfab1c.conf.
+1793328647: Bridge support available.
+1793328647: Persistence support available.
+1793328647: TLS support available.
+1793328647: TLS-PSK support available.
+1793328647: Websockets support available.
+1793328647: Warning: File /mosquitto/test/acl-5c0181c38a0e476cbd68e330d6cfab1c.txt has world readable permissions. Future versions will refuse to load this file.
+To fix this, use `chmod 0700 /mosquitto/test/acl-5c0181c38a0e476cbd68e330d6cfab1c.txt`.
+
+1793328647: Plugin builtin-security has registered to receive 'acl-check' events.
+1793328647: Opening ipv4 listen socket on port 1883.
+1793328647: Opening ipv6 listen socket on port 1883.
+1793328647: Opening ipv4 listen socket on port 8883.
+1793328647: Opening ipv6 listen socket on port 8883.
+1793328647: mosquitto version 2.1.2 running
+1793328651: New connection from 172.19.0.4:55556 on port 1883.
+1793328651: New client connected from 172.19.0.4:55556 as mqttjs_087d55d8 (p4, c1, k60).
+1793328651: No will message specified.
+1793328651: Sending CONNACK to mqttjs_087d55d8 (0, 0)
+1793328651: Received SUBSCRIBE from mqttjs_087d55d8
+1793328651: 	/oneM2M/req/+/Mobius4/json (QoS 0)
+1793328651: mqttjs_087d55d8 0 /oneM2M/req/+/Mobius4/json
+1793328651: Sending SUBACK to mqttjs_087d55d8
+1793328651: Received SUBSCRIBE from mqttjs_087d55d8
+1793328651: 	/oneM2M/reg_req/+/Mobius4/json (QoS 0)
+1793328651: mqttjs_087d55d8 0 /oneM2M/reg_req/+/Mobius4/json
+1793328651: Sending SUBACK to mqttjs_087d55d8
+1793328651: Received SUBSCRIBE from mqttjs_087d55d8
+1793328651: 	/oneM2M/req/+/Mobius4/xml (QoS 0)
+1793328651: mqttjs_087d55d8 0 /oneM2M/req/+/Mobius4/xml
+1793328651: Sending SUBACK to mqttjs_087d55d8
+1793328651: Received SUBSCRIBE from mqttjs_087d55d8
+1793328651: 	/oneM2M/reg_req/+/Mobius4/xml (QoS 0)
+1793328651: mqttjs_087d55d8 0 /oneM2M/reg_req/+/Mobius4/xml
+1793328651: Sending SUBACK to mqttjs_087d55d8
+1793328651: Received SUBSCRIBE from mqttjs_087d55d8
+1793328651: 	/oneM2M/req/+/Mobius4/cbor (QoS 0)
+1793328651: mqttjs_087d55d8 0 /oneM2M/req/+/Mobius4/cbor
+1793328651: Sending SUBACK to mqttjs_087d55d8
+1793328651: Received SUBSCRIBE from mqttjs_087d55d8
+1793328651: 	/oneM2M/reg_req/+/Mobius4/cbor (QoS 0)
+1793328651: mqttjs_087d55d8 0 /oneM2M/reg_req/+/Mobius4/cbor
+1793328651: Sending SUBACK to mqttjs_087d55d8
+1793328651: Received SUBSCRIBE from mqttjs_087d55d8
+1793328651: 	self/datasetManager/# (QoS 0)
+1793328651: mqttjs_087d55d8 0 self/datasetManager/#
+1793328651: Sending SUBACK to mqttjs_087d55d8
+1793328652: Received DISCONNECT from mqttjs_087d55d8
+1793328652: Client mqttjs_087d55d8 [172.19.0.4:55556] disconnected.
+1793328653: New connection from 172.19.0.4:55570 on port 1883.
+1793328653: New client connected from 172.19.0.4:55570 as mqttjs_3778ed6b (p4, c1, k60).
+1793328653: No will message specified.
+1793328653: Sending CONNACK to mqttjs_3778ed6b (0, 0)
+1793328653: Received SUBSCRIBE from mqttjs_3778ed6b
+1793328653: 	/oneM2M/req/+/Mobius4/json (QoS 0)
+1793328653: mqttjs_3778ed6b 0 /oneM2M/req/+/Mobius4/json
+1793328653: Sending SUBACK to mqttjs_3778ed6b
+1793328653: Received SUBSCRIBE from mqttjs_3778ed6b
+1793328653: 	/oneM2M/reg_req/+/Mobius4/json (QoS 0)
+1793328653: mqttjs_3778ed6b 0 /oneM2M/reg_req/+/Mobius4/json
+1793328653: Sending SUBACK to mqttjs_3778ed6b
+1793328653: Received SUBSCRIBE from mqttjs_3778ed6b
+1793328653: 	/oneM2M/req/+/Mobius4/xml (QoS 0)
+1793328653: mqttjs_3778ed6b 0 /oneM2M/req/+/Mobius4/xml
+1793328653: Sending SUBACK to mqttjs_3778ed6b
+1793328653: Received SUBSCRIBE from mqttjs_3778ed6b
+1793328653: 	/oneM2M/reg_req/+/Mobius4/xml (QoS 0)
+1793328653: mqttjs_3778ed6b 0 /oneM2M/reg_req/+/Mobius4/xml
+1793328653: Sending SUBACK to mqttjs_3778ed6b
+1793328653: Received SUBSCRIBE from mqttjs_3778ed6b
+1793328653: 	/oneM2M/req/+/Mobius4/cbor (QoS 0)
+1793328653: mqttjs_3778ed6b 0 /oneM2M/req/+/Mobius4/cbor
+1793328653: Sending SUBACK to mqttjs_3778ed6b
+1793328653: Received SUBSCRIBE from mqttjs_3778ed6b
+1793328653: 	/oneM2M/reg_req/+/Mobius4/cbor (QoS 0)
+1793328653: mqttjs_3778ed6b 0 /oneM2M/reg_req/+/Mobius4/cbor
+1793328653: Sending SUBACK to mqttjs_3778ed6b
+1793328653: Received SUBSCRIBE from mqttjs_3778ed6b
+1793328653: 	self/datasetManager/# (QoS 0)
+1793328653: mqttjs_3778ed6b 0 self/datasetManager/#
+1793328653: Sending SUBACK to mqttjs_3778ed6b
+1793328647: The 'per_listener_settings' option is now deprecated and will be removed in version 3.0. Please see the documentation for how to achieve the same effect.
+1793328647: You are using the 'allow_anonymous' option with 'per_listener_settings true'. Please replace this with 'listener_allow_anonymous'.
+1793328647: You are using the 'allow_anonymous' option with 'per_listener_settings true'. Please replace this with 'listener_allow_anonymous'.
+1793328647: Info: running mosquitto as user: root.
+1793328647: Warning: Mosquitto should not be run as root/administrator.

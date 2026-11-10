@@ -1,0 +1,44 @@
+1793328638: mosquitto version 2.1.2 starting
+1793328638: Config loaded from /mosquitto/test/broker-2c4a057992ff49aa8d28969cb88b2c48.conf.
+1793328638: Bridge support available.
+1793328638: Persistence support available.
+1793328638: TLS support available.
+1793328638: TLS-PSK support available.
+1793328638: Websockets support available.
+1793328638: Warning: File /mosquitto/test/acl-2c4a057992ff49aa8d28969cb88b2c48.txt has world readable permissions. Future versions will refuse to load this file.
+To fix this, use `chmod 0700 /mosquitto/test/acl-2c4a057992ff49aa8d28969cb88b2c48.txt`.
+
+1793328638: Plugin builtin-security has registered to receive 'acl-check' events.
+1793328638: Opening ipv4 listen socket on port 8883.
+1793328638: Opening ipv6 listen socket on port 8883.
+1793328638: mosquitto version 2.1.2 running
+1793328638: New connection from 172.17.0.1:43712 on port 8883.
+1793328638: New client connected from 172.17.0.1:43712 as cse-test-afcdd526c463490382a533f9c30d530b (p4, c1, k10, u'cse-test').
+1793328638: No will message specified.
+1793328638: Client cse-test-afcdd526c463490382a533f9c30d530b negotiated TLSv1.3 cipher TLS_AES_256_GCM_SHA384
+1793328638: Sending CONNACK to cse-test-afcdd526c463490382a533f9c30d530b (0, 0)
+1793328638: Received SUBSCRIBE from cse-test-afcdd526c463490382a533f9c30d530b
+1793328638: 	/oneM2M/req/# (QoS 1)
+1793328638: cse-test-afcdd526c463490382a533f9c30d530b 1 /oneM2M/req/#
+1793328638: Sending SUBACK to cse-test-afcdd526c463490382a533f9c30d530b
+1793328638: New connection from 172.17.0.1:43714 on port 8883.
+1793328638: New client connected from 172.17.0.1:43714 as gw-ecd79d2a3930b66bf4f6 (p4, c0, k10, u'gw-test').
+1793328638: No will message specified.
+1793328638: Client gw-ecd79d2a3930b66bf4f6 negotiated TLSv1.3 cipher TLS_AES_256_GCM_SHA384
+1793328638: Sending CONNACK to gw-ecd79d2a3930b66bf4f6 (0, 0)
+1793328638: Received SUBSCRIBE from gw-ecd79d2a3930b66bf4f6
+1793328638: 	/oneM2M/resp/Ctest/test-cse/json (QoS 1)
+1793328638: gw-ecd79d2a3930b66bf4f6 1 /oneM2M/resp/Ctest/test-cse/json
+1793328638: Sending SUBACK to gw-ecd79d2a3930b66bf4f6
+1793328638: Received PUBLISH from gw-ecd79d2a3930b66bf4f6 (d0, q1, r0, m2, '/oneM2M/req/Ctest/test-cse/json', ... (226 bytes))
+1793328638: Sending PUBLISH to cse-test-afcdd526c463490382a533f9c30d530b (d0, q1, r0, m1, '/oneM2M/req/Ctest/test-cse/json', ... (226 bytes))
+1793328638: Sending PUBACK to gw-ecd79d2a3930b66bf4f6 (m2, rc0)
+1793328638: Received PUBLISH from cse-test-afcdd526c463490382a533f9c30d530b (d0, q1, r0, m2, '/oneM2M/resp/Ctest/test-cse/json', ... (69 bytes))
+1793328638: Sending PUBLISH to gw-ecd79d2a3930b66bf4f6 (d0, q1, r0, m1, '/oneM2M/resp/Ctest/test-cse/json', ... (69 bytes))
+1793328638: Sending PUBACK to cse-test-afcdd526c463490382a533f9c30d530b (m2, rc0)
+1793328638: Received PUBACK from cse-test-afcdd526c463490382a533f9c30d530b (Mid: 1, RC:0)
+1793328638: Received PUBACK from gw-ecd79d2a3930b66bf4f6 (Mid: 1, RC:0)
+1793328638: The 'per_listener_settings' option is now deprecated and will be removed in version 3.0. Please see the documentation for how to achieve the same effect.
+1793328638: You are using the 'allow_anonymous' option with 'per_listener_settings true'. Please replace this with 'listener_allow_anonymous'.
+1793328638: Info: running mosquitto as user: root.
+1793328638: Warning: Mosquitto should not be run as root/administrator.

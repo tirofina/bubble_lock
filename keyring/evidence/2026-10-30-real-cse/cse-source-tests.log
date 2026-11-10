@@ -1,0 +1,10 @@
+test_cse_process_restart_preserves_committed_cin (test_mobius_cse.MobiusCseTests.test_cse_process_restart_preserves_committed_cin) ... ok
+test_duplicate_request_reuses_single_cin (test_mobius_cse.MobiusCseTests.test_duplicate_request_reuses_single_cin) ... ok
+test_https_publish_is_stored_and_read_back_from_real_cse (test_mobius_cse.MobiusCseTests.test_https_publish_is_stored_and_read_back_from_real_cse) ... ok
+test_mqtt_application_receipt_and_storage_without_https_post (test_mobius_cse.MobiusCseTests.test_mqtt_application_receipt_and_storage_without_https_post) ... ok
+test_same_rqi_different_payload_is_rejected_and_original_preserved (test_mobius_cse.MobiusCseTests.test_same_rqi_different_payload_is_rejected_and_original_preserved) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 19.375s
+
+OK

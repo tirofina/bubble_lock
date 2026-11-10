@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:privacy-bubble:keyring:0.1.0:ble-receipt",
+  "title": "BLE 실행 receipt",
+  "description": "KEYRING 후보 계약 0.1.0. PC-MOBIUS canonical contract 확정 및 실물 검증 전.",
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "deviceId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "bootId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "commandId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "payloadHash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "ackCode": {
+      "type": "string",
+      "enum": [
+        "APPLIED",
+        "DUPLICATE",
+        "REJECTED_EPOCH",
+        "REJECTED_GRANT",
+        "EXPIRED",
+        "CONFLICT",
+        "INVALID",
+        "JOURNAL_FULL",
+        "STORAGE_ERROR",
+        "INDETERMINATE",
+        "READBACK_MISMATCH"
+      ]
+    },
+    "acceptedUptimeMs": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "appliedUptimeMs": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "readback": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "state"
+      ],
+      "additionalProperties": false
+    },
+    "firmwareRevision": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    }
+  },
+  "required": [
+    "version",
+    "deviceId",
+    "bootId",
+    "commandId",
+    "payloadHash",
+    "ackCode",
+    "acceptedUptimeMs",
+    "appliedUptimeMs",
+    "readback",
+    "firmwareRevision"
+  ],
+  "additionalProperties": false
+}

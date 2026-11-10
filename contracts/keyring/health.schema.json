@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:privacy-bubble:keyring:0.1.0:health",
+  "title": "Gateway → oneM2M health",
+  "description": "KEYRING 후보 계약 0.1.0. PC-MOBIUS canonical contract 확정 및 실물 검증 전.",
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "gatewayId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "bootId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "observedAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+    },
+    "uptimeSeconds": {
+      "type": "number",
+      "minimum": 0
+    },
+    "runtimeDigest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "credentialStatus": {
+      "type": "string",
+      "enum": [
+        "ACTIVE",
+        "LOST",
+        "REVOKED",
+        "UNKNOWN"
+      ]
+    },
+    "credentialRevision": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "outboxDepth": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "commandCount": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "devices": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "type": "object",
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+          }
+        },
+        "required": [
+          "deviceId"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "counters": {
+      "type": "object",
+      "propertyNames": {
+        "minLength": 1,
+        "maxLength": 64
+      },
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 9007199254740991
+      }
+    }
+  },
+  "required": [
+    "version",
+    "gatewayId",
+    "bootId",
+    "observedAt",
+    "uptimeSeconds",
+    "runtimeDigest",
+    "credentialStatus",
+    "credentialRevision",
+    "outboxDepth",
+    "commandCount",
+    "devices",
+    "counters"
+  ],
+  "additionalProperties": false
+}

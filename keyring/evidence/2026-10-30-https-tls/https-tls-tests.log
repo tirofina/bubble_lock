@@ -1,0 +1,15 @@
+test_missing_client_certificate_is_rejected_before_http (test_https_tls.HttpsTlsTests.test_missing_client_certificate_is_rejected_before_http) ... Executing <Task pending name='Task-2' coro=<HttpsTlsTests.test_missing_client_certificate_is_rejected_before_http() running at C:\Users\NH\Documents\ChatGPT\mobius 해커톤\github_upload\bubble_lock\keyring\raspberry-pi-gateway\tests\test_https_tls.py:81> cb=[_run_until_complete_cb() at C:\Users\NH\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\base_events.py:181] created at C:\Users\NH\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\runners.py:100> took 0.110 seconds
+ok
+test_proxy_and_ca_environment_do_not_override_configured_tls (test_https_tls.HttpsTlsTests.test_proxy_and_ca_environment_do_not_override_configured_tls) ... ok
+loopback evidence: TLSv1.3, verified test client CN=gw-test, matching oneM2M CREATE response
+test_publish_uses_tls13_mtls_and_actual_onem2m_headers (test_https_tls.HttpsTlsTests.test_publish_uses_tls13_mtls_and_actual_onem2m_headers) ... ok
+test_redirect_is_not_followed (test_https_tls.HttpsTlsTests.test_redirect_is_not_followed) ... ok
+test_server_ip_identity_mismatch_is_rejected_before_http (test_https_tls.HttpsTlsTests.test_server_ip_identity_mismatch_is_rejected_before_http) ... ok
+test_tls12_only_peer_is_rejected_without_downgrade (test_https_tls.HttpsTlsTests.test_tls12_only_peer_is_rejected_without_downgrade) ... ok
+test_untrusted_client_is_rejected_before_http (test_https_tls.HttpsTlsTests.test_untrusted_client_is_rejected_before_http) ... ok
+test_untrusted_server_ca_is_rejected_before_http (test_https_tls.HttpsTlsTests.test_untrusted_server_ca_is_rejected_before_http) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 1.765s
+
+OK

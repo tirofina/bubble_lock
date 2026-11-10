@@ -1,0 +1,313 @@
+{
+  "evidenceVersion": 1,
+  "generatedAt": "2026-10-30T02:37:13.940457+00:00",
+  "role": "KEYRING",
+  "owner": "남호",
+  "documentRevision": "2.0.0",
+  "sourceCommit": "5dec2c02a30574f0c5c775274260faaa1b2eb0a9",
+  "sourcePushConfirmed": true,
+  "remoteBranch": "codex/keyring-namho",
+  "remoteCore": "91a281b",
+  "gatewayRevision": "0.2.2",
+  "runtimeCodeCommit": "3dd2e20",
+  "productionCodeChanged": false,
+  "scope": "real isolated Mosquitto MQTT/TLS/ACL and synthetic oneM2M responder with real loopback HTTPS fallback",
+  "rubricIds": [
+    "R02",
+    "R03",
+    "R10"
+  ],
+  "gateStatus": "partial-local-evidence",
+  "approver": null,
+  "testIds": [
+    "KR-MQTT-WIRE-01",
+    "KR-MQTT-WIRE-02",
+    "KR-MQTT-WIRE-03",
+    "KR-MQTT-WIRE-04",
+    "KR-MQTT-WIRE-05",
+    "KR-MQTT-WIRE-06"
+  ],
+  "tests": {
+    "mqtt-source-tests.log": {
+      "tests": 6,
+      "seconds": 17.845,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    "mqtt-installed-tests.log": {
+      "tests": 6,
+      "seconds": 17.956,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    "default-source-tests.log": {
+      "tests": 55,
+      "seconds": 2.497,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exitCode": 0
+    },
+    "default-installed-tests.log": {
+      "tests": 55,
+      "seconds": 2.364,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exitCode": 0
+    }
+  },
+  "host": {
+    "system": "Windows",
+    "release": "11",
+    "python": "3.12.14",
+    "pythonOpenSsl": "OpenSSL 3.5.8 25 Aug 2026",
+    "dockerServer": "29.4.0"
+  },
+  "broker": {
+    "implementation": "Mosquitto",
+    "observedVersion": "2.1.2",
+    "imageId": "sha256:860aeb5d63ce509508f6dcfb2bc8a1c1dd2bc60555b562b45ce90e52d8dabb0f",
+    "repoDigests": [
+      "eclipse-mosquitto@sha256:860aeb5d63ce509508f6dcfb2bc8a1c1dd2bc60555b562b45ce90e52d8dabb0f"
+    ],
+    "architecture": "amd64",
+    "imagePulled": false,
+    "mqttProtocol": "3.1.1",
+    "negotiatedTls": "TLSv1.3",
+    "authentication": "generated test CA/client certificates and CN username ACL",
+    "hostPortBinding": "127.0.0.1 ephemeral port only",
+    "persistence": false,
+    "testContainersRemainingAfterRuns": 0,
+    "ownershipTokenRequiredBeforeStopOrRemove": true,
+    "existingContainersChanged": false
+  },
+  "protocolPeer": {
+    "syntheticOneM2mResponder": true,
+    "realMobiusCse": false,
+    "authorizationApi": false
+  },
+  "package": {
+    "rebuilt": false,
+    "artifact": "privacy_bubble_gateway-0.2.2-py3-none-any.whl",
+    "localPath": "C:\\Users\\NH\\Documents\\ChatGPT\\mobius 해커톤\\github_upload\\_local\\keyring-gateway-022-wheel\\privacy_bubble_gateway-0.2.2-py3-none-any.whl",
+    "sha256": "88c5efa07fd2f376d005f2665478baa14cf44f055e57874ce3952ee0ebb1eca3",
+    "installedPythonModulesMatchSource": true,
+    "buildReceipt": "../2026-10-30-receipt-routing/receipt.json"
+  },
+  "verifiedBoundaries": [
+    "matching oneM2M rqi/rsc2001 completes MQTT without HTTPS",
+    "broker PUBACK without application response falls back with same cin",
+    "wrong response rqi ignored before fallback",
+    "rsc4103 denial does not bypass via HTTPS",
+    "certificate CN ACL denies Other Originator topic even though PUBACK exists",
+    "actual broker stop fails pending MQTT future with ConnectionError before its10s response timeout and falls back"
+  ],
+  "exclusions": [
+    "operational CSE/PKI/ACP/grant",
+    "existing databases and services",
+    "BLE/Pi/devices/flash/COM",
+    "physical measurements/video/release approval"
+  ],
+  "firmwareChangedOrRebuilt": false,
+  "testCredentialsCommitted": false,
+  "goalComplete": false,
+  "logs": [
+    {
+      "path": "broker-installed/test_application_denial_does_not_bypass_through_https.log",
+      "bytes": 3108,
+      "sha256": "e433b85a14366846a12fc3dc155be59645e2b70ccde5a8ea9b6ce51dda9d71b4"
+    },
+    {
+      "path": "broker-installed/test_broker_disconnect_fails_pending_and_uses_https.log",
+      "bytes": 2730,
+      "sha256": "f9421c93b8bad97bb7a14b03b6e0b6a18253f2ea251f9f2e80801343ac719713"
+    },
+    {
+      "path": "broker-installed/test_certificate_identity_acl_denies_other_originator_topic.log",
+      "bytes": 2446,
+      "sha256": "9d11c59e2d374c371842030846e60ccd8cd5d80b65093b58cc9bcb8f96dbd0f5"
+    },
+    {
+      "path": "broker-installed/test_mqtt_tls_application_receipt_completes_without_https.log",
+      "bytes": 3108,
+      "sha256": "f9ee79d98b20ea04646bce1b41e9de89924960921a7fcf5582c2b375291dd928"
+    },
+    {
+      "path": "broker-installed/test_puback_without_application_response_falls_back_with_same_cin.log",
+      "bytes": 2681,
+      "sha256": "930c58794633057ccab393666086bc4da99d6b35b2400bd48b70ee16fd17e8cb"
+    },
+    {
+      "path": "broker-installed/test_wrong_response_rqi_cannot_settle_mqtt_request.log",
+      "bytes": 3108,
+      "sha256": "3a7f41bd5171dee406aadbd7783057aa03bf259301512a3b54884dfa9e90aaca"
+    },
+    {
+      "path": "broker-source/test_application_denial_does_not_bypass_through_https.log",
+      "bytes": 3108,
+      "sha256": "914f23c1de837b5e6f7593a60cc3ad727e284370939480bf71e7a315e7908400"
+    },
+    {
+      "path": "broker-source/test_broker_disconnect_fails_pending_and_uses_https.log",
+      "bytes": 2730,
+      "sha256": "adefc5aade6341b84566e4a6633f62d786e8cd5a01258948155edf3ae957d55a"
+    },
+    {
+      "path": "broker-source/test_certificate_identity_acl_denies_other_originator_topic.log",
+      "bytes": 2446,
+      "sha256": "aef2b2f3fd3a717b2b641b252b6e5c7d205046290daf622c4e5abdb9376fed89"
+    },
+    {
+      "path": "broker-source/test_mqtt_tls_application_receipt_completes_without_https.log",
+      "bytes": 3108,
+      "sha256": "75ee973d9e97af92c30ef7eb1d59dab40f26aa2957cfe1836039b6e5bd985dc5"
+    },
+    {
+      "path": "broker-source/test_puback_without_application_response_falls_back_with_same_cin.log",
+      "bytes": 2681,
+      "sha256": "bd4ca8c50488878608b6b07059df49568fe5a6c5316f07c2d8850e63e1e21503"
+    },
+    {
+      "path": "broker-source/test_wrong_response_rqi_cannot_settle_mqtt_request.log",
+      "bytes": 3108,
+      "sha256": "5fbcd2b66d3dca3ef32ff7ddd06b146d2738f07869b5d4f86fcde6f3e2a8904a"
+    },
+    {
+      "path": "default-installed-tests.log",
+      "bytes": 8363,
+      "sha256": "be05d0044f9c637bdc1977a0d9d60810d586eee64c30243a9a457e6b0a21caa5"
+    },
+    {
+      "path": "default-source-tests.log",
+      "bytes": 8363,
+      "sha256": "c0e0beb045902845cd093d1fec0c6d5a7f8db7e6c63699fdc088cf26961c8a06"
+    },
+    {
+      "path": "mqtt-installed-tests.log",
+      "bytes": 1279,
+      "sha256": "5aeede53bed9574b4d8be56a93b1009055b7a4e9d427e56cc06703ed98811367"
+    },
+    {
+      "path": "mqtt-source-tests.log",
+      "bytes": 1111,
+      "sha256": "39975361264cf0412b803d08170f1fd8b1ba14aa9f72b13f87881686a94beff1"
+    }
+  ],
+  "sources": [
+    {
+      "path": "keyring/raspberry-pi-gateway/integration_tests/mqtt_fixture.py",
+      "sha256LfNormalized": "22b1ddf4c6bb1fbf33bc19bd877d8566c22261e840caea120c0ea77c8bbd2bf5"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/integration_tests/test_mqtt_tls.py",
+      "sha256LfNormalized": "b9b7e79bebc03013dd727ecba564af7cc0ef03c69cd5dbeccc1990848be1b9ff"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/pyproject.toml",
+      "sha256LfNormalized": "0f9a95edf7e4f4afba2e225e77e7025336b147e4d55b819d11f690e3fc4ea13f"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/__init__.py",
+      "sha256LfNormalized": "dc47a6ed28f6404598131518648fc2efca20e5d4626ea8009350c7f7c8f8a79a"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/__main__.py",
+      "sha256LfNormalized": "36dcb434b1343f6cdedb174c9f68e372141d27de327e94f54e958bd9719c4219"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/ble.py",
+      "sha256LfNormalized": "0a09b9f4b66ca63c7763e38058812dc848388d2ae446d86263b404a106f37d5f"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/config.py",
+      "sha256LfNormalized": "aaa913c289848cfbce6aad544d19b0d705f0bcbef3574435a96866489c2c54f2"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/core_bridge.py",
+      "sha256LfNormalized": "eddb76e43b823c8c53d351544f0132bc64f3321f3b6778fbdec7842209c49fa9"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/journal_cli.py",
+      "sha256LfNormalized": "a22dac2ddbf6142f8c0665e5efe460827721e502bb40453fde4d366783bff1fe"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/journal_export.py",
+      "sha256LfNormalized": "02ee7f74547656a650b3dbaebec6e1e7b1378d041825ff1937dbd05dba99d046"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/model.py",
+      "sha256LfNormalized": "964b4c982d94177f251bcbaec430e18edb36106300db45d79b094c0eca8c7fa6"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/service.py",
+      "sha256LfNormalized": "e6649210103decb3e02dfe81a576c2b09ede3f8c9130d8c842a0014329a3ebf1"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/state_archive.py",
+      "sha256LfNormalized": "be49b0c2cb336a69153aed777184bc038db398a480ad3f99bd1f421a60e93e97"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/state_identity.py",
+      "sha256LfNormalized": "aac06ec93f0c0e3ca22e67d0d4e8a7b605890d3aecc5aa1710a5a9cbd04f6ef0"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/store.py",
+      "sha256LfNormalized": "82c811e448779005545287699a9bcb9f5827f6dc4273e0a0ff87c98bec4afe1c"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/transport.py",
+      "sha256LfNormalized": "62b4c42dea5437882b4b69f79418e4f8e64387d2aa83a3eb570ae698707f0a13"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/helpers.py",
+      "sha256LfNormalized": "eee17a8b5cd175dc3e92c55adae0a88a5923b0331046a15f317b1f31fd6ff82e"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_ble_sessions.py",
+      "sha256LfNormalized": "d164b9c2f3733dde6b7aecd3b76aefc1c5a505f8e50aa309cccd2dd7aab97c18"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_dispatch.py",
+      "sha256LfNormalized": "193b158d20e019f7f75348be0c31908323a7a7a63e7be56b9935d167a645d668"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_https_tls.py",
+      "sha256LfNormalized": "12a2f50c007805b74615ad52993c5fd45ba97bdcde151fec7b4b4640ae6b6870"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_journal.py",
+      "sha256LfNormalized": "262b3baa8af2b985dfb14c46bbeabe9898fb1064343d74b0dcf20c0b42273858"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_protocol.py",
+      "sha256LfNormalized": "e75220ddb7b92e2bc50edd465c8777acc65829c8dd1c91c5c184f3f8f61332a2"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_receipt_outbox.py",
+      "sha256LfNormalized": "fb9dd0e7439f9c493668abfa42e23b5a72022787adfb163dbe71ceae6df96847"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_store.py",
+      "sha256LfNormalized": "e740d04e4a8349fce6ec2a6439093c4f450b7f67ca27837f99b8e2e810c590a6"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_transport.py",
+      "sha256LfNormalized": "773d8e4fb0cbdb7f339590da7903249f002ae0bc042306c8f727d7afa7dc63ae"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/tls_fixture.py",
+      "sha256LfNormalized": "59c90f59f48df9f43fa694b2b7644299ad495bc4be5f78434833edb000d1ad68"
+    }
+  ],
+  "packages": {
+    "paho-mqtt": "2.1.0",
+    "httpx": "0.28.1",
+    "bleak": "3.0.2"
+  },
+  "performer": "Codex-assisted local verification"
+}

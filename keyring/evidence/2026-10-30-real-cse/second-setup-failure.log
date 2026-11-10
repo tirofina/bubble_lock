@@ -1,0 +1,18 @@
+setUpClass (test_mobius_cse.MobiusCseTests) ... ERROR
+
+======================================================================
+ERROR: setUpClass (test_mobius_cse.MobiusCseTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\NH\Documents\ChatGPT\mobius 해커톤\github_upload\bubble_lock\keyring\raspberry-pi-gateway\cse_integration_tests\test_mobius_cse.py", line 23, in setUpClass
+    cls.stack = DisposableMobius(cls.pki)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\NH\Documents\ChatGPT\mobius 해커톤\github_upload\bubble_lock\keyring\raspberry-pi-gateway\cse_integration_tests\mobius_fixture.py", line 64, in __init__
+    port = info["NetworkSettings"]["Ports"]["8759/tcp"]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+KeyError: '8759/tcp'
+
+----------------------------------------------------------------------
+Ran 0 tests in 8.380s
+
+FAILED (errors=1)

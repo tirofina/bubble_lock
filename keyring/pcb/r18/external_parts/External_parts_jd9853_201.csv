@@ -1,0 +1,9 @@
+﻿Part,MPN,Quantity,Specification,Connection,Source
+Battery,DTP803040,1,"1000mAh 3.7V;continuous500mA;manufacturer protected-pack max30.5x42x8.2mm,UL3302AWG26/JST-PH2.0 leads50±3mm;datasheets/dtp803040.pdf p9",J2,https://www.dtpbattery.com/
+Speaker,AliExpress 1511 wired speaker,1,15x11mm; 8ohm seller 1W; not a confirmed CMS-15118D-SP,J4 direct solder,user selected product image
+Vibration motor,AliExpress 1005007703166995,1,rated3V; seller1.5-3.7V; running/start/stall current not specified; removable mount uses diameter10mm/thickness3mm and30mm leads; actual part not yet received,J6 direct solder,https://ko.aliexpress.com/item/1005007703166995.html
+Battery thermistor,103JT-025,1,SEMITEC 10kohm +/-1%; B3435K +/-1%; attach to battery body,J5 direct solder; no cable connector,https://www.semitec-global.com/uploads/2022/01/P9-JT-Thermistor.pdf
+Case power switch,MSL-1C2P dual 2mm,1,3pin 1C2T/SPDT; 2mm is knob height; case mounted; identify common terminal before wiring,J9 direct solder 3wires,https://www.devicemart.co.kr/goods/view?no=30530
+Battery ready cable,Adafruit 261,1,JST PH 2pin plug with 100mm 26AWG red/black leads; join existing battery wires by polarity; optional if the supplied battery PHR-2 cable already fits J2 with correct polarity,"J2 plug; pin1 VBAT(+), pin2 GND(-); bare opposite ends join battery leads",https://www.adafruit.com/product/261
+LCD ready cable,SH1.0mm 8Pin female-to-bare-wire harness,1,"Female /8Pin /SH1.0mm /10cm; board end mates J3, bare ends soldered by signal name",J3 plug; opposite ends solder to LCD module,https://ko.aliexpress.com/item/1005005757804816.html
+LCD module alternative,AliExpress 1005012282337473 / JD9853 2.01 inch,1,Alternative to ST7789 version; title240x296 conflicts with generic320x240 field,"J3 SH8 harness, opposite ends solder to module",https://ko.aliexpress.com/item/1005012282337473.html

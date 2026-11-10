@@ -1,0 +1,113 @@
+1793328919: mosquitto version 2.1.2 starting
+1793328919: Config loaded from /mosquitto/test/broker-5f2bbb63b300435c9094d0c237b98cfb.conf.
+1793328919: Bridge support available.
+1793328919: Persistence support available.
+1793328919: TLS support available.
+1793328919: TLS-PSK support available.
+1793328919: Websockets support available.
+1793328919: Warning: File /mosquitto/test/acl-5f2bbb63b300435c9094d0c237b98cfb.txt has world readable permissions. Future versions will refuse to load this file.
+To fix this, use `chmod 0700 /mosquitto/test/acl-5f2bbb63b300435c9094d0c237b98cfb.txt`.
+
+1793328919: Plugin builtin-security has registered to receive 'acl-check' events.
+1793328919: Opening ipv4 listen socket on port 1883.
+1793328919: Opening ipv6 listen socket on port 1883.
+1793328919: Opening ipv4 listen socket on port 8883.
+1793328919: Opening ipv6 listen socket on port 8883.
+1793328919: mosquitto version 2.1.2 running
+1793328923: New connection from 172.19.0.4:47974 on port 1883.
+1793328923: New client connected from 172.19.0.4:47974 as mqttjs_baab6356 (p4, c1, k60).
+1793328923: No will message specified.
+1793328923: Sending CONNACK to mqttjs_baab6356 (0, 0)
+1793328923: Received SUBSCRIBE from mqttjs_baab6356
+1793328923: 	/oneM2M/req/+/Mobius4/json (QoS 0)
+1793328923: mqttjs_baab6356 0 /oneM2M/req/+/Mobius4/json
+1793328923: Sending SUBACK to mqttjs_baab6356
+1793328923: Received SUBSCRIBE from mqttjs_baab6356
+1793328923: 	/oneM2M/reg_req/+/Mobius4/json (QoS 0)
+1793328923: mqttjs_baab6356 0 /oneM2M/reg_req/+/Mobius4/json
+1793328923: Sending SUBACK to mqttjs_baab6356
+1793328923: Received SUBSCRIBE from mqttjs_baab6356
+1793328923: 	/oneM2M/req/+/Mobius4/xml (QoS 0)
+1793328923: mqttjs_baab6356 0 /oneM2M/req/+/Mobius4/xml
+1793328923: Sending SUBACK to mqttjs_baab6356
+1793328923: Received SUBSCRIBE from mqttjs_baab6356
+1793328923: 	/oneM2M/reg_req/+/Mobius4/xml (QoS 0)
+1793328923: mqttjs_baab6356 0 /oneM2M/reg_req/+/Mobius4/xml
+1793328923: Sending SUBACK to mqttjs_baab6356
+1793328923: Received SUBSCRIBE from mqttjs_baab6356
+1793328923: 	/oneM2M/req/+/Mobius4/cbor (QoS 0)
+1793328923: mqttjs_baab6356 0 /oneM2M/req/+/Mobius4/cbor
+1793328923: Sending SUBACK to mqttjs_baab6356
+1793328923: Received SUBSCRIBE from mqttjs_baab6356
+1793328923: 	/oneM2M/reg_req/+/Mobius4/cbor (QoS 0)
+1793328923: mqttjs_baab6356 0 /oneM2M/reg_req/+/Mobius4/cbor
+1793328923: Sending SUBACK to mqttjs_baab6356
+1793328923: Received SUBSCRIBE from mqttjs_baab6356
+1793328923: 	self/datasetManager/# (QoS 0)
+1793328923: mqttjs_baab6356 0 self/datasetManager/#
+1793328923: Sending SUBACK to mqttjs_baab6356
+1793328924: Received DISCONNECT from mqttjs_baab6356
+1793328924: Client mqttjs_baab6356 [172.19.0.4:47974] disconnected.
+1793328924: New connection from 172.19.0.4:47982 on port 1883.
+1793328924: New client connected from 172.19.0.4:47982 as mqttjs_1777ddb2 (p4, c1, k60).
+1793328924: No will message specified.
+1793328924: Sending CONNACK to mqttjs_1777ddb2 (0, 0)
+1793328924: Received SUBSCRIBE from mqttjs_1777ddb2
+1793328924: 	/oneM2M/req/+/Mobius4/json (QoS 0)
+1793328924: mqttjs_1777ddb2 0 /oneM2M/req/+/Mobius4/json
+1793328924: Sending SUBACK to mqttjs_1777ddb2
+1793328924: Received SUBSCRIBE from mqttjs_1777ddb2
+1793328924: 	/oneM2M/reg_req/+/Mobius4/json (QoS 0)
+1793328924: mqttjs_1777ddb2 0 /oneM2M/reg_req/+/Mobius4/json
+1793328924: Sending SUBACK to mqttjs_1777ddb2
+1793328924: Received SUBSCRIBE from mqttjs_1777ddb2
+1793328924: 	/oneM2M/req/+/Mobius4/xml (QoS 0)
+1793328924: mqttjs_1777ddb2 0 /oneM2M/req/+/Mobius4/xml
+1793328924: Sending SUBACK to mqttjs_1777ddb2
+1793328924: Received SUBSCRIBE from mqttjs_1777ddb2
+1793328924: 	/oneM2M/reg_req/+/Mobius4/xml (QoS 0)
+1793328924: mqttjs_1777ddb2 0 /oneM2M/reg_req/+/Mobius4/xml
+1793328924: Sending SUBACK to mqttjs_1777ddb2
+1793328924: Received SUBSCRIBE from mqttjs_1777ddb2
+1793328924: 	/oneM2M/req/+/Mobius4/cbor (QoS 0)
+1793328924: mqttjs_1777ddb2 0 /oneM2M/req/+/Mobius4/cbor
+1793328924: Sending SUBACK to mqttjs_1777ddb2
+1793328924: Received SUBSCRIBE from mqttjs_1777ddb2
+1793328924: 	/oneM2M/reg_req/+/Mobius4/cbor (QoS 0)
+1793328924: mqttjs_1777ddb2 0 /oneM2M/reg_req/+/Mobius4/cbor
+1793328924: Sending SUBACK to mqttjs_1777ddb2
+1793328924: Received SUBSCRIBE from mqttjs_1777ddb2
+1793328924: 	self/datasetManager/# (QoS 0)
+1793328924: mqttjs_1777ddb2 0 self/datasetManager/#
+1793328924: Sending SUBACK to mqttjs_1777ddb2
+1793328929: New connection from 172.19.0.1:36538 on port 8883.
+1793328929: New client connected from 172.19.0.1:36538 as gw-ecd79d2a3930b66bf4f6 (p4, c0, k10, u'gw-test').
+1793328929: No will message specified.
+1793328929: Client gw-ecd79d2a3930b66bf4f6 negotiated TLSv1.3 cipher TLS_AES_256_GCM_SHA384
+1793328929: Sending CONNACK to gw-ecd79d2a3930b66bf4f6 (0, 0)
+1793328929: Received SUBSCRIBE from gw-ecd79d2a3930b66bf4f6
+1793328929: 	/oneM2M/resp/Skeyring-fixture/Mobius4/json (QoS 1)
+1793328929: gw-ecd79d2a3930b66bf4f6 1 /oneM2M/resp/Skeyring-fixture/Mobius4/json
+1793328929: Sending SUBACK to gw-ecd79d2a3930b66bf4f6
+1793328929: Received PUBLISH from gw-ecd79d2a3930b66bf4f6 (d0, q1, r0, m2, '/oneM2M/req/Skeyring-fixture/Mobius4/json', ... (290 bytes))
+1793328929: Sending PUBLISH to mqttjs_1777ddb2 (d0, q0, r0, m0, '/oneM2M/req/Skeyring-fixture/Mobius4/json', ... (290 bytes))
+1793328929: Sending PUBACK to gw-ecd79d2a3930b66bf4f6 (m2, rc0)
+1793328929: Received PUBLISH from mqttjs_1777ddb2 (d0, q0, r0, m0, '/oneM2M/resp/Skeyring-fixture/Mobius4/json', ... (354 bytes))
+1793328929: Sending PUBLISH to gw-ecd79d2a3930b66bf4f6 (d0, q0, r0, m0, '/oneM2M/resp/Skeyring-fixture/Mobius4/json', ... (354 bytes))
+1793328929: Received PUBLISH from gw-ecd79d2a3930b66bf4f6 (d0, q1, r0, m3, '/oneM2M/req/Skeyring-fixture/Mobius4/json', ... (299 bytes))
+1793328929: Sending PUBLISH to mqttjs_1777ddb2 (d0, q0, r0, m0, '/oneM2M/req/Skeyring-fixture/Mobius4/json', ... (299 bytes))
+1793328929: Sending PUBACK to gw-ecd79d2a3930b66bf4f6 (m3, rc0)
+1793328929: Received PUBLISH from mqttjs_1777ddb2 (d0, q0, r0, m0, '/oneM2M/resp/Skeyring-fixture/Mobius4/json', ... (354 bytes))
+1793328929: Sending PUBLISH to gw-ecd79d2a3930b66bf4f6 (d0, q0, r0, m0, '/oneM2M/resp/Skeyring-fixture/Mobius4/json', ... (354 bytes))
+1793328930: Received PUBLISH from gw-ecd79d2a3930b66bf4f6 (d0, q1, r0, m4, '/oneM2M/req/Skeyring-fixture/Mobius4/json', ... (310 bytes))
+1793328930: Sending PUBLISH to mqttjs_1777ddb2 (d0, q0, r0, m0, '/oneM2M/req/Skeyring-fixture/Mobius4/json', ... (310 bytes))
+1793328930: Sending PUBACK to gw-ecd79d2a3930b66bf4f6 (m4, rc0)
+1793328930: Received PUBLISH from mqttjs_1777ddb2 (d0, q0, r0, m0, '/oneM2M/resp/Skeyring-fixture/Mobius4/json', ... (354 bytes))
+1793328930: Sending PUBLISH to gw-ecd79d2a3930b66bf4f6 (d0, q0, r0, m0, '/oneM2M/resp/Skeyring-fixture/Mobius4/json', ... (354 bytes))
+1793328930: Received DISCONNECT from gw-ecd79d2a3930b66bf4f6
+1793328930: Client gw-ecd79d2a3930b66bf4f6 [172.19.0.1:36538] disconnected.
+1793328919: The 'per_listener_settings' option is now deprecated and will be removed in version 3.0. Please see the documentation for how to achieve the same effect.
+1793328919: You are using the 'allow_anonymous' option with 'per_listener_settings true'. Please replace this with 'listener_allow_anonymous'.
+1793328919: You are using the 'allow_anonymous' option with 'per_listener_settings true'. Please replace this with 'listener_allow_anonymous'.
+1793328919: Info: running mosquitto as user: root.
+1793328919: Warning: Mosquitto should not be run as root/administrator.

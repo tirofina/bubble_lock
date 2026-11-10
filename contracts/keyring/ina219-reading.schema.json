@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:privacy-bubble:keyring:0.1.0:ina219-reading",
+  "title": "INA219 supply reading in sensorValues.ina219",
+  "description": "Firmware 0.6.0 candidate, unverified. Load-side 3.3V supply, not battery input. All quantities use integer units. Runtime additionally checks timestamp ordering, ADC steps and rounded signed voltage/current product.",
+  "type": "object",
+  "properties": {
+    "status": {
+      "enum": [
+        "disabled",
+        "waiting",
+        "sampling",
+        "ok",
+        "stale",
+        "configuration_error",
+        "configuration_changed",
+        "i2c_error",
+        "conversion_timeout",
+        "overflow",
+        "overrange",
+        "inconsistent",
+        "shutdown_error"
+      ]
+    },
+    "busVoltageMv": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 15996
+    },
+    "currentUa": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": -8000000,
+      "maximum": 8000000
+    },
+    "loadPowerUw": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": -128000000,
+      "maximum": 128000000
+    },
+    "shuntVoltageUv": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": -79990,
+      "maximum": 79990
+    },
+    "readUptimeMs": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 9007199254740991
+    }
+  },
+  "required": [
+    "status",
+    "busVoltageMv",
+    "currentUa",
+    "loadPowerUw",
+    "shuntVoltageUv",
+    "readUptimeMs"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "ok"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "busVoltageMv": {
+            "type": "integer"
+          },
+          "currentUa": {
+            "type": "integer"
+          },
+          "loadPowerUw": {
+            "type": "integer"
+          },
+          "shuntVoltageUv": {
+            "type": "integer"
+          },
+          "readUptimeMs": {
+            "type": "integer"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "busVoltageMv": {
+            "type": "null"
+          },
+          "currentUa": {
+            "type": "null"
+          },
+          "loadPowerUw": {
+            "type": "null"
+          },
+          "shuntVoltageUv": {
+            "type": "null"
+          },
+          "readUptimeMs": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ]
+}

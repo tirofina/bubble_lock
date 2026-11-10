@@ -1,0 +1,201 @@
+{
+  "evidenceVersion": 1,
+  "generatedAt": "2026-10-30T02:13:57.861352+00:00",
+  "role": "KEYRING",
+  "owner": "남호",
+  "documentRevision": "2.0.0",
+  "sourceCommit": "48c71e17a5b64a36f01f006f987e232f5c67a497",
+  "sourcePushConfirmed": true,
+  "remoteBranch": "codex/keyring-namho",
+  "remoteCore": "91a281b",
+  "gatewayRevision": "0.2.1",
+  "scope": "BLE session race regression and Gateway package build; fake GATT only",
+  "rubricIds": [
+    "R02",
+    "R03",
+    "R10"
+  ],
+  "testIds": [
+    "KR-BLE-SESSION-01",
+    "KR-BLE-SESSION-02",
+    "KR-BLE-SESSION-03",
+    "KR-BLE-SESSION-04",
+    "KR-BLE-SESSION-05"
+  ],
+  "baseline": {
+    "sourceCommit": "bf4c8b0",
+    "tests": 5,
+    "failures": 5,
+    "errors": 0,
+    "exitCode": 1,
+    "replacementClientWritesObserved": 12
+  },
+  "tests": {
+    "source": {
+      "tests": 42,
+      "failures": 0,
+      "errors": 0,
+      "exitCode": 0,
+      "seconds": 1.008
+    },
+    "installedWheel": {
+      "tests": 42,
+      "failures": 0,
+      "errors": 0,
+      "exitCode": 0,
+      "seconds": 0.96
+    }
+  },
+  "host": {
+    "system": "Windows",
+    "release": "11",
+    "python": "3.12.14"
+  },
+  "packages": {
+    "bleak": "3.0.2",
+    "httpx": "0.28.1",
+    "paho-mqtt": "2.1.0",
+    "setuptools": "84.2.1",
+    "wheel": "0.48.0",
+    "packaging": "26.3"
+  },
+  "build": {
+    "command": "python -m pip wheel --no-index --no-deps --no-build-isolation --wheel-dir <local-output> .",
+    "exitCode": 0,
+    "artifact": "privacy_bubble_gateway-0.2.1-py3-none-any.whl",
+    "localPath": "C:\\Users\\NH\\Documents\\ChatGPT\\mobius 해커톤\\github_upload\\_local\\keyring-gateway-wheel\\privacy_bubble_gateway-0.2.1-py3-none-any.whl",
+    "bytes": 40336,
+    "sha256": "5f5d14e2b524c38bd57ae502a99e83fbbc0ac487c2aeb9a824898a8caca37f8a",
+    "binaryCommitted": false,
+    "isolatedInstallExitCode": 0,
+    "isolatedInstall": "C:\\Users\\NH\\Documents\\ChatGPT\\mobius 해커톤\\github_upload\\_local\\keyring-gateway-021-smoke"
+  },
+  "firmware": {
+    "changed": false,
+    "rebuilt": false,
+    "previousEvidence": "../2026-10-29-local-validation/receipt.json"
+  },
+  "exclusions": [
+    "actual BLE/BlueZ/radio",
+    "flash/COM/devices",
+    "existing DB",
+    "Gateway daemon",
+    "operational services",
+    "Pi/CSE E2E",
+    "release approval"
+  ],
+  "goalComplete": false,
+  "logs": [
+    {
+      "path": "baseline.log",
+      "bytes": 6557,
+      "sha256": "a8bbbb450a76c034ac8203b31b19a6157ce436320f7418e5f5d2a8002a090388"
+    },
+    {
+      "path": "gateway-tests-source.log",
+      "bytes": 6240,
+      "sha256": "7b86083e15f1d5c35cf4cc5aeed4facf391062ac5bc505efed4da67b81a9224d"
+    },
+    {
+      "path": "gateway-tests-installed.log",
+      "bytes": 6395,
+      "sha256": "f11dca9fff313174b44d2c7411728bf74a57c5131a5624ce5b0a50d42db72fba"
+    },
+    {
+      "path": "wheel-build.log",
+      "bytes": 809,
+      "sha256": "20ed00f91ba9f80ec0a93cecedf47298e915df8a23c60d28d7fe23fe96b94da9"
+    },
+    {
+      "path": "wheel-install.log",
+      "bytes": 256,
+      "sha256": "660a96c8c5d6ec5fc101ca81794e68b62a469b0a8d81b91ffbe6573874d18154"
+    }
+  ],
+  "sources": [
+    {
+      "path": "keyring/raspberry-pi-gateway/pyproject.toml",
+      "sha256LfNormalized": "35848e4dccbe7921a25a8d9414ee2351ecb96be1811f655845b0b7a8e3203d2c"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/__init__.py",
+      "sha256LfNormalized": "0d4d7e4ebae304bb2ef2725a6ff966353e521de28725d839128dac942f0020dd"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/__main__.py",
+      "sha256LfNormalized": "36dcb434b1343f6cdedb174c9f68e372141d27de327e94f54e958bd9719c4219"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/ble.py",
+      "sha256LfNormalized": "0a09b9f4b66ca63c7763e38058812dc848388d2ae446d86263b404a106f37d5f"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/config.py",
+      "sha256LfNormalized": "aaa913c289848cfbce6aad544d19b0d705f0bcbef3574435a96866489c2c54f2"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/core_bridge.py",
+      "sha256LfNormalized": "eddb76e43b823c8c53d351544f0132bc64f3321f3b6778fbdec7842209c49fa9"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/journal_cli.py",
+      "sha256LfNormalized": "a22dac2ddbf6142f8c0665e5efe460827721e502bb40453fde4d366783bff1fe"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/journal_export.py",
+      "sha256LfNormalized": "02ee7f74547656a650b3dbaebec6e1e7b1378d041825ff1937dbd05dba99d046"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/model.py",
+      "sha256LfNormalized": "964b4c982d94177f251bcbaec430e18edb36106300db45d79b094c0eca8c7fa6"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/service.py",
+      "sha256LfNormalized": "e6649210103decb3e02dfe81a576c2b09ede3f8c9130d8c842a0014329a3ebf1"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/state_archive.py",
+      "sha256LfNormalized": "be49b0c2cb336a69153aed777184bc038db398a480ad3f99bd1f421a60e93e97"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/state_identity.py",
+      "sha256LfNormalized": "aac06ec93f0c0e3ca22e67d0d4e8a7b605890d3aecc5aa1710a5a9cbd04f6ef0"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/store.py",
+      "sha256LfNormalized": "b639e3b02892f18db2c8c6c21c0910568cf372523573070e88f524c0e53d288a"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/transport.py",
+      "sha256LfNormalized": "62b4c42dea5437882b4b69f79418e4f8e64387d2aa83a3eb570ae698707f0a13"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/helpers.py",
+      "sha256LfNormalized": "eee17a8b5cd175dc3e92c55adae0a88a5923b0331046a15f317b1f31fd6ff82e"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_ble_sessions.py",
+      "sha256LfNormalized": "d164b9c2f3733dde6b7aecd3b76aefc1c5a505f8e50aa309cccd2dd7aab97c18"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_dispatch.py",
+      "sha256LfNormalized": "193b158d20e019f7f75348be0c31908323a7a7a63e7be56b9935d167a645d668"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_journal.py",
+      "sha256LfNormalized": "262b3baa8af2b985dfb14c46bbeabe9898fb1064343d74b0dcf20c0b42273858"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_protocol.py",
+      "sha256LfNormalized": "e75220ddb7b92e2bc50edd465c8777acc65829c8dd1c91c5c184f3f8f61332a2"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_store.py",
+      "sha256LfNormalized": "e740d04e4a8349fce6ec2a6439093c4f450b7f67ca27837f99b8e2e810c590a6"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/test_transport.py",
+      "sha256LfNormalized": "773d8e4fb0cbdb7f339590da7903249f002ae0bc042306c8f727d7afa7dc63ae"
+    }
+  ]
+}

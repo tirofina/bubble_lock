@@ -1,0 +1,182 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:privacy-bubble:keyring:0.1.0:gateway-state-archive",
+  "title": "KEYRING gateway-state-archive",
+  "description": "Gateway 0.2.0 candidate. Local state provenance/consistency, not a central grant, attestation, restore activation or settlement receipt. Source implementation unverified.",
+  "type": "object",
+  "properties": {
+    "archiveVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "archiveId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "binding": {
+      "type": "object",
+      "properties": {
+        "bindingVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "gatewayId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "originator": {
+          "type": "string",
+          "minLength": 1
+        },
+        "cseId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rvi": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observationContainer": {
+          "type": "string",
+          "pattern": "^/"
+        },
+        "receiptContainer": {
+          "type": "string",
+          "pattern": "^/"
+        },
+        "healthContainer": {
+          "type": "string",
+          "pattern": "^/"
+        }
+      },
+      "required": [
+        "bindingVersion",
+        "gatewayId",
+        "originator",
+        "cseId",
+        "rvi",
+        "observationContainer",
+        "receiptContainer",
+        "healthContainer"
+      ],
+      "additionalProperties": false
+    },
+    "bindingSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "sourceIdentityState": {
+      "enum": [
+        "bound",
+        "legacy-unbound"
+      ]
+    },
+    "dataRowsModified": {
+      "const": false
+    },
+    "copyRecoveryState": {
+      "const": "QUARANTINED"
+    },
+    "activationStatus": {
+      "const": "central-reconciliation-required"
+    },
+    "settlementStatus": {
+      "const": "not-settled"
+    },
+    "containsPlaintextDeviceData": {
+      "const": true
+    },
+    "credentialFilesIncluded": {
+      "const": false
+    },
+    "tableCounts": {
+      "type": "object",
+      "properties": {
+        "commands": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "fences": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "observations": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "outbox": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "core_sequences": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "commands",
+        "fences",
+        "observations",
+        "outbox",
+        "core_sequences"
+      ],
+      "additionalProperties": false
+    },
+    "commandStatuses": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "const": "gateway.sqlite3"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "required": [
+          "path",
+          "bytes",
+          "sha256"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "archiveVersion",
+    "archiveId",
+    "createdAt",
+    "binding",
+    "bindingSha256",
+    "sourceIdentityState",
+    "dataRowsModified",
+    "copyRecoveryState",
+    "activationStatus",
+    "settlementStatus",
+    "containsPlaintextDeviceData",
+    "credentialFilesIncluded",
+    "tableCounts",
+    "commandStatuses",
+    "files"
+  ],
+  "additionalProperties": false
+}

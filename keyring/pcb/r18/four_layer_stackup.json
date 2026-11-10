@@ -1,0 +1,26 @@
+{
+  "parent_PCB_sha256": "5492c03d276f985f29bbd8d19a6f80683357ce8e10a9ff31ed94a1c2679c2b1e",
+  "manufacturer": "JLCPCB",
+  "stackup": "JLC04101H-1080",
+  "source": "https://jlcpcb.com/impedance",
+  "verified_by": "Manufacturer browser table:4-layer1.0mm/outer1oz/inner0.5oz selected2026-10-22",
+  "nominal_finished_board_mm": 1.0,
+  "laminate_sum_copper_and_dielectric_mm": 0.9532,
+  "mask_nominal_each_mm": 0.01524,
+  "dielectric_mm": [
+    0.0764,
+    0.7,
+    0.0764
+  ],
+  "layer_roles": {
+    "F.Cu": "components and existing signals",
+    "In1.Cu": "continuous GND reference; no signal tracks",
+    "In2.Cu": "+3V3 distribution and remaining local routes; GND reference strip under USB",
+    "B.Cu": "components and existing signals"
+  },
+  "component_poses_unchanged": true,
+  "original_tracks_and_thermal_vias_retained": true,
+  "antenna_keepout_on_all_four_copper_layers": true,
+  "stencil": false,
+  "approval": "User:4\uce35\uc73c\ub85c \uc804\ud658\ud574\uc11c \uc644\uc131"
+}

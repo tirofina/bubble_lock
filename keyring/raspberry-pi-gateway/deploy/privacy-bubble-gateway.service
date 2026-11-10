@@ -1,0 +1,43 @@
+[Unit]
+Description=Privacy Bubble Keyring Raspberry Pi Gateway
+Wants=network-online.target time-sync.target
+Requires=bluetooth.service
+After=network-online.target time-sync.target bluetooth.service
+StartLimitIntervalSec=120
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=bubble-gateway
+Group=bubble-gateway
+WorkingDirectory=/opt/bubble_lock/keyring/raspberry-pi-gateway
+EnvironmentFile=/etc/privacy-bubble/gateway.env
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/bubble_lock/keyring/raspberry-pi-gateway/.venv/bin/bubble-gateway --log-level INFO
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+KillSignal=SIGTERM
+StateDirectory=privacy-bubble-gateway
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/privacy-bubble-gateway
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_BLUETOOTH
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=privacy-bubble-gateway
+
+[Install]
+WantedBy=multi-user.target

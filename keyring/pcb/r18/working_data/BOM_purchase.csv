@@ -1,0 +1,132 @@
+﻿MPN,Manufacturer,Value,Quantity,References,Footprint,Datasheet
+GRM188R71A105KA61D,Murata,1uF 10V X7R,1,C1,HandSolder:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder_C1_HandSolder,https://www.murata.com/en-global/products/productdetail?partno=GRM188R71A105KA61%23
+GRM21BR71A106KE51L,Murata,10uF 10V X7R,1,C2,HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C2_HandSolder,https://www.murata.com/en-global/products/productdetail?partno=GRM21BR71A106KE51%23
+C1608X7R1H104K080AA,TDK,100nF 50V X7R,1,C3,HandSolder:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder_C3_HandSolder,https://product.tdk.com/en/search/capacitor/ceramic/mlcc/info?part_no=C1608X7R1H104K080AA
+GRM21BR71A475KA73L,Murata,4.7uF 10V X7R,1,C4,HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C4_HandSolder,https://www.murata.com/en-global/products/productdetail?partno=GRM21BR71A475KA73%23
+GRM21BR71A106KE51L,Murata,10uF 10V X7R,1,C5,HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C5_HandSolder,https://www.murata.com/en-global/products/productdetail?partno=GRM21BR71A106KE51%23
+GRM21BR71A475KA73L,Murata,4.7uF 10V X7R,1,C6,HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C6_HandSolder,https://www.murata.com/en-global/products/productdetail?partno=GRM21BR71A475KA73%23
+C1608X7R1H104K080AA,TDK,100nF 50V X7R,1,C7,Sourced:Capacitor_SMD_C_0603_1608Metric,https://product.tdk.com/en/search/capacitor/ceramic/mlcc/info?part_no=C1608X7R1H104K080AA
+GRM21BR71A106KE51L,Murata,10uF 10V X7R,1,C8,HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C8_HandSolder,https://www.murata.com/en-global/products/productdetail?partno=GRM21BR71A106KE51%23
+GRM21BR61C226ME44L,Murata,22uF 16V X5R,1,C9,HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C9_HandSolder,https://www.murata.com/en-global/products/productdetail?partno=GRM21BR61C226ME44%23
+GRM21BR61C226ME44L,Murata,22uF 16V X5R,1,C10,HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C10_HandSolder,https://www.murata.com/en-global/products/productdetail?partno=GRM21BR61C226ME44%23
+GRM155R71H104KE14D,Murata,100nF 50V X7R,1,C15,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C15_HandSolder,https://search.murata.co.jp/Ceramy/image/img/A01X/G101/ENG/GRM155R71H104KE14-01A.pdf
+GRM155R71H104KE14D,Murata,100nF 50V X7R,1,C16,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C16_HandSolder,https://search.murata.co.jp/Ceramy/image/img/A01X/G101/ENG/GRM155R71H104KE14-01A.pdf
+GRM188R61A106ME69D,Murata,10uF 10V X5R 20%,1,C17,HandSolder:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder_C17_HandSolder,https://search.murata.co.jp/Ceramy/image/img/A01X/G101/ENG/GRM188R61A106ME69-01A.pdf
+C1608X7R1H104K080AA,TDK,100nF 50V X7R,1,C18,HandSolder:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder_C18_HandSolder,https://product.tdk.com/en/search/capacitor/ceramic/mlcc/info?part_no=C1608X7R1H104K080AA
+GRM21BR71A106KE51L,Murata,10uF 10V X7R,1,C19,HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C19_HandSolder,https://www.murata.com/en-global/products/productdetail?partno=GRM21BR71A106KE51%23
+GRM155R71H104KE14D,Murata,100nF 50V X7R,1,C20,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C20_HandSolder,https://product.tdk.com/en/search/capacitor/ceramic/mlcc/info?part_no=C1608X7R1H104K080AA
+C1608X7R1H104K080AA,TDK,100nF 50V X7R,1,C21,HandSolder:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder_C21_HandSolder,https://product.tdk.com/en/search/capacitor/ceramic/mlcc/info?part_no=C1608X7R1H104K080AA
+GRM21BR71A106KE51L,Murata,10uF 10V X7R,1,C22,HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C22_HandSolder,https://www.murata.com/en-global/products/productdetail?partno=GRM21BR71A106KE51%23
+GRM21BR71A106KE51L,Murata,10uF 10V X7R,2,C23 C49,Sourced:Capacitor_SMD_C_0805_2012Metric,https://www.murata.com/en-global/products/productdetail?partno=GRM21BR71A106KE51%23
+C1005X7R1H104K050BB,TDK,100nF 50V X7R,1,C24,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C24_HandSolder,https://product.tdk.com/en/search/capacitor/ceramic/mlcc/info?part_no=C1005X7R1H104K050BB
+C1005X7R1H104K050BB,TDK,100nF 50V X7R,1,C25,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C25_HandSolder,https://product.tdk.com/en/search/capacitor/ceramic/mlcc/info?part_no=C1005X7R1H104K050BB
+C1005X7R1H104K050BB,TDK,100nF 50V X7R,1,C26,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C26_HandSolder,https://product.tdk.com/en/search/capacitor/ceramic/mlcc/info?part_no=C1005X7R1H104K050BB
+GRM155R71H104KE14D,Murata,100nF 50V X7R,1,C27,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C27_HandSolder,https://www.murata.com/
+GRM21BR71A106KE51L,Murata,10uF 10V X7R,1,C28,HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C28_HandSolder,https://www.murata.com/
+GRM155R71H104KE14D,Murata,100nF 50V X7R,1,C29,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C29_HandSolder,https://www.murata.com/
+GRM155R71H472KA01D,Murata,4.7nF 50V X7R 10%,1,C30,Sourced:C_0402_1005Metric,https://search.murata.co.jp/Ceramy/image/img/A01X/G101/ENG/GRM155R71H472KA01-01A.pdf
+GRM1555C1H102JA01D,Murata,1nF 50V C0G,1,C31,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C31_HandSolder,https://www.murata.com/
+GRM155R71H104KE14D,Murata,100nF 50V X7R,1,C32,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C32_HandSolder,https://www.murata.com/
+GRM21BR61C226ME44L,Murata,22uF 16V X5R,1,C33,HandSolder:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder_C33_HandSolder,https://www.murata.com/
+GRM155R71H104KE14D,Murata,100nF 50V X7R,1,C35,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C35_HandSolder,https://www.murata.com/
+GRM155R71H104KE14D,Murata,100nF 50V X7R,1,C36,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C36_HandSolder,https://www.murata.com/
+T520D337M006ATE025,KEMET,330uF 6.3V polymer,1,C37,HandSolder:CP_EIA-7343-31_Kemet-D_C37_HandSolder,https://docs.rs-online.com/885c/A700000006401849.pdf
+CL05A105KP5NNNC,Samsung Electro-Mechanics,1uF 10V X5R,1,C38,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C38_HandSolder,https://product.samsungsem.com/mlcc/CL05A105KP5NNN.do
+CL05A105KP5NNNC,Samsung Electro-Mechanics,1uF 10V X5R,1,C39,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C39_HandSolder,https://product.samsungsem.com/mlcc/CL05A105KP5NNN.do
+CL05A105KP5NNNC,Samsung Electro-Mechanics,1uF 10V X5R,1,C40,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C40_HandSolder,https://product.samsungsem.com/mlcc/CL05A105KP5NNN.do
+CL05A105KP5NNNC,Samsung Electro-Mechanics,1uF 10V X5R,1,C41,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C41_HandSolder,https://product.samsungsem.com/mlcc/CL05A105KP5NNN.do
+CL05A105KP5NNNC,Samsung Electro-Mechanics,1uF 10V X5R,1,C42,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C42_HandSolder,https://product.samsungsem.com/mlcc/CL05A105KP5NNN.do
+CL05A105KP5NNNC,Samsung Electro-Mechanics,1uF 10V X5R,1,C43,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C43_HandSolder,https://product.samsungsem.com/mlcc/CL05A105KP5NNN.do
+GRM155R61A474KE15D,Murata,470nF 10V X5R,1,C44,Sourced:C_0402_1005Metric,https://www.murata.com/
+CL10A225KP8NNNC,Samsung Electro-Mechanics,2.2uF 10V X5R,1,C45,Sourced:C_0603_1608Metric,https://product.samsungsem.com/mlcc/CL10A225KP8NNN.do
+T530X687M006ATE010,KEMET,680uF 6.3V polymer,1,C46,HandSolder:CP_EIA-7343-43_Kemet-X_C46_HandSolder,https://search.kemet.com/download/specsheet/T530X687M006ATE010
+T530X687M006ATE010,KEMET,680uF 6.3V polymer,1,C47,HandSolder:CP_EIA-7343-43_Kemet-X_C47_HandSolder,https://search.kemet.com/download/specsheet/T530X687M006ATE010
+GRM155R71H104KE14D,Murata,100nF 50V X7R,1,C48,HandSolder:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder_C48_HandSolder,https://search.murata.co.jp/Ceramy/image/img/A01X/G101/ENG/GRM155R71H104KE14-01A.pdf
+T520D477M006ATE025,KEMET,470uF 6.3V polymer,1,C50,HandSolder:CP_EIA-7343-31_Kemet-D_C50_HandSolder,https://www.digikey.com/en/products/detail/kemet/T520D477M006ATE025/1129673
+"PMEG2010ER,115",Nexperia,PMEG2010ER flyback,1,D1,HandSolder:D_Diode_SMD_Nexperia_CFP3_SOD-123W_D1_HandSolder,https://assets.nexperia.com/documents/data-sheet/PMEG2010ER.pdf
+LTST-C190KRKT,Lite-On,CHARGE LED,1,D2,HandSolder:LED_0603_1608Metric_Pad1.05x0.95mm_HandSolder_D2_HandSolder,
+TYPE-C-31-M-12,HRO,USB-C USB2.0,1,J1,HandSolder:USB_C_Receptacle_HRO_TYPE-C-31-M-12_J1_HandSolder,https://www.usb.org/sites/default/files/documents/usb_type-c.zip
+S2B-PH-SM4-TB(LF)(SN),JST,BATTERY DTP803040,1,J2,Sourced:Connector_JST_JST_PH_S2B-PH-SM4-TB_1x02-1MP_P2.00mm_Horizontal,
+SM08B-SRSS-TB(LF)(SN),JST,ST7789 HARNESS,1,J3,Connector_HandSolder:Connector_JST_JST_SH_SM08B-SRSS-TB_1x08_1MP_P1.00mm_Horizontal_J3_HandSolder,
+DM3AT-SF-PEJM5,Hirose,microSD DM3AT-SF-PEJM5,1,J10,HandSolder:microSD_HC_Hirose_DM3AT-SF-PEJM5_J10_HandSolder,https://www.hirose.com/en/product/p/CL0609-0031-0-00
+PJ-320D-4A,Korean Hroparts Elec,3.5mm stereo output,1,J11,Sourced:AUDIO-SMD_PJ-320D,https://www.lcsc.com/product-detail/C95562.html
+XFL4020-222MEC,Coilcraft,2.2uH XFL4020,1,L1,HandSolder:Inductor_SMD_L_Coilcraft_XxL4020_L1_HandSolder,https://www.coilcraft.com/getmedia/50632d43-da1b-4cdb-8ab4-3029cab51df3/xfl4020.pdf
+AO3400A,Alpha & Omega Semiconductor,AO3400A,1,Q1,HandSolder:SOT-23_Handsoldering_Q1_HandSolder,http://www.aosmd.com/pdfs/datasheet/AO3400A.pdf
+2N7002,Nexperia,2N7002,1,Q2,HandSolder:SOT-23_Handsoldering_Q2_HandSolder,https://assets.nexperia.com/documents/data-sheet/2N7002.pdf
+AO3401A,Alpha & Omega Semiconductor,AO3401A,1,Q3,HandSolder:SOT-23_Handsoldering_Q3_HandSolder,https://www.aosmd.com/res/data_sheets/AO3401A.pdf
+2N7002,Nexperia,2N7002,1,Q4,HandSolder:SOT-23_Handsoldering_Q4_HandSolder,https://assets.nexperia.com/documents/data-sheet/2N7002.pdf
+RC0402FR-07100KL,Yageo,100k 1%,1,R1,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R1_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-0710KL,Yageo,10k 1%,1,R2,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R2_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-074K7L,Yageo,4.7k 1%,1,R3,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R3_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-074K7L,Yageo,4.7k 1%,1,R4,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R4_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-0747KL,Yageo,47k 1%,1,R5,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R5_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-0747KL,Yageo,47k 1%,1,R6,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R6_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-075K1L,Yageo,5.1k 1%,1,R7,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R7_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-075K1L,Yageo,5.1k 1%,1,R8,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R8_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-0733RL,Yageo,33R 1%,1,R9,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R9_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-0733RL,Yageo,33R 1%,1,R10,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R10_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-07100KL,Yageo,100k 1%,1,R11,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R11_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-074K53L,Yageo,4.53k 1%,1,R12,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R12_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-073K57L,Yageo,3.57k 1%,1,R13,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R13_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-071K5L,Yageo,1.50k 1%,1,R14,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R14_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-0769K8L,Yageo,69.8k 1%,1,R15,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R15_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-072K2L,Yageo,2.2k 1%,1,R18,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R18_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-07100RL,Yageo,100R 1%,1,R19,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R19_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-0710KL,Yageo,10k 1%,1,R20,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R20_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-0733RL,Yageo,33R 1%,1,R31,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R31_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-0733RL,Yageo,33R 1%,1,R32,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R32_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-0747KL,Yageo,47k 1%,1,R33,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R33_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-0747KL,Yageo,47k 1%,1,R34,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R34_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-07100KL,Yageo,100k 1%,1,R35,Sourced:Resistor_SMD_R_0402_1005Metric,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-0733RL,Yageo,33R 1%,1,R36,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R36_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-0733RL,Yageo,33R 1%,1,R37,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R37_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-0733RL,Yageo,33R 1%,1,R38,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R38_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-07100KL,Yageo,100k 1%,1,R39,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R39_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-07100KL,Yageo,100k 1%,1,R40,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R40_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-07100RL,Yageo,100R 1%,1,R41,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R41_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-07100KL,Yageo,100k 1%,1,R42,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R42_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-07100KL,Yageo,100k 1%,1,R43,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R43_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-07100KL,Yageo,100k 1%,1,R44,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R44_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-071ML,Yageo,1M 1%,2,R45 R46,Sourced:Resistor_SMD_R_0402_1005Metric,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-07560KL,Yageo,560k 1%,1,R47,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R47_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-0747KL,Yageo,47k 1%,1,R48,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R48_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-07100KL,Yageo,100k 1%,1,R49,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R49_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-07100KL,Yageo,100k 1%,1,R50,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R50_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-07100KL,Yageo,100k 1%,1,R51,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R51_HandSolder,https://www.yageo.com/en/Product/Index/RC
+RC0402FR-0761K9L,Yageo,61.9k 1%,1,R52,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R52_HandSolder,https://www.yageo.com/
+RC0402FR-07100KL,Yageo,100k 1%,1,R53,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R53_HandSolder,https://www.yageo.com/
+RC0402FR-0757K6L,Yageo,57.6k 1%,1,R54,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R54_HandSolder,https://www.yageo.com/
+RC0402FR-071ML,Yageo,1M 1%,1,R55,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R55_HandSolder,https://www.yageo.com/
+RC0402FR-07100KL,Yageo,100k 1%,1,R56,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R56_HandSolder,https://www.yageo.com/
+RC0402FR-07100KL,Yageo,100k 1%,1,R57,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R57_HandSolder,https://www.yageo.com/
+RC0402FR-07100KL,Yageo,100k 1%,1,R58,Sourced:R_0402_1005Metric,https://www.yageo.com/
+RC0402FR-07133KL,Yageo,133k 1%,1,R59,Sourced:R_0402_1005Metric,https://www.yageo.com/
+ERJP06F1000V,Panasonic,100R 1% 0.5W,1,R60,HandSolder:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder_R60_HandSolder,https://industrial.panasonic.com/ww/products/pt/small-and-high-power-chip-resistors/models/ERJP06F1000V
+RL0805FR-070R1L,Yageo,0.1R 1% 0.125W,1,R61,HandSolder:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder_R61_HandSolder,https://yageogroup.com/component-documentation/download/specsheet/RL0805FR-070R5L
+RC0402FR-07100KL,Yageo,100k 1%,1,R62,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R62_HandSolder,https://www.yageo.com/
+RC0402FR-0747KL,Yageo,47k 1%,1,R63,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R63_HandSolder,https://www.yageo.com/
+RC0402FR-0747KL,Yageo,47k 1%,1,R64,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R64_HandSolder,https://www.yageo.com/
+RC0402FR-0747KL,Yageo,47k 1%,1,R65,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R65_HandSolder,https://www.yageo.com/
+RC0402FR-0747KL,Yageo,47k 1%,1,R66,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R66_HandSolder,https://www.yageo.com/
+RC0402FR-0747KL,Yageo,47k 1%,1,R67,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R67_HandSolder,https://www.yageo.com/
+RC0402FR-0733RL,Yageo,33R 1%,1,R68,HandSolder:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder_R68_HandSolder,https://www.yageo.com/
+RC0603FR-07220RL,Yageo,220R 1%,1,R69,HandSolder:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder_R69_HandSolder,https://www.yageogroup.com/component-documentation/download/specsheet/RC0603FR-07220RL
+RC0805JR-070RL,YAGEO,0R jumper,1,R71,HandSolder:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder_R71_HandSolder,https://www.yageogroup.com/component-documentation/download/specsheet/RC0805JR-070RL
+PTS810SJK250SMTRLFS,Littelfuse / C&K,PANIC,1,SW1,Sourced:Button_Switch_SMD_SW_SPST_PTS810,https://www.littelfuse.com/assetdocs/littelfuse-ck-tactile-pts810-series-datasheet?assetguid=f1e4bc97-66e9-4beb-99c6-eaef0bd3bff4
+PTS810SJK250SMTRLFS,Littelfuse / C&K,CONFIRM,1,SW2,Sourced:Button_Switch_SMD_SW_SPST_PTS810,https://www.littelfuse.com/assetdocs/littelfuse-ck-tactile-pts810-series-datasheet?assetguid=f1e4bc97-66e9-4beb-99c6-eaef0bd3bff4
+B3U-1000P,Omron / Aratas,RESET,1,SW3,Sourced:Button_Switch_SMD_SW_SPST_B3U-1000P,https://components.omron.com/us-en/sites/components.omron.com.us/files/datasheet_pdf/A162-E1.pdf
+PTS810SJK250SMTRLFS,Littelfuse / C&K,BOOT,1,SW4,Sourced:Button_Switch_SMD_SW_SPST_PTS810,https://www.littelfuse.com/assetdocs/littelfuse-ck-tactile-pts810-series-datasheet?assetguid=f1e4bc97-66e9-4beb-99c6-eaef0bd3bff4
+ESP32-S3-WROOM-1-N16R8,Espressif,ESP32-S3-WROOM-1-N16R8,1,U1,Sourced:RF_Module_ESP32-S3-WROOM-1_JLC030,https://www.espressif.com/sites/default/files/documentation/esp32-s3-wroom-1_wroom-1u_datasheet_en.pdf
+BQ24074RGTR,Texas Instruments,BQ24074RGTR,1,U3,Sourced:Package_DFN_QFN_VQFN-16-1EP_3x3mm_P0.5mm_EP1.6x1.6mm,https://www.ti.com/lit/gpn/bq24074
+TPS63001DRCR,Texas Instruments,TPS63001DRCR,1,U4,Sourced:Package_SON_Texas_DRC0010J_ThermalVias_JLC030,https://www.ti.com/lit/ds/symlink/tps63001.pdf
+LIS2DW12TR,STMicroelectronics,LIS2DW12TR,1,U6,Sourced:Package_LGA_LGA-12_2x2mm_P0.5mm,https://www.st.com.cn/resource/en/datasheet/lis2dw12.pdf
+MAX17048G+,Analog Devices,MAX17048G+,1,U7,Sourced:Package_DFN_QFN_TDFN-8-1EP_2x2mm_P0.5mm_EP0.8x1.2mm,https://www.analog.com/media/en/technical-documentation/data-sheets/MAX17048-MAX17049.pdf
+MAX98357AETE+,Analog Devices,MAX98357AETE+,1,U8,Sourced:Package_DFN_QFN_TQFN-16-1EP_3x3mm_P0.5mm_EP1.23x1.23mm,https://www.analog.com/media/en/technical-documentation/data-sheets/max98357a-max98357b.pdf
+USBLC6-2SC6,STMicroelectronics,USBLC6-2SC6,1,U9,HandSolder:SOT-23-6_Handsoldering_U9_HandSolder,https://www.st.com/resource/en/datasheet/usblc6-2.pdf
+TLV6700DDCR,Texas Instruments,TLV6700DDCR,1,U10,HandSolder:SOT-23-6_Handsoldering_U10_HandSolder,https://www.ti.com/lit/ds/symlink/tlv6700.pdf
+TPS2553DBVR,Texas Instruments,TPS2553DBVR,1,U11,HandSolder:SOT-23-6_Handsoldering_U11_HandSolder,https://www.ti.com/lit/ds/symlink/tps2553.pdf
+TLV3012BIDBVR,Texas Instruments,TLV3012BIDBVR,1,U12,HandSolder:SOT-23-6_Handsoldering_U12_HandSolder,https://www.ti.com/lit/ds/symlink/tlv3012.pdf
+TPS2553DBVR,Texas Instruments,TPS2553DBVR,1,U13,HandSolder:SOT-23-6_Handsoldering_U13_HandSolder,https://www.ti.com/lit/ds/symlink/tps2553.pdf
+INA219BIDCNR,Texas Instruments,INA219BIDCNR,1,U15,HandSolder:SOT-23-8_Handsoldering_U15_HandSolder,https://www.ti.com/lit/ds/symlink/ina219.pdf
+MAX9850ETI+,Analog Devices / Maxim,MAX9850ETI+,1,U16,Sourced:TQFN-28-1EP_5x5mm_P0.5mm_EP3.25x3.25mm,https://www.analog.com/media/en/technical-documentation/data-sheets/max9850.pdf
+TPS3839G18DBZR,Texas Instruments,TPS3839G18DBZR,1,U17,HandSolder:SOT-23_Handsoldering_U17_HandSolder,https://www.ti.com/lit/ds/symlink/tps3839.pdf

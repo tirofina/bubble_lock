@@ -1,0 +1,26 @@
+test_cse_process_restart_preserves_committed_cin (test_mobius_cse.MobiusCseTests.test_cse_process_restart_preserves_committed_cin) ... ok
+test_duplicate_request_reuses_single_cin (test_mobius_cse.MobiusCseTests.test_duplicate_request_reuses_single_cin) ... ok
+test_https_publish_is_stored_and_read_back_from_real_cse (test_mobius_cse.MobiusCseTests.test_https_publish_is_stored_and_read_back_from_real_cse) ... ok
+test_mqtt_application_receipt_and_storage_without_https_post (test_mobius_cse.MobiusCseTests.test_mqtt_application_receipt_and_storage_without_https_post) ... ERROR
+test_same_rqi_different_payload_is_rejected_and_original_preserved (test_mobius_cse.MobiusCseTests.test_same_rqi_different_payload_is_rejected_and_original_preserved) ... ok
+
+======================================================================
+ERROR: test_mqtt_application_receipt_and_storage_without_https_post (test_mobius_cse.MobiusCseTests.test_mqtt_application_receipt_and_storage_without_https_post)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\NH\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\NH\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\Lib\asyncio\base_events.py", line 691, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\NH\Documents\ChatGPT\mobius 해커톤\github_upload\bubble_lock\keyring\raspberry-pi-gateway\cse_integration_tests\test_mobius_cse.py", line 106, in test_mqtt_application_receipt_and_storage_without_https_post
+    await hub.publish(rqi, self.parent, payload)
+  File "C:\Users\NH\Documents\ChatGPT\mobius 해커톤\github_upload\bubble_lock\keyring\raspberry-pi-gateway\src\bubble_gateway\transport.py", line 295, in publish
+    raise RemoteResponseError("oneM2M MQTT request rejected", rsc)
+bubble_gateway.transport.RemoteResponseError: oneM2M MQTT request rejected
+
+----------------------------------------------------------------------
+Ran 5 tests in 18.253s
+
+FAILED (errors=1)

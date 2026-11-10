@@ -1,0 +1,574 @@
+{
+  "evidenceVersion": 1,
+  "generatedAt": "2026-10-30T03:04:44.850993+00:00",
+  "role": "KEYRING",
+  "owner": "남호",
+  "documentRevision": "2.0.0",
+  "sourceCommit": "0017edac40815f9d3a812d7f858705496f7aaa3b",
+  "sourcePushConfirmed": true,
+  "remoteBranch": "codex/keyring-namho",
+  "remoteCore": "91a281b",
+  "remoteWeb": "80ed37f",
+  "gatewayRevision": "0.2.3",
+  "runtimeCodeCommit": "a970e3a5b2586cc80abd6eea49fb685dc79ab740",
+  "runtimeCodeChanged": false,
+  "databaseSchemaChanged": false,
+  "firmwareChangedOrRebuilt": false,
+  "runs": {
+    "initial-direct-tests.log": {
+      "source": {
+        "tests": 10,
+        "seconds": 1.339,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "exitCode": 0,
+        "facts": [
+          {
+            "adoptionRefused": true,
+            "realDirectoryFsync": true,
+            "realOtherProcessWrite": true,
+            "snapshotEpoch": 2,
+            "snapshotRecoveryState": "QUARANTINED",
+            "sourceEpoch": 3,
+            "sourceIdentityAdded": false,
+            "test": "test_adoption_detects_other_process_write_after_durable_snapshot"
+          },
+          {
+            "bindingAdded": true,
+            "realDirectoryFsync": true,
+            "snapshotRecoveryState": "QUARANTINED",
+            "sourceIdentityState": "LIVE",
+            "sourceRowsUnchanged": true,
+            "test": "test_cli_adopt_preserves_rows_and_quarantines_snapshot"
+          },
+          {
+            "daemonEntryExit": 1,
+            "daemonServeStarted": false,
+            "outputCreated": false,
+            "realOtherProcessFlock": true,
+            "snapshotExit": 1,
+            "sourceRowsUnchanged": true,
+            "test": "test_cli_and_daemon_refuse_other_process_lock"
+          },
+          {
+            "apiExpiredDeadline": true,
+            "completedManifest": false,
+            "partialOutputRetained": true,
+            "sourceRowsUnchanged": true,
+            "test": "test_copy_deadline_retains_partial_output_without_manifest"
+          },
+          {
+            "existingOutputExit": 2,
+            "symlinkExit": 2,
+            "targetUnchanged": true,
+            "test": "test_existing_output_and_symlink_never_overwritten"
+          },
+          {
+            "exitCode": 1,
+            "outputCreated": false,
+            "sourceRowsUnchanged": true,
+            "test": "test_identity_mismatch_refused_before_output"
+          },
+          {
+            "bindingAdded": false,
+            "invalidHashRefused": true,
+            "outputCreated": false,
+            "sourceRowsUnchanged": true,
+            "test": "test_legacy_hash_mismatch_refused_before_output"
+          },
+          {
+            "archiveCannotBeRearchivedAsLive": true,
+            "archiveCannotLaunch": true,
+            "snapshotUnchanged": true,
+            "test": "test_quarantined_copy_cannot_be_opened_or_archived"
+          },
+          {
+            "completedManifest": false,
+            "exitCode": 1,
+            "partialOutputRetained": true,
+            "realEnospcErrno": 28,
+            "sourceRowsUnchanged": true,
+            "test": "test_real_full_filesystem_retains_partial_output"
+          },
+          {
+            "archiveRecoveryState": "QUARANTINED",
+            "modes": {
+              "gateway.sqlite3": "0o600",
+              "manifest.json": "0o600",
+              "snapshot": "0o700"
+            },
+            "realDirectoryFsync": true,
+            "sourceRowsUnchanged": true,
+            "test": "test_snapshot_keeps_committed_wal_and_owner_only_permissions",
+            "walCommittedRowsPreserved": true
+          }
+        ]
+      },
+      "installed": {
+        "tests": 10,
+        "seconds": 0.801,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "exitCode": 0,
+        "facts": [
+          {
+            "adoptionRefused": true,
+            "realDirectoryFsync": true,
+            "realOtherProcessWrite": true,
+            "snapshotEpoch": 2,
+            "snapshotRecoveryState": "QUARANTINED",
+            "sourceEpoch": 3,
+            "sourceIdentityAdded": false,
+            "test": "test_adoption_detects_other_process_write_after_durable_snapshot"
+          },
+          {
+            "bindingAdded": true,
+            "realDirectoryFsync": true,
+            "snapshotRecoveryState": "QUARANTINED",
+            "sourceIdentityState": "LIVE",
+            "sourceRowsUnchanged": true,
+            "test": "test_cli_adopt_preserves_rows_and_quarantines_snapshot"
+          },
+          {
+            "daemonEntryExit": 1,
+            "daemonServeStarted": false,
+            "outputCreated": false,
+            "realOtherProcessFlock": true,
+            "snapshotExit": 1,
+            "sourceRowsUnchanged": true,
+            "test": "test_cli_and_daemon_refuse_other_process_lock"
+          },
+          {
+            "apiExpiredDeadline": true,
+            "completedManifest": false,
+            "partialOutputRetained": true,
+            "sourceRowsUnchanged": true,
+            "test": "test_copy_deadline_retains_partial_output_without_manifest"
+          },
+          {
+            "existingOutputExit": 2,
+            "symlinkExit": 2,
+            "targetUnchanged": true,
+            "test": "test_existing_output_and_symlink_never_overwritten"
+          },
+          {
+            "exitCode": 1,
+            "outputCreated": false,
+            "sourceRowsUnchanged": true,
+            "test": "test_identity_mismatch_refused_before_output"
+          },
+          {
+            "bindingAdded": false,
+            "invalidHashRefused": true,
+            "outputCreated": false,
+            "sourceRowsUnchanged": true,
+            "test": "test_legacy_hash_mismatch_refused_before_output"
+          },
+          {
+            "archiveCannotBeRearchivedAsLive": true,
+            "archiveCannotLaunch": true,
+            "snapshotUnchanged": true,
+            "test": "test_quarantined_copy_cannot_be_opened_or_archived"
+          },
+          {
+            "completedManifest": false,
+            "exitCode": 1,
+            "partialOutputRetained": true,
+            "realEnospcErrno": 28,
+            "sourceRowsUnchanged": true,
+            "test": "test_real_full_filesystem_retains_partial_output"
+          },
+          {
+            "archiveRecoveryState": "QUARANTINED",
+            "modes": {
+              "gateway.sqlite3": "0o600",
+              "manifest.json": "0o600",
+              "snapshot": "0o700"
+            },
+            "realDirectoryFsync": true,
+            "sourceRowsUnchanged": true,
+            "test": "test_snapshot_keeps_committed_wal_and_owner_only_permissions",
+            "walCommittedRowsPreserved": true
+          }
+        ]
+      }
+    },
+    "runner-tests.log": {
+      "source": {
+        "tests": 10,
+        "seconds": 1.289,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "exitCode": 0,
+        "facts": [
+          {
+            "adoptionRefused": true,
+            "realDirectoryFsync": true,
+            "realOtherProcessWrite": true,
+            "snapshotEpoch": 2,
+            "snapshotRecoveryState": "QUARANTINED",
+            "sourceEpoch": 3,
+            "sourceIdentityAdded": false,
+            "test": "test_adoption_detects_other_process_write_after_durable_snapshot"
+          },
+          {
+            "bindingAdded": true,
+            "realDirectoryFsync": true,
+            "snapshotRecoveryState": "QUARANTINED",
+            "sourceIdentityState": "LIVE",
+            "sourceRowsUnchanged": true,
+            "test": "test_cli_adopt_preserves_rows_and_quarantines_snapshot"
+          },
+          {
+            "daemonEntryExit": 1,
+            "daemonServeStarted": false,
+            "outputCreated": false,
+            "realOtherProcessFlock": true,
+            "snapshotExit": 1,
+            "sourceRowsUnchanged": true,
+            "test": "test_cli_and_daemon_refuse_other_process_lock"
+          },
+          {
+            "apiExpiredDeadline": true,
+            "completedManifest": false,
+            "partialOutputRetained": true,
+            "sourceRowsUnchanged": true,
+            "test": "test_copy_deadline_retains_partial_output_without_manifest"
+          },
+          {
+            "existingOutputExit": 2,
+            "symlinkExit": 2,
+            "targetUnchanged": true,
+            "test": "test_existing_output_and_symlink_never_overwritten"
+          },
+          {
+            "exitCode": 1,
+            "outputCreated": false,
+            "sourceRowsUnchanged": true,
+            "test": "test_identity_mismatch_refused_before_output"
+          },
+          {
+            "bindingAdded": false,
+            "invalidHashRefused": true,
+            "outputCreated": false,
+            "sourceRowsUnchanged": true,
+            "test": "test_legacy_hash_mismatch_refused_before_output"
+          },
+          {
+            "archiveCannotBeRearchivedAsLive": true,
+            "archiveCannotLaunch": true,
+            "snapshotUnchanged": true,
+            "test": "test_quarantined_copy_cannot_be_opened_or_archived"
+          },
+          {
+            "completedManifest": false,
+            "exitCode": 1,
+            "partialOutputRetained": true,
+            "realEnospcErrno": 28,
+            "sourceRowsUnchanged": true,
+            "test": "test_real_full_filesystem_retains_partial_output"
+          },
+          {
+            "archiveRecoveryState": "QUARANTINED",
+            "modes": {
+              "gateway.sqlite3": "0o600",
+              "manifest.json": "0o600",
+              "snapshot": "0o700"
+            },
+            "realDirectoryFsync": true,
+            "sourceRowsUnchanged": true,
+            "test": "test_snapshot_keeps_committed_wal_and_owner_only_permissions",
+            "walCommittedRowsPreserved": true
+          }
+        ]
+      },
+      "installed": {
+        "tests": 10,
+        "seconds": 0.818,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "exitCode": 0,
+        "facts": [
+          {
+            "adoptionRefused": true,
+            "realDirectoryFsync": true,
+            "realOtherProcessWrite": true,
+            "snapshotEpoch": 2,
+            "snapshotRecoveryState": "QUARANTINED",
+            "sourceEpoch": 3,
+            "sourceIdentityAdded": false,
+            "test": "test_adoption_detects_other_process_write_after_durable_snapshot"
+          },
+          {
+            "bindingAdded": true,
+            "realDirectoryFsync": true,
+            "snapshotRecoveryState": "QUARANTINED",
+            "sourceIdentityState": "LIVE",
+            "sourceRowsUnchanged": true,
+            "test": "test_cli_adopt_preserves_rows_and_quarantines_snapshot"
+          },
+          {
+            "daemonEntryExit": 1,
+            "daemonServeStarted": false,
+            "outputCreated": false,
+            "realOtherProcessFlock": true,
+            "snapshotExit": 1,
+            "sourceRowsUnchanged": true,
+            "test": "test_cli_and_daemon_refuse_other_process_lock"
+          },
+          {
+            "apiExpiredDeadline": true,
+            "completedManifest": false,
+            "partialOutputRetained": true,
+            "sourceRowsUnchanged": true,
+            "test": "test_copy_deadline_retains_partial_output_without_manifest"
+          },
+          {
+            "existingOutputExit": 2,
+            "symlinkExit": 2,
+            "targetUnchanged": true,
+            "test": "test_existing_output_and_symlink_never_overwritten"
+          },
+          {
+            "exitCode": 1,
+            "outputCreated": false,
+            "sourceRowsUnchanged": true,
+            "test": "test_identity_mismatch_refused_before_output"
+          },
+          {
+            "bindingAdded": false,
+            "invalidHashRefused": true,
+            "outputCreated": false,
+            "sourceRowsUnchanged": true,
+            "test": "test_legacy_hash_mismatch_refused_before_output"
+          },
+          {
+            "archiveCannotBeRearchivedAsLive": true,
+            "archiveCannotLaunch": true,
+            "snapshotUnchanged": true,
+            "test": "test_quarantined_copy_cannot_be_opened_or_archived"
+          },
+          {
+            "completedManifest": false,
+            "exitCode": 1,
+            "partialOutputRetained": true,
+            "realEnospcErrno": 28,
+            "sourceRowsUnchanged": true,
+            "test": "test_real_full_filesystem_retains_partial_output"
+          },
+          {
+            "archiveRecoveryState": "QUARANTINED",
+            "modes": {
+              "gateway.sqlite3": "0o600",
+              "manifest.json": "0o600",
+              "snapshot": "0o700"
+            },
+            "realDirectoryFsync": true,
+            "sourceRowsUnchanged": true,
+            "test": "test_snapshot_keeps_committed_wal_and_owner_only_permissions",
+            "walCommittedRowsPreserved": true
+          }
+        ]
+      }
+    }
+  },
+  "runtime": {
+    "system": "Linux",
+    "machine": "x86_64",
+    "kernel": "6.6.87.2-microsoft-standard-WSL2",
+    "python": "3.12.16",
+    "sqlite": "3.48.0",
+    "uid": 65532,
+    "alpine": "3.21.9"
+  },
+  "testIds": [
+    "KR-POSIX-STATE-01",
+    "KR-POSIX-STATE-02",
+    "KR-POSIX-STATE-03",
+    "KR-POSIX-STATE-04",
+    "KR-POSIX-STATE-05",
+    "KR-POSIX-STATE-06",
+    "KR-POSIX-STATE-07",
+    "KR-POSIX-STATE-08",
+    "KR-POSIX-STATE-09",
+    "KR-POSIX-STATE-10"
+  ],
+  "rubricIds": [
+    "R02",
+    "R10",
+    "R12"
+  ],
+  "gateStatus": "partial-local-evidence",
+  "approver": null,
+  "runner": {
+    "imageId": "sha256:2aaad292418dfca5b3ab3d9d0643a6f0be0857e00ccde376f85edf7fc4e66f18",
+    "imageTag": "privacy-bubble-keyring-posix-test:local",
+    "containerName": "keyring-posix-test-70eecc7a5ac84d35ac24680258dca34d",
+    "ownershipToken": "70eecc7a5ac84d35ac24680258dca34d",
+    "network": "none",
+    "user": "65532:65532",
+    "readOnlyRoot": true,
+    "sourceBindReadOnly": true,
+    "wheelBindReadOnly": true,
+    "existingDatabaseMounted": false,
+    "wheelName": "privacy_bubble_gateway-0.2.3-py3-none-any.whl",
+    "wheelSha256": "fd6254cea210059330d14910ca0bb2299b638b8b8e98bec70a808befbbc4e63d",
+    "exitCode": 0,
+    "finishedAt": "2026-10-30T03:03:20.1027976+00:00"
+  },
+  "image": {
+    "tag": "privacy-bubble-keyring-posix-test:local",
+    "id": "sha256:2aaad292418dfca5b3ab3d9d0643a6f0be0857e00ccde376f85edf7fc4e66f18",
+    "baseImageId": "sha256:9a2d989412a4fcd7645394f7d42683c89a7dbd03ed8780c8c388f07625660d70",
+    "baseImagePulled": false,
+    "developmentPackagesDownloadedDuringBuild": true,
+    "networkDuringTests": "none",
+    "testImageBinaryCommitted": false
+  },
+  "package": {
+    "artifact": "privacy_bubble_gateway-0.2.3-py3-none-any.whl",
+    "sha256": "fd6254cea210059330d14910ca0bb2299b638b8b8e98bec70a808befbbc4e63d",
+    "rebuilt": false,
+    "installedInContainerWithoutNetworkOrDependencies": true,
+    "moduleIdentityMatched": true,
+    "priorBuildReceipt": "../2026-10-30-real-cse/receipt.json"
+  },
+  "testEnvironment": {
+    "uid": 65532,
+    "rootReadonly": true,
+    "sourceAndWheelBindReadonly": true,
+    "data": "new tmpfs SQLite and placeholder env only",
+    "privatePkiUsed": false,
+    "fullDaemonStarted": false,
+    "bleOrDeviceUsed": false,
+    "existingDatabaseUsed": false,
+    "testContainersRemaining": [],
+    "existingDevelopmentContainers": [
+      "privacy-bubble-keyring-dev-mobius4-1 running",
+      "privacy-bubble-keyring-dev-postgres-1 running",
+      "privacy-bubble-keyring-dev-tls-1 running",
+      "privacy-bubble-keyring-dev-broker-1 running"
+    ],
+    "operationalServicesChanged": false
+  },
+  "previousUnchangedSuites": {
+    "rerunThisCheckpoint": false,
+    "defaultAndMqttReceipt": "../2026-10-30-real-cse/receipt.json",
+    "cseOutboxReceipt": "../2026-10-30-outbox-cse/receipt.json",
+    "firmwareReceipt": "../2026-10-29-local-validation/receipt.json"
+  },
+  "sources": [
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/__init__.py",
+      "sha256LfNormalized": "1b8e33c32154a30371326bc90170b517d1b4004c248e0e30ea14926b6bacd16c"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/__main__.py",
+      "sha256LfNormalized": "36dcb434b1343f6cdedb174c9f68e372141d27de327e94f54e958bd9719c4219"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/ble.py",
+      "sha256LfNormalized": "0a09b9f4b66ca63c7763e38058812dc848388d2ae446d86263b404a106f37d5f"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/config.py",
+      "sha256LfNormalized": "aaa913c289848cfbce6aad544d19b0d705f0bcbef3574435a96866489c2c54f2"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/core_bridge.py",
+      "sha256LfNormalized": "eddb76e43b823c8c53d351544f0132bc64f3321f3b6778fbdec7842209c49fa9"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/journal_cli.py",
+      "sha256LfNormalized": "a22dac2ddbf6142f8c0665e5efe460827721e502bb40453fde4d366783bff1fe"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/journal_export.py",
+      "sha256LfNormalized": "02ee7f74547656a650b3dbaebec6e1e7b1378d041825ff1937dbd05dba99d046"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/model.py",
+      "sha256LfNormalized": "964b4c982d94177f251bcbaec430e18edb36106300db45d79b094c0eca8c7fa6"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/service.py",
+      "sha256LfNormalized": "e6649210103decb3e02dfe81a576c2b09ede3f8c9130d8c842a0014329a3ebf1"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/state_archive.py",
+      "sha256LfNormalized": "be49b0c2cb336a69153aed777184bc038db398a480ad3f99bd1f421a60e93e97"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/state_identity.py",
+      "sha256LfNormalized": "aac06ec93f0c0e3ca22e67d0d4e8a7b605890d3aecc5aa1710a5a9cbd04f6ef0"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/store.py",
+      "sha256LfNormalized": "82c811e448779005545287699a9bcb9f5827f6dc4273e0a0ff87c98bec4afe1c"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/src/bubble_gateway/transport.py",
+      "sha256LfNormalized": "b8fdc12a0ea6a60dbda9d1f0ed6321e37cc724b5888fe94344ff8f48e33c9f85"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/tests/helpers.py",
+      "sha256LfNormalized": "eee17a8b5cd175dc3e92c55adae0a88a5923b0331046a15f317b1f31fd6ff82e"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/posix_integration_tests/Dockerfile",
+      "sha256LfNormalized": "a636e37e02ea26e93020748e8681d81dc573fafb59e590cd40d21c7be90e7c2c"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/posix_integration_tests/run-posix.ps1",
+      "sha256LfNormalized": "4878f5a1c43f9a8c35292082f3e69136a1225f25573488cc78425346d6603b36"
+    },
+    {
+      "path": "keyring/raspberry-pi-gateway/posix_integration_tests/test_state_cli.py",
+      "sha256LfNormalized": "1f1715db0774c4bbd08a3154f26850e8a62de7422a5b1dee6282dfbff16514d9"
+    }
+  ],
+  "files": [
+    {
+      "path": "image-build.log",
+      "bytes": 3266,
+      "sha256": "f58268d9e439e7a2a873f74faa837f679aa6f887f3b86dcf75302d49c9e7271e"
+    },
+    {
+      "path": "initial-direct-tests.log",
+      "bytes": 7894,
+      "sha256": "95e10a53c2d33481dd892aa73e39f00134d63cbbb6eaf7c99f2d2694b0666dbc"
+    },
+    {
+      "path": "README.md",
+      "bytes": 4667,
+      "sha256": "24d5606a3b623592357757f1102c11da68f30d7f67297245c8eeab99f1debd95"
+    },
+    {
+      "path": "runner-metadata.json",
+      "bytes": 678,
+      "sha256": "7a218fe2e7d633d0bc4fb2b238bfb842c4a9eee204f4595f760584ee85ce87f8"
+    },
+    {
+      "path": "runner-tests.log",
+      "bytes": 7894,
+      "sha256": "772491be7821661d193122248ffe86d1732b6e789ac26d147c9fa0a882107ea1"
+    },
+    {
+      "path": "runtime.json",
+      "bytes": 162,
+      "sha256": "28dbf55a3998bfc632d42b41e1a9cb158d9c876042750212262ec48954543757"
+    }
+  ],
+  "limits": [
+    "Linux x86_64 tmpfs; not Pi ARM or SD-card power loss",
+    "lock test stops daemon entry before serve/BLE/network",
+    "test legacy DB only; no operational DB adoption",
+    "expired API deadline only; not long-running CLI timeout",
+    "central recovery authorization and activation not implemented"
+  ],
+  "performer": "Codex-assisted local verification"
+}
