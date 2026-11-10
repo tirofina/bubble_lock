@@ -152,7 +152,7 @@ async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive
     finally:
         await transport.close()
     return {"reportVersion": 1, "checkedAt": iso_time(), "gatewayId": config.gateway_id, "deviceId": device_id,
-            "cseId": config.cse_id, "receiptContainer": config.receipt_container,
+            "cseId": config.cse_id, "cseDeploymentId": config.cse_deployment_id, "receiptContainer": config.receipt_container,
             "gatewayArchiveId": archive_id, "deviceSnapshotId": journal["deviceSnapshot"]["snapshotId"],
             "deviceRecordsSha256": journal["files"][0]["sha256"], "recordCount": len(records),
             "settlementStatus": "not-settled", "deviceJournalModified": False,

@@ -22,6 +22,7 @@ export function requireScopedJournalReport(report, gatewayId, receiptContainer) 
   const rows = report?.results;
   if (report?.reportVersion !== 1 || report.gatewayId !== gatewayId
       || report.cseId !== 'Mobius4' || report.receiptContainer !== receiptContainer
+      || (report.cseDeploymentId != null && report.cseDeploymentId !== scopedReceiptCseKey)
       || !receiptIdentifier(report.deviceId) || !receiptIdentifier(report.gatewayArchiveId)
       || !exact(/^[a-f0-9]{32}$/, report.deviceSnapshotId) || !isSha256(report.deviceRecordsSha256)
       || report.settlementStatus !== 'not-settled' || report.deviceJournalModified !== false
@@ -46,7 +47,7 @@ export function requireScopedJournalReport(report, gatewayId, receiptContainer) 
 }
 
 export function compareJournalSettlements(report, records) {
-  const { gatewayId, deviceId, cseId, receiptContainer, gatewayArchiveId,
+  const { gatewayId, deviceId, cseId, cseDeploymentId = null, receiptContainer, gatewayArchiveId,
     deviceSnapshotId, deviceRecordsSha256, recordCount } = report;
   if (records.length !== recordCount) throw new Error('JOURNAL_INSPECTION_ROW_BINDING');
   const results = report.results.map((row, index) => {
@@ -71,7 +72,8 @@ export function compareJournalSettlements(report, records) {
     if (!sourceBound) return { ...result, centralResult: 'settlement_source_unbound' };
     return { ...result, centralResult: 'settlement_matched', authorizationEventId: settlement.authorizationEventId };
   });
-  return { reportVersion: 1, checkedAt: new Date().toISOString(), gatewayId, deviceId, cseId, receiptContainer, gatewayArchiveId,
+  return { reportVersion: 1, checkedAt: new Date().toISOString(), gatewayId, deviceId, cseId, cseDeploymentId,
+    receiptContainer, gatewayArchiveId,
     deviceSnapshotId, deviceRecordsSha256, recordCount, settlementStatus: 'not-settled', deviceJournalModified: false,
     matchedCount: results.filter((row) => row.centralResult === 'settlement_matched').length,
     reviewCount: results.filter((row) => row.centralResult !== 'settlement_matched' || !row.gatewayDelivered).length,

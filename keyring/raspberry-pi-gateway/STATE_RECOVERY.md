@@ -12,6 +12,14 @@ SQLite journal/outbox/fence/dedup/CORE sequence를 보관하고 다른 Gateway �
 
 endpoint URL·broker 주소·인증서 경로는 binding에 넣지 않아 주소/credential 교체는 설정으로 가능하다. Gateway principal/CSE 자원 경로를 바꾸는 경우에는 이전 state를 그대로 새 정체성에 연결하지 않는다. 새로운 realm에는 새 DB 경로를 사용하고 이전 파일·fence·미정산 자료를 보존한다. 테스트 서버의 데이터·credential을 운영 환경에 자동 이관하지 않는다.
 
+## CSE 배포 전환
+
+Gateway 0.2.22에서 새 DB를 만들 때 `M2M_CSE_DEPLOYMENT_ID`에 CSE 데이터 저장소를 식별하는 운영자 배정 ID를 지정한다. 같은 저장소의 주소나 터널이 바뀌면 ID는 유지한다. 별도 저장소로 교체할 때는 새 ID와 새 `GATEWAY_DATABASE`를 함께 지정한다. ID가 바뀌거나 설정에서 빠지면 Gateway가 `STATE_CSE_DEPLOYMENT_MISMATCH`를 기록하고 기존 DB의 쓰기와 BLE·전송 시작 전에 종료한다.
+
+배포 ID 없는 기존 DB는 기존 환경 파일로 계속 사용한다. 이 파일에 새 ID만 넣어 DB에 덧씌우는 경로는 차단된다. 기존 큐는 원래 환경에서 처리하고, 보관이 필요하면 해당 환경 파일로 아래 snapshot을 만든다. 새 배포에서 이전 파일을 활성화하려면 중앙 복구 승인이 필요하다.
+
+배포 ID는 Gateway 설정과 SQLite가 같은 저장소를 가리킨다는 운영자 배정값이다. 실제 서버와 연결할 때는 mTLS 설정과 CSE 자원도 확인한다. 새 Feather 명령 벤치 프로필은 `scoped-mobius4`를 기록한다.
+
 ## 수동 snapshot
 
 `bubble-gateway-state snapshot`은 Python [sqlite3 backup API](https://docs.python.org/3.11/library/sqlite3.html#sqlite3.Connection.backup)로 committed WAL을 포함한 일관된 복사본을 만든다. live `.db` 파일만 복사하고 `-wal`을 놓치는 방식이 아니다. source connection은 read-only이며 command/fence/outbox 등 원본 data row를 수정하지 않는다. 새 private 폴더/파일만 만들고 기존 output을 덮어쓰거나 삭제하지 않는다.

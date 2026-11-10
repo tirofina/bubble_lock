@@ -41,7 +41,7 @@ docker compose --env-file ./keyring/dev/mobius4/.local/compose.env -f ./keyring/
 
 관측/receipt/health container와 binarySwitch 자원은 CORE owner가 준비해야 한다. 포함한 specialization registry는 `pb:binarySwitch`를 위한 로컬 설정이며 팀의 공통 파일을 변경하지 않는다. CORE 제공 하니스의 `create-state`는 현재 ty=4로 기록돼 있어 flexContainer ty=28과 불일치한다. 이 차이는 [인수 메모](../../CORE_INTEGRATION.md)에 기록했고 팀 원본은 보존했다.
 
-나중에 실제 Mobius 서버로 바꿀 때는 `M2M_CSE_URL`/RVI/Originator/container/CA·credential과 `PC_API_URL`을 교체한다. dev CA·관리자 매핑·local DB를 운영 환경에 이관하지 않는다.
+나중에 실제 Mobius 서버로 바꿀 때는 `M2M_CSE_URL`/RVI/Originator/container/CA·credential과 `PC_API_URL`을 교체한다. 운영 서버의 별도 데이터 저장소에는 새 `M2M_CSE_DEPLOYMENT_ID`와 새 `GATEWAY_DATABASE`를 지정한다. [배포 전환](../../raspberry-pi-gateway/STATE_RECOVERY.md#cse-배포-전환)
 
 ## Epoch 전용 MQTT 프로필
 

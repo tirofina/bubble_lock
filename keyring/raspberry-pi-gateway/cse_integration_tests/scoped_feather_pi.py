@@ -10,6 +10,7 @@ import sys
 
 GATEWAY_SOURCE = Path(__file__).resolve().parents[1] / "src"
 PARENT = "/Mobius/privacy-bubble-test-ae"
+CSE_DEPLOYMENT = "scoped-mobius4"
 
 
 def require_private(path, kind):
@@ -40,7 +41,7 @@ def gateway_environment(profile, session):
     if not tls.is_absolute():
         raise ValueError("Expected an absolute client TLS directory")
     ca, cert, key = load_tls(tls)
-    return {
+    environment = {
         "PATH": os.defpath, "PYTHONPATH": str(GATEWAY_SOURCE), "STATE_DIRECTORY": str(session),
         "GATEWAY_ID": "gw-a", "M2M_CSE_ID": "Mobius4", "M2M_RVI": "4",
         # The scoped TLS proxy maps the verified client to its local CSE originator.
@@ -54,6 +55,11 @@ def gateway_environment(profile, session):
         "MQTT_ENABLED": "false", "M2M_MQTT_ENABLED": "false", "CORE_BRIDGE_ENABLED": "false",
         "GATEWAY_DATABASE": str(session / "gateway.sqlite3"), "POLL_INTERVAL": "1", "REQUEST_TIMEOUT": "5",
     }
+    if "cseDeploymentId" in profile:
+        if profile["cseDeploymentId"] != CSE_DEPLOYMENT:
+            raise ValueError("Expected the scoped Mobius4 deployment")
+        environment["M2M_CSE_DEPLOYMENT_ID"] = profile["cseDeploymentId"]
+    return environment
 
 
 def prepare(args, session):
@@ -63,7 +69,7 @@ def prepare(args, session):
         if stream.read(1):
             raise ValueError("The address file must contain only one paired Feather address")
     profile = {"version": 1, "address": address, "tlsDirectory": str(args.tls_dir.absolute()),
-               "csePort": args.cse_port, "apiPort": args.api_port}
+               "csePort": args.cse_port, "apiPort": args.api_port, "cseDeploymentId": CSE_DEPLOYMENT}
     gateway_environment(profile, session)
     session.mkdir(mode=0o700)
     with (session / "profile.json").open("x", encoding="utf-8") as stream:
@@ -81,7 +87,8 @@ def run(root, session):
     profile_path = require_private(session / "profile.json", stat.S_ISREG)
     with profile_path.open(encoding="utf-8") as stream:
         profile = json.loads(stream.read(8193))
-    if not isinstance(profile, dict) or set(profile) != {"version", "address", "tlsDirectory", "csePort", "apiPort"}:
+    fields = {"version", "address", "tlsDirectory", "csePort", "apiPort"}
+    if not isinstance(profile, dict) or profile.keys() not in (fields, fields | {"cseDeploymentId"}):
         raise ValueError("Expected a prepared Feather command session")
     environment = gateway_environment(profile, session)
     with os.fdopen(os.open(root / "gateway.lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600), "rb") as lock:

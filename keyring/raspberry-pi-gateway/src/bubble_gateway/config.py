@@ -64,6 +64,7 @@ class GatewayConfig:
     ble_gatt_profile: str
     core_telemetry_epochs: dict[str, int] | None = None
     m2m_mqtt_enabled: bool = True
+    cse_deployment_id: str | None = None
 
     @classmethod
     def from_env(cls) -> "GatewayConfig":
@@ -172,6 +173,7 @@ class GatewayConfig:
             max_outbox_bytes=int(number("MAX_OUTBOX_BYTES", "33554432", 1048576, 1073741824)),
             max_commands=int(number("MAX_COMMANDS", "100000", 100, 10000000)),
             core_bridge_enabled=core_bridge, ble_gatt_profile=profile, core_telemetry_epochs=epochs,
+            cse_deployment_id=(identifier("M2M_CSE_DEPLOYMENT_ID") if "M2M_CSE_DEPLOYMENT_ID" in os.environ else None),
         )
 
 

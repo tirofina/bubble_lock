@@ -58,6 +58,8 @@ sudoedit /etc/privacy-bubble/gateway.env
 
 `.env.example`의 `REPLACE_*`, `*.example.invalid`, `00:00:00:00:00:00`은 실제 값이 없는 placeholder다. 인증서나 개인키 원문은 환경변수에 넣지 않고 파일 경로로 전달한다. 환경 파일은 `KEY=value` 형식이며 shell 명령·변수 치환을 사용하지 않는다.
 
+새 배포에는 `M2M_CSE_DEPLOYMENT_ID`와 전용 `GATEWAY_DATABASE`를 지정한다. 기존 DB를 계속 쓰거나 CSE 주소만 옮길 때는 [상태 보관과 배포 전환](STATE_RECOVERY.md#cse-배포-전환)의 설정을 따른다.
+
 중앙 경로 설정은 다음을 구분한다.
 
 | 설정 | 의미 |

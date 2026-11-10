@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 from bubble_gateway.model import canonical, payload_hash
 from bubble_gateway.state_archive import archive
-from bubble_gateway.state_identity import DATA_TABLES, StateIdentityError, metadata, readonly
+from bubble_gateway.state_identity import DATA_TABLES, StateIdentityError, configured_binding, metadata, readonly
 from bubble_gateway.store import CapacityError, Store
 from helpers import BINDING, command, config, observation
 
@@ -43,6 +43,28 @@ class StoreTests(unittest.TestCase):
         with self.assertRaisesRegex(StateIdentityError, "STATE_IDENTITY_MISMATCH"):
             self.open_store(gatewayId="gw-foreign")
         self.assertEqual(self.rows(), before)
+
+    def test_deployment_binding_keeps_queued_receipts_on_the_original_cse(self):
+        deployment_db = self.path.with_name("deployment.sqlite3")
+        cfg = config(deployment_db)
+        cfg.cse_deployment_id = "scoped-mobius4"
+        cfg.cse_url = "https://old-address.invalid"
+        binding = configured_binding(cfg)
+        self.assertEqual(binding["bindingVersion"], 2)
+        with closing(Store(deployment_db, 100, 100000, 20, binding)) as store:
+            store.enqueue("receipt", "pending-receipt", cfg.receipt_container, {}, critical=True)
+        cfg.cse_url = "https://replacement-address.invalid"
+        with closing(Store(deployment_db, 100, 100000, 20, configured_binding(cfg))) as store:
+            self.assertEqual(metadata(store.db)["binding"], binding)
+            self.assertEqual(store.due()["container"], cfg.receipt_container)
+        for different_deployment in ("production", None):
+            cfg.cse_deployment_id = different_deployment
+            with self.subTest(deployment=different_deployment), self.assertRaisesRegex(
+                    StateIdentityError, "STATE_CSE_DEPLOYMENT_MISMATCH"):
+                Store(deployment_db, 100, 100000, 20, configured_binding(cfg))
+        with self.assertRaisesRegex(StateIdentityError, "STATE_CSE_DEPLOYMENT_MISMATCH"):
+            self.open_store(bindingVersion=2, cseDeploymentId="scoped-mobius4")
+        self.assertEqual(metadata(self.store.db)["binding"], BINDING)
 
     def test_duplicate_conflict_and_interrupted_intent_survive_restart(self):
         cmd, digest = self.populate()
@@ -174,6 +196,12 @@ class StoreTests(unittest.TestCase):
         self.store.db.commit()
         with self.assertRaisesRegex(StateIdentityError, "STATE_LEGACY_ADOPTION_REQUIRED"):
             self.open_store()
+        deployment = config(self.path)
+        deployment.cse_deployment_id = "unproven"
+        refused_output = Path(self.temp.name) / "refused"
+        with self.assertRaisesRegex(StateIdentityError, "STATE_CSE_DEPLOYMENT_UNBOUND"):
+            archive(deployment, refused_output, adopt=True, timeout=5)
+        self.assertFalse(refused_output.exists())
         manifest_path = self.archive(adopt=True)
         self.assertEqual(self.rows(), before)
         self.assertEqual(metadata(self.store.db)["recovery_state"], "LIVE")

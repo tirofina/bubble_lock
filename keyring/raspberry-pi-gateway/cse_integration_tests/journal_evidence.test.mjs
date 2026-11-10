@@ -21,6 +21,10 @@ const central = { commandId: applied.commandId, nativeRef, inbox: null, settleme
 test('archive scope and applied evidence must match before lookup', () => {
   const report = reportFor(applied);
   assert.doesNotThrow(() => requireScopedJournalReport(report, gatewayId, receiptContainer));
+  assert.doesNotThrow(() => requireScopedJournalReport({ ...report, cseDeploymentId: scopedReceiptCseKey },
+    gatewayId, receiptContainer));
+  assert.throws(() => requireScopedJournalReport({ ...report, cseDeploymentId: 'production' },
+    gatewayId, receiptContainer), /JOURNAL_REPORT_BINDING/);
   assert.throws(() => requireScopedJournalReport(report, 'gw-b', receiptContainer), /JOURNAL_REPORT_BINDING/);
   assert.throws(() => requireScopedJournalReport(reportFor(applied, applied), gatewayId, receiptContainer),
     /JOURNAL_REPORT_ROW/);
