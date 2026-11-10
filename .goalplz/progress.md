@@ -1067,3 +1067,12 @@ Pi 배터리 기록 commit `3e4185bf9ecdc6c542686c65bd6bb5134c5a033e`을 `origin
 - 기존 DB의 추가 테이블, 보관본, 큐 포화·재시작·동일 ID, 완료 이력 제한, 저장 실패 시 실행 차단과 벤치 heartbeat 분리를 다루는 회귀시험 소스를 추가했다. 빌드·시험·Pi 배포·실제 CSE 전송은 미실행이다. 중앙의 실제 발급·회전 시각 증거와 실물 연결은 남아 있다. goal은 active/progress다.
 
 자격 전환 영수증 commit `bf1e4a947b00064687277e91e3f917d5ac667755`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `9ff2ad9..bf1e4a9`다.
+
+## 2026-11-11 — 자격 전환 영수증의 CSE 저장 확인
+
+직전 goal turn은 자격 전환 영수증을 SQLite에 보관하고 재전송하도록 구현한 progress다. DOC-REV 2.0.0, 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`와 자격 상태 계약을 확인했다. 팀 head는 직전과 같다.
+
+- Gateway `0.2.36`은 MQTT·HTTPS CREATE와 중복 응답 후 해당 contentInstance를 HTTPS로 읽어 이름·유형·리소스 ID·부모 ID·본문을 검사한다. CREATE가 인스턴스를 반환한 경우 조회에서 같은 리소스·부모를 확인한다. 조회 실패는 원래 영수증을 재시도한다. CSE HTTPS 보류 중에는 이 영수증만 health 경로의 선택에서 제외하고 MQTT 일반 heartbeat는 선택할 수 있다. [저장 확인 정책](../keyring/raspberry-pi-gateway/RECEIPT_ROUTING.md#자격-상태-전환-영수증)
+- 모의 전송·SQLite 대기열 및 격리 Mobius4 양쪽 binding의 회귀시험 소스를 추가했다. 이번 빌드·시험·Pi 배포·실제 CSE 저장 확인은 미실행이다. 기존 완료 행은 당시 판정 기준으로 남는다. goal은 active/progress다.
+
+자격 영수증 저장 확인 commit `4b82cbfd01cd3154d144443de4e87d5ad0a205f0`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `daadb12..4b82cbf`다.

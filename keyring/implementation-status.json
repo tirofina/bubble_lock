@@ -7,7 +7,7 @@
   "date": "2026-11-11",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Feather 0.2.0 and Pi Gateway 0.2.28 produced two APPLIED GPIO command receipts that matched pinned Mobius4, the Pi database, authenticated CSE callback and isolated PostgreSQL settlement. Firmware 0.7.12 battery alerts, Gateway 0.2.33 battery capture, and Gateway 0.2.34–0.2.35 credential continuity and transition receipts are source-only. Visual LED confirmation, r18 hardware, physical power characterization, and offline journal history comparison remain unverified.",
+  "verificationStatus": "Feather 0.2.0 and Pi Gateway 0.2.28 produced two APPLIED GPIO command receipts that matched pinned Mobius4, the Pi database, authenticated CSE callback and isolated PostgreSQL settlement. Firmware 0.7.12 battery alerts, Gateway 0.2.33 battery capture, and Gateway 0.2.34–0.2.36 credential continuity, transition receipts and CSE readback are source-only. Visual LED confirmation, r18 hardware, physical power characterization, and offline journal history comparison remain unverified.",
   "rubricIds": [
     "R01",
     "R02",
@@ -41,6 +41,7 @@
     "mTLS current authorization, credential status and deadline gating",
     "Gateway local credential continuity fence across failed status reads, TTL gaps and same-revision recoveries",
     "durable first authenticated credential status and transition receipts with ordered native health delivery",
+    "native CSE HTTPS readback before marking credential receipts delivered, with selective Retry-After holds",
     "absolute monotonic BLE deadline and per-fragment credential revision and clock checks",
     "MQTT 3.1.1 oneM2M request/response and HTTPS fallback",
     "HTTPS Retry-After for CSE and control API with same-origin deferral and durable per-item outbox deadlines",
@@ -166,17 +167,17 @@
   "firmwareRevision": "keyring-0.7.12",
   "benchFirmwareRevision": "feather-probe-0.2.0",
   "publication": {
-    "sourceCommit": "bf1e4a947b00064687277e91e3f917d5ac667755",
+    "sourceCommit": "4b82cbfd01cd3154d144443de4e87d5ad0a205f0",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "bf1e4a947b00064687277e91e3f917d5ac667755",
-    "lastPushedCommit": "bf1e4a947b00064687277e91e3f917d5ac667755",
-    "latestCheckpoint": "Persist authenticated credential status transitions and stage immutable receipts on the bound native health route.",
-    "lastPushedCommitBeforeThisCheckpoint": "9ff2ad98a0a38724401531f01baa488bceb664a5"
+    "latestLocalSourceCommit": "4b82cbfd01cd3154d144443de4e87d5ad0a205f0",
+    "lastPushedCommit": "4b82cbfd01cd3154d144443de4e87d5ad0a205f0",
+    "latestCheckpoint": "Require native CSE readback before finalizing credential transition receipt delivery.",
+    "lastPushedCommitBeforeThisCheckpoint": "daadb12292630e5de3bfdc1293251d65f0ad52bd"
   },
-  "gatewayRevision": "0.2.35",
+  "gatewayRevision": "0.2.36",
   "pendingValidationScope": "Visual Feather LED observation, r18 physical commands and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE MQTT ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
@@ -198,7 +199,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Implement durable Gateway credential transition receipts under DOC-REV 2.0.0",
+    "executionRequest": "Require CSE readback on credential transition receipt delivery under DOC-REV 2.0.0",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -206,11 +207,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "bf1e4a947b00064687277e91e3f917d5ac667755",
-    "sourceValidation": "Read the current plan, remote team heads, team central credential contract, and Gateway health, SQLite state and native transport paths. Implementation and regression source only. No build, test execution, Pi deployment, CSE transmission or hardware verification was performed.",
+    "sourceCommit": "4b82cbfd01cd3154d144443de4e87d5ad0a205f0",
+    "sourceValidation": "Read the current plan, remote team heads, team credential contract, and Gateway native CREATE, readback and SQLite route selection paths. Implementation and regression source only. No build, test execution, Pi deployment, CSE transmission or hardware verification was performed.",
     "goalComplete": false,
     "pendingInput": null,
-    "currentDependencyState": "The Feather 0.2.0 and Pi Gateway 0.2.28 command path was verified through isolated Mobius4 and PostgreSQL. Gateway 0.2.35 build, credential continuity and durable transition regression execution, real CSE credential receipt delivery and central issuance or rotation evidence remain. Firmware 0.7.12 build and real battery alert capture, LCD and charger observation, native CSE battery observation readback, visual Feather LED observation, r18 physical sensor recovery, BLE resubscription and long-read tests, NVS fault verification, archive comparison execution, authoritative production CSE routes, approved journal reclaim and automatic external rollback detection contracts, production CORE, and r18 bring-up with physical power/range/wake capture and an external supply measurement also remain.",
+    "currentDependencyState": "The Feather 0.2.0 and Pi Gateway 0.2.28 command path was verified through isolated Mobius4 and PostgreSQL. Gateway 0.2.36 build, credential continuity, durable transition and readback regression execution, real CSE credential receipt delivery and central issuance or rotation evidence remain. Firmware 0.7.12 build and real battery alert capture, LCD and charger observation, native CSE battery observation readback, visual Feather LED observation, r18 physical sensor recovery, BLE resubscription and long-read tests, NVS fault verification, archive comparison execution, authoritative production CSE routes, approved journal reclaim and automatic external rollback detection contracts, production CORE, and r18 bring-up with physical power/range/wake capture and an external supply measurement also remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -1143,5 +1144,13 @@
     "regressionsExecuted": false,
     "liveCseDeliveryExecuted": false,
     "sourceCommit": "bf1e4a947b00064687277e91e3f917d5ac667755"
+  },
+  "credentialReceiptReadback": {
+    "reference": "raspberry-pi-gateway/RECEIPT_ROUTING.md#자격-상태-전환-영수증",
+    "status": "source-only",
+    "gatewayVersion": "0.2.36",
+    "regressionsExecuted": false,
+    "liveCseReadbackExecuted": false,
+    "sourceCommit": "4b82cbfd01cd3154d144443de4e87d5ad0a205f0"
   }
 }
