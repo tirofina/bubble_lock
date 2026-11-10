@@ -771,3 +771,13 @@ PostgreSQL 정산 소스 commit `a551e9ee797dfa18b26c85a79c23d5ceccd55df5`를 `o
 - 이번에는 임시 중계 연결과 구독 등록까지 실행했다. 수신 대기열과 정산은 각각 0행이며 실제 영수증 알림·정산·회귀시험·Pi/Feather 명령은 미실행이다. 전체 goal은 active/progress다.
 
 중계와 구독 준비 commit `3d78e2d53beb16a462d6703b51556875356a2216`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `55df99a..3d78e2d`다.
+
+## 2026-11-10 — 영수증 전달 경로와 정산 증거 조회
+
+직전 goal turn은 격리 중계와 두 CSE 구독을 실제 등록한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- 대기열 삽입 트랜잭션에 `CSE_CALLBACK`·`RECOVERY_SWEEP`의 최초 수신 시각과 최초 생성 여부를 추가했다. 기존 대기열 상태나 정산 결과를 덮어쓰지 않는다. `inspect.mjs`는 명령 ID로 대기열·전달 경로·정산을 읽는다. [조회 절차](../keyring/dev/mobius4/README.md#명령별-영수증-증거-조회)
+- 전용 PostgreSQL에 003 마이그레이션을 적용하고, 발급 명령과 대기열이 비어 있을 때 scoped 콜백과 작업자 두 프로세스만 재기동했다. 각 준비 로그와 콜백 리스너를 확인했다. Mobius4와 중계는 같은 인스턴스이며 대기열·전달·정산은 각각 0행이다. [배치 증거](../keyring/evidence/2026-11-10-scoped-receipt-provenance/provisioning.json)
+- 이번 실행 범위는 격리 배치다. 명령별 조회 도구 실행·실제 영수증 수신·정산·회귀시험·Pi/Feather 명령은 미실행이다. 전체 goal은 active/progress다.
+
+전달 경로 기록과 배치 commit `7e72b25acc19b84b23c454f4f13245ea4e9350a5`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `d8116cc..7e72b25`다.

@@ -7,7 +7,7 @@
   "date": "2026-11-10",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "The scoped receipt relay reached the mTLS callback and both CSE receipt subscriptions were provisioned. Actual notification delivery, command settlement and hardware acceptance remain unverified.",
+  "verificationStatus": "The scoped relay and subscriptions are provisioned. The isolated receipt database now records callback and recovery provenance, and both Node processes restarted. Live notification, settlement and hardware acceptance remain unverified.",
   "rubricIds": [
     "R01",
     "R02",
@@ -139,15 +139,15 @@
   "firmwareRevision": "keyring-0.7.4",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "3d78e2d53beb16a462d6703b51556875356a2216",
+    "sourceCommit": "7e72b25acc19b84b23c454f4f13245ea4e9350a5",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "3d78e2d53beb16a462d6703b51556875356a2216",
-    "lastPushedCommit": "3d78e2d53beb16a462d6703b51556875356a2216",
-    "latestCheckpoint": "Connected the scoped receipt relay to the host mTLS callback and registered both Gateway receipt subscriptions.",
-    "lastPushedCommitBeforeThisCheckpoint": "55df99accc98644e7e919f42445ab1f7109dc5aa"
+    "latestLocalSourceCommit": "7e72b25acc19b84b23c454f4f13245ea4e9350a5",
+    "lastPushedCommit": "7e72b25acc19b84b23c454f4f13245ea4e9350a5",
+    "latestCheckpoint": "Deployed isolated receipt delivery provenance and added a read-only per-command evidence query.",
+    "lastPushedCommitBeforeThisCheckpoint": "d8116cc64baee7abde7a5655e360a8c97cd736df"
   },
   "gatewayRevision": "0.2.19",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
@@ -171,7 +171,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Provision scoped CSE receipt relay transport and Gateway receipt subscriptions",
+    "executionRequest": "Record and inspect receipt callback and recovery delivery provenance",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -179,11 +179,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "3d78e2d53beb16a462d6703b51556875356a2216",
-    "sourceValidation": "Isolated mTLS relay readiness and CSE subscription provisioning executed. No receipt notification, settlement, regression test or device command was performed.",
+    "sourceCommit": "7e72b25acc19b84b23c454f4f13245ea4e9350a5",
+    "sourceValidation": "Isolated provenance migration and Node process restart executed. No inspection CLI run, receipt notification, settlement, regression test or device command was performed.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "The isolated relay transport and subscriptions are provisioned. Live receipt notification and settlement, Pi physical command evidence, production CORE integration and r18 bring-up remain.",
+    "currentDependencyState": "The isolated receipt stack is ready to distinguish callback and recovery provenance. Live receipt notification and settlement, Pi physical command evidence, production CORE integration and r18 bring-up remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -846,5 +846,14 @@
     "notificationReceived": false,
     "physicalReceiptObserved": false,
     "sourceCommit": "3d78e2d53beb16a462d6703b51556875356a2216"
+  },
+  "scopedReceiptProvenance": {
+    "reference": "dev/mobius4/README.md#명령별-영수증-증거-조회",
+    "provisioningEvidence": "evidence/2026-11-10-scoped-receipt-provenance/provisioning.json",
+    "status": "isolated-schema-and-processes-deployed",
+    "inspectionCliExecuted": false,
+    "regressionsExecuted": false,
+    "physicalReceiptObserved": false,
+    "sourceCommit": "7e72b25acc19b84b23c454f4f13245ea4e9350a5"
   }
 }
