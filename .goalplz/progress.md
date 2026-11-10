@@ -995,3 +995,12 @@ HTTPS 재시도 commit `3cc69fd9d14a08988475c26e203899f506c478e2`를 `origin/cod
 - 준비 상태 필드 누락·false, 다른 부팅, 오래된 health를 다루는 회귀시험 소스를 추가했다. 빌드·시험·Pi 배포·실물 재시험은 미실행이다. 앞선 0.2.28의 실물 증거와 범위를 분리한다. goal은 active/progress다.
 
 준비 확인 commit `3bdd273a1a183fbb40d77d4b0288e647fcc72aa7`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1efe0ba..3bdd273`이다.
+
+## 2026-11-11 — r18 명령·영수증의 알림 구독 경계
+
+직전 goal turn은 Feather 발급 전 Pi 준비 확인을 구현한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 브랜치 head는 직전과 같다.
+
+- r18 펌웨어 `keyring-0.7.10`은 조립된 명령과 BLE 영수증을 수신 당시 연결 및 영수증 알림 구독에 묶는다. 구독이 바뀌면 이전 대기 명령은 새 모터 출력을 시작할 수 없고, 이전 구독의 미전송 영수증과 READ 사본은 폐기한다. NVS에 저장된 결과는 보존한다. [펌웨어 계약](../keyring/firmware/README.md)
+- 타이머 준비 중 재구독, 오래된 큐 명령, 미전송 조각과 긴 READ의 재사용을 다루는 호스트 회귀시험 소스를 추가했다. 빌드·시험·flash는 미실행이다. r18 실물 검증은 남아 있으며 goal은 active/progress다.
+
+구독 경계 commit `28df2d166565bafdd8ced6d2b9447032aa041e58`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `d56fe0f..28df2d1`이다.

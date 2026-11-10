@@ -7,7 +7,7 @@
   "date": "2026-11-11",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Feather 0.2.0 and Pi Gateway 0.2.28 produced two APPLIED GPIO command receipts that matched pinned Mobius4, the Pi database, authenticated CSE callback and isolated PostgreSQL settlement. Gateway 0.2.29 command readiness gating is source-only. Visual LED confirmation, r18 firmware 0.7.9, physical power characterization, and offline journal history comparison remain unverified.",
+  "verificationStatus": "Feather 0.2.0 and Pi Gateway 0.2.28 produced two APPLIED GPIO command receipts that matched pinned Mobius4, the Pi database, authenticated CSE callback and isolated PostgreSQL settlement. Gateway 0.2.29 command readiness and r18 firmware 0.7.10 subscription fencing are source-only. Visual LED confirmation, r18 hardware, physical power characterization, and offline journal history comparison remain unverified.",
   "rubricIds": [
     "R01",
     "R02",
@@ -25,6 +25,7 @@
     "LIS2DW12 latched motion events and optional ESP32-S3 deep sleep/button/timer wake",
     "BLE MITM bonding, GATT identity and framed JSON notifications",
     "r18 GATT writes, subscriptions, disconnects and notification fragments bound to the active BLE connection",
+    "r18 assembled command execution and receipt transmission bound to the original receipt subscription generation",
     "r18 identity, observation, receipt and journal GATT reads bound to the active connection with immutable long-read snapshots",
     "bounded NVS command journal, fencing, GPIO readback and timed motor output",
     "r18 startup lockout before Arduino default NVS format and fail-closed slot validation",
@@ -155,18 +156,18 @@
   "logSha256": "0c25234a13f2542bb13ff4ed2fd39c8aa015375a435bc6b6156f90cf0b7d6efa",
   "logSha256Scope": "private actual Pi observations.jsonl captured in the HTTPS outage/replay run; digest recorded by actualReceipt",
   "releaseSha": null,
-  "firmwareRevision": "keyring-0.7.9",
+  "firmwareRevision": "keyring-0.7.10",
   "benchFirmwareRevision": "feather-probe-0.2.0",
   "publication": {
-    "sourceCommit": "3bdd273a1a183fbb40d77d4b0288e647fcc72aa7",
+    "sourceCommit": "28df2d166565bafdd8ced6d2b9447032aa041e58",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "3bdd273a1a183fbb40d77d4b0288e647fcc72aa7",
-    "lastPushedCommit": "3bdd273a1a183fbb40d77d4b0288e647fcc72aa7",
-    "latestCheckpoint": "Require fresh Pi health with an acknowledged-write GATT session before issuing each Feather bench command.",
-    "lastPushedCommitBeforeThisCheckpoint": "1efe0ba36883254e74a0af2fae06ff2528e477b5"
+    "latestLocalSourceCommit": "28df2d166565bafdd8ced6d2b9447032aa041e58",
+    "lastPushedCommit": "28df2d166565bafdd8ced6d2b9447032aa041e58",
+    "latestCheckpoint": "Fence r18 queued commands and BLE receipts when the receipt subscription is replaced within the same authenticated link.",
+    "lastPushedCommitBeforeThisCheckpoint": "d56fe0fa7fa356d318f655673dd3bfc98f72108d"
   },
   "gatewayRevision": "0.2.29",
   "pendingValidationScope": "Visual Feather LED observation, r18 physical commands and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE MQTT ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
@@ -190,7 +191,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Prevent repeat bench issuance when the Pi can observe the Feather but has no current writable command GATT session",
+    "executionRequest": "Prevent queued r18 commands and buffered command receipts from surviving replacement of the original receipt subscription",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -198,11 +199,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "3bdd273a1a183fbb40d77d4b0288e647fcc72aa7",
-    "sourceValidation": "Read the current plan, remote team heads and the real Feather expiration evidence. Gateway health and bench readiness gating plus regression source only. No build, test execution, deployment or physical retest was performed.",
+    "sourceCommit": "28df2d166565bafdd8ced6d2b9447032aa041e58",
+    "sourceValidation": "Read the current plan, remote team heads, r18 BLE callbacks, command queue and motor gate. Firmware fencing and host regression source only. No build, test execution, flash or physical verification was performed.",
     "goalComplete": false,
     "pendingInput": null,
-    "currentDependencyState": "The Feather 0.2.0 and Pi Gateway 0.2.28 command path was verified through isolated Mobius4 and PostgreSQL. Gateway 0.2.29 readiness regression and physical retest, visual LED observation, firmware 0.7.9 build, physical BLE long-read and r18 NVS fault verification, archive comparison execution, authoritative production CSE routes, approved journal reclaim and automatic external rollback detection contracts, production CORE, and r18 bring-up with physical power/range/wake capture and an external supply measurement remain.",
+    "currentDependencyState": "The Feather 0.2.0 and Pi Gateway 0.2.28 command path was verified through isolated Mobius4 and PostgreSQL. Gateway 0.2.29 readiness regression and physical retest, visual LED observation, r18 0.7.10 build, BLE resubscription and long-read tests, NVS fault verification, archive comparison execution, authoritative production CSE routes, approved journal reclaim and automatic external rollback detection contracts, production CORE, and r18 bring-up with physical power/range/wake capture and an external supply measurement remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -1065,5 +1066,14 @@
     "regressionsExecuted": false,
     "physicalRetestExecuted": false,
     "sourceCommit": "3bdd273a1a183fbb40d77d4b0288e647fcc72aa7"
+  },
+  "firmwareReceiptSubscriptionFencing": {
+    "reference": "firmware/README.md",
+    "status": "source-only",
+    "firmwareVersion": "keyring-0.7.10",
+    "hostRegressionsExecuted": false,
+    "firmwareBuilt": false,
+    "physicalBleExecuted": false,
+    "sourceCommit": "28df2d166565bafdd8ced6d2b9447032aa041e58"
   }
 }
