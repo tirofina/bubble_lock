@@ -612,3 +612,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 이번 변경은 소스 단계다. 빌드·회귀시험, 펌웨어 flash, Pi·r18 wake와 전원 실측은 미실행이다. 전체 goal은 active/progress다.
 
 구현 commit `1f89a884683fb13d03f273108b547e55ef206a74`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `e13212e..1f89a88`다.
+
+## 2026-11-10 — Feather 벤치의 scoped Mobius4 경로
+
+이전 goal turn은 r18 wake 필드와 Pi 기록 모드를 작성한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- Gateway 0.2.18은 배터리나 RSSI가 없을 때 epoch 전용 토픽에서만 nullable 1.1.0을 사용한다. 일반 CORE v1은 숫자 계측값을 계속 요구한다. Feather의 버튼 상태는 native cin에 남고 실제 관측의 `state`를 별도 SDT에 쓴다.
+- 격리 CSE에서 `featherState` CREATE 201/2001, 영속 `gw-a:1` 소유권, 새 소비자의 구독을 확인했다. ACL과 모듈 해시를 기록했다. [서버 준비 기록](../keyring/evidence/2026-11-10-core-scoped-feather-rollout/README.md)
+- 실행은 임시 서버 준비까지다. Gateway 빌드와 회귀시험, Pi 연결 및 실제 Feather 관측·적용 영수증은 미실행이다. 전체 goal은 active/progress다.
+
+구현·준비 기록 commit `03ffb8206eab409b6e669a696f713d561d90f640`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `efe77c7..03ffb82`다.

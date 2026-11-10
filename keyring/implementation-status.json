@@ -7,7 +7,7 @@
   "date": "2026-11-10",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Firmware 0.7.4 wake preservation and Gateway 0.2.17 wake capture are source-only. Prior Pi/Feather observations do not establish r18 sleep, wake, range or power acceptance.",
+  "verificationStatus": "The isolated Feather SDT and its MQTT consumer are deployed. Gateway 0.2.18 and nullable telemetry are source-only on the Pi; live telemetry, firmware wake, range and power acceptance remain.",
   "rubricIds": [
     "R01",
     "R02",
@@ -79,7 +79,8 @@
     "serialized scoped owner transitions with pending UPDATE fencing, monotonic rollback and a bench operator command",
     "operator-only retirement of obsolete CORE telemetry after a durable cold archive and exact row fingerprint comparison",
     "operator-only BlueZ range/reconnect recorder with hardware identity checks, post-handshake notifications and private monotonic evidence",
-    "wake source and GPIO mask retention in bounded r18 health frames, plus operator-only Pi capture of a newly observed boot"
+    "wake source and GPIO mask retention in bounded r18 health frames, plus operator-only Pi capture of a newly observed boot",
+    "scoped nullable telemetry and a distinct Mobius4 Feather resource, gateway binding and reply topic"
   ],
   "existingHardware": {
     "status": "source-snapshot-included-unverified",
@@ -136,17 +137,17 @@
   "firmwareRevision": "keyring-0.7.4",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "1f89a884683fb13d03f273108b547e55ef206a74",
+    "sourceCommit": "03ffb8206eab409b6e669a696f713d561d90f640",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "1f89a884683fb13d03f273108b547e55ef206a74",
-    "lastPushedCommit": "1f89a884683fb13d03f273108b547e55ef206a74",
-    "latestCheckpoint": "Preserved r18 wake fields in reduced health frames and added a Pi wake capture mode with an idle interval and exact source matching. No BLE execution.",
-    "lastPushedCommitBeforeThisCheckpoint": "e13212eec18012701a14624bc13e09ce5d2af0ca"
+    "latestLocalSourceCommit": "03ffb8206eab409b6e669a696f713d561d90f640",
+    "lastPushedCommit": "03ffb8206eab409b6e669a696f713d561d90f640",
+    "latestCheckpoint": "Provisioned a distinct Feather SDT and exact scoped ACLs. The server consumer subscribed and its owner store reported gw-a at epoch 1.",
+    "lastPushedCommitBeforeThisCheckpoint": "efe77c7308546c4c9538412fc42efb67a95bd758"
   },
-  "gatewayRevision": "0.2.17",
+  "gatewayRevision": "0.2.18",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
@@ -168,7 +169,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Preserve r18 wake evidence on BLE health frames and prepare a two-window Pi wake capture",
+    "executionRequest": "Provide a physical Feather path through scoped Mobius4 without invented battery or RSSI",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -176,11 +177,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "1f89a884683fb13d03f273108b547e55ef206a74",
-    "sourceValidation": "Firmware, CLI and regression source only. No build, tests, BLE execution, flash or measurements.",
+    "sourceCommit": "03ffb8206eab409b6e669a696f713d561d90f640",
+    "sourceValidation": "Temporary server setup only: new Feather SDT CREATE, consumer subscription, persisted owner and mounted file hashes observed. No Gateway build, tests, BLE execution or telemetry.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "The physical wake capture path is available as source. Sleep-enabled r18 bring-up, Pi execution, external current/entry evidence and central acceptance remain.",
+    "currentDependencyState": "The isolated server is ready for Feather scoped telemetry. The Pi Gateway build, real Feather observation and application receipt, r18 bring-up and central acceptance remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -705,5 +706,16 @@
     "physicalMeasurementExecuted": false,
     "regressionsExecuted": false,
     "sourceCommit": "1f89a884683fb13d03f273108b547e55ef206a74"
+  },
+  "scopedFeatherRollout": {
+    "evidence": "evidence/2026-11-10-core-scoped-feather-rollout/README.md",
+    "gatewayVersion": "0.2.18",
+    "candidateSchemaVersion": "1.1.0",
+    "featherSdtCreated": true,
+    "scopedConsumerSubscribed": true,
+    "persistedOwner": "gw-a:1",
+    "physicalTelemetryExecuted": false,
+    "regressionsExecuted": false,
+    "sourceCommit": "03ffb8206eab409b6e669a696f713d561d90f640"
   }
 }
