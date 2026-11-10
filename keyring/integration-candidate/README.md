@@ -17,3 +17,13 @@ DOC-REV 2.0.0 · KEYRING / 남호.
 CORE/INTEGRATION의 실제 연결은 발급 기록과 실행 승인 기록을 인증된 수신 처리에 공급하고, `gatewayId + commandId`와 원본 hash로 재전송을 원자적으로 정산해야 한다. 실패·미확정 영수증의 표시와 retry 정책도 중앙 계약이 필요하다. 테스트에서는 중앙 코드의 실제 입력과 결과를 확인했고, 운영 ACK 수신 경로에는 후보 함수 연결과 영속 정산이 남아 있다.
 
 [실행 결과](../evidence/2026-11-10-core-ack-binding/README.md)
+
+## Handover 뒤 활성 Gateway 검증
+
+팀 main `715ef58`은 전환 전 epoch의 명령을 거절한다. 같은 장치를 가진 두 Gateway 등록이 모두 유효하면 전환 뒤 이전 Gateway에도 현재 epoch의 새 명령을 발급하고 승인할 수 있다.
+
+[활성 Gateway 확인 함수](handover-owner.mjs)는 handover 관리 장치에 대해 중앙의 등록 정보, handover 기록의 장치·상태·epoch, 서버 설정의 Edge → Gateway 매핑을 함께 확인한다. 관리 장치에는 초기 소유 Edge를 명시적으로 등록한다. `ACTIVE`와 `ROLLED_BACK`은 실제 `edgeId`를 사용한다. `DRAINING`, 기록·매핑 부재, 대상 장치 불일치에는 승인을 보류한다. Gateway 한 대가 여러 장치를 맡을 수 있어 대상 장치 기준으로 판단한다.
+
+후보는 중앙 `GatewayControl.active`의 현재 grant·인증서·기한 검사에 추가하는 조건이다. 이 위치에서 발급·목록·실행 직전 승인에 같은 소유권 검사가 적용된다. 시험은 별도 Edge 이름 두 개와 Gateway 인증서 두 개를 사용하고, Edge마다 활성 Gateway 한 대를 명시했다. 운영 연결에서는 팀이 정본 매핑과 초기 소유권을 공급해야 한다. 이미 내려간 승인과 전송 중 BLE 명령의 처리에는 중앙의 drain·원자적 승인 계약이 필요하다.
+
+[mTLS 재현 기록](../evidence/2026-11-10-handover-owner/README.md)

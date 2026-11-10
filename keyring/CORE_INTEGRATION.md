@@ -26,6 +26,8 @@ Gateway 0.2.5는 팀 main `715ef58`의 실제 mTLS API에서 명령을 받아 �
 
 팀 main 원본을 대상으로 이 차이를 재현했다. HTTP 발급 명령의 ACK는 `REVIEW`로 남았고, CORE에 등록된 명령은 ACK의 payloadHash만 바꿔도 `ACK_RECORDED`가 됐다. 중앙 발급·승인 기록, 인증된 Gateway ID, CSE native receipt를 결속하는 KEYRING 후보는 정상 입력 2개와 거절 사례 7개를 검증했다. 운영에서의 원자적 정산과 ACK 수신기 연결은 팀 owner 경계다. [결속 후보](integration-candidate/README.md) · [실행 증거](evidence/2026-11-10-core-ack-binding/README.md)
 
+handover 후에는 이전 epoch뿐 아니라 대상 Gateway도 확인해야 한다. 팀 원본 API는 이전 Gateway가 같은 장치에 등록된 상태에서 현재 epoch의 새 명령을 승인했다. 활성 Edge와 Gateway를 명시적으로 연결한 후보는 발급·조회·승인에서 이전 Gateway를 차단했다. 롤백 뒤 원래 Gateway 복구와 API 재기동 후 판정 유지도 확인했다. 운영 적용은 팀의 정본 Edge → Gateway 매핑과 drain 계약에 따른다. [후보와 입력](integration-candidate/README.md#handover-뒤-활성-gateway-검증) · [mTLS 시험](evidence/2026-11-10-handover-owner/README.md)
+
 ## 소유권
 
 CORE: oneM2M resource/SDT/namespace, RVI, broker topic/ACL, native bridge/DB.
