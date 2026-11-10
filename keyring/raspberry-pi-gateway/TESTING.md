@@ -99,7 +99,19 @@ python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_led_cyc
 
 `LED_ON_READY`, `LED_OFF_READY`가 각각 출력된 뒤에만 `$bench`에 해당 이름의 `LED_ON`, `LED_OFF` 파일을 만든다. 각 단계는 같은 부팅 세션의 명령 전 관측을 읽고, 팀 API에서 60초 grant를 받은 뒤 25초 기한의 명령을 발급한다. 실제 LED를 눈으로 확인한 결과는 따로 기록한다. 도구는 Mobius4 원본 영수증과 명령 후 관측을 확인하고 단계별 grant 회수 응답을 로컬에 저장한다.
 
-명령 발급 요청 전의 `led-*-intent.json`에 command ID와 CSE 자원명이 있다. 응답을 받기 전에 중단되면 새 명령을 보내기 전에 이 ID로 팀 상태와 원본 영수증을 대조한다. 전체가 끝난 뒤 Pi SQLite 대조에 `pi_led_cycle.py --gateway gw-a --evidence <led-cycle.json> --database <Pi SQLite 사본>`을 쓴다. 중앙 정산은 각 command ID로 [정산 명령](../dev/mobius4/README.md#명령-영수증-정산-준비)을 별도로 실행한다. 중간에 중단하려면 `STOP` 파일을 만들고 실제 LED 상태를 확인한다.
+명령 발급 요청 전의 `led-*-intent.json`에 command ID와 CSE 자원명이 있다. 응답을 받기 전에 중단되면 새 명령을 보내기 전에 이 ID로 팀 상태와 원본 영수증을 대조한다. [격리 PostgreSQL 정산 작업자](../dev/mobius4/README.md#격리-postgresql-정산-실행)가 원본을 처리한 뒤 아래 절차로 증거를 묶는다. 중간에 중단하려면 `STOP` 파일을 만들고 실제 LED 상태를 확인한다.
+
+#### 실물 명령 증거 대조
+
+두 명령이 끝나면 Pi SQLite 사본을 준비하고 `led-cycle.json`의 각 command ID로 [읽기 전용 정산 조회](../dev/mobius4/README.md#명령별-영수증-증거-조회)를 저장한다. `$teamState`는 같은 시험에서 팀 명령 API가 저장한 `runtime.json`의 사본이다. 운영자가 실제 LED를 확인한 경우에만 `--operator-observations`로 ON/OFF 순서의 JSON 배열을 공급한다. 각 항목은 `commandId`, `ledOn` 불리언, 시간대가 있는 `observedAt`을 포함한다.
+
+```powershell
+python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_evidence.py `
+  --cycle (Join-Path $bench 'led-cycle.json') --database $piDatabaseCopy `
+  --on-inspection $onInspection --off-inspection $offInspection --team-state $teamState
+```
+
+도구는 Pi SQLite의 명령·영수증 해시와 CSE 원본의 `ri`·`ct`를 팀 발급·승인 기록과 PostgreSQL 정산에 대조한다. `centralSettlementVerified`, `cseCallbackRecorded`, `physicalLedMatched`를 분리한다. 운영자가 실제 LED를 기록하지 않으면 물리 항목은 `null`이다. 승인과 CSE 보관 순서를 판정할 수 없어 정산이 `REVIEW`라면 원래 검토 상태를 보고한다.
 
 #### Pi 명령 세션
 

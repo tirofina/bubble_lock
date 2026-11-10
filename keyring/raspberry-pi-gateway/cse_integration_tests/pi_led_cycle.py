@@ -59,12 +59,13 @@ async def run_led_cycle(operator_post, cse, paths, output, *, gateway_id=GATEWAY
             return None
         if (status, rsc) != (200, 2000):
             raise RuntimeError("Bench CSE readback failed")
-        return body["m2m:cin"]["con"]
+        return body["m2m:cin"]
 
     async def observation(state, *, boot_id=None, after=None):
-        current = await read_cin("observation", "la")
-        if current is None:
+        native = await read_cin("observation", "la")
+        if native is None:
             return None
+        current = native["con"]
         observed = parse_time(current["receivedAt"])
         if (current["gatewayId"] == gateway_id and current["deviceId"] == DEVICE
                 and current["firmwareRevision"] == FIRMWARE and current["state"] is state
@@ -124,13 +125,15 @@ async def run_led_cycle(operator_post, cse, paths, output, *, gateway_id=GATEWAY
                 raise RuntimeError("Bench central issued a different command")
             write_new_json(output / f"led-{label.lower()}-issued.json", {"command": command, "cseReceiptName": rn})
             async with asyncio.timeout(35):
-                receipt = await wait_for(lambda: read_cin("receipt", rn))
+                native_receipt = await wait_for(lambda: read_cin("receipt", rn))
+                receipt = native_receipt["con"]
                 verify_receipt(command, receipt, boot_id, state)
                 observed = await wait_for(lambda: observation(state, boot_id=boot_id,
                                                                after=parse_time(receipt["receivedAt"])))
             if observed["sequence"] == baseline["sequence"]:
                 raise RuntimeError("Post-command observation must use a new device sequence")
             step = {"command": command, "cseReceiptName": rn, "cseReceipt": receipt,
+                    "cseResource": {key: native_receipt[key] for key in ("ri", "ct")},
                     "baseline": baseline, "observation": observed}
             write_new_json(output / f"led-{label.lower()}-readback.json", step)
         finally:
