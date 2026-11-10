@@ -77,6 +77,7 @@ function applyAck(member: MemberTimeline, receipt: CoreReceipt): MemberTimeline 
   let verified = member.verified;
   // READBACK_VERIFIED proves verification, not the missing application timestamp.
   if (payload.appliedAt !== undefined) applied = observed(applied, payload.appliedAt, 'payload.appliedAt');
+  if (payload.gatewayReceipt?.appliedAt) applied = observed(applied, payload.gatewayReceipt.appliedAt, `gatewayReceipt.appliedAt (${payload.gatewayReceipt.timestampSource})`);
   switch (payload.ackState) {
     case 'APPLIED':
       applied = observed(applied, payload.appliedAt ?? payload.timestamp, 'APPLIED ACK payload.timestamp');
@@ -93,7 +94,7 @@ function applyAck(member: MemberTimeline, receipt: CoreReceipt): MemberTimeline 
     ...member, applied, verified,
     ack: true,
     ackState: payload.ackState,
-    readback: payload.readback ?? member.readback,
+    readback: typeof payload.readback === 'object' ? payload.readback.state : payload.readback ?? member.readback,
     readbackVerified: verified.status === 'complete',
     retryPending: payload.ackState === 'RETRY_PENDING',
   };
@@ -103,6 +104,7 @@ function applyAck(member: MemberTimeline, receipt: CoreReceipt): MemberTimeline 
 export function timelineReducer(state: TimelineState, event: DashboardEvent): TimelineState {
   if (event.sequence <= state.lastSequence) return { ...state, ignoredEvents: state.ignoredEvents + 1 };
   const next = { ...state, lastSequence: event.sequence };
+  if (event.type === 'integration.receipt') return next;
   const rawCommandId = event.type === 'command.accepted' ? event.acceptance.commandId : event.receipt.commandId;
   if (rawCommandId === undefined) return next;
   const identity = event.type === 'group.summary' || event.type === 'command.accepted'

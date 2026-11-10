@@ -7,7 +7,10 @@
   "device": {
     "gateway": "Raspberry Pi 5",
     "transportIn": "BLE GATT",
-    "transportOut": ["MQTT", "HTTPS"],
+    "transportOut": [
+      "MQTT",
+      "HTTPS"
+    ],
     "timeSource": "gateway-ntp"
   },
   "ble": {
@@ -48,11 +51,59 @@
     "dedupKey": "deviceId:sequence",
     "queue": "sqlite-or-filesystem-journal",
     "reconnect": "exponential-backoff-with-jitter",
-    "ackStates": ["RECEIVED", "FORWARDED", "APPLIED", "READBACK_VERIFIED", "RETRY_PENDING"],
-    "oneM2MMapping": "/Mobius/privacy-bubble-test-ae/bubbleState"
+    "ackStates": [
+      "RECEIVED",
+      "FORWARDED",
+      "APPLIED",
+      "READBACK_VERIFIED",
+      "RETRY_PENDING"
+    ],
+    "oneM2MMapping": "/Mobius/privacy-bubble-test-ae/bubbleState",
+    "settledAckState": "READBACK_VERIFIED",
+    "telemetryExtensions": [
+      "bootId",
+      "firmwareSequence",
+      "gatewayId",
+      "timestampSource"
+    ]
   },
   "acceptance": {
-    "rubric": ["R01", "R02", "R03", "R10", "R11", "R15"],
-    "evidence": ["ble-capture", "mqtt-trace", "http-receipt", "oneM2M-subscription-receipt", "ack-readback-video"]
+    "rubric": [
+      "R01",
+      "R02",
+      "R03",
+      "R10",
+      "R11",
+      "R15"
+    ],
+    "evidence": [
+      "ble-capture",
+      "mqtt-trace",
+      "http-receipt",
+      "oneM2M-subscription-receipt",
+      "ack-readback-video"
+    ]
+  },
+  "command": {
+    "canonicalSchema": "../../contracts/keyring/command.schema.json",
+    "version": 1,
+    "required": [
+      "version",
+      "gatewayId",
+      "deviceId",
+      "commandId",
+      "claimId",
+      "desiredState",
+      "issuedAt",
+      "deadline",
+      "grantRevision",
+      "ownershipEpoch"
+    ],
+    "desiredState": {
+      "state": "boolean"
+    },
+    "authorization": "INTEGRATION 발급 claimId·grantRevision·ownershipEpoch와 실행 직전 authorize 응답",
+    "legacyAlias": "state/epoch 입력은 claimId와 grantRevision을 함께 제공해 canonical 명령으로 변환",
+    "groupCommands": "memberCommands[memberId]에 중앙 발급 canonical 명령을 전달"
   }
 }

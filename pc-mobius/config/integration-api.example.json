@@ -1,0 +1,30 @@
+{
+  "tls": {
+    "key": ".local/pki/server.key",
+    "cert": ".local/pki/server.pem",
+    "ca": ".local/pki/ca.pem"
+  },
+  "principals": [
+    {
+      "principalId": "gateway-1",
+      "mtlsFingerprint": "<Node X509Certificate.fingerprint256>",
+      "scopes": []
+    },
+    {
+      "principalId": "guardian-1",
+      "mtlsFingerprint": "<guardian certificate fingerprint256>",
+      "scopes": ["consent:write", "grant:write", "grant:revoke", "policy:approve", "bubble:command", "mcp:run"]
+    }
+  ],
+  "gateways": [
+    {
+      "gatewayId": "gateway-1",
+      "principalId": "gateway-1",
+      "fingerprint": "<Node X509Certificate.fingerprint256>",
+      "devices": { "keyring-1": "household-1" },
+      "credentialRevision": "1",
+      "ownershipEpoch": 0,
+      "status": "ACTIVE"
+    }
+  ]
+}

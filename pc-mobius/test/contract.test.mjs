@@ -31,3 +31,11 @@ test('Raspberry Pi Gateway contract binds BLE, MQTT, HTTPS and oneM2M mapping', 
   assert.equal(gateway.processing.oneM2MMapping, '/Mobius/privacy-bubble-test-ae/bubbleState');
   assert.ok(gateway.processing.ackStates.includes('READBACK_VERIFIED'));
 });
+
+test('oneM2M fixture uses flexContainer type 28 and group memberIDs with numeric memberType', () => {
+  for (const id of ['create-state', 'update-state', 'discover-state']) assert.equal(contract.steps.find((step) => step.id === id).resourceType, 28);
+  assert.equal(contract.steps.find((step) => step.id === 'create-state').contentFormat, 'application/json;ty=28');
+  const group = contract.steps.find((step) => step.id === 'group-fanout').body['m2m:grp'];
+  assert.equal(group.mt, 28);
+  assert.deepEqual(group.mid, ['/Mobius/privacy-bubble-test-ae/bubbleState']);
+});

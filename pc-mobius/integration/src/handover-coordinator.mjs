@@ -32,13 +32,18 @@ export class HandoverCoordinator {
   async handover({ ueId, targetEdgeId, grantId = null, subscriptionIds = [], reason = 'location-health' }) {
     const target = this.edges.get(targetEdgeId);
     if (!target || target.health !== 'HEALTHY') throw new Error('Target edge health review required');
-    const prior = this.sessions.get(ueId) ?? { ueId, epoch: 0, state: 'DETACHED', edgeId: null, subscriptions: [], securityContext: {} };
-    const next = { ...prior, state: 'DRAINING', handoverId: id('handover'), previousEdgeId: prior.edgeId, edgeId: targetEdgeId, targetEdgeId, grantId, reason, startedAt: nowIso(this.clock), epoch: prior.epoch + 1, subscriptions: [...new Set(subscriptionIds)], securityContext: { ...prior.securityContext, ...target.securityContext, grantId, epoch: prior.epoch + 1 } };
+    const prior = this.status(ueId) ?? { ueId, epoch: 0, state: 'DETACHED', edgeId: null, subscriptions: [], securityContext: {} };
+    const enrolledEpoch = Math.max(0, ...this.store.list('gateways').filter((gateway) => gateway.devices?.[ueId]).map((gateway) => gateway.ownershipEpoch));
+    const nextEpoch = Math.max(prior.epoch, enrolledEpoch) + 1;
+    if (nextEpoch > 2147483647) throw new Error('Gateway ownership epoch capacity reached');
+    const next = { ...prior, state: 'DRAINING', handoverId: id('handover'), previousEdgeId: prior.edgeId, edgeId: targetEdgeId, targetEdgeId, grantId, reason, startedAt: nowIso(this.clock), epoch: nextEpoch, subscriptions: [...new Set(subscriptionIds)], securityContext: { ...prior.securityContext, ...target.securityContext, grantId, epoch: nextEpoch } };
     this.sessions.set(ueId, next);
-    await this.store.put('handovers', ueId, recordEnvelope({ type: 'HANDOVER_DRAINING', ...next }, this.clock));
+    await this.store.put('handovers', ueId, recordEnvelope({ ...next, type: 'HANDOVER_DRAINING' }, this.clock));
+    await this.store.append('receipts', recordEnvelope({ ...next, type: 'HANDOVER_DRAINING' }, this.clock));
     next.state = 'ACTIVE';
     next.completedAt = nowIso(this.clock);
-    await this.store.put('handovers', ueId, recordEnvelope({ type: 'HANDOVER_ACTIVE', ...next }, this.clock));
+    await this.store.put('handovers', ueId, recordEnvelope({ ...next, type: 'HANDOVER_ACTIVE' }, this.clock));
+    await this.store.append('receipts', recordEnvelope({ ...next, type: 'HANDOVER_ACTIVE' }, this.clock));
     return next;
   }
 
@@ -46,9 +51,12 @@ export class HandoverCoordinator {
     const session = this.sessions.get(ueId) ?? this.store.get('handovers', ueId);
     if (!session) throw new Error('Handover session is required');
     const target = session.previousEdgeId ?? session.edgeId;
-    const next = { ...session, state: 'ROLLED_BACK', edgeId: target, rollbackReason: reason, rolledBackAt: nowIso(this.clock), epoch: session.epoch + 1 };
+    const epoch = Math.max(session.epoch, ...this.store.list('gateways').filter((gateway) => gateway.devices?.[ueId]).map((gateway) => gateway.ownershipEpoch)) + 1;
+    if (epoch > 2147483647) throw new Error('Gateway ownership epoch capacity reached');
+    const next = { ...session, state: 'ROLLED_BACK', edgeId: target, rollbackReason: reason, rolledBackAt: nowIso(this.clock), epoch, securityContext: { ...session.securityContext, epoch } };
     this.sessions.set(ueId, next);
-    await this.store.put('handovers', ueId, recordEnvelope({ type: 'HANDOVER_ROLLBACK', ...next }, this.clock));
+    await this.store.put('handovers', ueId, recordEnvelope({ ...next, type: 'HANDOVER_ROLLBACK' }, this.clock));
+    await this.store.append('receipts', recordEnvelope({ ...next, type: 'HANDOVER_ROLLBACK' }, this.clock));
     return next;
   }
 

@@ -1,63 +1,290 @@
 {
   "role": "WEB-DASHBOARD",
   "docRevision": "2.0.0",
-  "branch": "feature/web-dashboard",
-  "releaseSha": "eae5d59d86c732ffa2c6a6d0c6fad820e3f71b68",
+  "branch": "codex/integrate-all-branches",
+  "baseSha": "0331a313e86e60133fd3eec5389cf8651a850fde",
+  "sourceState": "working-tree-integration",
   "status": "verified",
-  "statusNote": "Local simulated dashboard verified by parent tests, build, HTTP and browser QA. releaseSha identifies implementation; this manifest ships in the following documentation commit. No production or project-wide release approval is claimed.",
+  "verifiedAt": "2026-11-10T06:55:36.091Z",
   "owner": "WEB-DASHBOARD",
-  "reviewer": "parent self-review (not independent Red/Blue/Green approval)",
+  "reviewer": "통합 모듈 교차 시험",
+  "statusNote": "로컬 통합 브랜치의 계약·journal·SSE·타입 검사·프로덕션 빌드를 검증했습니다.",
+  "runtime": {
+    "node": ">=22.19.0",
+    "verifiedNode": "v22.19.0"
+  },
   "gates": [
-    { "id": "G-WEB-DEMO", "status": "verified", "performer": "WEB-DASHBOARD parent lane", "approver": "self-review only" },
-    { "id": "G-RELEASE", "status": "planned", "performer": null, "approver": null },
-    { "id": "G-SUBMIT", "status": "planned", "performer": null, "approver": null }
+    {
+      "id": "G-WEB-INTEGRATION",
+      "status": "verified",
+      "scope": "CORE·KEYRING·INTEGRATION journal의 로컬 재생·HTTP 검색·상태 표시"
+    },
+    {
+      "id": "G-DEVICE",
+      "status": "planned",
+      "scope": "실물 Pi·BLE·장치 경로"
+    },
+    {
+      "id": "G-RELEASE",
+      "status": "planned",
+      "scope": "운영 배포와 프로젝트 release"
+    }
   ],
   "features": [
-    { "id": "event-contract", "rubric": ["R03"], "status": "verified", "contract": "contracts/dashboard-event.schema.json", "tests": ["test/contract.test.ts"] },
-    { "id": "sse-replay-resume", "rubric": ["R03", "R06"], "status": "verified", "contract": "contracts/dashboard-event.schema.json", "tests": ["test/sse.test.ts"], "evidence": ["evidence/http-sse.json"] },
-    { "id": "command-timeline", "rubric": ["R03"], "status": "verified", "tests": ["test/timeline.test.ts"], "evidence": ["evidence/browser-qa.json", "evidence/timezone-offset.json"], "note": "Default, partial, pending, false state, reconnect and RFC3339 offset rendering exercised in browser." },
-    { "id": "resource-tree", "rubric": ["R07", "R11"], "status": "verified", "note": "Fixture tree and source-derived oneM2M HTTP fixture discovery/retrieval exercised in browser; actual Mobius deployment remains untested.", "evidence": ["evidence/browser-qa.json"] },
-    { "id": "audit-search", "rubric": ["R10"], "status": "verified", "simulation": true, "evidence": ["evidence/browser-qa.json"] },
-    { "id": "mec-handover-fl-mcp-shells", "rubric": ["R12", "R15", "R16", "R17"], "status": "implemented", "simulation": true, "note": "UI shells inspected and labeled simulated; underlying integrations remain planned." },
-    { "id": "evidence-index", "rubric": ["R04", "R06"], "status": "verified", "evidence": ["evidence/browser-qa.json"] },
-    { "id": "r04-article", "rubric": ["R04"], "status": "planned", "doc": "docs/R04-article.md", "note": "Skeleton; physical, video, discussion and measurement evidence pending." }
+    {
+      "id": "event-contract",
+      "status": "verified",
+      "rubric": [
+        "R03"
+      ],
+      "contract": "contracts/dashboard-event.schema.json",
+      "tests": [
+        "test/contract.test.ts",
+        "test/integration-compat.test.ts"
+      ]
+    },
+    {
+      "id": "sse-replay-resume",
+      "status": "verified",
+      "rubric": [
+        "R03",
+        "R06"
+      ],
+      "tests": [
+        "test/sse.test.ts",
+        "test/integration-compat.test.ts"
+      ],
+      "note": "CORE·INTEGRATION 혼합 snapshot과 Last-Event-ID 재개"
+    },
+    {
+      "id": "keyring-canonical-receipts",
+      "status": "verified",
+      "rubric": [
+        "R03",
+        "R10",
+        "R11"
+      ],
+      "tests": [
+        "test/integration-compat.test.ts"
+      ],
+      "note": "canonical 명령·중첩 gatewayReceipt·false readback·확장 telemetry를 보존하고 식별자 결속을 검증"
+    },
+    {
+      "id": "command-timeline",
+      "status": "verified",
+      "rubric": [
+        "R03"
+      ],
+      "tests": [
+        "test/timeline.test.ts",
+        "test/integration-compat.test.ts"
+      ]
+    },
+    {
+      "id": "resource-tree",
+      "status": "verified",
+      "scope": "fixture 및 oneM2M HTTP fixture discovery/retrieve",
+      "historicalEvidence": [
+        "evidence/browser-qa.json"
+      ]
+    },
+    {
+      "id": "audit-search",
+      "status": "verified",
+      "scope": "INTEGRATION journal 전체 검색과 기본 fixture 검색",
+      "tests": [
+        "test/integration-compat.test.ts",
+        "test/sse.test.ts"
+      ]
+    },
+    {
+      "id": "mec-handover-fl-mcp-receipts",
+      "status": "verified",
+      "rubric": [
+        "R12",
+        "R15",
+        "R16",
+        "R17"
+      ],
+      "tests": [
+        "test/integration-compat.test.ts"
+      ],
+      "evidence": [
+        "evidence/2026-11-10-integration-verification.json"
+      ],
+      "note": "실제 병합 runtime이 생성한 journal의 최신 receipt를 서비스 카드에 연결"
+    },
+    {
+      "id": "evidence-index",
+      "status": "verified",
+      "historicalEvidence": [
+        "evidence/browser-qa.json"
+      ]
+    },
+    {
+      "id": "r04-article",
+      "status": "planned",
+      "doc": "docs/R04-article.md"
+    }
   ],
   "checks": [
-    { "command": "npm test", "expected": "exit 0, all tests pass", "actual": "exit 0, 21 pass, 0 fail", "status": "verified", "source": "evidence/test-build.txt" },
-    { "command": "npm run build", "expected": "exit 0", "actual": "exit 0, tsc clean and 225 modules, including final UTC display repair", "status": "verified", "source": "evidence/test-build.txt" },
-    { "command": "GET /events Last-Event-ID: 2", "expected": "ids 3..18", "actual": "ids 3..18, pass", "status": "verified", "source": "evidence/http-sse.json" },
-    { "command": "browser QA 390px and 1440px, light and dark", "expected": "four stages, member partial state, search, resources and no horizontal overflow", "actual": "PASS; screenshots and exact actions captured; mobile end separately captures Chrome full-page height limit", "status": "verified", "source": "evidence/browser-qa.json" },
-    { "command": "browser EventSource acceptance 2026-10-29T09:00:00.000+09:00", "expected": "00:00:00.000 UTC", "actual": "00:00:00.000 UTC", "status": "verified", "source": "evidence/timezone-offset.json" }
+    {
+      "command": "npm test",
+      "exitCode": 0,
+      "passed": 24,
+      "status": "verified",
+      "source": "evidence/2026-11-10-integration-verification.json"
+    },
+    {
+      "command": "npm run typecheck",
+      "exitCode": 0,
+      "status": "verified",
+      "source": "evidence/2026-11-10-integration-verification.json"
+    },
+    {
+      "command": "npm run typecheck:contract",
+      "exitCode": 0,
+      "status": "verified",
+      "source": "evidence/2026-11-10-integration-verification.json"
+    },
+    {
+      "command": "npm run build",
+      "exitCode": 0,
+      "modules": 226,
+      "status": "verified",
+      "source": "evidence/2026-11-10-integration-verification.json"
+    },
+    {
+      "command": "loadReplay(pc-mobius/receipts/integration-demo.jsonl)",
+      "status": "verified",
+      "eventCount": 22,
+      "sourceMode": "integration-journal-replay",
+      "services": [
+        {
+          "title": "MEC · Location / RNIS",
+          "eventId": "mec-demo-grant-0e5ab5d8-4161-4896-b474-25c57e10399a",
+          "type": "MEC_POLICY_RECONCILE"
+        },
+        {
+          "title": "Handover · Edge A → B",
+          "eventId": "evt-17f0b91f-50bc-4006-bd76-7643379d1537",
+          "type": "HANDOVER_ACTIVE",
+          "state": "ACTIVE"
+        },
+        {
+          "title": "FL · round / model lineage",
+          "eventId": "evt-e84dab8a-91f1-4383-befb-4eea4694576c",
+          "type": "FL_ROUND",
+          "state": "COMPLETED"
+        },
+        {
+          "title": "MCP · 승인 / 실행",
+          "eventId": "evt-7e451ab6-1a7d-4bbd-8021-8ff8710fae6b",
+          "type": "MCP_AUDIT",
+          "action": "RUN_COMPLETED"
+        }
+      ],
+      "source": "evidence/2026-11-10-integration-verification.json"
+    }
   ],
+  "historicalEvidence": {
+    "date": "2026-10-29",
+    "manifest": "docs/release-manifest-2026-10-29.json",
+    "scope": "당시 화면의 21개 시험과 브라우저 캡처·시각 검증",
+    "screenshots": "evidence/의 기존 PNG와 evidence/hig/ 기록을 원형 보관"
+  },
+  "deploymentInputs": [
+    "운영 Mobius endpoint·TLS·AE Originator·ACP 권한",
+    "브라우저 CORS와 oneM2M 응답 헤더 공개 설정",
+    "운영 연결 token과 roleScope 권한 판정",
+    "API 수락 receipt와 자원 currentRevision",
+    "실물 Pi·BLE·영상·지연 측정"
+  ],
+  "artifactHashNote": "2026-11-10 저장된 산출물의 실제 바이트를 SHA-256으로 계산했습니다. manifest 자기 참조는 artifact 목록에서 제외했습니다.",
   "artifacts": [
-    { "path": "contracts/dashboard-event.schema.json", "sha256": "c34aaab0faf98f2ae7a64ed1b695629da0aa535f2200fa882c9d2fb681834ed2" },
-    { "path": "fixtures/core-demo.jsonl", "sha256": "eee765249559e3bbc36777647d9c2a108d0b099d43533705d9f7cebed22998ec" },
-    { "path": "fixtures/core-partial.jsonl", "sha256": "bae6234f79ed1966e650e89b97794210098f33ab5b9322c98292fc3ed42d06bb" },
-    { "path": "fixtures/api-acceptance.json", "sha256": "8fb2f8bddf944403ee558b30b8ab0c70cc7168a4f2f83b77fe725b943bf1e58c" },
-    { "path": "evidence/http-sse.json", "sha256": "0cda31fcfa7ac3788656c333a0868ae90adc73544f4edf1c6cf0e9a43ba37636" },
-    { "path": "evidence/browser-qa.json", "sha256": "85c6c840af77ed1d710a0ceafaabc1034616a44e16499a222463403d351550aa" },
-    { "path": "evidence/desktop-dark.png", "sha256": "96bdc23724315b86043d28e8417d7edfde0f5a20009d1116a87acca577659c84" },
-    { "path": "evidence/desktop-light.png", "sha256": "dbb66887b6acb62a1ff9f861f4b56b52b0b385435c89403e15d76fa1d679c16b" },
-    { "path": "evidence/desktop-partial.png", "sha256": "1e79cd52f1edec9baf3ccec6033ea701410dae06848548261b42bdbf431158a6" },
-    { "path": "evidence/discovery-error.png", "sha256": "d6f1c255ce978c5fd7e08ade418e4bdfbbc3650781c0f9605c1cdb96308b5822" },
-    { "path": "evidence/discovery-http-fixture.png", "sha256": "2c91bcdf66402aabee0614c4938d8de1ec40bbf7352ab5cbcbb5cc35c4357a86" },
-    { "path": "evidence/mobile-dark.png", "sha256": "d3f3fa9d5f271087279c3611b5f885da620482b1107245f7e0bcbd4cf8c5e6f9" },
-    { "path": "evidence/mobile-end.png", "sha256": "5273e5c7a80a4d98a6b6ae16c2e741d2368a7a93c821cc8d4decbc6427aa64ca" },
-    { "path": "evidence/mobile-light.png", "sha256": "ec084679b4250f2195a890fe17a84a9886b7b57107142239d0c5e022a61f1be0" },
-    { "path": "evidence/test-build.txt", "sha256": "534ccf1251745971781bcc2db1a5f827fe1afb41bbd35a2c9b56b137466cc5e0" },
-    { "path": "evidence/timezone-offset.json", "sha256": "1b8eb784bcc4dc2663f9a659ecd3ee0f0cec6a17e7f1d6033501d7c545bf5def" },
-    { "path": "evidence/timezone-offset.png", "sha256": "d97c6fe3b154bb410a57f5c1ccf6f9c30f2c170e9cda04638957f0f31c861ed6" }
-  ],
-  "artifactHashNote": "SHA-256 captured by parent on 2026-10-29 after QA and the UTC offset repair. This manifest excludes its own hash to avoid self-reference.",
-  "unconfirmed": [
-    "live Mobius4 runtime SHA, endpoint and TLS",
-    "operator AE originator and ACP DISCOVER/RETRIEVE rights",
-    "browser CORS and oneM2M response header exposure",
-    "X-M2M-RVI=4 support",
-    "CORE ty=4 vs ty=28 mismatch",
-    "API acceptance receipt and currentRevision source in CORE",
-    "connection token and role scope authorization",
-    "receipt hash verification",
-    "R05 video, R08 public discussion, physical demo, latency measurement"
+    {
+      "path": "README.md",
+      "sha256": "d56d5c93965c24f12dd3bd2fedf0816f4aaf2f890b7315d96e4220348fc6c2eb"
+    },
+    {
+      "path": "docs/receipt-mapping.md",
+      "sha256": "734de508346f35e6ce1004427bc1c8621612cce3eda2125cf88f23cd72553bee"
+    },
+    {
+      "path": "package.json",
+      "sha256": "795f3995b0f914b325db70b12168ba0bf834b5dad761196801cf7e0a80e7af69"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "ceb68809acf89fbb97fbfe3d899498755a1dd6723de17232c8bedc074ef3a1c1"
+    },
+    {
+      "path": "contracts/dashboard-event.schema.json",
+      "sha256": "92e16bd56e4cd3aae4fbbf9bacebb357aa185ad0bbfa5776c152acdfd9b1b5bb"
+    },
+    {
+      "path": "shared/types.ts",
+      "sha256": "839591f35e5265fe5adef003e3607ba65211093c4981f57261455c4ec9c98eb3"
+    },
+    {
+      "path": "shared/validation.ts",
+      "sha256": "f5b1986128792f4ec6f59045f493aada6d9bcde4e8dfeda3b12ff6a449b16798"
+    },
+    {
+      "path": "shared/receipt-adapter.ts",
+      "sha256": "7c51629ad0d52bf6b26c580bd44a1e75a771522c246551a660964f73440dd918"
+    },
+    {
+      "path": "shared/timeline.ts",
+      "sha256": "361e8e58bf9ef1233d8acee148a0d2feacfe675b072305bf2d43b08838d80267"
+    },
+    {
+      "path": "shared/integration.ts",
+      "sha256": "51dac123fcec6507326488c0b593c21e2e660cf4f7034b44e63e90eacd9b139a"
+    },
+    {
+      "path": "server/replay.ts",
+      "sha256": "8252d1df2b7a173721ee7ef4ddc8eb68409bad32a8c1c446e018d28131091a6b"
+    },
+    {
+      "path": "server/sse.ts",
+      "sha256": "af02ed815dcd3ef333c69e1c8953415ac4c018eb0d46cf1f64b1fb82f60c24fa"
+    },
+    {
+      "path": "src/App.tsx",
+      "sha256": "a3f9869f92ce5a424d35106f3dd23918d31a7c55e297d2b677910b65597d3b9e"
+    },
+    {
+      "path": "src/client.ts",
+      "sha256": "039b21bcad1546120d0b6381ef74724317c41810959ee98e653164685851d8ce"
+    },
+    {
+      "path": "test/contract.test.ts",
+      "sha256": "d4bcb7fb248886fa684e03a798ce7db9fd32f1ed48167f48fea8bf5421c50f82"
+    },
+    {
+      "path": "test/sse.test.ts",
+      "sha256": "6c7b4736d69e37956ec5346eb7bda7591e738a3b07ff6cb57726ac71a7c48428"
+    },
+    {
+      "path": "test/timeline.test.ts",
+      "sha256": "3a461bf36679d1ef31beb629cf5970b12a957bc28af028b16ff6816870dcf48f"
+    },
+    {
+      "path": "test/integration-compat.test.ts",
+      "sha256": "35e58f2c67f1ac22bd811176fe48c517a3f170c808fc57a2bae2be927fcb8e5d"
+    },
+    {
+      "path": "evidence/2026-11-10-integration-demo.jsonl",
+      "sha256": "b780c3784c51c1e049acafc9be9a46215eb451966cc4997f603adf77ba0192ae"
+    },
+    {
+      "path": "evidence/2026-11-10-integration-verification.json",
+      "sha256": "4318c660927047f4be44c51976049e0770ccf8d9a95b5b8a1601f41c7613c12f"
+    },
+    {
+      "path": "docs/release-manifest-2026-10-29.json",
+      "sha256": "e276aeb111cc101df030aaee27645fc622dc9c81ec9c6f84b5008d3d56dae685"
+    }
   ]
 }

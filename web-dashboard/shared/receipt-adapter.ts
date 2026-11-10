@@ -1,5 +1,5 @@
-import type { ApiAcceptance, CoreReceipt, DashboardEvent, EventEnvelope, SourceMode } from './types.ts';
-import { ContractError, parseCoreReceipt, parseDashboardEvent } from './validation.ts';
+import type { ApiAcceptance, CoreReceipt, DashboardEvent, EventEnvelope, JournalReceipt, SourceMode } from './types.ts';
+import { ContractError, parseCoreReceipt, parseJournalReceipt, parseDashboardEvent } from './validation.ts';
 
 export interface AdapterOptions {
   readonly resourceUri?: string;
@@ -26,9 +26,15 @@ export function createReceiptAdapter(options: AdapterOptions = {}) {
   });
 
   function adaptReceipt(value: unknown): DashboardEvent {
-    const receipt = parseCoreReceipt(value);
+    const receipt = parseJournalReceipt(value);
+    if (receipt.contractId === 'privacy-bubble.integration.v1') {
+      return parseDashboardEvent({
+        ...envelope(receipt.journaledAt ?? receipt.timestamp, `/v1/events/${encodeURIComponent(receipt.eventId)}`),
+        type: 'integration.receipt', receipt, acceptance: null,
+      });
+    }
     const base = envelope(receipt.journaledAt ?? receipt.timestamp, receipt.oneM2MResource ?? options.resourceUri ?? DEFAULT_RESOURCE_URI);
-    let type: Exclude<DashboardEvent['type'], 'command.accepted'>;
+    let type: Exclude<DashboardEvent['type'], 'command.accepted' | 'integration.receipt'>;
     if (receipt.contractId === 'privacy-bubble.group-dispatch') {
       type = 'group.summary';
     } else {
@@ -42,7 +48,7 @@ export function createReceiptAdapter(options: AdapterOptions = {}) {
         case 'IN_FLIGHT': type = 'receipt.review'; break;
         case 'DISPATCHING':
         case 'SETTLED': throw new ContractError('Group status requires a group-dispatch receipt');
-        default: return assertNever(receipt.status);
+        default: throw new ContractError('Unsupported CORE receipt status');
       }
     }
     return parseDashboardEvent({ ...base, type, receipt, acceptance: null });
@@ -61,16 +67,20 @@ export function createReceiptAdapter(options: AdapterOptions = {}) {
   return { adaptReceipt, acceptanceEvent };
 }
 
-function assertNever(value: never): never {
-  throw new ContractError(`Unsupported receipt status: ${String(value)}`);
-}
-
 /** Blank lines are ignored; malformed lines stop the replay with their line number. */
 export function parseReceiptJsonl(text: string): readonly CoreReceipt[] {
+  return parseJsonl(text, parseCoreReceipt);
+}
+
+export function parseJournalJsonl(text: string): readonly JournalReceipt[] {
+  return parseJsonl(text, parseJournalReceipt);
+}
+
+function parseJsonl<T>(text: string, parse: (value: unknown) => T): readonly T[] {
   return text.split(/\r?\n/).flatMap((line, index) => {
     if (line.trim() === '') return [];
     try {
-      return [parseCoreReceipt(JSON.parse(line))];
+      return [parse(JSON.parse(line))];
     } catch (error) {
       if (error instanceof SyntaxError || error instanceof ContractError) {
         throw new ContractError(`JSONL line ${index + 1}: ${error.message}`);

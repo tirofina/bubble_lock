@@ -1,0 +1,158 @@
+
+> bubblelock-web-dashboard@0.1.0 test
+> node --test test/*.test.ts
+
+TAP version 13
+# Subtest: validates default events when exact CORE fixtures are wrapped
+ok 1 - validates default events when exact CORE fixtures are wrapped
+  ---
+  duration_ms: 22.1044
+  type: 'test'
+  ...
+# Subtest: rejects malformed fixtures when event schema boundaries are crossed
+ok 2 - rejects malformed fixtures when event schema boundaries are crossed
+  ---
+  duration_ms: 0.832
+  type: 'test'
+  ...
+# Subtest: preserves exact receipt fields and hashes when adapting a CORE JSONL journal
+ok 3 - preserves exact receipt fields and hashes when adapting a CORE JSONL journal
+  ---
+  duration_ms: 4.1665
+  type: 'test'
+  ...
+# Subtest: uses receipt timestamp and null revision when journal metadata is absent
+ok 4 - uses receipt timestamp and null revision when journal metadata is absent
+  ---
+  duration_ms: 0.3001
+  type: 'test'
+  ...
+# Subtest: rejects inconsistent identities when ACK payload and receipt disagree
+ok 5 - rejects inconsistent identities when ACK payload and receipt disagree
+  ---
+  duration_ms: 5.1089
+  type: 'test'
+  ...
+# Subtest: reports the actual line when a journal record is malformed
+ok 6 - reports the actual line when a journal record is malformed
+  ---
+  duration_ms: 0.322
+  type: 'test'
+  ...
+# Subtest: does not add acceptance when an explicit receipt file is supplied
+ok 7 - does not add acceptance when an explicit receipt file is supplied
+  ---
+  duration_ms: 3.6667
+  type: 'test'
+  ...
+# Subtest: replays actual merged INTEGRATION policy MEC handover FL and MCP journals
+ok 8 - replays actual merged INTEGRATION policy MEC handover FL and MCP journals
+  ---
+  duration_ms: 88.6568
+  type: 'test'
+  ...
+# Subtest: mixed journals preserve CORE commands and validate INTEGRATION envelope fields
+ok 9 - mixed journals preserve CORE commands and validate INTEGRATION envelope fields
+  ---
+  duration_ms: 2.6385
+  type: 'test'
+  ...
+# Subtest: renders canonical keyring commands telemetry extensions and nested readback receipts
+ok 10 - renders canonical keyring commands telemetry extensions and nested readback receipts
+  ---
+  duration_ms: 4.0157
+  type: 'test'
+  ...
+# Subtest: resumes strictly after Last-Event-ID and keeps finite replay open
+ok 11 - resumes strictly after Last-Event-ID and keeps finite replay open
+  ---
+  duration_ms: 58.0543
+  type: 'test'
+  ...
+# Subtest: resumes strictly after the query cursor on manual EventSource reconnect
+ok 12 - resumes strictly after the query cursor on manual EventSource reconnect
+  ---
+  duration_ms: 5.5972
+  type: 'test'
+  ...
+# Subtest: prefers native Last-Event-ID over the stale reconnect query
+ok 13 - prefers native Last-Event-ID over the stale reconnect query
+  ---
+  duration_ms: 4.7409
+  type: 'test'
+  ...
+# Subtest: keeps an exhausted resume cursor open without replaying duplicates
+ok 14 - keeps an exhausted resume cursor open without replaying duplicates
+  ---
+  duration_ms: 5.2213
+  type: 'test'
+  ...
+# Subtest: returns explicit cursor errors instead of accepting malformed or future IDs
+ok 15 - returns explicit cursor errors instead of accepting malformed or future IDs
+  ---
+  duration_ms: 17.4627
+  type: 'test'
+  ...
+# Subtest: serves simulated resources audit search and source metadata over HTTP
+ok 16 - serves simulated resources audit search and source metadata over HTTP
+  ---
+  duration_ms: 10.081
+  type: 'test'
+  ...
+# Subtest: calculates stage durations when explicit acceptance and member ACKs exist
+ok 17 - calculates stage durations when explicit acceptance and member ACKs exist
+  ---
+  duration_ms: 19.8414
+  type: 'test'
+  ...
+# Subtest: keeps stages pending when only a readback verification receipt exists
+ok 18 - keeps stages pending when only a readback verification receipt exists
+  ---
+  duration_ms: 3.4086
+  type: 'test'
+  ...
+# Subtest: never invents acceptance when dispatch is the only command evidence
+ok 19 - never invents acceptance when dispatch is the only command evidence
+  ---
+  duration_ms: 3.2663
+  type: 'test'
+  ...
+# Subtest: reports member partial failure when one member awaits retry
+ok 20 - reports member partial failure when one member awaits retry
+  ---
+  duration_ms: 3.1884
+  type: 'test'
+  ...
+# Subtest: reports failure when the only observed member explicitly requests retry
+ok 21 - reports failure when the only observed member explicitly requests retry
+  ---
+  duration_ms: 3.4713
+  type: 'test'
+  ...
+# Subtest: does not manufacture stage timestamps when only a settled group summary exists
+ok 22 - does not manufacture stage timestamps when only a settled group summary exists
+  ---
+  duration_ms: 3.8928
+  type: 'test'
+  ...
+# Subtest: ignores duplicate and out-of-order stream events without regressing state
+ok 23 - ignores duplicate and out-of-order stream events without regressing state
+  ---
+  duration_ms: 3.0522
+  type: 'test'
+  ...
+# Subtest: keeps negative or absent time differences unknown
+ok 24 - keeps negative or absent time differences unknown
+  ---
+  duration_ms: 0.2428
+  type: 'test'
+  ...
+1..24
+# tests 24
+# suites 0
+# pass 24
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 740.6613

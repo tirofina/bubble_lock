@@ -7,7 +7,15 @@
   "standards": ["TS-0001", "TS-0004", "TS-0023", "ETSI-MEC-010", "ETSI-MEC-011"],
   "surfaces": {
     "api": { "basePath": "/v1", "contentType": "application/json", "idempotencyHeader": "Idempotency-Key" },
-    "auth": { "oidcIssuer": "privacy-bubble-oidc", "audience": "privacy-bubble-api", "mtls": true, "originatorBinding": true },
+    "auth": { "oidcIssuer": "privacy-bubble-oidc", "audience": "privacy-bubble-api", "mtls": true, "originatorBinding": true, "httpPrincipalSource": "verified-client-certificate-and-server-enrollment" },
+    "gateway": {
+      "basePath": "/api/v1/gateways/{gatewayId}",
+      "aliases": ["/v1/gateways/{gatewayId}"],
+      "routes": { "GET /commands?limit=16": "commands[]", "GET /credentials/status": "credential-status.schema.json", "POST /authorize": "authorization.schema.json", "POST /commands": "command.schema.json" },
+      "schemas": "contracts/keyring/",
+      "payloadHash": "SHA256(sorted-key-compact-UTF8-JSON)",
+      "fences": ["gateway-certificate", "device-subject", "grant-revision", "consent", "credential-revision", "ownership-epoch", "deadline"]
+    },
     "mec": { "services": ["Location", "RNIS"], "callbackPath": "/v1/mec/callback", "dedupKey": "eventId" },
     "handover": { "states": ["DETACHED", "DRAINING", "ACTIVE", "ROLLED_BACK"], "epoch": "uint64" },
     "fl": { "vmRuntime": "ESTIMED", "roundStates": ["RUNNING", "RECOVERED", "COMPLETED"], "artifactFence": true },

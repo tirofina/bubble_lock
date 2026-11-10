@@ -1,4 +1,48 @@
 const ACCEPTED_ONE_M2M_STATUS = new Set([200, 204]);
+const ACK_STATES = new Set(['RECEIVED', 'FORWARDED', 'APPLIED', 'READBACK_VERIFIED', 'RETRY_PENDING']);
+const COMMAND_KEYS = ['version', 'gatewayId', 'deviceId', 'commandId', 'claimId', 'desiredState', 'issuedAt', 'deadline', 'grantRevision', 'ownershipEpoch'];
+const ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$/;
+
+function mqttTo(path) {
+  if (typeof path !== 'string' || !path.startsWith('/') || path.startsWith('//') || /[?#%\\]/.test(path)
+      || path.replace(/\/$/, '').slice(1).split('/').some((part) => !part || part === '.' || part === '..')) {
+    throw new Error('oneM2M resourcePath requires a valid HTTP resource path');
+  }
+  if (path.startsWith('/~/')) return path.slice(2).replace(/\/$/, '');
+  if (path.startsWith('/_/')) return `/${path.slice(2)}`.replace(/\/$/, '');
+  return path.slice(1).replace(/\/$/, '');
+}
+
+function canonicalCommand(input, gatewayId, issuedAt) {
+  const isCanonical = input.version !== undefined;
+  const hasAuthorization = isCanonical || input.claimId !== undefined || input.grantRevision !== undefined;
+  if (!hasAuthorization) return null; // Legacy emulator payload remains available.
+  if (isCanonical && (Object.keys(input).length !== COMMAND_KEYS.length || COMMAND_KEYS.some((key) => !(key in input)))) {
+    throw new Error('Gateway command fields must match keyring command schema');
+  }
+  const command = isCanonical ? input : {
+    version: 1, gatewayId, deviceId: input.deviceId, commandId: input.commandId, claimId: input.claimId,
+    desiredState: { state: input.state }, issuedAt: input.issuedAt ?? issuedAt, deadline: input.deadline,
+    grantRevision: input.grantRevision, ownershipEpoch: input.ownershipEpoch ?? input.epoch
+  };
+  if (command.version !== 1 || command.gatewayId !== gatewayId) throw new Error('Gateway command identity mismatch');
+  for (const key of ['gatewayId', 'deviceId', 'commandId', 'claimId']) {
+    if (typeof command[key] !== 'string' || !ID.test(command[key])) throw new Error(`Gateway command requires valid ${key}`);
+  }
+  if (!command.desiredState || Object.keys(command.desiredState).length !== 1 || typeof command.desiredState.state !== 'boolean') {
+    throw new Error('Gateway desiredState requires a boolean state');
+  }
+  for (const [key, minimum] of [['grantRevision', 1], ['ownershipEpoch', 0]]) {
+    if (!Number.isInteger(command[key]) || command[key] < minimum || command[key] > 2147483647) throw new Error(`Gateway command requires valid ${key}`);
+  }
+  for (const key of ['issuedAt', 'deadline']) {
+    if (typeof command[key] !== 'string' || !/(Z|[+-]\d{2}:\d{2})$/.test(command[key]) || !Number.isFinite(Date.parse(command[key]))) {
+      throw new Error(`Gateway command requires RFC3339 ${key}`);
+    }
+  }
+  if (Date.parse(command.deadline) <= Date.parse(command.issuedAt)) throw new Error('Gateway deadline must follow issuedAt');
+  return Object.fromEntries(COMMAND_KEYS.map((key) => [key, key === 'desiredState' ? { state: command.desiredState.state } : command[key]]));
+}
 
 function decodePayload(payload) {
   if (Buffer.isBuffer(payload)) return JSON.parse(payload.toString('utf8'));
@@ -14,12 +58,14 @@ function requireTelemetryShape(payload) {
   const required = ['deviceId', 'sequence', 'timestamp', 'state', 'batteryPct', 'rssiDbm', 'schemaVersion'];
   const missing = required.filter((key) => payload?.[key] === undefined);
   if (missing.length > 0) throw new Error(`Gateway telemetry fields required: ${missing.join(', ')}`);
-  if (!Number.isInteger(payload.sequence) || payload.sequence < 0) throw new Error('Gateway sequence uses uint32');
+  if (!Number.isInteger(payload.sequence) || payload.sequence < 0 || payload.sequence > 4294967295) throw new Error('Gateway sequence uses uint32');
   if (typeof payload.state !== 'boolean') throw new Error('Gateway state uses boolean');
   if (!Number.isInteger(payload.batteryPct) || payload.batteryPct < 0 || payload.batteryPct > 100) {
     throw new Error('Gateway batteryPct uses uint8');
   }
-  if (!Number.isInteger(payload.rssiDbm)) throw new Error('Gateway rssiDbm uses int8');
+  if (!Number.isInteger(payload.rssiDbm) || payload.rssiDbm < -127 || payload.rssiDbm > 20) throw new Error('Gateway rssiDbm uses -127..20');
+  if (payload.schemaVersion !== '1.0.0') throw new Error('Gateway schemaVersion requires 1.0.0');
+  if (typeof payload.timestamp !== 'string' || !Number.isFinite(Date.parse(payload.timestamp))) throw new Error('Gateway timestamp requires RFC3339');
   return payload;
 }
 
@@ -27,6 +73,7 @@ function requireAckShape(payload) {
   const required = ['deviceId', 'commandId', 'ackState', 'timestamp'];
   const missing = required.filter((key) => payload?.[key] === undefined);
   if (missing.length > 0) throw new Error(`Gateway ACK fields required: ${missing.join(', ')}`);
+  if (!ACK_STATES.has(payload.ackState)) throw new Error('Gateway ackState requires a recognized state');
   return payload;
 }
 
@@ -74,6 +121,7 @@ export class GatewayBridge {
     this.inFlightTelemetry = new Set();
     this.ackByCommand = new Map();
     this.pendingCommands = new Map();
+    this.commandPayloads = new Map();
     this.pendingOneM2M = new Map();
     this.receipts = [];
     this.ackListeners = new Set();
@@ -81,18 +129,23 @@ export class GatewayBridge {
   }
 
   async start() {
-    await this.mqttClient.subscribe(this.telemetryTopic, { qos: 1 });
-    await this.mqttClient.subscribe(this.ackTopic, { qos: 1 });
-    if (this.oneM2MTransport === 'mqtt') await this.mqttClient.subscribe(this.oneM2MResponseTopic, { qos: 1 });
     if (!this.messageListenerAttached) {
       this.mqttClient.on('message', (topic, message) => {
-        this.handleMessage(topic, message).catch((error) => {
-          this.recordReceipt({ status: 'REVIEW', transport: 'mqtt', topic, error: error.message, timestamp: this.clock() });
+        return this.handleMessage(topic, message).catch((error) => {
+          return this.recordReceipt({ status: 'REVIEW', transport: 'mqtt', topic, error: error.message, timestamp: this.clock() });
         });
       });
       this.messageListenerAttached = true;
     }
+    await this.mqttCall('subscribe', this.telemetryTopic, { qos: 1 });
+    await this.mqttCall('subscribe', this.ackTopic, { qos: 1 });
+    if (this.oneM2MTransport === 'mqtt') await this.mqttCall('subscribe', this.oneM2MResponseTopic, { qos: 1 });
     return { status: 'READY', telemetryTopic: this.telemetryTopic, ackTopic: this.ackTopic, listenerAttached: this.messageListenerAttached };
+  }
+
+  async mqttCall(method, ...args) {
+    const operation = this.mqttClient[`${method}Async`] ?? this.mqttClient[method];
+    return operation.apply(this.mqttClient, args);
   }
 
   async handleMessage(topic, message) {
@@ -166,19 +219,23 @@ export class GatewayBridge {
   async handleTelemetryMqtt(payload, dedupKey) {
     const requestId = `pb-${this.gatewayId}-${payload.deviceId}-${payload.sequence}`.replace(/[^a-zA-Z0-9_-]/g, '_');
     const primitive = {
-      op: 2,
-      to: this.resourcePath,
+      op: 3,
+      to: mqttTo(this.resourcePath),
       fr: this.originator,
       rqi: requestId,
+      rvi: this.rvi,
       pc: { 'pb:binarySwitch': { state: payload.state } }
     };
+    const pending = { dedupKey, payload, requestId, receipt: null };
+    this.pendingOneM2M.set(requestId, pending);
     try {
-      await this.mqttClient.publish(this.oneM2MRequestTopic, JSON.stringify(primitive), { qos: 1, retain: false });
+      await this.mqttCall('publish', this.oneM2MRequestTopic, JSON.stringify(primitive), { qos: 1, retain: false });
     } catch (error) {
+      this.pendingOneM2M.delete(requestId);
       this.inFlightTelemetry.delete(dedupKey);
       return this.recordReceipt({ status: 'REVIEW', dedupKey, requestId, transport: 'oneM2M-mqtt', error: error.message, timestamp: this.clock() });
     }
-    this.pendingOneM2M.set(requestId, { dedupKey, payload, requestId });
+    if (pending.receipt) return pending.receipt;
     return this.recordReceipt({
       contractId: 'privacy-bubble.raspberrypi-gateway',
       contractVersion: '1.0.0',
@@ -203,13 +260,13 @@ export class GatewayBridge {
     const pending = this.pendingOneM2M.get(requestId);
     if (!pending) return this.recordReceipt({ status: 'REVIEW', transport: 'oneM2M-mqtt', requestId, responseStatus: responseCode, timestamp: this.clock() });
     this.pendingOneM2M.delete(requestId);
-    const applied = [2000, 2001, 2004, 2005].includes(responseCode);
+    const applied = responseCode === 2004;
     if (applied) {
       this.seenTelemetry.add(pending.dedupKey);
       while (this.seenTelemetry.size > this.maxDedupEntries) this.seenTelemetry.delete(this.seenTelemetry.values().next().value);
     }
     this.inFlightTelemetry.delete(pending.dedupKey);
-    return this.recordReceipt({
+    pending.receipt = await this.recordReceipt({
       contractId: 'privacy-bubble.raspberrypi-gateway',
       contractVersion: '1.0.0',
       docRevision: '2.0.0',
@@ -225,25 +282,30 @@ export class GatewayBridge {
       timestamp: this.clock(),
       payload: pending.payload
     });
+    return pending.receipt;
   }
 
   async handleAck(rawPayload) {
     const payload = requireAckShape(decodePayload(rawPayload));
+    const pending = this.pendingCommands.get(payload.commandId);
+    const previous = this.ackByCommand.get(payload.commandId);
+    const expected = pending?.payload ?? this.commandPayloads.get(payload.commandId);
+    const mismatch = !expected || payload.deviceId !== expected.deviceId
+      || (payload.gatewayId !== undefined && payload.gatewayId !== this.gatewayId)
+      || (payload.ownershipEpoch !== undefined && payload.ownershipEpoch !== (expected.ownershipEpoch ?? expected.epoch))
+      || (payload.grantRevision !== undefined && payload.grantRevision !== expected.grantRevision)
+      || (payload.ackState === 'READBACK_VERIFIED' && payload.readback !== undefined
+        && (typeof payload.readback === 'boolean' ? payload.readback : payload.readback?.state) !== (expected.desiredState?.state ?? expected.desiredState));
+    if (mismatch) return this.recordReceipt({ status: 'REVIEW', commandId: payload.commandId, deviceId: payload.deviceId, reason: 'ack-command-binding', timestamp: this.clock(), payload });
+    if (previous?.ackState === 'READBACK_VERIFIED') return previous;
     const receipt = {
-      contractId: 'privacy-bubble.raspberrypi-gateway',
-      contractVersion: '1.0.0',
-      docRevision: '2.0.0',
-      gatewayId: this.gatewayId,
-      deviceId: payload.deviceId,
-      commandId: payload.commandId,
-      ackState: payload.ackState,
-      status: 'ACK_RECORDED',
-      timestamp: this.clock(),
-      payload
+      contractId: 'privacy-bubble.raspberrypi-gateway', contractVersion: '1.0.0', docRevision: '2.0.0',
+      gatewayId: this.gatewayId, deviceId: payload.deviceId, commandId: payload.commandId,
+      ackState: payload.ackState, status: 'ACK_RECORDED', timestamp: this.clock(), payload
     };
-    this.ackByCommand.set(payload.commandId, receipt);
-    this.pendingCommands.delete(payload.commandId);
     const persisted = await this.recordReceipt(receipt);
+    this.ackByCommand.set(payload.commandId, persisted);
+    if (payload.ackState === 'READBACK_VERIFIED') this.pendingCommands.delete(payload.commandId);
     for (const listener of this.ackListeners) await listener(persisted);
     return persisted;
   }
@@ -254,24 +316,32 @@ export class GatewayBridge {
     return () => this.ackListeners.delete(listener);
   }
 
-  async sendCommand({ deviceId, state, commandId, deadline, epoch }) {
-    if (typeof state !== 'boolean') throw new Error('Gateway command state uses boolean');
+  async sendCommand(input) {
+    const { deviceId, commandId, deadline, epoch, state } = input;
+    const existing = this.pendingCommands.get(commandId);
+    const issuedAt = input.issuedAt ?? existing?.payload.issuedAt ?? this.clock();
+    const payload = canonicalCommand(input, this.gatewayId, issuedAt)
+      ?? { deviceId, commandId, desiredState: state, deadline, epoch, issuedAt };
+    if (typeof (payload.desiredState?.state ?? payload.desiredState) !== 'boolean') throw new Error('Gateway command state uses boolean');
     if (!commandId) throw new Error('Gateway commandId is required');
-    const payload = { deviceId, commandId, desiredState: state, deadline, epoch, issuedAt: this.clock() };
-    await this.mqttClient.publish(this.commandTopic, JSON.stringify(payload), { qos: 1, retain: false });
+    if (existing && JSON.stringify(existing.payload) !== JSON.stringify(payload)) throw new Error('Gateway commandId already binds another payload');
     const receipt = {
-      contractId: 'privacy-bubble.raspberrypi-gateway',
-      contractVersion: '1.0.0',
-      docRevision: '2.0.0',
-      gatewayId: this.gatewayId,
-      commandId,
-      deviceId,
-      status: 'DISPATCHED',
-      topic: this.commandTopic,
-      timestamp: this.clock(),
-      payload
+      contractId: 'privacy-bubble.raspberrypi-gateway', contractVersion: '1.0.0', docRevision: '2.0.0',
+      gatewayId: this.gatewayId, commandId, deviceId, status: 'DISPATCHED', topic: this.commandTopic,
+      timestamp: this.clock(), payload
     };
+    // An application ACK can arrive before the broker publish promise resolves.
+    this.commandPayloads.set(commandId, payload);
     this.pendingCommands.set(commandId, receipt);
+    try {
+      await this.mqttCall('publish', this.commandTopic, JSON.stringify(payload), { qos: 1, retain: false });
+    } catch (error) {
+      if (this.pendingCommands.get(commandId) === receipt) {
+        if (existing) this.pendingCommands.set(commandId, existing);
+        else this.pendingCommands.delete(commandId);
+      }
+      throw error;
+    }
     return this.recordReceipt(receipt);
   }
 
@@ -286,4 +356,4 @@ export class GatewayBridge {
   }
 }
 
-export { requireAckShape, requireTelemetryShape };
+export { requireAckShape, requireTelemetryShape, canonicalCommand, mqttTo };

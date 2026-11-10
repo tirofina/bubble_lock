@@ -6,89 +6,103 @@
   "additionalProperties": false,
   "required": ["schemaVersion", "type", "sequence", "resourceUri", "currentRevision", "receivedAt", "roleScope", "simulation", "source", "receipt", "acceptance"],
   "properties": {
-    "schemaVersion": { "const": "1.0.0" },
-    "type": { "enum": ["command.accepted", "command.dispatched", "command.ack", "gateway.telemetry", "receipt.review", "group.summary"] },
-    "sequence": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
-    "resourceUri": { "type": "string", "pattern": "^/[^\\s]*$", "maxLength": 2048 },
-    "currentRevision": { "type": ["string", "null"], "minLength": 1 },
-    "receivedAt": { "$ref": "#/$defs/dateTime" },
-    "roleScope": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 128 } },
-    "simulation": { "type": "boolean" },
-    "source": { "enum": ["fixture-replay", "core-journal-replay"] },
-    "receipt": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/coreReceipt" }] },
-    "acceptance": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/acceptance" }] }
+    "schemaVersion": {"const": "1.0.0"},
+    "type": {"enum": ["command.accepted", "command.dispatched", "command.ack", "gateway.telemetry", "receipt.review", "group.summary", "integration.receipt"]},
+    "sequence": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
+    "resourceUri": {"type": "string", "pattern": "^/[^\\s]*$", "maxLength": 2048},
+    "currentRevision": {"type": ["string", "null"], "minLength": 1},
+    "receivedAt": {"$ref": "#/$defs/dateTime"},
+    "roleScope": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 128}},
+    "simulation": {"type": "boolean"},
+    "source": {"enum": ["fixture-replay", "core-journal-replay", "integration-journal-replay"]},
+    "receipt": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/coreReceipt"}, {"$ref": "#/$defs/integrationReceipt"}]},
+    "acceptance": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/acceptance"}]}
   },
   "allOf": [
     {
-      "if": { "properties": { "type": { "const": "command.accepted" } } },
+      "if": {"properties": {"type": {"const": "command.accepted"}}},
       "then": {
-        "properties": { "acceptance": { "$ref": "#/$defs/acceptance" }, "receipt": { "type": "null" }, "simulation": { "const": true }, "source": { "const": "fixture-replay" } }
+        "properties": {"acceptance": {"$ref": "#/$defs/acceptance"}, "receipt": {"type": "null"}, "simulation": {"const": true}, "source": {"const": "fixture-replay"}}
       },
-      "else": { "properties": { "acceptance": { "type": "null" }, "receipt": { "$ref": "#/$defs/coreReceipt" } } }
+      "else": {
+        "if": {"properties": {"type": {"const": "integration.receipt"}}},
+        "then": {"properties": {"acceptance": {"type": "null"}, "receipt": {"$ref": "#/$defs/integrationReceipt"}}},
+        "else": {"properties": {"acceptance": {"type": "null"}, "receipt": {"$ref": "#/$defs/coreReceipt"}}}
+      }
     },
     {
-      "if": { "properties": { "type": { "const": "command.dispatched" } } },
-      "then": { "properties": { "receipt": { "type": "object", "required": ["status"], "properties": { "status": { "const": "DISPATCHED" } } } } }
+      "if": {"properties": {"type": {"const": "command.dispatched"}}},
+      "then": {"properties": {"receipt": {"type": "object", "required": ["status"], "properties": {"status": {"const": "DISPATCHED"}}}}}
     },
     {
-      "if": { "properties": { "type": { "const": "command.ack" } } },
-      "then": { "properties": { "receipt": { "type": "object", "required": ["status"], "properties": { "status": { "const": "ACK_RECORDED" } } } } }
+      "if": {"properties": {"type": {"const": "command.ack"}}},
+      "then": {"properties": {"receipt": {"type": "object", "required": ["status"], "properties": {"status": {"const": "ACK_RECORDED"}}}}}
     },
     {
-      "if": { "properties": { "type": { "const": "gateway.telemetry" } } },
-      "then": { "properties": { "receipt": { "type": "object", "required": ["status"], "properties": { "status": { "enum": ["APPLIED", "MQTT_DISPATCHED"] } } } } }
+      "if": {"properties": {"type": {"const": "gateway.telemetry"}}},
+      "then": {"properties": {"receipt": {"type": "object", "required": ["status"], "properties": {"status": {"enum": ["APPLIED", "MQTT_DISPATCHED"]}}}}}
     },
     {
-      "if": { "properties": { "type": { "const": "receipt.review" } } },
-      "then": { "properties": { "receipt": { "type": "object", "required": ["status"], "properties": { "status": { "enum": ["REVIEW", "DUPLICATE", "IN_FLIGHT"] } }, "not": { "required": ["groupId"], "properties": { "groupId": {} } } } } }
+      "if": {"properties": {"type": {"const": "receipt.review"}}},
+      "then": {
+        "properties": {
+          "receipt": {
+            "type": "object",
+            "required": ["status"],
+            "properties": {"status": {"enum": ["REVIEW", "DUPLICATE", "IN_FLIGHT"]}},
+            "not": {"required": ["groupId"], "properties": {"groupId": {}}}
+          }
+        }
+      }
     },
     {
-      "if": { "properties": { "type": { "const": "group.summary" } } },
-      "then": { "properties": { "receipt": { "type": "object", "required": ["contractId", "groupId"], "properties": { "contractId": { "const": "privacy-bubble.group-dispatch" }, "groupId": { "$ref": "#/$defs/id" } } } } }
+      "if": {"properties": {"type": {"const": "group.summary"}}},
+      "then": {
+        "properties": {
+          "receipt": {
+            "type": "object",
+            "required": ["contractId", "groupId"],
+            "properties": {"contractId": {"const": "privacy-bubble.group-dispatch"}, "groupId": {"$ref": "#/$defs/id"}}
+          }
+        }
+      }
     }
   ],
   "$defs": {
-    "dateTime": { "type": "string", "format": "date-time" },
-    "id": { "type": "string", "minLength": 1, "maxLength": 512 },
-    "ackState": { "enum": ["RECEIVED", "FORWARDED", "APPLIED", "READBACK_VERIFIED", "RETRY_PENDING"] },
+    "dateTime": {"type": "string", "format": "date-time"},
+    "id": {"type": "string", "minLength": 1, "maxLength": 512},
+    "ackState": {"enum": ["RECEIVED", "FORWARDED", "APPLIED", "READBACK_VERIFIED", "RETRY_PENDING"]},
     "acceptance": {
       "type": "object",
       "additionalProperties": false,
       "required": ["commandId", "groupId", "acceptedAt", "label"],
       "properties": {
-        "commandId": { "$ref": "#/$defs/id" },
-        "groupId": { "$ref": "#/$defs/id" },
-        "acceptedAt": { "$ref": "#/$defs/dateTime" },
-        "label": { "const": "SIMULATED API acceptance; not a CORE receipt" }
+        "commandId": {"$ref": "#/$defs/id"},
+        "groupId": {"$ref": "#/$defs/id"},
+        "acceptedAt": {"$ref": "#/$defs/dateTime"},
+        "label": {"const": "SIMULATED API acceptance; not a CORE receipt"}
       }
     },
-    "commandPayload": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["deviceId", "commandId", "desiredState", "issuedAt"],
-      "properties": {
-        "deviceId": { "$ref": "#/$defs/id" },
-        "commandId": { "$ref": "#/$defs/id" },
-        "desiredState": { "type": "boolean" },
-        "deadline": { "$ref": "#/$defs/dateTime" },
-        "epoch": { "type": "integer", "minimum": 0 },
-        "issuedAt": { "$ref": "#/$defs/dateTime" }
-      }
-    },
+    "commandPayload": {"oneOf": [{"$ref": "#/$defs/legacyCommandPayload"}, {"$ref": "#/$defs/keyringCommandPayload"}]},
     "ackPayload": {
       "type": "object",
       "additionalProperties": false,
       "required": ["deviceId", "commandId", "ackState", "timestamp"],
       "properties": {
-        "deviceId": { "$ref": "#/$defs/id" },
-        "commandId": { "$ref": "#/$defs/id" },
-        "ackState": { "$ref": "#/$defs/ackState" },
-        "timestamp": { "$ref": "#/$defs/dateTime" },
-        "acceptedAt": { "$ref": "#/$defs/dateTime" },
-        "appliedAt": { "$ref": "#/$defs/dateTime" },
-        "ackCode": { "type": "string" },
-        "readback": { "type": "boolean" },
-        "firmwareRevision": { "type": "string" }
+        "deviceId": {"$ref": "#/$defs/id"},
+        "commandId": {"$ref": "#/$defs/id"},
+        "ackState": {"$ref": "#/$defs/ackState"},
+        "timestamp": {"$ref": "#/$defs/dateTime"},
+        "acceptedAt": {"$ref": "#/$defs/dateTime"},
+        "appliedAt": {"$ref": "#/$defs/dateTime"},
+        "ackCode": {"type": "string"},
+        "readback": {"oneOf": [{"type": "boolean"}, {"type": "object", "properties": {"state": {"type": "boolean"}}, "required": ["state"], "additionalProperties": false}]},
+        "firmwareRevision": {"type": "string"},
+        "payloadHash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "grantRevision": {"type": "integer", "minimum": 1, "maximum": 2147483647},
+        "ownershipEpoch": {"type": "integer", "minimum": 0, "maximum": 2147483647},
+        "measurementScope": {"const": "gpio-at-application"},
+        "gatewayReceipt": {"$ref": "#/$defs/keyringReceipt"}
       }
     },
     "telemetryPayload": {
@@ -96,13 +110,17 @@
       "additionalProperties": false,
       "required": ["deviceId", "sequence", "timestamp", "state", "batteryPct", "rssiDbm", "schemaVersion"],
       "properties": {
-        "deviceId": { "$ref": "#/$defs/id" },
-        "sequence": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
-        "timestamp": { "$ref": "#/$defs/dateTime" },
-        "state": { "type": "boolean" },
-        "batteryPct": { "type": "integer", "minimum": 0, "maximum": 100 },
-        "rssiDbm": { "type": "integer", "minimum": -127, "maximum": 0 },
-        "schemaVersion": { "const": "1.0.0" }
+        "deviceId": {"type": "string", "minLength": 1},
+        "sequence": {"type": "integer", "minimum": 0, "maximum": 4294967295},
+        "timestamp": {"type": "string", "format": "date-time"},
+        "state": {"type": "boolean"},
+        "batteryPct": {"type": "integer", "minimum": 0, "maximum": 100},
+        "rssiDbm": {"type": "integer", "minimum": -127, "maximum": 20},
+        "schemaVersion": {"const": "1.0.0"},
+        "bootId": {"type": "string", "minLength": 1, "maxLength": 64},
+        "firmwareSequence": {"type": "integer", "minimum": 0, "maximum": 4294967295},
+        "gatewayId": {"type": "string", "minLength": 1, "maxLength": 64},
+        "timestampSource": {"const": "gateway-received"}
       }
     },
     "member": {
@@ -110,13 +128,13 @@
       "additionalProperties": false,
       "required": ["memberId", "memberCommandId", "deviceId", "gatewayId", "status", "attempts"],
       "properties": {
-        "memberId": { "$ref": "#/$defs/id" },
-        "memberCommandId": { "$ref": "#/$defs/id" },
-        "deviceId": { "$ref": "#/$defs/id" },
-        "gatewayId": { "$ref": "#/$defs/id" },
-        "status": { "enum": ["DISPATCHED", "RECEIVED", "FORWARDED", "APPLIED", "READBACK_VERIFIED", "RETRY_PENDING"] },
-        "attempts": { "type": "integer", "minimum": 1 },
-        "ackTimestamp": { "$ref": "#/$defs/dateTime" }
+        "memberId": {"$ref": "#/$defs/id"},
+        "memberCommandId": {"$ref": "#/$defs/id"},
+        "deviceId": {"$ref": "#/$defs/id"},
+        "gatewayId": {"$ref": "#/$defs/id"},
+        "status": {"enum": ["DISPATCHED", "RECEIVED", "FORWARDED", "APPLIED", "READBACK_VERIFIED", "RETRY_PENDING"]},
+        "attempts": {"type": "integer", "minimum": 1},
+        "ackTimestamp": {"$ref": "#/$defs/dateTime"}
       }
     },
     "coreReceipt": {
@@ -124,85 +142,204 @@
       "additionalProperties": false,
       "required": ["status", "timestamp"],
       "properties": {
-        "status": { "enum": ["DISPATCHED", "ACK_RECORDED", "APPLIED", "MQTT_DISPATCHED", "REVIEW", "DUPLICATE", "IN_FLIGHT", "DISPATCHING", "SETTLED"] },
-        "timestamp": { "$ref": "#/$defs/dateTime" },
-        "journaledAt": { "$ref": "#/$defs/dateTime" },
-        "receiptHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
-        "contractId": { "enum": ["privacy-bubble.raspberrypi-gateway", "privacy-bubble.group-dispatch"] },
-        "contractVersion": { "const": "1.0.0" },
-        "docRevision": { "const": "2.0.0" },
-        "gatewayId": { "$ref": "#/$defs/id" },
-        "deviceId": { "$ref": "#/$defs/id" },
-        "commandId": { "$ref": "#/$defs/id" },
-        "sequence": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
-        "dedupKey": { "$ref": "#/$defs/id" },
-        "requestId": { "$ref": "#/$defs/id" },
-        "oneM2MResource": { "type": "string", "pattern": "^/" },
-        "responseStatus": { "type": "integer" },
-        "responseBody": { "type": "string" },
-        "transport": { "enum": ["mqtt", "oneM2M-http", "oneM2M-mqtt"] },
-        "topic": { "type": "string" },
-        "error": { "type": "string" },
-        "ackState": { "$ref": "#/$defs/ackState" },
-        "payload": { "oneOf": [{ "$ref": "#/$defs/commandPayload" }, { "$ref": "#/$defs/ackPayload" }, { "$ref": "#/$defs/telemetryPayload" }] },
-        "groupId": { "$ref": "#/$defs/id" },
-        "state": { "type": "boolean" },
-        "attempts": { "type": "integer", "minimum": 0 },
-        "memberCount": { "type": "integer", "minimum": 0 },
-        "appliedCount": { "type": "integer", "minimum": 0 },
-        "members": { "type": "array", "items": { "$ref": "#/$defs/member" } }
+        "status": {"enum": ["DISPATCHED", "ACK_RECORDED", "APPLIED", "MQTT_DISPATCHED", "REVIEW", "DUPLICATE", "IN_FLIGHT", "DISPATCHING", "SETTLED"]},
+        "timestamp": {"$ref": "#/$defs/dateTime"},
+        "journaledAt": {"$ref": "#/$defs/dateTime"},
+        "receiptHash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "contractId": {"enum": ["privacy-bubble.raspberrypi-gateway", "privacy-bubble.group-dispatch"]},
+        "contractVersion": {"const": "1.0.0"},
+        "docRevision": {"const": "2.0.0"},
+        "gatewayId": {"$ref": "#/$defs/id"},
+        "deviceId": {"$ref": "#/$defs/id"},
+        "commandId": {"$ref": "#/$defs/id"},
+        "sequence": {"type": "integer", "minimum": 0, "maximum": 4294967295},
+        "dedupKey": {"$ref": "#/$defs/id"},
+        "requestId": {"$ref": "#/$defs/id"},
+        "oneM2MResource": {"type": "string", "pattern": "^/"},
+        "responseStatus": {"type": "integer"},
+        "responseBody": {"type": "string"},
+        "transport": {"enum": ["mqtt", "oneM2M-http", "oneM2M-mqtt"]},
+        "topic": {"type": "string"},
+        "error": {"type": "string"},
+        "ackState": {"$ref": "#/$defs/ackState"},
+        "payload": {"oneOf": [{"$ref": "#/$defs/commandPayload"}, {"$ref": "#/$defs/ackPayload"}, {"$ref": "#/$defs/telemetryPayload"}]},
+        "groupId": {"$ref": "#/$defs/id"},
+        "state": {"type": "boolean"},
+        "attempts": {"type": "integer", "minimum": 0},
+        "memberCount": {"type": "integer", "minimum": 0},
+        "appliedCount": {"type": "integer", "minimum": 0},
+        "members": {"type": "array", "items": {"$ref": "#/$defs/member"}},
+        "reason": {"type": "string"}
       },
       "allOf": [
         {
-          "if": { "required": ["contractId"], "properties": { "contractId": { "const": "privacy-bubble.group-dispatch" } } },
+          "if": {"required": ["contractId"], "properties": {"contractId": {"const": "privacy-bubble.group-dispatch"}}},
           "then": {
             "required": ["groupId", "commandId", "state", "attempts", "memberCount", "appliedCount", "members"],
             "properties": {
-              "status": { "enum": ["DISPATCHING", "IN_FLIGHT", "SETTLED"] },
-              "groupId": { "$ref": "#/$defs/id" },
-              "commandId": { "$ref": "#/$defs/id" },
-              "state": { "type": "boolean" },
-              "attempts": { "type": "integer", "minimum": 0 },
-              "memberCount": { "type": "integer", "minimum": 0 },
-              "appliedCount": { "type": "integer", "minimum": 0 },
-              "members": { "type": "array", "items": { "$ref": "#/$defs/member" } }
+              "status": {"enum": ["DISPATCHING", "IN_FLIGHT", "SETTLED"]},
+              "groupId": {"$ref": "#/$defs/id"},
+              "commandId": {"$ref": "#/$defs/id"},
+              "state": {"type": "boolean"},
+              "attempts": {"type": "integer", "minimum": 0},
+              "memberCount": {"type": "integer", "minimum": 0},
+              "appliedCount": {"type": "integer", "minimum": 0},
+              "members": {"type": "array", "items": {"$ref": "#/$defs/member"}}
             }
           }
         },
         {
-          "if": { "properties": { "status": { "enum": ["DISPATCHED", "ACK_RECORDED", "APPLIED", "MQTT_DISPATCHED"] } } },
+          "if": {"properties": {"status": {"enum": ["DISPATCHED", "ACK_RECORDED", "APPLIED", "MQTT_DISPATCHED"]}}},
           "then": {
             "required": ["contractId", "contractVersion", "docRevision", "gatewayId", "deviceId", "payload"],
             "properties": {
-              "contractId": { "const": "privacy-bubble.raspberrypi-gateway" },
-              "contractVersion": { "const": "1.0.0" },
-              "docRevision": { "const": "2.0.0" },
-              "gatewayId": { "$ref": "#/$defs/id" },
-              "deviceId": { "$ref": "#/$defs/id" },
-              "payload": { "type": "object" }
+              "contractId": {"const": "privacy-bubble.raspberrypi-gateway"},
+              "contractVersion": {"const": "1.0.0"},
+              "docRevision": {"const": "2.0.0"},
+              "gatewayId": {"$ref": "#/$defs/id"},
+              "deviceId": {"$ref": "#/$defs/id"},
+              "payload": {"type": "object"}
             }
           }
         },
         {
-          "if": { "properties": { "status": { "const": "DISPATCHED" } } },
-          "then": { "required": ["commandId", "topic"], "properties": { "commandId": { "$ref": "#/$defs/id" }, "topic": { "type": "string" }, "payload": { "$ref": "#/$defs/commandPayload" } } }
+          "if": {"properties": {"status": {"const": "DISPATCHED"}}},
+          "then": {
+            "required": ["commandId", "topic"],
+            "properties": {"commandId": {"$ref": "#/$defs/id"}, "topic": {"type": "string"}, "payload": {"$ref": "#/$defs/commandPayload"}}
+          }
         },
         {
-          "if": { "properties": { "status": { "const": "ACK_RECORDED" } } },
-          "then": { "required": ["commandId", "ackState"], "properties": { "commandId": { "$ref": "#/$defs/id" }, "ackState": { "$ref": "#/$defs/ackState" }, "payload": { "$ref": "#/$defs/ackPayload" } } }
+          "if": {"properties": {"status": {"const": "ACK_RECORDED"}}},
+          "then": {
+            "required": ["commandId", "ackState"],
+            "properties": {"commandId": {"$ref": "#/$defs/id"}, "ackState": {"$ref": "#/$defs/ackState"}, "payload": {"$ref": "#/$defs/ackPayload"}}
+          }
         },
         {
-          "if": { "properties": { "status": { "enum": ["APPLIED", "MQTT_DISPATCHED"] } } },
+          "if": {"properties": {"status": {"enum": ["APPLIED", "MQTT_DISPATCHED"]}}},
           "then": {
             "required": ["sequence", "dedupKey", "requestId", "oneM2MResource"],
             "properties": {
-              "sequence": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
-              "dedupKey": { "$ref": "#/$defs/id" },
-              "requestId": { "$ref": "#/$defs/id" },
-              "oneM2MResource": { "type": "string", "pattern": "^/" },
-              "payload": { "$ref": "#/$defs/telemetryPayload" }
+              "sequence": {"type": "integer", "minimum": 0, "maximum": 4294967295},
+              "dedupKey": {"$ref": "#/$defs/id"},
+              "requestId": {"$ref": "#/$defs/id"},
+              "oneM2MResource": {"type": "string", "pattern": "^/"},
+              "payload": {"$ref": "#/$defs/telemetryPayload"}
             }
           }
+        }
+      ]
+    },
+    "integrationReceipt": {
+      "type": "object",
+      "required": ["contractId", "docRevision", "eventId", "timestamp"],
+      "additionalProperties": true,
+      "properties": {
+        "contractId": {"const": "privacy-bubble.integration.v1"},
+        "docRevision": {"const": "2.0.0"},
+        "eventId": {"$ref": "#/$defs/id"},
+        "timestamp": {"$ref": "#/$defs/dateTime"},
+        "journaledAt": {"$ref": "#/$defs/dateTime"},
+        "receiptHash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "allowed": {"type": "boolean"},
+        "type": {"$ref": "#/$defs/id"},
+        "eventType": {"$ref": "#/$defs/id"},
+        "service": {"$ref": "#/$defs/id"},
+        "ueId": {"$ref": "#/$defs/id"},
+        "principalId": {"$ref": "#/$defs/id"},
+        "consentId": {"$ref": "#/$defs/id"},
+        "grantId": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/id"}]},
+        "policyId": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/id"}]},
+        "roundId": {"$ref": "#/$defs/id"},
+        "runId": {"$ref": "#/$defs/id"},
+        "status": {"$ref": "#/$defs/id"},
+        "state": {"$ref": "#/$defs/id"},
+        "action": {"$ref": "#/$defs/id"}
+      },
+      "anyOf": [
+        {"required": ["type"], "properties": {"type": {"$ref": "#/$defs/id"}}},
+        {
+          "required": ["service", "eventType", "ueId"],
+          "properties": {"service": {"$ref": "#/$defs/id"}, "eventType": {"$ref": "#/$defs/id"}, "ueId": {"$ref": "#/$defs/id"}}
+        }
+      ]
+    },
+    "legacyCommandPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["deviceId", "commandId", "desiredState", "issuedAt"],
+      "properties": {
+        "deviceId": {"$ref": "#/$defs/id"},
+        "commandId": {"$ref": "#/$defs/id"},
+        "desiredState": {"type": "boolean"},
+        "deadline": {"$ref": "#/$defs/dateTime"},
+        "epoch": {"type": "integer", "minimum": 0},
+        "issuedAt": {"$ref": "#/$defs/dateTime"}
+      }
+    },
+    "keyringCommandPayload": {
+      "type": "object",
+      "properties": {
+        "version": {"const": 1},
+        "gatewayId": {"type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+        "deviceId": {"type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+        "commandId": {"type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+        "claimId": {"type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+        "desiredState": {"type": "object", "properties": {"state": {"type": "boolean"}}, "required": ["state"], "additionalProperties": false},
+        "issuedAt": {"type": "string", "format": "date-time", "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"},
+        "deadline": {"type": "string", "format": "date-time", "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"},
+        "grantRevision": {"type": "integer", "minimum": 1, "maximum": 2147483647},
+        "ownershipEpoch": {"type": "integer", "minimum": 0, "maximum": 2147483647}
+      },
+      "required": ["version", "gatewayId", "deviceId", "commandId", "claimId", "desiredState", "issuedAt", "deadline", "grantRevision", "ownershipEpoch"],
+      "additionalProperties": false
+    },
+    "keyringReceipt": {
+      "type": "object",
+      "properties": {
+        "version": {"const": 1},
+        "gatewayId": {"type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+        "deviceId": {"type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+        "commandId": {"type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+        "payloadHash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "status": {"type": "string", "enum": ["APPLIED", "REJECTED", "TIMEOUT", "INDETERMINATE"]},
+        "ackCode": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,63}$"},
+        "acceptedAt": {"anyOf": [{"type": "string", "format": "date-time", "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"}, {"type": "null"}]},
+        "appliedAt": {"anyOf": [{"type": "string", "format": "date-time", "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"}, {"type": "null"}]},
+        "receivedAt": {"type": "string", "format": "date-time", "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"},
+        "readback": {"anyOf": [{"type": "object", "properties": {"state": {"type": "boolean"}}, "required": ["state"], "additionalProperties": false}, {"type": "null"}]},
+        "firmwareRevision": {"anyOf": [{"type": "string", "minLength": 1, "maxLength": 64}, {"type": "null"}]},
+        "ownershipEpoch": {"type": "integer", "minimum": 0, "maximum": 2147483647},
+        "grantRevision": {"type": "integer", "minimum": 1, "maximum": 2147483647},
+        "timestampSource": {"type": "string", "enum": ["gateway-estimated", "unavailable"]},
+        "detail": {"anyOf": [{"type": "string", "maxLength": 512}, {"type": "null"}]},
+        "bootId": {"anyOf": [{"type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"}, {"type": "null"}]}
+      },
+      "required": [
+        "version",
+        "gatewayId",
+        "deviceId",
+        "commandId",
+        "payloadHash",
+        "status",
+        "ackCode",
+        "acceptedAt",
+        "appliedAt",
+        "receivedAt",
+        "readback",
+        "firmwareRevision",
+        "ownershipEpoch",
+        "grantRevision",
+        "timestampSource",
+        "detail",
+        "bootId"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {"properties": {"timestampSource": {"const": "unavailable"}}, "required": ["timestampSource"]},
+          "then": {"properties": {"acceptedAt": {"type": "null"}, "appliedAt": {"type": "null"}}}
         }
       ]
     }

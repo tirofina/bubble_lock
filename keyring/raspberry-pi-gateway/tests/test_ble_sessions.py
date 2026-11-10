@@ -103,6 +103,32 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
             await pending
         self.assertFalse(self.peer.ready.is_set())
 
+    async def test_scan_completion_preserves_watcher_cancellation(self):
+        started = asyncio.Event()
+        discovered = asyncio.Event()
+
+        async def scan_ready():
+            started.set()
+            await discovered.wait()
+            asyncio.get_running_loop().call_soon(self.watcher.cancel)
+            return True
+
+        self.peer.seen.wait = scan_ready
+        self.peer.discovered = object()
+        with patch("bubble_gateway.ble.BleakClient", side_effect=self.factory):
+            self.watcher = asyncio.create_task(self.fleet._watch(self.peer))
+            await started.wait()
+            discovered.set()
+            try:
+                done, _ = await asyncio.wait({self.watcher}, timeout=1)
+                self.assertIn(self.watcher, done, "scan completion consumed watcher cancellation")
+                self.assertTrue(self.watcher.cancelled())
+                self.assertFalse(self.peer.ready.is_set())
+                self.assertIsNone(self.peer.client)
+            finally:
+                self.watcher.cancel()
+                await asyncio.gather(self.watcher, return_exceptions=True)
+
     async def test_old_observation_cannot_poison_new_frame_buffer(self):
         old, current = await self.reconnect()
         count = self.peer.observations.qsize()

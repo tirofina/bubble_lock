@@ -1,0 +1,266 @@
+
+> privacy-bubble-pc-mobius-core@0.1.0 test
+> node --test test/**/*.test.mjs
+
+TAP version 13
+# Subtest: Gateway certificates require explicit service scopes before privileged API work
+ok 1 - Gateway certificates require explicit service scopes before privileged API work
+  ---
+  duration_ms: 8.505
+  type: 'test'
+  ...
+# Subtest: MCP execute, resume and replay keep the original run owner
+ok 2 - MCP execute, resume and replay keep the original run owner
+  ---
+  duration_ms: 1.0974
+  type: 'test'
+  ...
+# Subtest: authorization numeric bounds match the Python closed response schema
+ok 3 - authorization numeric bounds match the Python closed response schema
+  ---
+  duration_ms: 1.4045
+  type: 'test'
+  ...
+# Subtest: consent status and policy idempotency stay bound to the current owner and intent
+ok 4 - consent status and policy idempotency stay bound to the current owner and intent
+  ---
+  duration_ms: 0.7355
+  type: 'test'
+  ...
+# Subtest: oneM2M contract keeps the CORE ownership and release headers
+ok 5 - oneM2M contract keeps the CORE ownership and release headers
+  ---
+  duration_ms: 1.3634
+  type: 'test'
+  ...
+# Subtest: oneM2M flow covers resource creation, state update, retrieve, subscription and group
+ok 6 - oneM2M flow covers resource creation, state update, retrieve, subscription and group
+  ---
+  duration_ms: 0.1678
+  type: 'test'
+  ...
+# Subtest: Raspberry Pi Gateway contract binds BLE, MQTT, HTTPS and oneM2M mapping
+ok 7 - Raspberry Pi Gateway contract binds BLE, MQTT, HTTPS and oneM2M mapping
+  ---
+  duration_ms: 0.0809
+  type: 'test'
+  ...
+# Subtest: oneM2M fixture uses flexContainer type 28 and group memberIDs with numeric memberType
+ok 8 - oneM2M fixture uses flexContainer type 28 and group memberIDs with numeric memberType
+  ---
+  duration_ms: 0.1198
+  type: 'test'
+  ...
+# Subtest: GatewayBridge publishes oneM2M MQTT primitive and settles response rqi/rsc
+ok 9 - GatewayBridge publishes oneM2M MQTT primitive and settles response rqi/rsc
+  ---
+  duration_ms: 7.042
+  type: 'test'
+  ...
+# Subtest: oneM2M UPDATE settles a response arriving before PUBACK
+ok 10 - oneM2M UPDATE settles a response arriving before PUBACK
+  ---
+  duration_ms: 0.2893
+  type: 'test'
+  ...
+# Subtest: oneM2M CREATE success cannot settle an UPDATE and retry stays available
+ok 11 - oneM2M CREATE success cannot settle an UPDATE and retry stays available
+  ---
+  duration_ms: 0.1766
+  type: 'test'
+  ...
+# Subtest: oneM2M MQTT To reverses CSE relative, SP relative and absolute HTTP encodings
+ok 12 - oneM2M MQTT To reverses CSE relative, SP relative and absolute HTTP encodings
+  ---
+  duration_ms: 0.1838
+  type: 'test'
+  ...
+# Subtest: GatewayBridge awaits MQTT.js async subscription and publish APIs
+ok 13 - GatewayBridge awaits MQTT.js async subscription and publish APIs
+  ---
+  duration_ms: 0.2314
+  type: 'test'
+  ...
+# Subtest: GatewayBridge maps Raspberry Pi telemetry to oneM2M state and deduplicates sequence
+ok 14 - GatewayBridge maps Raspberry Pi telemetry to oneM2M state and deduplicates sequence
+  ---
+  duration_ms: 2.848
+  type: 'test'
+  ...
+# Subtest: GatewayBridge publishes command and settles it with ACK/readback
+ok 15 - GatewayBridge publishes command and settles it with ACK/readback
+  ---
+  duration_ms: 5.5746
+  type: 'test'
+  ...
+# Subtest: GatewayBridge keeps a reviewable telemetry event available for retry
+ok 16 - GatewayBridge keeps a reviewable telemetry event available for retry
+  ---
+  duration_ms: 0.4113
+  type: 'test'
+  ...
+# Subtest: GatewayBridge preserves the canonical keyring authorization envelope
+ok 17 - GatewayBridge preserves the canonical keyring authorization envelope
+  ---
+  duration_ms: 0.9214
+  type: 'test'
+  ...
+# Subtest: GatewayBridge keeps intermediate ACKs pending and validates member identity and readback
+ok 18 - GatewayBridge keeps intermediate ACKs pending and validates member identity and readback
+  ---
+  duration_ms: 0.5943
+  type: 'test'
+  ...
+# Subtest: GatewayBridge records a command before an immediate application ACK
+ok 19 - GatewayBridge records a command before an immediate application ACK
+  ---
+  duration_ms: 0.2906
+  type: 'test'
+  ...
+# Subtest: GatewayBridge normalizes authorized aliases while preserving issuedAt across retries
+ok 20 - GatewayBridge normalizes authorized aliases while preserving issuedAt across retries
+  ---
+  duration_ms: 0.31
+  type: 'test'
+  ...
+# Subtest: GatewayBridge retains the legacy boolean readback representation
+ok 21 - GatewayBridge retains the legacy boolean readback representation
+  ---
+  duration_ms: 0.1447
+  type: 'test'
+  ...
+# Subtest: central command survives restart and binds Gateway poll/authorize to exact payload
+ok 22 - central command survives restart and binds Gateway poll/authorize to exact payload
+  ---
+  duration_ms: 63.0264
+  type: 'test'
+  ...
+# Subtest: revocation, epoch change, credential rotation and expiry fence Gateway execution
+ok 23 - revocation, epoch change, credential rotation and expiry fence Gateway execution
+  ---
+  duration_ms: 191.2869
+  type: 'test'
+  ...
+# Subtest: transport principal, scopes, ownership and subject remain authoritative
+ok 24 - transport principal, scopes, ownership and subject remain authoritative
+  ---
+  duration_ms: 31.0493
+  type: 'test'
+  ...
+# Subtest: all service receipts share one journal and handover epochs survive restart
+ok 25 - all service receipts share one journal and handover epochs survive restart
+  ---
+  duration_ms: 82.6491
+  type: 'test'
+  ...
+# Subtest: bounded polling eventually delivers every active command while preserving retries
+ok 26 - bounded polling eventually delivers every active command while preserving retries
+  ---
+  duration_ms: 191.202
+  type: 'test'
+  ...
+# Subtest: GroupDispatcher fans out a command and settles member readback
+ok 27 - GroupDispatcher fans out a command and settles member readback
+  ---
+  duration_ms: 2.2576
+  type: 'test'
+  ...
+# Subtest: GroupDispatcher retries the member whose ACK remains pending
+ok 28 - GroupDispatcher retries the member whose ACK remains pending
+  ---
+  duration_ms: 0.2539
+  type: 'test'
+  ...
+# Subtest: GroupDispatcher forwards issued member claims and keeps retry payloads identical
+ok 29 - GroupDispatcher forwards issued member claims and keeps retry payloads identical
+  ---
+  duration_ms: 4.7086
+  type: 'test'
+  ...
+# Subtest: GroupDispatcher keeps immediate ACKs while fan-out is publishing
+ok 30 - GroupDispatcher keeps immediate ACKs while fan-out is publishing
+  ---
+  duration_ms: 0.3536
+  type: 'test'
+  ...
+# Subtest: OIDC/mTLS principal, consent, grant, revoke lifecycle
+ok 31 - OIDC/mTLS principal, consent, grant, revoke lifecycle
+  ---
+  duration_ms: 34.2054
+  type: 'test'
+  ...
+# Subtest: MEC Location/RNIS callback dedup and policy reconciliation
+ok 32 - MEC Location/RNIS callback dedup and policy reconciliation
+  ---
+  duration_ms: 30.4878
+  type: 'test'
+  ...
+# Subtest: handover epoch, security context, rollback
+ok 33 - handover epoch, security context, rollback
+  ---
+  duration_ms: 24.4253
+  type: 'test'
+  ...
+# Subtest: ESTIMED FL selection, artifact fence, recovery, round completion
+ok 34 - ESTIMED FL selection, artifact fence, recovery, round completion
+  ---
+  duration_ms: 38.997
+  type: 'test'
+  ...
+# Subtest: MCP multi-server approval hash, checkpoint, resume, persistent run
+ok 35 - MCP multi-server approval hash, checkpoint, resume, persistent run
+  ---
+  duration_ms: 47.4589
+  type: 'test'
+  ...
+# Subtest: integration API exposes contract-shaped routes
+ok 36 - integration API exposes contract-shaped routes
+  ---
+  duration_ms: 5.7784
+  type: 'test'
+  ...
+# Subtest: fault fixtures cover duplicate, replay, drain, crash and resume paths
+ok 37 - fault fixtures cover duplicate, replay, drain, crash and resume paths
+  ---
+  duration_ms: 2.4243
+  type: 'test'
+  ...
+# Subtest: CORE migration defines event, dispatch, receipt and oneM2M binding tables
+ok 38 - CORE migration defines event, dispatch, receipt and oneM2M binding tables
+  ---
+  duration_ms: 0.6195
+  type: 'test'
+  ...
+# Subtest: INTEGRATION migration defines policy, MEC, handover, FL, MCP and audit tables
+ok 39 - INTEGRATION migration defines policy, MEC, handover, FL, MCP and audit tables
+  ---
+  duration_ms: 0.1961
+  type: 'test'
+  ...
+# Subtest: ReceiptJournal writes a hash-recorded JSONL receipt
+ok 40 - ReceiptJournal writes a hash-recorded JSONL receipt
+  ---
+  duration_ms: 8.4803
+  type: 'test'
+  ...
+# Subtest: CORE release manifest maps runtime artifacts and replay commands
+ok 41 - CORE release manifest maps runtime artifacts and replay commands
+  ---
+  duration_ms: 0.8386
+  type: 'test'
+  ...
+# Subtest: Gateway event schema preserves BLE-to-Mobius payload contract
+ok 42 - Gateway event schema preserves BLE-to-Mobius payload contract
+  ---
+  duration_ms: 0.7752
+  type: 'test'
+  ...
+1..42
+# tests 42
+# suites 0
+# pass 42
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 764.9015

@@ -60,7 +60,7 @@ export async function fixtureResources(signal: AbortSignal): Promise<readonly Re
 
 export async function fixtureAudit(query: string, signal: AbortSignal): Promise<readonly AuditFixture[]> {
   const { value } = await getJson(`/api/audit?q=${encodeURIComponent(query)}`, signal);
-  if (!isRecord(value) || value['source'] !== 'fixture' || value['simulation'] !== true ||
+  if (!isRecord(value) || !['fixture', 'integration-journal-replay'].includes(String(value['source'])) || value['simulation'] !== true ||
     !Array.isArray(value['records']) || !value['records'].every(isAudit)) {
     throw new ReadError('모의 감사 응답이 계약과 다릅니다.');
   }

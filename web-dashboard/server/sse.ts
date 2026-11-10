@@ -4,6 +4,7 @@ import type { Server, ServerResponse } from 'node:http';
 import resources from '../fixtures/resources.json' with { type: 'json' };
 import audit from '../fixtures/audit.json' with { type: 'json' };
 import { ContractError } from '../shared/validation.ts';
+import { integrationAudit } from '../shared/integration.ts';
 import { loadReplay } from './replay.ts';
 import type { ReplaySnapshot } from './replay.ts';
 
@@ -43,9 +44,12 @@ export function createReplayServer(replay: ReplaySnapshot): Server {
         return;
       case '/api/audit': {
         const query = (url.searchParams.get('q') ?? '').toLowerCase();
+        const integrated = replay.source === 'integration-journal-replay';
+        const records = integrated ? integrationAudit(replay.events) : audit.records;
         json(response, 200, {
           ...audit,
-          records: audit.records.filter((record) => JSON.stringify(record).toLowerCase().includes(query)),
+          source: integrated ? 'integration-journal-replay' : audit.source,
+          records: records.filter((record) => JSON.stringify(record).toLowerCase().includes(query)),
         });
         return;
       }

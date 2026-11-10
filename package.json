@@ -1,0 +1,16 @@
+{
+  "name": "bubble-lock-integrated",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.19.0" },
+  "scripts": {
+    "setup": "node scripts/workspace.mjs setup",
+    "test": "node scripts/workspace.mjs test",
+    "verify": "node scripts/workspace.mjs verify",
+    "demo": "npm --prefix pc-mobius run integration",
+    "dashboard": "npm --prefix web-dashboard run dev",
+    "events": "npm --prefix web-dashboard run sse",
+    "api": "npm --prefix pc-mobius run integration:api"
+  }
+}

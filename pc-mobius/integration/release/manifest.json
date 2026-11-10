@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "role": "PC-MOBIUS-INTEGRATION",
   "docRevision": "2.0.0",
-  "generatedAt": "2026-10-30T06:52:24.752Z",
+  "generatedAt": "2026-11-10T06:58:04.648Z",
   "commands": [
     "npm run integration:validate",
     "npm run integration",
@@ -22,7 +22,7 @@
   "artifacts": [
     {
       "path": "contracts/integration-contract.v1.json",
-      "sha256": "57e7847eb3503b051d14dbc85502d7c2ac3058659e5eb0d2ebe090609ff685f5"
+      "sha256": "7a62d08e1d20d055c1005dea1d751309eea9c0624052082474db80c2ae70223f"
     },
     {
       "path": "integration/fixtures/fault-fixtures.json",
@@ -30,7 +30,7 @@
     },
     {
       "path": "integration/src/policy-service.mjs",
-      "sha256": "34396bf5cba6481247e5fe078ad988318f0364d0cd4af07fa9009dadde0d4312"
+      "sha256": "f8acb0b68b18b9ff33caea477ccbb3d6b564eac8d560f2604a7d68f325ee8261"
     },
     {
       "path": "integration/src/mec-adapter.mjs",
@@ -38,7 +38,7 @@
     },
     {
       "path": "integration/src/handover-coordinator.mjs",
-      "sha256": "682ab9a8b87658bf0bb5649f722a7c5a3d3d55969d7cd8edbee54ec15b4417db"
+      "sha256": "8266aabff1a6c69ef090acfad60129506c09c46fb7ac315bff8b79217e263683"
     },
     {
       "path": "integration/src/fl-coordinator.mjs",
@@ -50,11 +50,27 @@
     },
     {
       "path": "integration/src/api-gateway.mjs",
-      "sha256": "8d214b5caf718151a922afc4805260cda0288afe601e0b2590b34482d92dc0fd"
+      "sha256": "9eab0d439d4019c76c0676ca922814954302371e1709c10cfedfaef9f98c8181"
     },
     {
       "path": "integration/src/integration-runtime.mjs",
-      "sha256": "4307186804d708d02617f032849241d84843eb5f38473a29a4460dae038ee901"
+      "sha256": "f0857b0de452c4ab70b727fa728a0490e3ac8256fe9a9331181d5ee74a67febd"
+    },
+    {
+      "path": "integration/src/api-server.mjs",
+      "sha256": "c766fa42dec40544fb55b33a48edcb87f1c5c1f4208605f01b9e931b5e83f2cb"
+    },
+    {
+      "path": "integration/src/gateway-control.mjs",
+      "sha256": "af94d2a5a63d2d87e7187eab7cf43dcc5922b59ed286f0e894b41e9c3e4832fe"
+    },
+    {
+      "path": "integration/src/integration-store.mjs",
+      "sha256": "859471001f5bcf4770bdf01c7dac4c221d2ae03bd487ca895df29fc3cb73f2cf"
+    },
+    {
+      "path": "integration/src/integration-utils.mjs",
+      "sha256": "89e72338170b083ff138bc23eebccf5c507897791773b8c0802c95aac1af540e"
     }
   ]
 }

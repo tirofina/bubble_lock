@@ -67,3 +67,67 @@ test('GatewayBridge keeps a reviewable telemetry event available for retry', asy
   assert.equal(second.status, 'APPLIED');
   assert.equal(callCount, 2);
 });
+
+function canonical(overrides = {}) {
+  return { version: 1, gatewayId: 'pi-01', deviceId: 'keyring-01', commandId: 'canonical-1', claimId: 'claim-1',
+    desiredState: { state: true }, issuedAt: '2026-10-28T00:00:00.000Z', deadline: '2026-10-28T00:01:00.000Z',
+    grantRevision: 2, ownershipEpoch: 3, ...overrides };
+}
+
+test('GatewayBridge preserves the canonical keyring authorization envelope', async () => {
+  const mqtt = new FakeMqtt();
+  const bridge = new GatewayBridge({ mqttClient: mqtt, gatewayId: 'pi-01' });
+  const command = canonical();
+  await bridge.sendCommand(command);
+  assert.deepEqual(mqtt.published[0].payload, command);
+  await assert.rejects(bridge.sendCommand(canonical({ gatewayId: 'pi-other' })), /identity mismatch/);
+  await assert.rejects(bridge.sendCommand(canonical({ grantRevision: 0 })), /grantRevision/);
+  await assert.rejects(bridge.sendCommand(canonical({ extra: true })), /fields/);
+  await assert.rejects(bridge.sendCommand(canonical({ desiredState: { state: false } })), /another payload/);
+  assert.equal(mqtt.published.length, 1);
+});
+
+test('GatewayBridge keeps intermediate ACKs pending and validates member identity and readback', async () => {
+  const mqtt = new FakeMqtt();
+  const bridge = new GatewayBridge({ mqttClient: mqtt, gatewayId: 'pi-01' });
+  await bridge.sendCommand(canonical());
+  const ack = { deviceId: 'keyring-01', commandId: 'canonical-1', timestamp: '2026-10-28T00:00:01.000Z' };
+  for (const ackState of ['RECEIVED', 'FORWARDED', 'APPLIED', 'RETRY_PENDING']) {
+    await bridge.handleAck({ ...ack, ackState });
+    assert.deepEqual(bridge.getReceiptSnapshot().pendingCommands, ['canonical-1']);
+  }
+  for (const changed of [{ deviceId: 'other' }, { grantRevision: 1 }, { ownershipEpoch: 4 }, { readback: { state: false } }]) {
+    assert.equal((await bridge.handleAck({ ...ack, ackState: 'READBACK_VERIFIED', ...changed })).status, 'REVIEW');
+    assert.deepEqual(bridge.getReceiptSnapshot().pendingCommands, ['canonical-1']);
+  }
+  const final = await bridge.handleAck({ ...ack, ackState: 'READBACK_VERIFIED', readback: { state: true }, grantRevision: 2, ownershipEpoch: 3 });
+  assert.deepEqual(bridge.getReceiptSnapshot().pendingCommands, []);
+  assert.equal(await bridge.handleAck({ ...ack, ackState: 'FORWARDED' }), final);
+});
+
+test('GatewayBridge records a command before an immediate application ACK', async () => {
+  const mqtt = new FakeMqtt();
+  const bridge = new GatewayBridge({ mqttClient: mqtt, gatewayId: 'pi-01' });
+  mqtt.publish = async (_topic, raw) => {
+    const sent = JSON.parse(raw);
+    await bridge.handleAck({ deviceId: sent.deviceId, commandId: sent.commandId, ackState: 'READBACK_VERIFIED', timestamp: sent.issuedAt, readback: sent.desiredState });
+  };
+  await bridge.sendCommand(canonical());
+  assert.deepEqual(bridge.getReceiptSnapshot().pendingCommands, []);
+});
+
+test('GatewayBridge normalizes authorized aliases while preserving issuedAt across retries', async () => {
+  const mqtt = new FakeMqtt();
+  const bridge = new GatewayBridge({ mqttClient: mqtt, gatewayId: 'pi-01', clock: () => '2026-10-28T00:00:00.000Z' });
+  const command = { deviceId: 'keyring-01', state: true, commandId: 'alias-1', deadline: '2026-10-28T00:01:00.000Z', epoch: 3, claimId: 'claim-1', grantRevision: 2 };
+  await bridge.sendCommand(command);
+  await bridge.sendCommand(command);
+  assert.deepEqual(mqtt.published[0].payload, canonical({ commandId: 'alias-1' }));
+  assert.deepEqual(mqtt.published[0].payload, mqtt.published[1].payload);
+});
+
+test('GatewayBridge retains the legacy boolean readback representation', async () => {
+  const bridge = new GatewayBridge({ mqttClient: new FakeMqtt(), gatewayId: 'pi-01' });
+  await bridge.sendCommand({ deviceId: 'keyring-1', state: false, commandId: 'legacy-readback', deadline: '2026-10-28T00:01:00.000Z', epoch: 2 });
+  assert.equal((await bridge.handleAck({ deviceId: 'keyring-1', commandId: 'legacy-readback', ackState: 'READBACK_VERIFIED', timestamp: '2026-10-28T00:00:01.000Z', readback: false })).status, 'ACK_RECORDED');
+});

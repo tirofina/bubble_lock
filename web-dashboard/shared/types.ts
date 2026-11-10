@@ -1,12 +1,17 @@
 /** Stream sequence is global within one immutable replay, never device sequence. */
-export type SourceMode = 'fixture-replay' | 'core-journal-replay';
+export type SourceMode = 'fixture-replay' | 'core-journal-replay' | 'integration-journal-replay';
 export type AckState = 'RECEIVED' | 'FORWARDED' | 'APPLIED' | 'READBACK_VERIFIED' | 'RETRY_PENDING';
 export type ReceiptStatus = 'DISPATCHED' | 'ACK_RECORDED' | 'APPLIED' | 'MQTT_DISPATCHED' | 'REVIEW' | 'DUPLICATE' | 'IN_FLIGHT' | 'DISPATCHING' | 'SETTLED';
 
 export interface CommandPayload {
   readonly deviceId: string;
   readonly commandId: string;
-  readonly desiredState: boolean;
+  readonly desiredState: boolean | { readonly state: boolean };
+  readonly version?: 1;
+  readonly gatewayId?: string;
+  readonly claimId?: string;
+  readonly grantRevision?: number;
+  readonly ownershipEpoch?: number;
   readonly deadline?: string;
   readonly epoch?: number;
   readonly issuedAt: string;
@@ -20,8 +25,23 @@ export interface AckPayload {
   readonly acceptedAt?: string;
   readonly appliedAt?: string;
   readonly ackCode?: string;
-  readonly readback?: boolean;
+  readonly readback?: boolean | { readonly state: boolean };
   readonly firmwareRevision?: string;
+  readonly payloadHash?: string;
+  readonly grantRevision?: number;
+  readonly ownershipEpoch?: number;
+  readonly measurementScope?: 'gpio-at-application';
+  readonly gatewayReceipt?: {
+    readonly deviceId: string;
+    readonly gatewayId: string;
+    readonly commandId: string;
+    readonly payloadHash: string;
+    readonly grantRevision: number;
+    readonly ownershipEpoch: number;
+    readonly appliedAt: string | null;
+    readonly readback: { readonly state: boolean } | null;
+    readonly timestampSource: string;
+  };
 }
 
 export interface TelemetryPayload {
@@ -32,6 +52,10 @@ export interface TelemetryPayload {
   readonly batteryPct: number;
   readonly rssiDbm: number;
   readonly schemaVersion: '1.0.0';
+  readonly bootId?: string;
+  readonly firmwareSequence?: number;
+  readonly gatewayId?: string;
+  readonly timestampSource?: 'gateway-received';
 }
 
 export interface CoreMember {
@@ -65,6 +89,7 @@ export interface CoreReceipt {
   readonly transport?: 'mqtt' | 'oneM2M-http' | 'oneM2M-mqtt';
   readonly topic?: string;
   readonly error?: string;
+  readonly reason?: string;
   readonly ackState?: AckState;
   readonly payload?: CommandPayload | AckPayload | TelemetryPayload;
   readonly groupId?: string;
@@ -82,6 +107,33 @@ export interface ApiAcceptance {
   readonly label: 'SIMULATED API acceptance; not a CORE receipt';
 }
 
+/** INTEGRATION records retain their original data and journal hashes. */
+export interface IntegrationReceipt {
+  readonly contractId: 'privacy-bubble.integration.v1';
+  readonly docRevision: '2.0.0';
+  readonly eventId: string;
+  readonly timestamp: string;
+  readonly journaledAt?: string;
+  readonly receiptHash?: string;
+  readonly type?: string;
+  readonly eventType?: string;
+  readonly service?: string;
+  readonly principalId?: string;
+  readonly status?: string;
+  readonly state?: string;
+  readonly ueId?: string;
+  readonly policyId?: string | null;
+  readonly grantId?: string | null;
+  readonly consentId?: string;
+  readonly roundId?: string;
+  readonly runId?: string;
+  readonly action?: string;
+  readonly allowed?: boolean;
+  readonly [key: string]: unknown;
+}
+
+export type JournalReceipt = CoreReceipt | IntegrationReceipt;
+
 export interface EventEnvelope {
   readonly schemaVersion: '1.0.0';
   readonly sequence: number;
@@ -97,6 +149,7 @@ export interface EventEnvelope {
 
 export type DashboardEvent = EventEnvelope & (
   | { readonly type: 'command.accepted'; readonly acceptance: ApiAcceptance; readonly receipt: null }
+  | { readonly type: 'integration.receipt'; readonly acceptance: null; readonly receipt: IntegrationReceipt }
   | { readonly type: 'command.dispatched' | 'command.ack' | 'gateway.telemetry' | 'receipt.review' | 'group.summary'; readonly acceptance: null; readonly receipt: CoreReceipt }
 );
 

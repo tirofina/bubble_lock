@@ -1,0 +1,18 @@
+
+> privacy-bubble-pc-mobius-core@0.1.0 integration
+> node scripts/run-integration.mjs
+
+{
+  "contractId": "privacy-bubble.integration.v1",
+  "docRevision": "2.0.0",
+  "owner": "PC-MOBIUS-INTEGRATION",
+  "status": "PASS",
+  "consentId": "consent-45a89326-ffe1-447c-921b-b7d0d740d4d1",
+  "grantId": "grant-41cc1329-478f-4769-93ab-e39b9f2ed387",
+  "mecEventId": "mec-demo-grant-41cc1329-478f-4769-93ab-e39b9f2ed387",
+  "handoverEpoch": 4,
+  "flRoundId": "fl-round-ccaca88c-d315-4e29-87cf-e29c8150b849",
+  "modelHash": "440af97c35409c8ea9ff2d0c6708556497ab8b75f7e09cf1633c551083568d26",
+  "mcpRunId": "mcp-run-fa8034b3-f643-4cd6-9788-3cc9a15ac107",
+  "receiptPath": "C:\\Users\\user\\OneDrive\\문서\\ChatGPT\\모비우스4 보안\\bubble_lock\\pc-mobius\\receipts\\integration-demo.jsonl"
+}

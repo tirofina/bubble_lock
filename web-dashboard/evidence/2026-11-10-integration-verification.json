@@ -1,0 +1,54 @@
+{
+  "verifiedAt": "2026-11-10T06:55:36.091Z",
+  "node": "v22.19.0",
+  "source": "integration-journal-replay",
+  "input": "../pc-mobius/receipts/integration-demo.jsonl",
+  "archive": "evidence/2026-11-10-integration-demo.jsonl",
+  "inputSha256": "b780c3784c51c1e049acafc9be9a46215eb451966cc4997f603adf77ba0192ae",
+  "eventCount": 22,
+  "services": [
+    {
+      "title": "MEC · Location / RNIS",
+      "eventId": "mec-demo-grant-0e5ab5d8-4161-4896-b474-25c57e10399a",
+      "type": "MEC_POLICY_RECONCILE"
+    },
+    {
+      "title": "Handover · Edge A → B",
+      "eventId": "evt-17f0b91f-50bc-4006-bd76-7643379d1537",
+      "type": "HANDOVER_ACTIVE",
+      "state": "ACTIVE"
+    },
+    {
+      "title": "FL · round / model lineage",
+      "eventId": "evt-e84dab8a-91f1-4383-befb-4eea4694576c",
+      "type": "FL_ROUND",
+      "state": "COMPLETED"
+    },
+    {
+      "title": "MCP · 승인 / 실행",
+      "eventId": "evt-7e451ab6-1a7d-4bbd-8021-8ff8710fae6b",
+      "type": "MCP_AUDIT",
+      "action": "RUN_COMPLETED"
+    }
+  ],
+  "checks": [
+    {
+      "command": "npm test",
+      "exitCode": 0,
+      "passed": 24
+    },
+    {
+      "command": "npm run typecheck",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run typecheck:contract",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run build",
+      "exitCode": 0,
+      "modules": 226
+    }
+  ]
+}

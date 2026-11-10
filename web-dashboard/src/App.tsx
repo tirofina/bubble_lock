@@ -5,6 +5,7 @@ import { errorMessage, fixtureAudit } from './client.ts';
 import { Resources } from './Resources.tsx';
 import { Badge, BooleanState, Section, Stages, Timestamp } from './ui.tsx';
 import { useEventStream } from './useEventStream.ts';
+import { integrationServices } from '../shared/integration.ts';
 
 const sections = [
   ['commands', '01', '명령 타임라인'],
@@ -79,7 +80,7 @@ function EventDetails({ events }: { readonly events: readonly DashboardEvent[] }
   </details>;
 }
 
-function Audit({ refresh }: { readonly refresh: number }) {
+function Audit({ refresh, integrated }: { readonly refresh: number; readonly integrated: boolean }) {
   const [input, setInput] = useState('');
   const [query, setQuery] = useState('');
   const [request, setRequest] = useState(0);
@@ -99,7 +100,7 @@ function Audit({ refresh }: { readonly refresh: number }) {
   }, [query, request, refresh]);
 
   return <div className="stack">
-    <div className="row"><p className="small muted">정책·ACP·consent 감사 API 연동 전의 검색용 fixture입니다.</p><Badge tone="warning">모의 감사 기록</Badge></div>
+    <div className="row"><p className="small muted">{integrated ? '통합 journal의 정책·MEC·handover·FL·MCP 기록을 검색합니다.' : '정책·ACP·consent 검색용 fixture입니다.'}</p><Badge tone="warning">{integrated ? '통합 journal 재생' : '모의 감사 기록'}</Badge></div>
     <form className="row" onSubmit={(event) => { event.preventDefault(); setQuery(input); setRequest((value) => value + 1); }}>
       <div className="stack-tight">
         <label>감사 기록 검색
@@ -127,13 +128,6 @@ function Audit({ refresh }: { readonly refresh: number }) {
     </div>
   </div>;
 }
-
-const serviceShells = [
-  { title: 'MEC · Location / RNIS', fields: [['Service discovery', '미연결'], ['Subscription / callback', '미수신'], ['위치 · geofence', '관측 없음']] },
-  { title: 'Handover · Edge A → B', fields: [['상태 / ownership epoch', '미수신'], ['QUIESCING → CUTOVER', '전환 receipt 없음'], ['자원 · 구독 · 보안 복원', '미검증']] },
-  { title: 'FL · round / model lineage', fields: [['Participant / dataset', '미연결'], ['Task → round → model', 'artifact 미수신'], ['Model hash / parent model', 'lineage 미확인']] },
-  { title: 'MCP · 승인 / 실행', fields: [['Run / checkpoint', '미연결'], ['approvalHash', '미수신'], ['oneM2M · MEC · Audit tools', '실행 없음']] },
-] as const;
 
 const repository = 'https://github.com/tirofina/bubble_lock';
 const branch = `${repository}/tree/feature/web-dashboard`;
@@ -180,7 +174,7 @@ export function App() {
               <Badge tone={stream.connection === 'connected' ? 'success' : 'warning'}>{connectionLabels[stream.connection]}</Badge>
               <span className="small">sequence <strong>{stream.timeline.lastSequence}</strong> · 중복/이전 이벤트 제외 {stream.timeline.ignoredEvents}</span>
             </div>
-            <Badge tone="warning">{latest?.source === 'core-journal-replay' ? '모의 · CORE journal replay' : '모의 · fixture replay'}</Badge>
+            <Badge tone="warning">모의 · {latest?.source ?? 'fixture-replay'}</Badge>
           </div>
           <p className="small muted">실제 SSE로 모의 receipt를 재생합니다. 장치 실물 연결이나 인증 완료를 의미하지 않습니다.</p>
           {stream.error !== null && <p className="error small" role="alert">{stream.error}</p>}
@@ -210,13 +204,16 @@ export function App() {
           <EventDetails events={stream.events} />
         </Section>
         <Section id="resources" number="02" title="자원과 장치"><Resources refresh={refresh} /></Section>
-        <Section id="audit" number="03" title="감사 기록"><Audit refresh={refresh} /></Section>
+        <Section id="audit" number="03" title="감사 기록"><Audit refresh={refresh} integrated={latest?.source === 'integration-journal-replay'} /></Section>
         <Section id="services" number="04" title="연동 현황">
-          <p className="notice">아래는 모두 모의 화면 틀입니다. MEC·handover·FL·MCP의 실제 통합, 승인 또는 실행 기능은 없습니다.</p>
+          <p className="notice">통합 journal에서 수신한 최신 MEC·handover·FL·MCP receipt를 표시합니다. 재생 데이터의 범위는 원본 파일과 수신 시각으로 확인하세요.</p>
           <div className="service-grid">
-            {serviceShells.map((service) => <article className="panel" key={service.title}>
-              <div className="row"><h3>{service.title}</h3><Badge tone="warning">모의 · 미연결</Badge></div>
-              <dl>{service.fields.map(([label, value]) => <div className="field-wide" key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+            {integrationServices(stream.events).map((service) => <article className="panel" key={service.title}>
+              <div className="row"><h3>{service.title}</h3><Badge tone={service.receipt ? 'success' : 'warning'}>{service.receipt ? 'receipt 수신' : '수신 대기'}</Badge></div>
+              {service.receipt ? <>
+                <p className="small muted"><Timestamp at={service.receipt.timestamp} /> · journal 재생</p>
+                <dl>{service.values.map(([label, value]) => <div className="field-wide" key={label}><dt>{label}</dt><dd><code>{value}</code></dd></div>)}</dl>
+              </> : <p className="small muted">통합 receipt 파일을 연결하면 상태와 식별자를 표시합니다.</p>}
             </article>)}
           </div>
         </Section>

@@ -13,7 +13,11 @@ const files = [
   'integration/src/fl-coordinator.mjs',
   'integration/src/mcp-orchestrator.mjs',
   'integration/src/api-gateway.mjs',
-  'integration/src/integration-runtime.mjs'
+  'integration/src/integration-runtime.mjs',
+  'integration/src/api-server.mjs',
+  'integration/src/gateway-control.mjs',
+  'integration/src/integration-store.mjs',
+  'integration/src/integration-utils.mjs'
 ];
 const artifacts = [];
 for (const relative of files) {

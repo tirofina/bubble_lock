@@ -1,0 +1,7 @@
+test_real_mtls_command_hash_authorization_and_revoke (test_gateway_api.CentralGatewayTests.test_real_mtls_command_hash_authorization_and_revoke) ... Executing <Task pending name='Task-2' coro=<CentralGatewayTests.test_real_mtls_command_hash_authorization_and_revoke() running at C:\Users\user\OneDrive\문서\ChatGPT\모비우스4 보안\bubble_lock\tests\integration\test_gateway_api.py:49> cb=[_run_until_complete_cb() at C:\Users\user\anaconda3\Lib\asyncio\base_events.py:180] created at C:\Users\user\anaconda3\Lib\asyncio\runners.py:100> took 0.250 seconds
+ok
+
+----------------------------------------------------------------------
+Ran 1 test in 3.088s
+
+OK

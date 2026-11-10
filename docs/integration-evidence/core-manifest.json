@@ -1,0 +1,47 @@
+{
+  "releaseId": "privacy-bubble-pc-mobius-core",
+  "role": "PC-MOBIUS-CORE",
+  "docRevision": "2.0.0",
+  "runtime": "Mobius4 temporary test server",
+  "oneM2M": {
+    "rvi": "4",
+    "resourcePath": "/Mobius/privacy-bubble-test-ae/bubbleState",
+    "containerDefinition": "org.onem2m.common.moduleclass.binarySwitch",
+    "wireEnvelope": "pb:binarySwitch",
+    "transports": [
+      "HTTP",
+      "MQTT"
+    ]
+  },
+  "artifacts": [
+    "contracts/oneM2M-test-contract.v1.json",
+    "contracts/raspberrypi-gateway.v1.json",
+    "contracts/gateway-event.schema.json",
+    "specializations/binarySwitch.xsd",
+    "db/migrations/001_core_receipts.sql",
+    "src/gateway-bridge.mjs",
+    "src/group-dispatcher.mjs",
+    "src/receipt-journal.mjs"
+  ],
+  "commands": {
+    "install": "npm ci",
+    "test": "npm test",
+    "validate": "npm run validate",
+    "prepareSpecialization": "node scripts/prepare-specialization.mjs --mobius-root <mobius4-source>",
+    "httpContract": "node scripts/run-contract.mjs",
+    "mqttBridge": "npm run bridge",
+    "replayReceipt": "node scripts/replay-receipt.mjs --input <receipt.json>"
+  },
+  "sourceRevision": "working-tree",
+  "generatedAt": "2026-11-10T06:58:51.189Z",
+  "artifactSha256": {
+    "contracts/oneM2M-test-contract.v1.json": "820be582f2587d79f6c24304f216b09a8bf712d1fb17fc44ffa56353016e6f3c",
+    "contracts/raspberrypi-gateway.v1.json": "2594d7bdb9c100f49c90315db22fd88e3788f4d2cf6ec0171246bbffabdc4a90",
+    "contracts/gateway-event.schema.json": "fe213966201de15700116c9298ffe84fad1c59f3e84988fc91554c6db43bff1c",
+    "specializations/binarySwitch.xsd": "b3402ca5c575f624d831a53ca80fe337e8bd28cbdc32ef4ac11ebfd66d2ef868",
+    "db/migrations/001_core_receipts.sql": "7a0c07e41890539eee3fa4cb2633b688efcf280f24c788dee245bc8d84a97b9c",
+    "src/gateway-bridge.mjs": "4580f40c4da317d5985179d14fa0ea2287f93ee8471155bf284d35842ac52bf6",
+    "src/group-dispatcher.mjs": "c8b4182fdb03f94a1d031db0487f7fc9a71b05fc1336cc11b21b66586b3e5863",
+    "src/receipt-journal.mjs": "edde6ef9bde4715dd58a7e236984b4784ac516461c358395aa59b7dfc43764b7"
+  }
+}
