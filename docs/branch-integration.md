@@ -35,7 +35,7 @@
 
 ## 실행 증거
 
-루트 `npm run verify`는 CORE·웹·Gateway·Node/Python 교차시험, 계약 검증, oneM2M dry-run, 중앙 데모·재생, TypeScript 검사·웹 빌드를 실행합니다. `.local/verification/verify/`에 각 실행 로그·SHA-256·exit code가 기록됩니다. 공유 검증 요약은 `integration-verification.json`에 보관합니다.
+루트 `npm run verify`는 CORE·웹·Gateway·Node/Python 교차시험, 계약 검증, oneM2M dry-run, 중앙 데모·재생, TypeScript 검사·웹 빌드를 실행합니다. `.local/verification/verify/`에 각 실행 로그·SHA-256·exit code가 기록됩니다. 공유 검증 요약은 `integration-verification.json`에 보관합니다. 테스트 124개(CORE 42·웹 24·Gateway 57·실제 TLS 교차 1), 웹 빌드, 펌웨어 3개 프로필이 통과했습니다. 펌웨어 바이너리·ELF·map·bootloader·partition은 `.local/firmware/`에 보관하고 SHA-256은 `integration-evidence/firmware-artifacts.json`에 기록했습니다.
 
 실제 Node/Python 교차시험은 매 실행 새 CA·서버·클라이언트 인증서와 loopback 포트를 생성합니다. 중앙에서 발급한 명령을 Python Gateway TransportHub가 받아 해시·승인·권한 회수를 확인합니다. 종료 시 시험 프로세스와 인증서를 정리합니다.
 

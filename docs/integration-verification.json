@@ -185,5 +185,128 @@
     "web-dashboard/test/sse.test.ts": "6c7b4736d69e37956ec5346eb7bda7591e738a3b07ff6cb57726ac71a7c48428",
     "web-dashboard/test/timeline.test.ts": "3a461bf36679d1ef31beb629cf5970b12a957bc28af028b16ff6816870dcf48f",
     "web-dashboard/vite.config.ts": "9a180bc63f8a2dd1b1f644ac05cd79fd81b318867b830bba1fa32c16ce8945a6"
+  },
+  "verifiedImplementationCommit": "413fd319bf57d92a76df9c263f5240c2693e7a24",
+  "firmware": {
+    "status": "PASS",
+    "profiles": 3,
+    "sourceTree": "464d316188b4c2adc84350614d1c6f0bd1d5d397",
+    "sourceBranchCommit": "432a7aa239f73e0db862163ff54909493a80af07",
+    "command": "python -m platformio run -e keyring_compile_minimal -e keyring_compile_st7789 -e keyring_compile_jd9853",
+    "log": "integration-evidence/firmware-build.log",
+    "logSha256": "d9e71f18c3512f2b0a9930451210997b743e6f183681b2a29433598eeb05e310",
+    "buildOutput": ".local/firmware/",
+    "artifacts": [
+      {
+        "profile": "keyring_compile_minimal",
+        "file": "firmware.bin",
+        "path": ".local/firmware/keyring_compile_minimal/firmware.bin",
+        "bytes": 807472,
+        "sha256": "a79ce45ee4036273a4cf16704534c5e6884079d8fd6831377ee8d7783c774584"
+      },
+      {
+        "profile": "keyring_compile_minimal",
+        "file": "firmware.elf",
+        "path": ".local/firmware/keyring_compile_minimal/firmware.elf",
+        "bytes": 19740448,
+        "sha256": "03c799e8a86eaf1cdfaaa5e6dfbb876a12e21908a5c3d6cb66ab32d3a1287e3d"
+      },
+      {
+        "profile": "keyring_compile_minimal",
+        "file": "firmware.map",
+        "path": ".local/firmware/keyring_compile_minimal/firmware.map",
+        "bytes": 16114187,
+        "sha256": "0e3753fa01139794a77af3c0a58b9f8f95043cfa95066ab672c3b253f5e2ffc0"
+      },
+      {
+        "profile": "keyring_compile_minimal",
+        "file": "bootloader.bin",
+        "path": ".local/firmware/keyring_compile_minimal/bootloader.bin",
+        "bytes": 15104,
+        "sha256": "2a71d69b471e20c2bac7fb469f3c6a807b3ebee780e348e5889db0da849ca363"
+      },
+      {
+        "profile": "keyring_compile_minimal",
+        "file": "partitions.bin",
+        "path": ".local/firmware/keyring_compile_minimal/partitions.bin",
+        "bytes": 3072,
+        "sha256": "b16b1b27ccfeecedd026631c54e77065d3913bca810cad5cfe77525fc9938f75"
+      },
+      {
+        "profile": "keyring_compile_st7789",
+        "file": "firmware.bin",
+        "path": ".local/firmware/keyring_compile_st7789/firmware.bin",
+        "bytes": 890416,
+        "sha256": "53ca22d08a1791d036806c66f8897ebbd75bf81cbb92dbce8496e2ebc180ddb4"
+      },
+      {
+        "profile": "keyring_compile_st7789",
+        "file": "firmware.elf",
+        "path": ".local/firmware/keyring_compile_st7789/firmware.elf",
+        "bytes": 21588428,
+        "sha256": "64d64af25b0ed07f7a7366a6fdeb2da831fdccd4ce480c8f09998f56d50cc7ae"
+      },
+      {
+        "profile": "keyring_compile_st7789",
+        "file": "firmware.map",
+        "path": ".local/firmware/keyring_compile_st7789/firmware.map",
+        "bytes": 16682370,
+        "sha256": "6c78828b78058a24f6f5556b55fe9261d8699b68ded6cc855e80af78be0e3055"
+      },
+      {
+        "profile": "keyring_compile_st7789",
+        "file": "bootloader.bin",
+        "path": ".local/firmware/keyring_compile_st7789/bootloader.bin",
+        "bytes": 15104,
+        "sha256": "2a71d69b471e20c2bac7fb469f3c6a807b3ebee780e348e5889db0da849ca363"
+      },
+      {
+        "profile": "keyring_compile_st7789",
+        "file": "partitions.bin",
+        "path": ".local/firmware/keyring_compile_st7789/partitions.bin",
+        "bytes": 3072,
+        "sha256": "b16b1b27ccfeecedd026631c54e77065d3913bca810cad5cfe77525fc9938f75"
+      },
+      {
+        "profile": "keyring_compile_jd9853",
+        "file": "firmware.bin",
+        "path": ".local/firmware/keyring_compile_jd9853/firmware.bin",
+        "bytes": 890032,
+        "sha256": "f3f6ce5fb854ff2d84b4ba0d21a30bee4ce8ad68ebbd3f8bd2991b9ad677610e"
+      },
+      {
+        "profile": "keyring_compile_jd9853",
+        "file": "firmware.elf",
+        "path": ".local/firmware/keyring_compile_jd9853/firmware.elf",
+        "bytes": 21585196,
+        "sha256": "3b6eac4e3417cf852f69af35bf9453d9352de7ba9ec7c031ef78cbd560aa07f5"
+      },
+      {
+        "profile": "keyring_compile_jd9853",
+        "file": "firmware.map",
+        "path": ".local/firmware/keyring_compile_jd9853/firmware.map",
+        "bytes": 16672961,
+        "sha256": "bfaa023753ba73439932f7ec69f8884c87501133a3de581403d4c247172e4926"
+      },
+      {
+        "profile": "keyring_compile_jd9853",
+        "file": "bootloader.bin",
+        "path": ".local/firmware/keyring_compile_jd9853/bootloader.bin",
+        "bytes": 15104,
+        "sha256": "2a71d69b471e20c2bac7fb469f3c6a807b3ebee780e348e5889db0da849ca363"
+      },
+      {
+        "profile": "keyring_compile_jd9853",
+        "file": "partitions.bin",
+        "path": ".local/firmware/keyring_compile_jd9853/partitions.bin",
+        "bytes": 3072,
+        "sha256": "b16b1b27ccfeecedd026631c54e77065d3913bca810cad5cfe77525fc9938f75"
+      }
+    ]
+  },
+  "apiCliSmoke": {
+    "status": "PASS",
+    "healthStatus": 200,
+    "certificateRequiredStatus": 401
   }
 }
