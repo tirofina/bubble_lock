@@ -59,6 +59,24 @@ DB 경로가 다르면 서비스 lock과 협조할 수 없다. 현재 도구의 
 
 daemon의 `BleFleet.capture_journal(device_id)`는 기존 장치 명령 lock으로 직렬화한 같은 capture helper를 제공한다. 자동 호출·파일 저장은 없다. 호출자가 중앙 dispatch와 maintenance 창을 조정해야 한다.
 
+## 장치 journal과 Gateway·CSE 영수증 대조
+
+Gateway 0.2.9의 `bubble-keyring-reconcile`은 위 장치 archive와 `bubble-gateway-state snapshot`으로 생성한 Gateway archive를 사용한다. 같은 장치와 Gateway 설정의 보관본을 선택한다. SQLite 사본과 파일 해시, 장치·Gateway·CSE 자원 식별자를 확인한다. CSE에는 설정된 mTLS로 HTTPS GET만 보낸다.
+
+```sh
+env -i PATH=/usr/bin:/bin /opt/bubble_lock/keyring/raspberry-pi-gateway/.venv/bin/bubble-keyring-reconcile \
+  --env-file /etc/privacy-bubble/gateway.env \
+  --device-archive /var/lib/privacy-bubble-gateway/keyring-journal-archives/capture-001 \
+  --gateway-archive /var/lib/privacy-bubble-gateway/state-archives/snapshot-001
+```
+
+- `matched_applied`는 장치의 완료 기록·bootId·적용 당시 readback, SQLite 본문과 CSE 영수증이 일치한 경우다. 과거 `DUPLICATE` 영수증은 최초 적용 당시 기록과 비교한다.
+- CSE 영수증이 일치하지만 Gateway 전송 완료 표시가 0이면 `gatewayDelivered:false`로 남기고 검토 건수에 포함한다. 비교 과정에서 SQLite 보관본과 CSE 자원은 유지한다.
+- `device_prepared`, `matched_readback_failure`, 기록 누락·불일치는 검토 항목이다. `reviewCount`와 기록별 결과를 함께 확인한다. 장치 기록이 빈 보관본은 결과 목록도 비어 있다.
+- 정상 종료는 비교 보고서를 생성했다는 뜻이다. 입력 보관본의 해시 오류, CSE 인증·통신 오류는 종료 코드 1이다. 결과에는 두 보관본 ID, 조회 시각, 자원, 조회한 영수증 해시가 포함되므로 비공개 위치에 보관한다.
+
+보고서의 정산 상태는 `not-settled`다. 중앙 승인과 장치 journal 회수는 아래 계약을 따른다. [격리 Mobius4 시험](evidence/2026-11-10-journal-reconcile/README.md)
+
 ## 장기 운영에 남은 중앙 계약
 
 PC-MOBIUS-INTEGRATION/CORE와 아래 내용을 같은 revision으로 정한 뒤 reclaim 경로를 구현한다. 키링은 없는 승인을 생성하지 않는다.

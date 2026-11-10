@@ -1,5 +1,7 @@
 # Gateway 로컬 시험
 
+Gateway 0.2.9의 읽기 전용 journal 대조는 최종 wheel에서 기본 73개와 격리 Mobius4 통합 시험을 통과했다. [시험과 재현 명령](../evidence/2026-11-10-journal-reconcile/README.md)
+
 Gateway 0.2.8은 기본 73개와 중앙 명령 통합 5개 시험이 통과했다. 현재 부팅과 다른 `APPLIED`를 미확정으로 처리하고 과거 `DUPLICATE` readback은 보존한다. [부팅 ID 시험](../evidence/2026-11-10-receipt-boot/README.md)
 
 Gateway 0.2.7은 기본 71개, 중앙 명령 통합 4개, 별도 MQTT 6개 시험이 통과했다. 중앙 명령 통합은 실제 Mosquitto의 명령·ACK 전송과 Mobius4 영수증 대조를 포함한다. [수신 시험](../evidence/2026-11-10-command-ingress/README.md) · [브로커 시험](../evidence/2026-11-10-mqtt-command-wire/README.md)

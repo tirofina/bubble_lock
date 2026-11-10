@@ -263,7 +263,9 @@ class TransportHub:
             raise RemoteResponseError("oneM2M HTTP response has no valid result code", status_code=status) from exc
         return rsc
 
-    async def _existing(self, rqi: str, container: str, rn: str, payload: dict[str, Any]) -> None:
+    async def read_content(self, rqi: str, container: str) -> Any:
+        """Read the native content instance named by its original request ID."""
+        rn = "gw-" + hashlib.sha256(rqi.encode("utf-8")).hexdigest()
         read_rqi = "read-" + hashlib.sha256(rqi.encode("utf-8")).hexdigest()
         url = self._cse_url + _resource_path(container) + "/" + rn
         status, headers, document = await self._http_json("GET", url, headers=self._m2m_headers(read_rqi))
@@ -272,8 +274,11 @@ class TransportHub:
         if (status != 200 or rsc != 2000 or not isinstance(existing, dict)
                 or existing.get("rn") != rn or "con" not in existing):
             raise RemoteResponseError("unable to establish existing content identity", rsc, status)
-        if _json(existing["con"]) != _json(payload):
-            raise RemoteResponseError("existing oneM2M resource has different content", 4105, status)
+        return existing["con"]
+
+    async def _existing(self, rqi: str, container: str, payload: dict[str, Any]) -> None:
+        if _json(await self.read_content(rqi, container)) != _json(payload):
+            raise RemoteResponseError("existing oneM2M resource has different content", 4105, 200)
 
     async def publish(self, rqi: str, container: str, payload: dict[str, Any]) -> None:
         if container.startswith("@core/"):
@@ -303,7 +308,7 @@ class TransportHub:
                 if rsc == 2001:
                     return
                 if rsc == 4105:
-                    await self._existing(rqi, container, rn, payload)
+                    await self._existing(rqi, container, payload)
                     return
                 # A real CSE rejection is terminal for this attempt. HTTPS is a
                 # network fallback, not a second route around permission denial.
@@ -322,7 +327,7 @@ class TransportHub:
         if 200 <= status < 300 and rsc == 2001:
             return
         if rsc == 4105:
-            await self._existing(rqi, container, rn, payload)
+            await self._existing(rqi, container, payload)
             return
         raise RemoteResponseError("oneM2M HTTPS request rejected", rsc, status)
 

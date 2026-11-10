@@ -22,6 +22,8 @@ JOURNAL_UUIDS = {
 HEX32 = re.compile(r"[0-9a-f]{32}\Z")
 HEX64 = re.compile(r"[0-9a-f]{64}\Z")
 HEX8 = re.compile(r"[0-9a-f]{8}\Z")
+RECORD_FIELDS = {"commandId", "payloadHash", "bootId", "ownershipEpoch", "grantRevision", "phase",
+                 "ackCode", "desiredState", "readback", "acceptedUptimeMs", "appliedUptimeMs", "storageCrc32"}
 
 
 def validate_identity(identity: dict[str, Any], device_id: str) -> None:
@@ -72,6 +74,8 @@ def _part(frame: dict[str, Any], manifest: dict[str, Any], index: int, part: int
 
 
 def _record(record: dict[str, Any], manifest: dict[str, Any]) -> None:
+    if set(record) != RECORD_FIELDS:
+        raise BleProtocolError("invalid journal record shape")
     for key in ("commandId", "bootId"):
         if not isinstance(record[key], str) or IDENTIFIER.fullmatch(record[key]) is None:
             raise BleProtocolError("invalid journal record identity")
@@ -161,10 +165,7 @@ def _new_file(path: Path, data: bytes) -> None:
         os.fsync(handle.fileno())
 
 
-def write_archive(snapshot: dict[str, Any], identity: dict[str, Any], profile: str, output: Path) -> Path:
-    """Create a private new archive; never replace or prune source/device records."""
-    if os.name != "posix":
-        raise RuntimeError("journal archive requires POSIX owner-only file permissions")
+def _validate_snapshot(snapshot: dict[str, Any], identity: dict[str, Any]) -> None:
     validate_identity(identity, identity.get("deviceId", ""))
     _manifest(snapshot["manifest"], identity)
     if len(snapshot["records"]) != snapshot["manifest"]["recordCount"]:
@@ -174,6 +175,35 @@ def write_archive(snapshot: dict[str, Any], identity: dict[str, Any], profile: s
     if (len({r["commandId"] for r in snapshot["records"]}) != len(snapshot["records"])
             or sum(r["phase"] == "prepared" for r in snapshot["records"]) != snapshot["manifest"]["preparedCount"]):
         raise BleProtocolError("inconsistent journal archive membership")
+
+
+def read_archive(directory: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Read the complete export, verifying its local digest and membership."""
+    with (directory / "manifest.json").open("rb") as stream:
+        archive = _object(stream.read(8193), 8192)
+    if (type(archive.get("archiveVersion")) is not int or archive["archiveVersion"] != 1
+            or archive.get("settlementStatus") != "not-settled" or archive.get("deviceJournalModified") is not False
+            or not isinstance(archive.get("identity"), dict) or not isinstance(archive.get("deviceSnapshot"), dict)
+            or not _integer(archive.get("recordCount"), maximum=32)):
+        raise BleProtocolError("invalid journal archive manifest")
+    with (directory / "records.jsonl").open("rb") as stream:
+        data = stream.read(32 * 2048 + 1)
+    descriptor = [{"path": "records.jsonl", "bytes": len(data), "sha256": hashlib.sha256(data).hexdigest()}]
+    if len(data) > 32 * 2048 or _json(archive.get("files")) != _json(descriptor) or (data and not data.endswith(b"\n")):
+        raise BleProtocolError("journal archive bytes do not match manifest")
+    lines = data.splitlines()
+    if len(lines) != archive["recordCount"]:
+        raise BleProtocolError("journal archive record count mismatch")
+    records = [_object(line, 2048) for line in lines]
+    _validate_snapshot({"manifest": archive["deviceSnapshot"], "records": records}, archive["identity"])
+    return archive, records
+
+
+def write_archive(snapshot: dict[str, Any], identity: dict[str, Any], profile: str, output: Path) -> Path:
+    """Create a private new archive; never replace or prune source/device records."""
+    if os.name != "posix":
+        raise RuntimeError("journal archive requires POSIX owner-only file permissions")
+    _validate_snapshot(snapshot, identity)
     output.mkdir(mode=0o700, parents=False, exist_ok=False)
     data = b"".join(_json(record) for record in snapshot["records"])
     _new_file(output / "records.jsonl", data)
