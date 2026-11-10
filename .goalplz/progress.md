@@ -1040,3 +1040,12 @@ HTTPS 선택 보류 commit `420c07df34944681f86b763f35765db849bd55ae`를 `origin
 - 경계값과 임시 읽기 오류, 축약 관측, BLE 및 Gateway 관측 계약을 다루는 회귀시험 소스를 추가했다. 빌드·시험·flash·LCD/배터리 실물 검증은 미실행이다. goal은 active/progress다.
 
 배터리 경보 commit `dd71dace86f89367cd6a51b99bbcbc0f5d980e07`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `738bced..dd71dac`다.
+
+## 2026-11-11 — Pi에서 r18 배터리 경보 전환 기록
+
+직전 goal turn은 r18 저전압 경보를 BLE·LCD·native CSE 관측에 추가한 progress다. DOC-REV 2.0.0 및 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 head와 Gateway 관련 계약은 직전과 같다.
+
+- Gateway `0.2.33`의 배터리 기록 모드는 인증된 r18 알림에서 정상 잔량, 방전 중 중간 구간, 경보 설정, 충전 중 중간 구간, 경보 해제를 한 BLE 세션 안에서 대조한다. 반대 경보, 필드 누락, 잔량 미확인을 구분하고 실제 팩과 계측 IC 모사 입력을 별도로 표기한다. [Pi 실행 절차](../keyring/raspberry-pi-gateway/TESTING.md#r18-배터리-경보-기록)
+- 회귀시험 소스는 임계값, 세션 분리, 알림 필드 누락, 센서 읽기 미확인과 다른 기록 모드의 출력 범위를 다룬다. 빌드·시험·Pi 배포·실물 기록은 미실행이다. LCD·충전 표시와 CSE 수신은 별도 증거가 필요하다. goal은 active/progress다.
+
+Pi 배터리 기록 commit `3e4185bf9ecdc6c542686c65bd6bb5134c5a033e`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `49341a8..3e4185b`다.
