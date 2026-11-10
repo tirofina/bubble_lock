@@ -23,6 +23,7 @@ uint32_t sequence = UINT32_MAX - 10;
 uint8_t detailSection = 0;
 uint64_t lastObservation = 0;
 bool connected = true, authenticated = true, storageHealthy = true, observationDirty = true;
+bool ObservationOnly = false;
 bool linkMux = false;
 uint16_t peerConnection = 1;
 uint32_t connectionGeneration = 1;
@@ -145,4 +146,17 @@ int main() {
   assert(fallback["sensorValues"]["wakePins"].as<uint64_t>() == UINT64_MAX);
   assert(fallback["sensorValues"]["power"] == "disabled");
   std::puts("PASS minimal fallback keeps both press counts and wake fields");
+
+  ObservationOnly = true;
+  storageHealthy = false;
+  headphone.state = "configured_off";
+  detailSection = 2;
+  publishObservation();
+  auto bringup = readFrame(2);
+  assert(bringup["sensorValues"]["journal"] == "disabled");
+  assert(bringup["sensorValues"]["journalCapacity"].is<unsigned>());
+  assert(bringup["sensorValues"]["journalCapacity"].as<unsigned>() == 0);
+  assert(bringup["sensorValues"]["journalUsed"].isNull());
+  assert(bringup["sensorValues"]["journalPrepared"].isNull());
+  std::puts("PASS observation-only health reports the command journal as disabled");
 }

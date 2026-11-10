@@ -5,7 +5,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
-from bubble_gateway.ble import BleFleet, BleUnavailable
+from bubble_gateway.ble import BleFleet, BleProtocolError, BleUnavailable
 from bubble_gateway.ble_characterize import summarize
 from bubble_gateway.model import payload_hash
 from helpers import command, config, device_receipt
@@ -284,6 +284,30 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(snapshot["connected"])
             self.assertFalse(snapshot["commandReady"])
 
+    async def test_r18_bringup_accepts_observations_and_rejects_cached_write_handles(self):
+        def bringup(*args, **kwargs):
+            client = self.factory(*args, **kwargs)
+            client.identity.update(boardRevision="r18-hand-solder", firmwareRevision="keyring-0.7.13-bringup")
+            client.write_gatt_char = AsyncMock()
+            return client
+
+        self.peer.discovered = object()
+        self.peer.seen.set()
+        with patch("bubble_gateway.ble.BleakClient", side_effect=bringup):
+            self.watcher = asyncio.create_task(self.fleet._watch(self.peer))
+            await self.ready(1)
+            client = self.clients[0]
+            self.assertIsNotNone(client.services.get_service(None).get_characteristic(self.fleet.command_uuid))
+            self.assertEqual(self.peer.observations.qsize(), 1)
+            self.assertTrue(self.fleet.snapshot()[0]["connected"])
+            self.assertIsNone(self.fleet.command_session("kr-test"))
+            cmd = command()
+            with self.assertRaisesRegex(BleUnavailable, "does not support command"):
+                await self.fleet.execute(cmd, 1000, payload_hash(cmd))
+            with self.assertRaisesRegex(BleProtocolError, "does not expose the command journal"):
+                await self.fleet.capture_journal("kr-test")
+            client.write_gatt_char.assert_not_awaited()
+
     async def test_authorized_generation_cannot_write_on_replacement(self):
         old, current = await self.reconnect()
         old_generation = self.peer.generation - 2
@@ -427,6 +451,7 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
         original = SimpleNamespace(is_connected=True, write_gatt_char=AsyncMock(side_effect=switch_connection))
         self.peer.client = original
         self.peer.ready.set()
+        self.peer.command_writable = True
         cmd = command()
         with self.assertRaises(BleUnavailable):
             await self.fleet.execute(cmd, 1000, payload_hash(cmd))

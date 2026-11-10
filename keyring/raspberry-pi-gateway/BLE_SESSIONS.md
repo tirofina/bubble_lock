@@ -43,3 +43,7 @@ Rubric R02·R03·R10 연결 항목이며 다음 ID는 KEYRING 내부 제안 ID�
 | KR-BLE-SESSION-05 | test_failed_handshake_never_marks_session_ready | handshake 실패 시 ready 설정0회 |
 
 수정 전5개 실패, 수정 후 기존 시험을 포함한42개 통과다. wheel을 빌드하고 별도 경로에 설치한 패키지로도42개가 통과했다. [실행 로그·패키지 SHA256](../evidence/2026-10-30-ble-sessions/README.md)에 연결한다. 시험은 fake GATT·합성 명령·임시 DB를 사용했다. 실제 BLE/BlueZ·장비·Pi·중앙 통합·운영 서비스 시험은 실행하지 않았다.
+
+## r18 관측 전용 revision
+
+Gateway 0.2.37은 인증된 `r18-hand-solder`의 `-bringup` revision에서 BlueZ 캐시에 기존 명령 WRITE 특성이 보여도 `commandReady:false`로 처리한다. 명령 전송과 저널 selector 쓰기를 차단하고 identity·관측 수신은 유지한다. [r18 초기 구동](../pcb/BRING_UP.md)

@@ -1,6 +1,22 @@
 #pragma once
+#ifndef KEYRING_R18_BRINGUP
+#define KEYRING_R18_BRINGUP 0
+#endif
 #if !defined(KEYRING_IGNORE_PROVISIONING) && __has_include("provisioning.h")
 #include "provisioning.h"
+#endif
+
+// A device's normal provisioning may enable peripherals. First power-on still
+// uses the observation-only settings selected by the PlatformIO environment.
+#if KEYRING_R18_BRINGUP
+#undef KEYRING_DISPLAY_PROFILE
+#define KEYRING_DISPLAY_PROFILE 0
+#undef KEYRING_ENABLE_AUDIO
+#define KEYRING_ENABLE_AUDIO 0
+#undef KEYRING_ENABLE_SD_LOG
+#define KEYRING_ENABLE_SD_LOG 0
+#undef KEYRING_ENABLE_SLEEP
+#define KEYRING_ENABLE_SLEEP 0
 #endif
 #ifndef KEYRING_PASSKEY
 #define KEYRING_PASSKEY 0
@@ -85,6 +101,7 @@
 #endif
 
 // Configuration errors fail at build time; this task does not run a build.
+static_assert(KEYRING_R18_BRINGUP == 0 || KEYRING_R18_BRINGUP == 1, "Choose a supported r18 build mode");
 static_assert(KEYRING_ENABLE_SLEEP == 0 || KEYRING_ENABLE_SLEEP == 1, "Sleep option must be 0 or 1");
 static_assert(KEYRING_IDLE_SLEEP_MS >= 10000UL && KEYRING_IDLE_SLEEP_MS <= 3600000UL, "Idle sleep range is 10s..1h");
 static_assert(KEYRING_SLEEP_POLL_MS >= 1000UL && KEYRING_SLEEP_POLL_MS <= 300000UL, "Sleep timer range is 1s..5min");

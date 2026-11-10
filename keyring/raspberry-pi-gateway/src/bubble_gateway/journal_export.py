@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from .ble import BleProtocolError, IDENTIFIER, MAX_UPTIME_MS, _integer, _object
+from .ble import BleProtocolError, IDENTIFIER, MAX_UPTIME_MS, _integer, _object, _r18_bringup
 from .model import parse_time
 
 JOURNAL_UUIDS = {
@@ -103,6 +103,8 @@ def _record(record: dict[str, Any], manifest: dict[str, Any]) -> None:
 async def capture(client: Any, identity: dict[str, Any], profile: str) -> dict[str, Any]:
     """Caller owns an authenticated client and its exclusive per-device operation lock."""
     validate_identity(identity, identity.get("deviceId", ""))
+    if _r18_bringup(identity):
+        raise BleProtocolError("r18 bring-up firmware does not expose the command journal")
     uuid = JOURNAL_UUIDS[profile]
     if client.services.get_characteristic(uuid) is None:
         raise BleProtocolError("firmware does not expose the journal export extension")

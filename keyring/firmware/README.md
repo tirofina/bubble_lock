@@ -6,6 +6,8 @@ ESP32-S3-WROOM-1-N16R8 / r18-hand-solder 보드를 대상으로 작성한 소스
 
 배송 대기 중에는 Adafruit Feather ESP32 V2와 1.54인치 ST7789에서 화면·버튼·BLE 관측을 [별도 벤치 스케치](feather_probe/README.md)로 시험한다.
 
+r18 제작 PCB의 첫 구동에는 `keyring_r18_bringup`을 사용한다. 별도 BLE revision `keyring-0.7.13-bringup`으로 버튼·센서·전원 관측을 제공하고 출력 명령과 장치 저널은 비활성화한다. [초기 구동 절차](../pcb/BRING_UP.md)
+
 ## 구성과 준비
 
 `platformio.ini`는 espressif32 6.9.0, Arduino framework, ArduinoJson 6.21.5를 고정한다. 내장 ESP32 BLE 라이브러리를 사용한다. 그래픽 dependency Arduino_GFX는 commit 3cc08c4e9ab6d85807e49b657d73fae10871616e으로 고정했다. 2026-10-29 사용자 허가로 개발 dependency 설치와 로컬 compile profile 빌드를 진행했다. 실제 결과는 [BUILD_PROFILES](BUILD_PROFILES.md)에 기록한다. 보드 프로필의 개발보드 이름은 빌드 타깃 선택이며 실제 대상은 커스텀 N16R8 보드다. 16MB flash, octal PSRAM, USB CDC를 설정했다. `partitions.csv`는 factory 앱 하나와 NVS를 할당하며 OTA는 구현하지 않았다.

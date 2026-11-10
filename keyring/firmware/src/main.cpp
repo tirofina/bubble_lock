@@ -40,7 +40,12 @@ extern "C" esp_err_t __wrap_nvs_flash_init() {
 }
 
 namespace {
-constexpr char FirmwareRevision[] = "keyring-0.7.12";
+#if KEYRING_R18_BRINGUP
+constexpr char FirmwareRevision[] = "keyring-0.7.13-bringup";
+#else
+constexpr char FirmwareRevision[] = "keyring-0.7.13";
+#endif
+constexpr bool ObservationOnly = KEYRING_R18_BRINGUP != 0;
 #if defined(KEYRING_LEGACY_GATT) && KEYRING_LEGACY_GATT
 constexpr char ServiceUuid[] = "8b8f0001-8e7a-4f36-a8c2-1c9b5d620001";
 constexpr char IdentityUuid[] = "8b8f0002-8e7a-4f36-a8c2-1c9b5d620001";
@@ -509,7 +514,7 @@ void publishObservation() {
     doc["state"] = outputState;
     JsonObject values = doc.createNestedObject("sensorValues");
     values["detail"] = detail; values["fault"] = fault;
-    values["journal"] = storageHealthy ? "ready" : "error";
+    values["journal"] = ObservationOnly ? "disabled" : storageHealthy ? "ready" : "error";
     if (sensors.fuel) values["batteryAlert"] = sensors.batteryLow; else values["batteryAlert"] = nullptr;
     buttonPresses.append(values);
     return values;
@@ -548,7 +553,7 @@ void publishObservation() {
     }
     if (storageHealthy) { values["journalUsed"] = used; values["journalPrepared"] = prepared; }
     else { values["journalUsed"] = nullptr; values["journalPrepared"] = nullptr; }
-    values["journalCapacity"] = JournalSlots;
+    values["journalCapacity"] = ObservationOnly ? 0 : JournalSlots;
     appendWake(values);
     values["audio"] = headphone.speakerAllowed() ? audio.status() : "blocked_headphone";
     values["headphone"] = headphone.status();
@@ -901,14 +906,17 @@ void initBle() {
   BLEService *service = server->createService(ServiceUuid);
   identityChar = service->createCharacteristic(IdentityUuid, BLECharacteristic::PROPERTY_READ);
   observationChar = service->createCharacteristic(ObservationUuid, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+  // Keep the inert receipt subscription for existing observation clients.
   receiptChar = service->createCharacteristic(ReceiptUuid, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
-  commandChar = service->createCharacteristic(CommandUuid, BLECharacteristic::PROPERTY_WRITE);
-  journalChar = service->createCharacteristic(JournalUuid, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
+  if (!ObservationOnly) {
+    commandChar = service->createCharacteristic(CommandUuid, BLECharacteristic::PROPERTY_WRITE);
+    journalChar = service->createCharacteristic(JournalUuid, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
+    commandChar->setAccessPermissions(ESP_GATT_PERM_WRITE_ENC_MITM);
+    journalChar->setAccessPermissions(ESP_GATT_PERM_READ_ENC_MITM | ESP_GATT_PERM_WRITE_ENC_MITM);
+  }
   identityChar->setAccessPermissions(ESP_GATT_PERM_READ_ENC_MITM);
   observationChar->setAccessPermissions(ESP_GATT_PERM_READ_ENC_MITM);
   receiptChar->setAccessPermissions(ESP_GATT_PERM_READ_ENC_MITM);
-  commandChar->setAccessPermissions(ESP_GATT_PERM_WRITE_ENC_MITM);
-  journalChar->setAccessPermissions(ESP_GATT_PERM_READ_ENC_MITM | ESP_GATT_PERM_WRITE_ENC_MITM);
   observationTx.characteristic = observationChar; receiptTx.characteristic = receiptChar;
   for (Tx *stream : {&observationTx, &receiptTx}) {
     stream->cccd = new BLE2902();
@@ -987,26 +995,37 @@ void setup() {
 #endif
   snprintf(bootId, sizeof(bootId), "%08lx%08lx%08lx%08lx", static_cast<unsigned long>(esp_random()),
       static_cast<unsigned long>(esp_random()), static_cast<unsigned long>(esp_random()), static_cast<unsigned long>(esp_random()));
-  loadJournal(); initSensors();
+  if (!ObservationOnly) loadJournal();
+  initSensors();
   headphone.begin(readRegisters, writeRegister);
   supply.begin(readRegisters, writeRegister16);
   recoverAccelerometer(uptime());
-  esp_timer_create_args_t timerArgs = {};
-  timerArgs.callback = motorExpired; timerArgs.name = "motor-stop";
-  if (esp_timer_create(&timerArgs, &motorTimer) != ESP_OK) motorTimer = nullptr;
-  commandQueue = xQueueCreate(4, sizeof(Frame));
-  journalRequests = xQueueCreate(4, sizeof(JournalRequest));
-  provisioned = KEYRING_PASSKEY >= 100000 && KEYRING_PASSKEY <= 999999 && identifier(deviceId) && commandQueue && journalRequests;
+  if (!ObservationOnly) {
+    esp_timer_create_args_t timerArgs = {};
+    timerArgs.callback = motorExpired; timerArgs.name = "motor-stop";
+    if (esp_timer_create(&timerArgs, &motorTimer) != ESP_OK) motorTimer = nullptr;
+    commandQueue = xQueueCreate(4, sizeof(Frame));
+    journalRequests = xQueueCreate(4, sizeof(JournalRequest));
+  }
+  provisioned = KEYRING_PASSKEY >= 100000 && KEYRING_PASSKEY <= 999999 && identifier(deviceId)
+      && (ObservationOnly || (commandQueue && journalRequests));
   if (!provisioned) {
     Serial.println("KEYRING LOCKED: set a per-device passkey and valid identity before enabling BLE.");
     return;
   }
   initializeAudioWhenQuiet(); // I2S installation also waits for the other receiver's quiet state.
-  auxRail::begin();
+  if (!ObservationOnly) auxRail::begin();
   peripherals.begin();
   initBle(); sampleSensors(); publishObservation();
   Serial.printf("KEYRING ready: %s, storage=%s, radioSleep=%s\n", deviceId,
-      storageHealthy ? "ready" : "error", radioSleepEnabled ? "enabled" : "unavailable");
+      ObservationOnly ? "disabled" : storageHealthy ? "ready" : "error",
+      radioSleepEnabled ? "enabled" : "unavailable");
+  if (ObservationOnly) {
+    Serial.printf("KEYRING bringup: motor=%d aux=%d fault=%d fuel=%s accel=%s motion=%s\n",
+        static_cast<int>(readState()), gpio_get_level(static_cast<gpio_num_t>(board::AuxEnable)),
+        digitalRead(board::MainFaultN) == LOW, sensors.fuel ? "ok" : "unavailable",
+        sensors.accel ? "ok" : "unavailable", motion.ready() ? "ready" : "unavailable");
+  }
 }
 void loop() {
   if (!provisioned) { delay(100); return; }
@@ -1017,9 +1036,11 @@ void loop() {
   if (connected) powerState::activity(now);
   if (disconnected) {
     stopMotor(); observationTx.clear(); receiptTx.clear();
-    xQueueReset(commandQueue);
-    xQueueReset(journalRequests); memset(&journalCapture, 0, sizeof(journalCapture));
-    setGattReadValue(journalRead, {});
+    if (!ObservationOnly) {
+      xQueueReset(commandQueue);
+      xQueueReset(journalRequests); memset(&journalCapture, 0, sizeof(journalCapture));
+      setGattReadValue(journalRead, {});
+    }
     publishObservation(); // The next authenticated peer reads before it subscribes.
     portENTER_CRITICAL(&linkMux); disconnected = false; portEXIT_CRITICAL(&linkMux);
     BLEDevice::startAdvertising();
@@ -1038,22 +1059,24 @@ void loop() {
   if (changedConfirm || changedPanic) observationDirty = true;
   if (confirm.pressed || panic.pressed || changedConfirm || changedPanic) powerState::activity(now);
   if (motion.poll(now)) { powerState::activity(now); observationDirty = true; }
-  // Preserve every receipt notification frame. A new command waits until its predecessor drains.
-  if (receiptTx.active.empty() && receiptTx.pending.empty()) {
-    if (xQueueReceive(commandQueue, &processingFrame, 0) == pdTRUE) processCommand(processingFrame);
-  }
-  JournalRequest journalRequest = {};
-  if (xQueueReceive(journalRequests, &journalRequest, 0) == pdTRUE) processJournalRequest(journalRequest);
-  if (journalCapture.active && uptime() - journalCapture.capturedAt >= 120000) {
-    memset(&journalCapture, 0, sizeof(journalCapture));
-    setGattReadValue(journalRead, {});
+  if (!ObservationOnly) {
+    // Preserve every receipt notification frame. A new command waits until its predecessor drains.
+    if (receiptTx.active.empty() && receiptTx.pending.empty()) {
+      if (xQueueReceive(commandQueue, &processingFrame, 0) == pdTRUE) processCommand(processingFrame);
+    }
+    JournalRequest journalRequest = {};
+    if (xQueueReceive(journalRequests, &journalRequest, 0) == pdTRUE) processJournalRequest(journalRequest);
+    if (journalCapture.active && uptime() - journalCapture.capturedAt >= 120000) {
+      memset(&journalCapture, 0, sizeof(journalCapture));
+      setGattReadValue(journalRead, {});
+    }
   }
   supply.poll(uptime());
   recoverAccelerometer(uptime());
   if (uptime() - lastSensorRead >= board::ObserveMs) { sampleSensors(); observationDirty = true; }
   if (uptime() - lastObservation >= board::ObserveMs) observationDirty = true;
   if (observationDirty) publishObservation();
-  auxRail::service();
+  if (!ObservationOnly) auxRail::service();
   if (now >= nextScreenAt) {
     KeyringScreen screen;
     screen.linked = connected; screen.authenticated = authenticated;
@@ -1065,8 +1088,9 @@ void loop() {
     screen.supplyReadAt = supply.reading().readAt;
     peripherals.update(screen); nextScreenAt = now + 250;
   }
-  receiptTx.tick(now); observationTx.tick(now);
-  considerSleep(now);
+  if (!ObservationOnly) receiptTx.tick(now);
+  observationTx.tick(now);
+  if (!ObservationOnly) considerSleep(now);
   // Yield to BLE and idle tasks. Manual light-sleep is deliberately not entered with active BLE.
   delay(5);
 }

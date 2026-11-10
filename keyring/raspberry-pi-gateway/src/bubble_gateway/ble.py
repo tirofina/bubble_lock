@@ -46,6 +46,9 @@ class BleProtocolError(RuntimeError):
 class BleUnavailable(ConnectionError):
     """An enrolled keyring currently has no authenticated GATT session."""
 
+def _r18_bringup(identity: dict[str, Any]) -> bool:
+    return identity["boardRevision"] == "r18-hand-solder" and identity["firmwareRevision"].endswith("-bringup")
+
 
 def _utc(value: datetime) -> str:
     return value.isoformat(timespec="milliseconds").replace("+00:00", "Z")
@@ -317,7 +320,9 @@ class BleFleet:
                         lambda _, data, session=generation: self._observation_fragment(peer, data, session))
                     self._require_session(peer, client, generation, ready=False)
                     command = service.get_characteristic(self.command_uuid)
-                    peer.command_writable = command is not None and "write" in command.properties
+                    # BlueZ may still list writable handles from the full image.
+                    peer.command_writable = (not _r18_bringup(identity)
+                                             and command is not None and "write" in command.properties)
                     peer.ready.set()
                     peer.last_error = None
                     if self._trace is not None:
@@ -501,6 +506,8 @@ class BleFleet:
                 client = peer.client
                 generation = peer.generation if expected_generation is None else expected_generation
                 self._require_session(peer, client, generation)
+                if not peer.command_writable:
+                    raise BleUnavailable("authenticated BLE session does not support command writes")
                 wire_remaining = int((expires - time.monotonic()) * 1000)
                 if wire_remaining <= 0:
                     raise asyncio.TimeoutError("dispatch deadline elapsed while waiting for BLE")

@@ -103,6 +103,7 @@ class BleMockTests(unittest.IsolatedAsyncioTestCase):
         self.peer = self.fleet._peers["kr-test"]
         self.peer.identity = dict(bootId="boot-test", firmwareRevision="keyring-0.7.0")
         self.peer.ready.set()
+        self.peer.command_writable = True
 
     async def test_execute_20_byte_chunks_ignores_unrelated_receipt(self):
         cmd = command()
