@@ -1,0 +1,17 @@
+{
+  "documentRevision": "2.0.0",
+  "scope": "isolated-receipt-process-startup-with-empty-queue",
+  "observedAt": "2026-11-10T13:52:19.981Z",
+  "teamRevision": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+  "dependencies": { "ajv": "8.17.1", "ajv-formats": "3.0.1", "pg": "8.16.3" },
+  "dependencyInstall": { "manager": "pnpm", "lifecycleScriptsEnabled": false, "offlineCacheMiss": "ajv@8.17.1" },
+  "readyStatus": "SCOPED_RECEIPT_PROCESS_READY",
+  "nodeProcessObservedRunning": true,
+  "database": "keyring_receipt_dev",
+  "databaseApplicationName": "keyring-scoped-receipt",
+  "databaseInboxPollObserved": true,
+  "rows": { "keyring_command_settlement": 0, "keyring_receipt_notification": 0 },
+  "issuedCommandsBeforeStartup": 0,
+  "cseReceiptReadObserved": false,
+  "physicalReceiptObserved": false
+}

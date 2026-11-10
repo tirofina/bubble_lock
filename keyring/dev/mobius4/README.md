@@ -114,9 +114,11 @@ npm install --prefix $tool --ignore-scripts --no-package-lock
 node "$tool/run.mjs"
 ```
 
+`npm`이 없는 PC에서는 `pnpm --dir $tool install --ignore-scripts --lockfile=false`로 같은 고정 의존성을 준비한다.
+
 정산 프로세스는 scoped 명령 API의 저장된 `runtime.json`을 읽고, CSE 원본을 인증 조회해 대기열과 정산 테이블을 처리한다. 기본으로 최근 승인 120분을 반복해서 확인한다. `--lookback-minutes`로 이전 승인 구간을 포함하거나 `--once`로 복구 한 페이지와 대기열 작업 최대 10건만 실행할 수 있다. 종료할 때는 실행 터미널에서 Ctrl+C를 사용한다. DB만 멈추려면 같은 Compose 파일로 `stop postgres`를 호출한다.
 
-이 개발 프로세스의 입력은 팀 상태와 CSE 원본 조회다. CORE 콜백 인증·구독은 운영 연동에서 별도로 구성한다. 2026-11-10에 전용 DB와 두 빈 KEYRING 테이블을 확인했다. Node 의존성 설치와 정산 프로세스 실행은 남아 있다. [전용 DB 준비 증거](../../evidence/2026-11-10-receipt-database/provisioning.json)
+이 개발 프로세스의 입력은 팀 상태와 CSE 원본 조회다. CORE 콜백 인증·구독은 운영 연동에서 별도로 구성한다. 2026-11-10에 전용 DB와 두 빈 KEYRING 테이블을 준비하고, Node 프로세스의 시작과 PostgreSQL 대기열 조회를 확인했다. 실제 명령 영수증의 조회·정산은 남아 있다. [전용 DB 준비 증거](../../evidence/2026-11-10-receipt-database/provisioning.json) · [정산 프로세스 시작 증거](../../evidence/2026-11-10-scoped-receipt-runtime/startup.json)
 
 ### Feather 벤치 명령 API
 

@@ -25,7 +25,8 @@ async function main() {
   const context = await loadScopedReceiptContext({ teamRoot: fileURLToPath(new URL('team-source/', local)),
     state: new URL('runtime.json', local) });
   const pool = new pg.Pool({ host: '127.0.0.1', port: 5544, user: 'keyring_receipt_dev', database: 'keyring_receipt_dev',
-    password, ssl: false, max: 3, connectionTimeoutMillis: 5000, statement_timeout: 10000 });
+    password, ssl: false, application_name: 'keyring-scoped-receipt', max: 3,
+    connectionTimeoutMillis: 5000, statement_timeout: 10000 });
   pool.on('error', () => log('DATABASE_CONNECTION_LOST'));
   const stop = new AbortController();
   const requestStop = () => stop.abort();
