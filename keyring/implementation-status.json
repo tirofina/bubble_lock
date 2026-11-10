@@ -116,15 +116,15 @@
   "firmwareRevision": "keyring-0.7.0",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "2014b18bb44ce5e9304cb9494de743313f3bf1e2",
+    "sourceCommit": "cd4818b77f2ef05552e4fabe3c096ac9942d739e",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "2014b18bb44ce5e9304cb9494de743313f3bf1e2",
-    "lastPushedCommit": "2014b18bb44ce5e9304cb9494de743313f3bf1e2",
-    "latestCheckpoint": "0.2.5 command readiness and graceful stop; 63 basic and 2 central mTLS/GATT-mock/CSE cases passed and pushed",
-    "lastPushedCommitBeforeThisCheckpoint": "615de7908cce11908f76eefdb911a09e9d00c941"
+    "latestLocalSourceCommit": "cd4818b77f2ef05552e4fabe3c096ac9942d739e",
+    "lastPushedCommit": "cd4818b77f2ef05552e4fabe3c096ac9942d739e",
+    "latestCheckpoint": "Feather 0.2.0 command profile pushed with two compiler profiles and four native test groups; physical flash and command/ACK pending",
+    "lastPushedCommitBeforeThisCheckpoint": "7b2b295523bc147fae6c2d3f2c3255bc901aea72"
   },
   "gatewayRevision": "0.2.5",
   "pendingValidationScope": "Pi deployment of 0.2.5 and physical command/systemd, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
@@ -156,10 +156,10 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "2014b18bb44ce5e9304cb9494de743313f3bf1e2",
+    "sourceCommit": "cd4818b77f2ef05552e4fabe3c096ac9942d739e",
     "sourceValidation": "Feather 0.1.1 observation and 0.2.0 command profiles compiled; native command code passed four test groups with stub NVS/GPIO. Physical command/ACK pending. Previous Gateway 0.2.5 and physical observation evidence retained.",
     "goalComplete": false,
-    "pendingInput": null,
+    "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
     "currentDependencyState": "Feather 0.2.0 is prepared for isolated LED command verification; a flash decision and subsequent Pi/Mobius4 execution are pending, plus production PCB and CORE settlement.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
@@ -437,6 +437,7 @@
     "nativeTestGroupsPassed": 4,
     "flashPerformed": false,
     "physicalCommandVerified": false,
-    "receipt": "evidence/2026-11-10-feather-command/receipt.json"
+    "receipt": "evidence/2026-11-10-feather-command/receipt.json",
+    "sourceCommit": "cd4818b77f2ef05552e4fabe3c096ac9942d739e"
   }
 }

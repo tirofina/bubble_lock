@@ -371,3 +371,5 @@ Gateway 0.2.5 wheel 로컬 빌드와 Python 모듈 13개 소스 일치를 확인
 - 기존 배선의 Feather V2 GPIO13 내장 LED를 시험 출력으로 선택했다. opt-in 명령 프로필 0.2.0이 CORE v1 WRITE/NOTIFY, 인증·구독·세션 확인, 상대 기한, 16개 NVS intent/완료 journal, epoch·grant, GPIO readback을 처리한다. 실제 핀 값을 관측과 ACK로 보낸다. 기존 0.1.1 관측 프로필과 버튼 화면 동작은 이어간다.
 - 실제 보드용 컴파일은 관측·명령 두 프로필 exit 0이다. 첫 컴파일에서 sample 내부 변수 위치를 잘못 넣어 실패했고 위치를 수정한 최종 소스로 다시 빌드했다. MSVC에서 실제 명령 코드와 모의 NVS·GPIO를 실행한 네 그룹도 통과했다. [빌드·시험 로그와 해시](../keyring/evidence/2026-11-10-feather-command/README.md)
 - 합성 PIN 빌드 산출물은 로컬에 보관했다. 실물 업로드와 Pi 명령·LED·CSE 영수증은 대기 중이다. 실제 LED 시험이 제작 PCB의 센서·모터·전력 수용이나 CORE 정산을 대체하지 않는다.
+
+구현·빌드·시험 증거 commit `cd4818b77f2ef05552e4fabe3c096ac9942d739e`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `7b2b295..cd4818b`다. 전체 goal은 active/progress다.
