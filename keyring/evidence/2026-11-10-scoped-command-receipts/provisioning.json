@@ -1,0 +1,34 @@
+{
+  "documentRevision": "2.0.0",
+  "scope": "isolated-scoped-mobius4-empty-resource-provisioning",
+  "composeProject": "privacy-bubble-keyring-scoped",
+  "endpoint": "https://localhost:8760",
+  "proxyReplaced": true,
+  "proxyScopedRouteRulesPresent": true,
+  "mobiusContainerPreserved": true,
+  "postgresContainerPreserved": true,
+  "localProvisioningLogSha256": "71c828379f6fafad1f00dc41a96d8816cbe4cec2c9fb4c309b503a0066200bcd",
+  "resources": [
+    {
+      "path": "/Mobius/privacy-bubble-test-ae/command-receipts-a",
+      "status": "CREATED",
+      "resourceType": 3,
+      "httpStatus": 201,
+      "rsc": 2001,
+      "rqiMatched": true,
+      "timestamp": "2026-11-10T13:13:38.317Z"
+    },
+    {
+      "path": "/Mobius/privacy-bubble-test-ae/command-receipts-b",
+      "status": "CREATED",
+      "resourceType": 3,
+      "httpStatus": 201,
+      "rsc": 2001,
+      "rqiMatched": true,
+      "timestamp": "2026-11-10T13:13:52.372Z"
+    }
+  ],
+  "gatewayAclExercised": false,
+  "settlementExecuted": false,
+  "deviceCommandExecuted": false
+}

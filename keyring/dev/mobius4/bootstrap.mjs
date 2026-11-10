@@ -6,10 +6,12 @@ import {randomUUID} from 'node:crypto';
 import {scopedCommandReceiptContainers} from './scoped-command-receipts.mjs';
 
 const args = process.argv.slice(2);
-if (args.length && (args.length !== 1 || args[0] !== '--scoped')) {
-  throw new Error('Usage: node bootstrap.mjs [--scoped]');
+if (args.length && (args.length !== 1 || !['--scoped', '--scoped-command-receipts'].includes(args[0]))) {
+  throw new Error('Usage: node bootstrap.mjs [--scoped | --scoped-command-receipts]');
 }
-const root = new URL(args.length ? './.local/scoped/' : './.local/', import.meta.url);
+const scoped = args.length === 1;
+const commandReceiptsOnly = args[0] === '--scoped-command-receipts';
+const root = new URL(scoped ? './.local/scoped/' : './.local/', import.meta.url);
 const environment = Object.fromEntries((await readFile(new URL('compose.env', root), 'utf8'))
   .split(/\r?\n/).filter(line => line && !line.startsWith('#')).map(line => {
     const at = line.indexOf('=');
@@ -22,7 +24,7 @@ const tls = {
   minVersion: 'TLSv1.3', rejectUnauthorized: true,
 };
 const ae = 'privacy-bubble-test-ae';
-const resources = [
+const resources = commandReceiptsOnly ? [] : [
   {path: '/Mobius', ty: 2, body: {'m2m:ae': {rn: ae, api: 'Nprivacy-bubble', rr: true}}},
   ...['observations', 'receipts', 'health'].map(rn => ({
     path: `/Mobius/${ae}`, ty: 3, body: {'m2m:cnt': {rn, mni: 10000}},
@@ -32,13 +34,15 @@ const resources = [
     state: false, lbl: ['dev-bootstrap', 'unobserved'],
   }}},
 ];
-if (args.length) {
+if (scoped) {
   for (const container of Object.values(scopedCommandReceiptContainers)) {
     const slash = container.lastIndexOf('/');
     resources.push({path: container.slice(0, slash), ty: 3, body: {
       'm2m:cnt': {rn: container.slice(slash + 1), mni: 10000},
     }});
   }
+}
+if (scoped && !commandReceiptsOnly) {
   resources.push({path: `/Mobius/${ae}`, ty: 28, body: {'pb:binarySwitch': {
     rn: 'featherState', cnd: 'org.onem2m.common.moduleclass.binarySwitch',
     state: false, lbl: ['dev-bootstrap', 'feather-bench'],
@@ -78,7 +82,7 @@ async function exchange(method, path, resource = null) {
 }
 
 async function provision(resource) {
-  if (args.length) {
+  if (scoped) {
     const [[envelope, expected]] = Object.entries(resource.body);
     const existing = await exchange('GET', `${resource.path}/${expected.rn}`);
     if (existing.rqi !== existing.requestId) throw new Error('Scoped resource response RQI mismatch');
@@ -96,7 +100,7 @@ async function provision(resource) {
   }
   const response = await exchange('POST', resource.path, resource);
   if (response.rqi !== response.requestId || !((response.httpStatus === 201 && response.rsc === 2001)
-      || (!args.length && response.httpStatus === 409 && response.rsc === 4105))) {
+      || (!scoped && response.httpStatus === 409 && response.rsc === 4105))) {
     throw new Error(`Resource provisioning stopped: HTTP ${response.httpStatus}, rsc ${response.rsc}`);
   }
   return {...response, status: response.rsc === 2001 ? 'CREATED' : 'EXISTS_UNCHANGED'};
@@ -111,5 +115,6 @@ for (const [index, resource] of resources.entries()) {
     timestamp: new Date().toISOString(), evidenceScope: 'empty-resource-provisioning'});
   console.log(`${status} ${resource.path}/${resourceName} ty=${resource.ty} HTTP=${httpStatus} rsc=${rsc}`);
 }
-await writeFile(new URL('resource-provisioning.json', root), JSON.stringify(receipts, null, 2) + '\n');
+const receiptName = commandReceiptsOnly ? 'command-receipts-provisioning.json' : 'resource-provisioning.json';
+await writeFile(new URL(receiptName, root), JSON.stringify(receipts, null, 2) + '\n');
 console.log('Empty resources prepared. No BLE, device command, observation or end-to-end test was run.');

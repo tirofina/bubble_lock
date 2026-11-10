@@ -83,15 +83,13 @@ Scoped bootstrap은 명령 영수증 정산 전용 빈 컨테이너도 준비한
 | `gw-a` | `/Mobius/privacy-bubble-test-ae/command-receipts-a` |
 | `gw-b` | `/Mobius/privacy-bubble-test-ae/command-receipts-b` |
 
-이미 시작한 scoped 서버에 적용할 때는 발행 작업이 끝난 뒤 TLS 프록시만 교체하고 scoped bootstrap으로 빈 자원을 준비한다. 새 경로는 새 명령 벤치의 전용 SQLite 설정에 지정한다. 기존 DB의 대기 중인 영수증은 원래 경로에서 처리한다. 명령 발급·승인에는 별도의 실제 팀 INTEGRATION mTLS API를 설정한다.
+이미 시작한 scoped 서버에 적용할 때는 발행 작업이 끝난 뒤 아래 명령으로 TLS 프록시만 교체하고 전용 컨테이너 두 개를 준비한다. 같은 이름의 컨테이너가 있으면 조회하여 그대로 사용한다. 준비 결과는 `.local/scoped/command-receipts-provisioning.json`에 남긴다. 새 경로는 새 명령 벤치의 전용 SQLite 설정에 지정한다. 기존 DB의 대기 중인 영수증은 원래 경로에서 처리한다. 명령 발급·승인에는 별도의 실제 팀 INTEGRATION mTLS API를 설정한다.
 
 ```powershell
-$dev = './keyring/dev/mobius4'
-docker compose --project-name privacy-bubble-keyring-scoped --env-file "$dev/.local/scoped/compose.env" `
-  -f "$dev/compose.yaml" -f "$dev/compose.scoped.yaml" up -d --no-deps --no-build --pull never --force-recreate tls
-if ($LASTEXITCODE -ne 0) { throw 'Scoped TLS route refresh failed.' }
-node "$dev/bootstrap.mjs" --scoped
+./keyring/dev/mobius4/prepare-scoped-command-receipts.ps1
 ```
+
+2026-11-10에 격리 TLS 프록시의 Gateway별 경로를 반영하고 두 빈 컨테이너를 생성했다. CORE 인증서의 생성 요청은 모두 HTTP 201·oneM2M 2001을 받았고 응답 RQI가 일치했다. Gateway 인증서별 접근과 실제 영수증 정산은 별도 확인이 남아 있다. [배치 증거](../../evidence/2026-11-10-scoped-command-receipts/provisioning.json)
 
 정산 명령은 CSE loopback 포트에 접근할 수 있는 중앙 측 POSIX 환경에서 실행한다. Node 22 이상, 팀 main `715ef58` 소스, 같은 팀 API가 명령 발급·승인에 사용한 `pc-mobius/integration/state/runtime.json` 또는 그 시점의 로컬 스냅샷이 필요하다. `.local/scoped`에서 CORE 인증서와 CSE 포트를 읽는다. WSL에서 실행할 경우 PC의 해당 loopback 포트에 접근할 수 있어야 하며 정산 디렉터리는 Linux 파일시스템에 둔다.
 
