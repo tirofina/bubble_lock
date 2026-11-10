@@ -818,3 +818,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 소스와 회귀시험 사례를 반영했다. 격리 작업자 재기동, DB 조회, 빌드, 시험, 실물 명령은 미실행이다. 명령별 원본 CSE 배정과 저널 회수는 팀 계약에 의존한다. Feather/Pi 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
 
 출처 고정 commit `36bc81624abfe9887592b3315217738de097e96e`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `08d2eb2..36bc816`이다.
+
+## 2026-11-10 — Pi 재시작 뒤 새 명령 영수증의 큐 등록
+
+직전 goal turn은 명령 재정산의 CSE 출처를 고정한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 브랜치에 새 변경은 없다.
+
+- 재시도 중인 native 영수증을 새 등록용 128개 한도에서 제외한다. 이전 행의 대기 시각과 전송한 CORE ACK의 중복 방지는 유지한다. 이전 영수증 128개가 남은 DB를 다시 열고 다음 영수증이 발송 가능한지 확인하는 회귀시험 소스를 추가했다. [Gateway 큐](../keyring/raspberry-pi-gateway/README.md)
+- 기존 wheel 버전 `0.2.19`와 실행 모듈 버전 `0.2.6`의 불일치를 정리했다. wheel 설정이 모듈 버전을 읽도록 바꿨고 이번 소스의 버전은 `0.2.20`이다.
+- wheel 빌드, 시험, 기존 DB 접근과 Pi 배포는 미실행이다. 이전 Feather/Pi 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
+
+큐 수정 commit `d584caad89ef9dc04f12462b9240dad986baff5d`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `448cd2a..d584caa`다.
