@@ -7,7 +7,7 @@
   "date": "2026-11-11",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Feather 0.2.0 and Pi Gateway 0.2.28 produced two APPLIED GPIO command receipts that matched pinned Mobius4, the Pi database, authenticated CSE callback and isolated PostgreSQL settlement. r18 firmware 0.7.12 battery alerts, 0.7.13 bring-up and Gateway 0.2.33–0.2.42 battery, credential, bring-up, reconnect and receipt changes are source-only. Visual LED confirmation, r18 hardware, physical power characterization, and offline journal history comparison remain unverified.",
+  "verificationStatus": "Feather 0.2.0 and Pi Gateway 0.2.28 produced two APPLIED GPIO command receipts that matched pinned Mobius4, the Pi database, authenticated CSE callback and isolated PostgreSQL settlement. Gateway 0.2.43 passed 153 local tests from its built wheel, including receipt persistence before the final GATT response. Visual LED confirmation, Gateway 0.2.43 on Pi and BlueZ, r18 hardware and physical power characterization remain unverified.",
   "rubricIds": [
     "R01",
     "R02",
@@ -173,17 +173,17 @@
   "firmwareRevision": "keyring-0.7.13",
   "benchFirmwareRevision": "feather-probe-0.2.0",
   "publication": {
-    "sourceCommit": "2cdc96baae12cb85524488aa5daab0c2f893d627",
+    "sourceCommit": "596e44ce7ff2857d015d057ce82f6236a985d34a",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "2cdc96baae12cb85524488aa5daab0c2f893d627",
-    "lastPushedCommit": "2cdc96baae12cb85524488aa5daab0c2f893d627",
-    "latestCheckpoint": "Retain matching on-time receipts after final GATT response loss.",
-    "lastPushedCommitBeforeThisCheckpoint": "4bde3f7b6ba7a41cad1165f73398ba651f040463"
+    "latestLocalSourceCommit": "596e44ce7ff2857d015d057ce82f6236a985d34a",
+    "lastPushedCommit": "596e44ce7ff2857d015d057ce82f6236a985d34a",
+    "latestCheckpoint": "Commit the matching BLE receipt before waiting for the final GATT response.",
+    "lastPushedCommitBeforeThisCheckpoint": "6af22799c5d05fe94803f9f64191371d4d58e382"
   },
-  "gatewayRevision": "0.2.42",
+  "gatewayRevision": "0.2.43",
   "pendingValidationScope": "Visual Feather LED observation, r18 physical commands and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE MQTT ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
@@ -205,7 +205,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Preserve timely BLE receipts through final GATT response loss under DOC-REV 2.0.0",
+    "executionRequest": "Persist matching BLE receipts at notification under DOC-REV 2.0.0",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -213,11 +213,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "2cdc96baae12cb85524488aa5daab0c2f893d627",
-    "sourceValidation": "Read the current plan, remote team heads, team ACK contract and Gateway BLE session, timeout and SQLite receipt paths. Implementation and regression source only. No build, test execution, Pi connection or hardware capture was performed.",
+    "sourceCommit": "596e44ce7ff2857d015d057ce82f6236a985d34a",
+    "sourceValidation": "Read the current plan, remote team heads, team ACK contract and Gateway BLE and SQLite receipt paths. Built a wheel and ran 153 local tests on Windows Python 3.11. This Gateway version was not deployed to Pi or tested on hardware.",
     "goalComplete": false,
     "pendingInput": null,
-    "currentDependencyState": "The Feather 0.2.0 and Pi Gateway 0.2.28 command path was verified through isolated Mobius4 and PostgreSQL. Firmware 0.7.13 bring-up and Gateway 0.2.42 build, regressions, assembled r18 identification, first power-on, Pi capture and physical reconnect, restart and receipt response-loss behavior remain. Credential continuity, durable transition and real CSE readback, central issuance or rotation evidence, real battery alert capture, LCD and charger observation, native CSE battery observation readback, visual Feather LED observation, r18 physical sensor recovery, BLE resubscription and long-read tests, NVS fault verification, archive comparison execution, authoritative production CSE routes, approved journal reclaim and automatic external rollback detection contracts, production CORE, and physical power/range/wake capture and an external supply measurement also remain.",
+    "currentDependencyState": "The Feather 0.2.0 and Pi Gateway 0.2.28 command path was verified through isolated Mobius4 and PostgreSQL. Gateway 0.2.43 was built and tested locally. Firmware 0.7.13 bring-up, assembled r18 identification, first power-on, Pi capture and physical reconnect, restart and receipt response-loss behavior remain. Credential continuity, durable transition and real CSE readback, central issuance or rotation evidence, real battery alert capture, LCD and charger observation, native CSE battery observation readback, visual Feather LED observation, r18 physical sensor recovery, BLE resubscription and long-read tests, NVS fault verification, archive comparison execution, authoritative production CSE routes, approved journal reclaim and automatic external rollback detection contracts, production CORE, and physical power/range/wake capture and an external supply measurement also remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -1208,5 +1208,14 @@
     "regressionsExecuted": false,
     "physicalResponseLossExecuted": false,
     "sourceCommit": "2cdc96baae12cb85524488aa5daab0c2f893d627"
+  },
+  "receiptDurability": {
+    "reference": "raspberry-pi-gateway/BLE_SESSIONS.md#승인-기한과-gatt-전송",
+    "status": "locally-verified",
+    "gatewayVersion": "0.2.43",
+    "wheelSha256": "63f236ed68faae8f1bcde735480827b9ddc4af7a053a96e43520f0786624c51d",
+    "localTestsPassed": 153,
+    "physicalResponseLossExecuted": false,
+    "sourceCommit": "596e44ce7ff2857d015d057ce82f6236a985d34a"
   }
 }

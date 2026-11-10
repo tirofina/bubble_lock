@@ -1130,3 +1130,13 @@ r18 재연결 기록 commit `ff473c2fd7b834de6b9d1ad239b8f67690006117`을 `origi
 - 이른 응답, 기한 이후 응답, 사용자 취소, 기존 연결 교체 방어와 SQLite 정산을 다루는 회귀시험 소스를 추가했다. 빌드·시험·Pi 접속·실물 검증은 미실행이다. goal은 active/progress다.
 
 영수증 보존 commit `2cdc96baae12cb85524488aa5daab0c2f893d627`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `4bde3f7..2cdc96b`다.
+
+## 2026-11-11 — 마지막 GATT 응답 전 SQLite 영수증 저장
+
+DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 head는 직전과 같다.
+
+- Gateway `0.2.43`은 현재 세션의 기한 내 일치 영수증을 알림 처리 중 SQLite에 커밋한다. 마지막 쓰기 응답을 기다리는 동안 종료되어도 커밋된 결과를 유지한다. SQLite 저장이 일시적으로 실패하면 보관한 영수증으로 저장만 재시도한다. [BLE 처리](../keyring/raspberry-pi-gateway/BLE_SESSIONS.md#승인-기한과-gatt-전송)
+- Windows Python 3.11에서 wheel을 빌드하고 설치본의 기본 시험 153개가 통과했다. 마지막 응답을 보류한 상태에서 별도 SQLite 연결로 결과를 읽고, 취소 후 결과와 카운터, SQLite 오류 후 저장 재시도를 확인했다. 해당 버전의 Pi·BlueZ와 r18 시험은 남아 있다. [로컬 시험](../keyring/raspberry-pi-gateway/TESTING.md)
+- 사용자가 승인한 Feather 0.2.0·Pi 0.2.28 격리 시험은 이전에 수행했다. ON/OFF 모두 GPIO readback, Mobius4 원본과 중앙 정산이 일치했다. [실물 시험 기록](../keyring/evidence/2026-11-11-scoped-feather-led/receipt.json)
+
+소스 commit `596e44ce7ff2857d015d057ce82f6236a985d34a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `6af2279..596e44c`다. goal은 active/progress다.
