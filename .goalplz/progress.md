@@ -632,3 +632,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 실제 실행은 임시 TLS 설정과 읽기 경로 확인까지다. 빌드·회귀시험, Pi relay 실행, Feather 관측과 실제 적용 영수증은 미실행이다. 전체 goal은 active/progress다.
 
 구현·준비 기록 commit `ed404f6a39333829c597a3d54dc59f2fb20e0190`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `01e25eb..ed404f6`다.
+
+## 2026-11-10 — 중단된 Feather scoped 관측 복구
+
+이전 goal turn은 scoped relay 작성과 Gateway A의 초기 SDT 조회를 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- `relay.py --recover-scoped`는 이미 생성된 벤치 DB의 native·scoped 관측만 선택한다. 대기열 원본을 보존한 뒤 기존 RQI·sequence·재시도 일정으로 전송한다. 새 BLE 캡처를 시작하지 않는다.
+- native cin의 동일 payload readback과 scoped 적용 영수증을 경로별로 기록한다. 각 기록을 fsync한 뒤 대기열 행의 완료를 허용한다. timeout 결과는 확인 수와 남은 수를 별도로 기록한다. [복구 명령](../keyring/firmware/feather_probe/README.md#중단된-scoped-전송-복구)
+- 구현과 회귀시험 소스만 반영했다. 복구 실행·빌드·시험·기존 DB 변경은 미실행이다. 전체 goal은 active/progress다.
+
+구현 commit `36ecd72491f9a70e51f2a6388d78d51820b7d76b`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `913393d..36ecd72`다.
