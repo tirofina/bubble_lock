@@ -7,7 +7,7 @@
   "date": "2026-11-10",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Gateway 0.2.6 offline deployment preflight: 67 basic tests and 3 actual WSL systemd cases passed. Actual Pi transient daemon/replay evidence remains at 0.2.5. Physical command and production deployment remain.",
+  "verificationStatus": "Gateway 0.2.7 command ingress: 71 basic tests and 3 team-central mTLS integration cases passed. Actual Pi transient daemon/replay evidence remains at 0.2.5. Physical command and production deployment remain.",
   "rubricIds": [
     "R01",
     "R02",
@@ -63,7 +63,8 @@
     "GATT command readiness deferral, current authorization for the same BLE generation, bounded fair pending batches, and graceful Gateway stop",
     "Opt-in Feather 0.2.0 GPIO13 command/receipt profile with scoped NVS intent journal; observation profile remains 0.1.1",
     "Offline deployment preflight for TLS files and paths beneath systemd STATE_DIRECTORY; checked by ExecStartPre before the daemon",
-    "KEYRING handoff candidate for binding native receipt and optional CORE ACK to the authenticated Gateway and historical central issuance/authorization"
+    "KEYRING handoff candidate for binding native receipt and optional CORE ACK to the authenticated Gateway and historical central issuance/authorization",
+    "Authoritative HTTPS command polling ahead of CORE MQTT and exact current central hash binding before admitting MQTT-only commands"
   ],
   "existingHardware": {
     "status": "source-snapshot-included-unverified",
@@ -118,17 +119,17 @@
   "firmwareRevision": "keyring-0.7.0",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "c441f7c7586f9b5dfbf45e143e88de9bec42765d",
+    "sourceCommit": "cbef49eb88999dc173f4455666da45c789e073e3",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "c441f7c7586f9b5dfbf45e143e88de9bec42765d",
-    "lastPushedCommit": "c441f7c7586f9b5dfbf45e143e88de9bec42765d",
-    "latestCheckpoint": "CORE HTTP-issued ACK gap reproduced. KEYRING binding candidate and 2 real API/CSE cases pushed. Physical command and production settlement pending.",
-    "lastPushedCommitBeforeThisCheckpoint": "7891d2ccb50e1ad0acf47b6ee765d7e858708c7e"
+    "latestLocalSourceCommit": "cbef49eb88999dc173f4455666da45c789e073e3",
+    "lastPushedCommit": "cbef49eb88999dc173f4455666da45c789e073e3",
+    "latestCheckpoint": "Gateway 0.2.7 protects authoritative command admission from unverified CORE copies; verified locally and against the team mTLS API.",
+    "lastPushedCommitBeforeThisCheckpoint": "058355f2e31997d0ccffad3da0b615abe0f98307"
   },
-  "gatewayRevision": "0.2.6",
+  "gatewayRevision": "0.2.7",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
@@ -150,7 +151,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Reproduce the team HTTP-to-CORE ACK gap with real CSE readback and prepare the KEYRING binding candidate",
+    "executionRequest": "Preserve central HTTPS issuance under CORE MQTT load and require exact authorization before MQTT-only durable admission",
     "remainingCompletionDependencies": [
       "central deployment, settlement and recovery activation",
       "purchased JD9853 module initialization",
@@ -158,11 +159,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "c441f7c7586f9b5dfbf45e143e88de9bec42765d",
-    "sourceValidation": "Team main CORE handler gap reproduced; 2 real API/CSE integration cases, 2 positive and 7 rejected binding-candidate inputs passed. Physical GATT command and production settlement remain.",
+    "sourceCommit": "cbef49eb88999dc173f4455666da45c789e073e3",
+    "sourceValidation": "71 basic tests, 3 real central mTLS integration cases and wheel/source comparison passed. 0.2.7 physical deployment and command verification remain.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "The handoff candidate and reproducible CORE/central binding evidence are ready; team owner integration and physical command flash approval remain.",
+    "currentDependencyState": "Ingress and ACK binding evidence are available; team settlement integration and physical command flash approval remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -470,5 +471,16 @@
     "candidateRejectedCases": 7,
     "productionSettlementVerified": false,
     "sourceCommit": "c441f7c7586f9b5dfbf45e143e88de9bec42765d"
+  },
+  "commandIngressValidation": {
+    "evidence": "evidence/2026-11-10-command-ingress/README.md",
+    "gatewayVersion": "0.2.7",
+    "teamMain": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+    "basicTestsPassed": 71,
+    "centralMtlsIntegrationCasesPassed": 3,
+    "wheelSourceModulesMatched": 13,
+    "actualBrokerCommandIngressVerified": false,
+    "physicalDeploymentPerformed": false,
+    "sourceCommit": "cbef49eb88999dc173f4455666da45c789e073e3"
   }
 }

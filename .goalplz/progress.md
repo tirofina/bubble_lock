@@ -407,3 +407,13 @@ fixture와 실물 실행 증거 commit `f7e917cfbc4a77ddc2e11bac80f7146a363f4986
 - 운영 ACK 수신기 연결과 원자적 정산은 팀 owner 단계다. Feather 0.2.0 플래시·실물 명령과 제작 PCB 수용이 남았다. 전체 goal은 active/progress다.
 
 후보 코드·재현 증거 commit `c441f7c7586f9b5dfbf45e143e88de9bec42765d`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `7891d2c..c441f7c`다.
+
+## 2026-11-10 — 중앙 명령 수신 우선순위
+
+DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 HEAD는 이전과 같다.
+
+- Gateway 0.2.7은 MQTT 대기열과 관계없이 중앙 HTTPS 목록을 조회한다. 같은 commandId에서는 중앙 발급본을 배치에 넣는다. MQTT 단독 사본은 실제 중앙 권한과 해시·기한 확인 뒤에만 저장 대상이 된다. 이미 저장한 명령과 영수증은 그대로 유지한다.
+- 기본 71개와 팀 중앙 mTLS 통합 3개가 통과했다. 새 사례는 목록 조회 실패를 주입하고 실제 팀 API가 같은 ID의 변조본을 거절하며 정확한 사본을 승인하는지 확인했다. 기존 두 사례에서 모의 GATT와 격리 Mobius4 receipt를 재확인했다. wheel의 모듈 13개가 소스와 일치했다. [시험 증거](../keyring/evidence/2026-11-10-command-ingress/README.md)
+- 0.2.7 Pi 설치와 실제 broker 명령 수신 시험은 남아 있다. 다음 실물 관문은 Feather 명령 프로필과 Pi를 이용한 출력·receipt·CSE 대조다. 운영 CORE 정산·제작 PCB 수용은 별도 관문이다. 전체 goal은 active/progress다.
+
+소스 및 시험 증거 commit `cbef49eb88999dc173f4455666da45c789e073e3`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `058355f..cbef49e`다.
