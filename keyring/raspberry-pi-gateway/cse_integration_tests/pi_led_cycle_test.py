@@ -1,6 +1,7 @@
 """Opt-in real team API/CSE bench rehearsal with a software Feather peer."""
 import asyncio
 from copy import deepcopy
+from datetime import datetime, timedelta, timezone
 import json
 import os
 from pathlib import Path
@@ -14,7 +15,29 @@ from unittest.mock import patch
 from bubble_gateway.config import GatewayConfig
 from bubble_gateway.service import Gateway
 from helpers import device_receipt, observation
-from pi_led_cycle import DEVICE, FIRMWARE, GATEWAY, verify_database
+from pi_led_cycle import DEVICE, FIRMWARE, GATEWAY, ready_heartbeat, verify_database
+
+
+class PiCommandReadinessTests(unittest.TestCase):
+    def test_same_boot_active_and_fresh_command_ready_health_is_required(self):
+        now = datetime(2026, 11, 11, tzinfo=timezone.utc)
+        since = now - timedelta(seconds=2)
+        device = {"deviceId": DEVICE, "firmwareRevision": FIRMWARE, "bootId": "device-boot",
+                  "connected": True, "commandReady": True}
+        health = {"gatewayId": GATEWAY, "bootId": "gateway-boot", "credentialStatus": "ACTIVE",
+                  "observedAt": now.isoformat(), "devices": [device]}
+        with patch("pi_led_cycle.utc_now", return_value=now):
+            self.assertEqual(ready_heartbeat(health, GATEWAY, "device-boot", since),
+                             {"gatewayBootId": "gateway-boot", "observedAt": now.isoformat()})
+            self.assertIsNone(ready_heartbeat(health, GATEWAY, "different-boot", since))
+            self.assertIsNone(ready_heartbeat(health, GATEWAY, "device-boot", now + timedelta(milliseconds=1)))
+            self.assertIsNone(ready_heartbeat(health | {"credentialStatus": "UNKNOWN"}, GATEWAY, "device-boot", since))
+            for old_health in ({key: value for key, value in device.items() if key != "commandReady"},
+                               device | {"commandReady": False}, device | {"connected": False}):
+                with self.subTest(device=old_health):
+                    self.assertIsNone(ready_heartbeat(health | {"devices": [old_health]}, GATEWAY, "device-boot", since))
+            stale = health | {"observedAt": (now - timedelta(seconds=16)).isoformat()}
+            self.assertIsNone(ready_heartbeat(stale, GATEWAY, "device-boot", now - timedelta(seconds=20)))
 
 
 class SoftwareFeather:
@@ -33,7 +56,8 @@ class SoftwareFeather:
         self.task = asyncio.create_task(observe())
 
     def snapshot(self):
-        return [{"deviceId": DEVICE, "connected": True, "firmwareRevision": FIRMWARE}]
+        return [{"deviceId": DEVICE, "connected": True, "commandReady": True,
+                 "firmwareRevision": FIRMWARE, "bootId": "boot-test"}]
 
     def command_session(self, device_id):
         return 1 if device_id == DEVICE else None
@@ -109,6 +133,7 @@ class PiLedCycleTests(unittest.IsolatedAsyncioTestCase):
             "M2M_CSE_URL": endpoints["cse"], "PC_API_URL": endpoints["central"], "M2M_RVI": "4",
             "M2M_OBSERVATION_CONTAINER": paths["observation"], "M2M_RECEIPT_CONTAINER": paths["receipt"],
             "M2M_HEALTH_CONTAINER": paths["health"], "MQTT_ENABLED": "false", "POLL_INTERVAL": "0.5",
+            "HEARTBEAT_INTERVAL": "5",
             "TLS_CA_FILE": str(bundle / "trusted.pem"), "TLS_CERT_FILE": str(bundle / "client.pem"),
             "TLS_KEY_FILE": str(bundle / "client.key"), "GATEWAY_DATABASE": str(self.root / "gateway.sqlite3"),
             "FIRMWARE_REVISION_ALLOWLIST": FIRMWARE, "BLE_DEVICES": json.dumps({DEVICE: "00:00:00:00:00:01"}),

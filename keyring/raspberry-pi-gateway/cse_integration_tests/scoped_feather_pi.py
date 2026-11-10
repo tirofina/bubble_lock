@@ -54,6 +54,7 @@ def gateway_environment(profile, session):
         "BLE_PAIR": "true", "BLE_GATT_PROFILE": "core-v1", "FIRMWARE_REVISION_ALLOWLIST": "feather-probe-0.2.0",
         "MQTT_ENABLED": "false", "M2M_MQTT_ENABLED": "false", "CORE_BRIDGE_ENABLED": "false",
         "GATEWAY_DATABASE": str(session / "gateway.sqlite3"), "POLL_INTERVAL": "1", "REQUEST_TIMEOUT": "5",
+        "HEARTBEAT_INTERVAL": "5",
     }
     if "cseDeploymentId" in profile:
         if profile["cseDeploymentId"] != CSE_DEPLOYMENT:

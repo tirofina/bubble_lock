@@ -75,6 +75,10 @@
             "minLength": 1,
             "maxLength": 64,
             "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+          },
+          "commandReady": {
+            "type": "boolean",
+            "description": "The current authenticated BLE session supports acknowledged command writes. Central authorization is evaluated at dispatch."
           }
         },
         "required": [

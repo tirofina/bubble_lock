@@ -203,11 +203,15 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
             await self.ready(1)
             self.assertEqual(self.peer.observations.qsize(), 1)
             self.assertIsNone(self.fleet.command_session("kr-test"))
+            snapshot = self.fleet.snapshot()[0]
+            self.assertTrue(snapshot["connected"])
+            self.assertFalse(snapshot["commandReady"])
 
     async def test_authorized_generation_cannot_write_on_replacement(self):
         old, current = await self.reconnect()
         old_generation = self.peer.generation - 2
         self.assertEqual(self.fleet.command_session("kr-test"), self.peer.generation)
+        self.assertTrue(self.fleet.snapshot()[0]["commandReady"])
         current.write_gatt_char = AsyncMock()
         cmd = command()
         with self.assertRaises(BleUnavailable):

@@ -10,6 +10,7 @@ from pathlib import Path
 import sqlite3
 import uuid
 
+from bubble_gateway.config import ID
 from bubble_gateway.model import canonical, iso_time, parse_time, payload_hash, utc_now, validate_command
 from bubble_gateway.store import Store
 
@@ -44,6 +45,24 @@ def verify_receipt(command, receipt, boot_id, state):
     parse_time(receipt["receivedAt"])
 
 
+def ready_heartbeat(health, gateway_id, device_boot, not_before):
+    gateway_boot = health.get("bootId")
+    if (health.get("gatewayId") != gateway_id or health.get("credentialStatus") != "ACTIVE"
+            or not isinstance(gateway_boot, str) or ID.fullmatch(gateway_boot) is None):
+        return None
+    observed = parse_time(health["observedAt"])
+    if observed < not_before or not -2 <= (utc_now() - observed).total_seconds() <= 15:
+        return None
+    devices = [device for device in health["devices"] if device.get("deviceId") == DEVICE]
+    if len(devices) != 1:
+        return None
+    device = devices[0]
+    if (device.get("connected") is not True or device.get("commandReady") is not True
+            or device.get("bootId") != device_boot or device.get("firmwareRevision") != FIRMWARE):
+        return None
+    return {"gatewayBootId": gateway_boot, "observedAt": health["observedAt"]}
+
+
 async def run_led_cycle(operator_post, cse, paths, output, *, gateway_id=GATEWAY, subject_id=SUBJECT):
     async def wait_for(check):
         while not (output / "STOP").exists():
@@ -75,6 +94,17 @@ async def run_led_cycle(operator_post, cse, paths, output, *, gateway_id=GATEWAY
             return {key: current[key] for key in ("bootId", "sequence", "receivedAt", "state")}
         return None
 
+    async def ready_baseline(state, boot_id, not_before):
+        baseline = await observation(state, boot_id=boot_id)
+        if baseline is None:
+            return None
+        health = await read_cin("health", "la")
+        if health is not None:
+            readiness = ready_heartbeat(health["con"], gateway_id, baseline["bootId"], not_before)
+            if readiness is not None:
+                return baseline, readiness
+        return None
+
     async def post(path, body, expected_status=201):
         status, result = await operator_post(path, body)
         if status != expected_status:
@@ -85,9 +115,11 @@ async def run_led_cycle(operator_post, cse, paths, output, *, gateway_id=GATEWAY
     consent = None
     results = []
     boot_id = None
+    print("Waiting for fresh Pi command readiness and matching Feather observations.", flush=True)
     for label, state in STEPS:
         prior_state = not state
-        baseline = await wait_for(lambda: observation(prior_state, boot_id=boot_id))
+        waiting_since = utc_now()
+        baseline, _ = await wait_for(lambda: ready_baseline(prior_state, boot_id, waiting_since))
         boot_id = baseline["bootId"]
         trigger = output / f"LED_{label}"
         if trigger.exists():
@@ -95,11 +127,10 @@ async def run_led_cycle(operator_post, cse, paths, output, *, gateway_id=GATEWAY
         print(f"LED_{label}_READY", flush=True)
 
         async def current_trigger():
-            if trigger.is_file():
-                return await observation(prior_state, boot_id=boot_id)
-            return None
+            return utc_now() if trigger.is_file() else None
 
-        baseline = await wait_for(current_trigger)
+        triggered_at = await wait_for(current_trigger)
+        _, readiness = await wait_for(lambda: ready_baseline(prior_state, boot_id, triggered_at))
         if (output / "STOP").exists():
             raise RuntimeError("Stopped before issuing the next LED command")
         if consent is None:
@@ -108,9 +139,10 @@ async def run_led_cycle(operator_post, cse, paths, output, *, gateway_id=GATEWAY
         grant = await post("/v1/grants", {"consentId": consent["consentId"], "scopes": scope, "ttlSec": 60})
         grant_id = grant["grantId"]
         try:
-            baseline = await observation(prior_state, boot_id=boot_id)
-            if baseline is None:
-                raise RuntimeError("Feather baseline changed before the LED command")
+            checked = await ready_baseline(prior_state, boot_id, triggered_at)
+            if checked is None or checked[1]["gatewayBootId"] != readiness["gatewayBootId"]:
+                raise RuntimeError("Pi command readiness or Feather baseline changed before the LED command")
+            baseline, readiness = checked
             if (output / "STOP").exists():
                 raise RuntimeError("Stopped before issuing the next LED command")
             command_id = f"feather-led-{label.lower()}-{uuid.uuid4().hex}"
@@ -134,7 +166,7 @@ async def run_led_cycle(operator_post, cse, paths, output, *, gateway_id=GATEWAY
                 raise RuntimeError("Post-command observation must use a new device sequence")
             step = {"command": command, "cseReceiptName": rn, "cseReceipt": receipt,
                     "cseResource": {key: native_receipt[key] for key in ("ri", "ct")},
-                    "baseline": baseline, "observation": observed}
+                    "baseline": baseline, "commandReadiness": readiness, "observation": observed}
             write_new_json(output / f"led-{label.lower()}-readback.json", step)
         finally:
             revoked = await post("/v1/grants/revoke", {"grantId": grant_id, "reason": "keyring-led-bench-step-ended"}, 200)

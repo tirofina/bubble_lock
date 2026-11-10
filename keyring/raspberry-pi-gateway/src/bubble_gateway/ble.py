@@ -556,6 +556,7 @@ class BleFleet:
 
     def snapshot(self) -> list[dict[str, Any]]:
         return [{"deviceId": peer.device_id, "connected": peer.ready.is_set(),
+                 "commandReady": self.command_session(peer.device_id) is not None,
                  "firmwareRevision": peer.identity.get("firmwareRevision"),
                  "boardRevision": peer.identity.get("boardRevision"),
                  "bootId": peer.identity.get("bootId"), "lastError": peer.last_error,

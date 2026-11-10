@@ -12,7 +12,8 @@ from pi_led_cycle import run_led_cycle
 
 PROFILE = Path(__file__).resolve().parents[2] / "dev/mobius4/.local/scoped"
 PARENT = "/Mobius/privacy-bubble-test-ae"
-PATHS = {"observation": f"{PARENT}/command-observations-a", "receipt": f"{PARENT}/command-receipts-a"}
+PATHS = {"observation": f"{PARENT}/command-observations-a", "receipt": f"{PARENT}/command-receipts-a",
+         "health": f"{PARENT}/health"}
 
 
 def tls_context(cert, key):
