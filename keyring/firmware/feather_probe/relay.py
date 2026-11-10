@@ -4,7 +4,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 from collections import Counter
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 from contextvars import ContextVar
 from dataclasses import replace
 import hashlib
@@ -17,9 +17,9 @@ from urllib.parse import quote
 import uuid
 
 from bubble_gateway.ble import BleFleet
-from bubble_gateway.config import GatewayConfig, read_env_file
+from bubble_gateway.config import GatewayConfig, ID, read_env_file
 from bubble_gateway.core_bridge import telemetry
-from bubble_gateway.model import canonical, payload_hash
+from bubble_gateway.model import canonical, payload_hash, validate_observation
 from bubble_gateway.service import Gateway
 from bubble_gateway.state_identity import configured_binding
 from bubble_gateway.store import Store
@@ -30,6 +30,7 @@ FIRMWARE = "feather-probe-0.1.1"
 BENCH_ROOT = "/Mobius/privacy-bubble-test-ae"
 FEATHER_SDT = BENCH_ROOT + "/featherState"
 BUTTON_STATES = {"released", "confirm", "panic"}
+MAX_RECOVERY_ROWS = 200
 
 
 class RelayFailure(RuntimeError):
@@ -116,11 +117,13 @@ def write_receipt(output: Path, summary: dict) -> None:
 
 
 @contextmanager
-def open_scoped_state(config: GatewayConfig, state: Path, output: Path):
+def open_scoped_state(config: GatewayConfig, state: Path, output: Path, *, existing_only: bool = False):
     import fcntl
 
     if state.is_symlink() or state.resolve().is_relative_to(output.resolve()) or output.resolve().is_relative_to(state.resolve()):
         raise RelayFailure("SCOPED_PRIVATE_STATE_REQUIRED")
+    if existing_only and not state.is_dir():
+        raise RelayFailure("SCOPED_STATE_BINDING_MISMATCH")
     try:
         state.mkdir(mode=0o700, parents=False, exist_ok=False)
         new = True
@@ -176,6 +179,145 @@ async def read_scoped_state(hub: RelayTransport, expected: bool) -> bool:
             or switch.get("state") is not expected):
         raise RelayFailure("SCOPED_SDT_READBACK_MISMATCH")
     return switch["state"]
+
+
+def pending_recovery_rows(store: Store, config: GatewayConfig) -> dict[str, dict]:
+    rows = list(store.db.execute("SELECT * FROM outbox ORDER BY rowid LIMIT ?", (MAX_RECOVERY_ROWS + 1,)))
+    if store.counts()[1] or len(rows) > MAX_RECOVERY_ROWS:
+        raise RelayFailure("RECOVERY_SCOPE_INVALID")
+    pending = {}
+    for raw in rows:
+        row = dict(raw)
+        payload = json.loads(row["payload"])
+        if (not isinstance(payload, dict) or row["command_id"] is not None
+                or payload.get("deviceId") != DEVICE_ID or payload.get("gatewayId") != config.gateway_id
+                or canonical(payload) != row["payload"] or len(row["payload"].encode()) != row["payload_bytes"]):
+            raise RelayFailure("RECOVERY_SCOPE_INVALID")
+        if row["container"] == config.observation_container:
+            payload = validate_observation(payload, config.gateway_id, config.ble_devices)
+            if payload["firmwareRevision"] != FIRMWARE:
+                raise RelayFailure("RECOVERY_SCOPE_INVALID")
+            kind, sequence = "observation", payload["sequence"]
+        elif row["container"] == "@core/telemetry":
+            kind, sequence = "core-telemetry", payload.get("firmwareSequence")
+            if (type(payload.get("ownershipEpoch")) is not int or payload["ownershipEpoch"] != 1
+                    or payload.get("schemaVersion") not in ("1.0.0", "1.1.0")
+                    or type(payload.get("sequence")) is not int or not 0 <= payload["sequence"] <= 4294967295
+                    or type(payload.get("state")) is not bool):
+                raise RelayFailure("RECOVERY_SCOPE_INVALID")
+        else:
+            raise RelayFailure("RECOVERY_SCOPE_INVALID")
+        boot = payload.get("bootId")
+        if (not isinstance(boot, str) or ID.fullmatch(boot) is None
+                or type(sequence) is not int or not 0 <= sequence <= 4294967295
+                or row["rqi"] != Store.request_id(kind, f"{DEVICE_ID}:{boot}:{sequence}")):
+            raise RelayFailure("RECOVERY_SCOPE_INVALID")
+        pending[row["rqi"]] = {**row, "payload": payload}
+    return pending
+
+
+class RecoveryTransport(RelayTransport):
+    def __init__(self, config: GatewayConfig, pending: dict[str, dict], ledger):
+        super().__init__(config)
+        self.pending, self.ledger = pending, ledger
+        self.confirmed = {}
+
+    async def publish(self, rqi, container, payload):
+        planned = self.pending.get(rqi)
+        if planned is None or planned["container"] != container or canonical(planned["payload"]) != canonical(payload):
+            raise RelayFailure("RECOVERY_ROW_CHANGED")
+        result = await super().publish(rqi, container, payload)
+        entry = {"rqi": rqi, "container": container, "payloadSha256": payload_hash(payload)}
+        if container == "@core/telemetry":
+            entry["scopedReceipt"] = result
+        else:
+            observed = await self.read_content(rqi, container)
+            if canonical(observed) != canonical(payload):
+                raise RelayFailure("RECOVERY_READBACK_MISMATCH")
+            entry["readbackSha256"] = payload_hash(observed)
+        self.ledger.write(canonical(entry) + "\n")
+        self.ledger.flush()
+        os.fsync(self.ledger.fileno())
+        self.confirmed[rqi] = entry
+        return result
+
+
+async def run_recovery(config: GatewayConfig, output: Path, database: Path, seconds: int) -> dict:
+    """Replay only already-staged records from the explicitly opened Feather state."""
+    summary = {"mode": "scoped-recovery", "status": "failed", "error": None,
+               "pendingCount": 0, "confirmedCount": 0, "remainingCount": None}
+    phase = "RECOVERY_SETUP"
+    try:
+        validate_config(config, scoped=True)
+        if not database.is_file() or database.is_symlink():
+            raise RelayFailure("SCOPED_STATE_BINDING_MISMATCH")
+        config = replace(config, database=database)
+        with closing(Store(database, config.max_outbox_rows, config.max_outbox_bytes,
+                           config.max_commands, configured_binding(config))) as store:
+            pending = pending_recovery_rows(store, config)
+            summary["pendingCount"] = len(pending)
+            summary["remainingCount"] = len(pending)
+            if not pending:
+                summary["status"] = "nothing-to-recover"
+                return summary
+            plan_path = output / "recovery-plan.jsonl"
+            with plan_path.open("x", encoding="utf-8", newline="\n") as plan:
+                for row in pending.values():
+                    plan.write(canonical(row) + "\n")
+                plan.flush()
+                os.fsync(plan.fileno())
+            summary["planSha256"] = hashlib.sha256(plan_path.read_bytes()).hexdigest()
+            ledger_path = output / "recovery-receipts.jsonl"
+            with ledger_path.open("x", encoding="utf-8", newline="\n") as ledger:
+                # Persist both file entries before any publish can remove a row.
+                for directory in (output, output.parent):
+                    descriptor = os.open(directory, os.O_RDONLY | os.O_DIRECTORY)
+                    try:
+                        os.fsync(descriptor)
+                    finally:
+                        os.close(descriptor)
+                hub = RecoveryTransport(config, pending, ledger)
+                gateway = Gateway.__new__(Gateway)
+                gateway.config, gateway.store, gateway.transport = config, store, hub
+                gateway.stop, gateway.counters = asyncio.Event(), Counter()
+                workers = []
+                try:
+                    async with asyncio.timeout(seconds):
+                        phase = "RECOVERY_CONNECT"
+                        await hub.start()
+                        await hub._ready.wait()
+                        phase = "RECOVERY_DRAIN"
+                        workers = [asyncio.create_task(gateway._outbox_loop(scoped=scoped)) for scoped in (False, True)]
+                        while store.counts()[0]:
+                            for worker in workers:
+                                if worker.done():
+                                    worker.result()
+                                    raise RelayFailure("SENDER_STOPPED")
+                            await asyncio.sleep(0.05)
+                        if set(hub.confirmed) != set(pending):
+                            raise RelayFailure("RECOVERY_RECEIPTS_INCOMPLETE")
+                        summary["status"] = "passed"
+                finally:
+                    gateway.stop.set()
+                    for worker in workers:
+                        worker.cancel()
+                    await asyncio.gather(*workers, return_exceptions=True)
+                    summary["confirmedCount"] = len(hub.confirmed)
+                    summary["remainingCount"] = store.counts()[0]
+                    try:
+                        await asyncio.wait_for(hub.close(), 10)
+                    except (Exception, asyncio.CancelledError):
+                        summary.update(status="failed", error="RECOVERY_TRANSPORT_CLOSE_FAILED")
+                    summary["receiptsSha256"] = hashlib.sha256(ledger_path.read_bytes()).hexdigest()
+    except RelayFailure as exc:
+        summary.update(status="failed", error=str(exc))
+    except TimeoutError:
+        summary.update(status="failed", error=phase + "_TIMEOUT")
+    except asyncio.CancelledError:
+        summary.update(status="failed", error="INTERRUPTED")
+    except Exception:
+        summary.update(status="failed", error=phase + "_FAILED")
+    return summary
 
 
 async def run_capture(config: GatewayConfig, output: Path, frames: int, seconds: int, *,
@@ -363,11 +505,14 @@ def main() -> int:
     parser.add_argument("--frames", type=int, default=5, help="Number of real observations to relay (1..100)")
     parser.add_argument("--seconds", type=int, default=90, help="Total connect/capture/drain/readback budget (5..600)")
     parser.add_argument("--scoped-state", type=Path, help="Private, dedicated Feather scope state directory")
+    parser.add_argument("--recover-scoped", action="store_true", help="Replay an existing scoped outbox without BLE")
     args = parser.parse_args()
     if not 1 <= args.frames <= 100 or not 5 <= args.seconds <= 600:
         parser.error("frames must be 1..100 and seconds must be 5..600")
-    if args.scoped_state is not None and args.frames < 3:
+    if args.scoped_state is not None and not args.recover_scoped and args.frames < 3:
         parser.error("scoped capture requires at least three frames for the button states")
+    if args.recover_scoped and args.scoped_state is None:
+        parser.error("scoped recovery requires --scoped-state")
     if os.name != "posix":
         parser.error("relay execution requires POSIX private files and flock; run on the Pi")
     import fcntl
@@ -382,14 +527,20 @@ def main() -> int:
         print(json.dumps({"status": "failed", "error": "NEW_PRIVATE_OUTPUT_REQUIRED"}), flush=True)
         return 1
     summary = summary_template()
+    if args.recover_scoped:
+        summary["mode"] = "scoped-recovery"
     try:
         with (output / "gateway.lock").open("x") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
             config = load_config(args.env)
             if args.scoped_state is not None:
                 validate_config(config, scoped=True)
-                with open_scoped_state(config, args.scoped_state.expanduser().absolute(), output) as database:
-                    summary = asyncio.run(run_capture(config, output, args.frames, args.seconds, scoped_database=database))
+                with open_scoped_state(config, args.scoped_state.expanduser().absolute(), output,
+                                       existing_only=args.recover_scoped) as database:
+                    if args.recover_scoped:
+                        summary = asyncio.run(run_recovery(config, output, database, args.seconds))
+                    else:
+                        summary = asyncio.run(run_capture(config, output, args.frames, args.seconds, scoped_database=database))
             else:
                 summary = asyncio.run(run_capture(config, output, args.frames, args.seconds))
             write_receipt(output, summary)
@@ -405,7 +556,7 @@ def main() -> int:
         except OSError:
             summary.update(status="failed", error="RECEIPT_WRITE_FAILED")
     print(json.dumps(summary, ensure_ascii=True), flush=True)
-    return 0 if summary["status"] == "passed" else 1
+    return 0 if summary["status"] in {"passed", "nothing-to-recover"} else 1
 
 
 if __name__ == "__main__":

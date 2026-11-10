@@ -62,7 +62,22 @@ Gateway 0.2.19와 [격리 Feather 설정](../../dev/mobius4/README.md#feather-�
 
 `receipt.json`의 `publishedCount`와 `deliveryChannels`는 native 전송 수다. `scopedReceiptCount`, `scopedReceipts`와 `sdtReadbackState`는 별도로 기록한다. 관측 전용 Feather의 버튼 상태는 cin으로 확인한다. SDT의 false는 펌웨어가 보고한 출력 상태다.
 
-반복 실행 시 `--scoped-state`는 같은 격리 경로를 쓰고 출력 폴더는 새로 지정한다. 시험 전용 SQLite를 재사용해 wire sequence를 이어 간다. 이전 실행의 미전송 행이 남아 있거나 scope 정보가 맞지 않으면 중단한다. 그 DB를 보존한 채 원인을 확인한다. scope 또는 DB를 삭제해 sequence를 처음부터 다시 발급하는 방식은 쓰지 않는다. 이번에는 서버의 빈 SDT 조회까지만 확인했다. [준비 기록](../../evidence/2026-11-10-core-scoped-feather-readback/README.md)
+반복 실행 시 `--scoped-state`는 같은 격리 경로를 쓰고 출력 폴더는 새로 지정한다. 시험 전용 SQLite를 재사용해 wire sequence를 이어 간다. 이전 실행의 미전송 행이 남아 있거나 scope 정보가 맞지 않으면 새 캡처가 중단된다. 서버의 빈 SDT 조회까지 확인했다. [준비 기록](../../evidence/2026-11-10-core-scoped-feather-readback/README.md)
+
+### 중단된 scoped 전송 복구
+
+동일한 시험 환경과 기존 scoped-state 디렉터리를 지정한다. 복구는 이전 SQLite 대기열만 전송하며 새 BLE 세션을 시작하지 않는다.
+
+```sh
+.venv/bin/python keyring/firmware/feather_probe/relay.py \
+  --env "$PRIVATE_BENCH/feather-scoped.env" \
+  --scoped-state "$PRIVATE_BENCH/feather-scoped-state" \
+  --recover-scoped --output "$PRIVATE_BENCH/feather-scoped-recovery-01" --seconds 600
+```
+
+전송 전 `recovery-plan.jsonl`에 정확한 대기열 행을 보존한다. 일반 관측은 같은 cin을 다시 읽고, scoped 관측은 동일한 epoch·sequence·본문 해시의 MQTT 적용 영수증을 받는다. 도구는 `recovery-receipts.jsonl`을 동기화한 뒤 각 행의 완료를 허용한다. 두 파일은 시험용 private 폴더에 보관한다. 일반 관측의 읽기 해시는 원본과 비교하고, scoped 영수증의 해시는 내부 epoch 필드를 제거한 MQTT 본문을 가리킨다.
+
+기존 재시도 대기를 유지한다. 이미 원격에서 처리된 행은 기존 요청 ID의 재시도 결과로 확인한다. 복구가 멈추면 `confirmedCount`와 `remainingCount`로 확인 기록과 SQLite 상태를 구분한다. 같은 RQI의 기록이 여러 시도에서 보이면 RQI별로 대조한다. 대기 행이 없으면 `nothing-to-recover`다. 복구 결과는 새 버튼 시연 기록과 분리한다. 이번 추가 모드는 소스와 회귀시험 코드만 준비했다.
 
 ## Raspberry Pi에서 단독 BLE 관측
 

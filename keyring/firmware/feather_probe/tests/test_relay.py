@@ -15,6 +15,8 @@ import httpx
 
 from bubble_gateway.config import GatewayConfig
 from bubble_gateway.model import canonical, payload_hash
+from bubble_gateway.state_identity import configured_binding
+from bubble_gateway.store import Store
 from helpers import observation
 
 
@@ -49,6 +51,14 @@ class FeatherRelayTests(unittest.IsolatedAsyncioTestCase):
                                    firmwareRevision=relay.FIRMWARE, battery=None,
                                    sequence=index + 1, buttonState=state)
                        for index, state in enumerate(("released", "confirm", "panic"))]
+
+    def scoped_config(self):
+        return replace(self.config, gateway_id="gw-a", cse_url="https://localhost:8760",
+                       mqtt_enabled=True, mqtt_host="localhost", mqtt_port=8884, m2m_mqtt_enabled=False,
+                       core_bridge_enabled=True, core_telemetry_epochs={relay.DEVICE_ID: 1},
+                       observation_container=relay.BENCH_ROOT + "/observations",
+                       receipt_container=relay.BENCH_ROOT + "/receipts",
+                       health_container=relay.BENCH_ROOT + "/health")
 
     def test_explicit_env_wins_and_inherited_environment_is_restored(self):
         env_file = self.root / "relay.env"
@@ -149,12 +159,7 @@ class FeatherRelayTests(unittest.IsolatedAsyncioTestCase):
 
         config = replace(self.config, mqtt_enabled=mqtt, mqtt_host="fixture.invalid")
         if scoped:
-            config = replace(config, gateway_id="gw-a", cse_url="https://localhost:8760",
-                             mqtt_enabled=True, mqtt_host="localhost", mqtt_port=8884, m2m_mqtt_enabled=False,
-                             core_bridge_enabled=True, core_telemetry_epochs={relay.DEVICE_ID: 1},
-                             observation_container=relay.BENCH_ROOT + "/observations",
-                             receipt_container=relay.BENCH_ROOT + "/receipts",
-                             health_container=relay.BENCH_ROOT + "/health")
+            config = self.scoped_config()
         with patch.object(relay, "BleFleet", FakeFleet), patch.object(relay, "RelayTransport", MockHttpHub):
             summary = await relay.run_capture(config, self.output, 3, 5,
                                               scoped_database=self.root / "scoped.sqlite3" if scoped else None)
@@ -206,3 +211,45 @@ class FeatherRelayTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(summary["scopedReceiptCount"], 3)
         self.assertEqual([receipt["sequence"] for receipt in summary["scopedReceipts"]], [0, 1, 2])
         self.assertIs(summary["sdtReadbackState"], False)
+
+    async def test_scoped_recovery_reuses_pending_bytes_without_starting_ble(self):
+        config = self.scoped_config()
+        database = self.root / "scoped.sqlite3"
+        original = dict(self.frames[0], gatewayId="gw-a")
+        store = Store(database, 100, 5000000, 20, configured_binding(config))
+        try:
+            store.observation(config.observation_container, original, True, core_epochs=config.core_telemetry_epochs)
+            expected = {rqi: row["payload"] for rqi, row in relay.pending_recovery_rows(store, config).items()}
+        finally:
+            store.close()
+
+        async def start(hub):
+            hub._ready.set()
+
+        async def publish(_hub, rqi, container, payload):
+            self.assertTrue((self.output / "recovery-plan.jsonl").is_file())
+            self.assertEqual(payload, expected[rqi])
+            if container == "@core/telemetry":
+                wire = {key: value for key, value in payload.items() if key != "ownershipEpoch"}
+                return {"payloadHash": payload_hash(wire), "responseStatus": 2004}
+
+        async def readback(_hub, rqi, _container):
+            return expected[rqi]
+
+        with (patch.object(relay, "BleFleet", side_effect=AssertionError("recovery started BLE")),
+              patch.object(relay.TransportHub, "start", start),
+              patch.object(relay.TransportHub, "publish", publish),
+              patch.object(relay.TransportHub, "read_content", readback)):
+            summary = await relay.run_recovery(config, self.output, database, 5)
+        self.assertEqual(summary["status"], "passed", summary)
+        self.assertEqual((summary["pendingCount"], summary["confirmedCount"], summary["remainingCount"]), (2, 2, 0))
+        rows = [json.loads(line) for line in (self.output / "recovery-receipts.jsonl").read_text().splitlines()]
+        self.assertEqual({row["rqi"] for row in rows}, set(expected))
+        self.assertEqual(sum("scopedReceipt" in row for row in rows), 1)
+        self.assertEqual(sum("readbackSha256" in row for row in rows), 1)
+        store = Store(database, 100, 5000000, 20, configured_binding(config))
+        try:
+            self.assertEqual(store.counts(), (0, 0))
+            self.assertEqual(store.db.execute("SELECT wire_sequence FROM core_sequences").fetchone()[0], 0)
+        finally:
+            store.close()
