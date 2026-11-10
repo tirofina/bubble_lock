@@ -30,6 +30,8 @@ USB 로그의 `KEYRING bringup`에서 `motor=0 aux=0 fault=0`을 기대한다. m
 
 [BlueZ 등록 절차](../raspberry-pi-gateway/README.md#bluez-등록)를 따라 장치별로 페어링한다. 격리 Gateway에서 `BLE_GATT_PROFILE=core-v1`, `FIRMWARE_REVISION_ALLOWLIST=keyring-0.7.13-bringup`과 시험 전용 DB를 사용한다. Gateway health에서 보드 `r18-hand-solder`, 새 부팅 ID, `connected:true`, `commandReady:false`를 확인한다. BlueZ에 이전 쓰기 특성이 캐시돼 있어도 Gateway 0.2.37은 이 revision을 관측 전용으로 처리한다.
 
+버튼·센서·전원과 Gateway의 명령 차단 상태는 Gateway 0.2.38의 [Pi 초기 구동 기록 모드](../raspberry-pi-gateway/TESTING.md#r18-초기-구동-기록)에서 한 번에 기록할 수 있다. 기록 시에는 같은 DB 경로를 사용하는 Gateway를 중지한다. 이 모드는 BLE 관측으로 판정하며 전원 레일의 실측은 별도로 남긴다.
+
 | 확인 항목 | 증거 |
 |---|---|
 | 부팅·전원 | board revision, 빌드 산출물 해시, USB 로그, +3V3 실측, 입력 전원 조건 |

@@ -143,6 +143,79 @@ class BatteryCaptureTests(unittest.TestCase):
         self.assertTrue(all("batteryAlert" not in row and "batteryPercent" not in row for row in report["events"]))
 
 
+class BringupCaptureTests(unittest.TestCase):
+    board = "r18-hand-solder"
+
+    def events(self, *, split_at=None, command_ready=False):
+        events = []
+
+        def add(kind, generation, **fields):
+            events.append(dict(event=kind, generation=generation, atNs=len(events) * 1_000_000,
+                               bootId="private-boot", boardRevision=self.board, **fields))
+
+        def ready(generation):
+            add("ready", generation, commandReady=command_ready, advertisingRssiDbm=None, advertisingAgeMs=None)
+
+        generation = 1
+        ready(generation)
+        cases = (
+            ("released", [2, 1], dict(detail="sensors", batteryStatus="ok", accelStatus="ok",
+                                      motion="ready", accelerationG=[0, 0, 1])),
+            ("confirm", [3, 1], {}),
+            ("released", [3, 1], dict(detail="energy")),
+            ("panic", [3, 2], {}),
+            ("released", [3, 2], dict(detail="health", power="disabled")),
+        )
+        for sequence, (button, presses, sensor) in enumerate(cases):
+            if sequence == split_at:
+                add("lost", generation)
+                generation += 1
+                ready(generation)
+            energy = {"ina219": {"status": "ok", "readUptimeMs": 100}, "deviceUptimeMs": 150} if sequence == 2 else {}
+            observation = dict(state=False, buttonState=button, battery=73, deviceId="private-device", uptimeMs=150,
+                               sensorValues=dict(sensor, fault=False, journal="disabled", buttonPresses=presses,
+                                                 arbitraryField="private-payload"))
+            add("notification", generation, sequence=sequence, observation=observation, **energy)
+        return events
+
+    def report(self, events):
+        return summarize(events, 0, len(events) * 1_000_000, board=self.board, mode="bringup",
+                         truncated=False, dropped=0)
+
+    def test_one_session_records_buttons_sensors_power_and_health_without_raw_frame(self):
+        report = self.report(self.events())
+        self.assertEqual(report["status"], "RECORDED")
+        self.assertEqual(report["bringup"], dict(session=1, buttonSequences=[0, 1, 2, 3, 4],
+                                                 sensorSequence=0, powerSequence=2, healthSequence=4,
+                                                 missing=[], mismatches=[]))
+        contents = json.dumps(report)
+        for private in ("private-boot", "private-device", "private-payload"):
+            self.assertNotIn(private, contents)
+
+    def test_capture_does_not_splice_sessions_even_on_the_same_boot(self):
+        report = self.report(self.events(split_at=3))
+        self.assertEqual(report["status"], "INSUFFICIENT")
+        self.assertEqual(report["bringup"]["buttonSequences"], [0, 1, 2])
+        self.assertEqual(report["bringup"]["missing"], ["buttons", "health"])
+
+    def test_counter_requires_an_observed_press_and_release(self):
+        events = self.events()
+        events[2]["observation"]["sensorValues"]["buttonPresses"] = [True, 1]
+        report = self.report(events)
+        self.assertEqual(report["status"], "INSUFFICIENT")
+        self.assertIn("buttons", report["bringup"]["missing"])
+
+    def test_safety_mismatches_and_counter_regression_prevent_recorded_status(self):
+        events = self.events(command_ready=True)
+        events[1]["observation"]["state"] = True
+        events[4]["observation"]["sensorValues"]["fault"] = True
+        events[5]["observation"]["sensorValues"].update(journal="ready", buttonPresses=[1, 1])
+        report = self.report(events)
+        self.assertEqual(report["status"], "MISMATCH")
+        self.assertEqual(set(report["bringup"]["mismatches"]),
+                         {"commandReady", "outputActive", "mainFault", "journalEnabled", "buttonCounterRegressed"})
+
+
 class SessionTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         cfg = config()
@@ -248,6 +321,17 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([event["event"] for event in events], ["ready", "lost", "ready", "notification"])
         self.assertEqual(events[-1]["generation"], events[2]["generation"])
         self.assertEqual(events[-1]["sequence"], 2)
+        self.assertNotIn("observation", events[-1])
+
+    async def test_observation_trace_is_opt_in_and_excludes_initial_read(self):
+        events = []
+        self.fleet._trace = events.append
+        self.fleet._trace_observation = True
+        _, current = await self.reconnect()
+        self.assertTrue(all("observation" not in event for event in events))
+        frame = current.frame(2)
+        current.callbacks[self.fleet.observation_uuid](None, bytearray((json.dumps(frame) + "\n").encode()))
+        self.assertEqual(events[-1]["observation"], frame)
 
     async def test_diagnostic_trace_distinguishes_missing_unknown_and_known_battery_alerts(self):
         events = []

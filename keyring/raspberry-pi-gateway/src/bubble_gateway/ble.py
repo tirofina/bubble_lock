@@ -182,15 +182,18 @@ class BleFleet:
         self._tasks: list[asyncio.Task] = []
         self._callback: Callable[[dict[str, Any]], Awaitable[None]] | None = None
         self._trace: Callable[[dict[str, Any]], None] | None = None
+        self._trace_observation = False
         self._closed = asyncio.Event()
 
     async def start(self, observation_callback: Callable[[dict[str, Any]], Awaitable[None]], *,
-                    trace: Callable[[dict[str, Any]], None] | None = None) -> None:
+                    trace: Callable[[dict[str, Any]], None] | None = None,
+                    trace_observation: bool = False) -> None:
         if self._tasks:
             raise RuntimeError("BLE fleet already started")
         self._closed.clear()
         self._callback = observation_callback
         self._trace = trace
+        self._trace_observation = trace_observation
         self._tasks.append(asyncio.create_task(self._scan(), name="ble-scan"))
         for peer in self._peers.values():
             self._tasks.append(asyncio.create_task(self._watch(peer), name=f"ble-{peer.device_id}"))
@@ -328,7 +331,8 @@ class BleFleet:
                     if self._trace is not None:
                         age = None if peer.rssi_monotonic is None else time.monotonic() - peer.rssi_monotonic
                         fresh = peer.rssi is not None and age is not None and 0 <= age <= 30
-                        self._trace_event(peer, "ready", advertisingRssiDbm=peer.rssi if fresh else None,
+                        self._trace_event(peer, "ready", commandReady=peer.command_writable,
+                                          advertisingRssiDbm=peer.rssi if fresh else None,
                                           advertisingAgeMs=round(age * 1000) if fresh else None)
                     delay = 1.0
                     await peer.disconnected.wait()
@@ -408,6 +412,8 @@ class BleFleet:
                     fields.update(wakeCause=wake, wakePins=pins, deviceUptimeMs=frame["uptimeMs"])
                 if sensor.get("detail") == "energy" or "ina219" in sensor:
                     fields.update(ina219=sensor.get("ina219"), deviceUptimeMs=frame["uptimeMs"])
+                if self._trace_observation:
+                    fields["observation"] = frame
                 self._trace_event(peer, "notification", **fields)
 
     async def _deliver(self, peer: _Peer) -> None:

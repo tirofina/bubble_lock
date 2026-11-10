@@ -1,4 +1,4 @@
-"""Capture BLE range, reconnect, wake, battery alerts and r18 power on Linux/BlueZ."""
+"""Capture BLE range, reconnect, wake, battery alerts and r18 bring-up on Linux/BlueZ."""
 from __future__ import annotations
 
 import argparse
@@ -12,9 +12,9 @@ import time
 from pathlib import Path
 from types import SimpleNamespace
 
-from .ble import BleFleet
+from .ble import BleFleet, _r18_bringup
 from .config import ID
-from .model import canonical, iso_time
+from .model import canonical, iso_time, valid_button_presses
 
 MAX_EVENTS = 8192
 BOARD_REVISIONS = {"feather-bench": "feather-esp32-v2", "r18-pcb": "r18-hand-solder"}
@@ -23,6 +23,7 @@ WAKE_CASES = {"confirm": ("button", 1 << 6), "panic": ("button", 1 << 7),
               "motion": ("motion", 0), "timer": ("timer", 0)}
 BATTERY_THRESHOLDS = (20, 25)
 BATTERY_STAGES = ("initialClear", "clearInBand", "lowAlert", "alertInBand", "recovered")
+BRINGUP_BUTTON_STATES = ("released", "confirm", "released", "panic", "released")
 
 
 def wake_result(sessions: list[dict], rows: list[dict], expected: str, release_ms: int | None) -> dict:
@@ -132,6 +133,80 @@ def battery_result(rows: list[dict], warn: int, recover: int) -> dict:
             "missingAlertFrames": missing, "unknownFrames": unknown, "mismatchedFrames": mismatched}
 
 
+def bringup_fields(frame: dict) -> dict:
+    sensors = frame["sensorValues"]
+    axes = sensors.get("accelerationG")
+    axes_valid = (isinstance(axes, list) and len(axes) == 3
+                  and all(type(value) in (int, float) and -float("inf") < value < float("inf") for value in axes))
+    presses = sensors.get("buttonPresses")
+    fault = sensors.get("fault")
+    battery_status, accel_status, motion = (sensors.get(key) for key in ("batteryStatus", "accelStatus", "motion"))
+    journal = sensors.get("journal")
+    return {
+        "state": frame["state"], "mainFault": fault if type(fault) is bool else None,
+        "deviceUptimeMs": frame["uptimeMs"],
+        "buttonState": frame["buttonState"], "buttonPresses": presses if valid_button_presses(presses) else None,
+        "batteryPercent": frame["battery"], "accelerationG": axes if axes_valid else None,
+        "batteryStatus": battery_status if battery_status in ("ok", "unavailable") else None,
+        "accelStatus": accel_status if accel_status in ("ok", "unavailable") else None,
+        "motion": motion if motion in ("ready", "unavailable") else None,
+        "sensorsReady": (sensors.get("detail") == "sensors" and battery_status == "ok"
+                         and accel_status == "ok" and motion == "ready"
+                         and frame["battery"] is not None and axes_valid),
+        "journal": journal if journal in ("disabled", "ready", "error") else None,
+        "sleepDisabled": sensors.get("detail") == "health" and sensors.get("power") == "disabled",
+    }
+
+
+def bringup_buttons(rows: list[dict]) -> tuple[list[int], bool]:
+    markers = []
+    previous = None
+    regressed = False
+    for row in rows:
+        presses = row.get("buttonPresses")
+        if presses is None:
+            continue
+        if previous is not None and any(current < earlier for current, earlier in zip(presses, previous)):
+            regressed = True
+        previous = presses
+        step = len(markers)
+        if step == len(BRINGUP_BUTTON_STATES) or row["buttonState"] != BRINGUP_BUTTON_STATES[step]:
+            continue
+        if markers:
+            confirm, panic = (current - earlier for current, earlier in zip(presses, markers[-1]["buttonPresses"]))
+            expected = (1, 0) if step == 1 else (0, 1) if step == 3 else (0, 0)
+            if (confirm, panic) != expected:
+                continue
+        markers.append(row)
+    return [row["sequence"] for row in markers], regressed
+
+
+def bringup_result(sessions: list[dict], rows: list[dict]) -> dict:
+    first = next((session for session in sessions if session["notificationCount"]), None)
+    session_id = first["session"] if first else None
+    notifications = [row for row in rows if row["event"] == "notification"]
+    selected = [row for row in notifications if row["session"] == session_id]
+    buttons, regressed = bringup_buttons(selected)
+    sensors = next((row["sequence"] for row in selected if row.get("sensorsReady")), None)
+    power = next((row["sequence"] for row in selected if (row.get("ina219") or {}).get("status") == "ok"), None)
+    health = next((row["sequence"] for row in selected if row.get("journal") == "disabled" and row.get("sleepDisabled")), None)
+    missing = [name for name, present in (
+        ("commandDisabled", first is not None and first["commandReady"] is False),
+        ("safeOutputs", selected and all(row.get("state") is False and row.get("mainFault") is False for row in selected)),
+        ("buttons", len(buttons) == len(BRINGUP_BUTTON_STATES)),
+        ("sensors", sensors is not None), ("power", power is not None), ("health", health is not None),
+    ) if not present]
+    mismatches = [name for name, observed in (
+        ("commandReady", any(session["commandReady"] is True for session in sessions)),
+        ("outputActive", any(row.get("state") is True for row in notifications)),
+        ("mainFault", any(row.get("mainFault") is True for row in notifications)),
+        ("journalEnabled", any(row.get("journal") in ("ready", "error") for row in notifications)),
+        ("buttonCounterRegressed", regressed),
+    ) if observed]
+    return {"session": session_id, "buttonSequences": buttons, "sensorSequence": sensors,
+            "powerSequence": power, "healthSequence": health, "missing": missing, "mismatches": mismatches}
+
+
 def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mode: str,
               truncated: bool, dropped: int, expected_wake: str | None = None,
               release_ms: int | None = None, include_power: bool = False,
@@ -164,6 +239,8 @@ def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mo
                 "notificationCount": 0, "firstNotificationAtMs": None, "lastSequence": None,
                 "sequenceGaps": 0,
             }
+            if mode == "bringup":
+                sessions[key]["commandReady"] = event.get("commandReady")
         elif key in sessions:
             session = sessions[key]
             if kind == "lost":
@@ -174,10 +251,12 @@ def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mo
                 if mode == "wake" and "wakeCause" in event:
                     row.update(wakeCause=event["wakeCause"], wakePins=event["wakePins"],
                                deviceUptimeMs=event["deviceUptimeMs"])
-                if include_power and "ina219" in event:
+                if (include_power or mode == "bringup") and "ina219" in event:
                     row.update(ina219=event["ina219"], deviceUptimeMs=event["deviceUptimeMs"])
                 if mode == "battery" and "batteryAlert" in event:
                     row.update(batteryPercent=event["batteryPercent"], batteryAlert=event["batteryAlert"])
+                if mode == "bringup" and "observation" in event:
+                    row.update(bringup_fields(event["observation"]))
                 if session["notificationCount"] == 0:
                     session["firstNotificationAtMs"] = elapsed
                 else:
@@ -200,15 +279,17 @@ def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mo
     wake = wake_result(measured, rows, expected_wake, release_ms) if expected_wake is not None else None
     power = power_result(measured, rows, mode) if include_power else None
     battery = battery_result(rows, *battery_thresholds) if mode == "battery" else None
+    bringup = bringup_result(measured, rows) if mode == "bringup" else None
     status = "RECORDED"
     if truncated:
         status = "TRUNCATED"
-    elif battery is not None and battery["mismatchedFrames"]:
+    elif (battery is not None and battery["mismatchedFrames"]) or (bringup is not None and bringup["mismatches"]):
         status = "MISMATCH"
     elif (not notifications or unexpected_boards or dropped or (mode == "reconnect" and not reconnects)
           or (mode == "wake" and (wake is None or not wake["matched"]))
           or (power is not None and power["missingPhases"])
-          or (battery is not None and (battery["matchedCycle"] is None or battery["missingAlertFrames"]))):
+          or (battery is not None and (battery["matchedCycle"] is None or battery["missingAlertFrames"]))
+          or (bringup is not None and bringup["missing"])):
         status = "INSUFFICIENT"
     report = {"status": status, "durationMs": (stop_ns - start_ns) // 1_000_000,
               "notificationCount": notifications, "droppedByReceiver": dropped,
@@ -220,6 +301,8 @@ def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mo
         report["power"] = power
     if battery is not None:
         report["battery"] = battery
+    if bringup is not None:
+        report["bringup"] = bringup
     return report
 
 
@@ -254,13 +337,16 @@ async def characterize(args: argparse.Namespace) -> dict:
             if event["event"] == "notification" and event["boardRevision"] == board:
                 if event["generation"] not in receiving:
                     receiving.add(event["generation"])
+                    if args.mode == "bringup" and not first.is_set():
+                        print("Baseline window: release both buttons, then hold and release Confirm and Panic in order.",
+                              flush=True)
                     first.set()
                     print("First notification received for this BLE session.", flush=True)
                 reading = event.get("ina219")
                 if reading is not None and reading["status"] == "ok":
                     first_power.set()
 
-        await fleet.start(discard_observation, trace=trace)
+        await fleet.start(discard_observation, trace=trace, trace_observation=args.mode == "bringup")
         try:
             if stop_on_first:
                 try:
@@ -307,7 +393,7 @@ async def characterize(args: argparse.Namespace) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--mode", choices=("range", "reconnect", "wake", "battery"), required=True)
+    parser.add_argument("--mode", choices=("range", "reconnect", "wake", "battery", "bringup"), required=True)
     parser.add_argument("--hardware", choices=tuple(BOARD_REVISIONS), required=True)
     parser.add_argument("--gateway-id", required=True)
     parser.add_argument("--device-id", required=True)
@@ -347,6 +433,9 @@ def main() -> None:
             parser.error("battery mode requires r18-pcb, --battery-source and thresholds 0 <= WARN < RECOVER <= 100")
     elif args.battery_source is not None or args.battery_thresholds is not None:
         parser.error("battery source and thresholds require battery mode")
+    if args.mode == "bringup" and not _r18_bringup({
+            "boardRevision": BOARD_REVISIONS[args.hardware], "firmwareRevision": args.firmware_revision}):
+        parser.error("bringup mode requires r18-pcb and an observation-only -bringup firmware revision")
     lock_path = args.database.with_suffix(".lock")
     if (args.output.exists() or args.output.is_symlink() or not args.output.parent.is_dir()
             or args.output.resolve() in {args.database.resolve(), lock_path.resolve()}):
@@ -358,8 +447,11 @@ def main() -> None:
         import fcntl
         with lock_path.open("a") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            print("BLE capture started. For reconnect mode, wait for observations, interrupt the link and restore it.",
-                  flush=True)
+            if args.mode == "bringup":
+                print("BLE capture started. Keep both buttons released until the first notification.", flush=True)
+            else:
+                print("BLE capture started. For reconnect mode, wait for observations, interrupt the link and restore it.",
+                      flush=True)
             report = asyncio.run(characterize(args))
         content = (canonical(report) + "\n").encode("utf-8")
         with args.output.open("xb") as handle:
