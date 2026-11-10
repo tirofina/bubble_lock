@@ -88,9 +88,7 @@ def prepare(args, session):
     print(f"SCOPED_FEATHER_SESSION_PREPARED {session.name}")
 
 
-def run(root, session):
-    import fcntl
-
+def load_environment(session):
     require_private(session, stat.S_ISDIR)
     profile_path = require_private(session / "profile.json", stat.S_ISREG)
     with profile_path.open(encoding="utf-8") as stream:
@@ -99,7 +97,13 @@ def run(root, session):
     if (not isinstance(profile, dict) or not fields <= profile.keys()
             or profile.keys() - fields - {"cseDeploymentId", "receiptContainerRi"}):
         raise ValueError("Expected a prepared Feather command session")
-    environment = gateway_environment(profile, session)
+    return gateway_environment(profile, session)
+
+
+def run(root, session):
+    import fcntl
+
+    environment = load_environment(session)
     with os.fdopen(os.open(root / "gateway.lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600), "rb") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         # Keep the bench-wide lock across exec in addition to the normal SQLite lock.
@@ -117,7 +121,8 @@ def main():
     setup.add_argument("--api-port", type=int, default=8787)
     setup.add_argument("--receipt-container-ri", help="Use the scoped gw-a receipt pin in a fresh session")
     start = modes.add_parser("run", help="Start the Gateway for an explicitly prepared session")
-    for mode in (setup, start):
+    check = modes.add_parser("preflight", help="Check the pinned receipt and central command routes over mTLS")
+    for mode in (setup, start, check):
         mode.add_argument("--session", required=True)
     args = parser.parse_args()
     if sys.platform != "linux" or os.getuid() == 0:
@@ -130,6 +135,10 @@ def main():
         if args.mode == "prepare":
             root.mkdir(mode=0o700, parents=True, exist_ok=True)
             prepare(args, require_private(root, stat.S_ISDIR) / args.session)
+        elif args.mode == "preflight":
+            require_private(root, stat.S_ISDIR)
+            environment = load_environment(root / args.session)
+            os.execve(sys.executable, [sys.executable, "-m", "bubble_gateway", "--check-command-route"], environment)
         else:
             run(require_private(root, stat.S_ISDIR), root / args.session)
     except BlockingIOError:

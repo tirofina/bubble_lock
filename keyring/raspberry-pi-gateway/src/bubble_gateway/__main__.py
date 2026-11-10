@@ -3,12 +3,15 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import logging
 import os
 import signal
+from dataclasses import replace
 from pathlib import Path
 
 from .config import DeploymentConfigError, GatewayConfig, check_state_directory, read_env_file, tls_context
+from .model import iso_time, validate_credential_status
 from .state_identity import StateIdentityError
 
 
@@ -21,10 +24,41 @@ async def serve(config: GatewayConfig) -> None:
     await gateway.run()
 
 
+async def check_command_route(config: GatewayConfig) -> dict:
+    import httpx
+    from .transport import RemoteResponseError, TransportHub
+
+    if config.receipt_container_ri is None:
+        raise DeploymentConfigError("M2M_RECEIPT_CONTAINER_RI is required for this check")
+    hub = TransportHub(replace(config, mqtt_enabled=False, m2m_mqtt_enabled=False, core_bridge_enabled=False))
+    stage = "mTLS initialization"
+    try:
+        await hub.start()
+        stage = "CSE receipt parent lookup"
+        pin = await hub.verify_receipt_route()
+        stage = "central credential status"
+        credential = validate_credential_status(await hub.credential_status(), config.gateway_id)
+        if credential["status"] != "ACTIVE":
+            raise DeploymentConfigError("Central Gateway credential is not ACTIVE")
+        stage = "central command list"
+        if await hub.poll_commands():
+            raise DeploymentConfigError("Central Gateway command list is not empty")
+        return {"gatewayId": config.gateway_id, "checkedAt": iso_time(), "receiptContainerRi": pin,
+                "credentialStatus": "ACTIVE", "activeCommands": 0}
+    except DeploymentConfigError:
+        raise
+    except (RemoteResponseError, httpx.HTTPError, OSError, ValueError) as exc:
+        raise DeploymentConfigError(f"{stage} failed ({type(exc).__name__})") from None
+    finally:
+        await hub.close()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Privacy Bubble Raspberry Pi Gateway")
     parser.add_argument("--env-file", type=Path)
-    parser.add_argument("--check-config", action="store_true", help="Check local config and TLS files without starting the Gateway")
+    checks = parser.add_mutually_exclusive_group()
+    checks.add_argument("--check-config", action="store_true", help="Check local config and TLS files without starting the Gateway")
+    checks.add_argument("--check-command-route", action="store_true", help="Check the pinned CSE and central API with HTTPS GET")
     parser.add_argument("--log-level", choices=("DEBUG", "INFO", "WARNING", "ERROR"), default="INFO")
     args = parser.parse_args()
     os.umask(0o077)
@@ -43,6 +77,10 @@ def main() -> None:
             except OSError as exc:
                 raise DeploymentConfigError(f"TLS file check failed ({type(exc).__name__})") from None
             logging.getLogger(__name__).info("Gateway configuration check passed")
+            return
+        if args.check_command_route:
+            report = asyncio.run(check_command_route(config))
+            print(json.dumps(report, separators=(",", ":")))
             return
         import fcntl
         config.database.parent.mkdir(mode=0o700, parents=True, exist_ok=True)

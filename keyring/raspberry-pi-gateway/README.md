@@ -113,6 +113,8 @@ sudo -u bubble-gateway env STATE_DIRECTORY=/var/lib/privacy-bubble-gateway \
 
 `--check-config`는 로컬 CA 및 인증서·개인키를 로드하고 키 일치를 확인한다. `STATE_DIRECTORY`가 있으면 SQLite와 잠금 파일의 해석된 경로가 그 안에 있는지 확인한다. 기존 DB를 열거나 생성하지 않는다. 서버 인증, 중앙 등록 상태, BlueZ 권한은 실제 연결 단계에서 확인한다.
 
+컨테이너 ID를 설정한 명령 Gateway는 같은 환경 파일에서 `--check-command-route`로 CSE 영수증 컨테이너와 중앙 자격, 활성 명령 목록을 HTTPS GET으로 확인할 수 있다. [격리 Pi 사용 절차](TESTING.md#pi-명령-세션)
+
 foreground 실행 명령은 다음과 같다. 같은 데이터베이스를 사용하는 프로세스는 하나만 허용한다. systemd 서비스가 이미 실행 중이면 중복으로 실행하지 않는다.
 
 ```sh

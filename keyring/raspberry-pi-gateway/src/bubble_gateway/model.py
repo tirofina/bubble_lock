@@ -80,6 +80,16 @@ def authorization_deadline(command: dict, digest: str, response: Any) -> datetim
     return min(parse_time(response["expiresAt"]), parse_time(command["deadline"]))
 
 
+def validate_credential_status(raw: Any, gateway_id: str) -> dict:
+    if (not isinstance(raw, dict) or set(raw) != {"gatewayId", "credentialRevision", "status"}
+            or raw["gatewayId"] != gateway_id
+            or raw["status"] not in ("ACTIVE", "LOST", "REVOKED")
+            or not isinstance(raw["credentialRevision"], str)
+            or not 1 <= len(raw["credentialRevision"]) <= 64):
+        raise ValueError("Credential status contract mismatch")
+    return raw
+
+
 def validate_observation(raw: Any, gateway_id: str, devices: dict[str, str]) -> dict:
     keys = {"version", "gatewayId", "deviceId", "bootId", "sequence", "observedAt", "receivedAt",
             "rssi", "battery", "buttonState", "sensorValues", "state", "firmwareRevision", "timestampSource"}

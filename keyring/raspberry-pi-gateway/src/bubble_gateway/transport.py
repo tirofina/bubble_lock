@@ -318,6 +318,13 @@ class TransportHub:
                 or type(parent.get("ty")) is not int or parent["ty"] != 3 or parent.get("ri") != pin):
             raise ReceiptParentMismatch("oneM2M receipt container identity mismatch", rsc, status)
 
+    async def verify_receipt_route(self) -> str:
+        pin = self.config.receipt_container_ri
+        if pin is None:
+            raise ValueError("A receipt container ID is required")
+        await self._verify_receipt_container(_resource_path(self.config.receipt_container), pin)
+        return pin
+
     @staticmethod
     def _require_receipt_parent(cin: Any, pin: str | None, rsc: int, status: int | None = None) -> None:
         if pin is not None and (not isinstance(cin, dict) or cin.get("pi") != pin):

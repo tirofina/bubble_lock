@@ -127,6 +127,14 @@ tool=keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_pi.py
 
 격리 TLS 프록시에 컨테이너 권한을 준비한 경우, 새 세션의 `prepare`에 `--receipt-container-ri "$gw_a_receipt_ri"`를 추가한다. 이 값에는 PC 준비 도구의 `SCOPED_RECEIPT_PIN gw-a` 출력에서 읽은 ID를 넣는다.
 
+핀을 지정한 세션은 두 SSH 포워딩이 열린 상태에서 아래 명령으로 전송 경로를 점검한다.
+
+```sh
+"$pi_python" "$tool" preflight --session "$bench_session"
+```
+
+Pi 인증서로 HTTPS GET만 보내 컨테이너 ID 일치, 중앙 자격 `ACTIVE`, 중앙 API의 활성 명령 0건을 확인한다. 성공하면 세 항목과 확인 시각을 JSON 한 줄로 출력한다. SQLite를 열거나 Gateway·BLE를 시작하는 단계는 다음 `run`이다. 실제 장치 준비 여부는 PC 명령 도구에서 같은 Feather 부팅의 최신 관측을 다시 확인한다.
+
 Feather 명령 프로필 `0.2.0`과 두 SSH 포워딩이 준비되면 같은 Feather를 쓰는 관측 프로세스를 종료한 뒤 아래 명령을 실행한다. 실행한 Gateway는 해당 세션의 `gateway.sqlite3`를 사용한다. Pi 사용자당 명령 벤치 한 개가 실행되며, 기본 Gateway의 SQLite 잠금도 유지한다.
 
 ```sh

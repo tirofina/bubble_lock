@@ -12,8 +12,8 @@ from pathlib import Path
 
 from .ble import BleFleet
 from .config import GatewayConfig, ID
-from .model import (authorization_deadline, canonical, iso_time, parse_time,
-                    payload_hash, utc_now, validate_command, validate_observation)
+from .model import (authorization_deadline, canonical, iso_time, parse_time, payload_hash, utc_now,
+                    validate_command, validate_credential_status, validate_observation)
 from .store import CapacityError, Store
 from .transport import TransportHub
 
@@ -131,13 +131,7 @@ class Gateway:
     async def _credentials_loop(self) -> None:
         while not self.stop.is_set():
             try:
-                result = await self.transport.credential_status()
-                if (not isinstance(result, dict) or set(result) != {"gatewayId", "credentialRevision", "status"}
-                        or result["gatewayId"] != self.config.gateway_id
-                        or result["status"] not in {"ACTIVE", "LOST", "REVOKED"}
-                        or not isinstance(result["credentialRevision"], str)
-                        or not 1 <= len(result["credentialRevision"]) <= 64):
-                    raise ValueError("Credential status contract mismatch")
+                result = validate_credential_status(await self.transport.credential_status(), self.config.gateway_id)
                 previous = (self.credential_status, self.credential_revision)
                 self.credential_status = result["status"]
                 self.credential_revision = result["credentialRevision"]
