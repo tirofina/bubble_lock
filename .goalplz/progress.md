@@ -501,3 +501,14 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 실제 r18/Pi 버튼 및 명령, 앱 알림, 중앙 정산과 제작 PCB 수용은 대기 중이다. 전체 goal은 active/progress다.
 
 구현·시험 증거 commit `534379bc39c5f4afd272865e22d315de7fda3c99`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `45b1c5d..534379b`다.
+
+## 2026-11-10 — CORE 관측 재시도 순서
+
+이전 goal turn은 r18 확인·비상 누계를 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- 기존 SQLite는 오래된 CORE 관측이 backoff 중일 때 같은 장치의 최신 값을 먼저 전송 대상으로 선택했다. Gateway 0.2.11은 장치별 선두 행만 선택한다. 다른 장치와 native 관측·영수증의 독립 전송을 유지한다.
+- 팀 원본 handler로 격리 Mobius4의 실제 SDT를 갱신했다. 역순 1→0은 옛 ON, 수정된 순서 0→1은 최신 OFF가 남았다. CORE backoff 동안 native cin 2건도 저장됐다.
+- 기본 75개, native CSE 11개, SDT 1개, Ubuntu SQLite 회귀시험과 wheel 소스 대조가 통과했다. [시험 기록](../keyring/evidence/2026-11-10-core-retry-order/README.md)
+- 중앙 동시 UPDATE 순서와 다중 Gateway handover, 실제 Pi/r18·Feather 명령은 대기 중이다. 전체 goal은 active/progress다.
+
+구현·시험 증거 commit `02ed4d367ad1f6a3a77d08b753890ebb545130ea`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `22f312e..02ed4d3`다.
