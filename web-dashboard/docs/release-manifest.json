@@ -1,0 +1,63 @@
+{
+  "role": "WEB-DASHBOARD",
+  "docRevision": "2.0.0",
+  "branch": "feature/web-dashboard",
+  "releaseSha": "eae5d59d86c732ffa2c6a6d0c6fad820e3f71b68",
+  "status": "verified",
+  "statusNote": "Local simulated dashboard verified by parent tests, build, HTTP and browser QA. releaseSha identifies implementation; this manifest ships in the following documentation commit. No production or project-wide release approval is claimed.",
+  "owner": "WEB-DASHBOARD",
+  "reviewer": "parent self-review (not independent Red/Blue/Green approval)",
+  "gates": [
+    { "id": "G-WEB-DEMO", "status": "verified", "performer": "WEB-DASHBOARD parent lane", "approver": "self-review only" },
+    { "id": "G-RELEASE", "status": "planned", "performer": null, "approver": null },
+    { "id": "G-SUBMIT", "status": "planned", "performer": null, "approver": null }
+  ],
+  "features": [
+    { "id": "event-contract", "rubric": ["R03"], "status": "verified", "contract": "contracts/dashboard-event.schema.json", "tests": ["test/contract.test.ts"] },
+    { "id": "sse-replay-resume", "rubric": ["R03", "R06"], "status": "verified", "contract": "contracts/dashboard-event.schema.json", "tests": ["test/sse.test.ts"], "evidence": ["evidence/http-sse.json"] },
+    { "id": "command-timeline", "rubric": ["R03"], "status": "verified", "tests": ["test/timeline.test.ts"], "evidence": ["evidence/browser-qa.json", "evidence/timezone-offset.json"], "note": "Default, partial, pending, false state, reconnect and RFC3339 offset rendering exercised in browser." },
+    { "id": "resource-tree", "rubric": ["R07", "R11"], "status": "verified", "note": "Fixture tree and source-derived oneM2M HTTP fixture discovery/retrieval exercised in browser; actual Mobius deployment remains untested.", "evidence": ["evidence/browser-qa.json"] },
+    { "id": "audit-search", "rubric": ["R10"], "status": "verified", "simulation": true, "evidence": ["evidence/browser-qa.json"] },
+    { "id": "mec-handover-fl-mcp-shells", "rubric": ["R12", "R15", "R16", "R17"], "status": "implemented", "simulation": true, "note": "UI shells inspected and labeled simulated; underlying integrations remain planned." },
+    { "id": "evidence-index", "rubric": ["R04", "R06"], "status": "verified", "evidence": ["evidence/browser-qa.json"] },
+    { "id": "r04-article", "rubric": ["R04"], "status": "planned", "doc": "docs/R04-article.md", "note": "Skeleton; physical, video, discussion and measurement evidence pending." }
+  ],
+  "checks": [
+    { "command": "npm test", "expected": "exit 0, all tests pass", "actual": "exit 0, 21 pass, 0 fail", "status": "verified", "source": "evidence/test-build.txt" },
+    { "command": "npm run build", "expected": "exit 0", "actual": "exit 0, tsc clean and 225 modules, including final UTC display repair", "status": "verified", "source": "evidence/test-build.txt" },
+    { "command": "GET /events Last-Event-ID: 2", "expected": "ids 3..18", "actual": "ids 3..18, pass", "status": "verified", "source": "evidence/http-sse.json" },
+    { "command": "browser QA 390px and 1440px, light and dark", "expected": "four stages, member partial state, search, resources and no horizontal overflow", "actual": "PASS; screenshots and exact actions captured; mobile end separately captures Chrome full-page height limit", "status": "verified", "source": "evidence/browser-qa.json" },
+    { "command": "browser EventSource acceptance 2026-10-29T09:00:00.000+09:00", "expected": "00:00:00.000 UTC", "actual": "00:00:00.000 UTC", "status": "verified", "source": "evidence/timezone-offset.json" }
+  ],
+  "artifacts": [
+    { "path": "contracts/dashboard-event.schema.json", "sha256": "c34aaab0faf98f2ae7a64ed1b695629da0aa535f2200fa882c9d2fb681834ed2" },
+    { "path": "fixtures/core-demo.jsonl", "sha256": "eee765249559e3bbc36777647d9c2a108d0b099d43533705d9f7cebed22998ec" },
+    { "path": "fixtures/core-partial.jsonl", "sha256": "bae6234f79ed1966e650e89b97794210098f33ab5b9322c98292fc3ed42d06bb" },
+    { "path": "fixtures/api-acceptance.json", "sha256": "8fb2f8bddf944403ee558b30b8ab0c70cc7168a4f2f83b77fe725b943bf1e58c" },
+    { "path": "evidence/http-sse.json", "sha256": "0cda31fcfa7ac3788656c333a0868ae90adc73544f4edf1c6cf0e9a43ba37636" },
+    { "path": "evidence/browser-qa.json", "sha256": "85c6c840af77ed1d710a0ceafaabc1034616a44e16499a222463403d351550aa" },
+    { "path": "evidence/desktop-dark.png", "sha256": "96bdc23724315b86043d28e8417d7edfde0f5a20009d1116a87acca577659c84" },
+    { "path": "evidence/desktop-light.png", "sha256": "dbb66887b6acb62a1ff9f861f4b56b52b0b385435c89403e15d76fa1d679c16b" },
+    { "path": "evidence/desktop-partial.png", "sha256": "1e79cd52f1edec9baf3ccec6033ea701410dae06848548261b42bdbf431158a6" },
+    { "path": "evidence/discovery-error.png", "sha256": "d6f1c255ce978c5fd7e08ade418e4bdfbbc3650781c0f9605c1cdb96308b5822" },
+    { "path": "evidence/discovery-http-fixture.png", "sha256": "2c91bcdf66402aabee0614c4938d8de1ec40bbf7352ab5cbcbb5cc35c4357a86" },
+    { "path": "evidence/mobile-dark.png", "sha256": "d3f3fa9d5f271087279c3611b5f885da620482b1107245f7e0bcbd4cf8c5e6f9" },
+    { "path": "evidence/mobile-end.png", "sha256": "5273e5c7a80a4d98a6b6ae16c2e741d2368a7a93c821cc8d4decbc6427aa64ca" },
+    { "path": "evidence/mobile-light.png", "sha256": "ec084679b4250f2195a890fe17a84a9886b7b57107142239d0c5e022a61f1be0" },
+    { "path": "evidence/test-build.txt", "sha256": "534ccf1251745971781bcc2db1a5f827fe1afb41bbd35a2c9b56b137466cc5e0" },
+    { "path": "evidence/timezone-offset.json", "sha256": "1b8eb784bcc4dc2663f9a659ecd3ee0f0cec6a17e7f1d6033501d7c545bf5def" },
+    { "path": "evidence/timezone-offset.png", "sha256": "d97c6fe3b154bb410a57f5c1ccf6f9c30f2c170e9cda04638957f0f31c861ed6" }
+  ],
+  "artifactHashNote": "SHA-256 captured by parent on 2026-10-29 after QA and the UTC offset repair. This manifest excludes its own hash to avoid self-reference.",
+  "unconfirmed": [
+    "live Mobius4 runtime SHA, endpoint and TLS",
+    "operator AE originator and ACP DISCOVER/RETRIEVE rights",
+    "browser CORS and oneM2M response header exposure",
+    "X-M2M-RVI=4 support",
+    "CORE ty=4 vs ty=28 mismatch",
+    "API acceptance receipt and currentRevision source in CORE",
+    "connection token and role scope authorization",
+    "receipt hash verification",
+    "R05 video, R08 public discussion, physical demo, latency measurement"
+  ]
+}

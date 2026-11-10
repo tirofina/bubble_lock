@@ -1,0 +1,61 @@
+Commands: npm test; npm run build (sequential parent final gate)
+status: completed exit_code: 0
+npm notice run bubblelock-web-dashboard@0.1.0 test
+npm notice run node --test test/*.test.ts
+✔ validates default events when exact CORE fixtures are wrapped (14.689131ms)
+✔ rejects malformed fixtures when event schema boundaries are crossed (0.823082ms)
+✔ preserves exact receipt fields and hashes when adapting a CORE JSONL journal (5.901675ms)
+✔ uses receipt timestamp and null revision when journal metadata is absent (0.400681ms)
+✔ rejects inconsistent identities when ACK payload and receipt disagree (2.985863ms)
+✔ reports the actual line when a journal record is malformed (0.288166ms)
+✔ does not add acceptance when an explicit receipt file is supplied (2.063676ms)
+✔ resumes strictly after Last-Event-ID and keeps finite replay open (33.168698ms)
+✔ resumes strictly after the query cursor on manual EventSource reconnect (5.914317ms)
+✔ prefers native Last-Event-ID over the stale reconnect query (3.568411ms)
+✔ keeps an exhausted resume cursor open without replaying duplicates (3.026022ms)
+✔ returns explicit cursor errors instead of accepting malformed or future IDs (20.375903ms)
+✔ serves simulated resources audit search and source metadata over HTTP (11.475305ms)
+✔ calculates stage durations when explicit acceptance and member ACKs exist (14.371422ms)
+✔ keeps stages pending when only a readback verification receipt exists (2.831444ms)
+✔ never invents acceptance when dispatch is the only command evidence (3.447795ms)
+✔ reports member partial failure when one member awaits retry (2.030921ms)
+✔ reports failure when the only observed member explicitly requests retry (1.908ms)
+✔ does not manufacture stage timestamps when only a settled group summary exists (2.051244ms)
+✔ ignores duplicate and out-of-order stream events without regressing state (2.686383ms)
+✔ keeps negative or absent time differences unknown (0.305906ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 374.135997
+⠙npm notice
+npm notice New minor version of npm available! 12.0.2 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+⠙npm notice run bubblelock-web-dashboard@0.1.0 build
+npm notice run tsc --noEmit && vite build
+vite v7.3.7 building client environment for production...
+transforming (1) src/main.tsxtransforming (12) commonjsHelpers.jstransforming (31) node_modules/ajv/dist/runtime/validation_error.jstransforming (54) node_modules/ajv/dist/compile/codegen/code.jstransforming (118) node_modules/fast-uri/index.js✓ 225 modules transformed.
+rendering chunks (1)...computing gzip size (0)...computing gzip size (1)...computing gzip size (2)...computing gzip size (3)...dist/index.html                   0.41 kB │ gzip:   0.28 kB
+dist/assets/index-BDP2xilU.css    8.22 kB │ gzip:   2.26 kB
+dist/assets/index-C18Hh6Yc.js   415.58 kB │ gzip: 127.82 kB
+✓ built in 1.26s
+⠙PARENT_TEST_EXIT=0 PARENT_BUILD_EXIT=0
+
+After source self-review fixed only Timestamp UTC offset rendering:
+Command: npm run build
+status: completed exit_code: 0
+npm notice run bubblelock-web-dashboard@0.1.0 build
+npm notice run tsc --noEmit && vite build
+vite v7.3.7 building client environment for production...
+transforming (1) src/main.tsxtransforming (12) commonjsHelpers.jstransforming (31) node_modules/react-dom/client.jstransforming (69) node_modules/ajv/dist/compile/resolve.js✓ 225 modules transformed.
+rendering chunks (1)...computing gzip size (0)...computing gzip size (1)...computing gzip size (2)...computing gzip size (3)...dist/index.html                   0.41 kB │ gzip:   0.27 kB
+dist/assets/index-BDP2xilU.css    8.22 kB │ gzip:   2.26 kB
+dist/assets/index-BSlYalW2.js   415.60 kB │ gzip: 127.82 kB
+✓ built in 1.26s
+⠙
+Contract/SSE/timeline test inputs unchanged after their passing run.

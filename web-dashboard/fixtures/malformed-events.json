@@ -1,0 +1,175 @@
+[
+  {
+    "name": "unknown top-level property",
+    "event": {
+      "schemaVersion": "1.0.0",
+      "type": "command.accepted",
+      "sequence": 1,
+      "resourceUri": "/Mobius/privacy-bubble-test-ae/bubbleState",
+      "currentRevision": null,
+      "receivedAt": "2026-10-29T00:00:00.000Z",
+      "roleScope": [
+        "operator"
+      ],
+      "simulation": true,
+      "source": "fixture-replay",
+      "receipt": null,
+      "acceptance": {
+        "commandId": "grp-demo",
+        "groupId": "household",
+        "acceptedAt": "2026-10-29T00:00:00.000Z",
+        "label": "SIMULATED API acceptance; not a CORE receipt"
+      },
+      "admin": true
+    }
+  },
+  {
+    "name": "negative stream sequence",
+    "event": {
+      "schemaVersion": "1.0.0",
+      "type": "command.accepted",
+      "sequence": -1,
+      "resourceUri": "/Mobius/privacy-bubble-test-ae/bubbleState",
+      "currentRevision": null,
+      "receivedAt": "2026-10-29T00:00:00.000Z",
+      "roleScope": [
+        "operator"
+      ],
+      "simulation": true,
+      "source": "fixture-replay",
+      "receipt": null,
+      "acceptance": {
+        "commandId": "grp-demo",
+        "groupId": "household",
+        "acceptedAt": "2026-10-29T00:00:00.000Z",
+        "label": "SIMULATED API acceptance; not a CORE receipt"
+      }
+    }
+  },
+  {
+    "name": "invalid timestamp",
+    "event": {
+      "schemaVersion": "1.0.0",
+      "type": "command.accepted",
+      "sequence": 1,
+      "resourceUri": "/Mobius/privacy-bubble-test-ae/bubbleState",
+      "currentRevision": null,
+      "receivedAt": "yesterday",
+      "roleScope": [
+        "operator"
+      ],
+      "simulation": true,
+      "source": "fixture-replay",
+      "receipt": null,
+      "acceptance": {
+        "commandId": "grp-demo",
+        "groupId": "household",
+        "acceptedAt": "2026-10-29T00:00:00.000Z",
+        "label": "SIMULATED API acceptance; not a CORE receipt"
+      }
+    }
+  },
+  {
+    "name": "missing role scope",
+    "event": {
+      "schemaVersion": "1.0.0",
+      "type": "command.accepted",
+      "sequence": 1,
+      "resourceUri": "/Mobius/privacy-bubble-test-ae/bubbleState",
+      "currentRevision": null,
+      "receivedAt": "2026-10-29T00:00:00.000Z",
+      "simulation": true,
+      "source": "fixture-replay",
+      "receipt": null,
+      "acceptance": {
+        "commandId": "grp-demo",
+        "groupId": "household",
+        "acceptedAt": "2026-10-29T00:00:00.000Z",
+        "label": "SIMULATED API acceptance; not a CORE receipt"
+      }
+    }
+  },
+  {
+    "name": "unlabeled acceptance",
+    "event": {
+      "schemaVersion": "1.0.0",
+      "type": "command.accepted",
+      "sequence": 1,
+      "resourceUri": "/Mobius/privacy-bubble-test-ae/bubbleState",
+      "currentRevision": null,
+      "receivedAt": "2026-10-29T00:00:00.000Z",
+      "roleScope": [
+        "operator"
+      ],
+      "simulation": true,
+      "source": "fixture-replay",
+      "receipt": null,
+      "acceptance": {
+        "commandId": "grp-demo",
+        "groupId": "household",
+        "acceptedAt": "2026-10-29T00:00:00.000Z",
+        "label": "real"
+      }
+    }
+  },
+  {
+    "name": "pretend real acceptance",
+    "event": {
+      "schemaVersion": "1.0.0",
+      "type": "command.accepted",
+      "sequence": 1,
+      "resourceUri": "/Mobius/privacy-bubble-test-ae/bubbleState",
+      "currentRevision": null,
+      "receivedAt": "2026-10-29T00:00:00.000Z",
+      "roleScope": [
+        "operator"
+      ],
+      "simulation": false,
+      "source": "fixture-replay",
+      "receipt": null,
+      "acceptance": {
+        "commandId": "grp-demo",
+        "groupId": "household",
+        "acceptedAt": "2026-10-29T00:00:00.000Z",
+        "label": "SIMULATED API acceptance; not a CORE receipt"
+      }
+    }
+  },
+  {
+    "name": "nonboolean nested readback",
+    "event": {
+      "schemaVersion": "1.0.0",
+      "type": "command.ack",
+      "sequence": 1,
+      "resourceUri": "/Mobius/privacy-bubble-test-ae/bubbleState",
+      "currentRevision": null,
+      "receivedAt": "2026-10-29T00:00:00.000Z",
+      "roleScope": [
+        "operator"
+      ],
+      "simulation": true,
+      "source": "fixture-replay",
+      "receipt": {
+        "contractId": "privacy-bubble.raspberrypi-gateway",
+        "contractVersion": "1.0.0",
+        "docRevision": "2.0.0",
+        "gatewayId": "pi-01",
+        "deviceId": "keyring-A",
+        "commandId": "grp-demo:keyringA",
+        "ackState": "READBACK_VERIFIED",
+        "status": "ACK_RECORDED",
+        "timestamp": "2026-10-29T00:00:13.000Z",
+        "payload": {
+          "deviceId": "keyring-A",
+          "commandId": "grp-demo:keyringA",
+          "ackState": "READBACK_VERIFIED",
+          "timestamp": "2026-10-29T00:00:12.000Z",
+          "readback": "true"
+        },
+        "journaledAt": "2026-10-29T00:00:14.000Z",
+        "receiptHash": "de7e08e5e5628f28d1c22e0120cacae2977fb85505eddc17bb9f606480f765c9"
+      },
+      "acceptance": null
+    }
+  }
+]
