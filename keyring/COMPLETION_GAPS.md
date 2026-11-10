@@ -2,7 +2,7 @@
 
 ROLE KEYRING / 남호 · DOC-REV2.0.0 · 2026-10-30.
 
-최신 루트 계획서의 담당 산출물·7개 완료 자료·첫 통합 조건을 firmware0.7.0/Gateway0.2.3의 현재 소스와 실행 evidence에 대조했다. main/CORE91a281b·WEB80ed37f 기준이다. 로컬 구현·빌드·시험은 확보했으며 실물 Pi/키링과 중앙 통합·release는 미완료다.
+최신 루트 계획서의 담당 산출물·7개 완료 자료·첫 통합 조건을 firmware0.7.0/Gateway0.2.3의 현재 소스와 실행 evidence에 대조했다. 2026-11-10 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 로컬 구현·빌드·시험은 확보했으며 실물 Pi/키링과 중앙 통합·release는 미완료다.
 
 현재 [실제 Mobius4/영속 큐10개](evidence/2026-10-30-outbox-cse/README.md)가 소스·설치본에서 각각 통과했다. 직전 [기본56개·MQTT6개·CSE5개](evidence/2026-10-30-real-cse/README.md)와 [firmware3개 프로필](evidence/2026-10-29-local-validation/README.md)은 당시 증거로 유지한다. 현재 CSE10개는 기존5개와 추가영속큐5개를 포함한다.
 
@@ -26,9 +26,9 @@ ROLE KEYRING / 남호 · DOC-REV2.0.0 · 2026-10-30.
 
 ## 계획서의7개 완료 자료
 
-1. 계약: KEYRING 후보 schema와 CORE v1 adapter가 있다. INTEGRATION 승인/정산/복구와 확장 수용은 미확정이다.
+1. 계약: KEYRING 후보 schema와 CORE v1 adapter가 있다. 원격 main에서 명령·승인·자격 상태 계약을 확인했고 로컬 mTLS 교차시험이 통과했다. 중앙 정산·복구 활성화와 실물 수용이 남아 있다.
 2. 코드/configuration: 역할 브랜치에 업로드했다. 실물 Pi·장치 설치/runtime은 남아 있다.
-3. 단위/통합/장애 시험: firmware3개 build, 기본56개, MQTT6개, 현재 실제 CSE/영속큐10개와 Linux POSIX10개 증거를 확보했다. 실제 Pi/BLE·중앙 통합·전원 손실은 남아 있다.
+3. 단위/통합/장애 시험: 기존 firmware3개 build, MQTT6개, 실제 CSE/영속큐10개, Linux POSIX10개 증거와 이번 ARM64 Gateway 기본57개, 중앙 mTLS 교차시험 1개, Feather 빌드를 확보했다. 실제 Pi/BLE·중앙 통합·전원 손실은 남아 있다.
 4. 기대/실제 결과: 로컬 로그·delivery facts·hash를 보존했다. 합성 payload와 test worker를 실물 수행으로 표시하지 않는다.
 5. 수행/승인/gate: owner 남호/KEYRING·로컬 수행 환경을 기록했다. approver는 null이며 중앙 gate 승인·A01~A26의 원래 정의/매핑은 미확정이다.
 6. 로그/receipt/hash: source·CAD inventory·firmware/wheel·TLS/MQTT/CSE/queue의 실제 로그와 hash가 있다. 실물/E2E·전력/거리·영상은 남아 있다.
@@ -36,7 +36,7 @@ ROLE KEYRING / 남호 · DOC-REV2.0.0 · 2026-10-30.
 
 ## 첫 통합 데모 조건
 
-계획서가 요구하는 BLE→실물 Pi→CSE의 pb:binarySwitch/state 저장, 앱 승인 Group 명령, 장치 ACK/readback, 웹 시각 표시, 최신 grant 회수 판정, MEC callback, 동일 commandId receipt 정산은 전체 경로로 아직 검증되지 않았다. 현재 일반 cin 저장·합성 receipt/outbox 시험은 그 일부 전송 경계다. 중앙 command의 누락된 claimId/grantRevision을 임의로 채우지 않는다.
+계획서가 요구하는 BLE→실물 Pi→CSE의 pb:binarySwitch/state 저장, 앱 승인 Group 명령, 장치 ACK/readback, 웹 시각 표시, 최신 grant 회수 판정, MEC callback, 동일 commandId receipt 정산은 전체 경로로 아직 검증되지 않았다. 일반 cin 저장·합성 receipt/outbox와 중앙 mTLS 승인·회수는 각 경계에서 검증했다. 실제 Pi의 BLE 연결부터 장치 readback까지 이어지는 시험을 다음에 수행한다.
 
 ## 지정 원문
 
@@ -52,4 +52,4 @@ KR-*는 KEYRING 제안 시험 ID다. 원문 인수 후 실제 정의에 맞게 �
 
 ## 다음 단계
 
-기존 async 질문의 Pi SSH 별칭/주소와 보드·패널 준비 상태 답변을 기다린다. 비밀번호/개인키를 받지 않는다. 중앙 INTEGRATION 승인·정산·복구 계약, 구매 JD9853 모듈 초기화 자료, 지정 원문과 실제 시험 대상을 확보해야 한다. flash·COM·실제 BLE/장비·기존 DB·운영 서비스는 현재 로컬 시험 허가에 포함되지 않는다. 로컬 개발은 최신 사용자 AGENTS의 관련 빌드·시험 요구에 따라 검증한다.
+Feather ESP32 V2와 1.54인치 ST7789 벤치를 별도 프로필로 준비했다. Pi Zero 2 W의 현재 Wi-Fi 설정은 5GHz 대역이므로 2.4GHz Wi-Fi나 USB Gadget 네트워크로 연결한 다음 SSH를 확인한다. 이후 시험용 등록과 인증서로 관측·명령 경로를 검증한다. 중앙 정산·복구 계약, JD9853 모듈 초기화 자료, 지정 원문과 실제 수용 시험은 계속 추적한다. [Feather 벤치](firmware/feather_probe/README.md) · [Gateway 시험](raspberry-pi-gateway/TESTING.md)

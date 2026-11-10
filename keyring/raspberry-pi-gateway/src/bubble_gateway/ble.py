@@ -250,7 +250,10 @@ class BleFleet:
             generation = peer.generation
             peer.ready.clear()
             try:
-                await asyncio.wait_for(peer.seen.wait(), self.config.ble_scan_seconds)
+                # Keep discovery in this task so cancellation reaches the watcher
+                # even when an advertisement completes at the same time.
+                async with asyncio.timeout(self.config.ble_scan_seconds):
+                    await peer.seen.wait()
                 peer.disconnected.clear()
                 peer.identity = {}
                 peer.anchor = None

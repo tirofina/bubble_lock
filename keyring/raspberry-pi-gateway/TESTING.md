@@ -73,3 +73,16 @@ docker build --pull=false -t privacy-bubble-keyring-posix-test:local -f keyring/
 runner는 --pull never/network none/UID65532/read-only root로 실행하며 source/wheel만 read-only mount한다. wheel 설치는 --no-index --no-deps다. 새/tmp SQLite와256KiB/limited tmpfs만 사용한다. 새 log path를 요구하며 label/token 일치 자원만 정리한다. 시험 종료 후 host source/wheel은 그대로다.
 
 TLS/env는 시험용 placeholder 파일이다. snapshot/adopt는 새 합성 DB에만 실행한다. daemon entry는 다른 프로세스 lock 때문에 serve 전에 중단되므로 BLE·network·전체 daemon은 실행하지 않는다. API timeout=-1은 이미 경과한 deadline 확인이다. fsync는 tmpfs에서 실행했으며 Pi ARM/SD카드 전원 손실·운영 DB·중앙 복구 승인·실물 시험은 남아 있다. 기본56/MQTT6/CSE10/firmware3은 이번 POSIX checkpoint에서 변경·재실행하지 않았다.
+
+## Docker ARM64 Gateway 실행
+
+2026-11-10 Docker Desktop에서 `python:3.12-slim-bookworm`의 `linux/arm64` 이미지를 실행했다. ARM64 Debian 사용자 공간에 현재 Gateway wheel을 빌드·설치한 뒤 기본 57개 시험이 통과했다. Docker는 Pi Zero 2 W의 SD 부팅, Wi-Fi 및 Bluetooth 어댑터 시험을 별도 실물 단계로 남긴다.
+
+재현할 때 임시 입력 폴더에 이 Gateway의 `pyproject.toml`, `src`, `tests`를 복사한다. PowerShell에서 `$inputDir`를 해당 절대경로로 설정한 후 실행한다.
+
+```powershell
+docker pull --platform linux/arm64 python:3.12-slim-bookworm
+docker run --rm --platform linux/arm64 --mount "type=bind,source=$inputDir,target=/input,readonly" python:3.12-slim-bookworm sh -ec 'uname -m && cp -a /input /tmp/gateway && pip install /tmp/gateway && python -m unittest discover -s /input/tests -v'
+```
+
+빌드와 설치에 Python 공개 패키지 저장소를 사용한다. 시험은 모의 BLE와 테스트용 loopback TLS·SQLite를 사용한다.

@@ -313,3 +313,12 @@ Pi SSH/보드·패널준비답변과INTEGRATION API계약파일/브랜치/PR답�
 동일차단조건의3번째연속no-progress이며liveprocess에대한verified wait가아니다. 독립필수구현을진행할근거가없으므로update_goal(status=blocked)를호출했고실제반환상태blocked를확인했다. 전체목표는완료되지않았다. 새로운code/build/test·실물/운영실행은없다. 이번최종기록upload도구현진전으로세지않는다.
 
 재개입력: 실제Pi SSH별칭/주소와보드·패널준비상태, INTEGRATION의정본commands/authorize/credentials API계약파일/브랜치/PR와이후정산/checkpoint/복구·모듈init/원문자료. 실제비밀번호/개인키는요청하지않는다. 새정보또는외부상태변경을받고재개할때현재원격/계약부터다시확인한다.
+
+
+## 2026-11-10 — Feather ST7789 벤치와 Pi 네트워크 진단
+
+DOC-REV 2.0.0. 원격 main `715ef58`와 CORE `d54a43a` 확인. main의 `413fd31`에서 중앙 명령·승인·자격 상태 API를 찾았고 KEYRING BLE 탐색 취소 수정과 회귀시험을 반영했다. Windows에서 새 인증서로 Node/Python mTLS 교차시험 1개, Docker ARM64 Debian에서 설치 Gateway 시험 57개 통과.
+
+기존 Feather ESP32 V2·1.54인치 ST7789·A0/A1 배선에 맞는 별도 벤치 펌웨어를 추가했다. 기본과 BLE 활성 빌드 2개 통과. Windows의 제한된 벤치 광고 검색 실행은 성공했고 대상 0개. COM12는 Windows 장치 목록에서 확인했다. 실물 업로드와 BLE 연결 시험은 별도 단계다.
+
+Pi Zero 2 W는 USB 데이터 포트에 연결됐고 초록 LED가 계속 켜져 있다. Windows에 Gadget 네트워크 어댑터가 없고 해당 Wi-Fi는 5GHz 채널 153으로 확인됐다. 사용자가 Pi의 네트워크를 재설정 중이다. 다음 단계는 Pi 호스트명/IP와 SSH 확인, Feather 시험 업로드 승인 및 장치 관측이다. [실행 기록](../keyring/evidence/2026-11-10-feather-arm64/README.md)
