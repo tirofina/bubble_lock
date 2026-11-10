@@ -115,15 +115,15 @@
   "firmwareRevision": "keyring-0.7.0",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "dfa5129c2374070f8e3fcdf46fa85eefb2ca9663",
+    "sourceCommit": "2014b18bb44ce5e9304cb9494de743313f3bf1e2",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "dfa5129c2374070f8e3fcdf46fa85eefb2ca9663",
-    "lastPushedCommit": "dfa5129c2374070f8e3fcdf46fa85eefb2ca9663",
-    "latestCheckpoint": "dfa5129 source/relay/tests/35-readback evidence pushed; cni35/outboxes0 and owned-resource cleanup verified; full system incomplete",
-    "lastPushedCommitBeforeThisCheckpoint": "686f7b44b94cf5668df86cc97c2722a18024854b"
+    "latestLocalSourceCommit": "2014b18bb44ce5e9304cb9494de743313f3bf1e2",
+    "lastPushedCommit": "2014b18bb44ce5e9304cb9494de743313f3bf1e2",
+    "latestCheckpoint": "0.2.5 command readiness and graceful stop; 63 basic and 2 central mTLS/GATT-mock/CSE cases passed and pushed",
+    "lastPushedCommitBeforeThisCheckpoint": "615de7908cce11908f76eefdb911a09e9d00c941"
   },
   "gatewayRevision": "0.2.5",
   "pendingValidationScope": "Pi deployment of 0.2.5 and physical command/systemd, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
@@ -155,7 +155,7 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "dfa5129c2374070f8e3fcdf46fa85eefb2ca9663",
+    "sourceCommit": "2014b18bb44ce5e9304cb9494de743313f3bf1e2",
     "sourceValidation": "Gateway 0.2.5 basic63 and isolated full worker central dispatch2 passed. Fake GATT boundary. Existing 0.2.4 real Feather/Pi observations retained.",
     "goalComplete": false,
     "pendingInput": null,
@@ -426,6 +426,7 @@
     "gatewayUnitPassed": 63,
     "isolatedFullWorkerCasesPassed": 2,
     "physicalGatts": false,
-    "coreAckSettlementVerified": false
+    "coreAckSettlementVerified": false,
+    "sourceCommit": "2014b18bb44ce5e9304cb9494de743313f3bf1e2"
   }
 }

@@ -361,3 +361,5 @@ Pi Zero 2 W는 USB 데이터 포트에 연결됐고 초록 LED가 계속 켜져 
 - 기본 63개와 팀 Node mTLS API→전체 Gateway worker→모의 GATT→실제 격리 Mobius4 통합 2개가 통과했다. 승인된 명령은 중복 poll에도 한 번 처리되고 native receipt 1건이 저장됐다. 연결 전에 grant를 회수하면 쓰기 0회, 거절 receipt 1건이다. 두 경우 CSE의 내용을 SQLite와 대조했고 정상 종료했다. [증거](../keyring/evidence/2026-11-10-central-dispatch/README.md)
 - 새 PKI·DB·시험 stack만 사용했다. 종료 후 시험 container/network 0개와 기존 개발 4개 running을 확인했다. 이번에는 Pi에 0.2.5를 설치하거나 Feather에 flash하지 않았다.
 - 전체 goal은 active/progress다. 실물 GATT 명령·출력, 제작 PCB, Pi systemd, CORE의 HTTP 발급 명령과 ACK 결속, 운영 principal/AE/ACP/grant, 앱/웹·전력/거리·영상/release가 남았다.
+
+Gateway 0.2.5 wheel 로컬 빌드와 Python 모듈 13개 소스 일치를 확인했다. 구현·시험 증거 commit `2014b18bb44ce5e9304cb9494de743313f3bf1e2`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `615de79..2014b18`이다.
