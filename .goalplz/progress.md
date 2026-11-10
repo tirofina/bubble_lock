@@ -702,3 +702,12 @@ LED 절차와 준비 증거 commit `47697ec03421b9b0b708797ed254752c3a8d0300`를
 - PC에서 격리 CSE와 팀 API loopback 리스너가 열려 있음을 관찰했다. Pi 접속·설정 실행·인증서 복사·빌드·시험·장치 명령·정산은 미실행이다. 전체 goal은 active/progress다.
 
 Pi 세션 소스 commit `6f20aaf67838a245892f6987fb1dea560ebdd841`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1499805..6f20aaf`다.
+
+## 2026-11-10 — 팀 PostgreSQL용 명령 영수증 정산 저장
+
+직전 goal turn은 Feather 전용 Pi 실행 경로를 원격에 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- 팀 PostgreSQL의 감사 journal과 별개로 `(gateway_id, command_id)`를 기본 키로 갖는 KEYRING 정산 테이블 후보를 추가했다. 정산 함수와 호환되는 `pg.Pool` 어댑터는 한 트랜잭션에서 삽입을 시도하고, 충돌하면 다음 조회에서 먼저 저장된 행을 반환한다. 커밋 확인 뒤에만 성공을 반환한다. [PostgreSQL 정산 저장 후보](../keyring/integration-candidate/README.md#postgresql-정산-저장-후보)
+- 저장 충돌, 키 불일치, 커밋 응답 유실과 연결 폐기 처리를 위한 회귀시험 소스를 추가했다. DB 적용·회귀시험·CORE 수신기 연결·Pi/Feather 실행은 미실행이다. 중앙 DB 실사용과 물리 명령 영수증은 남아 있다. 전체 goal은 active/progress다.
+
+PostgreSQL 정산 소스 commit `a551e9ee797dfa18b26c85a79c23d5ceccd55df5`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `f1a58a5..a551e9e`다.

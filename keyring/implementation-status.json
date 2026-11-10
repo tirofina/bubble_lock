@@ -7,7 +7,7 @@
   "date": "2026-11-10",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Scoped CSE resources and the team command API were provisioned. The LED cycle and isolated Pi session are implemented in source. Pi execution, live commands, settlement and hardware acceptance remain unverified.",
+  "verificationStatus": "Scoped CSE resources and the team command API were provisioned. The PostgreSQL settlement adapter, LED cycle and isolated Pi session are implemented in source. Database deployment, live commands and hardware acceptance remain unverified.",
   "rubricIds": [
     "R01",
     "R02",
@@ -139,15 +139,15 @@
   "firmwareRevision": "keyring-0.7.4",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "6f20aaf67838a245892f6987fb1dea560ebdd841",
+    "sourceCommit": "a551e9ee797dfa18b26c85a79c23d5ceccd55df5",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "6f20aaf67838a245892f6987fb1dea560ebdd841",
-    "lastPushedCommit": "6f20aaf67838a245892f6987fb1dea560ebdd841",
-    "latestCheckpoint": "Added a private Pi command session with fixed scoped endpoints, isolated SQLite and an explicit Gateway launch step.",
-    "lastPushedCommitBeforeThisCheckpoint": "1499805fe7e32ab3293abb23b0f5f4aa23d218e2"
+    "latestLocalSourceCommit": "a551e9ee797dfa18b26c85a79c23d5ceccd55df5",
+    "lastPushedCommit": "a551e9ee797dfa18b26c85a79c23d5ceccd55df5",
+    "latestCheckpoint": "Added the PostgreSQL unique-key settlement migration candidate and transaction adapter for the CORE companion database.",
+    "lastPushedCommitBeforeThisCheckpoint": "f1a58a56872b4d768f39b98f7a4304834c33cb19"
   },
   "gatewayRevision": "0.2.19",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
@@ -171,7 +171,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Prepare an isolated Pi session for the provisioned Feather command and receipt bench",
+    "executionRequest": "Provide an atomic PostgreSQL settlement adapter compatible with the team companion database",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -179,11 +179,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "6f20aaf67838a245892f6987fb1dea560ebdd841",
-    "sourceValidation": "Pi command session source only. Existing PC loopback listeners were observed. No Pi SSH, credential transfer, Gateway execution, test or live command was performed.",
+    "sourceCommit": "a551e9ee797dfa18b26c85a79c23d5ceccd55df5",
+    "sourceValidation": "PostgreSQL migration, adapter and regression source only. No database connection, migration, test, CORE deployment or physical device command was performed.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "The scoped server and Pi session launcher are prepared. The Pi tunnel and Gateway session, physical LED and command receipt evidence, production CORE ingress and r18 bring-up remain.",
+    "currentDependencyState": "The scoped server, Pi launcher and PostgreSQL adapter are prepared. CORE database migration and authenticated receipt ingress, the Pi session and physical receipt evidence, and r18 bring-up remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -785,5 +785,14 @@
     "piGatewayExecuted": false,
     "regressionsExecuted": false,
     "sourceCommit": "6f20aaf67838a245892f6987fb1dea560ebdd841"
+  },
+  "postgresCommandReceiptSettlement": {
+    "reference": "integration-candidate/README.md#postgresql-정산-저장-후보",
+    "teamMain": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+    "status": "source-only",
+    "migrationApplied": false,
+    "coreIngressWired": false,
+    "regressionsExecuted": false,
+    "sourceCommit": "a551e9ee797dfa18b26c85a79c23d5ceccd55df5"
   }
 }
