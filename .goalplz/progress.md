@@ -572,3 +572,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 회귀시험 소스를 추가했다. handover 소비자·ACL 배치, 실제 소유권 변경, 빌드·시험·실물 검증은 미실행이다. 전체 goal은 active/progress다.
 
 구현 commit `fa62263120786dddac752efb89808c998ac94d6f`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `3cb9dbf..fa62263`다.
+
+## 2026-11-10 — Scoped handover 초기 소유권 배치
+
+이전 goal turn은 SDT 갱신과 handover 대기열을 연결한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- `start-scoped.ps1 -RefreshIngress`로 handover 소비자와 롤백 ACL을 배치했다. 시작·갱신 스크립트는 현재 소비자의 구독 로그를 확인한 뒤 반환한다.
+- `handover-scoped.ps1 -Status`가 영속 소유권 `gw-a:7`과 `EMPTY` cursor를 반환했다. 배치 파일 4개의 해시가 일치했고 교체 대상 밖의 컨테이너 ID 7개도 일치했다. [배치 기록](../keyring/evidence/2026-11-10-core-scoped-handover-rollout/README.md)
+- 임시 프로필 배치와 상태 조회만 실행했다. 실제 Forward·Rollback, 관측과 영수증 발행, 빌드·시험·실물 검증은 미실행이다. 전체 goal은 active/progress다.
+
+구현·배치 증거 commit `7af699ab4902f5ef937a1ca3ed7ae635c336ed9d`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `3a0e9ad..7af699a`다.

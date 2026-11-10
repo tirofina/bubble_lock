@@ -7,7 +7,7 @@
   "date": "2026-11-10",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Scoped owner transitions are source-only. The earlier receipt consumer and ACL are deployed. Gateway 0.2.14 build, live receipt execution, handover readback and physical acceptance remain.",
+  "verificationStatus": "The isolated handover consumer and ACL are deployed. Subscription and initial A7 owner readback were observed. Gateway 0.2.14 build, live owner transitions, telemetry readback and physical acceptance remain.",
   "rubricIds": [
     "R01",
     "R02",
@@ -133,15 +133,15 @@
   "firmwareRevision": "keyring-0.7.3",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "fa62263120786dddac752efb89808c998ac94d6f",
+    "sourceCommit": "7af699ab4902f5ef937a1ca3ed7ae635c336ed9d",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "fa62263120786dddac752efb89808c998ac94d6f",
-    "lastPushedCommit": "fa62263120786dddac752efb89808c998ac94d6f",
-    "latestCheckpoint": "Staged same-lane SDT owner transitions and the isolated operator command. The running consumer has the prior receipt release.",
-    "lastPushedCommitBeforeThisCheckpoint": "3cb9dbf1da6319a6bd8940e807989cb10824a76a"
+    "latestLocalSourceCommit": "7af699ab4902f5ef937a1ca3ed7ae635c336ed9d",
+    "lastPushedCommit": "7af699ab4902f5ef937a1ca3ed7ae635c336ed9d",
+    "latestCheckpoint": "Deployed the isolated handover consumer and rollback ACL. Startup reported the new subscription and the operator status read the persisted A7 owner.",
+    "lastPushedCommitBeforeThisCheckpoint": "3a0e9add5bc819d3923a15b37d0346bbea449f94"
   },
   "gatewayRevision": "0.2.14",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
@@ -165,7 +165,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Bind scoped handover and rollback to the SDT update queue and a persisted compare-and-set owner",
+    "executionRequest": "Deploy the scoped handover runtime and confirm startup and persisted initial ownership",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -173,11 +173,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "fa62263120786dddac752efb89808c998ac94d6f",
-    "sourceValidation": "Handover source and regression source only. No scoped rollout, owner transition, telemetry publication, build or tests.",
+    "sourceCommit": "7af699ab4902f5ef937a1ca3ed7ae635c336ed9d",
+    "sourceValidation": "Scoped deployment only: subscription, four mounted files, and A7 owner with EMPTY cursor were observed. No owner transitions, telemetry publication, builds or functional tests.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "The earlier receipt consumer is running. The handover consumer and rollback ACL need rollout and live tests; central authoritative integration and physical acceptance remain.",
+    "currentDependencyState": "The scoped handover consumer and rollback ACL are running with persisted A7. Live transitions, broker ACL and receipt checks, central authoritative integration and physical acceptance remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -659,10 +659,21 @@
   },
   "coreScopedOwnerTransition": {
     "reference": "dev/mobius4/README.md",
-    "status": "source-only",
+    "status": "isolated-consumer-deployed",
     "stagedSequence": ["gw-a:7", "gw-b:8", "gw-a:9"],
-    "deployed": false,
+    "deployed": true,
     "transitionExecuted": false,
     "sourceCommit": "fa62263120786dddac752efb89808c998ac94d6f"
+  },
+  "coreScopedOwnerRollout": {
+    "evidence": "evidence/2026-11-10-core-scoped-handover-rollout/README.md",
+    "startupSubscriptionObserved": true,
+    "initialOwner": "gw-a:7",
+    "cursorPhase": "EMPTY",
+    "mountedFilesMatched": 4,
+    "existingContainerIdsPreserved": 7,
+    "transitionExecuted": false,
+    "telemetryPublished": false,
+    "sourceCommit": "7af699ab4902f5ef937a1ca3ed7ae635c336ed9d"
   }
 }
