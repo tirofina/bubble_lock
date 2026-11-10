@@ -751,3 +751,13 @@ PostgreSQL 정산 소스 commit `a551e9ee797dfa18b26c85a79c23d5ceccd55df5`를 `o
 - 이번 실행은 임시 서버의 기동과 빈 대기열 조회까지다. CSE 명령 영수증 조회·정산·콜백·회귀시험·Pi/Feather 장치 명령은 미실행이다. 전체 goal은 active/progress다.
 
 정산 프로세스 기동 증거 commit `6799b9d934aa3b62d4ce0ea7cd3af84793024a12`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `0f6e0c0..6799b9d`다.
+
+## 2026-11-10 — 격리 영수증 mTLS 콜백 수신기 준비
+
+직전 goal turn은 격리 Node 정산 프로세스를 기동하고 빈 PostgreSQL 대기열 조회를 관찰한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- TLS 1.3 클라이언트 인증서의 등록 지문으로 CSE 키를 결정하는 HTTPS 콜백 어댑터를 추가했다. 정확한 POST 경로와 최대 8 KiB JSON을 검증해 기존 영속 대기열로 넘긴다. 기존 팀 서버 코드는 유지했다.
+- scoped CA로 전용 중계 인증서를 발급하고 콜백 수신기를 `127.0.0.1:8790`에 기동했다. `SCOPED_RECEIPT_CALLBACK_READY`와 OS 리스너를 관찰했고 대기열과 정산은 각각 0행이다. [시작 증거](../keyring/evidence/2026-11-10-scoped-receipt-callback/startup.json)
+- 이번 실행은 임시 콜백 준비까지다. 실제 Mobius4 발신과 mTLS 중계 연결·구독 등록·콜백 요청·회귀시험·Pi/Feather 명령은 미실행이다. 전체 goal은 active/progress다.
+
+콜백 수신기 소스와 기동 증거 commit `f64bb1f3354793794aa15612d7857f0a50db23b7`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `e45a36a..f64bb1f`다.
