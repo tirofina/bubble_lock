@@ -8,7 +8,7 @@ import os
 import signal
 from pathlib import Path
 
-from .config import GatewayConfig, read_env_file
+from .config import DeploymentConfigError, GatewayConfig, check_state_directory, read_env_file, tls_context
 from .state_identity import StateIdentityError
 
 
@@ -24,6 +24,7 @@ async def serve(config: GatewayConfig) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Privacy Bubble Raspberry Pi Gateway")
     parser.add_argument("--env-file", type=Path)
+    parser.add_argument("--check-config", action="store_true", help="Check local config and TLS files without starting the Gateway")
     parser.add_argument("--log-level", choices=("DEBUG", "INFO", "WARNING", "ERROR"), default="INFO")
     args = parser.parse_args()
     os.umask(0o077)
@@ -35,6 +36,14 @@ def main() -> None:
         if args.env_file:
             read_env_file(args.env_file)
         config = GatewayConfig.from_env()
+        check_state_directory(config.database)
+        if args.check_config:
+            try:
+                tls_context(config)
+            except OSError as exc:
+                raise DeploymentConfigError(f"TLS file check failed ({type(exc).__name__})") from None
+            logging.getLogger(__name__).info("Gateway configuration check passed")
+            return
         import fcntl
         config.database.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
         with config.database.with_suffix(".lock").open("a") as lock:
@@ -42,6 +51,9 @@ def main() -> None:
             asyncio.run(serve(config))
     except KeyboardInterrupt:
         pass
+    except DeploymentConfigError as exc:
+        logging.getLogger(__name__).error("Gateway configuration blocked: %s", str(exc))
+        raise SystemExit(1) from None
     except StateIdentityError as exc:
         logging.getLogger(__name__).error("Gateway state blocked: %s; see STATE_RECOVERY.md", str(exc))
         raise SystemExit(1) from None

@@ -1,0 +1,67 @@
+{
+  "role": "KEYRING",
+  "date": "2026-11-10",
+  "documentRevision": "2.0.0",
+  "gatewayVersion": "0.2.6",
+  "roleBase": "8fdbaec6135bd99e85705c209813c2a4e813a8b8",
+  "teamMain": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+  "wheel": {
+    "name": "privacy_bubble_gateway-0.2.6-py3-none-any.whl",
+    "sha256": "314473f317e41bdd2141defc52721c9d44a48f7e29932c3d3aacdffd743b5e88",
+    "bytes": 41967,
+    "modulesMatched": 13,
+    "buildExit": 0
+  },
+  "gatewayTests": {
+    "passed": 67,
+    "exit": 0,
+    "newPreflightCases": 4
+  },
+  "systemd": {
+    "host": "Ubuntu 24.04 WSL2",
+    "version": "systemd 255 (255.4-1ubuntu8.18)",
+    "suiteExit": 0,
+    "cases": [
+      {
+        "case": "valid",
+        "systemdExit": 0,
+        "mainReached": true,
+        "stateFilesCreated": false
+      },
+      {
+        "case": "mismatched-key",
+        "systemdExit": 1,
+        "mainReached": false,
+        "stateFilesCreated": false
+      },
+      {
+        "case": "outside-state",
+        "systemdExit": 1,
+        "mainReached": false,
+        "stateFilesCreated": false
+      }
+    ],
+    "scope": "transient system service, copied isolation settings, service uid nobody, real wheel config check, marker as main process",
+    "fixtureSetupFailureCorrected": "duplicate Environment directives were initially rejected by the fixture INI reader",
+    "remainingTestUnits": 0,
+    "remainingTestStateDirectories": 0
+  },
+  "productionDeployed": false,
+  "sourceSha256Lf": {
+    "keyring/raspberry-pi-gateway/deploy/privacy-bubble-gateway.service": "b5f2d01f4e7827e3c06f476f057a0b7d2450ebed81b6697e67bdb496ac81e1df",
+    "keyring/raspberry-pi-gateway/posix_integration_tests/systemd_preflight.py": "b817989e9b6a3e23455ca224ee1e1f155009628d39f922c229a98a91edacddc2",
+    "keyring/raspberry-pi-gateway/pyproject.toml": "f011716a84bbe709a744b46caa3fd0a8173fb712451149ffe225e57fe0d2a026",
+    "keyring/raspberry-pi-gateway/src/bubble_gateway/__init__.py": "1adaa91306b17505cab31321bbb44ae54d60b8c247c9a3998d93a64250d42121",
+    "keyring/raspberry-pi-gateway/src/bubble_gateway/__main__.py": "a99cf4485cf035d5c916e94c105afe5ab0d3a01b8d858f49c0ea3e5a7aa632f2",
+    "keyring/raspberry-pi-gateway/src/bubble_gateway/config.py": "ec71d388ce0adc4f1d18f04ce1fb03d0d47fd8e96539a10e09c26b5d13eb4085",
+    "keyring/raspberry-pi-gateway/src/bubble_gateway/transport.py": "eaf27c040df7ec8942af8701d0578e58c74e5fb78e2bf2dd9b8ebc82255644d6",
+    "keyring/raspberry-pi-gateway/tests/test_preflight.py": "7e723f9ce4e4cf799c23f80e8cca2afc752ff96121bc91cdf581c57cf4b02083"
+  },
+  "logSha256Lf": {
+    "gateway-tests.log": "0135e878c062e5cc7fa7df7f7448e2a6eb9786328fcde4bf8bcf3270717d1ef6",
+    "mismatched-key.log": "9559708146210a21e145453ecefb0a43442ee0de64ebd20126e4a47012c7fe5c",
+    "outside-state.log": "628dfa13a98f086988f35dca421647117ce736872982c1e680f9cab421f572e9",
+    "valid.log": "57f98695e74cd857c9e33f5a5aeeaa066ca77b5fe4be937861ad22d9cb70d010"
+  },
+  "logPolicy": "Published diagnostic logs use LF and a single final newline."
+}

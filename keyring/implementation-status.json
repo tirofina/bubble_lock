@@ -7,7 +7,7 @@
   "date": "2026-11-10",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Gateway 0.2.5 on actual Pi: transient systemd, 27 observation and 16 health cin in isolated Mobius4, same-row replay after restart verified. Physical command, production systemd and settlement remain. PC mock-GATT command tests retained.",
+  "verificationStatus": "Gateway 0.2.6 offline deployment preflight: 67 basic tests and 3 actual WSL systemd cases passed. Actual Pi transient daemon/replay evidence remains at 0.2.5. Physical command and production deployment remain.",
   "rubricIds": [
     "R01",
     "R02",
@@ -61,7 +61,8 @@
     "Feather0.1.1 latched display and authenticated Pi BLE observations with BlueZ READ-before-NOTIFY handling in Gateway0.2.4",
     "Opt-in real Feather/Pi relay harness with explicit env isolation, fresh private SQLite outbox, native HTTPS CSE readback and successful-channel MQTT/HTTPS accounting",
     "GATT command readiness deferral, current authorization for the same BLE generation, bounded fair pending batches, and graceful Gateway stop",
-    "Opt-in Feather 0.2.0 GPIO13 command/receipt profile with scoped NVS intent journal; observation profile remains 0.1.1"
+    "Opt-in Feather 0.2.0 GPIO13 command/receipt profile with scoped NVS intent journal; observation profile remains 0.1.1",
+    "Offline deployment preflight for TLS files and paths beneath systemd STATE_DIRECTORY; checked by ExecStartPre before the daemon"
   ],
   "existingHardware": {
     "status": "source-snapshot-included-unverified",
@@ -126,7 +127,7 @@
     "latestCheckpoint": "Pi full daemon fixture and 27 observation / 16 health cin evidence pushed. One real pending row replayed across process restart; physical command and production systemd remain.",
     "lastPushedCommitBeforeThisCheckpoint": "77b5ba846283051e4020c048456eef117d2627ec"
   },
-  "gatewayRevision": "0.2.5",
+  "gatewayRevision": "0.2.6",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
@@ -148,7 +149,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Verify Gateway 0.2.5 complete worker lifecycle and durable restart on actual Pi with existing Feather 0.1.1",
+    "executionRequest": "Validate the production-style Gateway startup boundary without a production install",
     "remainingCompletionDependencies": [
       "central deployment, settlement and recovery activation",
       "purchased JD9853 module initialization",
@@ -157,10 +158,10 @@
     ],
     "latestRemoteCore": "d54a43a",
     "sourceCommit": "f7e917cfbc4a77ddc2e11bac80f7146a363f4986",
-    "sourceValidation": "Pi isolated Gateway 0.2.5 installation, both transient units exit0, 27 observations and 16 health cin, exact pending payload replay, final outbox0. Physical command and production systemd pending.",
+    "sourceValidation": "Gateway 0.2.6 wheel, 67 regression tests, 3 WSL systemd preflight cases. Earlier 0.2.5 Pi transient daemon/replay evidence retained.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "Pi full daemon and CSE observation/health path verified. Feather command profile flash decision and physical command/ACK, production PCB and CORE settlement pending.",
+    "currentDependencyState": "Local deployment preflight and Pi observation/replay are verified in their separate scopes. Physical Feather command and production deployment/CORE settlement remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -451,5 +452,12 @@
     "productionSystemdVerified": false,
     "physicalCommandVerified": false,
     "sourceCommit": "f7e917cfbc4a77ddc2e11bac80f7146a363f4986"
+  },
+  "deploymentPreflightValidation": {
+    "gatewayVersion": "0.2.6",
+    "basicTestsPassed": 67,
+    "systemdCasesPassed": 3,
+    "productionDeploymentPerformed": false,
+    "receipt": "evidence/2026-11-10-deployment-preflight/receipt.json"
   }
 }

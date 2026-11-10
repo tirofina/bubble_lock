@@ -8,13 +8,13 @@ import hashlib
 import json
 import logging
 import math
-import ssl
 import uuid
 from typing import Any
 from urllib.parse import quote, urlsplit
 
 import httpx
 import paho.mqtt.client as mqtt
+from .config import tls_context
 from .core_bridge import command as core_command
 
 LOG = logging.getLogger(__name__)
@@ -124,9 +124,7 @@ class TransportHub:
             raise RuntimeError("transport already started")
         self._closing = False
         self._loop = asyncio.get_running_loop()
-        context = ssl.create_default_context(cafile=str(self.config.ca_file))
-        context.minimum_version = ssl.TLSVersion.TLSv1_3
-        context.load_cert_chain(str(self.config.cert_file), str(self.config.key_file))
+        context = tls_context(self.config)
         self._http = httpx.AsyncClient(verify=context, follow_redirects=False, trust_env=False,
                                       timeout=httpx.Timeout(self.config.request_timeout),
                                       limits=httpx.Limits(max_connections=8, max_keepalive_connections=4))

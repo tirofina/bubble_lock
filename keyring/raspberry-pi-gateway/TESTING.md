@@ -1,5 +1,7 @@
 # Gateway 로컬 시험
 
+Gateway 0.2.6은 로컬 기본 시험 67개와 실제 Ubuntu systemd의 시작 전 검사 3개가 통과했다. systemd 시험은 배포 unit의 격리 설정을 복사한 임시 unit에서 wheel의 `--check-config`를 실행하고, 성공한 경우에만 본 실행 표시를 남긴다. [실행 범위와 재현 절차](../evidence/2026-11-10-deployment-preflight/README.md)
+
 Gateway 0.2.5 소스에서 기본 63개와 [중앙 명령 통합 2개](../evidence/2026-11-10-central-dispatch/README.md)가 통과했다. 후자는 팀 Node mTLS API, Gateway 전체 worker, 모의 GATT, 실제 격리 Mobius4를 실행한다.
 
 ## 중앙 명령 통합 시험

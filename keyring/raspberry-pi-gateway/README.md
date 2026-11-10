@@ -6,7 +6,7 @@ Python 3.11 이상과 Linux BlueZ를 사용하는 KEYRING 현장 daemon이다. B
 
 Pi Zero 2 W의 별도 시험 폴더에 Gateway 0.2.5를 설치했다. 임시 사용자 systemd 서비스로 전체 데몬을 실행해 실제 Feather 관측 27개와 Gateway 상태 16개를 격리 Mobius4에서 확인했다. 재시작 뒤 SQLite에 남은 관측 한 건의 원본 해시도 CSE와 일치했다. 0.2.4에서 수행한 버튼 관측과 PC 모의 GATT 명령 시험은 각각 별도 증거다. 실물 명령과 배포용 systemd 설정 시험이 남아 있다. [Pi 전체 데몬](../evidence/2026-11-10-pi-full-daemon/README.md) · [버튼 관측](../evidence/2026-11-10-pi-feather/README.md) · [명령 통합 시험](../evidence/2026-11-10-central-dispatch/README.md)
 
-2026-10-30 Gateway0.2.2에서 재접속·영수증 대기열 경계를 수정했고, 소스·기존 설치 wheel 각각55개 시험이 통과했다(모의47개·실제 로컬 HTTPS/TLS8개)([범위와 재실행](TESTING.md)). 아래 절차는 중앙 인증서·API와 연결할 전체 Gateway 배포용이다. 이번 Feather 벤치에서는 이 daemon과 운영 서비스를 시작하지 않았다.
+아래 절차는 중앙 인증서·API와 연결할 전체 Gateway 배포용이다. Gateway 0.2.6의 배포용 시작 검사는 로컬 Linux systemd와 시험용 TLS 파일로 검증했다. Pi 실물 실행은 위의 0.2.5 벤치 결과다. [시작 검사 시험](../evidence/2026-11-10-deployment-preflight/README.md)
 
 [BLE_SESSIONS.md](BLE_SESSIONS.md)에 연결 교체 시 남은 명령 조각 전송 중단·이전 callback 무시·실패한 handshake의 ready 차단을 설명한다. GATT/중앙 wire schema와 DB format은 유지한다.
 
@@ -93,13 +93,23 @@ bonding이 완료된 주소를 `BLE_DEVICES`에 넣는다. `BLE_PAIR=true`는 �
 
 ## 수동 실행 또는 systemd 배포
 
+0.2.6 이상에서 배포 파일을 설치하기 전에 서비스 계정으로 로컬 설정을 점검한다.
+
+```sh
+sudo -u bubble-gateway env STATE_DIRECTORY=/var/lib/privacy-bubble-gateway \
+  /opt/bubble_lock/keyring/raspberry-pi-gateway/.venv/bin/bubble-gateway \
+  --env-file /etc/privacy-bubble/gateway.env --check-config
+```
+
+`--check-config`는 로컬 CA 및 인증서·개인키를 로드하고 키 일치를 확인한다. `STATE_DIRECTORY`가 있으면 SQLite와 잠금 파일의 해석된 경로가 그 안에 있는지 확인한다. 기존 DB를 열거나 생성하지 않는다. 서버 인증, 중앙 등록 상태, BlueZ 권한은 실제 연결 단계에서 확인한다.
+
 foreground 실행 명령은 다음과 같다. 같은 데이터베이스를 사용하는 프로세스는 하나만 허용한다. systemd 서비스가 이미 실행 중이면 중복으로 실행하지 않는다.
 
 ```sh
 sudo -u bubble-gateway /opt/bubble_lock/keyring/raspberry-pi-gateway/.venv/bin/bubble-gateway --env-file /etc/privacy-bubble/gateway.env --log-level INFO
 ```
 
-서비스를 사용할 경우 사용자가 아래 명령을 직접 수행한다.
+배포용 unit은 같은 환경과 서비스 계정으로 `--check-config`를 실행한 뒤 데몬을 시작한다. 기존 설치를 업그레이드할 때는 unit을 교체하기 전에 해당 가상환경의 Gateway를 0.2.6 이상으로 올리고 위 점검을 통과시킨다. 서비스 배포 시 아래 명령을 사용한다.
 
 ```sh
 sudo install -o root -g root -m 0644 /opt/bubble_lock/keyring/raspberry-pi-gateway/deploy/privacy-bubble-gateway.service /etc/systemd/system/privacy-bubble-gateway.service

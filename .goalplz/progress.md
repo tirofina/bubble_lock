@@ -386,3 +386,11 @@ Gateway 0.2.5 wheel 로컬 빌드와 Python 모듈 13개 소스 일치를 확인
 전체 goal은 active/progress다. 현재 Feather 0.1.1로 관측·상태만 검증했다. 별도 승인 뒤 0.2.0 실물 명령, 제작 PCB·센서·출력·전력, 배포용 systemd와 운영 권한 등록, CORE 정산·앱/웹·release 검증이 남았다.
 
 fixture와 실물 실행 증거 commit `f7e917cfbc4a77ddc2e11bac80f7146a363f4986`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `77b5ba8..f7e917c`다.
+
+## 2026-11-10 — 배포용 systemd 시작 전 설정 검사
+
+이전 goal turn은 실제 Pi 전체 데몬과 관측 재전송을 검증한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 재확인했다. 팀 HEAD는 이전과 같다.
+
+- Gateway 0.2.6에 `--check-config`를 추가하고 배포 unit의 `ExecStartPre`로 연결했다. 실제 transport와 같은 TLS context 함수로 CA·인증서·키를 확인한다. `STATE_DIRECTORY` 안에 SQLite와 잠금 파일이 있어야 하며, 점검 중에는 DB·잠금 파일을 만들지 않는다.
+- 기본 67개가 통과했고 로컬 wheel의 모듈 13개가 원본 소스와 일치했다. Ubuntu WSL systemd에서 정상 설정은 본 실행 표시까지 도달했고, 키 불일치와 상태 경로 이탈은 그 전에 차단됐다. 세 경우 상태 파일 0개다. 첫 실행에서 fixture의 반복 `Environment` 파싱을 수정한 뒤 재실행했다.
+- 시험 unit과 임시 경로를 정리했다. Pi의 0.2.5 실물 관측 증거와 이 0.2.6 로컬 배포 검사는 범위가 다르다. 배포 unit 운영 설치·중앙 운영 PKI·실물 명령·제작 PCB·정산은 남아 있다. [시험 기록](../keyring/evidence/2026-11-10-deployment-preflight/README.md)

@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import ssl
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -158,3 +159,32 @@ class GatewayConfig:
             max_commands=int(number("MAX_COMMANDS", "100000", 100, 10000000)),
             core_bridge_enabled=core_bridge, ble_gatt_profile=profile,
         )
+
+
+def tls_context(config: GatewayConfig) -> ssl.SSLContext:
+    context = ssl.create_default_context(cafile=str(config.ca_file))
+    context.minimum_version = ssl.TLSVersion.TLSv1_3
+    context.load_cert_chain(str(config.cert_file), str(config.key_file))
+    return context
+
+
+class DeploymentConfigError(ValueError):
+    """A diagnostic for deployment checks that does not include private values."""
+
+
+def check_state_directory(database: Path) -> None:
+    directory = os.getenv("STATE_DIRECTORY")
+    if directory is None:
+        return  # A foreground or bench run can choose a separate state root.
+    state = Path(directory)
+    if not state.is_absolute() or not state.is_dir():
+        raise DeploymentConfigError("Expected one absolute STATE_DIRECTORY")
+    root = state.resolve()
+    lock = database.with_suffix(".lock")
+    if database == lock:
+        raise DeploymentConfigError("GATEWAY_DATABASE and its lock must be different files")
+    for path in (database, lock):
+        resolved = path.resolve()
+        if (path.is_symlink() or (path.exists() and not path.is_file()) or
+                resolved == root or not resolved.is_relative_to(root)):
+            raise DeploymentConfigError("GATEWAY_DATABASE and its lock must be files inside STATE_DIRECTORY")
