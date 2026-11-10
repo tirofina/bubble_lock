@@ -522,3 +522,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 운영에는 원래 epoch를 결속하는 인증된 CORE 수신, 중복 판정 범위, 중앙 handover drain과 미확정 갱신 복구가 남아 있다. 실제 Pi·Feather 명령과 r18 PCB 수용은 대기 중이다. 전체 goal은 active/progress다.
 
 구현·시험 증거 commit `b945b15dc38f7df39ba3c7739029b8e8ddef4f65`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `7220fec..b945b15`다.
+
+## 2026-11-10 — CORE 관측의 발행 epoch 결속
+
+이전 goal turn은 중앙 동시 갱신을 재현하고 후보를 검증한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- Gateway 0.2.12의 선택 설정은 중앙이 배정한 장치별 epoch를 CORE 관측과 한 트랜잭션으로 저장한다. 발행은 저장된 epoch의 MQTT 토픽으로 제한한다. 설정에서 제외된 행은 보류되며 현재 관측 순서를 막지 않는다. 보류 행은 outbox 용량에 포함된다.
+- 중앙 수신 후보는 토픽의 Gateway·장치·epoch를 정본 SDT 라우팅과 순서 함수에 연결한다. 정확한 토픽에 쓰는 mTLS 주체를 하나로 제한하는 ACL, 익명 발행 차단, 기존 구독 종료 및 handover drain 조건을 문서화했다. [연동 조건](../keyring/integration-candidate/README.md#발행-당시-epoch를-보존하는-mqtt-수신-후보)
+- 이번 체크포인트는 소스 단계다. 최신 goal의 검증 범위에 따라 빌드·정적분석·시험·실행을 생략했다. 전용 ACL에서 두 Gateway를 전환하며 실제 broker/CSE readback을 확인하는 작업과 실물 명령 시험이 남아 있다. 전체 goal은 active/progress다.
+
+구현 commit `9782c8aa7ca88718ba21ea5df2e6a6a4861cea02`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `3c24c0b..9782c8a`다.

@@ -7,7 +7,7 @@
   "date": "2026-11-10",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Team CORE with real isolated Mobius4 reproduced a concurrent SDT overwrite. Two integration tests passed for the retry order and the KEYRING ordering candidate. Production ingress and physical acceptance remain.",
+  "verificationStatus": "Gateway 0.2.12 and the scoped MQTT ingress adapter are source-only. The previous two isolated SDT tests apply to the earlier ordering candidate. Scoped broker ACL and physical acceptance remain.",
   "rubricIds": [
     "R01",
     "R02",
@@ -72,7 +72,8 @@
     "operator-only device and Gateway archive verification with native CSE receipt comparison and explicit unresolved outcomes",
     "boot-local confirm/panic press counts retained through observation replacement and native CSE storage",
     "per-device ordering of CORE telemetry retries with independent native and receipt delivery",
-    "KEYRING CORE telemetry ordering candidate with a per-resource queue, source epoch checks and a durable pending update cursor"
+    "KEYRING CORE telemetry ordering candidate with a per-resource queue, source epoch checks and a durable pending update cursor",
+    "opt-in immutable CORE telemetry epoch in SQLite, epoch-specific MQTT publish and topic-bound central ingress candidate"
   ],
   "existingHardware": {
     "status": "source-snapshot-included-unverified",
@@ -94,7 +95,7 @@
     "central settlement/checkpoint and crash-safe device journal reclaim",
     "authoritative recovery checkpoint and fenced Gateway snapshot activation",
     "authoritative per-device Edge-to-Gateway mapping and atomic handover drain/approval binding",
-    "authenticated original CORE telemetry epoch, epoch-scoped deduplication, single-writer or distributed handover fencing and pending cursor reconciliation"
+    "exclusive broker ACL deployment and live testing for original CORE telemetry epoch, epoch-scoped deduplication integration, single-writer or distributed handover fencing and pending cursor reconciliation"
   ],
   "notImplemented": [
     "purchased JD9853 module-specific power/gamma initialization confirmation",
@@ -129,17 +130,17 @@
   "firmwareRevision": "keyring-0.7.3",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "b945b15dc38f7df39ba3c7739029b8e8ddef4f65",
+    "sourceCommit": "9782c8aa7ca88718ba21ea5df2e6a6a4861cea02",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "b945b15dc38f7df39ba3c7739029b8e8ddef4f65",
-    "lastPushedCommit": "b945b15dc38f7df39ba3c7739029b8e8ddef4f65",
-    "latestCheckpoint": "The team CORE concurrency overwrite was reproduced against isolated Mobius4. The candidate retained the latest SDT state and blocked stale ownership and unresolved updates.",
-    "lastPushedCommitBeforeThisCheckpoint": "7220fecc9be330c2a3d22755ebfa2f58be382e6d"
+    "latestLocalSourceCommit": "9782c8aa7ca88718ba21ea5df2e6a6a4861cea02",
+    "lastPushedCommit": "9782c8aa7ca88718ba21ea5df2e6a6a4861cea02",
+    "latestCheckpoint": "Gateway staging and MQTT routing preserve the original assigned epoch. The central candidate binds the topic to the CSE update cursor. Execution is pending.",
+    "lastPushedCommitBeforeThisCheckpoint": "3c24c0b8fee91535650ca22f688e52eb41e4770c"
   },
-  "gatewayRevision": "0.2.11",
+  "gatewayRevision": "0.2.12",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
@@ -161,7 +162,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Reproduce concurrent CORE SDT overwrites and verify a per-resource order and handover candidate with actual isolated CSE readback",
+    "executionRequest": "Preserve the assigned ownership epoch through SQLite staging and MQTT retries and prepare the exact-topic ACL ingress adapter",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -169,11 +170,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "b945b15dc38f7df39ba3c7739029b8e8ddef4f65",
-    "sourceValidation": "2 team CORE and actual isolated CSE tests passed over TLS 1.3/mTLS. Candidate ownership epochs were test inputs.",
+    "sourceCommit": "9782c8aa7ca88718ba21ea5df2e6a6a4861cea02",
+    "sourceValidation": "No new builds, static analysis, tests or execution for this source checkpoint.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "Single-process CORE UPDATE ordering and handover checks passed against isolated CSE with fixture ownership. Authenticated epoch ingress, operational handover fencing, broker delivery and actual Pi/r18 command acceptance remain.",
+    "currentDependencyState": "Scoped ingress is available as source. An exclusive broker listener and ACLs, central route activation and handover fencing, actual broker/CSE readback and Pi/r18 command acceptance remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -616,5 +617,12 @@
     "productionIngressVerified": false,
     "physicalDeviceVerified": false,
     "sourceCommit": "b945b15dc38f7df39ba3c7739029b8e8ddef4f65"
+  },
+  "coreScopedIngress": {
+    "reference": "integration-candidate/README.md",
+    "gatewayVersion": "0.2.12",
+    "status": "source-only",
+    "teamMain": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+    "sourceCommit": "9782c8aa7ca88718ba21ea5df2e6a6a4861cea02"
   }
 }
