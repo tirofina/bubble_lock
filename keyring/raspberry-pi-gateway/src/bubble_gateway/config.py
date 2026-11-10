@@ -62,6 +62,7 @@ class GatewayConfig:
     max_commands: int
     core_bridge_enabled: bool
     ble_gatt_profile: str
+    core_telemetry_epochs: dict[str, int] | None = None
 
     @classmethod
     def from_env(cls) -> "GatewayConfig":
@@ -129,6 +130,12 @@ class GatewayConfig:
         core_bridge = boolean("CORE_BRIDGE_ENABLED", "false")
         if core_bridge and not boolean("MQTT_ENABLED", "true"):
             raise ValueError("CORE_BRIDGE_ENABLED requires MQTT_ENABLED=true")
+        epochs = None
+        if "CORE_TELEMETRY_EPOCHS" in os.environ:
+            epochs = json.loads(required("CORE_TELEMETRY_EPOCHS"))
+            if (not core_bridge or not isinstance(epochs, dict) or epochs.keys() != devices.keys()
+                    or any(type(epoch) is not int or not 0 <= epoch <= 2147483647 for epoch in epochs.values())):
+                raise ValueError("CORE_TELEMETRY_EPOCHS requires CORE bridge and an epoch for every BLE device")
         profile = os.getenv("BLE_GATT_PROFILE", "core-v1")
         if profile not in {"core-v1", "keyring-v01"}:
             raise ValueError("BLE_GATT_PROFILE must be core-v1 or keyring-v01")
@@ -157,7 +164,7 @@ class GatewayConfig:
             max_outbox_rows=int(number("MAX_OUTBOX_ROWS", "10000", 100, 1000000)),
             max_outbox_bytes=int(number("MAX_OUTBOX_BYTES", "33554432", 1048576, 1073741824)),
             max_commands=int(number("MAX_COMMANDS", "100000", 100, 10000000)),
-            core_bridge_enabled=core_bridge, ble_gatt_profile=profile,
+            core_bridge_enabled=core_bridge, ble_gatt_profile=profile, core_telemetry_epochs=epochs,
         )
 
 

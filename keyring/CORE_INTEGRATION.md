@@ -31,6 +31,8 @@ handover 후에는 이전 epoch뿐 아니라 대상 Gateway도 확인해야 한�
 
 같은 장치의 순서가 맞아도 팀 CORE 브리지에서 CSE UPDATE가 동시에 실행되면 최신 상태가 옛 값으로 덮인다. 격리 Mobius4에서 옛 ON 요청을 지연시켜 최종 ON을 재현했다. [관측 순서 후보](integration-candidate/README.md#core-관측의-동시-갱신)를 거치면 최종 OFF를 확인했고, 소유권이 바뀐 뒤 이전 Gateway의 갱신과 적용 여부가 불명확한 자원의 후속 갱신은 차단됐다. 운영 연결에는 원래 발행 epoch를 보존하는 인증 수신 경로와 중앙 handover·중복 판정 연동이 남아 있다. [실행 기록](evidence/2026-11-10-core-concurrent-order/README.md)
 
+Gateway 0.2.12와 KEYRING 수신 후보는 발행 시점의 epoch를 SQLite와 별도 MQTT 토픽에 보존한다. 중앙이 장치·epoch별 토픽의 쓰기 권한을 해당 Gateway 인증서에만 부여하면 수신 후보가 원래 소유권을 복원할 수 있다. 팀 CORE v1 본문은 유지한다. ACL, 중앙 라우팅, handover drain과 실제 CSE 적용 연결이 필요하다. [입력·ACL·전환 계약](integration-candidate/README.md#발행-당시-epoch를-보존하는-mqtt-수신-후보)
+
 ## 소유권
 
 CORE: oneM2M resource/SDT/namespace, RVI, broker topic/ACL, native bridge/DB.

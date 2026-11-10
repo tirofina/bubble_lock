@@ -337,6 +337,18 @@ class TransportHub:
         if self._mqtt is None or not self._ready.is_set():
             raise ConnectionError("CORE MQTT session is not ready")
         topic = self._core_root + "/" + target.split("/", 1)[1]
+        if target == "@core/telemetry":
+            epochs = self.config.core_telemetry_epochs
+            if epochs is None:
+                if "ownershipEpoch" in payload:
+                    raise ValueError("Scoped CORE telemetry cannot use the legacy topic")
+            else:
+                device_id, epoch = payload.get("deviceId"), payload.get("ownershipEpoch")
+                if (payload.get("gatewayId") != self.config.gateway_id or not isinstance(device_id, str)
+                        or type(epoch) is not int or epochs.get(device_id) != epoch):
+                    raise ValueError("CORE telemetry ownership assignment does not match the queued route")
+                topic = f"{self._core_root}/telemetry-epoch/{device_id}/{epoch}"
+                payload = {key: value for key, value in payload.items() if key != "ownershipEpoch"}
         info = self._mqtt.publish(topic, payload=_json(payload), qos=1, retain=False)
         if info.rc != mqtt.MQTT_ERR_SUCCESS:
             raise ConnectionError("CORE publish was not accepted")

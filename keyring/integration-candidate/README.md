@@ -43,3 +43,23 @@ CORE/INTEGRATION의 실제 연결은 발급 기록과 실행 승인 기록을 �
 운영 연결에는 같은 자원을 갱신하는 단일 실행 주체와 handover drain, 또는 여러 실행 주체를 조정하는 중앙 차단 장치가 필요하다. 기존 CORE v1 메시지에는 epoch가 없으므로 대기 메시지에 현재 epoch를 붙이면 이전 소유자의 관측을 구별할 수 없다. 발행자와 원래 epoch를 수신 경로에서 함께 확인하고, 기존 CORE의 중복 키도 epoch와 자원 범위에 맞춰야 한다. 미확정 갱신은 CSE와 영속 기록을 대조한 뒤 같은 자원의 처리 재개 여부를 결정한다.
 
 [격리 Mobius4 재현](../evidence/2026-11-10-core-concurrent-order/README.md)
+
+## 발행 당시 epoch를 보존하는 MQTT 수신 후보
+
+Gateway 0.2.12에서 `CORE_TELEMETRY_EPOCHS`에 중앙이 부여한 장치별 epoch를 설정하면, 관측을 SQLite에 넣는 트랜잭션에서 epoch도 함께 기록한다. 재시도와 재기동은 저장된 epoch로만 `privacy-bubble/gateway/{gatewayId}/telemetry-epoch/{deviceId}/{epoch}`에 발행한다. 본문에는 CORE v1 telemetry를 그대로 보낸다. 활성 설정에 속하지 않는 행은 SQLite에 남기며 최신 epoch의 전송 순서를 막지 않는다. 보류 행은 전체 outbox 용량에 포함된다.
+
+[수신 어댑터](core-telemetry-ingress.mjs)는 신뢰한 브로커의 구독 콜백에서 사용한다. 토픽에서 Gateway·장치·epoch를 읽고 본문의 Gateway·장치와 대조한다. retained replay와 본문으로 전달된 epoch는 거절한다. 정본 장치 → SDT 매핑과 현재 소유권을 순서 제어 함수에 전달한다. `apply`는 SDT·Gateway·장치·epoch·sequence에 결속된 `requestId`를 받아 CSE 요청 ID와 중복 판정에 사용한다. 실제 CSE UPDATE 응답이 확인됐을 때 `APPLIED`를 반환해야 한다.
+
+브로커 설정에서는 등록된 각 mTLS 주체가 중앙에서 지정한 **정확한 토픽 하나**에만 쓰도록 한다. 장치나 epoch에 대해 wildcard 쓰기 권한을 부여하면 토픽을 소유권 근거로 사용할 수 없다. 예를 들어 Gateway 인증서 사용자 `bench-gw-a`가 장치 `kr-01`의 epoch 7을 소유한다면 다음처럼 배정한다.
+
+```conf
+user bench-gw-a
+topic write privacy-bubble/gateway/gw-a/telemetry-epoch/kr-01/7
+
+user bench-core
+topic read privacy-bubble/gateway/+/telemetry-epoch/+/+
+```
+
+익명 listener, 브리지나 다른 경로에서도 같은 namespace에 발행할 수 없어야 한다. 현재 Mobius4 개발 프로필의 내부 익명 listener에는 이 수신 후보를 연결하지 않는다. 브로커가 retained publish도 차단해야 하며, 같은 SDT를 갱신하는 기존 unscoped 구독 경로는 전환 전에 종료한다. 중앙이 이전 writer의 전송을 종료하고 미확정 UPDATE를 처리한 뒤 새 ACL과 소유권을 배정한다. 기존 메시지에 새 epoch를 다시 붙이지 않는다.
+
+이 변경의 Gateway·수신 후보는 소스 단계다. 실제 두 인증서로 토픽 ACL 격리, 교체 전 지연 메시지, SQLite 재기동과 CSE readback을 이어서 확인해야 한다. 앞선 동시 갱신 시험에는 시험용 소유권을 공급했다.

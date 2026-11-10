@@ -132,7 +132,8 @@ class Store:
         with self.db:
             self._enqueue(self.request_id(kind, identity), container, payload, critical)
 
-    def observation(self, container: str, payload: dict, core_enabled: bool = False) -> bool:
+    def observation(self, container: str, payload: dict, core_enabled: bool = False, *,
+                    core_epochs: dict[str, int] | None = None) -> bool:
         with self.db:
             previous = self.db.execute("SELECT boot_id,sequence FROM observations WHERE device_id=?", (payload["deviceId"],)).fetchone()
             if previous and previous["boot_id"] == payload["bootId"] and payload["sequence"] <= previous["sequence"]:
@@ -144,7 +145,10 @@ class Store:
                 wire_sequence = previous_core["wire_sequence"] + 1 if previous_core else 0
                 if wire_sequence > 4294967295:
                     raise CapacityError("CORE uint32 sequence exhausted; explicit device identity rotation required")
-                self._enqueue(self.request_id("core-telemetry", identity), "@core/telemetry", telemetry(payload, wire_sequence))
+                projection = telemetry(payload, wire_sequence)
+                if core_epochs is not None:
+                    projection["ownershipEpoch"] = core_epochs[payload["deviceId"]]
+                self._enqueue(self.request_id("core-telemetry", identity), "@core/telemetry", projection)
                 self.db.execute("INSERT INTO core_sequences(device_id,wire_sequence) VALUES(?,?) ON CONFLICT(device_id) DO UPDATE SET wire_sequence=excluded.wire_sequence",
                                 (payload["deviceId"], wire_sequence))
             self.db.execute("INSERT INTO observations(device_id,boot_id,sequence) VALUES(?,?,?) ON CONFLICT(device_id) DO UPDATE SET boot_id=excluded.boot_id,sequence=excluded.sequence",
@@ -170,18 +174,28 @@ class Store:
             except CapacityError:
                 break
 
-    def due(self) -> dict | None:
-        # CORE telemetry updates current state. Only the oldest projection per
-        # device is eligible; other delivery routes keep their own retry timing.
+    def due(self, *, core_epochs: dict[str, int] | None = None) -> dict | None:
+        # Old ownership routes stay on disk and cannot block the active route.
+        # Within the active route, only the oldest projection per device can run.
+        epochs = canonical(core_epochs) if core_epochs is not None else None
         row = self.db.execute("""
-            WITH core_heads AS (
-                SELECT MIN(rowid) AS head FROM outbox WHERE container='@core/telemetry'
-                GROUP BY json_extract(CASE WHEN json_valid(payload) THEN payload ELSE '{}' END, '$.deviceId')
+            WITH core_rows AS (
+                SELECT rowid, CASE WHEN json_valid(payload) THEN payload ELSE '{}' END AS message
+                FROM outbox WHERE container='@core/telemetry'
+            ), core_heads AS (
+                SELECT MIN(rowid) AS head FROM core_rows
+                WHERE CASE WHEN ?1 IS NULL THEN json_type(message, '$.ownershipEpoch') IS NULL
+                    ELSE json_type(message, '$.ownershipEpoch') = 'integer' AND EXISTS (
+                       SELECT 1 FROM json_each(?1) AS assignment
+                       WHERE assignment.key = json_extract(message, '$.deviceId')
+                         AND assignment.value = json_extract(message, '$.ownershipEpoch')
+                    ) END
+                GROUP BY json_extract(message, '$.deviceId')
             )
-            SELECT * FROM outbox WHERE next_attempt<=?
+            SELECT * FROM outbox WHERE next_attempt<=?2
               AND (container<>'@core/telemetry' OR rowid IN (SELECT head FROM core_heads))
             ORDER BY created_at,rqi LIMIT 1
-        """, (time.time(),)).fetchone()
+        """, (epochs, time.time())).fetchone()
         if row is None:
             return None
         result = dict(row)
