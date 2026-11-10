@@ -1,0 +1,115 @@
+#include <algorithm>
+#include <cassert>
+#include <cctype>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+
+using std::max;
+using esp_err_t = int;
+using nvs_handle_t = unsigned;
+constexpr esp_err_t ESP_OK = 0, ESP_FAIL = -1, ESP_ERR_NVS_NOT_FOUND = 1,
+    ESP_ERR_NVS_NO_FREE_PAGES = 2, ESP_ERR_NVS_NEW_VERSION_FOUND = 3;
+constexpr int NVS_READWRITE = 1;
+esp_err_t initResult = ESP_OK, commitResult = ESP_OK;
+nvs_handle_t journalNvs = 0;
+bool storageHealthy = false;
+uint32_t maxEpoch = 0, maxGrant = 0;
+esp_err_t nvs_open(const char *, int, nvs_handle_t *);
+esp_err_t nvs_get_blob(nvs_handle_t, const char *, void *, size_t *);
+esp_err_t nvs_set_blob(nvs_handle_t, const char *, const void *, size_t);
+esp_err_t nvs_commit(nvs_handle_t);
+
+#include "journal_nvs_subject.inc"
+
+Record slots[JournalSlots] = {};
+esp_err_t readResults[JournalSlots] = {};
+extern "C" esp_err_t __real_nvs_flash_init() { return initResult; }
+esp_err_t nvs_open(const char *name, int mode, nvs_handle_t *handle) {
+    assert(std::strcmp(name, "keyring-v1") == 0 && mode == NVS_READWRITE);
+    *handle = 1;
+    return ESP_OK;
+}
+esp_err_t nvs_get_blob(nvs_handle_t handle, const char *key, void *data, size_t *size) {
+    assert(handle == 1 && key[0] == 'j' && *size == sizeof(Record));
+    const auto slot = std::atoi(key + 1);
+    if (readResults[slot] == ESP_OK) std::memcpy(data, &slots[slot], sizeof(Record));
+    return readResults[slot];
+}
+esp_err_t nvs_set_blob(nvs_handle_t handle, const char *key, const void *, size_t size) {
+    assert(handle == 1 && key[0] == 'j' && size == sizeof(Record));
+    return ESP_OK;
+}
+esp_err_t nvs_commit(nvs_handle_t handle) {
+    assert(handle == 1);
+    return commitResult;
+}
+
+void resetLoadedJournal() {
+    std::memset(occupied, 0, sizeof(occupied));
+    maxEpoch = maxGrant = 0;
+}
+
+int main() {
+    assert(__wrap_nvs_flash_init() == ESP_OK && !journalNvsNeedsRecovery);
+    const esp_err_t recoveryErrors[] = {ESP_ERR_NVS_NO_FREE_PAGES, ESP_ERR_NVS_NEW_VERSION_FOUND};
+    for (const auto error : recoveryErrors) {
+        journalNvsNeedsRecovery = false;
+        initResult = error;
+        assert(__wrap_nvs_flash_init() == ESP_FAIL && journalNvsNeedsRecovery);
+    }
+    initResult = ESP_OK;
+    assert(__wrap_nvs_flash_init() == ESP_OK && journalNvsNeedsRecovery);
+
+    journalNvsNeedsRecovery = false;
+    std::fill_n(readResults, JournalSlots, ESP_ERR_NVS_NOT_FOUND);
+    loadJournal();
+    assert(storageHealthy && !occupied[0] && maxEpoch == 0);
+    Record prepared = {};
+    prepared.magic = JournalMagic;
+    prepared.format = 1;
+    prepared.phase = Prepared;
+    std::memcpy(prepared.commandId, "cmd-1", sizeof("cmd-1"));
+    std::memset(prepared.hash, 'a', 64);
+    std::memcpy(prepared.bootId, "boot-a", sizeof("boot-a"));
+    prepared.desired = 1;
+    prepared.epoch = 3;
+    prepared.grant = 4;
+    prepared.acceptedAt = 50;
+    prepared.crc = crc32(&prepared, offsetof(Record, crc));
+    slots[0] = prepared;
+    readResults[0] = ESP_OK;
+    loadJournal();
+    assert(storageHealthy && occupied[0] && !occupied[1] && maxEpoch == 3 && maxGrant == 4);
+
+    Record completed = prepared;
+    completed.phase = Completed;
+    completed.result = static_cast<uint8_t>(Result::Applied);
+    completed.readback = 1;
+    completed.appliedAt = 51;
+    commitResult = ESP_FAIL;
+    assert(!storeRecord(0, completed) && !storageHealthy && journal[0].phase == Prepared);
+
+    resetLoadedJournal();
+    readResults[1] = ESP_FAIL;
+    loadJournal();
+    assert(!storageHealthy && !occupied[1]);
+    resetLoadedJournal();
+    readResults[1] = ESP_OK;
+    slots[1] = prepared;
+    loadJournal();
+    assert(!storageHealthy && !occupied[1]); // Duplicate command ID across two valid records.
+    resetLoadedJournal();
+    readResults[1] = ESP_ERR_NVS_NOT_FOUND;
+    slots[0] = completed;
+    slots[0].crc = crc32(&slots[0], offsetof(Record, crc));
+    loadJournal();
+    assert(storageHealthy && occupied[0] && journal[0].phase == Completed);
+    resetLoadedJournal();
+    slots[0].readback = 0;
+    slots[0].crc = crc32(&slots[0], offsetof(Record, crc));
+    loadJournal();
+    assert(!storageHealthy && !occupied[0]); // Valid CRC, contradictory applied readback.
+}

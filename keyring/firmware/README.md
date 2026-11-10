@@ -2,7 +2,7 @@
 
 ROLE: KEYRING · DOC-REV: 2.0.0 · 구현 계약: 0.1.0 · 상태: implemented, unverified
 
-ESP32-S3-WROOM-1-N16R8 / r18-hand-solder 보드를 대상으로 작성한 소스다. keyring-0.7.4는 BLE 관측·버튼·배터리·가속도와 진동 명령/receipt, 선택형 ST7789·JD9853 상태 화면·스피커 cue·SD receipt 복사를 포함한다. 축약된 health 프레임에도 wake 원인과 핀 마스크를 담는다. [저전력·wake](POWER_WAKE.md), [전원 계측](POWER_MONITOR.md), [프로필과 빌드 기록](BUILD_PROFILES.md)을 함께 본다. 제작 PCB에서의 flash·실물 실행은 수용 시험 단계다.
+ESP32-S3-WROOM-1-N16R8 / r18-hand-solder 보드를 대상으로 작성한 소스다. keyring-0.7.5는 BLE 관측·버튼·배터리·가속도와 진동 명령/receipt, 선택형 ST7789·JD9853 상태 화면·스피커 cue·SD receipt 복사를 포함한다. 축약된 health 프레임에도 wake 원인과 핀 마스크를 담는다. [저전력·wake](POWER_WAKE.md), [전원 계측](POWER_MONITOR.md), [프로필과 빌드 기록](BUILD_PROFILES.md)을 함께 본다. 제작 PCB에서의 flash·실물 실행은 수용 시험 단계다.
 
 배송 대기 중에는 Adafruit Feather ESP32 V2와 1.54인치 ST7789에서 화면·버튼·BLE 관측을 [별도 벤치 스케치](feather_probe/README.md)로 시험한다.
 
@@ -51,6 +51,8 @@ Observation은 LF를 포함해 512byte 이하일 때만 게시한다. 초과하�
 출력 변경 전에 PREPARED record를 먼저 저장하고 적용 후 COMPLETED record를 저장한다. PREPARED만 남으면 재실행하지 않고 INDETERMINATE를 반환한다. 완료된 성공 재전송은 DUPLICATE와 과거 적용 당시 bootId/uptime/readback을 반환한다. 과거 적용 readback은 재부팅 후 현재 출력 상태를 뜻하지 않는다. 완료 저장 실패는 출력을 즉시 끄고 INDETERMINATE를 반환하며 저장 오류 이후 신규 실행을 막는다.
 
 최대 32개 record를 보존하며 자동 삭제·순환 덮어쓰기를 하지 않는다. 가득 차면 JOURNAL_FULL이다. CRC·형식·NVS 쓰기 오류도 신규 실행을 차단한다. 가장 큰 수락 epoch와 grantRevision을 journal에서 복구해 오래된 신규 명령을 거절한다. 기록 삭제나 자동 epoch reset API는 없다. keyring-0.5.0은 NVS를 수정하지 않는 BLE journal snapshot과 Gateway 수동 보관 도구를 추가했다. [읽기·보관·정산 경계](../JOURNAL_RETENTION.md)를 따른다. 장기 운영의 실제 공간 회수에는 중앙 영속 정산 후 승인된 crash-safe checkpoint/reclaim 계약이 추가로 필요하다. flash/NVS 전체를 지우면 journal과 fencing 이력이 사라지므로 일반 복구 방식으로 사용해서는 안 된다.
+
+keyring-0.7.5는 Arduino 코어의 `nvs_flash_init` 호출을 감싼다. `ESP_ERR_NVS_NO_FREE_PAGES` 또는 `ESP_ERR_NVS_NEW_VERSION_FOUND`에서 자동 포맷 경로를 막고, 출력을 안전 상태로 둔 채 BLE 시작 전에 잠근다. USB 직렬 로그에 `default NVS needs recovery`가 남는다. 초기화에 성공하면 기존 `keyring-v1` namespace와 record format 1을 읽는다. 명시적 `ESP_ERR_NVS_NOT_FOUND`만 빈 슬롯으로 취급하며, 읽기 오류·중복 명령 ID·모순된 record가 있으면 정상 영수증 재발행과 신규 실행을 차단한다. [호스트 오류 주입 시험 소스](tests/run_journal_nvs_host.py)는 추가됐으며 링크·실물 전원 장애 검증은 남아 있다.
 
 현재 grant의 회수/만료 여부는 Gateway가 매 실행 직전에 중앙 authorize API로 확인한다. 펌웨어의 숫자 fencing은 이미 본 revision보다 오래된 명령을 막는 기능이다. 더 최신의 중앙 권한 상태를 장치가 추측하지 않는다. Secure Boot·flash encryption·attestation·서명 검증·OTA·원격 인증서 발급은 이 구현의 범위에 포함되지 않는다.
 

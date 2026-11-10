@@ -3,13 +3,13 @@
 #include <BLE2902.h>
 #include <BLEDevice.h>
 #include <BLESecurity.h>
-#include <Preferences.h>
 #include <Wire.h>
 #include <driver/gpio.h>
 #include <esp_bt.h>
 #include <esp_timer.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
+#include <nvs_flash.h>
 #include <stddef.h>
 #include <string>
 #include "board_r18.h"
@@ -24,8 +24,21 @@
 #include "supply_monitor.h"
 #include "headphone_standby.h"
 
+static bool journalNvsNeedsRecovery = false;
+extern "C" esp_err_t __real_nvs_flash_init();
+extern "C" esp_err_t __wrap_nvs_flash_init() {
+  const esp_err_t status = __real_nvs_flash_init();
+  if (status == ESP_ERR_NVS_NO_FREE_PAGES || status == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+    // Arduino init erases the default NVS partition on either of these codes.
+    // The command journal in that partition must survive for manual recovery.
+    journalNvsNeedsRecovery = true;
+    return ESP_FAIL;
+  }
+  return status;
+}
+
 namespace {
-constexpr char FirmwareRevision[] = "keyring-0.7.4";
+constexpr char FirmwareRevision[] = "keyring-0.7.5";
 #if defined(KEYRING_LEGACY_GATT) && KEYRING_LEGACY_GATT
 constexpr char ServiceUuid[] = "8b8f0001-8e7a-4f36-a8c2-1c9b5d620001";
 constexpr char IdentityUuid[] = "8b8f0002-8e7a-4f36-a8c2-1c9b5d620001";
@@ -55,7 +68,7 @@ BLECharacteristic *identityChar = nullptr, *observationChar = nullptr, *receiptC
 BLECharacteristic *journalChar = nullptr;
 QueueHandle_t commandQueue = nullptr;
 QueueHandle_t journalRequests = nullptr;
-Preferences nvs;
+nvs_handle_t journalNvs = 0;
 bool storageHealthy = false, provisioned = false, radioSleepEnabled = false;
 volatile bool connected = false, authenticated = false, disconnected = false;
 volatile bool sleepPreparing = false;
@@ -120,10 +133,24 @@ uint32_t crc32(const void *data, size_t size) {
   return ~crc;
 }
 void slotKey(unsigned slot, char *key) { snprintf(key, 8, "j%02u", slot); }
+bool identifier(const char *value);
+bool hashValid(const char *hash);
+bool validRecord(const Record &record) {
+  if (record.magic != JournalMagic || record.format != 1 ||
+      record.crc != crc32(&record, offsetof(Record, crc)) ||
+      record.commandId[64] != '\0' || record.hash[64] != '\0' || record.bootId[32] != '\0' ||
+      !identifier(record.commandId) || !hashValid(record.hash) || !identifier(record.bootId) ||
+      record.epoch > INT32_MAX || record.grant == 0 || record.grant > INT32_MAX ||
+      record.desired > 1 || record.readback > 1) return false;
+  if (record.phase == Prepared) return record.result == 0 && record.appliedAt == 0 && record.readback == 0;
+  const Result expected = record.desired == record.readback ? Result::Applied : Result::ReadbackMismatch;
+  return record.phase == Completed && record.appliedAt >= record.acceptedAt &&
+      record.result == static_cast<uint8_t>(expected);
+}
 bool storeRecord(unsigned slot, Record &record) {
   record.crc = crc32(&record, offsetof(Record, crc));
   char key[8]; slotKey(slot, key);
-  if (nvs.putBytes(key, &record, sizeof(record)) != sizeof(record)) {
+  if (nvs_set_blob(journalNvs, key, &record, sizeof(record)) != ESP_OK || nvs_commit(journalNvs) != ESP_OK) {
     storageHealthy = false;
     return false;
   }
@@ -132,18 +159,23 @@ bool storeRecord(unsigned slot, Record &record) {
   return true;
 }
 void loadJournal() {
-  storageHealthy = nvs.begin("keyring-v1", false);
+  storageHealthy = nvs_open("keyring-v1", NVS_READWRITE, &journalNvs) == ESP_OK;
   if (!storageHealthy) return;
   for (unsigned slot = 0; slot < JournalSlots; ++slot) {
     char key[8]; slotKey(slot, key);
-    if (!nvs.isKey(key)) continue;
     Record &r = journal[slot];
-    if (nvs.getBytesLength(key) != sizeof(r) || nvs.getBytes(key, &r, sizeof(r)) != sizeof(r) ||
-        r.magic != JournalMagic || r.format != 1 || (r.phase != Prepared && r.phase != Completed) ||
-        r.commandId[64] != '\0' || r.hash[64] != '\0' || r.bootId[32] != '\0' ||
-        r.crc != crc32(&r, offsetof(Record, crc))) {
+    size_t size = sizeof(r);
+    const esp_err_t status = nvs_get_blob(journalNvs, key, &r, &size);
+    if (status == ESP_ERR_NVS_NOT_FOUND) continue;
+    if (status != ESP_OK || size != sizeof(r) || !validRecord(r)) {
       storageHealthy = false;
       return; // A corrupt slot is never silently erased or reused.
+    }
+    for (unsigned prior = 0; prior < slot; ++prior) {
+      if (occupied[prior] && strcmp(journal[prior].commandId, r.commandId) == 0) {
+        storageHealthy = false;
+        return;
+      }
     }
     occupied[slot] = true;
     maxEpoch = max(maxEpoch, r.epoch);
@@ -455,6 +487,7 @@ void processCommand(const Frame &frame) {
   if (!commandWire::valid(doc.as<JsonObjectConst>(), deviceId, frame.bytes, length)) {
     publishReceipt(id, hash, "INVALID"); return;
   }
+  if (!storageHealthy) { publishReceipt(id, hash, "STORAGE_ERROR"); return; }
   uint32_t epoch = doc["ownershipEpoch"], grant = doc["grantRevision"], remaining = doc["remainingMs"];
   bool desired = doc["desiredState"]["state"];
   int freeSlot = -1;
@@ -469,7 +502,6 @@ void processCommand(const Frame &frame) {
       r.result == static_cast<uint8_t>(Result::Applied) ? "DUPLICATE" : "READBACK_MISMATCH";
     publishReceipt(id, hash, result, &r); return;
   }
-  if (!storageHealthy) { publishReceipt(id, hash, "STORAGE_ERROR"); return; }
   if (epoch < maxEpoch) { publishReceipt(id, hash, "REJECTED_EPOCH"); return; }
   if (grant < maxGrant) { publishReceipt(id, hash, "REJECTED_GRANT"); return; }
   if (uptime() - frame.firstAt >= remaining) { publishReceipt(id, hash, "EXPIRED"); return; }
@@ -736,6 +768,10 @@ void setup() {
   powerState::begin(); // Release sleep holds after writing safe output latches.
   safePins();
   Serial.begin(115200); // Native USB CDC only; GPIO43 is reserved for LCD reset.
+  if (journalNvsNeedsRecovery) {
+    Serial.println("KEYRING LOCKED: default NVS needs recovery; command journal preserved.");
+    return;
+  }
   uint64_t mac = ESP.getEfuseMac();
 #ifdef KEYRING_DEVICE_ID
   strlcpy(deviceId, KEYRING_DEVICE_ID, sizeof(deviceId));
@@ -766,10 +802,10 @@ void setup() {
       storageHealthy ? "ready" : "error", radioSleepEnabled ? "enabled" : "unavailable");
 }
 void loop() {
+  if (!provisioned) { delay(100); return; }
   uint64_t now = uptime();
   if (headphone.poll(now)) observationDirty = true;
   if (!headphone.speakerAllowed()) audio.stop();
-  if (!provisioned) { delay(100); return; }
   initializeAudioWhenQuiet();
   if (connected) powerState::activity(now);
   if (disconnected) {
