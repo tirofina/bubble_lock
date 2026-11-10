@@ -1,4 +1,4 @@
-"""Operator-only cold state archives and explicit legacy identity adoption.
+"""Operator-only cold archives, explicit identity adoption and retired CORE cleanup.
 
 No restore activation, credentials, service control, BLE or network calls.
 """
@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import logging
 import os
 import sqlite3
@@ -14,10 +15,11 @@ import uuid
 from contextlib import closing
 from pathlib import Path
 
-from .config import GatewayConfig, read_env_file
+from .config import GatewayConfig, ID, read_env_file
 from .model import canonical, iso_time
 from .state_identity import (StateIdentityError, configured_binding, counts, install,
                              legacy_ownership, match, metadata, quarantine_copy, readonly, tables)
+from .store import Store
 
 
 def _new_file(path: Path, data: bytes) -> None:
@@ -129,12 +131,105 @@ def archive(config: GatewayConfig, output: Path, *, adopt: bool, timeout: float)
         return manifest_path
 
 
+_RETIRED_CORE_SCOPE = """container='@core/telemetry' AND CASE WHEN json_valid(payload) THEN
+    json_extract(payload, '$.deviceId')=?1 AND CASE
+        WHEN ?2 IS NULL THEN json_type(payload, '$.ownershipEpoch') IS NULL
+        ELSE json_type(payload, '$.ownershipEpoch')='integer' AND json_extract(payload, '$.ownershipEpoch')=?2
+    END ELSE 0 END"""
+
+
+def _retired_core_fingerprint(db: sqlite3.Connection, gateway: str, device: str, epoch: int | None) -> tuple[int, str]:
+    count = 0
+    digest = hashlib.sha256()
+    for row in db.execute(f"SELECT * FROM outbox WHERE {_RETIRED_CORE_SCOPE} ORDER BY rqi", (device, epoch)):
+        payload = json.loads(row["payload"])
+        if not isinstance(payload, dict) or payload.get("deviceId") != device:
+            raise StateIdentityError("STATE_RETIRED_CORE_BINDING_INVALID")
+        boot_id, sequence = payload.get("bootId"), payload.get("firmwareSequence")
+        if (payload.get("gatewayId") != gateway or payload.get("schemaVersion") != "1.0.0"
+                or not isinstance(boot_id, str) or ID.fullmatch(boot_id) is None
+                or type(sequence) is not int or not 0 <= sequence <= 4294967295
+                or row["command_id"] is not None or canonical(payload) != row["payload"]
+                or len(row["payload"].encode("utf-8")) != row["payload_bytes"]):
+            raise StateIdentityError("STATE_RETIRED_CORE_BINDING_INVALID")
+        if row["rqi"] != Store.request_id("core-telemetry", f"{device}:{boot_id}:{sequence}"):
+            raise StateIdentityError("STATE_RETIRED_CORE_BINDING_INVALID")
+        digest.update((canonical(dict(row)) + "\n").encode("utf-8"))
+        count += 1
+    return count, digest.hexdigest()
+
+
+def retire_core(config: GatewayConfig, output: Path, *, device: str, epoch: int | None, timeout: float) -> Path:
+    """Caller holds the daemon lifetime lock. Save a full archive before removing an obsolete scope."""
+    expected = configured_binding(config)
+    active = (config.core_telemetry_epochs or {}).get(device)
+    if (not config.core_bridge_enabled or not ID.fullmatch(device) or active is None
+            or (epoch is not None and (type(epoch) is not int or not 0 <= epoch < active))):
+        raise StateIdentityError("STATE_RETIRED_CORE_SCOPE_INVALID")
+
+    path = config.database.resolve(strict=True)
+    initial_file = path.stat()
+    with closing(readonly(path)) as source:
+        current = metadata(source)
+        if current is None:
+            raise StateIdentityError("STATE_LEGACY_ADOPTION_REQUIRED")
+        match(current, expected)
+        version = source.execute("PRAGMA data_version").fetchone()[0]
+        fingerprint = _retired_core_fingerprint(source, config.gateway_id, device, epoch)
+        row_count, rows_hash = fingerprint
+        if not row_count:
+            raise StateIdentityError("STATE_NO_RETIRED_CORE_ROWS")
+        manifest_path = archive(config, output, adopt=False, timeout=timeout)
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        with closing(readonly(output / "gateway.sqlite3")) as copy:
+            copied = metadata(copy)
+            if copied is None:
+                raise StateIdentityError("STATE_RETIRED_CORE_ARCHIVE_MISMATCH")
+            match(copied, expected, require_live=False)
+            if (copied["recovery_state"] != "QUARANTINED" or copied["archive_id"] != manifest["archiveId"]
+                    or _retired_core_fingerprint(copy, config.gateway_id, device, epoch) != fingerprint):
+                raise StateIdentityError("STATE_RETIRED_CORE_ARCHIVE_MISMATCH")
+        prepared = {
+            "retirementVersion": 1, "archiveId": manifest["archiveId"], "gatewayId": config.gateway_id,
+            "deviceId": device, "retiredEpoch": epoch, "configuredEpoch": active, "rowCount": row_count,
+            "rowsSha256": rows_hash,
+            "settlementStatus": "not-settled", "status": "PREPARED", "recordedAt": iso_time(),
+        }
+        _json_file(output / "retirement-plan.json", prepared)
+        _sync_directory(output)
+
+        with closing(sqlite3.connect(path.as_uri() + "?mode=rw", uri=True, timeout=5)) as writer:
+            writer.row_factory = sqlite3.Row
+            writer.execute("PRAGMA trusted_schema=OFF")
+            writer.execute("PRAGMA synchronous=FULL")
+            with writer:
+                writer.execute("BEGIN IMMEDIATE")
+                if (config.database.resolve() != path or not os.path.samestat(initial_file, path.stat())
+                        or source.execute("PRAGMA data_version").fetchone()[0] != version):
+                    raise StateIdentityError("STATE_CHANGED_DURING_ARCHIVE")
+                bound = metadata(writer)
+                if bound is None:
+                    raise StateIdentityError("STATE_CHANGED_DURING_ARCHIVE")
+                match(bound, expected)
+                if _retired_core_fingerprint(writer, config.gateway_id, device, epoch) != fingerprint:
+                    raise StateIdentityError("STATE_CHANGED_DURING_ARCHIVE")
+                deleted = writer.execute(f"DELETE FROM outbox WHERE {_RETIRED_CORE_SCOPE}", (device, epoch)).rowcount
+                if deleted != row_count:
+                    raise StateIdentityError("STATE_RETIRED_CORE_ROW_COUNT_MISMATCH")
+        receipt_path = output / "retirement.json"
+        _json_file(receipt_path, {**prepared, "status": "RETIRED", "recordedAt": iso_time()})
+        _sync_directory(output)
+        return receipt_path
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Cold Gateway state snapshot / explicit legacy identity adoption")
-    parser.add_argument("operation", choices=("snapshot", "adopt"))
+    parser = argparse.ArgumentParser(description="Cold Gateway state snapshot, identity adoption or retired CORE cleanup")
+    parser.add_argument("operation", choices=("snapshot", "adopt", "retire-core"))
     parser.add_argument("--env-file", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True, help="new private archive directory; parent must exist")
     parser.add_argument("--timeout", type=float, default=120, help="SQLite copy deadline in seconds, 5..3600")
+    parser.add_argument("--device-id", help="device whose retired CORE scope is selected")
+    parser.add_argument("--retired-epoch", help="older integer epoch or 'unscoped' for legacy CORE telemetry")
     args = parser.parse_args()
     if os.name != "posix":
         parser.error("this operator command requires POSIX owner-only files and advisory locking")
@@ -142,6 +237,17 @@ def main() -> None:
         parser.error("timeout must be between 5 and 3600 seconds")
     if args.output.exists() or args.output.is_symlink() or not args.output.parent.is_dir():
         parser.error("output must be a new directory under an existing parent")
+    epoch = None
+    if args.operation == "retire-core":
+        if not args.device_id or not ID.fullmatch(args.device_id) or args.retired_epoch is None:
+            parser.error("retire-core requires a valid --device-id and --retired-epoch")
+        if args.retired_epoch != "unscoped":
+            if (len(args.retired_epoch) > 10 or not args.retired_epoch.isascii()
+                    or not args.retired_epoch.isdecimal()):
+                parser.error("retired epoch must be an integer or 'unscoped'")
+            epoch = int(args.retired_epoch)
+    elif args.device_id is not None or args.retired_epoch is not None:
+        parser.error("device and epoch selection require retire-core")
     os.umask(0o077)
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s %(message)s")
     try:
@@ -152,8 +258,14 @@ def main() -> None:
             raise StateIdentityError("STATE_DATABASE_MISSING")
         with config.database.with_suffix(".lock").open("a") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            path = archive(config, args.output, adopt=args.operation == "adopt", timeout=args.timeout)
-        print(f"Gateway state archive created: {path}; copy quarantined; not settled")
+            if args.operation == "retire-core":
+                path = retire_core(config, args.output, device=args.device_id, epoch=epoch, timeout=args.timeout)
+            else:
+                path = archive(config, args.output, adopt=args.operation == "adopt", timeout=args.timeout)
+        if args.operation == "retire-core":
+            print(f"Retired CORE outbox scope recorded: {path}; copy quarantined; not settled")
+        else:
+            print(f"Gateway state archive created: {path}; copy quarantined; not settled")
     except KeyboardInterrupt:
         raise SystemExit(130) from None
     except StateIdentityError as exc:

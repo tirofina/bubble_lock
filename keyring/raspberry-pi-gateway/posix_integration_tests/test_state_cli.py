@@ -54,13 +54,13 @@ class PosixStateTests(unittest.TestCase):
     def write_env(self):
         self.env_file.write_text("".join(f"{k}={v}\n" for k, v in self.values.items()), encoding="utf-8")
 
-    def cli(self, output, operation="snapshot", *, database=None):
+    def cli(self, output, operation="snapshot", *, database=None, selection=()):
         if database is not None:
             self.values["GATEWAY_DATABASE"] = str(database)
             self.write_env()
         installed = os.environ.get("KEYRING_TEST_STATE_CLI")
         args = [sys.executable, installed] if installed else [sys.executable, "-m", "bubble_gateway.state_archive"]
-        return subprocess.run([*args, operation, "--env-file", str(self.env_file), "--output", str(output)],
+        return subprocess.run([*args, operation, "--env-file", str(self.env_file), "--output", str(output), *selection],
                               capture_output=True, text=True, encoding="utf-8", timeout=8)
 
     def populate(self):
@@ -155,6 +155,38 @@ class PosixStateTests(unittest.TestCase):
         self.assertFalse(output.exists())
         self.assertEqual(self.rows(), before)
         self.fact(sourceRowsUnchanged=True, outputCreated=False, exitCode=1)
+
+    def test_retire_core_archives_only_the_selected_old_epoch(self):
+        self.populate()
+        container = BINDING["observationContainer"]
+        self.store.observation(container, observation(sequence=2), core_enabled=True, core_epochs={"kr-test": 7})
+        self.store.observation(container, observation(sequence=3), core_enabled=True, core_epochs={"kr-test": 9})
+        self.values.update(MQTT_ENABLED="true", MQTT_HOST="127.0.0.1", CORE_BRIDGE_ENABLED="true",
+                           CORE_TELEMETRY_EPOCHS='{"kr-test":9}')
+        self.write_env()
+        before = self.rows()
+        selection = ("--device-id", "kr-test", "--retired-epoch")
+        refused = self.root / "refuse-current"
+        denied = self.cli(refused, "retire-core", selection=(*selection, "9"))
+        self.assertEqual(denied.returncode, 1, denied.stdout + denied.stderr)
+        self.assertIn("STATE_RETIRED_CORE_SCOPE_INVALID", denied.stderr)
+        self.assertFalse(refused.exists())
+        self.assertEqual(self.rows(), before)
+
+        output = self.root / "retired"
+        result = self.cli(output, "retire-core", selection=(*selection, "7"))
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        retired_id = Store.request_id("core-telemetry", "kr-test:boot-test:2")
+        self.assertEqual(self.rows(), {**before, "outbox": [row for row in before["outbox"] if row[0] != retired_id]})
+        with closing(readonly(output / "gateway.sqlite3")) as db:
+            self.assertEqual(self.rows(db), before)
+            self.assertEqual(metadata(db)["recovery_state"], "QUARANTINED")
+        prepared = json.loads((output / "retirement-plan.json").read_text())
+        completed = json.loads((output / "retirement.json").read_text())
+        self.assertEqual((prepared["status"], completed["status"]), ("PREPARED", "RETIRED"))
+        self.assertEqual((completed["retiredEpoch"], completed["configuredEpoch"], completed["rowCount"]), (7, 9, 1))
+        self.assertEqual(completed["rowsSha256"], prepared["rowsSha256"])
+        self.fact(archivedRowsPreserved=True, onlySelectedEpochRemoved=True, currentEpochRefused=True)
 
     def test_quarantined_copy_cannot_be_opened_or_archived(self):
         self.populate()

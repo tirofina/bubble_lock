@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:privacy-bubble:keyring:0.1.0:gateway-core-retirement",
+  "title": "KEYRING retired CORE outbox record",
+  "description": "Local archive/cleanup evidence. An archived projection is not a central settlement.",
+  "type": "object",
+  "properties": {
+    "retirementVersion": {"type": "integer", "const": 1},
+    "archiveId": {"type": "string", "format": "uuid"},
+    "gatewayId": {"type": "string", "maxLength": 64, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+    "deviceId": {"type": "string", "maxLength": 64, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+    "retiredEpoch": {"type": ["integer", "null"], "minimum": 0, "maximum": 2147483647},
+    "configuredEpoch": {"type": "integer", "minimum": 0, "maximum": 2147483647},
+    "rowCount": {"type": "integer", "minimum": 1},
+    "rowsSha256": {"type": "string", "minLength": 64, "maxLength": 64, "pattern": "^[a-f0-9]{64}$"},
+    "settlementStatus": {"const": "not-settled"},
+    "status": {"enum": ["PREPARED", "RETIRED"]},
+    "recordedAt": {"type": "string", "format": "date-time"}
+  },
+  "required": ["retirementVersion", "archiveId", "gatewayId", "deviceId", "retiredEpoch",
+    "configuredEpoch", "rowCount", "rowsSha256", "settlementStatus", "status", "recordedAt"],
+  "additionalProperties": false
+}

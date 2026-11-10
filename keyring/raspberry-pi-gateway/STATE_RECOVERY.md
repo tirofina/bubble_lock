@@ -51,6 +51,23 @@ sudo -u bubble-gateway /opt/bubble_lock/keyring/raspberry-pi-gateway/.venv/bin/b
 
 commit 후 [adoption.json](../../contracts/keyring/gateway-state-adoption.schema.json)에 실제 bindingAdded 여부를 기록한다. DB commit 뒤 receipt 쓰기 실패가 날 수도 있어, receipt 부재만으로 metadata가 추가되지 않았다고 단정하지 않는다. 원본/부분 output을 보존하고 startup error·metadata 상태를 기준으로 조사한다. mismatch나 quarantine을 강제로 LIVE로 바꾸는 flag는 없다.
 
+## 종료된 CORE epoch 보관
+
+Gateway 0.2.15의 `bubble-gateway-state retire-core`는 중앙에서 종료가 확인된 CORE telemetry 전송 행을 보관한 뒤 활성 outbox에서 정리한다. 같은 Gateway와 CSE의 LIVE DB, scoped 설정에 있는 장치, 현재 설정보다 낮은 epoch만 선택할 수 있다. epoch 전환 전의 기존 토픽 행을 보관할 때는 `--retired-epoch unscoped`를 명시한다. 해당 장치의 중앙 전환과 이전 경로 종료 여부는 운영자가 확인한다.
+
+예를 들어 scoped 설정에 `kr-handover`의 epoch 9가 배정된 같은 Gateway에서 epoch 7 행을 보관할 때는 서비스를 중지한 유지보수 창에서 다음 명령을 쓴다.
+
+```sh
+sudo -u bubble-gateway /opt/bubble_lock/keyring/raspberry-pi-gateway/.venv/bin/bubble-gateway-state retire-core \
+  --env-file /etc/privacy-bubble/gateway.env \
+  --device-id kr-handover --retired-epoch 7 \
+  --output /var/lib/privacy-bubble-gateway/keyring-gateway-archives/core-epoch-7
+```
+
+동일한 daemon lock을 잡은 상태에서 전체 WAL 포함 스냅샷을 먼저 저장한다. 스냅샷과 원본에서 선택한 행의 개수·해시, Gateway·장치·epoch, 원본 request ID를 대조한다. 원본 파일이나 SQLite 내용이 바뀌면 정리를 중단한다. native 관측, 명령 영수증, command journal, fence, CORE sequence는 그대로 남는다. 선택된 CORE 행은 격리 스냅샷에 보존된다.
+
+`retirement-plan.json`은 원본 변경 전, `retirement.json`은 SQLite commit 후에 기록한다. 행 해시는 RQI 순서의 각 SQLite 행을 canonical JSON으로 인코딩하고 행마다 LF를 붙인 바이트의 SHA-256이다. commit 후 파일 기록이 실패하면 plan과 스냅샷을 보존한 채 실제 대기열 상태를 확인한다. 두 파일의 스키마는 [CORE 보관 기록](../../contracts/keyring/gateway-core-retirement.schema.json)에 있다. 중앙 적용이나 명령 정산을 증명하는 영수증은 아니다. 소스와 회귀시험 코드만 반영했으며 기존 DB에서 실행한 기록은 없다.
+
 ## 복구 활성화에 남은 중앙 계약
 
 이 버전은 snapshot을 실수로 시작하는 것을 막으며, **restore activation 명령은 아직 제공하지 않는다**. 전체 R12/continuity 완료를 주장하지 않는다. 다음 항목을 PC-MOBIUS-INTEGRATION/CORE와 맞춘 뒤 복구 활성화 경로를 구현해야 한다.
