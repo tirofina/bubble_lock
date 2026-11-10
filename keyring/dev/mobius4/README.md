@@ -113,21 +113,16 @@ PC의 `https://127.0.0.1:8787`에 팀 main `715ef58`의 mTLS API를 띄운다. �
 
 등록 뒤 `READY`가 출력되면 해당 터미널에서 API가 실행 중이다. Pi의 Gateway A 인증서는 명령 조회·현재 승인·자격 상태만 사용할 수 있다. 운영자 인증서는 벤치 주체의 동의, grant 발급·회수와 해당 Gateway 명령 발급에 사용한다. 동의·grant·장치 명령은 시작 과정에서 생성하지 않는다. 운영자 개인키는 PC의 `.local/scoped/command-api/`에 둔다.
 
-이 명령 벤치는 관측용 Feather `0.1.1`과 별도로 명령 프로필 `0.2.0` 및 새 Pi SQLite를 사용한다. PC의 두 loopback 포트를 승인된 SSH 역방향 터널로 Pi의 loopback에 연결할 때는 8760과 8787을 각각 전달한다. Pi에는 scoped CA와 Gateway A 인증서 및 키를 사용한다.
+이 명령 벤치는 관측용 Feather `0.1.1`과 별도로 명령 프로필 `0.2.0` 및 새 Pi SQLite를 사용한다. 승인된 시험에서 PC의 두 포트를 Pi loopback으로 전달한다. `$piHost`에는 해당 Pi의 SSH 접속 주소를 지정한다. 포워딩이 준비된 동안 터미널을 열어 둔다.
 
-```dotenv
-GATEWAY_ID=gw-a
-FIRMWARE_REVISION_ALLOWLIST=feather-probe-0.2.0
-BLE_GATT_PROFILE=core-v1
-M2M_CSE_URL=https://127.0.0.1:8760
-M2M_OBSERVATION_CONTAINER=/Mobius/privacy-bubble-test-ae/command-observations-a
-M2M_RECEIPT_CONTAINER=/Mobius/privacy-bubble-test-ae/command-receipts-a
-PC_API_URL=https://127.0.0.1:8787
-MQTT_ENABLED=false
-CORE_BRIDGE_ENABLED=false
+```powershell
+ssh -N -T -o ExitOnForwardFailure=yes `
+  -R 127.0.0.1:8760:127.0.0.1:8760 -R 127.0.0.1:8787:127.0.0.1:8787 $piHost
 ```
 
-명령 프로필의 관측은 `gw-a` 전용 컨테이너로 보낸다. 이미 시작한 scoped 프로필에서는 발행을 마친 뒤 `prepare-scoped-command-receipts.ps1 -FeatherObservationsOnly`로 이 컨테이너만 준비한다. 기존 명령 영수증 컨테이너는 계속 사용한다. [관측 컨테이너 배치 증거](../../evidence/2026-11-10-scoped-feather-led-cycle/provisioning.json)
+Pi에는 scoped CA의 `ca.pem`, `gateway-a.pem`, `gateway-a.key`를 소유자 전용 폴더에 둔다. `gw-a`의 mTLS 인증서를 검증한 임시 프록시가 CSE originator를 매핑하므로 `CSE_ADMIN`은 PC에 둔다. Gateway 설정과 SQLite 생성은 [Pi 명령 세션](../../raspberry-pi-gateway/TESTING.md#pi-명령-세션) 절차를 따른다.
+
+명령 프로필의 관측은 `gw-a` 전용 `command-observations-a`에, 영수증은 `command-receipts-a`에 보낸다. 이미 시작한 scoped 프로필에서는 발행을 마친 뒤 `prepare-scoped-command-receipts.ps1 -FeatherObservationsOnly`로 관측 컨테이너만 준비한다. [관측 컨테이너 배치 증거](../../evidence/2026-11-10-scoped-feather-led-cycle/provisioning.json)
 
 정산 명령의 `--team-root`에는 `.local/scoped/command-api/team-source`, `--state`에는 같은 폴더의 `runtime.json`을 넣는다. 다른 연결 설정은 [Feather 명령 프로필](../../firmware/feather_probe/README.md#내장-led를-쓰는-명령-프로필)과 [Scoped LED 시험 절차](../../raspberry-pi-gateway/TESTING.md#기존-scoped-mobius4에서-feather-led-시험)를 따른다. 2026-11-10에는 로컬 API 리스너와 장치 등록까지 준비했다. [API 배치 증거](../../evidence/2026-11-10-scoped-command-api/provisioning.json)
 

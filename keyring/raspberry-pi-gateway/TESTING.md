@@ -101,6 +101,26 @@ python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_led_cyc
 
 명령 발급 요청 전의 `led-*-intent.json`에 command ID와 CSE 자원명이 있다. 응답을 받기 전에 중단되면 새 명령을 보내기 전에 이 ID로 팀 상태와 원본 영수증을 대조한다. 전체가 끝난 뒤 Pi SQLite 대조에 `pi_led_cycle.py --gateway gw-a --evidence <led-cycle.json> --database <Pi SQLite 사본>`을 쓴다. 중앙 정산은 각 command ID로 [정산 명령](../dev/mobius4/README.md#명령-영수증-정산-준비)을 별도로 실행한다. 중간에 중단하려면 `STOP` 파일을 만들고 실제 LED 상태를 확인한다.
 
+#### Pi 명령 세션
+
+Pi의 일반 계정에서 저장소 루트로 이동한다. 짝지은 Feather 주소 한 줄을 소유자 전용 파일에 기록한다. `--address-file`에는 그 파일을, `--tls-dir`에는 `ca.pem`, `gateway-a.pem`, `gateway-a.key`가 있는 소유자 전용 폴더를 지정한다. Gateway 의존성이 설치된 기존 시험 가상환경의 Python을 사용한다.
+
+```sh
+tool=keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_pi.py
+"$pi_python" "$tool" prepare --session "$bench_session" \
+  --address-file "$paired_address_file" --tls-dir "$scoped_gateway_tls"
+```
+
+`prepare`는 로컬 TLS 파일을 읽고 `~/.local/state/privacy-bubble-feather-command/<세션>/profile.json`을 만든다. Pi 포워딩 포트가 8760과 8787과 다르면 `--cse-port`와 `--api-port`를 함께 지정한다. 실행 단계에서 상속된 Gateway 환경변수를 사용하지 않는다.
+
+Feather 명령 프로필 `0.2.0`과 두 SSH 포워딩이 준비되면 같은 Feather를 쓰는 관측 프로세스를 종료한 뒤 아래 명령을 실행한다. 실행한 Gateway는 해당 세션의 `gateway.sqlite3`를 사용한다. Pi 사용자당 명령 벤치 한 개가 실행되며, 기본 Gateway의 SQLite 잠금도 유지한다.
+
+```sh
+"$pi_python" "$tool" run --session "$bench_session"
+```
+
+재시작할 때는 같은 세션명을 사용한다. 시험 종료 뒤 Gateway를 정상 종료하고 SQLite backup으로 사본을 만든다. 미전송 행이 있으면 원래 세션과 CSE 자원에서 대조한다.
+
 ## 이전 시험 기록
 
 2026-11-10 Gateway 0.2.4의 기본 시험은 **58개 통과**다. BlueZ가 READ 값을 구독 callback에도 전달하는 회귀시험을 추가했고, 수정 전 실패와 수정 후 통과를 확인했다. 실제 Pi Zero 2 W에서도 90초 연속 관측과 A0/A1 입력 수신이 통과했다. [Pi 실행 기록](../evidence/2026-11-10-pi-feather/README.md)을 따른다. 아래 이전 날짜의 실행 수와 CSE·POSIX 결과는 당시 기록이다.
