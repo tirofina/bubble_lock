@@ -915,3 +915,12 @@ GATT 읽기 commit `82d76bb80aeb903ea3cad1681e8abe838a99ee47`을 `origin/codex/k
 - 모의 시험 소스를 추가했다. 이번 변경의 실행·빌드·시험과 Pi 배포는 미실행이다. Gateway/장치 준비는 이후 실제 BLE 관측으로 별도 확인해야 한다. Feather/Pi 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
 
 사전 점검 commit `1cb9e6988103f1d3419bf385e8acfd17c2c14c6d`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `02baf23..1cb9e69`다.
+
+## 2026-11-11 — 중단된 Feather 명령 시험 기록 대조
+
+직전 goal turn은 Pi 명령 경로 사전 점검 도구를 올린 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- ON/OFF 중간에 멈춰도 `--interrupted-output`으로 원래 발급 의도와 팀 상태의 intent hash·command hash, Pi 저널·전송 상태, 보존된 CSE 읽기 기록을 단계별로 대조할 수 있다. 발급 HTTP 응답이 유실돼도 저장된 원래 명령의 ID와 CSE 경로를 확인할 수 있다. [시험과 증거 절차](../keyring/raspberry-pi-gateway/TESTING.md)
+- 도구는 로컬 사본을 읽는다. 중단 시험에서 물리 LED와 중앙 정산은 미확인으로 표시한다. 실행·빌드·시험·실물 명령은 미실행이다. Feather/Pi 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
+
+중단 기록 대조 commit `6a5537f67d8786ea9bf2f1fb571c24a0855d9553`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `0138f0f..6a5537f`다.

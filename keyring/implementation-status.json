@@ -7,7 +7,7 @@
   "date": "2026-11-11",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Scoped receipt pin routes were provisioned. Both Gateway certificates retrieved only their assigned parent in the recorded GET checks. Firmware 0.7.7 protected GATT reads and Gateway 0.2.24 command route preflight are source-only. Live receipt publication and settlement remain unverified.",
+  "verificationStatus": "Scoped receipt pin routes were provisioned. Both Gateway certificates retrieved only their assigned parent in the recorded GET checks. Firmware 0.7.7, Gateway 0.2.24 and interrupted Feather evidence reconciliation are source-only. Live receipt publication and settlement remain unverified.",
   "rubricIds": [
     "R01",
     "R02",
@@ -58,6 +58,7 @@
     "configured CSE deployment identity for new Gateway databases and scoped receipt archive comparison",
     "optional native receipt container resource ID binding for MQTT and HTTPS writes and confirmation",
     "explicit HTTPS-only command route preflight for pinned CSE, Gateway credentials and active command list",
+    "offline reconciliation of interrupted scoped Feather command evidence using intent and payload bindings",
     "isolated TLS receipt pin provisioning and optional pin in new Feather command sessions",
     "operator-invoked consistent WAL state archives with quarantine and private manifests",
     "explicit legacy DB identity adoption after a cold snapshot with original data rows preserved",
@@ -150,15 +151,15 @@
   "firmwareRevision": "keyring-0.7.7",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "1cb9e6988103f1d3419bf385e8acfd17c2c14c6d",
+    "sourceCommit": "6a5537f67d8786ea9bf2f1fb571c24a0855d9553",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "1cb9e6988103f1d3419bf385e8acfd17c2c14c6d",
-    "lastPushedCommit": "1cb9e6988103f1d3419bf385e8acfd17c2c14c6d",
-    "latestCheckpoint": "Added an explicit mTLS command bench preflight that checks the receipt pin, credentials and idle central command list.",
-    "lastPushedCommitBeforeThisCheckpoint": "02baf23e74ee123c1290948a6505991446d13aef"
+    "latestLocalSourceCommit": "6a5537f67d8786ea9bf2f1fb571c24a0855d9553",
+    "lastPushedCommit": "6a5537f67d8786ea9bf2f1fb571c24a0855d9553",
+    "latestCheckpoint": "Reconcile interrupted Feather command intent, team issuance, Pi journal and any captured CSE readback offline.",
+    "lastPushedCommitBeforeThisCheckpoint": "0138f0f0bb77bfadaaa96ae2aeebf2d0d1b47584"
   },
   "gatewayRevision": "0.2.24",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
@@ -182,7 +183,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Provide a read-only Pi bench preflight for the command API and CSE receipt route",
+    "executionRequest": "Reconcile the original Feather command when a bench cycle is interrupted",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -190,8 +191,8 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "1cb9e6988103f1d3419bf385e8acfd17c2c14c6d",
-    "sourceValidation": "Checked team credential and command GET contracts in source. Preflight implementation and regression source only. No preflight, build, test, Pi deployment or physical command was performed.",
+    "sourceCommit": "6a5537f67d8786ea9bf2f1fb571c24a0855d9553",
+    "sourceValidation": "Checked the team-issued command and intent hash contracts in source. Offline reconciliation and regression source only. No script execution, build, test, device command or physical observation was performed.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
     "currentDependencyState": "The isolated worker and receipt pin routes are ready. Firmware 0.7.7 link, physical BLE long-read and r18 NVS fault verification, Gateway 0.2.24 build and preflight verification, receipt POST and settlement evidence, a separately authorized Feather 0.2.0 and Pi bench run, authoritative CSE route and journal reclaim contracts, production CORE and r18 bring-up remain.",
@@ -980,5 +981,13 @@
     "regressionsExecuted": false,
     "piPreflightExecuted": false,
     "sourceCommit": "1cb9e6988103f1d3419bf385e8acfd17c2c14c6d"
+  },
+  "scopedInterruptedFeatherEvidence": {
+    "reference": "raspberry-pi-gateway/TESTING.md",
+    "status": "source-only",
+    "evidenceToolExecuted": false,
+    "regressionsExecuted": false,
+    "physicalReceiptObserved": false,
+    "sourceCommit": "6a5537f67d8786ea9bf2f1fb571c24a0855d9553"
   }
 }
