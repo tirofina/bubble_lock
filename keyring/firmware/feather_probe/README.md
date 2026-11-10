@@ -47,6 +47,23 @@ python keyring/firmware/feather_probe/observe.py --seconds 90
 
 첫 명령은 해당 광고만 검색한다. Windows에서는 `keyring-feather-lab`을 먼저 PIN으로 페어링한 뒤 두 번째 명령을 실행한다. 이번 벤치에서는 Windows의 PIN 페어링 API에서 암호화와 인증을 요구해 등록했다. 버튼을 뗀 상태, A0, A1을 차례로 확인하며 도구는 결과를 콘솔에 출력한다.
 
+## Feather scoped 적용 영수증
+
+Gateway 0.2.19와 [격리 Feather 설정](../../dev/mobius4/README.md#feather-벤치-경로)을 준비한 뒤, Pi에서 기존 관측기와 Gateway를 멈추고 시험을 실행한다. 벤치 환경 파일의 `GATEWAY_DATABASE`에는 존재하지 않는 시험 전용 경로를 지정한다. relay가 실제로 사용하는 DB는 `--scoped-state` 아래에 만든다.
+
+```sh
+.venv/bin/python keyring/firmware/feather_probe/relay.py \
+  --env "$PRIVATE_BENCH/feather-scoped.env" \
+  --scoped-state "$PRIVATE_BENCH/feather-scoped-state" \
+  --output "$PRIVATE_BENCH/feather-scoped-run-01" --frames 5 --seconds 90
+```
+
+시작 안내가 나오면 버튼 해제, A0 확인, A1 비상을 차례로 관측시킨다. `--frames`는 최소 수집 개수다. 도구는 세 상태와 최소 개수를 모두 모을 때까지 기다리고 최대 100개를 수집한다. 각 native cin 전체와 관측 해시를 대조한다. 각 관측은 scoped MQTT 적용 영수증의 sequence와 본문 해시를 대조하며, 마지막 `featherState`를 HTTPS로 읽는다.
+
+`receipt.json`의 `publishedCount`와 `deliveryChannels`는 native 전송 수다. `scopedReceiptCount`, `scopedReceipts`와 `sdtReadbackState`는 별도로 기록한다. 관측 전용 Feather의 버튼 상태는 cin으로 확인한다. SDT의 false는 펌웨어가 보고한 출력 상태다.
+
+반복 실행 시 `--scoped-state`는 같은 격리 경로를 쓰고 출력 폴더는 새로 지정한다. 시험 전용 SQLite를 재사용해 wire sequence를 이어 간다. 이전 실행의 미전송 행이 남아 있거나 scope 정보가 맞지 않으면 중단한다. 그 DB를 보존한 채 원인을 확인한다. scope 또는 DB를 삭제해 sequence를 처음부터 다시 발급하는 방식은 쓰지 않는다. 이번에는 서버의 빈 SDT 조회까지만 확인했다. [준비 기록](../../evidence/2026-11-10-core-scoped-feather-readback/README.md)
+
 ## Raspberry Pi에서 단독 BLE 관측
 
 2026-11-10 Pi Zero 2 W Rev 1.0에서 Debian 13.7 aarch64, Python 3.13.5, BlueZ 5.82로 벤치 시험을 시작했다. Gateway 0.2.4와 Bleak 3.1.0에서 90초 연속 수신과 `released/confirm/panic` 버튼 관측을 확인했다. 사용자는 버튼을 뗀 뒤 화면 유지도 확인했다. [Pi 실행 증거](../../evidence/2026-11-10-pi-feather/README.md)에 단계별 결과를 기록한다.

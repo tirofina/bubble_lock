@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 from collections import Counter
+from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import replace
 import hashlib
@@ -11,11 +12,13 @@ import json
 import logging
 import os
 from pathlib import Path
+import stat
 from urllib.parse import quote
 import uuid
 
 from bubble_gateway.ble import BleFleet
 from bubble_gateway.config import GatewayConfig, read_env_file
+from bubble_gateway.core_bridge import telemetry
 from bubble_gateway.model import canonical, payload_hash
 from bubble_gateway.service import Gateway
 from bubble_gateway.state_identity import configured_binding
@@ -24,6 +27,9 @@ from bubble_gateway.transport import TransportHub
 
 DEVICE_ID = "keyring-feather-lab"
 FIRMWARE = "feather-probe-0.1.1"
+BENCH_ROOT = "/Mobius/privacy-bubble-test-ae"
+FEATHER_SDT = BENCH_ROOT + "/featherState"
+BUTTON_STATES = {"released", "confirm", "panic"}
 
 
 class RelayFailure(RuntimeError):
@@ -35,6 +41,7 @@ class RelayTransport(TransportHub):
     def __init__(self, config):
         super().__init__(config)
         self.delivery_channels = {"mqtt": 0, "https": 0}
+        self.scoped_receipts = {}
         self._publish_used_https = ContextVar("relay_publish_used_https", default=False)
 
     async def _http_json(self, method, url, *, headers, body=None):
@@ -45,7 +52,12 @@ class RelayTransport(TransportHub):
     async def publish(self, rqi, container, payload):
         token = self._publish_used_https.set(False)
         try:
-            await super().publish(rqi, container, payload)
+            result = await super().publish(rqi, container, payload)
+            if container == "@core/telemetry":
+                if result is None:
+                    raise RelayFailure("SCOPED_RECEIPT_MISSING")
+                self.scoped_receipts[rqi] = result
+                return result
             channel = "https" if self._publish_used_https.get() else "mqtt"
             self.delivery_channels[channel] += 1
         finally:
@@ -64,8 +76,17 @@ def summary_template() -> dict:
     }
 
 
-def validate_config(config: GatewayConfig) -> None:
-    if config.core_bridge_enabled:
+def validate_config(config: GatewayConfig, *, scoped: bool = False) -> None:
+    if scoped:
+        if (config.gateway_id != "gw-a" or not config.core_bridge_enabled or not config.mqtt_enabled
+                or config.m2m_mqtt_enabled or config.core_telemetry_epochs != {DEVICE_ID: 1}
+                or config.mqtt_host not in {"localhost", "127.0.0.1"} or config.mqtt_port != 8884
+                or config.cse_url not in {"https://localhost:8760", "https://127.0.0.1:8760"}
+                or config.observation_container != BENCH_ROOT + "/observations"
+                or config.receipt_container != BENCH_ROOT + "/receipts"
+                or config.health_container != BENCH_ROOT + "/health"):
+            raise RelayFailure("SCOPED_FEATHER_PROFILE_REQUIRED")
+    elif config.core_bridge_enabled:
         raise RelayFailure("CORE_BRIDGE_MUST_BE_DISABLED")
     if (set(config.ble_devices) != {DEVICE_ID} or not config.ble_pair
             or config.ble_gatt_profile != "core-v1"
@@ -94,34 +115,106 @@ def write_receipt(output: Path, summary: dict) -> None:
         stream.write("\n")
 
 
-async def run_capture(config: GatewayConfig, output: Path, frames: int, seconds: int) -> dict:
-    """Caller owns the new private directory and holds its lifetime flock."""
+@contextmanager
+def open_scoped_state(config: GatewayConfig, state: Path, output: Path):
+    import fcntl
+
+    if state.is_symlink() or state.resolve().is_relative_to(output.resolve()) or output.resolve().is_relative_to(state.resolve()):
+        raise RelayFailure("SCOPED_PRIVATE_STATE_REQUIRED")
+    try:
+        state.mkdir(mode=0o700, parents=False, exist_ok=False)
+        new = True
+    except FileExistsError:
+        new = False
+    info = state.stat()
+    if not stat.S_ISDIR(info.st_mode) or info.st_uid != os.geteuid() or stat.S_IMODE(info.st_mode) & 0o077:
+        raise RelayFailure("SCOPED_PRIVATE_STATE_REQUIRED")
+    marker, database, lock_path = (state / name for name in ("scope.json", "gateway.sqlite3", "gateway.lock"))
+    if database.resolve() == config.database.resolve() or any(path.is_symlink() for path in (marker, database, lock_path)):
+        raise RelayFailure("SCOPED_PRIVATE_STATE_REQUIRED")
+    expected = {"format": 1, "purpose": "scoped-feather-relay", "binding": configured_binding(config),
+                "epochs": config.core_telemetry_epochs}
+    with lock_path.open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        if new:
+            if database.exists():
+                raise RelayFailure("EXISTING_DATABASE_REFUSED")
+            with marker.open("x", encoding="utf-8") as handle:
+                handle.write(canonical(expected) + "\n")
+                handle.flush()
+                os.fsync(handle.fileno())
+        elif not marker.is_file() or not database.is_file() or json.loads(marker.read_text(encoding="utf-8")) != expected:
+            raise RelayFailure("SCOPED_STATE_BINDING_MISMATCH")
+        yield database
+
+
+def scoped_receipts(captured: list[dict], hub: RelayTransport) -> list[dict]:
+    matched = []
+    for payload in captured:
+        identity = f"{payload['deviceId']}:{payload['bootId']}:{payload['sequence']}"
+        receipt = hub.scoped_receipts.get(Store.request_id("core-telemetry", identity))
+        if receipt is None:
+            raise RelayFailure("SCOPED_RECEIPT_MISSING")
+        projected = telemetry(payload, receipt["sequence"], scoped=True)
+        if receipt["payloadHash"] != payload_hash(projected):
+            raise RelayFailure("SCOPED_RECEIPT_HASH_MISMATCH")
+        matched.append(receipt)
+    if len(hub.scoped_receipts) != len(matched) or any(
+            left["sequence"] >= right["sequence"] for left, right in zip(matched, matched[1:])):
+        raise RelayFailure("SCOPED_RECEIPT_ORDER_MISMATCH")
+    return matched
+
+
+async def read_scoped_state(hub: RelayTransport, expected: bool) -> bool:
+    rqi = "verify-sdt-" + uuid.uuid4().hex
+    status, headers, body = await hub._http_json(
+        "GET", hub.config.cse_url + FEATHER_SDT, headers=hub._m2m_headers(rqi))
+    rsc = hub._response_rsc(status, headers, rqi)
+    switch = body.get("pb:binarySwitch")
+    if (status != 200 or rsc != 2000 or not isinstance(switch, dict) or switch.get("rn") != "featherState"
+            or switch.get("cnd") != "org.onem2m.common.moduleclass.binarySwitch"
+            or switch.get("state") is not expected):
+        raise RelayFailure("SCOPED_SDT_READBACK_MISMATCH")
+    return switch["state"]
+
+
+async def run_capture(config: GatewayConfig, output: Path, frames: int, seconds: int, *,
+                      scoped_database: Path | None = None) -> dict:
+    """Caller owns the new output and holds the matching test DB lock."""
+    scoped = scoped_database is not None
     summary = summary_template()
+    if scoped:
+        summary.update(scopedReceiptCount=0, scopedReceipts=[], sdtReadbackState=None)
     captured: list[dict] = []
     readback_hashes: list[str] = []
-    store = hub = fleet = gateway = sender = source = None
+    store = hub = fleet = gateway = source = None
+    senders = []
     phase = "SETUP"
     cleanup_errors: list[str] = []
     complete = asyncio.Event()
     callback_error = None
 
     try:
-        validate_config(config)
-        database = output / "gateway.sqlite3"
-        if database.exists() or database.is_symlink():
+        validate_config(config, scoped=scoped)
+        database = scoped_database if scoped else output / "gateway.sqlite3"
+        if database.is_symlink() or (not scoped and database.exists()):
             raise RelayFailure("EXISTING_DATABASE_REFUSED")
         config = replace(config, database=database)
         source = (output / "observations.jsonl").open("x", encoding="utf-8", newline="\n")
         store = Store(database, config.max_outbox_rows, config.max_outbox_bytes,
                       config.max_commands, configured_binding(config))
+        if scoped and store.counts()[0]:
+            raise RelayFailure("SCOPED_OUTBOX_NOT_EMPTY")
         hub, fleet = RelayTransport(config), BleFleet(config)
         gateway = Gateway.__new__(Gateway)
         gateway.config, gateway.store, gateway.transport = config, store, hub
         gateway.stop, gateway.counters = asyncio.Event(), Counter()
 
+        button_states = set()
+
         async def receive(raw: dict) -> None:
             nonlocal callback_error
-            if len(captured) >= frames or callback_error:
+            if complete.is_set():
                 return
             before = gateway.counters["observations_queued"]
             invalid_before = gateway.counters["observations_invalid"]
@@ -133,6 +226,10 @@ async def run_capture(config: GatewayConfig, output: Path, frames: int, seconds:
             if gateway.counters["observations_queued"] != before:
                 payload = json.loads(canonical(raw))
                 captured.append(payload)
+                first = len(captured) == 1
+                button_states.add(payload["buttonState"])
+                if scoped and first:
+                    print("Feather observations started. Release both buttons, then press A0 and A1.", flush=True)
                 try:
                     source.write(canonical(payload) + "\n")
                     source.flush()
@@ -141,8 +238,17 @@ async def run_capture(config: GatewayConfig, output: Path, frames: int, seconds:
                     callback_error = "CAPTURE_WRITE_FAILED"
                     complete.set()
                     return
-                if len(captured) == frames:
+                if len(captured) >= frames and (not scoped or button_states == BUTTON_STATES):
                     complete.set()
+                elif len(captured) >= 100:
+                    callback_error = "BUTTON_STATES_NOT_OBSERVED"
+                    complete.set()
+
+        def check_senders() -> None:
+            for sender in senders:
+                if sender.done():
+                    sender.result()
+                    raise RelayFailure("SENDER_STOPPED")
 
         async with asyncio.timeout(seconds):
             phase = "CONNECT"
@@ -150,13 +256,13 @@ async def run_capture(config: GatewayConfig, output: Path, frames: int, seconds:
             if config.mqtt_enabled:
                 phase = "MQTT_READY"
                 await hub._ready.wait()
-            sender = asyncio.create_task(gateway._outbox_loop(), name="feather-cse-outbox")
+            senders.append(asyncio.create_task(gateway._outbox_loop(), name="feather-cse-outbox"))
+            if scoped:
+                senders.append(asyncio.create_task(gateway._outbox_loop(scoped=True), name="feather-scoped-outbox"))
             await fleet.start(receive)
             phase = "CAPTURE"
             while not complete.is_set():
-                if sender.done():
-                    sender.result()
-                    raise RelayFailure("SENDER_STOPPED")
+                check_senders()
                 await asyncio.sleep(0.05)
             if callback_error:
                 raise RelayFailure(callback_error)
@@ -164,9 +270,7 @@ async def run_capture(config: GatewayConfig, output: Path, frames: int, seconds:
             fleet = None
             phase = "DRAIN"
             while store.counts()[0]:
-                if sender.done():
-                    sender.result()
-                    raise RelayFailure("SENDER_STOPPED")
+                check_senders()
                 await asyncio.sleep(0.05)
             phase = "READBACK"
             parent = quote(config.observation_container.rstrip("/"), safe="/:-._~")
@@ -185,6 +289,10 @@ async def run_capture(config: GatewayConfig, output: Path, frames: int, seconds:
                         or canonical(cin["con"]) != canonical(payload)):
                     raise RelayFailure("READBACK_MISMATCH")
                 readback_hashes.append(payload_hash(cin["con"]))
+            if scoped:
+                phase = "SCOPED_READBACK"
+                summary["scopedReceipts"] = scoped_receipts(captured, hub)
+                summary["sdtReadbackState"] = await read_scoped_state(hub, captured[-1]["state"])
             summary["status"] = "passed"
     except RelayFailure as exc:
         summary["error"] = str(exc)
@@ -203,10 +311,11 @@ async def run_capture(config: GatewayConfig, output: Path, frames: int, seconds:
                 cleanup_errors.append("BLE_CLOSE")
         if gateway is not None:
             gateway.stop.set()
-        if sender is not None:
-            sender.cancel()
+        if senders:
+            for sender in senders:
+                sender.cancel()
             try:
-                await asyncio.wait_for(asyncio.gather(sender, return_exceptions=True), 10)
+                await asyncio.wait_for(asyncio.gather(*senders, return_exceptions=True), 10)
             except (Exception, asyncio.CancelledError):
                 cleanup_errors.append("SENDER_CLOSE")
         if hub is not None:
@@ -227,8 +336,11 @@ async def run_capture(config: GatewayConfig, output: Path, frames: int, seconds:
         if cleanup_errors:
             summary.update(status="failed", cleanupErrors=cleanup_errors)
             summary["error"] = summary["error"] or "CLEANUP_FAILED"
+        scoped_count = gateway.counters["core_applied_confirmed"] if gateway else 0
+        if scoped:
+            summary["scopedReceiptCount"] = scoped_count
         summary.update(capturedCount=len(captured),
-                       publishedCount=gateway.counters["published"] if gateway else 0,
+                       publishedCount=gateway.counters["published"] - scoped_count if gateway else 0,
                        deliveryChannels=dict(hub.delivery_channels) if hub else {"mqtt": 0, "https": 0},
                        readbackCount=len(readback_hashes),
                        sequences=[frame["sequence"] for frame in captured],
@@ -250,9 +362,12 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True, help="New private output directory; parent must exist")
     parser.add_argument("--frames", type=int, default=5, help="Number of real observations to relay (1..100)")
     parser.add_argument("--seconds", type=int, default=90, help="Total connect/capture/drain/readback budget (5..600)")
+    parser.add_argument("--scoped-state", type=Path, help="Private, dedicated Feather scope state directory")
     args = parser.parse_args()
     if not 1 <= args.frames <= 100 or not 5 <= args.seconds <= 600:
         parser.error("frames must be 1..100 and seconds must be 5..600")
+    if args.scoped_state is not None and args.frames < 3:
+        parser.error("scoped capture requires at least three frames for the button states")
     if os.name != "posix":
         parser.error("relay execution requires POSIX private files and flock; run on the Pi")
     import fcntl
@@ -271,10 +386,17 @@ def main() -> int:
         with (output / "gateway.lock").open("x") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
             config = load_config(args.env)
-            summary = asyncio.run(run_capture(config, output, args.frames, args.seconds))
+            if args.scoped_state is not None:
+                validate_config(config, scoped=True)
+                with open_scoped_state(config, args.scoped_state.expanduser().absolute(), output) as database:
+                    summary = asyncio.run(run_capture(config, output, args.frames, args.seconds, scoped_database=database))
+            else:
+                summary = asyncio.run(run_capture(config, output, args.frames, args.seconds))
             write_receipt(output, summary)
     except KeyboardInterrupt:
         summary.update(status="failed", error="INTERRUPTED")
+    except RelayFailure as exc:
+        summary.update(status="failed", error=str(exc))
     except Exception:
         summary.update(status="failed", error=summary["error"] or "CONFIG_OR_OUTPUT_FAILED")
     if not (output / "receipt.json").exists():

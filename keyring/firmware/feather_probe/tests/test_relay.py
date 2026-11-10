@@ -1,6 +1,7 @@
 """Feather relay with fake BLE/HTTP and a real fresh SQLite outbox; no radio."""
 import asyncio
 from dataclasses import replace
+import hashlib
 import importlib.util
 import json
 import os
@@ -63,10 +64,11 @@ class FeatherRelayTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(loaded, self.config)
             self.assertEqual(dict(os.environ), before)
 
-    async def run_relay(self, corrupt=False, mqtt=False):
+    async def run_relay(self, corrupt=False, mqtt=False, scoped=False):
         stored, fleets, hubs = {}, [], []
         http_posts = []
-        frames = self.frames
+        frames = [dict(frame, gatewayId="gw-a") for frame in self.frames] if scoped else self.frames
+        applied = []
 
         class FakeFleet:
             def __init__(self, _config):
@@ -95,6 +97,10 @@ class FeatherRelayTests(unittest.IsolatedAsyncioTestCase):
                 cin = json.loads(request.content)["m2m:cin"]
                 stored[request.url.path + "/" + cin["rn"]] = cin
                 return httpx.Response(201, headers=headers | {"X-M2M-RSC": "2001"}, json={})
+            if scoped and request.url.path == relay.FEATHER_SDT:
+                return httpx.Response(200, headers=headers | {"X-M2M-RSC": "2000"},
+                                      json={"pb:binarySwitch": {"rn": "featherState", "state": applied[-1],
+                                            "cnd": "org.onem2m.common.moduleclass.binarySwitch"}})
             cin = json.loads(canonical(stored[request.url.path]))
             if corrupt:
                 cin["con"]["buttonState"] = "panic"
@@ -105,6 +111,20 @@ class FeatherRelayTests(unittest.IsolatedAsyncioTestCase):
                 self.hub = hub
 
             def publish(self, topic, *, payload, qos, retain):
+                if scoped:
+                    assert topic == f"privacy-bubble/gateway/gw-a/telemetry-epoch/{relay.DEVICE_ID}/1"
+                    assert qos == 1 and retain is False
+                    sample = json.loads(payload)
+                    assert sample["schemaVersion"] == "1.1.0" and sample["batteryPct"] is None
+                    applied.append(sample["state"])
+                    receipt = dict(version=1, gatewayId="gw-a", deviceId=relay.DEVICE_ID,
+                                   ownershipEpoch=1, sequence=sample["sequence"],
+                                   payloadHash=hashlib.sha256(payload).hexdigest(),
+                                   cseRequestId="kr-" + f"{sample['sequence']:048x}", responseStatus=2004)
+                    self.hub._on_message(None, None, SimpleNamespace(
+                        topic=f"privacy-bubble/gateway/gw-a/telemetry-result/{relay.DEVICE_ID}/1",
+                        retain=False, payload=json.dumps(receipt).encode()))
+                    return SimpleNamespace(rc=0)
                 assert topic == self.hub._request_topic and qos == 1 and retain is False
                 request = json.loads(payload)
                 cin = request["pc"]["m2m:cin"]
@@ -123,17 +143,26 @@ class FeatherRelayTests(unittest.IsolatedAsyncioTestCase):
                 hubs.append(self)
                 self._http = httpx.AsyncClient(transport=httpx.MockTransport(handle), trust_env=False)
                 if self.config.mqtt_enabled:
+                    self._loop = asyncio.get_running_loop()
                     self._mqtt = FakeMqtt(self)
                     asyncio.get_running_loop().call_soon(self._ready.set)
 
         config = replace(self.config, mqtt_enabled=mqtt, mqtt_host="fixture.invalid")
+        if scoped:
+            config = replace(config, gateway_id="gw-a", cse_url="https://localhost:8760",
+                             mqtt_enabled=True, mqtt_host="localhost", mqtt_port=8884, m2m_mqtt_enabled=False,
+                             core_bridge_enabled=True, core_telemetry_epochs={relay.DEVICE_ID: 1},
+                             observation_container=relay.BENCH_ROOT + "/observations",
+                             receipt_container=relay.BENCH_ROOT + "/receipts",
+                             health_container=relay.BENCH_ROOT + "/health")
         with patch.object(relay, "BleFleet", FakeFleet), patch.object(relay, "RelayTransport", MockHttpHub):
-            summary = await relay.run_capture(config, self.output, 3, 5)
+            summary = await relay.run_capture(config, self.output, 3, 5,
+                                              scoped_database=self.root / "scoped.sqlite3" if scoped else None)
         self.assertTrue(all(fleet.closed for fleet in fleets))
         self.assertTrue(all(hub._http is None for hub in hubs))
         self.assertFalse(self.config.database.exists())
         self.assertEqual(len(stored), 3)
-        self.assertEqual(len(http_posts), 0 if mqtt else 3)
+        self.assertEqual(len(http_posts), 0 if mqtt and not scoped else 3)
         return summary
 
     async def test_real_outbox_relay_matches_each_cse_readback(self):
@@ -167,3 +196,13 @@ class FeatherRelayTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(receipt["capturedCount"], 3)
         self.assertNotIn("fixture.invalid", json.dumps(receipt))
         self.assertNotIn("00:00:00:00:00:01", json.dumps(receipt))
+
+    async def test_scoped_relay_keeps_native_and_application_receipts_separate(self):
+        summary = await self.run_relay(scoped=True)
+        self.assertEqual(summary["status"], "passed", summary)
+        self.assertEqual(summary["publishedCount"], 3)
+        self.assertEqual(summary["deliveryChannels"], {"mqtt": 0, "https": 3})
+        self.assertEqual(summary["readbackSha256"], summary["payloadSha256"])
+        self.assertEqual(summary["scopedReceiptCount"], 3)
+        self.assertEqual([receipt["sequence"] for receipt in summary["scopedReceipts"]], [0, 1, 2])
+        self.assertIs(summary["sdtReadbackState"], False)

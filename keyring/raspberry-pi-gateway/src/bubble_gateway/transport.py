@@ -121,7 +121,7 @@ class TransportHub:
         self._loop: asyncio.AbstractEventLoop | None = None
         self._ready = asyncio.Event()
         self._pending: dict[str, asyncio.Future] = {}
-        self._core_pending: dict[tuple[str, int, int, str], asyncio.Future[None]] = {}
+        self._core_pending: dict[tuple[str, int, int, str], asyncio.Future[dict[str, Any]]] = {}
         self._subscribe_mid: int | None = None
         self._closing = False
 
@@ -257,12 +257,12 @@ class TransportHub:
                 or not isinstance(digest, str) or not re.fullmatch(r"[a-f0-9]{64}", digest)
                 or not isinstance(request_id, str) or not re.fullmatch(r"kr-[a-f0-9]{48}", request_id)):
             return
-        self._schedule(self._receive_core_receipt, (device, epoch, sequence, digest))
+        self._schedule(self._receive_core_receipt, (device, epoch, sequence, digest), result)
 
-    def _receive_core_receipt(self, key: tuple[str, int, int, str]) -> None:
+    def _receive_core_receipt(self, key: tuple[str, int, int, str], result: dict[str, Any]) -> None:
         future = self._core_pending.get(key)
         if future is not None and not future.done():
-            future.set_result(None)
+            future.set_result(result)
 
     def _queue_command(self, command: dict[str, Any]) -> None:
         try:
@@ -319,10 +319,9 @@ class TransportHub:
         if _json(await self.read_content(rqi, container)) != _json(payload):
             raise RemoteResponseError("existing oneM2M resource has different content", 4105, 200)
 
-    async def publish(self, rqi: str, container: str, payload: dict[str, Any]) -> None:
+    async def publish(self, rqi: str, container: str, payload: dict[str, Any]) -> dict[str, Any] | None:
         if container.startswith("@core/"):
-            await self._publish_core(container, payload)
-            return
+            return await self._publish_core(container, payload)
         if not isinstance(rqi, str) or not 1 <= len(rqi) <= 128:
             raise ValueError("invalid request ID")
         path = _resource_path(container)
@@ -370,7 +369,7 @@ class TransportHub:
             return
         raise RemoteResponseError("oneM2M HTTPS request rejected", rsc, status)
 
-    async def _publish_core(self, target: str, payload: dict[str, Any]) -> None:
+    async def _publish_core(self, target: str, payload: dict[str, Any]) -> dict[str, Any] | None:
         if target not in {"@core/telemetry", "@core/ack"} or not self.config.core_bridge_enabled:
             raise ValueError("Unsupported CORE outbox target")
         if self._mqtt is None or not self._ready.is_set():
@@ -388,8 +387,7 @@ class TransportHub:
                     raise ValueError("CORE telemetry ownership assignment does not match the queued route")
                 topic = f"{self._core_root}/telemetry-epoch/{device_id}/{epoch}"
                 payload = {key: value for key, value in payload.items() if key != "ownershipEpoch"}
-                await self._publish_scoped_telemetry(topic, device_id, epoch, payload)
-                return
+                return await self._publish_scoped_telemetry(topic, device_id, epoch, payload)
         info = self._mqtt.publish(topic, payload=_json(payload), qos=1, retain=False)
         if info.rc != mqtt.MQTT_ERR_SUCCESS:
             raise ConnectionError("CORE publish was not accepted")
@@ -400,7 +398,7 @@ class TransportHub:
         # a oneM2M UPDATE or a physical device actuation.
 
     async def _publish_scoped_telemetry(self, topic: str, device: str, epoch: int,
-                                        payload: dict[str, Any]) -> None:
+                                        payload: dict[str, Any]) -> dict[str, Any]:
         sequence = payload.get("sequence")
         if type(sequence) is not int or not 0 <= sequence <= 4294967295:
             raise ValueError("Invalid scoped CORE telemetry sequence")
@@ -414,7 +412,7 @@ class TransportHub:
             info = self._mqtt.publish(topic, payload=encoded, qos=1, retain=False)
             if info.rc != mqtt.MQTT_ERR_SUCCESS:
                 raise ConnectionError("Scoped CORE publish was not queued")
-            await asyncio.wait_for(future, self.config.request_timeout)
+            return await asyncio.wait_for(future, self.config.request_timeout)
         finally:
             self._core_pending.pop(key, None)
             if not future.done():

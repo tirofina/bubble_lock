@@ -88,7 +88,7 @@ Gateway에서는 위 포트와 해당 Gateway 인증서를 사용한다. `MQTT_E
 
 ### Feather 벤치 경로
 
-화면과 두 버튼만 쓰는 `feather-probe-0.1.1` 벤치용으로 `featherState` SDT와 전용 토픽을 준비했다. Pi에서 Gateway 0.2.18을 새 시험 설정과 SQLite 경로로 설치하는 경우, 등록된 실제 BLE 주소에 `keyring-feather-lab`을 지정하고 아래 값을 사용한다.
+화면과 두 버튼만 쓰는 `feather-probe-0.1.1` 벤치용으로 `featherState` SDT와 전용 토픽을 준비했다. Pi에서 Gateway 0.2.19의 [scoped relay](../../firmware/feather_probe/README.md#feather-scoped-적용-영수증)를 사용하는 경우, 등록된 실제 BLE 주소에 `keyring-feather-lab`을 지정하고 아래 값을 사용한다.
 
 ```dotenv
 GATEWAY_ID=gw-a
@@ -106,7 +106,7 @@ PC_API_URL=https://localhost:8760
 
 Pi가 별도 호스트라면 PC의 loopback HTTPS 8760과 MQTT 8884를 승인된 SSH reverse tunnel로 Pi의 loopback에 연결한다. scoped CA와 `gateway-a.pem`·`gateway-a.key`만 해당 Pi의 private 경로로 전달한다. CSE originator와 native 컨테이너는 기존 scoped 로컬 설정을 따른다.
 
-이 벤치의 배터리와 미확인 RSSI는 `null`로 보낸다. A0·A1과 해제는 native `observations`의 `buttonState`로 확인한다. `featherState`에는 기존 펌웨어의 관측 `state`가 들어간다. 관측 전용 Feather의 출력 상태는 false이며, 버튼과 출력 제어는 별도 항목이다. 격리 자원과 ACL은 배치했고 Pi에서 실제 관측·영수증 왕복은 아직 실행하지 않았다. [서버 준비 기록](../../evidence/2026-11-10-core-scoped-feather-rollout/README.md)
+이 벤치의 배터리와 미확인 RSSI는 `null`로 보낸다. A0·A1과 해제는 native `observations`의 `buttonState`로 확인한다. `featherState`에는 기존 펌웨어의 관측 `state`가 들어간다. Gateway A는 이 자원을 읽을 수 있고, scoped 소비자가 갱신한다. 빈 자원의 Gateway A HTTPS 조회를 확인했다. Pi의 실제 관측·영수증 왕복은 아직 실행하지 않았다. [서버 준비 기록](../../evidence/2026-11-10-core-scoped-feather-rollout/README.md) · [읽기 경로 준비](../../evidence/2026-11-10-core-scoped-feather-readback/README.md)
 
 ```powershell
 docker compose --project-name privacy-bubble-keyring-scoped --env-file ./keyring/dev/mobius4/.local/scoped/compose.env -f ./keyring/dev/mobius4/compose.yaml -f ./keyring/dev/mobius4/compose.scoped.yaml down
