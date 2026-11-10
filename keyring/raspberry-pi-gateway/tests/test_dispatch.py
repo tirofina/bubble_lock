@@ -12,6 +12,7 @@ from unittest.mock import AsyncMock, Mock
 from bubble_gateway.model import iso_time, payload_hash, utc_now
 from bubble_gateway.service import Gateway
 from bubble_gateway.store import Store
+from bubble_gateway.transport import NativeDeliveryHold
 from helpers import BINDING, command, config, device_receipt
 
 
@@ -39,7 +40,7 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
                               ("commandId", "deviceId", "claimId", "grantRevision", "ownershipEpoch")}
         self.authorization.update(allowed=True, payloadHash=self.digest, expiresAt=self.cmd["deadline"])
         self.gateway.transport = SimpleNamespace(authorize=AsyncMock(return_value=self.authorization),
-                                                 publish=AsyncMock())
+                                                 publish=AsyncMock(), native_delivery_hold=NativeDeliveryHold)
         self.gateway.ble = SimpleNamespace(command_session=Mock(return_value=1),
                                            execute=AsyncMock(return_value=device_receipt(self.cmd, self.digest)))
 

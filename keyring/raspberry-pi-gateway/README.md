@@ -153,4 +153,6 @@ oneM2M은 같은 `rqi`의 CREATE 성공 응답을 받아야 전송 완료 처리
 
 Gateway 0.2.26은 HTTPS 429/503의 `Retry-After` 초 단위와 HTTP 날짜를 처리한다. 유효한 시간이 남아 있으면 같은 HTTPS origin의 새 요청을 보류한다. outbox 행은 서버 대기 시간과 기존 backoff 중 긴 값을 SQLite에 저장해 재시작 뒤에도 그 시각까지 보존한다. origin 전체의 대기 시간은 현재 프로세스에서 관리한다. 중앙 API가 대기 중이면 기존 승인·자격·명령 기한 검사에 따라 실행을 보류한다.
 
+Gateway 0.2.31은 CSE가 재시도를 보류한 동안 HTTPS가 필요한 항목을 대기열 선택에서 건너뛴다. 아직 보내지 않은 항목의 재시도 횟수와 시각을 그대로 유지한다. oneM2M MQTT가 준비돼 있으면 고정 컨테이너 영수증처럼 HTTPS 사전 조회가 필요한 경로만 보류한다. CORE MQTT 항목은 별도 경로로 선택할 수 있다. 이 변경의 시험과 배포는 미실행이다.
+
 수용 항목과 중앙 인수 조건은 [KEYRING 인수인계](../../docs/keyring-handoff.md)에 있다. 로컬 모의 단위 테스트 결과는 [TESTING.md](TESTING.md)에 있다. Pi의 Feather BLE 벤치와 전체 daemon·중앙 서비스·실물 키링 PCB 통합시험을 구분하며, 후자의 검증은 미완료다.

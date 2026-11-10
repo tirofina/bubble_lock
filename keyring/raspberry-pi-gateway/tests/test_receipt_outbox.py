@@ -6,11 +6,12 @@ import unittest
 from collections import Counter
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 from bubble_gateway.model import iso_time, payload_hash
 from bubble_gateway.service import Gateway
 from bubble_gateway.store import Store
+from bubble_gateway.transport import NativeDeliveryHold
 from helpers import BINDING, command, config
 
 
@@ -136,7 +137,7 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         async def idle(_seconds):
             gateway.stop.set()
 
-        gateway.transport = SimpleNamespace(publish=AsyncMock(side_effect=publish))
+        gateway.transport = SimpleNamespace(publish=AsyncMock(side_effect=publish), native_delivery_hold=NativeDeliveryHold)
         gateway._pause = idle
         with patch("bubble_gateway.store.time.time", return_value=1000):
             async with asyncio.timeout(1):
@@ -163,7 +164,7 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
             gateway.stop.set()
 
         gateway._pause = idle
-        gateway.transport = SimpleNamespace(publish=AsyncMock())
+        gateway.transport = SimpleNamespace(publish=AsyncMock(), native_delivery_hold=NativeDeliveryHold)
         with patch("bubble_gateway.store.time.time", return_value=1000):
             self.store.retry(self.native_rqi, 0, minimum_delay=60)
             self.assertEqual(self.store.due()["rqi"], observation_rqi)
@@ -176,3 +177,37 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn(self.ack_rqi, attempts)
         self.assertNotIn(self.native_rqi, attempts)
         self.assertEqual(self.queued(BINDING["receiptContainer"]), 1)
+
+    async def test_cse_hold_skips_unsent_rows_and_keeps_core_ack_independent(self):
+        self.store.enqueue("observation", "queued", BINDING["observationContainer"], {"sequence": 1})
+        observation_rqi = self.store.request_id("observation", "queued")
+        self.stage()
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+        gateway.transport = SimpleNamespace(publish=AsyncMock(), native_delivery_hold=Mock(
+            return_value=NativeDeliveryHold(all_native=True)))
+
+        async def idle(_seconds):
+            gateway.stop.set()
+
+        gateway._pause = idle
+        async with asyncio.timeout(1):
+            await gateway._outbox_loop()
+            self.assertEqual([call.args[0] for call in gateway.transport.publish.await_args_list], [self.ack_rqi])
+            queued = self.store.db.execute("SELECT rqi,attempts,next_attempt FROM outbox").fetchall()
+            self.assertEqual({tuple(row) for row in queued}, {(self.native_rqi, 0, 0), (observation_rqi, 0, 0)})
+
+            gateway.stop.clear()
+            gateway.transport.native_delivery_hold.return_value = NativeDeliveryHold(
+                receipt_container=BINDING["receiptContainer"])
+            await gateway._outbox_loop()
+            self.assertEqual(self.store.counts()[0], 1)
+
+            gateway.stop.clear()
+            gateway.transport.native_delivery_hold.return_value = NativeDeliveryHold()
+            await gateway._outbox_loop()
+
+        self.assertEqual([call.args[0] for call in gateway.transport.publish.await_args_list],
+                         [self.ack_rqi, observation_rqi, self.native_rqi])
+        self.assertEqual(self.native_delivered(), 1)

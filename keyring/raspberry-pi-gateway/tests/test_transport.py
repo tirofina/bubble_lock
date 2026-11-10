@@ -11,7 +11,7 @@ import httpx
 
 from bubble_gateway.core_bridge import telemetry
 from bubble_gateway.model import iso_time, payload_hash, utc_now
-from bubble_gateway.transport import (MAX_RETRY_AFTER_SECONDS, HttpRetryDeferred, ReceiptParentMismatch,
+from bubble_gateway.transport import (MAX_RETRY_AFTER_SECONDS, HttpRetryDeferred, NativeDeliveryHold, ReceiptParentMismatch,
                                       RemoteResponseError, TransportHub, _mqtt_to, _retry_after)
 from helpers import command, config, observation
 
@@ -48,6 +48,7 @@ class HttpRetryAfterTests(unittest.IsolatedAsyncioTestCase):
                 with self.assertRaises(HttpRetryDeferred) as initial:
                     await hub.publish("request-test", "/test/receipts", {"synthetic": True})
                 self.assertEqual((initial.exception.status_code, initial.exception.retry_after), (503, 45))
+                self.assertEqual(hub.native_delivery_hold(), NativeDeliveryHold(all_native=True))
 
                 clock.return_value = 120.0
                 with self.assertRaises(HttpRetryDeferred) as gated:
@@ -55,7 +56,16 @@ class HttpRetryAfterTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(gated.exception.retry_after, 25)
                 self.assertEqual(await hub.credential_status(), {"status": "ACTIVE"})
 
+                hub._mqtt = SimpleNamespace()
+                hub._ready.set()
+                self.assertEqual(hub.native_delivery_hold(), NativeDeliveryHold())
+                cfg.receipt_container_ri = "cnt-pinned"
+                self.assertEqual(hub.native_delivery_hold(), NativeDeliveryHold(receipt_container=cfg.receipt_container))
+                hub._mqtt = None
+                cfg.receipt_container_ri = None
+
                 clock.return_value = 145.0
+                self.assertEqual(hub.native_delivery_hold(), NativeDeliveryHold())
                 await hub.publish("request-test", "/test/receipts", {"synthetic": True})
 
         self.assertEqual([request.url.host for request in requests], ["cse.invalid", "api.invalid", "cse.invalid"])

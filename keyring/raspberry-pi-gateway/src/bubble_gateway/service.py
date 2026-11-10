@@ -15,7 +15,7 @@ from .config import GatewayConfig, ID
 from .model import (authorization_deadline, canonical, iso_time, parse_time, payload_hash, utc_now,
                     validate_command, validate_credential_status, validate_observation)
 from .store import CapacityError, Store
-from .transport import HttpRetryDeferred, TransportHub
+from .transport import HttpRetryDeferred, NativeDeliveryHold, TransportHub
 
 LOG = logging.getLogger(__name__)
 RECEIPT_BURST = 4
@@ -322,7 +322,9 @@ class Gateway:
             if not scoped:
                 self.store.stage_receipts(self.config.receipt_container, self.config.core_bridge_enabled)
             prefer_receipts = None if scoped else receipt_attempts < RECEIPT_BURST
-            item = self.store.due(core_epochs=epochs, scoped_only=scoped, prefer_receipts=prefer_receipts)
+            hold = NativeDeliveryHold() if scoped else self.transport.native_delivery_hold()
+            item = self.store.due(core_epochs=epochs, scoped_only=scoped, prefer_receipts=prefer_receipts,
+                                  skip_native=hold.all_native, held_receipt_container=hold.receipt_container)
             if item is None:
                 await self._pause(0.5)
                 continue

@@ -13,7 +13,7 @@ import uuid
 from datetime import timezone
 from email.utils import parsedate_to_datetime
 from time import monotonic
-from typing import Any
+from typing import Any, NamedTuple
 from urllib.parse import quote, urlsplit
 
 import httpx
@@ -45,6 +45,11 @@ class HttpRetryDeferred(RemoteResponseError):
     def __init__(self, status_code: int, retry_after: float):
         super().__init__("HTTPS peer requested a retry delay", status_code=status_code)
         self.retry_after = retry_after
+
+
+class NativeDeliveryHold(NamedTuple):
+    all_native: bool = False
+    receipt_container: str | None = None
 
 
 def _retry_after(value: str | None) -> float | None:
@@ -112,6 +117,11 @@ def _https_base(value: str, *, origin_only: bool = False) -> str:
     return value.rstrip("/")
 
 
+def _https_origin(url: str) -> tuple[str | None, int]:
+    endpoint = urlsplit(url)
+    return endpoint.hostname, endpoint.port or 443
+
+
 def _resource_path(path: str) -> str:
     if (not isinstance(path, str) or not path.startswith("/") or path.startswith("//")
             or any(part in {".", "..", ""} for part in path.strip("/").split("/"))
@@ -140,6 +150,7 @@ class TransportHub:
         self.config = config
         self._api_url = _https_base(config.api_url)
         self._cse_url = _https_base(config.cse_url, origin_only=True)
+        self._cse_origin = _https_origin(self._cse_url)
         for segment in (config.originator, config.cse_id):
             if not isinstance(segment, str) or not segment or any(char in segment for char in "/+#\x00"):
                 raise ValueError("MQTT originator and CSE ID must be single topic segments")
@@ -307,8 +318,7 @@ class TransportHub:
                          body: dict[str, Any] | None = None) -> tuple[int, httpx.Headers, dict[str, Any]]:
         if self._http is None:
             raise RuntimeError("transport is not started")
-        endpoint = urlsplit(url)
-        origin = (endpoint.hostname, endpoint.port or 443)
+        origin = _https_origin(url)
         now = monotonic()
         retry_until, retry_status = self._http_retry_until.get(origin, (now, 0))
         remaining = retry_until - now
@@ -353,6 +363,20 @@ class TransportHub:
 
     def _receipt_pin(self, container: str) -> str | None:
         return self.config.receipt_container_ri if container == self.config.receipt_container else None
+
+    def _native_mqtt_ready(self) -> bool:
+        return self.config.m2m_mqtt_enabled and self._mqtt is not None and self._ready.is_set()
+
+    def native_delivery_hold(self) -> NativeDeliveryHold:
+        hold = self._http_retry_until.get(self._cse_origin)
+        if hold is None or hold[0] <= monotonic():
+            return NativeDeliveryHold()
+        if not self._native_mqtt_ready():
+            return NativeDeliveryHold(all_native=True)
+        # Pinned receipt delivery requires an HTTPS parent lookup even over MQTT.
+        if self.config.receipt_container_ri is not None:
+            return NativeDeliveryHold(receipt_container=self.config.receipt_container)
+        return NativeDeliveryHold()
 
     async def _verify_receipt_container(self, path: str, pin: str) -> None:
         rqi = "receipt-parent-" + uuid.uuid4().hex
@@ -427,7 +451,7 @@ class TransportHub:
             # Write to the verified resource itself even if its name is later rebound.
             target = f"/{pin}"
             path = _resource_path(target)
-        if self.config.m2m_mqtt_enabled and self._mqtt is not None and self._ready.is_set():
+        if self._native_mqtt_ready():
             if rqi in self._pending:
                 raise RuntimeError("request ID already in flight")
             future = asyncio.get_running_loop().create_future()
