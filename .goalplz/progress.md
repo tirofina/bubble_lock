@@ -622,3 +622,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 실행은 임시 서버 준비까지다. Gateway 빌드와 회귀시험, Pi 연결 및 실제 Feather 관측·적용 영수증은 미실행이다. 전체 goal은 active/progress다.
 
 구현·준비 기록 commit `03ffb8206eab409b6e669a696f713d561d90f640`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `efe77c7..03ffb82`다.
+
+## 2026-11-10 — Feather scoped 관측·영수증 기록 준비
+
+이전 goal turn은 Feather 전용 SDT와 scope를 준비한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- Gateway 0.2.19의 relay는 세 버튼 상태가 담긴 일반 관측, 같은 관측의 MQTT 적용 영수증, 최종 SDT readback을 분리해 기록한다. 반복 실행에 쓸 시험 전용 SQLite는 scope를 대조하고 미전송 행이 남으면 실행을 중단한다.
+- 격리 프록시의 첫 시작은 Nginx map hash 크기 오류로 실패했다. 전체 경로 일치 패턴으로 고친 뒤 Gateway A 인증서로 `featherState` 초기값을 조회해 TLS 1.3·200/2000·RQI 일치를 확인했다. [읽기 경로 배치 기록](../keyring/evidence/2026-11-10-core-scoped-feather-readback/README.md)
+- 실제 실행은 임시 TLS 설정과 읽기 경로 확인까지다. 빌드·회귀시험, Pi relay 실행, Feather 관측과 실제 적용 영수증은 미실행이다. 전체 goal은 active/progress다.
+
+구현·준비 기록 commit `ed404f6a39333829c597a3d54dc59f2fb20e0190`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `01e25eb..ed404f6`다.

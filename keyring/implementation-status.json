@@ -7,7 +7,7 @@
   "date": "2026-11-10",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "The isolated Feather SDT and its MQTT consumer are deployed. Gateway 0.2.18 and nullable telemetry are source-only on the Pi; live telemetry, firmware wake, range and power acceptance remain.",
+  "verificationStatus": "The isolated Feather SDT was read over TLS 1.3 with the Gateway A certificate. Gateway 0.2.19 scoped relay, Pi telemetry, application receipt delivery and hardware acceptance remain untested.",
   "rubricIds": [
     "R01",
     "R02",
@@ -80,7 +80,8 @@
     "operator-only retirement of obsolete CORE telemetry after a durable cold archive and exact row fingerprint comparison",
     "operator-only BlueZ range/reconnect recorder with hardware identity checks, post-handshake notifications and private monotonic evidence",
     "wake source and GPIO mask retention in bounded r18 health frames, plus operator-only Pi capture of a newly observed boot",
-    "scoped nullable telemetry and a distinct Mobius4 Feather resource, gateway binding and reply topic"
+    "scoped nullable telemetry and a distinct Mobius4 Feather resource, gateway binding and reply topic",
+    "operator-only scoped Feather relay capture with bound reusable bench SQLite, per-observation application receipt evidence and final SDT readback"
   ],
   "existingHardware": {
     "status": "source-snapshot-included-unverified",
@@ -137,17 +138,17 @@
   "firmwareRevision": "keyring-0.7.4",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "03ffb8206eab409b6e669a696f713d561d90f640",
+    "sourceCommit": "ed404f6a39333829c597a3d54dc59f2fb20e0190",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "03ffb8206eab409b6e669a696f713d561d90f640",
-    "lastPushedCommit": "03ffb8206eab409b6e669a696f713d561d90f640",
-    "latestCheckpoint": "Provisioned a distinct Feather SDT and exact scoped ACLs. The server consumer subscribed and its owner store reported gw-a at epoch 1.",
-    "lastPushedCommitBeforeThisCheckpoint": "efe77c7308546c4c9538412fc42efb67a95bd758"
+    "latestLocalSourceCommit": "ed404f6a39333829c597a3d54dc59f2fb20e0190",
+    "lastPushedCommit": "ed404f6a39333829c597a3d54dc59f2fb20e0190",
+    "latestCheckpoint": "Added scoped Feather relay evidence capture and deployed the exact Gateway A read path. Local CSE GET returned its initial SDT value.",
+    "lastPushedCommitBeforeThisCheckpoint": "01e25eb92e0f328773c3faacdf4a19a08453f071"
   },
-  "gatewayRevision": "0.2.18",
+  "gatewayRevision": "0.2.19",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
@@ -169,7 +170,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Provide a physical Feather path through scoped Mobius4 without invented battery or RSSI",
+    "executionRequest": "Prepare a Pi Feather capture that correlates native observations, scoped receipts and final SDT readback",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -177,11 +178,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "03ffb8206eab409b6e669a696f713d561d90f640",
-    "sourceValidation": "Temporary server setup only: new Feather SDT CREATE, consumer subscription, persisted owner and mounted file hashes observed. No Gateway build, tests, BLE execution or telemetry.",
+    "sourceCommit": "ed404f6a39333829c597a3d54dc59f2fb20e0190",
+    "sourceValidation": "Scoped TLS setup and initial-state GET over mTLS only. No Gateway build, relay execution, regression tests, BLE or telemetry publication.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "The isolated server is ready for Feather scoped telemetry. The Pi Gateway build, real Feather observation and application receipt, r18 bring-up and central acceptance remain.",
+    "currentDependencyState": "The isolated server has scoped publish and SDT readback configuration. The Pi relay build/run, real Feather observation/receipt evidence, r18 bring-up and central acceptance remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -717,5 +718,15 @@
     "physicalTelemetryExecuted": false,
     "regressionsExecuted": false,
     "sourceCommit": "03ffb8206eab409b6e669a696f713d561d90f640"
+  },
+  "scopedFeatherCapture": {
+    "evidence": "evidence/2026-11-10-core-scoped-feather-readback/README.md",
+    "gatewayVersion": "0.2.19",
+    "initialSdtGetHttp": 200,
+    "initialSdtGetRsc": 2000,
+    "gatewayAInitialSdtReadback": true,
+    "physicalRelayExecuted": false,
+    "regressionsExecuted": false,
+    "sourceCommit": "ed404f6a39333829c597a3d54dc59f2fb20e0190"
   }
 }
