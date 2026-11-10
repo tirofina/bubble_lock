@@ -40,7 +40,7 @@ extern "C" esp_err_t __wrap_nvs_flash_init() {
 }
 
 namespace {
-constexpr char FirmwareRevision[] = "keyring-0.7.8";
+constexpr char FirmwareRevision[] = "keyring-0.7.9";
 #if defined(KEYRING_LEGACY_GATT) && KEYRING_LEGACY_GATT
 constexpr char ServiceUuid[] = "8b8f0001-8e7a-4f36-a8c2-1c9b5d620001";
 constexpr char IdentityUuid[] = "8b8f0002-8e7a-4f36-a8c2-1c9b5d620001";
@@ -60,6 +60,8 @@ constexpr char JournalUuid[] = "7f8a0006-4b6e-4f4e-9b0a-505249564255";
 constexpr size_t MaxFrame = 4096;
 constexpr unsigned JournalSlots = 32;
 constexpr uint32_t JournalMagic = 0x4b524731;
+constexpr char JournalTailKey[] = "journal-tail";
+constexpr uint16_t LegacyRecordFormat = 1, TailRecordFormat = 2;
 constexpr uint8_t Prepared = 1, Completed = 2;
 enum class Result : uint8_t { Applied = 1, ReadbackMismatch = 2 };
 
@@ -117,6 +119,8 @@ struct Record {
 };
 Record journal[JournalSlots] = {};
 bool occupied[JournalSlots] = {};
+struct JournalTail { uint32_t count, crc; };
+bool journalTailPresent = false;
 struct JournalRequest { uint32_t id, generation; uint8_t operation, index, part; };
 struct JournalCapture {
   Record records[JournalSlots];
@@ -140,7 +144,7 @@ void slotKey(unsigned slot, char *key) { snprintf(key, 8, "j%02u", slot); }
 bool identifier(const char *value);
 bool hashValid(const char *hash);
 bool validRecord(const Record &record) {
-  if (record.magic != JournalMagic || record.format != 1 ||
+  if (record.magic != JournalMagic || (record.format != LegacyRecordFormat && record.format != TailRecordFormat) ||
       record.crc != crc32(&record, offsetof(Record, crc)) ||
       record.commandId[64] != '\0' || record.hash[64] != '\0' || record.bootId[32] != '\0' ||
       !identifier(record.commandId) || !hashValid(record.hash) || !identifier(record.bootId) ||
@@ -151,20 +155,37 @@ bool validRecord(const Record &record) {
   return record.phase == Completed && record.appliedAt >= record.acceptedAt &&
       record.result == static_cast<uint8_t>(expected);
 }
-bool storeRecord(unsigned slot, Record &record) {
-  record.crc = crc32(&record, offsetof(Record, crc));
-  char key[8]; slotKey(slot, key);
-  if (nvs_set_blob(journalNvs, key, &record, sizeof(record)) != ESP_OK || nvs_commit(journalNvs) != ESP_OK) {
+template <typename Value>
+bool commitJournalValue(const char *key, const Value &value) {
+  if (nvs_set_blob(journalNvs, key, &value, sizeof(value)) != ESP_OK || nvs_commit(journalNvs) != ESP_OK) {
     storageHealthy = false;
     return false;
   }
-  Record stored;
+  Value stored;
   size_t size = sizeof(stored);
   if (nvs_get_blob(journalNvs, key, &stored, &size) != ESP_OK || size != sizeof(stored) ||
-      memcmp(&stored, &record, sizeof(stored)) != 0) {
+      memcmp(&stored, &value, sizeof(stored)) != 0) {
     storageHealthy = false;
     return false;
   }
+  return true;
+}
+bool storeJournalTail(uint32_t count) {
+  JournalTail tail = {count, 0};
+  tail.crc = crc32(&tail, offsetof(JournalTail, crc));
+  journalTailPresent = commitJournalValue(JournalTailKey, tail);
+  return journalTailPresent;
+}
+bool storeRecord(unsigned slot, Record &record) {
+  const bool append = !occupied[slot];
+  if (append) {
+    // Preserve the legacy prefix before the first tail-checked record is written.
+    if (!journalTailPresent && !storeJournalTail(slot)) return false;
+    record.format = TailRecordFormat;
+  }
+  record.crc = crc32(&record, offsetof(Record, crc));
+  char key[8]; slotKey(slot, key);
+  if (!commitJournalValue(key, record) || (append && !storeJournalTail(slot + 1))) return false;
   journal[slot] = record;
   occupied[slot] = true;
   return true;
@@ -172,18 +193,18 @@ bool storeRecord(unsigned slot, Record &record) {
 void loadJournal() {
   storageHealthy = nvs_open("keyring-v1", NVS_READWRITE, &journalNvs) == ESP_OK;
   if (!storageHealthy) return;
-  bool seenEmpty = false;
+  journalTailPresent = false;
+  unsigned count = 0;
+  bool tailFormatSeen = false;
   for (unsigned slot = 0; slot < JournalSlots; ++slot) {
     char key[8]; slotKey(slot, key);
     Record &r = journal[slot];
     size_t size = sizeof(r);
     const esp_err_t status = nvs_get_blob(journalNvs, key, &r, &size);
-    if (status == ESP_ERR_NVS_NOT_FOUND) {
-      seenEmpty = true;
-      continue;
-    }
+    if (status == ESP_ERR_NVS_NOT_FOUND) continue;
     // Every writer appends at the first free slot and never lowers either fence.
-    if (seenEmpty || status != ESP_OK || size != sizeof(r) || !validRecord(r) ||
+    if (slot != count || status != ESP_OK || size != sizeof(r) || !validRecord(r) ||
+        (tailFormatSeen && r.format != TailRecordFormat) ||
         (slot > 0 && (r.epoch < journal[slot - 1].epoch || r.grant < journal[slot - 1].grant))) {
       storageHealthy = false;
       return; // A corrupt slot is never silently erased or reused.
@@ -195,8 +216,31 @@ void loadJournal() {
       }
     }
     occupied[slot] = true;
+    ++count;
+    tailFormatSeen = r.format == TailRecordFormat;
     maxEpoch = max(maxEpoch, r.epoch);
     maxGrant = max(maxGrant, r.grant);
+  }
+  JournalTail tail;
+  size_t size = sizeof(tail);
+  const esp_err_t status = nvs_get_blob(journalNvs, JournalTailKey, &tail, &size);
+  if (status == ESP_ERR_NVS_NOT_FOUND) {
+    storageHealthy = !tailFormatSeen;
+    return;
+  }
+  if (status != ESP_OK || size != sizeof(tail) || tail.count > JournalSlots ||
+      tail.crc != crc32(&tail, offsetof(JournalTail, crc))) {
+    storageHealthy = false;
+    return;
+  }
+  journalTailPresent = true;
+  if (tail.count == count) return;
+  // A reset can leave one verified PREPARED append ahead of the tail. Preserve
+  // that command as indeterminate and advance only the metadata, never the GPIO.
+  if (count == tail.count + 1 && tailFormatSeen && journal[count - 1].phase == Prepared) {
+    storeJournalTail(count);
+  } else {
+    storageHealthy = false;
   }
 }
 
@@ -544,7 +588,7 @@ void processCommand(const Frame &frame) {
     publishReceipt(id, hash, "READBACK_MISMATCH"); return;
   }
   Record r = {};
-  r.magic = JournalMagic; r.format = 1; r.phase = Prepared;
+  r.magic = JournalMagic; r.phase = Prepared;
   strlcpy(r.commandId, id, sizeof(r.commandId)); strlcpy(r.hash, hash, sizeof(r.hash));
   strlcpy(r.bootId, bootId, sizeof(r.bootId)); r.epoch = epoch; r.grant = grant;
   r.desired = desired; r.acceptedAt = frame.completedAt;

@@ -36,7 +36,11 @@ storageCrc32는 native NVS record의 CRC metadata다. JSON에서 재계산 가�
 
 keyring-0.7.5에서 record 읽기 오류나 중복 ID는 저널 전체를 `storage_error`로 처리한다. 기본 NVS 자체에 복구가 필요한 두 SDK 오류에서는 Arduino의 자동 삭제를 막고 BLE 시작 전에 잠근다. 이 상태에서는 USB 직렬 로그와 파티션 보존 절차로 상태를 확인한다. [펌웨어 복구 경계](firmware/README.md)
 
-keyring-0.7.8은 앞에서부터 채운 연속 슬롯과 감소하지 않는 epoch·grantRevision만 정상으로 복구한다. 중간 슬롯 누락과 새 기록의 쓰기 후 읽기 불일치는 저널을 잠근다. 끝쪽 기록만 유실된 경우까지 식별하려면 외부에 보존한 마지막 기록 위치나 중앙 체크포인트가 필요하다.
+keyring-0.7.8은 앞에서부터 채운 연속 슬롯과 감소하지 않는 epoch·grantRevision만 정상으로 복구한다. 중간 슬롯 누락과 새 기록의 쓰기 후 읽기 불일치는 저널을 잠근다.
+
+keyring-0.7.9는 같은 NVS namespace의 `journal-tail` 키에 CRC와 사용 슬롯 수를 따로 저장한다. 형식 1 기록만 있는 장치는 기존 기록을 읽고, 첫 새 명령 직전에 그 개수를 기준점으로 저장한다. 그다음 새 형식 2 PREPARED 기록과 개수 증가를 순서대로 확인한 뒤에 출력을 허용한다. 유효한 개수보다 형식 2 PREPARED가 하나 앞서면 부팅 때 개수만 복구한다. 슬롯 수 감소, 형식 2 기록이 있는데 키가 사라짐, 기타 불일치는 `storage_error`로 처리한다. 형식 2를 이해하는 펌웨어로 복구하며 BLE snapshot의 `format:1`은 기존 전송 계약에 해당한다.
+
+이 키는 개별 슬롯 유실을 감지한다. NVS 파티션 전체 유실이나 기록과 개수 키가 함께 과거 상태로 돌아가는 상황의 검출에는 장치 외부의 독립 체크포인트가 필요하다. 중앙 정산과 공간 회수는 아래 별도 계약을 따른다.
 
 관측 sensorValues에 journalUsed/journalPrepared/journalCapacity를 추가했다. NVS 불건전 시 앞의 두 값은 null이며 512byte 한도로 생략될 수도 있다. 누락을 빈 journal로 해석하지 않는다. 실제 보관 목록은 export manifest에 따른다.
 

@@ -60,6 +60,8 @@ keyring-0.7.5는 Arduino 코어의 `nvs_flash_init` 호출을 감싼다. `ESP_ER
 
 keyring-0.7.8은 부팅 시 빈 슬롯 뒤에 기록이 있거나 저장 순서에서 epoch 또는 grantRevision이 낮아지면 `storage_error`로 처리한다. `keyring-v1`의 슬롯 형식은 유지한다. PREPARED와 COMPLETED는 commit 뒤 같은 키의 blob을 다시 읽어 원래 바이트와 맞아야 RAM에 반영한다. PREPARED 확인 실패는 출력 시작을 차단하고, COMPLETED 확인 실패는 출력을 끄고 `INDETERMINATE`를 반환한다. 이번 빌드와 호스트·실물 장애 시험은 미실행이다.
 
+keyring-0.7.9는 기존 슬롯을 읽고 첫 새 명령부터 `journal-tail`에 슬롯 개수를 기록한다. 새 PREPARED 슬롯과 개수를 모두 commit하고 다시 읽은 뒤에만 출력을 변경할 수 있다. 부팅 시 기록 개수가 줄었거나 체크포인트가 손상되면 새 실행을 잠근다. 체크포인트보다 PREPARED 슬롯 하나만 앞선 경우에는 개수만 복구하고 그 명령은 `INDETERMINATE`로 보존한다. 기존 NVS 레코드 형식 1을 읽으며 새 레코드는 같은 레이아웃의 형식 2를 쓴다. BLE 내보내기 계약은 버전 1이다. 이번 빌드·호스트 시험·실물 시험은 미실행이다.
+
 현재 grant의 회수/만료 여부는 Gateway가 매 실행 직전에 중앙 authorize API로 확인한다. 펌웨어의 숫자 fencing은 이미 본 revision보다 오래된 명령을 막는 기능이다. 더 최신의 중앙 권한 상태를 장치가 추측하지 않는다. Secure Boot·flash encryption·attestation·서명 검증·OTA·원격 인증서 발급은 이 구현의 범위에 포함되지 않는다.
 
 ## 센서·버튼·저전력
