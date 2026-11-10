@@ -166,6 +166,12 @@ class JournalReconcileTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(report["receiptContainer"], self.parent)
         matching, changed = report["results"][0], report["results"][5]
         self.assertEqual(matching["gatewayReceiptSha256"], matching["cseReceiptSha256"])
+        original_cin = await self.hub.read_content_instance(Store.request_id("receipt", "applied"), self.parent)
+        self.assertEqual(matching["nativeResourceId"], original_cin["ri"])
+        self.assertRegex(matching["nativeStoredAt"], r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.000Z$")
+        self.assertIs(matching["deviceReadbackState"], True)
+        self.assertEqual(report["deviceRecordsSha256"], hashlib.sha256(original[1]).hexdigest())
+        self.assertEqual(report["recordCount"], len(expected))
         self.assertNotEqual(changed["gatewayReceiptSha256"], changed["cseReceiptSha256"])
         self.assertEqual(report["settlementStatus"], "not-settled")
         self.assertEqual([file.read_bytes() for file in input_files], original)

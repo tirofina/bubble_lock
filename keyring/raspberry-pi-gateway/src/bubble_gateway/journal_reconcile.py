@@ -5,11 +5,13 @@ import argparse
 import asyncio
 from contextlib import closing
 from dataclasses import replace
+from datetime import datetime, timezone
 from pathlib import Path
+import re
 import sys
 
 from .ble import BleProtocolError, _object
-from .config import GatewayConfig, read_env_file
+from .config import ID, GatewayConfig, read_env_file
 from .journal_export import read_archive
 from .model import canonical, iso_time, parse_time, payload_hash, validate_command
 from .state_archive import _file_digest
@@ -109,6 +111,7 @@ async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive
             command_id = record["commandId"]
             row = rows.get(command_id)
             result = {"commandId": command_id, "payloadHash": record["payloadHash"], "devicePhase": record["phase"],
+                      "deviceReadbackState": record["readback"],
                       "gatewayDelivered": None if row is None else row["receipt_delivered"] == 1}
             results.append(result)
             if row is None:
@@ -124,20 +127,34 @@ async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive
                 continue
             result["gatewayReceiptSha256"] = payload_hash(receipt)
             try:
-                cin = await transport.read_content(Store.request_id("receipt", command_id), config.receipt_container)
+                cin = await transport.read_content_instance(
+                    Store.request_id("receipt", command_id), config.receipt_container)
             except RemoteResponseError as exc:
                 if (exc.status_code, exc.rsc) != (404, 4004):
                     raise
                 result["result"] = "missing_cse_receipt"
                 continue
-            result["cseReceiptSha256"] = payload_hash(cin)
-            result["result"] = (_compared_result(record, receipt) if canonical(cin) == canonical(receipt)
+            content = cin["con"]
+            result["cseReceiptSha256"] = payload_hash(content)
+            resource_id, created = cin.get("ri"), cin.get("ct")
+            try:
+                if (type(cin.get("ty")) is not int or cin["ty"] != 4
+                        or not isinstance(resource_id, str) or ID.fullmatch(resource_id) is None
+                        or not isinstance(created, str) or re.fullmatch(r"[0-9]{8}T[0-9]{6}", created) is None):
+                    raise ValueError("invalid native receipt identity")
+                stored_at = iso_time(datetime.strptime(created, "%Y%m%dT%H%M%S").replace(tzinfo=timezone.utc))
+            except ValueError:
+                result["result"] = "cse_receipt_identity_invalid"
+                continue
+            result.update(nativeResourceId=resource_id, nativeStoredAt=stored_at)
+            result["result"] = (_compared_result(record, receipt) if canonical(content) == canonical(receipt)
                                 else "cse_receipt_mismatch")
     finally:
         await transport.close()
     return {"reportVersion": 1, "checkedAt": iso_time(), "gatewayId": config.gateway_id, "deviceId": device_id,
             "cseId": config.cse_id, "receiptContainer": config.receipt_container,
             "gatewayArchiveId": archive_id, "deviceSnapshotId": journal["deviceSnapshot"]["snapshotId"],
+            "deviceRecordsSha256": journal["files"][0]["sha256"], "recordCount": len(records),
             "settlementStatus": "not-settled", "deviceJournalModified": False,
             "reviewCount": sum(row["result"] != "matched_applied" or not row["gatewayDelivered"] for row in results),
             "results": results}

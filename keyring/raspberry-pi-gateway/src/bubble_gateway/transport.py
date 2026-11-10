@@ -304,6 +304,10 @@ class TransportHub:
 
     async def read_content(self, rqi: str, container: str) -> Any:
         """Read the native content instance named by its original request ID."""
+        return (await self.read_content_instance(rqi, container))["con"]
+
+    async def read_content_instance(self, rqi: str, container: str) -> dict[str, Any]:
+        """Return the native instance envelope for callers that need CSE metadata."""
         rn = "gw-" + hashlib.sha256(rqi.encode("utf-8")).hexdigest()
         read_rqi = "read-" + hashlib.sha256(rqi.encode("utf-8")).hexdigest()
         url = self._cse_url + _resource_path(container) + "/" + rn
@@ -313,7 +317,7 @@ class TransportHub:
         if (status != 200 or rsc != 2000 or not isinstance(existing, dict)
                 or existing.get("rn") != rn or "con" not in existing):
             raise RemoteResponseError("unable to establish existing content identity", rsc, status)
-        return existing["con"]
+        return existing
 
     async def _existing(self, rqi: str, container: str, payload: dict[str, Any]) -> None:
         if _json(await self.read_content(rqi, container)) != _json(payload):

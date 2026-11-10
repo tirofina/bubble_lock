@@ -150,6 +150,12 @@ node "$tool/inspect.mjs" --gateway gw-a --command $issuedCommandId
 
 `deliveries`의 `CSE_CALLBACK`은 인증 콜백에서 수신한 기록이고 `RECOVERY_SWEEP`은 복구 조회가 대기열로 넘긴 기록이다. `queuedNew`가 참인 경로가 처음 대기열 행을 만들었다. `settlement`에는 최종 readback과 승인 이벤트 ID, 영수증 해시가 있다. 2026-11-10에 전달 경로 테이블을 전용 DB에 적용했고 콜백과 작업자의 재기동을 확인했다. 대기열·전달·정산 테이블은 모두 0행이었다. [배치 증거](../../evidence/2026-11-10-scoped-receipt-provenance/provisioning.json)
 
+장치 journal을 검토할 때는 [Gateway 비교 보고서](../../JOURNAL_RETENTION.md#격리-postgresql-정산-기록-대조)를 비공개 파일에 보관한 뒤 같은 Gateway를 지정한다. 한 번의 읽기 쿼리로 최대 32개 명령의 정산 기록을 확인한다.
+
+```powershell
+node "$tool/inspect.mjs" --gateway gw-a --journal-report $privateReportPath
+```
+
 ### Feather 벤치 명령 API
 
 PC의 `https://127.0.0.1:8787`에 팀 main `715ef58`의 mTLS API를 띄운다. 런처는 로컬 Git 객체에서 해당 팀 소스를 추출하고 scoped CA로 벤치 운영자 인증서를 발급한다. Git for Windows의 OpenSSL을 기본으로 사용한다. 첫 시작에 `gw-a`의 `keyring-feather-lab`과 벤치 주체 `scoped-feather-bench`를 등록한다. 이후 시작은 같은 등록을 읽고 저장된 자격 상태를 유지한다.

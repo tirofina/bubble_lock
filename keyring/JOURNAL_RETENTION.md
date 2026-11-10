@@ -77,6 +77,15 @@ env -i PATH=/usr/bin:/bin /opt/bubble_lock/keyring/raspberry-pi-gateway/.venv/bi
 
 보고서의 정산 상태는 `not-settled`다. 중앙 승인과 장치 journal 회수는 아래 계약을 따른다. [격리 Mobius4 시험](evidence/2026-11-10-journal-reconcile/README.md)
 
+### 격리 PostgreSQL 정산 기록 대조
+
+위 비교 도구의 최신 소스는 장치 기록 파일의 SHA256과 CSE 원본의 `ri`·`ct`도 기록한다. 그 JSON을 비공개 파일에 저장하면 [격리 DB 조회](dev/mobius4/README.md#명령별-영수증-증거-조회)에서 같은 장치·Gateway·명령의 정산 기록을 한 번에 비교할 수 있다. 발급 명령 전체를 결속하는 payload hash, 영수증 hash, readback, CSE 원본 ID와 생성 시각을 확인한다.
+
+- `settlement_matched`는 장치·Gateway·CSE가 비교된 적용 기록과 격리 DB의 정산 행이 일치함을 뜻한다. Gateway 전송 완료 표시가 없으면 검토 건수에 남는다.
+- `settlement_missing`은 비교된 적용 기록에 중앙 정산 행이 없음을 뜻한다. `settlement_mismatch`는 불일치 필드를 반환한다. `journal_review_required`에는 PREPARED, readback 실패 등 기존 검토 건이 남는다.
+
+출력은 원본 비교 보고서의 SHA256을 포함한다. 이 해시는 두 보고서를 연결하며 보관본의 발급자 인증은 별도다. 결과가 모두 일치해도 장치 journal 정산 상태는 `not-settled`로 남는다. 회수에는 아래 중앙 계약이 필요하다.
+
 ## 장기 운영에 남은 중앙 계약
 
 PC-MOBIUS-INTEGRATION/CORE와 아래 내용을 같은 revision으로 정한 뒤 reclaim 경로를 구현한다. 키링은 없는 승인을 생성하지 않는다.
