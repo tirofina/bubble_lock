@@ -7,7 +7,7 @@
   "date": "2026-11-10",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "The refreshed scoped receipt worker reached readiness and connected to the empty isolated database. Firmware 0.7.5 and Gateway 0.2.22 changes are source-only. Live command settlement and hardware acceptance remain unverified.",
+  "verificationStatus": "The refreshed scoped receipt worker reached readiness and connected to the empty isolated database. Firmware 0.7.5 and Gateway 0.2.23 changes are source-only. Live command settlement and hardware acceptance remain unverified.",
   "rubricIds": [
     "R01",
     "R02",
@@ -54,6 +54,7 @@
     "Gateway INA219 integer unit/null/time/product runtime checks and LCD current display",
     "configured Gateway/CSE resource identity binding for persistent SQLite state",
     "configured CSE deployment identity for new Gateway databases and scoped receipt archive comparison",
+    "optional native receipt container resource ID binding for MQTT and HTTPS writes and confirmation",
     "operator-invoked consistent WAL state archives with quarantine and private manifests",
     "explicit legacy DB identity adoption after a cold snapshot with original data rows preserved",
     "MAX9850 mute/shutdown control requests at boot, periodic readback and before sleep",
@@ -145,17 +146,17 @@
   "firmwareRevision": "keyring-0.7.5",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "3f954cef262aec7741913dad69af1fe645159dd0",
+    "sourceCommit": "19c95a0b37c57b1dd440bbedbb704a9ed95f174f",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "3f954cef262aec7741913dad69af1fe645159dd0",
-    "lastPushedCommit": "3f954cef262aec7741913dad69af1fe645159dd0",
-    "latestCheckpoint": "Separate new Gateway databases by configured CSE deployment identity and preserve legacy binding compatibility.",
-    "lastPushedCommitBeforeThisCheckpoint": "10dfa3ea4d6403fb5f9e9c0148a7468c9c6d06b7"
+    "latestLocalSourceCommit": "19c95a0b37c57b1dd440bbedbb704a9ed95f174f",
+    "lastPushedCommit": "19c95a0b37c57b1dd440bbedbb704a9ed95f174f",
+    "latestCheckpoint": "Use a pinned native receipt container ID for both MQTT and HTTPS with authenticated parent and confirmation checks.",
+    "lastPushedCommitBeforeThisCheckpoint": "def9f1ea94cc4c8700ecc80e7378718b8ce18913"
   },
-  "gatewayRevision": "0.2.22",
+  "gatewayRevision": "0.2.23",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
@@ -177,7 +178,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Keep the original Gateway queue separate when switching CSE deployments",
+    "executionRequest": "Prevent a receipt queue from writing to a recreated container with the same name",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -185,11 +186,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "3f954cef262aec7741913dad69af1fe645159dd0",
-    "sourceValidation": "CSE deployment binding, archive contracts and regression source only. No build, test, database migration, endpoint cutover or Pi deployment was performed.",
+    "sourceCommit": "19c95a0b37c57b1dd440bbedbb704a9ed95f174f",
+    "sourceValidation": "Read local Mobius4 resource addressing and receipt response source. Gateway pinning and regression source only. No build, test, ACL change or Pi deployment was performed.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "The isolated worker is refreshed. Firmware 0.7.5 link and r18 NVS fault verification, Gateway 0.2.22 build and verification, observed receipt settlement, a separately authorized Feather 0.2.0 and Pi bench run, authoritative CSE route and journal reclaim contracts, production CORE and r18 bring-up remain.",
+    "currentDependencyState": "The isolated worker is refreshed. Firmware 0.7.5 link and r18 NVS fault verification, Gateway 0.2.23 build and verification, scoped ACL for optional native receipt pin, observed receipt settlement, a separately authorized Feather 0.2.0 and Pi bench run, authoritative CSE route and journal reclaim contracts, production CORE and r18 bring-up remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -931,5 +932,14 @@
     "regressionsExecuted": false,
     "actualCutoverExecuted": false,
     "sourceCommit": "3f954cef262aec7741913dad69af1fe645159dd0"
+  },
+  "nativeReceiptContainerPin": {
+    "reference": "raspberry-pi-gateway/STATE_RECOVERY.md#명령-영수증-컨테이너-id-고정",
+    "status": "source-only",
+    "gatewayVersion": "0.2.23",
+    "regressionsExecuted": false,
+    "scopedAclUpdated": false,
+    "piDeployed": false,
+    "sourceCommit": "19c95a0b37c57b1dd440bbedbb704a9ed95f174f"
   }
 }

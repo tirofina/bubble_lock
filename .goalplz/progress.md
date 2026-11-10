@@ -867,3 +867,12 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 회귀시험 소스만 반영했다. 빌드·시험·기존 DB 변경·서버 전환·Pi 배포는 미실행이다. Feather/Pi 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
 
 배포 구분 commit `3f954cef262aec7741913dad69af1fe645159dd0`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `10dfa3e..3f954ce`다.
+
+## 2026-11-10 — 명령 영수증의 CSE 컨테이너 자원 ID 고정
+
+직전 goal turn은 Gateway DB를 CSE 배포 ID별로 분리한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- Gateway `0.2.23`의 선택 설정은 새 SQLite에 원본 컨테이너 `ri`를 기록한다. 이름 경로를 mTLS로 조회해 자원 ID를 대조한 뒤 MQTT와 HTTPS는 같은 `ri`에 직접 기록한다. 성공 응답이나 기존 영수증의 부모 `pi`가 다르면 발송 완료로 표시하지 않는다. [전환 절차](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#명령-영수증-컨테이너-id-고정)
+- 모의·격리 CSE 회귀시험 소스를 추가했다. 빌드, 시험, CSE ACL 변경, Pi 배포와 실제 명령은 미실행이다. 현재 격리 프록시에서 이 옵션을 켜려면 컨테이너 GET과 자원 ID CREATE 권한을 준비해야 한다. Feather/Pi 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
+
+자원 ID 고정 commit `19c95a0b37c57b1dd440bbedbb704a9ed95f174f`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `def9f1e..19c95a0`다.
