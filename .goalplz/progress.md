@@ -1049,3 +1049,12 @@ HTTPS 선택 보류 commit `420c07df34944681f86b763f35765db849bd55ae`를 `origin
 - 회귀시험 소스는 임계값, 세션 분리, 알림 필드 누락, 센서 읽기 미확인과 다른 기록 모드의 출력 범위를 다룬다. 빌드·시험·Pi 배포·실물 기록은 미실행이다. LCD·충전 표시와 CSE 수신은 별도 증거가 필요하다. goal은 active/progress다.
 
 Pi 배터리 기록 commit `3e4185bf9ecdc6c542686c65bd6bb5134c5a033e`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `49341a8..3e4185b`다.
+
+## 2026-11-11 — 자격 조회 단절 후 이전 명령 승인 차단
+
+직전 goal turn은 Pi의 r18 배터리 전환 기록 모드를 구현한 progress다. DOC-REV 2.0.0, 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`와 팀 중앙의 자격 상태·승인 계약을 확인했다. 팀 head는 직전과 같다.
+
+- Gateway `0.2.34`는 중앙 자격 상태의 변경, 조회 실패, TTL 만료로 생긴 단절을 로컬 승인 세대에 반영한다. 같은 revision으로 복구돼도 단절 전에 요청한 중앙 승인은 사용할 수 없다. BLE 조각 송신 중이면 다음 쓰기를 중단하고 미확정 영수증을 보존한다. 자격 TTL은 조회 요청 시작부터 계산한다. [명령 실행 정책](../keyring/raspberry-pi-gateway/README.md)
+- 동일 revision 복구, TTL 공백, 지연된 응답, 정상 연속 갱신과 부분 전송 중단을 다루는 회귀시험 소스를 추가했다. 빌드·시험·Pi 배포·실물 명령은 미실행이다. goal은 active/progress다.
+
+자격 단절 commit `723342f7ad6cc2b28cc70fa0cf82ac23d530db97`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `9095f64..723342f`다.
