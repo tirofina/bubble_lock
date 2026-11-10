@@ -65,13 +65,16 @@ class SoftwareFeather:
     def command_session(self, device_id):
         return 1 if device_id == DEVICE else None
 
-    async def execute(self, command, budget_ms, digest, *, expected_generation, deadline_monotonic, before_write):
+    async def execute(self, command, budget_ms, digest, *, expected_generation, deadline_monotonic,
+                      before_write, on_receipt):
         if budget_ms <= 0 or expected_generation != 1 or time.monotonic() >= deadline_monotonic:
             raise ValueError("invalid simulated session or budget")
         before_write()
         self.state = command["desiredState"]["state"]
         self.applied.append(self.state)
-        return device_receipt(command, digest, readback={"state": self.state}, firmwareRevision=FIRMWARE)
+        result = device_receipt(command, digest, readback={"state": self.state}, firmwareRevision=FIRMWARE)
+        on_receipt(result)
+        return result
 
     async def close(self):
         self.task.cancel()

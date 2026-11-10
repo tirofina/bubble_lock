@@ -121,11 +121,12 @@ class Store:
                             (command["deviceId"], command["ownershipEpoch"], command["grantRevision"]))
         return None
 
-    def finish(self, command_id: str, receipt: dict) -> None:
+    def finish(self, command_id: str, receipt: dict) -> bool:
         """Receipt remains in the command journal even if the outbox is full."""
         with self.db:
-            self.db.execute("UPDATE commands SET status=?,receipt=? WHERE command_id=? AND receipt IS NULL",
-                            (receipt["status"], canonical(receipt), command_id))
+            result = self.db.execute("UPDATE commands SET status=?,receipt=? WHERE command_id=? AND receipt IS NULL",
+                                     (receipt["status"], canonical(receipt), command_id))
+        return result.rowcount == 1
 
     def _enqueue(self, rqi: str, container: str, payload: dict, critical: bool = False, command_id: str | None = None) -> bool:
         if self.db.execute("SELECT 1 FROM outbox WHERE rqi=?", (rqi,)).fetchone():

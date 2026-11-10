@@ -158,6 +158,7 @@ class _Peer:
     pending_hash: str | None = None
     pending_final_write_at: float | None = None
     pending_receipt_deadline: float | None = None
+    pending_on_receipt: Callable[[dict[str, Any]], None] | None = None
     anchor: tuple[str, int, datetime, float] | None = None
     # The latest queued boot, sequence and uptime survive a BLE reconnect.
     observation_watermark: tuple[str, int, int | None] | None = None
@@ -479,8 +480,11 @@ class BleFleet:
                         # Fresh applies use the current boot. Journal replays use their original boot and result code.
                         self._protocol_failure(peer, "receipt_boot_mismatch")
                         return
-                    # BlueZ can return from the final WRITE after delivering this notification.
-                    peer.pending.set_result(self._receipt_times(peer, frame, received_monotonic=received_at))
+                    result = self._receipt_times(peer, frame, received_monotonic=received_at)
+                    # BlueZ can deliver the receipt before completing the final WRITE.
+                    if peer.pending_on_receipt is not None:
+                        peer.pending_on_receipt(result)
+                    peer.pending.set_result(result)
         except (BleProtocolError, ValueError, TypeError):
             self._protocol_failure(peer, "invalid_receipt")
 
@@ -532,7 +536,8 @@ class BleFleet:
 
     async def execute(self, command_dict: dict[str, Any], remaining_ms: int, payload_hash: str,
                       *, expected_generation: int | None = None, deadline_monotonic: float | None = None,
-                      before_write: Callable[[], None] | None = None) -> dict[str, Any]:
+                      before_write: Callable[[], None] | None = None,
+                      on_receipt: Callable[[dict[str, Any]], None] | None = None) -> dict[str, Any]:
         peer = self._peers.get(command_dict["deviceId"])
         if peer is None:
             raise BleUnavailable("device is not enrolled")
@@ -569,6 +574,7 @@ class BleFleet:
                 peer.pending_command, peer.pending_hash = command_dict["commandId"], payload_hash
                 peer.pending_final_write_at = None
                 peer.pending_receipt_deadline = now + timeout
+                peer.pending_on_receipt = on_receipt
                 try:
                     for offset in range(0, len(raw), 20):
                         self._require_session(peer, client, generation)
@@ -599,6 +605,7 @@ class BleFleet:
                         peer.pending_command = peer.pending_hash = None
                         peer.pending_final_write_at = None
                         peer.pending_receipt_deadline = None
+                        peer.pending_on_receipt = None
         except Exception as exc:
             # The notification confirms the result even if the last GATT response is lost.
             if pending.done() and not pending.cancelled() and pending.exception() is None:

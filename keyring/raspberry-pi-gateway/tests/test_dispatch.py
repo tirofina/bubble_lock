@@ -1,9 +1,11 @@
 import asyncio
 import json
+import sqlite3
 import tempfile
 import time
 import unittest
 from collections import Counter
+from contextlib import closing
 from datetime import timedelta
 from pathlib import Path
 from types import SimpleNamespace
@@ -248,7 +250,7 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((receipt["receivedAt"], receipt["acceptedAt"], receipt["appliedAt"]),
                          (arrived, accepted, applied))
 
-    async def test_dispatch_keeps_confirmed_receipt_when_final_gatt_response_is_lost(self):
+    def use_ble_notification(self, after_notification):
         fleet = self.gateway.ble = BleFleet(self.gateway.config)
         peer = fleet._peers[self.cmd["deviceId"]]
         result = device_receipt(self.cmd, self.digest)
@@ -259,13 +261,64 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
         async def write(_uuid, data, *, response):
             if data.endswith(b"\n"):
                 fleet._receipt_fragment(peer, bytearray((json.dumps(result) + "\n").encode()), peer.generation)
-                fleet._lost(peer)
-                raise OSError("synthetic lost GATT response")
+                await after_notification()
 
         peer.client = SimpleNamespace(is_connected=True, write_gatt_char=AsyncMock(side_effect=write))
+
+    async def test_dispatch_keeps_confirmed_receipt_when_final_gatt_response_is_lost(self):
+        async def lose_response():
+            fleet = self.gateway.ble
+            fleet._lost(fleet._peers[self.cmd["deviceId"]])
+            raise OSError("synthetic lost GATT response")
+
+        self.use_ble_notification(lose_response)
         status, receipt = await self.dispatch()
         self.assertEqual((status, receipt["ackCode"], receipt["readback"]), ("APPLIED", "APPLIED", {"state": True}))
         self.assertEqual(self.store.pending(), [])
+
+    async def test_notification_commits_receipt_before_gatt_response_and_survives_shutdown(self):
+        received = asyncio.Event()
+
+        async def hold_response():
+            received.set()
+            await asyncio.Future()
+
+        self.use_ble_notification(hold_response)
+        task = asyncio.create_task(self.dispatch())
+        try:
+            await asyncio.wait_for(received.wait(), timeout=1)
+            self.assertFalse(task.done())
+            with closing(sqlite3.connect(Path(self.temp.name) / "synthetic.sqlite3")) as reader:
+                status, encoded = reader.execute("SELECT status,receipt FROM commands").fetchone()
+            self.assertEqual((status, json.loads(encoded)["readback"]), ("APPLIED", {"state": True}))
+            self.assertEqual(self.store.interrupted(), [])
+        finally:
+            task.cancel()
+            with self.assertRaises(asyncio.CancelledError):
+                await task
+        status, final_receipt = self.store.db.execute("SELECT status,receipt FROM commands").fetchone()
+        self.assertEqual((status, final_receipt), ("APPLIED", encoded))
+        self.assertEqual(self.gateway.counters, {"command_applied": 1})
+
+    async def test_dispatch_retries_receipt_after_transient_sqlite_failure(self):
+        async def complete_response():
+            self.assertEqual(len(self.store.interrupted()), 1)
+
+        self.use_ble_notification(complete_response)
+        finish = self.store.finish
+        fail_once = Mock(side_effect=sqlite3.OperationalError("synthetic storage error"))
+
+        def finish_after_error(command_id, receipt):
+            if not fail_once.called:
+                fail_once()
+            return finish(command_id, receipt)
+
+        with patch.object(self.store, "finish", side_effect=finish_after_error) as finish_calls:
+            with self.assertLogs("bubble_gateway.service", level="WARNING"):
+                status, receipt = await self.dispatch()
+        self.assertEqual(finish_calls.call_count, 2)
+        self.assertEqual((status, receipt["ackCode"]), ("APPLIED", "APPLIED"))
+        self.assertEqual(self.store.interrupted(), [])
 
     async def test_clock_step_after_write_keeps_device_result_without_estimates(self):
         arrived = iso_time()

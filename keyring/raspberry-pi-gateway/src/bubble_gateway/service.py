@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import logging
+import sqlite3
 import time
 import uuid
 from collections import Counter
@@ -114,8 +115,8 @@ class Gateway:
 
     def _finish(self, command: dict, digest: str, status: str, code: str,
                 detail: str | None = None, device: dict | None = None) -> None:
-        self.store.finish(command["commandId"], self._receipt(command, digest, status, code, detail, device))
-        self.counters[f"command_{status.lower()}"] += 1
+        if self.store.finish(command["commandId"], self._receipt(command, digest, status, code, detail, device)):
+            self.counters[f"command_{status.lower()}"] += 1
 
     async def observation(self, raw: dict) -> None:
         try:
@@ -221,6 +222,22 @@ class Gateway:
         if "receivedAt" in raw:
             parse_time(raw["receivedAt"])
 
+    def _finish_device_result(self, command: dict, digest: str, raw: dict) -> None:
+        try:
+            self._validate_device_result(raw, command, digest)
+            code = raw["ackCode"]
+            if code in {"APPLIED", "DUPLICATE"}:
+                if raw["readback"]["state"] != command["desiredState"]["state"] or raw.get("appliedUptimeMs") is None:
+                    self._finish(command, digest, "INDETERMINATE", "READBACK_MISMATCH", "Device did not confirm requested output at application time", raw)
+                else:
+                    self._finish(command, digest, "APPLIED", code, device=raw)
+            elif code in {"INDETERMINATE", "STORAGE_ERROR", "READBACK_MISMATCH"}:
+                self._finish(command, digest, "INDETERMINATE", code, device=raw)
+            else:
+                self._finish(command, digest, "REJECTED", code, device=raw)
+        except (ValueError, TypeError, KeyError, OverflowError):
+            self._finish(command, digest, "INDETERMINATE", "INVALID_RECEIPT", "Device receipt could not establish a valid result")
+
     async def _dispatch_one(self, command: dict, digest: str) -> None:
         if not self._clock_ok():
             self._finish(command, digest, "REJECTED", "CLOCK_UNTRUSTED", "Wall clock jumped; synchronize clock and restart gateway")
@@ -291,31 +308,41 @@ class Gateway:
         if budget_ms <= 0:
             self._finish(command, digest, "REJECTED", "EXPIRED", "Deadline elapsed during durable intent recording; BLE not sent")
             return
+
+        observed_result = None
+        receipt_saved = False
+
+        def record_receipt(raw: dict) -> None:
+            nonlocal observed_result, receipt_saved
+            observed_result = raw
+            try:
+                self._finish_device_result(command, digest, raw)
+            except sqlite3.Error as exc:
+                LOG.warning("SQLite receipt write failed (%s); keeping result for retry", type(exc).__name__)
+            else:
+                receipt_saved = True
+
         try:
             raw = await self.ble.execute(command, budget_ms, digest, expected_generation=generation,
-                                         deadline_monotonic=expires, before_write=require_write_authority)
-            self._validate_device_result(raw, command, digest)
-            code = raw["ackCode"]
-            if code in {"APPLIED", "DUPLICATE"}:
-                if raw["readback"]["state"] != command["desiredState"]["state"] or raw.get("appliedUptimeMs") is None:
-                    self._finish(command, digest, "INDETERMINATE", "READBACK_MISMATCH", "Device did not confirm requested output at application time", raw)
-                else:
-                    self._finish(command, digest, "APPLIED", code, device=raw)
-            elif code in {"INDETERMINATE", "STORAGE_ERROR", "READBACK_MISMATCH"}:
-                self._finish(command, digest, "INDETERMINATE", code, device=raw)
-            else:
-                self._finish(command, digest, "REJECTED", code, device=raw)
+                                         deadline_monotonic=expires, before_write=require_write_authority,
+                                         on_receipt=record_receipt)
         except DispatchBlocked as exc:
             self._finish(command, digest, "INDETERMINATE", str(exc), "BLE transmission stopped after an authorization change; no automatic replay")
         except asyncio.TimeoutError:
             self._finish(command, digest, "TIMEOUT", "TIMEOUT", "No matching device receipt before timeout; execution may have occurred; no automatic replay")
         except asyncio.CancelledError:
-            self._finish(command, digest, "INDETERMINATE", "CANCELLED", "Shutdown interrupted dispatch; no automatic replay")
+            if observed_result is None:
+                self._finish(command, digest, "INDETERMINATE", "CANCELLED", "Shutdown interrupted dispatch; no automatic replay")
+            elif not receipt_saved:
+                record_receipt(observed_result)
             raise
         except (ValueError, TypeError, KeyError, OverflowError):
             self._finish(command, digest, "INDETERMINATE", "INVALID_RECEIPT", "Device receipt could not establish a valid result")
         except Exception as exc:
             self._finish(command, digest, "INDETERMINATE", "DEVICE_UNAVAILABLE", f"Dispatch interrupted ({type(exc).__name__}); execution may have occurred")
+        else:
+            if not receipt_saved:
+                self._finish_device_result(command, digest, raw)
 
     async def _dispatch_loop(self) -> None:
         cursor = through = 0
