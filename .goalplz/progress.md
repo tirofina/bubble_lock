@@ -405,3 +405,5 @@ fixture와 실물 실행 증거 commit `f7e917cfbc4a77ddc2e11bac80f7146a363f4986
 - 팀 CORE 원본은 HTTP 발급 ACK를 `REVIEW`로 분류했다. CORE 등록 뒤 ACK hash만 바꾼 사례는 `ACK_RECORDED`로 기록됐다. 이 결과는 합성 MQTT를 사용한 원본 handler 직접 호출 범위다.
 - KEYRING 결속 후보는 인증된 Gateway·발급 명령·승인 응답과 native receipt를 비교한다. 정상 2개와 변조/거절 7개를 확인했다. 별도 권한 회수 실행은 BLE 쓰기 0회, 거절 receipt 1개였다. 시험 container/network 잔여 0을 확인했다. [증거](../keyring/evidence/2026-11-10-core-ack-binding/README.md)
 - 운영 ACK 수신기 연결과 원자적 정산은 팀 owner 단계다. Feather 0.2.0 플래시·실물 명령과 제작 PCB 수용이 남았다. 전체 goal은 active/progress다.
+
+후보 코드·재현 증거 commit `c441f7c7586f9b5dfbf45e143e88de9bec42765d`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `7891d2c..c441f7c`다.

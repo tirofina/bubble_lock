@@ -118,15 +118,15 @@
   "firmwareRevision": "keyring-0.7.0",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "106050ae31a087268ad38d9bf406348dedd9cd29",
+    "sourceCommit": "c441f7c7586f9b5dfbf45e143e88de9bec42765d",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "106050ae31a087268ad38d9bf406348dedd9cd29",
-    "lastPushedCommit": "106050ae31a087268ad38d9bf406348dedd9cd29",
-    "latestCheckpoint": "Gateway 0.2.6 deploy preflight pushed. 67 basic and 3 transient systemd cases passed. Real Pi daemon evidence remains 0.2.5; physical command and production deployment pending.",
-    "lastPushedCommitBeforeThisCheckpoint": "8fdbaec6135bd99e85705c209813c2a4e813a8b8"
+    "latestLocalSourceCommit": "c441f7c7586f9b5dfbf45e143e88de9bec42765d",
+    "lastPushedCommit": "c441f7c7586f9b5dfbf45e143e88de9bec42765d",
+    "latestCheckpoint": "CORE HTTP-issued ACK gap reproduced. KEYRING binding candidate and 2 real API/CSE cases pushed. Physical command and production settlement pending.",
+    "lastPushedCommitBeforeThisCheckpoint": "7891d2ccb50e1ad0acf47b6ee765d7e858708c7e"
   },
   "gatewayRevision": "0.2.6",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
@@ -158,7 +158,7 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "106050ae31a087268ad38d9bf406348dedd9cd29",
+    "sourceCommit": "c441f7c7586f9b5dfbf45e143e88de9bec42765d",
     "sourceValidation": "Team main CORE handler gap reproduced; 2 real API/CSE integration cases, 2 positive and 7 rejected binding-candidate inputs passed. Physical GATT command and production settlement remain.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
@@ -468,6 +468,7 @@
     "isolatedCseCasesPassed": 2,
     "candidateValidCases": 2,
     "candidateRejectedCases": 7,
-    "productionSettlementVerified": false
+    "productionSettlementVerified": false,
+    "sourceCommit": "c441f7c7586f9b5dfbf45e143e88de9bec42765d"
   }
 }
