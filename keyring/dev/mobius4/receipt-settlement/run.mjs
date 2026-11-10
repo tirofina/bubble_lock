@@ -1,14 +1,13 @@
-import { readFile } from 'node:fs/promises';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
-import pg from 'pg';
 import { scopedCommandReceiptContainers } from '../scoped-command-receipts.mjs';
 import { createPostgresSettlementCommit } from '../../../integration-candidate/receipt-settlement-postgres.mjs';
 import { createPostgresReceiptInbox } from '../../../integration-candidate/receipt-notification-postgres.mjs';
 import { createReceiptNotificationSweep } from '../../../integration-candidate/receipt-notification-recovery.mjs';
 import { createReceiptNotificationWorker } from '../../../integration-candidate/receipt-notification-worker.mjs';
 import { loadScopedReceiptContext } from './scoped-io.mjs';
+import { openScopedReceiptPool, requireScopedReceiptSchema } from './scoped-database.mjs';
 
 const cseKey = 'scoped-mobius4';
 const log = (status, details = {}) => process.stdout.write(`${JSON.stringify({ status, ...details })}\n`);
@@ -20,22 +19,16 @@ async function main() {
   } });
   const minutes = Number(values['lookback-minutes']);
   if (!Number.isInteger(minutes) || minutes < 1 || minutes > 10080) throw new Error('INVALID_RECOVERY_LOOKBACK');
-  const password = (await readFile(new URL('./.local/database-password', import.meta.url), 'utf8')).trim();
-  if (!/^[a-f0-9]{64}$/.test(password)) throw new Error('INVALID_SCOPED_DATABASE_PASSWORD');
   const context = await loadScopedReceiptContext({ teamRoot: fileURLToPath(new URL('team-source/', local)),
     state: new URL('runtime.json', local) });
-  const pool = new pg.Pool({ host: '127.0.0.1', port: 5544, user: 'keyring_receipt_dev', database: 'keyring_receipt_dev',
-    password, ssl: false, application_name: 'keyring-scoped-receipt', max: 3,
-    connectionTimeoutMillis: 5000, statement_timeout: 10000 });
+  const pool = await openScopedReceiptPool('keyring-scoped-receipt');
   pool.on('error', () => log('DATABASE_CONNECTION_LOST'));
   const stop = new AbortController();
   const requestStop = () => stop.abort();
   process.on('SIGINT', requestStop);
   process.on('SIGTERM', requestStop);
   try {
-    const { rows } = await pool.query(`SELECT to_regclass('privacy_bubble.keyring_command_settlement') IS NOT NULL
-      AND to_regclass('privacy_bubble.keyring_receipt_notification') IS NOT NULL AS ready`);
-    if (rows[0]?.ready !== true) throw new Error('SCOPED_RECEIPT_SCHEMA_REQUIRED');
+    await requireScopedReceiptSchema(pool);
     const inbox = createPostgresReceiptInbox(pool);
     const commit = createPostgresSettlementCommit(pool);
     const drainOne = createReceiptNotificationWorker({ inbox, resolveSettlement: async (key) => key === cseKey

@@ -56,6 +56,8 @@ Mobius4의 Gateway 전용 영수증 컨테이너 아래 `ty=23` 구독을 둔다
 
 [수신 함수](receipt-notification-ingress.mjs)는 인증된 전송 계층이 부여한 `verifiedCseKey`로 등록을 찾는다. 구독의 정확한 wire `sur`, oneM2M originator와 RVI를 대조한다. 구독 확인 요청은 응답만 하고, 등록된 컨테이너 바로 아래의 `gw-<해시>` URI만 [PostgreSQL 대기열](receipt-notification-postgres.mjs)에 넣는다. `verifiedCseKey`는 HTTP 본문이나 클라이언트 헤더로 전달하지 않는다. 콜백은 등록된 경로의 POST에서 최대 8 KiB의 JSON 바이트를 넘기고 함수가 반환한 HTTP 상태·oneM2M 헤더로 응답한다.
 
+[HTTPS 전송 어댑터](receipt-notification-https.mjs)는 TLS 1.3에서 검증된 클라이언트 인증서의 SHA-256 지문을 등록 CSE 키에 연결한다. 정해진 경로·메서드와 JSON 요청만 넘긴다. 수신 서버에 등록할 지문은 승인된 CSE 발신 또는 중계 인증서에서 읽는다. [Node.js TLS 인증 상태](https://nodejs.org/docs/latest-v22.x/api/tls.html#tlssocketauthorized)
+
 ```js
 const inbox = createPostgresReceiptInbox(pgPool);
 const receive = createReceiptNotificationIngress({ subscriptions, enqueue: inbox.enqueue });

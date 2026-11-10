@@ -120,6 +120,18 @@ node "$tool/run.mjs"
 
 이 개발 프로세스의 입력은 팀 상태와 CSE 원본 조회다. CORE 콜백 인증·구독은 운영 연동에서 별도로 구성한다. 2026-11-10에 전용 DB와 두 빈 KEYRING 테이블을 준비하고, Node 프로세스의 시작과 PostgreSQL 대기열 조회를 확인했다. 실제 명령 영수증의 조회·정산은 남아 있다. [전용 DB 준비 증거](../../evidence/2026-11-10-receipt-database/provisioning.json) · [정산 프로세스 시작 증거](../../evidence/2026-11-10-scoped-receipt-runtime/startup.json)
 
+#### 격리 영수증 콜백 수신
+
+전용 PostgreSQL과 Node 의존성을 준비한 뒤 scoped CA로 단기 중계 인증서를 발급하고 콜백 수신기를 시작한다. 수신기는 등록한 중계 인증서의 SHA-256 지문을 사용한다. 중계 개인키는 PC의 정산 도구 `.local/callback-peer/`에 둔다.
+
+```powershell
+$tool = './keyring/dev/mobius4/receipt-settlement'
+& "$tool/prepare-callback.ps1"
+node "$tool/callback.mjs"
+```
+
+`SCOPED_RECEIPT_CALLBACK_READY`가 나오면 `https://127.0.0.1:8790/onem2m/keyring/receipt-notifications`에서 수신한다. Gateway A/B의 전용 영수증 컨테이너 아래 `keyring-settlement` 구독을 등록할 때 [Mobius4 알림 계약](../../integration-candidate/README.md#mobius4-알림에서-원본-정산까지)을 따른다. 현재 임시 Mobius4의 HTTP 알림 구현은 클라이언트 인증서를 설정하지 않으므로, CSE에서 인증된 중계까지의 경로를 구성해야 한다. 이번에는 리스너 시작까지만 확인했다. [콜백 시작 증거](../../evidence/2026-11-10-scoped-receipt-callback/startup.json)
+
 ### Feather 벤치 명령 API
 
 PC의 `https://127.0.0.1:8787`에 팀 main `715ef58`의 mTLS API를 띄운다. 런처는 로컬 Git 객체에서 해당 팀 소스를 추출하고 scoped CA로 벤치 운영자 인증서를 발급한다. Git for Windows의 OpenSSL을 기본으로 사용한다. 첫 시작에 `gw-a`의 `keyring-feather-lab`과 벤치 주체 `scoped-feather-bench`를 등록한다. 이후 시작은 같은 등록을 읽고 저장된 자격 상태를 유지한다.
