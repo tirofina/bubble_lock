@@ -672,3 +672,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - Gateway 인증서별 교차 접근 시험, 실제 팀 발급·승인 연동과 영수증 정산 명령, Pi/Feather 실행·빌드·회귀시험은 미실행이다. 운영 CORE의 자동 수신과 중앙 DB 연결도 남아 있다. 전체 goal은 active/progress다.
 
 준비 절차와 증거 commit `b8c9177c60741976f1127ef5d12dedfe1807fa29`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `cf6b152..b8c9177`다.
+
+## 2026-11-10 — Feather용 격리 팀 명령 API 준비
+
+직전 goal turn은 scoped TLS와 두 빈 CSE 영수증 컨테이너를 실제 배치한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- 팀 원본을 고정 SHA의 Git 객체에서 추출하고 KEYRING 런처에서 팀 mTLS 서버·정책·GatewayControl을 사용한다. 벤치 운영자는 별도 scoped 인증서로, Gateway A는 기존 인증서로 등록한다. 루프백 한 포트와 Feather 한 대로 범위를 지정하고 재시작 시 기존 자격 상태를 보존한다.
+- 임시 API가 PC의 `127.0.0.1:8787`에서 `READY`를 보고했고 해당 프로세스가 포트를 열고 있음을 확인했다. 전용 상태 파일에 `gw-a`·`keyring-feather-lab`·epoch 1이 등록됐다. 동의·grant·발급 명령·감사 기록은 모두 0건이다. [배치 증거](../keyring/evidence/2026-11-10-scoped-command-api/provisioning.json)
+- 실행 범위는 임시 API 준비와 등록까지다. API 요청·실제 발급·정산·Pi 터널/BLE·장비 명령·빌드·회귀시험은 미실행이다. 운영 CORE 자동 수신과 중앙 DB 연결은 남아 있다. 전체 goal은 active/progress다.
+
+명령 API 준비 commit `7383facdfaf670996931a55d1c15fa62ab9eaf82`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1233b97..7383fac`다.
