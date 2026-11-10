@@ -7,7 +7,7 @@
   "date": "2026-11-10",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "The isolated handover consumer and ACL are deployed. Subscription and initial A7 owner readback were observed. Gateway 0.2.14 build, live owner transitions, telemetry readback and physical acceptance remain.",
+  "verificationStatus": "Gateway 0.2.15 retire-core is source-only. The isolated handover consumer has earlier subscription and initial-owner evidence. Build, retirement execution, live handover and physical acceptance remain.",
   "rubricIds": [
     "R01",
     "R02",
@@ -76,7 +76,8 @@
     "opt-in immutable CORE telemetry epoch in SQLite, epoch-specific MQTT publish and topic-bound central ingress candidate",
     "separate scoped Mobius4 profile with exclusive broker ACLs, dedicated TLS identities, a persisted CSE consumer cursor, and optional native HTTPS routing",
     "scoped CSE application receipts bound to the original MQTT bytes, exact reply ACLs, and replay from the latest durable APPLIED cursor",
-    "serialized scoped owner transitions with pending UPDATE fencing, monotonic rollback and a bench operator command"
+    "serialized scoped owner transitions with pending UPDATE fencing, monotonic rollback and a bench operator command",
+    "operator-only retirement of obsolete CORE telemetry after a durable cold archive and exact row fingerprint comparison"
   ],
   "existingHardware": {
     "status": "source-snapshot-included-unverified",
@@ -133,17 +134,17 @@
   "firmwareRevision": "keyring-0.7.3",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "7af699ab4902f5ef937a1ca3ed7ae635c336ed9d",
+    "sourceCommit": "a95bd8482867ece24150cb6b6b1478565c6f73ba",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "7af699ab4902f5ef937a1ca3ed7ae635c336ed9d",
-    "lastPushedCommit": "7af699ab4902f5ef937a1ca3ed7ae635c336ed9d",
-    "latestCheckpoint": "Deployed the isolated handover consumer and rollback ACL. Startup reported the new subscription and the operator status read the persisted A7 owner.",
-    "lastPushedCommitBeforeThisCheckpoint": "3a0e9add5bc819d3923a15b37d0346bbea449f94"
+    "latestLocalSourceCommit": "a95bd8482867ece24150cb6b6b1478565c6f73ba",
+    "lastPushedCommit": "a95bd8482867ece24150cb6b6b1478565c6f73ba",
+    "latestCheckpoint": "Added the operator-only retire-core command with a durable cold snapshot and targeted outbox cleanup. No database operation was executed.",
+    "lastPushedCommitBeforeThisCheckpoint": "a37a58014d1987fd6d5f47a215a65ff5477e9bbb"
   },
-  "gatewayRevision": "0.2.14",
+  "gatewayRevision": "0.2.15",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
@@ -165,7 +166,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Deploy the scoped handover runtime and confirm startup and persisted initial ownership",
+    "executionRequest": "Provide cold archiving and selected outbox retirement for obsolete CORE telemetry epochs",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -173,11 +174,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "7af699ab4902f5ef937a1ca3ed7ae635c336ed9d",
-    "sourceValidation": "Scoped deployment only: subscription, four mounted files, and A7 owner with EMPTY cursor were observed. No owner transitions, telemetry publication, builds or functional tests.",
+    "sourceCommit": "a95bd8482867ece24150cb6b6b1478565c6f73ba",
+    "sourceValidation": "CLI, receipt schema and POSIX regression source added. No build, test, execution or existing database change.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "The scoped handover consumer and rollback ACL are running with persisted A7. Live transitions, broker ACL and receipt checks, central authoritative integration and physical acceptance remain.",
+    "currentDependencyState": "The retired CORE outbox operator path is available as source. POSIX CLI execution, live handover and scoped receipts, central authoritative integration and physical acceptance remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -675,5 +676,13 @@
     "transitionExecuted": false,
     "telemetryPublished": false,
     "sourceCommit": "7af699ab4902f5ef937a1ca3ed7ae635c336ed9d"
+  },
+  "coreOutboxRetirement": {
+    "reference": "raspberry-pi-gateway/STATE_RECOVERY.md",
+    "gatewayVersion": "0.2.15",
+    "status": "source-only",
+    "dbOperationExecuted": false,
+    "regressionExecuted": false,
+    "sourceCommit": "a95bd8482867ece24150cb6b6b1478565c6f73ba"
   }
 }

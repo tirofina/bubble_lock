@@ -582,3 +582,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 임시 프로필 배치와 상태 조회만 실행했다. 실제 Forward·Rollback, 관측과 영수증 발행, 빌드·시험·실물 검증은 미실행이다. 전체 goal은 active/progress다.
 
 구현·배치 증거 commit `7af699ab4902f5ef937a1ca3ed7ae635c336ed9d`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `3a0e9ad..7af699a`다.
+
+## 2026-11-10 — 종료된 CORE epoch의 활성 대기열 정리
+
+이전 goal turn은 격리 handover 소비자 배치와 초기 A7 소유권 확인을 마친 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- Gateway 0.2.15의 `bubble-gateway-state retire-core`는 daemon lock을 잡고 이전 epoch의 전송 행을 보관한다. 격리 스냅샷과 준비 계획을 먼저 기록한다. 장치·Gateway·epoch·RQI와 행 해시를 대조한 뒤 선택한 CORE telemetry 행만 활성 outbox에서 정리한다.
+- 현재 epoch는 거절한다. native 관측·명령 영수증·fence·CORE sequence는 정리 대상에서 제외한다. 원본 변경 전후 기록의 스키마와 합성 POSIX 회귀시험 소스를 추가했다. [보관 절차](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#종료된-core-epoch-보관)
+- 이번 체크포인트는 소스 단계다. 빌드·시험·명령 실행과 기존 DB 변경은 없었다. 전체 goal은 active/progress다.
+
+구현 commit `a95bd8482867ece24150cb6b6b1478565c6f73ba`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `a37a580..a95bd84`다.
