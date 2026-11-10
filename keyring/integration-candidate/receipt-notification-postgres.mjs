@@ -4,6 +4,8 @@ import { commitReceiptTransaction } from './receipt-postgres-transaction.mjs';
 const enqueueSql = `
   INSERT INTO privacy_bubble.keyring_receipt_notification (cse_key, native_ref)
   VALUES ($1, $2) ON CONFLICT (cse_key, native_ref) DO NOTHING`;
+const hasSql = `
+  SELECT 1 FROM privacy_bubble.keyring_receipt_notification WHERE cse_key = $1 AND native_ref = $2`;
 
 const claimSql = `
   WITH next_job AS (
@@ -31,7 +33,10 @@ const finishSql = `
 export function createPostgresReceiptInbox(pool) {
   return {
     enqueue({ cseKey, nativeRef }) {
-      return commitReceiptTransaction(pool, (client) => client.query(enqueueSql, [cseKey, nativeRef]));
+      return commitReceiptTransaction(pool, async (client) => (await client.query(enqueueSql, [cseKey, nativeRef])).rowCount === 1);
+    },
+    async has({ cseKey, nativeRef }) {
+      return (await pool.query(hasSql, [cseKey, nativeRef])).rowCount === 1;
     },
     async claim(leaseSeconds) {
       const { rows } = await pool.query(claimSql, [randomUUID(), leaseSeconds]);

@@ -66,7 +66,22 @@ const drainOne = createReceiptNotificationWorker({ inbox, resolveSettlement });
 
 [대기열 테이블](sql/002_receipt_notification_inbox.sql)은 `(cse_key, native_ref)`별로 중복 알림을 합친다. 수신 성공은 대기열 커밋 이후에만 반환한다. [작업자](receipt-notification-worker.mjs)는 제한 시간 동안 한 행을 맡고 원본을 조회해 정산한다. 일시 실패는 간격을 늘려 다시 시도한다. 한도를 넘겼거나 영수증이 검토로 분류되면 운영자가 확인할 상태와 코드가 남는다. 처리 도중 프로세스가 끝나면 기한 뒤 다른 작업자가 같은 URI를 처리할 수 있다.
 
-배치하려면 팀이 콜백의 CSE 인증 경계와 구독을 등록하고 DB 마이그레이션을 적용해야 한다. 사용 중인 Mobius4의 HTTP 알림은 전송 실패를 로그에 남긴다. 대기열에 들어오기 전에 전달에 실패한 영수증은 CSE 원본과 발급 기록을 대조해 보완해야 한다. 이번에는 실제 콜백·DB·재시도 시험을 실행하지 않았다. [Mobius4 HTTP 알림 처리](https://github.com/IoTKETI/mobius4/blob/e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8/cse/noti.js)
+배치하려면 팀이 콜백의 CSE 인증 경계와 구독을 등록하고 DB 마이그레이션을 적용해야 한다. 사용 중인 Mobius4의 HTTP 알림은 전송 실패를 로그에 남긴다. 이번에는 실제 콜백·DB·재시도 시험을 실행하지 않았다. [Mobius4 HTTP 알림 처리](https://github.com/IoTKETI/mobius4/blob/e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8/cse/noti.js)
+
+### 대기열 도달 전 유실 복구
+
+[복구 스윕](receipt-notification-recovery.mjs)은 팀 `IntegrationStore`가 저장한 스냅샷의 `gatewayCommands`와 `receipts`를 대조한다. `[from, until)` 구간의 `GATEWAY_COMMAND_AUTHORIZED` 중 허용 결과와 원래 발급 해시·claim·revision·epoch가 맞는 명령을 고른다. 명령당 구간 내 가장 이른 허용 시각을 기준으로 정렬한다. 발급이 구간 전이더라도 허용이 구간 내라면 포함한다.
+
+```js
+const sweep = createReceiptNotificationSweep({
+  snapshot: committedTeamSnapshot, from, until, hashPayload: approvalHash, resolveRoute, inbox,
+});
+const page = await sweep({ after, limit: 50 });
+```
+
+`resolveRoute({ gatewayId, commandId, issuedAt })`는 정본의 Gateway·명령 배정에 따른 `{ cseKey, receiptContainer, readNativeReceipt }`를 반환한다. CSE가 교체된 경우 원래 영수증 경로를 보존해 선택한다. 기존 대기열 행은 건너뛴다. 빠진 행은 계산된 이름으로 인증 CSE에서 조회하고 Gateway 및 명령 ID가 일치하는 원본을 찾았을 때만 같은 대기열에 넣는다. 콜백과 스윕이 동시에 넣어도 고유 키가 유지된다. 작업자는 원래 승인·스키마·readback을 다시 확인한다.
+
+한 스냅샷에서 `page.next`가 `null`이 될 때까지 같은 `sweep`을 호출한다. `gaps`에는 원본 미도착, 조회 실패, 매핑·원본 불일치를 기록한다. CORE 운영자는 원본 보존 기간 안에서 최근 승인 구간을 겹쳐 다시 조회하고, 누락이 남은 이전 구간은 같은 범위로 재처리한다. DB 오류로 페이지가 중단되면 같은 커서로 재호출할 수 있다. 이미 검토로 남은 행은 기존 검토 절차로 처리한다. 실제 주기 실행과 실물 영수증 복구 시험은 남아 있다.
 
 ## Handover 뒤 활성 Gateway 검증
 

@@ -1,25 +1,13 @@
 import { bindAppliedReceipt } from './receipt-binding.mjs';
 import { InvalidNativeReceipt } from './receipt-native-source.mjs';
+import { matchesReceiptAuthorization, receiptIdentifier, receiptInstant } from './receipt-authorization.mjs';
 
-const id = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$/;
-const identifier = (value) => typeof value === 'string' && id.exec(value)?.[0] === value;
-const instant = (value) => typeof value === 'string' && /(Z|[+-]\d{2}:\d{2})$/.test(value)
-  ? Date.parse(value) : NaN;
 const review = (reason) => ({ status: 'REVIEW', reason });
 
 function historicalApproval(history, command, payloadHash, storedAt) {
-  const issued = instant(command.issuedAt);
-  const last = instant(storedAt);
-  return history.find((record) => {
-    const authorized = instant(record?.timestamp);
-    return record?.contractId === 'privacy-bubble.integration.v1' && record.docRevision === '2.0.0'
-      && record.owner === 'PC-MOBIUS-INTEGRATION' && record.type === 'GATEWAY_COMMAND_AUTHORIZED'
-      && identifier(record.eventId) && record.allowed === true && record.payloadHash === payloadHash
-      && ['gatewayId', 'commandId', 'deviceId', 'claimId', 'grantRevision', 'ownershipEpoch']
-        .every((key) => record[key] === command[key])
-      && issued <= authorized && authorized <= last && authorized < instant(record.expiresAt)
-      && instant(record.expiresAt) <= instant(command.deadline);
-  });
+  const last = receiptInstant(storedAt);
+  return history.find((record) => receiptInstant(record?.timestamp) <= last
+    && matchesReceiptAuthorization(record, command, payloadHash));
 }
 
 /**
@@ -41,8 +29,8 @@ export function createCommandReceiptSettlement({
     }
     if (native == null) return { status: 'WAITING_FOR_NATIVE' };
     const { gatewayId, resourceId, storedAt, receipt } = native;
-    if (!identifier(gatewayId) || !identifier(receipt?.commandId) || !identifier(resourceId)
-        || !Number.isFinite(instant(storedAt)) || await validateNativeReceipt(receipt) !== true) {
+    if (!receiptIdentifier(gatewayId) || !receiptIdentifier(receipt?.commandId) || !receiptIdentifier(resourceId)
+        || !Number.isFinite(receiptInstant(storedAt)) || await validateNativeReceipt(receipt) !== true) {
       return review('INVALID_NATIVE_RECEIPT');
     }
     const commandRecord = await readIssuedCommand(receipt.commandId);

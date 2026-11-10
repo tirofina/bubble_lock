@@ -35,6 +35,8 @@ Scoped 개발 환경에는 Gateway별 명령 영수증 컨테이너와 한 건�
 
 Mobius4의 새 cin 알림을 받아 PostgreSQL에 URI를 보관하고, 원본 조회와 정산을 재시도하는 수신 함수와 작업자 후보를 추가했다. 운영 CORE에서 인증된 콜백 경로·구독·작업 루프와 DB 마이그레이션을 연결해야 한다. [알림 정산 후보](integration-candidate/README.md#mobius4-알림에서-원본-정산까지)
 
+대기열에 도달하기 전 유실된 알림은 팀 명령·승인 스냅샷과 인증 CSE 원본을 대조해 보완하도록 복구 스윕을 추가했다. 운영 CORE는 원래 CSE 경로의 배정 기록, 영수증 보존 기간과 스윕 주기를 설정한다. [알림 유실 복구 후보](integration-candidate/README.md#대기열-도달-전-유실-복구)
+
 handover 후에는 이전 epoch뿐 아니라 대상 Gateway도 확인해야 한다. 팀 원본 API는 이전 Gateway가 같은 장치에 등록된 상태에서 현재 epoch의 새 명령을 승인했다. 활성 Edge와 Gateway를 명시적으로 연결한 후보는 발급·조회·승인에서 이전 Gateway를 차단했다. 롤백 뒤 원래 Gateway 복구와 API 재기동 후 판정 유지도 확인했다. 운영 적용은 팀의 정본 Edge → Gateway 매핑과 drain 계약에 따른다. [후보와 입력](integration-candidate/README.md#handover-뒤-활성-gateway-검증) · [mTLS 시험](evidence/2026-11-10-handover-owner/README.md)
 
 같은 장치의 순서가 맞아도 팀 CORE 브리지에서 CSE UPDATE가 동시에 실행되면 최신 상태가 옛 값으로 덮인다. 격리 Mobius4에서 옛 ON 요청을 지연시켜 최종 ON을 재현했다. [관측 순서 후보](integration-candidate/README.md#core-관측의-동시-갱신)를 거치면 최종 OFF를 확인했고, 소유권이 바뀐 뒤 이전 Gateway의 갱신과 적용 여부가 불명확한 자원의 후속 갱신은 차단됐다. 운영 연결에는 원래 발행 epoch를 보존하는 인증 수신 경로와 중앙 handover·중복 판정 연동이 남아 있다. [실행 기록](evidence/2026-11-10-core-concurrent-order/README.md)
