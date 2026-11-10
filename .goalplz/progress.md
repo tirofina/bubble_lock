@@ -532,3 +532,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 이번 체크포인트는 소스 단계다. 최신 goal의 검증 범위에 따라 빌드·정적분석·시험·실행을 생략했다. 전용 ACL에서 두 Gateway를 전환하며 실제 broker/CSE readback을 확인하는 작업과 실물 명령 시험이 남아 있다. 전체 goal은 active/progress다.
 
 구현 commit `9782c8aa7ca88718ba21ea5df2e6a6a4861cea02`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `3c24c0b..9782c8a`다.
+
+## 2026-11-10 — Epoch 전용 Mobius4 프로필 준비
+
+이전 goal turn은 epoch를 SQLite에 보존하고 수신 후보를 추가한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- 별도 Compose 프로젝트에 전용 mTLS 브로커와 Gateway 인증서 2개, Mobius4, 팀 저장소를 쓰는 scoped 소비자를 연결했다. Gateway 0.2.13은 native cin에 HTTPS만 쓰면서 CORE MQTT를 사용할 수 있다.
+- 빈 AE 1개·cnt 3개·SDT 1개를 실제로 생성했다. 이어서 자원 5개의 RQI·이름·타입·specialization을 조회했다. 소비자는 `SCOPED_SUBSCRIBED` 상태였고 기존 개발 프로필의 컨테이너 4개도 계속 실행됐다. [포트와 로컬 로그 해시](../keyring/evidence/2026-11-10-core-scoped-stack/README.md)
+- 실행은 임시 서버 준비 범위다. 관측 발행, Gateway 빌드, ACL 거절, handover SDT readback 및 실물 시험은 미실행이다. 전체 goal은 active/progress다.
+
+구현·준비 증거 commit `8b2081f1d4d4e9299bae8a4292e35e8523b94151`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `786c306..8b2081f`다.
