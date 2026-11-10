@@ -1,5 +1,11 @@
 # BLE 재접속과 명령 세션
 
+## 승인 기한과 GATT 전송
+
+Gateway 0.2.21은 중앙 응답의 `expiresAt`과 명령 `deadline` 중 이른 시각에 250ms 여유를 두고 단조 시계 기한을 고정한다. SQLite에 실행 의도를 쓰고 GATT 작업을 기다리는 시간도 같은 기한에서 차감한다. Gateway는 각 20바이트 조각 직전에 인증 세션·자격 상태와 revision·시계·기한을 확인한다. 조각 전송을 중단하면 연결을 무효화해 다음 세션에서 부분 프레임을 비운다.
+
+승인 요청 중 자격 revision이 바뀌면 새 승인까지 대기한다. SQLite 기록 후 전송 전에 상태가 바뀌면 거절 영수증을 남긴다. BLE 처리 중 중단은 `TIMEOUT` 또는 `INDETERMINATE`로 보존한다. BlueZ에 넘긴 조각은 장치의 `remainingMs`와 저널 규칙에 따라 처리된다. 새 사례는 모의 시험 소스로 추가했으며 실행은 남아 있다.
+
 ## 현재 부팅과 새 적용 영수증
 
 Gateway 0.2.8은 대기 중인 commandId와 payloadHash가 일치하는 `APPLIED`에 현재 GATT identity의 bootId를 요구한다. 부팅 ID가 다르면 세션을 끊고 명령 결과를 미확정으로 기록한다. 이미 전송한 명령은 자동 재실행하지 않는다. 과거 journal의 `DUPLICATE`는 원래 bootId와 적용 당시 readback을 유지하며, 현재 부팅의 관측 시각으로 환산하지 않는다.

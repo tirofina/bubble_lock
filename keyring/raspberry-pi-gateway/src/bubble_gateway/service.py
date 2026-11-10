@@ -7,6 +7,7 @@ import logging
 import time
 import uuid
 from collections import Counter
+from datetime import timedelta
 from pathlib import Path
 
 from .ble import BleFleet
@@ -19,6 +20,10 @@ from .transport import TransportHub
 LOG = logging.getLogger(__name__)
 DEVICE_ACKS = {"APPLIED", "DUPLICATE", "REJECTED_EPOCH", "REJECTED_GRANT", "EXPIRED",
                "CONFLICT", "INVALID", "JOURNAL_FULL", "STORAGE_ERROR", "INDETERMINATE", "READBACK_MISMATCH"}
+
+
+class DispatchBlocked(RuntimeError):
+    """The local authority for a GATT write is no longer current."""
 
 
 class Gateway:
@@ -212,6 +217,7 @@ class Gateway:
             return
         if not self._credentials_active():
             return  # Persisted pending; retry until credential recovery or command expiry.
+        credential_revision = self.credential_revision
         device_id = command["deviceId"]
         generation = self.ble.command_session(device_id)
         if generation is None:
@@ -225,33 +231,50 @@ class Gateway:
             self.counters["authorization_unavailable"] += 1
             LOG.warning("Authorization unavailable (%s); execution deferred", type(exc).__name__)
             return
+        if (not self._credentials_active() or self.credential_revision != credential_revision
+                or not self._clock_ok()):
+            return
         try:
             deadline = authorization_deadline(command, digest, response)
         except (ValueError, PermissionError, TypeError, OverflowError):
             self._finish(command, digest, "REJECTED", "NOT_AUTHORIZED", "Current authorization denied or binding invalid")
-            return
-        if not self._credentials_active() or not self._clock_ok():
             return
         if self.ble.command_session(device_id) != generation:
             self.counters["dispatch_deferred_ble"] += 1
             return  # Authorize again on the next ready session.
         # Conservative margin for scheduling/first-fragment latency. Firmware also counts
         # elapsed time from its first fragment through journal persistence before apply.
-        remaining_ms = min(30000, int((deadline - utc_now()).total_seconds() * 1000) - 250)
-        if remaining_ms <= 0:
+        margin = timedelta(milliseconds=250)
+        started = time.monotonic()
+        expires = started + min(30.0, (deadline - utc_now() - margin).total_seconds())
+        if expires <= started:
             self._finish(command, digest, "REJECTED", "EXPIRED")
             return
-        started = time.monotonic()
+
+        def require_write_authority() -> None:
+            if not self._clock_ok():
+                raise DispatchBlocked("CLOCK_UNTRUSTED")
+            if not self._credentials_active() or self.credential_revision != credential_revision:
+                raise DispatchBlocked("CREDENTIAL_CHANGED")
+            if deadline - utc_now() <= margin:
+                raise DispatchBlocked("EXPIRED")
+
         fence_error = self.store.begin_dispatch(command)
         if fence_error:
             self._finish(command, digest, "REJECTED", fence_error)
             return
         try:
-            budget_ms = remaining_ms - int((time.monotonic() - started) * 1000)
-            if budget_ms <= 0:
-                self._finish(command, digest, "REJECTED", "EXPIRED", "Deadline elapsed during durable intent recording; BLE not sent")
-                return
-            raw = await asyncio.wait_for(self.ble.execute(command, budget_ms, digest, expected_generation=generation),
+            require_write_authority()
+        except DispatchBlocked as exc:
+            self._finish(command, digest, "REJECTED", str(exc), "Authorization changed before BLE transmission")
+            return
+        budget_ms = int((expires - time.monotonic()) * 1000)
+        if budget_ms <= 0:
+            self._finish(command, digest, "REJECTED", "EXPIRED", "Deadline elapsed during durable intent recording; BLE not sent")
+            return
+        try:
+            raw = await asyncio.wait_for(self.ble.execute(command, budget_ms, digest, expected_generation=generation,
+                                                          deadline_monotonic=expires, before_write=require_write_authority),
                                          timeout=min(budget_ms / 1000, self.config.ble_command_timeout))
             self._validate_device_result(raw, command, digest)
             code = raw["ackCode"]
@@ -264,6 +287,8 @@ class Gateway:
                 self._finish(command, digest, "INDETERMINATE", code, device=raw)
             else:
                 self._finish(command, digest, "REJECTED", code, device=raw)
+        except DispatchBlocked as exc:
+            self._finish(command, digest, "INDETERMINATE", str(exc), "BLE transmission stopped after an authorization change; no automatic replay")
         except asyncio.TimeoutError:
             self._finish(command, digest, "TIMEOUT", "TIMEOUT", "No matching device receipt before timeout; execution may have occurred; no automatic replay")
         except asyncio.CancelledError:

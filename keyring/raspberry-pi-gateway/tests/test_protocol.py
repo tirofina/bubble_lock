@@ -4,6 +4,7 @@ import time
 import unittest
 from copy import deepcopy
 from datetime import timedelta
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 from bubble_gateway.ble import BleFleet, BleProtocolError, BleUnavailable, _Frames, _object, _power_reading
@@ -128,6 +129,32 @@ class BleMockTests(unittest.IsolatedAsyncioTestCase):
             await self.fleet.execute(cmd, 1000, payload_hash(cmd))
         self.assertFalse(self.peer.ready.is_set())
         self.assertTrue(self.peer.disconnected.is_set())
+        self.assertIsNone(self.peer.pending)
+
+    async def test_deadline_is_not_rebased_on_late_execute(self):
+        self.peer.client = SimpleNamespace(is_connected=True, write_gatt_char=AsyncMock())
+        cmd = command()
+        with self.assertRaises(TimeoutError):
+            await self.fleet.execute(cmd, 1000, payload_hash(cmd), deadline_monotonic=time.monotonic() - 0.1)
+        self.peer.client.write_gatt_char.assert_not_awaited()
+        self.assertTrue(self.peer.ready.is_set())
+
+    async def test_expired_budget_stops_partial_frame_before_next_write(self):
+        now = 100.0
+
+        async def write(_uuid, _data, *, response):
+            nonlocal now
+            self.assertTrue(response)
+            now = 101.0
+
+        client = SimpleNamespace(is_connected=True, write_gatt_char=AsyncMock(side_effect=write))
+        self.peer.client = client
+        cmd = command()
+        clock = SimpleNamespace(monotonic=lambda: now)
+        with patch("bubble_gateway.ble.time", clock), self.assertRaises(TimeoutError):
+            await self.fleet.execute(cmd, 1000, payload_hash(cmd), deadline_monotonic=100.5)
+        client.write_gatt_char.assert_awaited_once()
+        self.assertFalse(self.peer.ready.is_set())
         self.assertIsNone(self.peer.pending)
 
     async def test_observation_duplicates_and_stale_rssi(self):

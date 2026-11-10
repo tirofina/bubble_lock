@@ -28,6 +28,7 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
         self.gateway.clock_anchor = time.time() - time.monotonic()
         self.gateway.clock_trusted = True
         self.gateway.credential_status = "ACTIVE"
+        self.gateway.credential_revision = "rev-1"
         self.gateway.credential_checked = time.monotonic()
         self.gateway.counters = Counter()
         self.gateway.stop = asyncio.Event()
@@ -83,6 +84,40 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
         self.gateway.transport.authorize.assert_awaited_once()
         self.gateway.ble.execute.assert_not_awaited()
         self.assertEqual(self.store.interrupted(), [])
+
+    async def test_credential_rotation_during_authorization_defers_for_fresh_decision(self):
+        async def authorize(_command, _digest):
+            self.gateway.credential_revision = "rev-2"
+            return self.authorization
+
+        self.gateway.transport.authorize.side_effect = authorize
+        self.assertEqual(await self.dispatch(), ("RECEIVED", None))
+        self.gateway.ble.execute.assert_not_awaited()
+        self.assertEqual(self.store.interrupted(), [])
+
+    async def test_clock_jump_during_intent_recording_blocks_ble(self):
+        begin_dispatch = self.store.begin_dispatch
+
+        def record_intent(command):
+            result = begin_dispatch(command)
+            self.gateway.clock_anchor += 10
+            return result
+
+        self.store.begin_dispatch = record_intent
+        status, receipt = await self.dispatch()
+        self.assertEqual((status, receipt["ackCode"]), ("REJECTED", "CLOCK_UNTRUSTED"))
+        self.gateway.ble.execute.assert_not_awaited()
+
+    async def test_credential_change_after_ble_starts_is_terminal_and_uncertain(self):
+        async def execute(_command, _budget, _digest, *, before_write, **_session):
+            before_write()
+            self.gateway.credential_status = "REVOKED"
+            before_write()
+
+        self.gateway.ble.execute.side_effect = execute
+        status, receipt = await self.dispatch()
+        self.assertEqual((status, receipt["ackCode"]), ("INDETERMINATE", "CREDENTIAL_CHANGED"))
+        self.assertEqual(self.store.pending(), [])
 
     async def test_unavailable_batch_does_not_starve_next_device(self):
         self.store.db.execute("DELETE FROM commands")

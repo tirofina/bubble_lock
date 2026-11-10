@@ -7,6 +7,7 @@ from pathlib import Path
 import sys
 import tarfile
 import tempfile
+import time
 import unittest
 from unittest.mock import patch
 
@@ -37,9 +38,10 @@ class SoftwareFeather:
     def command_session(self, device_id):
         return 1 if device_id == DEVICE else None
 
-    async def execute(self, command, budget_ms, digest, *, expected_generation):
-        if budget_ms <= 0 or expected_generation != 1:
+    async def execute(self, command, budget_ms, digest, *, expected_generation, deadline_monotonic, before_write):
+        if budget_ms <= 0 or expected_generation != 1 or time.monotonic() >= deadline_monotonic:
             raise ValueError("invalid simulated session or budget")
+        before_write()
         self.state = command["desiredState"]["state"]
         self.applied.append(self.state)
         return device_receipt(command, digest, readback={"state": self.state}, firmwareRevision=FIRMWARE)

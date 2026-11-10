@@ -476,23 +476,32 @@ class BleFleet:
         return peer.generation
 
     async def execute(self, command_dict: dict[str, Any], remaining_ms: int, payload_hash: str,
-                      *, expected_generation: int | None = None) -> dict[str, Any]:
+                      *, expected_generation: int | None = None, deadline_monotonic: float | None = None,
+                      before_write: Callable[[], None] | None = None) -> dict[str, Any]:
         peer = self._peers.get(command_dict["deviceId"])
         if peer is None:
             raise BleUnavailable("device is not enrolled")
         if not _integer(remaining_ms, 1, 30_000):
             raise ValueError("remaining_ms must be between 1 and 30000")
-        expires = time.monotonic() + remaining_ms / 1000
-        async with asyncio.timeout(min(self.config.ble_command_timeout, remaining_ms / 1000)):
+        now = time.monotonic()
+        expires = now + remaining_ms / 1000
+        if deadline_monotonic is not None:
+            expires = min(expires, deadline_monotonic)
+        if expires <= now:
+            raise asyncio.TimeoutError("dispatch deadline elapsed before BLE")
+        async with asyncio.timeout(min(self.config.ble_command_timeout, expires - now)):
             async with peer.lock:
                 client = peer.client
                 generation = peer.generation if expected_generation is None else expected_generation
                 self._require_session(peer, client, generation)
+                wire_remaining = int((expires - time.monotonic()) * 1000)
+                if wire_remaining <= 0:
+                    raise asyncio.TimeoutError("dispatch deadline elapsed while waiting for BLE")
                 wire = {
                     "version": 1, "type": "command", "deviceId": peer.device_id,
                     "commandId": command_dict["commandId"], "desiredState": command_dict["desiredState"],
                     "grantRevision": command_dict["grantRevision"], "ownershipEpoch": command_dict["ownershipEpoch"],
-                    "payloadHash": payload_hash, "remainingMs": max(1, int((expires - time.monotonic()) * 1000)),
+                    "payloadHash": payload_hash, "remainingMs": wire_remaining,
                 }
                 raw = json.dumps(wire, ensure_ascii=True, allow_nan=False, separators=(",", ":")).encode("utf-8") + b"\n"
                 if len(raw) > MAX_FRAME:
@@ -501,13 +510,15 @@ class BleFleet:
                 peer.pending = pending
                 peer.pending_command, peer.pending_hash = command_dict["commandId"], payload_hash
                 try:
-                    async with asyncio.timeout(min(self.config.ble_command_timeout,
-                                                   max(0.001, expires - time.monotonic()))):
-                        for offset in range(0, len(raw), 20):
-                            self._require_session(peer, client, generation)
-                            await client.write_gatt_char(self.command_uuid, raw[offset:offset + 20], response=True)
-                            self._require_session(peer, client, generation)
-                        receipt = await pending
+                    for offset in range(0, len(raw), 20):
+                        self._require_session(peer, client, generation)
+                        if before_write is not None:
+                            before_write()
+                        if time.monotonic() >= expires:
+                            raise asyncio.TimeoutError("dispatch deadline elapsed during BLE")
+                        await client.write_gatt_char(self.command_uuid, raw[offset:offset + 20], response=True)
+                        self._require_session(peer, client, generation)
+                    receipt = await pending
                     self._require_session(peer, client, generation)
                     return self._receipt_times(peer, receipt)
                 except BaseException:
