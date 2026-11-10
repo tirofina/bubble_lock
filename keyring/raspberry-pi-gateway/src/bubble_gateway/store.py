@@ -184,7 +184,8 @@ class Store:
             except CapacityError:
                 break
 
-    def due(self, *, core_epochs: dict[str, int] | None = None, scoped_only: bool = False) -> dict | None:
+    def due(self, *, core_epochs: dict[str, int] | None = None, scoped_only: bool = False,
+            prefer_receipts: bool | None = None) -> dict | None:
         # Old ownership routes stay on disk and cannot block the active route.
         # Within the active route, only the oldest projection per device can run.
         epochs = canonical(core_epochs) if core_epochs is not None else None
@@ -202,11 +203,12 @@ class Store:
                     ) END
                 GROUP BY json_extract(message, '$.deviceId')
             )
-            SELECT * FROM outbox WHERE next_attempt<=?2
+            SELECT *, (command_id IS NOT NULL OR container='@core/ack') AS is_receipt
+            FROM outbox WHERE next_attempt<=?2
               AND (container<>'@core/telemetry' OR rowid IN (SELECT head FROM core_heads))
               AND (?3=0 OR container='@core/telemetry')
-            ORDER BY created_at,rqi LIMIT 1
-        """, (epochs, time.time(), scoped_only)).fetchone()
+            ORDER BY CASE WHEN is_receipt=?4 THEN 0 ELSE 1 END, created_at,rqi LIMIT 1
+        """, (epochs, time.time(), scoped_only, prefer_receipts)).fetchone()
         if row is None:
             return None
         result = dict(row)

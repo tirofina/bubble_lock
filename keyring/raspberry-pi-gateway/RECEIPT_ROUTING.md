@@ -10,6 +10,8 @@ KEYRING / 남호 · DOC-REV2.0.0 · Gateway0.2.2 · 2026-10-30.
 
 Gateway 0.2.27에서 컨테이너 ID를 고정한 배포는 native CREATE 뒤 같은 자원을 HTTPS로 조회해 저장된 영수증을 대조한다. 읽기가 실패하면 native 항목이 대기열에 남고 CORE ACK는 독립 상태를 유지한다. [고정 컨테이너 확인 절차](STATE_RECOVERY.md#명령-영수증-컨테이너-id-고정)
 
+Gateway 0.2.30의 송신 worker는 재시도 시각이 된 native 명령 영수증과 CORE ACK를 오래된 관측보다 먼저 시도한다. 영수증을 연속 네 번 시도하면 다음 선택에서 일반 항목을 우선한다. 해당 쪽에 전송할 항목이 없으면 준비된 쪽이 계속 진행한다. 기존 SQLite 행으로 구분하며 요청 ID, 재시도 시각, 분리된 scoped CORE telemetry의 장치별 순서를 유지한다. 이 변경의 시험과 배포는 미실행이다.
+
 CORE_BRIDGE_ENABLED의 projection 선택은 영수증 최초 staging 시 고정한다. 이미 대기 중인 native 영수증에 설정 변경만으로 CORE ACK를 과거로 소급 생성하지 않는다. 이미 있는 outbox 항목은 유지한다. DB 삭제·수동 outbox 재작성으로 재전송을 유도하지 않는다.
 
 ## 회귀 시험
@@ -23,5 +25,6 @@ R02/R03/R10에 연결한 KEYRING 제안 ID이며 원래 A01~A26 정의를 대체
 | KR-RECEIPT-ROUTE-03 | test_native_confirmation_keeps_pending_core_ack_for_its_own_retry | native 완료와 무관하게 미완료 ACK 보존 |
 | KR-RECEIPT-ROUTE-04 | test_capacity_failure_does_not_leave_half_a_receipt_pair | 용량 부족 시 두 outbox 항목 모두 미생성·원본 receipt 보존 |
 | KR-RECEIPT-ROUTE-05 | test_outbox_worker_does_not_spin_publishing_ack_while_native_is_backed_off | 모의 native 장애 중 ACK 전송1회 후 backoff 대기 |
+| KR-RECEIPT-ROUTE-06 | test_due_receipts_jump_older_observations_without_starving_them | 도래한 영수증을 먼저 시도하고 네 번 뒤 관측 전송. 대기 중인 영수증은 보존 |
 
 수정 전5개 중3개 실패·2개 통과, 수정 후 전체47개 통과다. wheel build와 설치한 패키지의47개 시험도 통과했다. [실제 로그·hash](../evidence/2026-10-30-receipt-routing/README.md)에 연결한다. 합성 명령·모의 전송·새 임시 SQLite만 사용했으며 기존 DB·실제 broker/CSE·장비·운영 서비스는 실행하지 않았다.

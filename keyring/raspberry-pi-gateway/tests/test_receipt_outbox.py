@@ -144,3 +144,35 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(published_acks, [self.ack_rqi])
         self.assertEqual(self.native_delivered(), 0)
         self.assertEqual(self.queued(BINDING["receiptContainer"]), 1)
+
+    async def test_due_receipts_jump_older_observations_without_starving_them(self):
+        with patch("bubble_gateway.store.iso_time", return_value="2020-01-01T00:00:00Z"):
+            self.store.enqueue("observation", "older", BINDING["observationContainer"], {"sequence": 1})
+        observation_rqi = self.store.request_id("observation", "older")
+        for index in range(3):
+            cmd = command(commandId=f"queued-{index}")
+            digest = payload_hash(cmd)
+            self.store.accept(cmd, digest)
+            self.store.finish(cmd["commandId"], dict(self.receipt, commandId=cmd["commandId"], payloadHash=digest))
+        self.stage()
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+
+        async def idle(_seconds):
+            gateway.stop.set()
+
+        gateway._pause = idle
+        gateway.transport = SimpleNamespace(publish=AsyncMock())
+        with patch("bubble_gateway.store.time.time", return_value=1000):
+            self.store.retry(self.native_rqi, 0, minimum_delay=60)
+            self.assertEqual(self.store.due()["rqi"], observation_rqi)
+            async with asyncio.timeout(1):
+                await gateway._outbox_loop()
+
+        attempts = [call.args[0] for call in gateway.transport.publish.await_args_list]
+        self.assertEqual(len(attempts), 8)  # Seven due receipts and one observation.
+        self.assertEqual(attempts[4], observation_rqi)
+        self.assertIn(self.ack_rqi, attempts)
+        self.assertNotIn(self.native_rqi, attempts)
+        self.assertEqual(self.queued(BINDING["receiptContainer"]), 1)

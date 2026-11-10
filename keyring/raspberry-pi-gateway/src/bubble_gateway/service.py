@@ -18,6 +18,7 @@ from .store import CapacityError, Store
 from .transport import HttpRetryDeferred, TransportHub
 
 LOG = logging.getLogger(__name__)
+RECEIPT_BURST = 4
 DEVICE_ACKS = {"APPLIED", "DUPLICATE", "REJECTED_EPOCH", "REJECTED_GRANT", "EXPIRED",
                "CONFLICT", "INVALID", "JOURNAL_FULL", "STORAGE_ERROR", "INDETERMINATE", "READBACK_MISMATCH"}
 
@@ -312,6 +313,7 @@ class Gateway:
 
     async def _outbox_loop(self, *, scoped: bool = False) -> None:
         epochs = self.config.core_telemetry_epochs
+        receipt_attempts = 0
         if not scoped and epochs is not None:
             # The scoped worker owns this lane, so awaiting its receipt never
             # holds the native observation or command-receipt worker.
@@ -319,10 +321,12 @@ class Gateway:
         while not self.stop.is_set():
             if not scoped:
                 self.store.stage_receipts(self.config.receipt_container, self.config.core_bridge_enabled)
-            item = self.store.due(core_epochs=epochs, scoped_only=scoped)
+            prefer_receipts = None if scoped else receipt_attempts < RECEIPT_BURST
+            item = self.store.due(core_epochs=epochs, scoped_only=scoped, prefer_receipts=prefer_receipts)
             if item is None:
                 await self._pause(0.5)
                 continue
+            receipt_attempts = min(receipt_attempts + 1, RECEIPT_BURST) if item["is_receipt"] else 0
             try:
                 await self.transport.publish(item["rqi"], item["container"], item["payload"])
             except asyncio.CancelledError:
