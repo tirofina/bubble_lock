@@ -2,13 +2,15 @@ import asyncio
 import hashlib
 import json
 import unittest
+from datetime import timedelta
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock, Mock, call
 
 import httpx
 
+from bubble_gateway.model import iso_time, payload_hash, utc_now
 from bubble_gateway.transport import RemoteResponseError, TransportHub, _mqtt_to
-from helpers import config
+from helpers import command, config
 
 
 class TransportMockTests(unittest.IsolatedAsyncioTestCase):
@@ -84,3 +86,60 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
                 else:
                     with self.assertRaises(RemoteResponseError):
                         await self.hub.publish(self.rqi, self.container, self.payload)
+
+    async def test_full_core_queue_does_not_skip_central_poll(self):
+        issued = [command(commandId=f"issued-{index}") for index in range(16)]
+        for index in range(16):
+            self.hub._queue_command(command(commandId=f"mqtt-{index}"))
+        self.hub._api = AsyncMock(return_value={"commands": issued})
+
+        self.assertEqual(await self.hub.poll_commands(), issued)
+        self.hub._api.assert_awaited_once_with("GET", "/commands?limit=16")
+        self.assertTrue(self.hub._commands.empty())
+
+    async def test_http_issued_command_supersedes_earlier_core_copy(self):
+        issued = command()
+        self.hub._queue_command(dict(issued, desiredState={"state": False}))
+        self.hub._queue_command(issued)
+        self.hub._api = AsyncMock(return_value={"commands": [issued]})
+
+        self.assertEqual(await self.hub.poll_commands(), [issued])
+        self.hub._api.assert_awaited_once_with("GET", "/commands?limit=16")
+
+    async def test_core_fallback_requires_exact_unexpired_central_approval(self):
+        issued = command()
+        altered = dict(issued, desiredState={"state": False})
+        revoked = command(commandId="revoked")
+        expired_approval = command(commandId="expired-approval")
+        now = utc_now()
+        expired = command(commandId="expired-command", issuedAt=iso_time(now - timedelta(seconds=2)),
+                          deadline=iso_time(now - timedelta(seconds=1)))
+        for candidate in (altered, revoked, expired, issued, issued, expired_approval):
+            self.hub._queue_command(candidate)
+        digest = payload_hash(issued)
+
+        async def api(method, suffix, body=None, correlation_id=None):
+            if method == "GET":
+                raise RemoteResponseError("synthetic poll failure", status_code=503)
+            response = dict(body, allowed=True, expiresAt=issued["deadline"])
+            if body["commandId"] == issued["commandId"]:
+                response["payloadHash"] = digest
+            elif body["commandId"] == revoked["commandId"]:
+                response["allowed"] = False
+            elif body["commandId"] == expired_approval["commandId"]:
+                response["expiresAt"] = expired["deadline"]
+            return response
+
+        self.hub._api = AsyncMock(side_effect=api)
+        self.assertEqual(await self.hub.poll_commands(), [issued])
+        self.assertEqual(self.hub._api.await_args_list[0], call("GET", "/commands?limit=16"))
+        self.assertEqual([args.args[2]["payloadHash"] for args in self.hub._api.await_args_list[1:]],
+                         [payload_hash(candidate) for candidate in (altered, revoked, issued, expired_approval)])
+
+    async def test_unavailable_central_does_not_admit_core_copy(self):
+        self.hub._queue_command(command())
+        self.hub._api = AsyncMock(side_effect=TimeoutError)
+
+        with self.assertRaises(TimeoutError):
+            await self.hub.poll_commands()
+        self.assertEqual(self.hub._api.await_count, 2)

@@ -250,6 +250,24 @@ class CentralDispatchTests(unittest.IsolatedAsyncioTestCase):
     async def test_grant_revoked_after_poll_is_rejected_without_gatt_write(self):
         await self.exercise(revoke_before_connect=True)
 
+    async def test_core_fallback_requires_the_real_central_command_hash(self):
+        api = self.reader._api
+        wrong = dict(self.command, desiredState={"state": not self.command["desiredState"]["state"]})
+
+        async def poll_unavailable(method, suffix, *args):
+            if (method, suffix) == ("GET", "/commands?limit=16"):
+                raise RemoteResponseError("synthetic poll outage", status_code=503)
+            return await api(method, suffix, *args)
+
+        with patch.object(self.reader, "_api", poll_unavailable):
+            self.reader._queue_command(wrong)
+            with self.assertRaises(RemoteResponseError) as raised:
+                await self.reader.poll_commands()
+            self.assertEqual(raised.exception.status_code, 503)
+            self.reader._queue_command(wrong)
+            self.reader._queue_command(self.command)
+            self.assertEqual(await self.reader.poll_commands(), [self.command])
+
 
 if __name__ == "__main__":
     unittest.main()

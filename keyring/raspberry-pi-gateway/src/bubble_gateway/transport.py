@@ -16,9 +16,11 @@ import httpx
 import paho.mqtt.client as mqtt
 from .config import tls_context
 from .core_bridge import command as core_command
+from .model import authorization_deadline, parse_time, payload_hash, utc_now
 
 LOG = logging.getLogger(__name__)
 MAX_BODY = 256 * 1024
+COMMAND_BATCH = 16
 
 
 class RemoteResponseError(RuntimeError):
@@ -352,22 +354,48 @@ class TransportHub:
         return document
 
     async def poll_commands(self) -> list[dict[str, Any]]:
-        queued = []
-        while len(queued) < 16 and not self._commands.empty():
-            queued.append(self._commands.get_nowait())
-            self._commands.task_done()
-        if len(queued) == 16:
-            return queued
+        poll_error = None
         try:
-            document = await self._api("GET", "/commands?limit=16")
-        except Exception:
-            if queued:
-                return queued
-            raise
-        commands = document.get("commands")
-        if not isinstance(commands, list) or len(commands) > 16 or any(not isinstance(item, dict) for item in commands):
-            raise RemoteResponseError("invalid PC command list")
-        return queued + commands[:16 - len(queued)]
+            document = await self._api("GET", f"/commands?limit={COMMAND_BATCH}")
+            commands = document.get("commands")
+            if (not isinstance(commands, list) or len(commands) > COMMAND_BATCH
+                    or any(not isinstance(item, dict) for item in commands)):
+                raise RemoteResponseError("invalid PC command list")
+        except (RemoteResponseError, httpx.HTTPError, OSError) as exc:
+            poll_error = exc
+            commands = []
+
+        issued_ids = {item["commandId"] for item in commands if isinstance(item.get("commandId"), str)}
+        available = COMMAND_BATCH - len(commands)
+        candidates = {}
+        for _ in range(min(self._commands.qsize(), COMMAND_BATCH)):
+            command = self._commands.get_nowait()
+            self._commands.task_done()
+            if available and command["commandId"] not in issued_ids:
+                candidates[payload_hash(command)] = command
+
+        if candidates:
+            # Only centrally bound MQTT copies may claim a durable commandId.
+            # Parallel, bounded checks keep one unavailable request from blocking the rest.
+            approvals = await asyncio.gather(*(self._approve_core_command(command, digest)
+                                               for digest, command in candidates.items()))
+            approved = [command for command, allowed in zip(candidates.values(), approvals) if allowed]
+            if len(approved) != len(candidates):
+                LOG.warning("Ignored %d CORE commands without a current central binding",
+                            len(candidates) - len(approved))
+            commands = commands + approved[:available]
+        if poll_error is not None and not commands:
+            raise poll_error
+        return commands
+
+    async def _approve_core_command(self, command: dict[str, Any], digest: str) -> bool:
+        try:
+            if parse_time(command["deadline"]) <= utc_now():
+                return False
+            response = await self.authorize(command, digest)
+            return authorization_deadline(command, digest, response) > utc_now()
+        except (RemoteResponseError, httpx.HTTPError, OSError, ValueError, OverflowError):
+            return False
 
     async def authorize(self, command_dict: dict[str, Any], payload_hash: str) -> dict[str, Any]:
         body = {key: command_dict[key] for key in

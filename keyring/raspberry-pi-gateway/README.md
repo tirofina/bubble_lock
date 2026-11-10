@@ -129,6 +129,7 @@ Gateway0.2.0은 DB를 configured Gateway/Originator/CSE 자원 identity에 연�
 - `MAX_OUTBOX_ROWS`와 `MAX_OUTBOX_BYTES`는 미전송 payload 수와 합산 byte 예산이다. SQLite 파일·WAL·command journal의 전체 디스크 크기 제한은 아니다. 관측은 outbox 예산의 90%를 사용하고 나머지를 receipt에 남긴다.
 - queue가 가득 차면 기존 항목을 삭제하지 않는다. BLE 전달 대기 항목은 메모리에서 재시도하지만 버퍼가 넘치거나 프로세스가 종료되면 아직 저장되지 않은 관측을 복구할 수 없다. [IO 메모](IO_NOTES.md)에 drop counter와 reconnect 경계를 정리했다.
 - 완료한 commandId도 journal에 남긴다. `MAX_COMMANDS` 도달 시 새 명령을 거절하고 자동 삭제하지 않는다. 장치 NVS journal과 Gateway DB의 보존·이관은 중앙의 명령 보존 기간과 함께 정해야 한다. 저장소를 지워 단순히 한도를 초기화하면 중복 실행 방어 근거를 잃는다.
+- 명령 수신 시 매번 중앙 HTTPS 목록을 조회한다. MQTT 대기열은 한 번에 최대 16건을 확인하고, 중앙 목록에 같은 commandId가 있으면 그 목록의 발급본을 사용한다. MQTT로만 들어온 명령은 중앙이 정확한 payloadHash와 현재 권한을 확인한 경우에만 남은 배치 자리에 넣는다. 두 채널의 기존 journal 행은 그대로 보존한다.
 - credential 상태 조회 실패 또는 freshness 만료에서는 새 실행을 보류한다. 저장된 명령은 credential이 복구되거나 deadline이 만료될 때까지 pending 상태로 남는다. LOST/REVOKED는 신규 실행을 거절한다.
 - 실행 직전 중앙 authorize 응답의 ID·claim·hash·grant·epoch·expiry를 확인한다. 중앙의 dispatch/회수 race 처리까지 대신하는 것은 아니다.
 - wall clock이 monotonic clock에 비해 2초를 넘게 점프하면 실행을 막는다. 시계를 동기화한 뒤 Gateway를 재시작해야 한다. `time-sync.target` 순서만으로 시각 정확도가 보장되지는 않는다.

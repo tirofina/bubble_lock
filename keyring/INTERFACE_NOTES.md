@@ -33,6 +33,7 @@ CORE v1 canonical contract는 인수했다. 아래 KEYRING identity·receipt 확
 
 - `GET /api/v1/gateways/{gatewayId}/commands?limit=16`: `{commands:[command...]}`. 중앙은 receipt가 도착할 때까지 미정산 명령을 반복 반환해야 한다. fetch만으로 소비 처리하지 않는다.
 - `POST /api/v1/gateways/{gatewayId}/authorize`: `{commandId,deviceId,claimId,grantRevision,ownershipEpoch,payloadHash}`. 응답은 `{allowed:boolean,commandId,deviceId,claimId,grantRevision,ownershipEpoch,payloadHash,expiresAt}`. allowed=true이고 모든 바인딩·revision·payloadHash가 일치하고 expiresAt이 미래일 때만 직전에 실행한다. 오류·오프라인·만료는 fail closed. 권한 판정 이후 발생하는 회수 race는 중앙 claim/dispatch 정책과 통합해야 한다.
+- Gateway 0.2.7은 mTLS 명령 목록을 우선 처리한다. 같은 ID의 CORE MQTT 사본은 이 조회 결과를 덮어쓸 수 없다. MQTT 단독 수신은 DB 등록 전에 동일한 authorize API로 원본과 현재 권한을 확인한다. 두 단계에서 발급된 승인 응답은 각각 수신과 실행 전 판단을 나타낸다. 장치 실행 결과는 별도의 receipt로 확인한다.
 - command: `version:1, gatewayId, deviceId, commandId, claimId, desiredState:{state:boolean}, issuedAt, deadline, grantRevision, ownershipEpoch`. 시간은 timezone이 있는 RFC3339. commandId는 전역 유일, revision은 양의 정수, epoch는 0 이상. PC에서 동일 commandId 내용을 바꾸지 않는다.
 - `GET /api/v1/gateways/{gatewayId}/credentials/status`: `{gatewayId,credentialRevision,status:"ACTIVE"|"LOST"|"REVOKED"}`. 등록 및 인증서 발급/교체 자체는 중앙 PKI·운영 담당. Gateway는 상태를 receipt에 기록하며 LOST/REVOKED에서 새 실행을 막는다.
 - 설정/인증서 파일 교체는 서비스 재시작 시 읽는다. 인증서/개인키 원문은 로그나 receipt에 기록하지 않는다.
