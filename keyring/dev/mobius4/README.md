@@ -130,7 +130,15 @@ $tool = './keyring/dev/mobius4/receipt-settlement'
 node "$tool/callback.mjs"
 ```
 
-`SCOPED_RECEIPT_CALLBACK_READY`가 나오면 `https://127.0.0.1:8790/onem2m/keyring/receipt-notifications`에서 수신한다. Gateway A/B의 전용 영수증 컨테이너 아래 `keyring-settlement` 구독을 등록할 때 [Mobius4 알림 계약](../../integration-candidate/README.md#mobius4-알림에서-원본-정산까지)을 따른다. 현재 임시 Mobius4의 HTTP 알림 구현은 클라이언트 인증서를 설정하지 않으므로, CSE에서 인증된 중계까지의 경로를 구성해야 한다. 이번에는 리스너 시작까지만 확인했다. [콜백 시작 증거](../../evidence/2026-11-10-scoped-receipt-callback/startup.json)
+`SCOPED_RECEIPT_CALLBACK_READY`가 나오면 `https://127.0.0.1:8790/onem2m/keyring/receipt-notifications`에서 수신한다. 별도 터미널에서 중계를 시작하고 Gateway A/B의 전용 영수증 컨테이너 아래 `keyring-settlement` 구독을 등록한다.
+
+```powershell
+& "$tool/prepare-relay.ps1"
+```
+
+중계기는 scoped Mobius4와 네트워크 공간을 공유하고 그 안의 `127.0.0.1:8791`에만 바인딩한다. 호스트 포트는 게시하지 않는다. Mobius4의 HTTP POST를 받아 등록된 중계 인증서로 PC의 mTLS 콜백에 전달한다. CSE 컨테이너가 교체됐거나 중계 소스를 갱신했을 때는 `-RefreshRelay`로 중계만 다시 띄운다. 같은 이름의 구독이 이미 있으면 설정을 대조해 재사용한다. [Mobius4 알림 계약](../../integration-candidate/README.md#mobius4-알림에서-원본-정산까지)
+
+2026-11-10에 중계와 PC 수신기의 TLS 연결, 그리고 두 구독의 HTTP 201·oneM2M 2001 응답을 확인했다. 현재 Mobius4는 직접 URL로 등록하는 구독에서 발신 검증을 생략한다. 실제 명령 영수증이 생성될 때의 콜백 수신과 정산은 남아 있다. [콜백 시작 증거](../../evidence/2026-11-10-scoped-receipt-callback/startup.json) · [중계와 구독 준비 증거](../../evidence/2026-11-10-scoped-receipt-relay/provisioning.json)
 
 ### Feather 벤치 명령 API
 
@@ -190,7 +198,7 @@ Pi가 별도 호스트라면 PC의 loopback HTTPS 8760과 MQTT 8884를 승인된
 이 벤치의 배터리와 미확인 RSSI는 `null`로 보낸다. A0·A1과 해제는 native `observations`의 `buttonState`로 확인한다. `featherState`에는 기존 펌웨어의 관측 `state`가 들어간다. Gateway A는 이 자원을 읽을 수 있고, scoped 소비자가 갱신한다. 빈 자원의 Gateway A HTTPS 조회를 확인했다. Pi의 실제 관측·영수증 왕복은 아직 실행하지 않았다. [서버 준비 기록](../../evidence/2026-11-10-core-scoped-feather-rollout/README.md) · [읽기 경로 준비](../../evidence/2026-11-10-core-scoped-feather-readback/README.md)
 
 ```powershell
-docker compose --project-name privacy-bubble-keyring-scoped --env-file ./keyring/dev/mobius4/.local/scoped/compose.env -f ./keyring/dev/mobius4/compose.yaml -f ./keyring/dev/mobius4/compose.scoped.yaml down
+docker compose --project-name privacy-bubble-keyring-scoped --profile receipt-relay --env-file ./keyring/dev/mobius4/.local/scoped/compose.env -f ./keyring/dev/mobius4/compose.yaml -f ./keyring/dev/mobius4/compose.scoped.yaml down
 ```
 
 [격리 프로필 준비 기록](../../evidence/2026-11-10-core-scoped-stack/README.md) · [영수증 ACL·소비자 배치 기록](../../evidence/2026-11-10-core-scoped-receipt-rollout/README.md)

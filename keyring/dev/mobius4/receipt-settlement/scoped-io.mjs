@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { open, readFile } from 'node:fs/promises';
-import { get } from 'node:https';
+import { request as httpsRequest } from 'node:https';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseEnv } from 'node:util';
@@ -35,11 +35,12 @@ async function receive(response, requestId) {
   }
   const status = response.statusCode;
   const rsc = Number(response.headers['x-m2m-rsc']);
-  const body = status === 200 && rsc === 2000 ? JSON.parse(Buffer.concat(chunks).toString('utf8')) : null;
+  const successful = (status === 200 && rsc === 2000) || (status === 201 && rsc === 2001);
+  const body = successful && size ? JSON.parse(Buffer.concat(chunks).toString('utf8')) : null;
   return { status, rsc, body };
 }
 
-async function scopedRetrieve() {
+export async function openScopedCseExchange() {
   const profile = new URL('../.local/scoped/', import.meta.url);
   const environment = parseEnv(await readFile(new URL('compose.env', profile), 'utf8'));
   const port = Number(environment.KEYRING_CSE_TLS_PORT);
@@ -49,14 +50,18 @@ async function scopedRetrieve() {
   const [ca, cert, key] = await Promise.all(['ca.pem', 'client.pem', 'client.key']
     .map((name) => readFile(new URL(`tls/${name}`, profile))));
 
-  return (path) => new Promise((resolveResponse, reject) => {
+  return (path, { method = 'GET', body, ty } = {}) => new Promise((resolveResponse, reject) => {
     const requestId = `kr-settle-${randomUUID()}`;
-    const request = get({ hostname: '127.0.0.1', servername: 'localhost', port, path, ca, cert, key,
+    const encoded = body === undefined ? undefined : Buffer.from(JSON.stringify(body));
+    const headers = { Accept: 'application/json', 'X-M2M-Origin': environment.CSE_ADMIN,
+      'X-M2M-RVI': '4', 'X-M2M-RI': requestId };
+    if (encoded) Object.assign(headers, { 'Content-Type': `application/json;ty=${ty}`, 'Content-Length': encoded.length });
+    const request = httpsRequest({ hostname: '127.0.0.1', servername: 'localhost', port, path, method, ca, cert, key,
       minVersion: 'TLSv1.3', rejectUnauthorized: true, signal: AbortSignal.timeout(15000),
-      headers: { Accept: 'application/json', 'X-M2M-Origin': environment.CSE_ADMIN,
-        'X-M2M-RVI': '4', 'X-M2M-RI': requestId },
+      headers,
     }, (response) => receive(response, requestId).then(resolveResponse, reject));
     request.once('error', reject);
+    request.end(encoded);
   });
 }
 
@@ -64,7 +69,7 @@ export async function loadScopedReceiptContext({ teamRoot, state }) {
   const utility = resolve(teamRoot, 'pc-mobius/integration/src/integration-utils.mjs');
   const schemaUrl = new URL('../../../../contracts/keyring/receipt.schema.json', import.meta.url);
   const [{ approvalHash }, schema, retrieve] = await Promise.all([
-    import(pathToFileURL(utility).href), readJson(schemaUrl, 65536), scopedRetrieve(),
+    import(pathToFileURL(utility).href), readJson(schemaUrl, 65536), openScopedCseExchange(),
   ]);
   if (typeof approvalHash !== 'function') throw new Error('INVALID_TEAM_HASH_ADAPTER');
   const validateNativeReceipt = addFormats(new Ajv2020()).compile(schema);

@@ -1,0 +1,34 @@
+{
+  "documentRevision": "2.0.0",
+  "scope": "isolated-mobius4-receipt-relay-and-subscription-provisioning",
+  "observedAt": "2026-11-10T14:01:56.802Z",
+  "mobius4Revision": "e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8",
+  "relayScope": "scoped Mobius4 network namespace",
+  "relayPublishedHostPorts": 0,
+  "mobius4ContainerPreserved": true,
+  "relayReadyStatus": "SCOPED_RECEIPT_RELAY_READY",
+  "hostCallbackTransport": { "method": "HEAD", "httpStatus": 405, "rsc": 4005 },
+  "subscriptionTargets": [
+    {
+      "gatewayId": "gw-a",
+      "path": "/Mobius/privacy-bubble-test-ae/command-receipts-a/keyring-settlement",
+      "httpStatus": 201,
+      "rsc": 2001,
+      "rqiMatched": true,
+      "recordedAt": "2026-11-10T14:01:32.009Z"
+    },
+    {
+      "gatewayId": "gw-b",
+      "path": "/Mobius/privacy-bubble-test-ae/command-receipts-b/keyring-settlement",
+      "httpStatus": 201,
+      "rsc": 2001,
+      "rqiMatched": true,
+      "recordedAt": "2026-11-10T14:01:42.044Z"
+    }
+  ],
+  "localSubscriptionLogSha256": "1351a3b97e9facda8c3d5e9af9c256a3ede161a11bc135555d3301f760d58395",
+  "directUrlSubscriptionVerification": false,
+  "rows": { "keyring_command_settlement": 0, "keyring_receipt_notification": 0 },
+  "receiptNotificationReceived": false,
+  "physicalReceiptObserved": false
+}

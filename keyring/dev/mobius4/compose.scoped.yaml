@@ -34,5 +34,19 @@ services:
     read_only: true
     cap_drop: [ALL]
     stop_grace_period: 30s
+  receipt-relay:
+    profiles: [receipt-relay]
+    image: privacy-bubble-keyring-mobius4:local
+    network_mode: service:mobius4
+    entrypoint: ["node", "/relay/relay.mjs"]
+    user: "0:0"
+    volumes:
+      - ./receipt-settlement/relay.mjs:/relay/relay.mjs:ro
+      - ./.local/scoped/tls/ca.pem:/relay/tls/ca.pem:ro
+      - ./receipt-settlement/.local/callback-peer/relay.pem:/relay/tls/relay.pem:ro
+      - ./receipt-settlement/.local/callback-peer/relay.key:/relay/tls/relay.key:ro
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
 volumes:
   scoped_cursor:
