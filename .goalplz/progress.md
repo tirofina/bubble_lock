@@ -809,3 +809,12 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 구현·회귀시험 소스만 반영했다. 새 PostgreSQL 조회, 빌드, 시험, 실물 명령은 미실행이다. 장치 저널 회수에는 중앙 계약이 필요하다. 이전 Feather/Pi 실물 승인 요청은 대기 중이며 goal은 active/progress다.
 
 대조 도구 commit `a2c9976e612bca2c033a13bd7b1cf903d4e5d9ae`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `325ba5b..a2c9976`이다.
+
+## 2026-11-10 — 명령 재정산에서 CSE 원본 출처 고정
+
+직전 goal turn은 장치 저널과 격리 중앙 정산 기록의 대조 도구를 올린 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- 새 정산 행은 인증 조회의 CSE 키와 경로를 영수증 해시·원본 ID·생성 시각과 함께 저장한다. 재정산에서 원본이 재생성되거나 다른 CSE로 조회되면 검토로 분류한다. 기존 행에 출처 필드가 없으면 그대로 보존하고 출처 미확인으로 남긴다. 저널과 Feather 실물 증거 도구도 정산 행의 출처를 대조한다. [정산 후보](../keyring/integration-candidate/README.md#cse-명령-영수증의-중앙-정산-후보)
+- 소스와 회귀시험 사례를 반영했다. 격리 작업자 재기동, DB 조회, 빌드, 시험, 실물 명령은 미실행이다. 명령별 원본 CSE 배정과 저널 회수는 팀 계약에 의존한다. Feather/Pi 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
+
+출처 고정 commit `36bc81624abfe9887592b3315217738de097e96e`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `08d2eb2..36bc816`이다.
