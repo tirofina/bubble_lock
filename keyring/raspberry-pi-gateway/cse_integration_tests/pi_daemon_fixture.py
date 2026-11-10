@@ -1,7 +1,8 @@
-"""Isolated, command-free team API and Mobius4 for the real Pi Gateway bench."""
+"""Isolated team API and Mobius4 for the Pi bench, command-free by default."""
 import argparse
 import asyncio
 from contextlib import ExitStack
+from copy import copy
 import hashlib
 import json
 import os
@@ -20,29 +21,36 @@ import httpx
 from bubble_gateway.transport import RemoteResponseError, TransportHub
 from helpers import config
 from mobius_fixture import DisposableMobius
+from pi_led_cycle import DEVICE, GATEWAY, GUARDIAN, SUBJECT, run_led_cycle
 from tls_fixture import TestPki
 
 REPO = Path(__file__).resolve().parents[3]
-GATEWAY = "gw-feather-bench"
-DEVICE = "keyring-feather-lab"
 
 
 def write_json(path, data):
     path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
 
 
-def start_api(cleanup, pki, team, output):
-    launcher = team / "pc-mobius/scripts/run-integration-api.mjs"
-    pem = pki.path("client").read_text(encoding="ascii")
+def certificate_fingerprint(path):
+    pem = path.read_text(encoding="ascii")
     fingerprint = hashlib.sha256(ssl.PEM_cert_to_DER_cert(pem)).hexdigest().upper()
-    fingerprint = ":".join(fingerprint[i:i + 2] for i in range(0, len(fingerprint), 2))
+    return ":".join(fingerprint[i:i + 2] for i in range(0, len(fingerprint), 2))
+
+
+def start_api(cleanup, pki, team, output, *, led_cycle=False):
+    launcher = team / "pc-mobius/scripts/run-integration-api.mjs"
+    fingerprint = certificate_fingerprint(pki.path("client"))
+    principals = [{"principalId": GATEWAY, "mtlsFingerprint": fingerprint, "scopes": []}]
+    if led_cycle:
+        principals.append({"principalId": GUARDIAN, "mtlsFingerprint": certificate_fingerprint(pki.path("guardian")),
+                           "scopes": ["consent:write", "grant:write", "bubble:command"]})
     config_path = pki.root / "central.json"
     write_json(config_path, {
         "tls": {"key": str(pki.path("server", "key")), "cert": str(pki.path("server")),
                 "ca": str(pki.path("trusted"))},
-        "principals": [{"principalId": GATEWAY, "mtlsFingerprint": fingerprint, "scopes": []}],
+        "principals": principals,
         "gateways": [{"gatewayId": GATEWAY, "principalId": GATEWAY, "fingerprint": fingerprint,
-                      "devices": {DEVICE: "keyring-test-household"}, "credentialRevision": "1",
+                      "devices": {DEVICE: SUBJECT}, "credentialRevision": "1",
                       "ownershipEpoch": 0, "status": "ACTIVE"}],
     })
     with socket.socket() as reservation:
@@ -70,7 +78,7 @@ def start_api(cleanup, pki, team, output):
     return process, f"https://127.0.0.1:{port}"
 
 
-async def exercise(pki, stack, process, api, output, seconds):
+async def exercise(pki, stack, process, api, output, seconds, *, led_cycle=False):
     cfg = config()
     cfg.gateway_id, cfg.originator, cfg.cse_id, cfg.rvi = GATEWAY, stack.admin, stack.cse_id, "4"
     cfg.cse_url, cfg.api_url = stack.origin, api
@@ -101,6 +109,7 @@ async def exercise(pki, stack, process, api, output, seconds):
                     pass
                 await asyncio.sleep(0.25)
 
+    guardian = None
     await hub.start()
     try:
         await ready()
@@ -121,14 +130,23 @@ async def exercise(pki, stack, process, api, output, seconds):
         write_json(output / "endpoints.json", {"central": api, "cse": stack.origin, "containers": paths,
                    "gatewayId": GATEWAY, "deviceId": DEVICE, "originator": cfg.originator, "cseId": cfg.cse_id})
         print("STACK_READY", flush=True)
+        cycle_complete = False
         try:
             async with asyncio.timeout(seconds):
+                if led_cycle:
+                    guardian_cfg = copy(cfg)
+                    guardian_cfg.cert_file, guardian_cfg.key_file = pki.path("guardian"), pki.path("guardian", "key")
+                    guardian = TransportHub(guardian_cfg)
+                    await guardian.start()
+                    await run_led_cycle(guardian, cse, paths, output)
+                    cycle_complete = True
                 while not (output / "STOP").exists():
                     if process.poll() is not None:
                         raise RuntimeError("isolated central API exited during test")
                     await asyncio.sleep(0.25)
         except TimeoutError:
-            pass
+            if led_cycle and not cycle_complete:
+                raise RuntimeError("No complete LED cycle was recorded before the bench timeout") from None
 
         counts = {}
         for role, path in paths.items():
@@ -154,7 +172,11 @@ async def exercise(pki, stack, process, api, output, seconds):
                                       "commandCount", "outboxDepth", "devices", "counters")}
         write_json(output / "readback.json", facts)
     finally:
-        await hub.close()
+        try:
+            if guardian is not None:
+                await guardian.close()
+        finally:
+            await hub.close()
 
 
 def main():
@@ -162,6 +184,7 @@ def main():
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--team-ref", required=True)
     parser.add_argument("--seconds", type=int, default=600, choices=range(30, 1801), metavar="30..1800")
+    parser.add_argument("--led-cycle", action="store_true", help="Enable explicit LED_ON and LED_OFF trigger files")
     args = parser.parse_args()
     output = args.output.resolve()
     if output.is_relative_to(REPO):
@@ -181,16 +204,19 @@ def main():
                 package.extractall(team)
             pki = TestPki()
             cleanup.callback(pki.close)
+            if args.led_cycle:
+                pki.leaf("guardian", "trusted", 7, "clientAuth", subject=GUARDIAN)
             server = pki.root / "cse-server"
             server.mkdir()
             for name in ("trusted.pem", "server.pem", "server.key"):
                 shutil.copyfile(pki.root / name, server / name)
             stack = DisposableMobius(SimpleNamespace(root=server))
             cleanup.callback(stack.close)
-            process, api = start_api(cleanup, pki, team, output)
+            process, api = start_api(cleanup, pki, team, output, led_cycle=args.led_cycle)
             write_json(output / "fixture.json", {"teamRef": revision, "cseToken": stack.token,
-                       "brokerToken": stack.broker.token, "images": stack.images | {"broker": stack.broker.image_id}})
-            asyncio.run(exercise(pki, stack, process, api, output, args.seconds))
+                       "brokerToken": stack.broker.token, "images": stack.images | {"broker": stack.broker.image_id},
+                       "ledCycleEnabled": args.led_cycle})
+            asyncio.run(exercise(pki, stack, process, api, output, args.seconds, led_cycle=args.led_cycle))
         write_json(output / "cleanup.json", {"ownedStackClosed": True, "centralExited": process.poll() is not None})
         print("STACK_CLOSED", flush=True)
     finally:

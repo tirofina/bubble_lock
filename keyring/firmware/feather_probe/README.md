@@ -33,9 +33,7 @@ arduino-cli compile --fqbn esp32:esp32:adafruit_feather_esp32_v2 `
   --output-dir '<새 로컬 빌드 폴더>' keyring/firmware/feather_probe
 ```
 
-실물 시험에서는 Gateway 0.2.5의 `FIRMWARE_REVISION_ALLOWLIST=feather-probe-0.2.0`, `BLE_PAIR=true`, `CORE_BRIDGE_ENABLED=false`를 사용한다. 새 시험 CA와 별도 SQLite, 관측·receipt·health 컨테이너를 준비한다. Pi의 `PC_API_URL`에는 팀 mTLS API, `M2M_CSE_URL`에는 임시 Mobius4를 지정한다. PC의 loopback 서비스에 연결할 때는 서버 인증서 SAN과 일치하는 주소로 SSH reverse tunnel을 사용한다. Gateway와 guardian의 인증서를 각각 등록하고 guardian이 받은 실제 시험 grant에서 명령을 발급한다. [중앙 API 연동 범위](../../CORE_INTEGRATION.md#중앙-api와-남은-통합-시험)
-
-Pi에서 시험 환경 파일로 `bubble-gateway --env-file <시험 env 파일>`을 실행한다. ON과 OFF를 별도 commandId로 발급해 LED와 같은 commandId의 receipt, payloadHash, readback, oneM2M 저장값을 맞춘다. `Store.request_id("receipt", commandId)`로 rqi를 구하면 receipt container에서 `gw-<SHA256(rqi)>`의 `m2m:cin.con`을 읽을 수 있다. 다른 명령은 연결 전에 조회된 뒤 grant를 회수해 거절 receipt와 GPIO 변동 0회를 확인한다. 재연결·재부팅 시험은 최초 성공 때 저장한 ID/hash의 중복 실행 방지를 확인한다. 이 절차로 Feather LED를 시험하고 제작 PCB의 모터 펄스·센서·전력은 PCB 수용 단계에서 다룬다.
+실물 시험은 Gateway 0.2.7과 [Feather LED ON/OFF 절차](../../raspberry-pi-gateway/TESTING.md#feather-led-onoff-시험)를 사용한다. ON과 OFF를 별도 명령으로 발급하고 보드 LED를 직접 본다. Gateway SQLite와 Mobius4의 명령 해시·readback 대조는 별도 읽기 전용 도구가 수행한다. 재연결·재부팅 중복 방지와 제작 PCB의 모터 펄스·센서·전력은 각각 별도 실물 시험이다.
 
 아래 단독 관측과 relay 도구는 기존 0.1.1 프로필용이다. 명령 프로필은 전체 Gateway로 실행한다. [명령 프로필 빌드·로컬 시험 기록](../../evidence/2026-11-10-feather-command/README.md)
 

@@ -24,6 +24,29 @@ MQTT 단독 수신 시험은 목록 조회에만 503 오류를 주입한다. 대
 
 정상 명령 사례는 CSE에서 읽은 영수증과 실행 직전 중앙 승인 응답을 Node의 ACK 결속 검사에도 전달한다. 이 재현은 팀 main `715ef58`의 CORE 동작을 기준으로 한다. [재현 결과](../evidence/2026-11-10-core-ack-binding/README.md)
 
+## Feather LED ON/OFF 시험
+
+Feather 명령 펌웨어 0.2.0과 [Pi 벤치 연결 절차](../evidence/2026-11-10-pi-full-daemon/README.md#재현-절차)를 사용한다. PC의 시험 fixture는 새 CA·Mobius4 컨테이너·팀 중앙 API를 열고, Gateway와 Guardian에 별도 인증서를 발급한다. Guardian은 PC에만 두고 Pi에는 Gateway bundle을 전달한다. Pi는 Gateway 0.2.7, 새 SQLite, `FIRMWARE_REVISION_ALLOWLIST=feather-probe-0.2.0`, `MQTT_ENABLED=false`, `CORE_BRIDGE_ENABLED=false`로 시작한다.
+
+```powershell
+$bench = '<저장소 밖의 새 절대 경로>'
+python keyring/raspberry-pi-gateway/cse_integration_tests/pi_daemon_fixture.py --team-ref 715ef58 --output $bench --led-cycle
+```
+
+1. `STACK_READY` 이후 SSH 터널과 Pi 시험 데몬을 시작한다. 내장 빨간 LED가 꺼져 있는지 확인한다.
+2. `LED_ON_READY`가 나오면 다른 터미널에서 같은 출력 폴더에 `LED_ON` 빈 파일을 만든다. `LED_ON_RECORDED`가 나오고 빨간 LED가 켜졌는지 직접 확인한다.
+3. `LED_OFF_READY`가 나온 뒤 같은 폴더에 `LED_OFF` 빈 파일을 만든다. `LED_OFF_RECORDED` 뒤 실제 LED 소등을 확인한다.
+4. Pi 시험 데몬을 종료하고 이번 시험 SQLite의 일관된 사본을 가져온다. 닫힌 DB에 WAL이 남아 있으면 SQLite backup으로 사본을 만든다. PC 시험 폴더의 `STOP` 파일로 격리 stack을 종료한다.
+
+중간에 중단하면 Pi 시험 데몬을 먼저 종료해 BLE를 끊고 실제 LED 소등을 확인한다. 증거 파일은 두 단계의 발급과 readback을 따로 저장한다. 완주하면 `led-cycle.json`을 출력한다. 아래 도구는 로컬 DB 사본을 읽기 전용으로 열어 명령 해시, CSE readback, 영수증 전송 완료를 비교한다.
+
+```powershell
+python keyring/raspberry-pi-gateway/cse_integration_tests/pi_led_cycle.py `
+    --evidence (Join-Path $bench 'led-cycle.json') --database '<Pi 시험 DB 사본>'
+```
+
+출력의 `dataBindingsVerified`는 데이터 대조 결과다. `physicalLedObserved`는 비워 두며 실제 LED 확인 기록은 따로 남긴다. [로컬 리허설 기록](../evidence/2026-11-10-pi-led-rehearsal/README.md)
+
 ## 이전 시험 기록
 
 2026-11-10 Gateway 0.2.4의 기본 시험은 **58개 통과**다. BlueZ가 READ 값을 구독 callback에도 전달하는 회귀시험을 추가했고, 수정 전 실패와 수정 후 통과를 확인했다. 실제 Pi Zero 2 W에서도 90초 연속 관측과 A0/A1 입력 수신이 통과했다. [Pi 실행 기록](../evidence/2026-11-10-pi-feather/README.md)을 따른다. 아래 이전 날짜의 실행 수와 CSE·POSIX 결과는 당시 기록이다.
