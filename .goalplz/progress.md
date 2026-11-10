@@ -1076,3 +1076,12 @@ Pi 배터리 기록 commit `3e4185bf9ecdc6c542686c65bd6bb5134c5a033e`을 `origin
 - 모의 전송·SQLite 대기열 및 격리 Mobius4 양쪽 binding의 회귀시험 소스를 추가했다. 이번 빌드·시험·Pi 배포·실제 CSE 저장 확인은 미실행이다. 기존 완료 행은 당시 판정 기준으로 남는다. goal은 active/progress다.
 
 자격 영수증 저장 확인 commit `4b82cbfd01cd3154d144443de4e87d5ad0a205f0`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `daadb12..4b82cbf`다.
+
+## 2026-11-11 — r18 제작 PCB 관측 전용 초기 구동
+
+직전 goal turn은 자격 전환 영수증의 CSE 저장 확인을 추가한 progress다. DOC-REV 2.0.0, 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 head와 관련 GATT 계약은 직전과 같다.
+
+- `keyring_r18_bringup`은 별도 identity `keyring-0.7.13-bringup`으로 배터리·가속도·버튼·전원 관측을 제공한다. LCD·오디오 재생·SD·deep sleep을 끄고 BLE 명령과 장치 journal을 열지 않는다. USB 부팅 로그에 모터·AUX·fault와 센서 상태를 추가했다. [PCB 구동 절차](../keyring/pcb/BRING_UP.md)
+- Gateway `0.2.37`은 BlueZ에 기존 쓰기 특성이 캐시돼도 관측 전용 identity에서 명령과 저널 selector 쓰기를 차단한다. 펌웨어 관측과 Gateway 캐시 사례의 회귀시험 소스를 추가했다. 빌드·시험·플래시·전원 인가·Pi 연결은 미실행이다. goal은 active/progress다.
+
+r18 초기 구동 commit `b63c795ef872099372191021e846cc3f79571f93`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `d0a5cad..b63c795`다.
