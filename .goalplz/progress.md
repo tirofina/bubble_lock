@@ -924,3 +924,12 @@ GATT 읽기 commit `82d76bb80aeb903ea3cad1681e8abe838a99ee47`을 `origin/codex/k
 - 도구는 로컬 사본을 읽는다. 중단 시험에서 물리 LED와 중앙 정산은 미확인으로 표시한다. 실행·빌드·시험·실물 명령은 미실행이다. Feather/Pi 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
 
 중단 기록 대조 commit `6a5537f67d8786ea9bf2f1fb571c24a0855d9553`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `0138f0f..6a5537f`다.
+
+## 2026-11-11 — r18 전원과 BLE 시험 기록 통합
+
+직전 goal turn은 중단된 Feather 명령 기록을 대조하는 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 세 팀 브랜치의 head는 직전과 같다.
+
+- Gateway `0.2.25`에서 `--include-power`를 선택하면 r18 거리·재연결·wake JSON에 INA219 상태, 전압·전류·부하 전력, 부팅별 측정 시각을 추가한다. 같은 부팅에서 재연결한 뒤 반복 수신한 샘플은 구분한다. wake 전후 첫 부팅의 유효 샘플이 비어 있으면 `INSUFFICIENT`로 남긴다. [Pi 사용 절차](../keyring/raspberry-pi-gateway/TESTING.md#r18-ble-시험의-전원-샘플)
+- 동일 부팅에서의 반복 계측과 후속 부팅의 잘못된 대체를 다루는 회귀시험 소스를 추가했다. 빌드·시험·실물 계측은 미실행이다. BLE 해제 중 sleep 전류와 배터리 입력은 외부 계측이 필요하다. Feather/Pi 명령 시험과 r18 PCB 인수 시험은 남아 있으며 goal은 active/progress다.
+
+전원 기록 commit `b5be18d47436890e2c80a59b3a8367226c718754`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `133183e..b5be18d`다.
