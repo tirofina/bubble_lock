@@ -103,6 +103,21 @@ node "$tool/settle.mjs" --team-root "$team_root" --state "$team_state" \
 
 `--ack`에 같은 명령의 CORE MQTT ACK 본문을 담은 로컬 JSON을 선택적으로 지정할 수 있다. 조회는 CSE의 TLS·요청 ID를 검증하고 팀 스냅샷을 한 번만 읽는다. 결과는 JSON 한 줄이다. 신규·중복 정산은 종료 코드 0, 원본 도착 대기는 2, 불일치 검토는 3, 연결·설정·저장 실패는 1이다. 정산 결과는 별도 디렉터리에 저장한다. [정산 계약](../../integration-candidate/README.md#cse-명령-영수증의-중앙-정산-후보)
 
+#### 격리 PostgreSQL 정산 실행
+
+별도 Compose 프로젝트 `privacy-bubble-keyring-receipt-dev`가 PostgreSQL을 `127.0.0.1:5544`에 연다. [Feather 벤치 명령 API](#feather-벤치-명령-api)를 준비할 때 추출한 팀 SQL과 KEYRING의 정산·대기열 SQL을 새 전용 DB에 한 트랜잭션으로 적용한다. 암호는 정산 도구의 `.local/database-password`에 보관한다. Mobius4의 기존 DB와 별도 볼륨을 사용한다.
+
+```powershell
+$tool = './keyring/dev/mobius4/receipt-settlement'
+& "$tool/prepare-database.ps1"
+npm install --prefix $tool --ignore-scripts --no-package-lock
+node "$tool/run.mjs"
+```
+
+정산 프로세스는 scoped 명령 API의 저장된 `runtime.json`을 읽고, CSE 원본을 인증 조회해 대기열과 정산 테이블을 처리한다. 기본으로 최근 승인 120분을 반복해서 확인한다. `--lookback-minutes`로 이전 승인 구간을 포함하거나 `--once`로 복구 한 페이지와 대기열 작업 최대 10건만 실행할 수 있다. 종료할 때는 실행 터미널에서 Ctrl+C를 사용한다. DB만 멈추려면 같은 Compose 파일로 `stop postgres`를 호출한다.
+
+이 개발 프로세스의 입력은 팀 상태와 CSE 원본 조회다. CORE 콜백 인증·구독은 운영 연동에서 별도로 구성한다. 2026-11-10에 전용 DB와 두 빈 KEYRING 테이블을 확인했다. Node 의존성 설치와 정산 프로세스 실행은 남아 있다. [전용 DB 준비 증거](../../evidence/2026-11-10-receipt-database/provisioning.json)
+
 ### Feather 벤치 명령 API
 
 PC의 `https://127.0.0.1:8787`에 팀 main `715ef58`의 mTLS API를 띄운다. 런처는 로컬 Git 객체에서 해당 팀 소스를 추출하고 scoped CA로 벤치 운영자 인증서를 발급한다. Git for Windows의 OpenSSL을 기본으로 사용한다. 첫 시작에 `gw-a`의 `keyring-feather-lab`과 벤치 주체 `scoped-feather-bench`를 등록한다. 이후 시작은 같은 등록을 읽고 저장된 자격 상태를 유지한다.
