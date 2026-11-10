@@ -72,7 +72,7 @@ Gateway 0.2.14는 적용 영수증을 기다린다. 새 ACL은 해당 Gateway에
 ./keyring/dev/mobius4/start-scoped.ps1 -RefreshIngress
 ```
 
-Gateway에서는 위 포트와 해당 Gateway 인증서를 사용한다. `MQTT_ENABLED=true`, `M2M_MQTT_ENABLED=false`, `CORE_BRIDGE_ENABLED=true`를 지정한다. `CORE_TELEMETRY_EPOCHS`에는 현재 배정된 `kr-handover`의 epoch를 지정하고 `BLE_DEVICES`에는 같은 장치 ID를 쓴다. native cin은 HTTPS를 사용한다. 명령 승인 API는 503을 반환한다.
+Gateway에서는 위 포트와 해당 Gateway 인증서를 사용한다. `MQTT_ENABLED=true`, `M2M_MQTT_ENABLED=false`, `CORE_BRIDGE_ENABLED=true`를 지정한다. `CORE_TELEMETRY_EPOCHS`에는 현재 배정된 `kr-handover`의 epoch를 지정하고 `BLE_DEVICES`에는 같은 장치 ID를 쓴다. native cin은 HTTPS를 사용한다. CSE 포트의 `/api/`는 503을 반환하며 명령 벤치에는 별도의 API 포트를 사용한다.
 
 ### 명령 영수증 정산 준비
 
@@ -102,6 +102,31 @@ node "$tool/settle.mjs" --team-root "$team_root" --state "$team_state" \
 ```
 
 `--ack`에 같은 명령의 CORE MQTT ACK 본문을 담은 로컬 JSON을 선택적으로 지정할 수 있다. 조회는 CSE의 TLS·요청 ID를 검증하고 팀 스냅샷을 한 번만 읽는다. 결과는 JSON 한 줄이다. 신규·중복 정산은 종료 코드 0, 원본 도착 대기는 2, 불일치 검토는 3, 연결·설정·저장 실패는 1이다. 정산 결과는 별도 디렉터리에 저장한다. [정산 계약](../../integration-candidate/README.md#cse-명령-영수증의-중앙-정산-후보)
+
+### Feather 벤치 명령 API
+
+PC의 `https://127.0.0.1:8787`에 팀 main `715ef58`의 mTLS API를 띄운다. 런처는 로컬 Git 객체에서 해당 팀 소스를 추출하고 scoped CA로 벤치 운영자 인증서를 발급한다. Git for Windows의 OpenSSL을 기본으로 사용한다. 첫 시작에 `gw-a`의 `keyring-feather-lab`과 벤치 주체 `scoped-feather-bench`를 등록한다. 이후 시작은 같은 등록을 읽고 저장된 자격 상태를 유지한다.
+
+```powershell
+./keyring/dev/mobius4/start-scoped-command-api.ps1
+```
+
+등록 뒤 `READY`가 출력되면 해당 터미널에서 API가 실행 중이다. Pi의 Gateway A 인증서는 명령 조회·현재 승인·자격 상태만 사용할 수 있다. 운영자 인증서는 벤치 주체의 동의, grant 발급·회수와 해당 Gateway 명령 발급에 사용한다. 동의·grant·장치 명령은 시작 과정에서 생성하지 않는다. 운영자 개인키는 PC의 `.local/scoped/command-api/`에 둔다.
+
+이 명령 벤치는 관측용 Feather `0.1.1`과 별도로 명령 프로필 `0.2.0` 및 새 Pi SQLite를 사용한다. PC의 두 loopback 포트를 승인된 SSH 역방향 터널로 Pi의 loopback에 연결할 때는 8760과 8787을 각각 전달한다. Pi에는 scoped CA와 Gateway A 인증서 및 키를 사용한다.
+
+```dotenv
+GATEWAY_ID=gw-a
+FIRMWARE_REVISION_ALLOWLIST=feather-probe-0.2.0
+BLE_GATT_PROFILE=core-v1
+M2M_CSE_URL=https://127.0.0.1:8760
+M2M_RECEIPT_CONTAINER=/Mobius/privacy-bubble-test-ae/command-receipts-a
+PC_API_URL=https://127.0.0.1:8787
+MQTT_ENABLED=false
+CORE_BRIDGE_ENABLED=false
+```
+
+정산 명령의 `--team-root`에는 `.local/scoped/command-api/team-source`, `--state`에는 같은 폴더의 `runtime.json`을 넣는다. 다른 연결 설정은 [Feather 명령 프로필](../../firmware/feather_probe/README.md#내장-led를-쓰는-명령-프로필)을 따른다. 2026-11-10에는 로컬 API 리스너와 장치 등록까지 준비했다. [배치 증거](../../evidence/2026-11-10-scoped-command-api/provisioning.json)
 
 ### 격리 소유권 전환
 
