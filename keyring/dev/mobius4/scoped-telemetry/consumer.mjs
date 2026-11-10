@@ -7,6 +7,9 @@ import { IntegrationStore } from './integration-store.mjs';
 const { connect } = createRequire('/app/package.json')('mqtt');
 const deviceId = 'kr-handover';
 const path = '/Mobius/privacy-bubble-test-ae/bubbleState';
+const featherPath = '/Mobius/privacy-bubble-test-ae/featherState';
+const featherOwner = { gatewayId: 'gw-a', deviceId: 'keyring-feather-lab', ownershipEpoch: 1 };
+const routes = new Map([[deviceId, path], [featherOwner.deviceId, featherPath]]);
 const owners = 'coreTelemetryOwners';
 const owner = (gatewayId, ownershipEpoch) => ({ gatewayId, deviceId, ownershipEpoch });
 const initialOwner = owner('gw-a', 7);
@@ -35,6 +38,13 @@ if (persistedOwner === undefined) {
 } else if (!allowedOwners.some((candidate) => sameOwner(persistedOwner, candidate))) {
   throw new Error('Invalid scoped persisted owner');
 }
+const storedFeatherOwner = store.get(owners, featherPath);
+const featherCursor = store.get('coreTelemetryCursors', featherPath);
+if ((storedFeatherOwner !== undefined && !sameOwner(storedFeatherOwner, featherOwner))
+    || (featherCursor != null && !sameOwner(featherCursor, featherOwner))) {
+  throw new Error('Feather scoped resource has a conflicting persisted binding');
+}
+if (storedFeatherOwner === undefined) await store.put(owners, featherPath, featherOwner);
 const tls = {
   ca: await readFile('/scoped/tls/ca.pem'),
   cert: await readFile('/scoped/tls/client.pem'),
@@ -66,7 +76,7 @@ function apply({ resource, requestId, payload }) {
 }
 
 const ingest = createScopedTelemetryIngress({
-  resolveResource: (device) => device === deviceId ? path : null,
+  resolveResource: (device) => routes.get(device),
   readOwner: (resource) => store.get(owners, resource),
   compareAndSetOwner: async (resource, expected, replacement) => {
     if (!sameOwner(store.get(owners, resource), expected)) return false;
@@ -96,7 +106,7 @@ mqtt.on('connect', () => {
       mqtt.end(true);
       return;
     }
-    console.log('SCOPED_SUBSCRIBED receipts=1 handover=1');
+    console.log('SCOPED_SUBSCRIBED receipts=1 handover=1 feather=1');
   });
 });
 mqtt.on('error', () => console.error('SCOPED_BROKER_ERROR'));

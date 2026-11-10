@@ -143,10 +143,23 @@ const conflict = await retryReceipt(receiptTopic, Buffer.from(JSON.stringify({ .
 assert.equal(conflict.status, 'CONFLICT');
 assert.equal(conflict.receipt, undefined);
 
+const nullable = { ...newer, schemaVersion: '1.1.0', batteryPct: null };
+const applyNullable = scoped(receiptStore, async (input) => {
+  assert.equal(input.payload.batteryPct, null);
+  assert.equal(input.payload.state, false);
+  return { status: 'APPLIED' };
+});
+const invalidNull = Buffer.from(JSON.stringify({ ...nullable, schemaVersion: '1.0.0' }));
+assert.equal((await applyNullable(receiptTopic, invalidNull, { retain: false })).status, 'INVALID_TELEMETRY_PAYLOAD');
+const nullableBytes = Buffer.from(JSON.stringify(nullable));
+const appliedNull = await applyNullable(receiptTopic, nullableBytes, { retain: false });
+assert.equal(appliedNull.receipt.payloadHash, createHash('sha256').update(nullableBytes).digest('hex'));
+
 console.log(JSON.stringify({
   originalCompletionOrder: baseline.completed, serializedCompletionOrder: ordered.completed,
   oldOwnerAndOldEpochRejected: true, rollbackAccepted: true, unresolvedPreservedOnReload: true,
   staleAfterReloadRejected: true, ownerChangeBeforeDispatchBlocked: true, queueBoundEnforced: true,
   matchingReceiptReplayed: true, conflictingReceiptRejected: true,
   ownershipTransitionSerialized: true, unresolvedTransitionBlocked: true,
+  nullableScopeAccepted: true, nullUnderV1Rejected: true,
 }));

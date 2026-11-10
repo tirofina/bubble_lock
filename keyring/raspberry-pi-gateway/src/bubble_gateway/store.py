@@ -140,12 +140,12 @@ class Store:
                 return False
             identity = f"{payload['deviceId']}:{payload['bootId']}:{payload['sequence']}"
             self._enqueue(self.request_id("observation", identity), container, payload)
-            if core_enabled and measurable(payload):
+            if core_enabled and (core_epochs is not None or measurable(payload)):
                 previous_core = self.db.execute("SELECT wire_sequence FROM core_sequences WHERE device_id=?", (payload["deviceId"],)).fetchone()
                 wire_sequence = previous_core["wire_sequence"] + 1 if previous_core else 0
                 if wire_sequence > 4294967295:
                     raise CapacityError("CORE uint32 sequence exhausted; explicit device identity rotation required")
-                projection = telemetry(payload, wire_sequence)
+                projection = telemetry(payload, wire_sequence, scoped=core_epochs is not None)
                 if core_epochs is not None:
                     projection["ownershipEpoch"] = core_epochs[payload["deviceId"]]
                 self._enqueue(self.request_id("core-telemetry", identity), "@core/telemetry", projection)

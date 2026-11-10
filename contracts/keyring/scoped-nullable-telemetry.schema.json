@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:privacy-bubble:keyring:0.1.0:scoped-nullable-telemetry",
+  "title": "KEYRING epoch telemetry with an unavailable measurement",
+  "description": "Candidate 1.1.0 wire body for scoped ingress. The authenticated MQTT topic carries the ownership epoch.",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {"const": "1.1.0"},
+    "gatewayId": {"type": "string", "maxLength": 64, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+    "deviceId": {"type": "string", "maxLength": 64, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+    "bootId": {"type": "string", "maxLength": 64, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+    "sequence": {"type": "integer", "minimum": 0, "maximum": 4294967295},
+    "firmwareSequence": {"type": "integer", "minimum": 0, "maximum": 4294967295},
+    "timestamp": {"type": "string", "format": "date-time"},
+    "timestampSource": {"const": "gateway-received"},
+    "state": {"type": "boolean"},
+    "batteryPct": {"type": ["integer", "null"], "minimum": 0, "maximum": 100},
+    "rssiDbm": {"type": ["integer", "null"], "minimum": -127, "maximum": 20}
+  },
+  "required": [
+    "schemaVersion", "gatewayId", "deviceId", "bootId", "sequence", "firmwareSequence",
+    "timestamp", "timestampSource", "state", "batteryPct", "rssiDbm"
+  ],
+  "anyOf": [
+    {"properties": {"batteryPct": {"type": "null"}}},
+    {"properties": {"rssiDbm": {"type": "null"}}}
+  ],
+  "additionalProperties": false
+}

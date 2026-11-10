@@ -46,7 +46,9 @@ CORE/INTEGRATION의 실제 연결은 발급 기록과 실행 승인 기록을 �
 
 ## 발행 당시 epoch를 보존하는 MQTT 수신 후보
 
-Gateway 0.2.12에서 `CORE_TELEMETRY_EPOCHS`에 중앙이 부여한 장치별 epoch를 설정하면, 관측을 SQLite에 넣는 트랜잭션에서 epoch도 함께 기록한다. 재시도와 재기동은 저장된 epoch로만 `privacy-bubble/gateway/{gatewayId}/telemetry-epoch/{deviceId}/{epoch}`에 발행한다. 본문에는 CORE v1 telemetry를 그대로 보낸다. 활성 설정에 속하지 않는 행은 SQLite에 남기며 최신 epoch의 전송 순서를 막지 않는다. 보류 행은 전체 outbox 용량에 포함된다. 0.2.15의 [수동 보관 절차](../raspberry-pi-gateway/STATE_RECOVERY.md#종료된-core-epoch-보관)에서 종료된 범위를 정리할 수 있다.
+Gateway 0.2.12에서 `CORE_TELEMETRY_EPOCHS`에 중앙이 부여한 장치별 epoch를 설정하면, 관측을 SQLite에 넣는 트랜잭션에서 epoch도 함께 기록한다. 재시도와 재기동은 저장된 epoch로만 `privacy-bubble/gateway/{gatewayId}/telemetry-epoch/{deviceId}/{epoch}`에 발행한다. 활성 설정에 속하지 않는 행은 SQLite에 남기며 최신 epoch의 전송 순서를 막지 않는다. 보류 행은 전체 outbox 용량에 포함된다. 0.2.15의 [수동 보관 절차](../raspberry-pi-gateway/STATE_RECOVERY.md#종료된-core-epoch-보관)에서 종료된 범위를 정리할 수 있다.
+
+0.2.18은 배터리와 RSSI가 모두 있으면 기존 1.0.0 형식으로 보낸다. 둘 중 하나가 없으면 epoch 전용 토픽에서만 [nullable 후보 1.1.0](../../contracts/keyring/scoped-nullable-telemetry.schema.json)을 사용한다. 기존 CORE v1 본문과 일반 MQTT 토픽의 측정 조건은 이전과 같다.
 
 [수신 어댑터](core-telemetry-ingress.mjs)는 신뢰한 브로커의 구독 콜백에서 사용한다. 토픽에서 Gateway·장치·epoch를 읽고 본문의 Gateway·장치와 대조한다. retained replay와 본문으로 전달된 epoch는 거절한다. 정본 장치 → SDT 매핑과 현재 소유권을 순서 제어 함수에 전달한다. `apply`는 SDT·Gateway·장치·epoch·sequence에 결속된 `requestId`를 받아 CSE 요청 ID와 중복 판정에 사용한다. 실제 CSE UPDATE 응답이 확인됐을 때 `APPLIED`를 반환해야 한다.
 

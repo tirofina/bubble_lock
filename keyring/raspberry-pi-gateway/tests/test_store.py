@@ -73,6 +73,20 @@ class StoreTests(unittest.TestCase):
         self.store.enqueue("receipt", "synthetic", BINDING["receiptContainer"], {}, critical=True)
         self.assertEqual(self.store.counts()[0], 1)
 
+    def test_nullable_projection_uses_only_the_scoped_route(self):
+        container = BINDING["observationContainer"]
+        base = observation(battery=None, rssi=None, buttonState="confirm", state=False)
+        self.assertTrue(self.store.observation(container, base, True))
+        self.assertEqual(self.store.db.execute("SELECT COUNT(*) FROM core_sequences").fetchone()[0], 0)
+        self.assertTrue(self.store.observation(container, {**base, "sequence": 2}, True, core_epochs={"kr-test": 7}))
+        row = self.store.due(core_epochs={"kr-test": 7}, scoped_only=True)
+        self.assertEqual(row["payload"]["schemaVersion"], "1.1.0")
+        self.assertEqual(row["payload"]["ownershipEpoch"], 7)
+        self.assertIsNone(row["payload"]["batteryPct"])
+        self.assertIsNone(row["payload"]["rssiDbm"])
+        self.assertIs(row["payload"]["state"], False)
+        self.assertEqual(self.store.due()["payload"]["buttonState"], "confirm")
+
     def test_core_sequence_persists_across_firmware_reboots(self):
         self.store.observation(BINDING["observationContainer"], observation(sequence=99), True)
         self.store.close()

@@ -8,20 +8,23 @@ CORE_OBSERVATION = "7f8a0002-4b6e-4f4e-9b0a-505249564255"
 CORE_COMMAND = "7f8a0003-4b6e-4f4e-9b0a-505249564255"
 CORE_RECEIPT = "7f8a0004-4b6e-4f4e-9b0a-505249564255"
 CORE_IDENTITY = "7f8a0005-4b6e-4f4e-9b0a-505249564255"  # KEYRING extension
+SCOPED_NULLABLE_TELEMETRY = "1.1.0"
 
 
 def measurable(observation: dict) -> bool:
     return (observation["battery"] is not None and type(observation["rssi"]) is int)
 
 
-def telemetry(observation: dict, wire_sequence: int) -> dict:
-    if not measurable(observation):
+def telemetry(observation: dict, wire_sequence: int, *, scoped: bool = False) -> dict:
+    measured = measurable(observation)
+    if not measured and not scoped:
         raise ValueError("CORE v1 requires real battery and RSSI; no null sentinel exists")
+    battery = observation["battery"]
     return {
         "deviceId": observation["deviceId"], "sequence": wire_sequence,
         "timestamp": observation["observedAt"], "state": observation["state"],
-        "batteryPct": int(round(observation["battery"])), "rssiDbm": observation["rssi"],
-        "schemaVersion": "1.0.0", "bootId": observation["bootId"],
+        "batteryPct": int(round(battery)) if battery is not None else None, "rssiDbm": observation["rssi"],
+        "schemaVersion": "1.0.0" if measured else SCOPED_NULLABLE_TELEMETRY, "bootId": observation["bootId"],
         "firmwareSequence": observation["sequence"], "gatewayId": observation["gatewayId"],
         "timestampSource": observation["timestampSource"],
     }

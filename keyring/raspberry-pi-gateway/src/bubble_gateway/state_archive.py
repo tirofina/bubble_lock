@@ -16,6 +16,7 @@ from contextlib import closing
 from pathlib import Path
 
 from .config import GatewayConfig, ID, read_env_file
+from .core_bridge import SCOPED_NULLABLE_TELEMETRY
 from .model import canonical, iso_time
 from .state_identity import (StateIdentityError, configured_binding, counts, install,
                              legacy_ownership, match, metadata, quarantine_copy, readonly, tables)
@@ -141,12 +142,13 @@ _RETIRED_CORE_SCOPE = """container='@core/telemetry' AND CASE WHEN json_valid(pa
 def _retired_core_fingerprint(db: sqlite3.Connection, gateway: str, device: str, epoch: int | None) -> tuple[int, str]:
     count = 0
     digest = hashlib.sha256()
+    supported_versions = ("1.0.0", SCOPED_NULLABLE_TELEMETRY) if epoch is not None else ("1.0.0",)
     for row in db.execute(f"SELECT * FROM outbox WHERE {_RETIRED_CORE_SCOPE} ORDER BY rqi", (device, epoch)):
         payload = json.loads(row["payload"])
         if not isinstance(payload, dict) or payload.get("deviceId") != device:
             raise StateIdentityError("STATE_RETIRED_CORE_BINDING_INVALID")
         boot_id, sequence = payload.get("bootId"), payload.get("firmwareSequence")
-        if (payload.get("gatewayId") != gateway or payload.get("schemaVersion") != "1.0.0"
+        if (payload.get("gatewayId") != gateway or payload.get("schemaVersion") not in supported_versions
                 or not isinstance(boot_id, str) or ID.fullmatch(boot_id) is None
                 or type(sequence) is not int or not 0 <= sequence <= 4294967295
                 or row["command_id"] is not None or canonical(payload) != row["payload"]

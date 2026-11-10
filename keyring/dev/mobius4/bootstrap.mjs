@@ -31,6 +31,12 @@ const resources = [
     state: false, lbl: ['dev-bootstrap', 'unobserved'],
   }}},
 ];
+if (args.length) {
+  resources.push({path: `/Mobius/${ae}`, ty: 28, body: {'pb:binarySwitch': {
+    rn: 'featherState', cnd: 'org.onem2m.common.moduleclass.binarySwitch',
+    state: false, lbl: ['dev-bootstrap', 'feather-bench'],
+  }}});
+}
 async function exchange(method, path, resource = null) {
   const requestId = `kr-setup-${randomUUID()}`;
   const encoded = resource ? Buffer.from(JSON.stringify(resource.body)) : null;
@@ -93,9 +99,10 @@ const receipts = [];
 for (const [index, resource] of resources.entries()) {
   if (index) await delay(7000);
   const {requestId, status, httpStatus, rsc, rqi} = await provision(resource);
-  receipts.push({requestId, parent: resource.path, ty: resource.ty, httpStatus, rsc, rqi, status,
+  const resourceName = Object.values(resource.body)[0].rn;
+  receipts.push({requestId, parent: resource.path, resourceName, ty: resource.ty, httpStatus, rsc, rqi, status,
     timestamp: new Date().toISOString(), evidenceScope: 'empty-resource-provisioning'});
-  console.log(`${status} ${resource.path} ty=${resource.ty} HTTP=${httpStatus} rsc=${rsc}`);
+  console.log(`${status} ${resource.path}/${resourceName} ty=${resource.ty} HTTP=${httpStatus} rsc=${rsc}`);
 }
 await writeFile(new URL('resource-provisioning.json', root), JSON.stringify(receipts, null, 2) + '\n');
 console.log('Empty resources prepared. No BLE, device command, observation or end-to-end test was run.');

@@ -66,7 +66,7 @@ Gateway 0.2.14는 적용 영수증을 기다린다. 새 ACL은 해당 Gateway에
 
 두 번째 명령은 격리 서버와 소비자를 기동하고 빈 oneM2M 자원을 준비한다. 기존 scoped 자원이 있으면 RQI·타입·이름·SDT specialization을 조회해 재사용한다. TLS 키, 임시 관리자 값과 `config/owner.json`은 `.local/scoped/`에만 생성된다. 기본 초기 소유권은 `gw-a`·`kr-handover`·epoch 7이다. 새 소비자는 이 파일을 최초 등록에만 사용하고 이후에는 cursor 저장소의 소유권을 사용한다. 운영 전환에는 중앙 정본과 이전 writer의 drain이 필요하다.
 
-실행 중인 이 임시 프로필에서 ACL과 소비자만 갱신할 때는 시험용 발행자를 멈춘 뒤 아래 명령을 사용한다. 소비자가 정상 종료한 다음 브로커와 소비자만 교체한다. PostgreSQL·Mobius4·TLS proxy와 저장된 cursor는 계속 사용한다. 시작·갱신 명령은 현재 소비자가 `SCOPED_SUBSCRIBED receipts=1 handover=1`을 기록한 뒤 반환한다. 대기 시간이 초과되면 현재 컨테이너 상태와 로그를 확인한다.
+실행 중인 이 임시 프로필에서 ACL과 소비자만 갱신할 때는 시험용 발행자를 멈춘 뒤 아래 명령을 사용한다. 소비자가 정상 종료한 다음 브로커와 소비자만 교체한다. PostgreSQL·Mobius4·TLS proxy와 저장된 cursor는 계속 사용한다. 시작·갱신 명령은 현재 소비자가 `SCOPED_SUBSCRIBED receipts=1 handover=1 feather=1`을 기록한 뒤 반환한다. 대기 시간이 초과되면 현재 컨테이너 상태와 로그를 확인한다.
 
 ```powershell
 ./keyring/dev/mobius4/start-scoped.ps1 -RefreshIngress
@@ -85,6 +85,28 @@ Gateway에서는 위 포트와 해당 Gateway 인증서를 사용한다. `MQTT_E
 ```
 
 전환 요청은 SDT 갱신과 같은 대기열에서 처리된다. `PENDING` cursor, 이전 소유권 불일치, 저장 결과 불확실 상태에서는 전환 완료를 반환하지 않는다. 명령 대기 시간이 초과되면 `-Status`로 영속 소유권과 cursor 상태를 읽는다. 격리 프로필에 handover 소비자·ACL을 배치하고 `-Status`로 초기 A7을 확인했다. [배치 기록](../../evidence/2026-11-10-core-scoped-handover-rollout/README.md)
+
+### Feather 벤치 경로
+
+화면과 두 버튼만 쓰는 `feather-probe-0.1.1` 벤치용으로 `featherState` SDT와 전용 토픽을 준비했다. Pi에서 Gateway 0.2.18을 새 시험 설정과 SQLite 경로로 설치하는 경우, 등록된 실제 BLE 주소에 `keyring-feather-lab`을 지정하고 아래 값을 사용한다.
+
+```dotenv
+GATEWAY_ID=gw-a
+FIRMWARE_REVISION_ALLOWLIST=feather-probe-0.1.1
+BLE_GATT_PROFILE=core-v1
+MQTT_ENABLED=true
+M2M_MQTT_ENABLED=false
+CORE_BRIDGE_ENABLED=true
+CORE_TELEMETRY_EPOCHS={"keyring-feather-lab":1}
+MQTT_HOST=localhost
+MQTT_PORT=8884
+M2M_CSE_URL=https://localhost:8760
+PC_API_URL=https://localhost:8760
+```
+
+Pi가 별도 호스트라면 PC의 loopback HTTPS 8760과 MQTT 8884를 승인된 SSH reverse tunnel로 Pi의 loopback에 연결한다. scoped CA와 `gateway-a.pem`·`gateway-a.key`만 해당 Pi의 private 경로로 전달한다. CSE originator와 native 컨테이너는 기존 scoped 로컬 설정을 따른다.
+
+이 벤치의 배터리와 미확인 RSSI는 `null`로 보낸다. A0·A1과 해제는 native `observations`의 `buttonState`로 확인한다. `featherState`에는 기존 펌웨어의 관측 `state`가 들어간다. 관측 전용 Feather의 출력 상태는 false이며, 버튼과 출력 제어는 별도 항목이다. 격리 자원과 ACL은 배치했고 Pi에서 실제 관측·영수증 왕복은 아직 실행하지 않았다. [서버 준비 기록](../../evidence/2026-11-10-core-scoped-feather-rollout/README.md)
 
 ```powershell
 docker compose --project-name privacy-bubble-keyring-scoped --env-file ./keyring/dev/mobius4/.local/scoped/compose.env -f ./keyring/dev/mobius4/compose.yaml -f ./keyring/dev/mobius4/compose.scoped.yaml down

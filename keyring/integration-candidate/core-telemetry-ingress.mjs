@@ -4,6 +4,21 @@ import { createTelemetryOrder } from './core-telemetry-order.mjs';
 const topicPattern = /^privacy-bubble\/gateway\/([A-Za-z0-9][A-Za-z0-9._:-]{0,63})\/telemetry-epoch\/([A-Za-z0-9][A-Za-z0-9._:-]{0,63})\/(0|[1-9][0-9]{0,9})$/;
 const utf8 = new TextDecoder('utf-8', { fatal: true });
 const boundedInt = (value, min, max) => Number.isInteger(value) && value >= min && value <= max;
+const nullableFields = [
+  'gatewayId', 'deviceId', 'sequence', 'timestamp', 'state', 'batteryPct', 'rssiDbm',
+  'schemaVersion', 'bootId', 'firmwareSequence', 'timestampSource',
+];
+
+function supportedMeasurements(payload) {
+  const battery = boundedInt(payload.batteryPct, 0, 100);
+  const rssi = boundedInt(payload.rssiDbm, -127, 20);
+  if (payload.schemaVersion === '1.0.0') return battery && rssi;
+  if (payload.schemaVersion !== '1.1.0' || (battery && rssi)
+      || !(battery || payload.batteryPct === null) || !(rssi || payload.rssiDbm === null)) return false;
+  return Object.keys(payload).length === nullableFields.length && nullableFields.every((key) => Object.hasOwn(payload, key))
+    && typeof payload.bootId === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$/.exec(payload.bootId)?.[0] === payload.bootId
+    && boundedInt(payload.firmwareSequence, 0, 4294967295) && payload.timestampSource === 'gateway-received';
+}
 
 /** Use only on a trusted subscription whose broker enforces exclusive exact-topic publisher ACLs. */
 export function createScopedTelemetryIngress({ resolveResource, apply, ...ordering }) {
@@ -26,9 +41,8 @@ export function createScopedTelemetryIngress({ resolveResource, apply, ...orderi
       return { status: 'INVALID_TELEMETRY_PAYLOAD' };
     }
     if (payload?.gatewayId !== gatewayId || payload.deviceId !== deviceId
-        || Object.hasOwn(payload, 'ownershipEpoch') || payload.schemaVersion !== '1.0.0'
+        || Object.hasOwn(payload, 'ownershipEpoch') || !supportedMeasurements(payload)
         || typeof payload.state !== 'boolean' || !boundedInt(payload.sequence, 0, 4294967295)
-        || !boundedInt(payload.batteryPct, 0, 100) || !boundedInt(payload.rssiDbm, -127, 20)
         || typeof payload.timestamp !== 'string' || !/(Z|[+-]\d{2}:\d{2})$/.test(payload.timestamp)
         || !Number.isFinite(Date.parse(payload.timestamp))) {
       return { status: 'INVALID_TELEMETRY_PAYLOAD' };

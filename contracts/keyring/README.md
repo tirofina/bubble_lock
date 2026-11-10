@@ -15,6 +15,7 @@
 | [ble-receipt.schema.json](ble-receipt.schema.json) | 키링 → Gateway | ACK, uptime, GPIO readback |
 | [observation.schema.json](observation.schema.json) | Gateway → CSE | Gateway 시각·실측 RSSI를 결합한 관측 |
 | [core-telemetry-receipt.schema.json](core-telemetry-receipt.schema.json) | CORE → Gateway | scoped 관측 본문의 SHA-256과 oneM2M SDT 적용 결과 |
+| [scoped-nullable-telemetry.schema.json](scoped-nullable-telemetry.schema.json) | Gateway → scoped CORE | 배터리·RSSI 중 미확인 값이 있는 scoped 관측 1.1.0 |
 | [receipt.schema.json](receipt.schema.json) | Gateway → CSE | 정산 상태, 명령 hash, 시각의 근거, 장치 결과 |
 | [health.schema.json](health.schema.json) | Gateway → CSE | 실행 프로세스, credential, queue 및 연결 상태 |
 | [ble-journal-manifest.schema.json](ble-journal-manifest.schema.json) | 장치 → Gateway | frozen NVS journal manifest, KEYRING 확장 |

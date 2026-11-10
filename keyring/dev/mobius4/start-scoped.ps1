@@ -20,10 +20,10 @@ function Wait-ScopedSubscription {
     if ($status -in @('exited', 'dead')) { throw 'Scoped consumer exited before subscribing. Inspect its logs.' }
     if ($status -eq 'running') {
       $ready = docker logs --since $startedAt --tail 80 $consumerId 2>&1 |
-        Select-String -CaseSensitive -Pattern '^SCOPED_SUBSCRIBED receipts=1 handover=1$'
+        Select-String -CaseSensitive -Pattern '^SCOPED_SUBSCRIBED receipts=1 handover=1 feather=1$'
       if ($LASTEXITCODE -ne 0) { throw 'Could not read scoped consumer startup logs.' }
       if ($ready) {
-        Write-Host 'Scoped consumer subscribed with receipts and handover enabled.'
+        Write-Host 'Scoped consumer subscribed with receipts, handover and Feather enabled.'
         return
       }
     }

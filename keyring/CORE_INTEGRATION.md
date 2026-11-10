@@ -8,7 +8,7 @@
 - 기존 펌웨어 profile은 `KEYRING_LEGACY_GATT=1`, Gateway는 `BLE_GATT_PROFILE=keyring-v01`로 명시 선택한다. 자동 downgrade하지 않는다. 이번 작업에서 실제 firmware flash는 하지 않았다.
 - BLE 내부 프레임은 bootId·uptime·nullable battery와 sensorValues를 유지한다. UTC/RSSI는 Gateway가 관측하므로 CORE의 timestamp/batteryPct/rssiDbm으로 내보내는 변환을 별도로 둔다. UUID 일치만으로 팀의 BLE payload 전체와 동일하다고 주장하지 않는다. 이 확장·변환 계약은 CORE owner의 수용이 필요하다.
 - `CORE_BRIDGE_ENABLED=true`는 telemetry와 성공 ACK를 SQLite outbox에 추가하고 팀 MQTT topic으로 보낸다. direct oneM2M cin 원본도 유지한다. 기존 CORE v1 토픽은 broker PUBACK까지 확인한다. epoch 전용 경로의 적용 영수증은 별도 계약이다.
-- batteryPct는 실제 측정 SOC를 정수 반올림한다. battery 또는 RSSI가 없으면 CORE v1이 null을 허용하지 않으므로 projection을 보내지 않는다. 원본 nullable 관측은 cin에 보존한다. 0%나 -127 같은 가짜 측정값으로 채우지 않는다.
+- batteryPct는 실제 측정 SOC를 정수 반올림한다. 일반 CORE v1 경로는 배터리 또는 RSSI가 없으면 projection을 보내지 않는다. epoch 전용 후보는 미확인 값을 null로 보내며 원본 관측은 cin에 보존한다.
 - CORE가 deviceId:sequence로 dedup하므로 device별 uint32 sequence를 SQLite에 따로 유지한다. 원래 bootId/firmwareSequence를 함께 남긴다. sequence 소진 시 오류로 보존하며 자동 wrap하지 않는다. DB를 삭제하면 이 연속성을 잃으므로 일반 복구로 사용하지 않는다.
 - Gateway 0.2.11은 SQLite에서 장치별로 가장 먼저 대기열에 들어간 CORE 관측만 전송 대상으로 삼는다. 그 행이 재시도 대기 중이면 같은 장치의 최신 CORE 관측도 기다린다. 다른 장치의 CORE 관측과 native 관측·영수증은 계속 처리한다. [재시도 순서와 SDT 시험](evidence/2026-11-10-core-retry-order/README.md)
 - 성공 ACK만 READBACK_VERIFIED로 변환하고 measurementScope=gpio-at-application을 함께 보낸다. 실제 모터 작동을 센서로 검증한 값이 아니다. 실패/미확정 결과는 원래 상세 receipt cin에 기록한다.
@@ -38,6 +38,8 @@ Gateway 0.2.12와 KEYRING 수신 후보는 발행 시점의 epoch를 SQLite와 �
 Gateway 0.2.14는 epoch 관측과 일치하는 CSE 적용 영수증을 받아야 해당 outbox 행을 완료한다. 중앙 소비자는 확인한 최신 cursor의 영수증을 재전송할 수 있다. Gateway, 소비자, 응답 ACL을 함께 적용해야 한다. [적용 영수증 계약](integration-candidate/README.md#epoch-관측의-적용-영수증)
 
 KEYRING 전환 후보는 SDT UPDATE와 활성 Gateway 교체를 같은 자원 대기열에서 처리한다. 팀 handover가 새 epoch를 활성화하기 전에 이 경계에서 미확정 UPDATE를 보류하도록 연결할 수 있다. 격리 프로필에서 전환용 소비자가 구독했고 초기 A7 소유권을 조회했다. B8 전환과 A9 롤백 실행은 별도 시험 범위다. [전환 계약](integration-candidate/README.md#sdt-적용과-소유권-전환) · [배치 기록](evidence/2026-11-10-core-scoped-handover-rollout/README.md)
+
+Gateway 0.2.18은 epoch 전용 경로에서 배터리·RSSI가 없는 관측을 nullable 형식 1.1.0으로 보낸다. 격리 Mobius4에는 Feather의 별도 SDT와 토픽을 준비했다. 두 버튼은 native cin의 `buttonState`에 남고 SDT에는 실제 관측의 `state`를 쓴다. [Feather 설정](dev/mobius4/README.md#feather-벤치-경로)
 
 ## 소유권
 
