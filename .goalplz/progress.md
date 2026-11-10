@@ -1085,3 +1085,12 @@ Pi 배터리 기록 commit `3e4185bf9ecdc6c542686c65bd6bb5134c5a033e`을 `origin
 - Gateway `0.2.37`은 BlueZ에 기존 쓰기 특성이 캐시돼도 관측 전용 identity에서 명령과 저널 selector 쓰기를 차단한다. 펌웨어 관측과 Gateway 캐시 사례의 회귀시험 소스를 추가했다. 빌드·시험·플래시·전원 인가·Pi 연결은 미실행이다. goal은 active/progress다.
 
 r18 초기 구동 commit `b63c795ef872099372191021e846cc3f79571f93`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `d0a5cad..b63c795`다.
+
+## 2026-11-11 — Pi에서 r18 초기 구동 증거 한 세션에 기록
+
+직전 goal turn은 r18 관측 전용 펌웨어와 Gateway의 쓰기 차단을 구현한 progress다. DOC-REV 2.0.0, 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`와 팀 GATT 계약을 확인했다. 팀 head는 직전과 같다.
+
+- Gateway `0.2.38`은 `--mode bringup`에서 최초 알림 세션의 확인·비상 누름/해제와 누계, 배터리·3축·motion, INA219, 저널·절전 비활성과 명령 준비·fault를 대조한다. 같은 boot여도 후속 세션 자료로 부족한 단계를 채우지 않는다. 판정에 필요한 필드만 로컬 JSON에 남긴다. [Pi 기록 절차](../keyring/raspberry-pi-gateway/TESTING.md#r18-초기-구동-기록)
+- 관측 성공, 세션 분리, 유효하지 않은 누계, 위험 상태 및 원본 프레임 제외 회귀시험 소스를 추가했다. 빌드·시험·Pi 접속·실물 캡처는 미실행이다. 전원 레일·외부 입력 및 충전 전류 실측은 별도다. goal은 active/progress다.
+
+r18 Pi 기록 commit `815d89ce6879af204c21f9cfdd9cbef1724cf679`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `2302da3..815d89c`다.
