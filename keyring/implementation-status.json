@@ -7,7 +7,7 @@
   "date": "2026-11-10",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Reproduced the team handover ownership gap over TLS 1.3 mTLS; the KEYRING candidate passed cutover, rollback and restart checks. Operating integration and physical trials remain.",
+  "verificationStatus": "r18 firmware 0.7.2 rejects ambiguous BLE command frames. Three unprovisioned builds, four r18 host groups and four Feather regression groups passed. Physical trials remain.",
   "rubricIds": [
     "R01",
     "R02",
@@ -67,7 +67,8 @@
     "Authoritative HTTPS command polling ahead of CORE MQTT and exact current central hash binding before admitting MQTT-only commands",
     "Fresh BLE APPLIED receipt binding to the current GATT boot; historical DUPLICATE readbacks retained",
     "r18 motor timer armed before AUX and GPIO, with final deadline, fault and BLE session checks",
-    "KEYRING handover candidate binding device epoch and active edge to the enrolled gateway"
+    "KEYRING handover candidate binding device epoch and active edge to the enrolled gateway",
+    "r18 raw BLE command validation for duplicate members, decoded NUL and trailing data before NVS and GPIO"
   ],
   "existingHardware": {
     "status": "source-snapshot-included-unverified",
@@ -120,18 +121,18 @@
   "logSha256": "0c25234a13f2542bb13ff4ed2fd39c8aa015375a435bc6b6156f90cf0b7d6efa",
   "logSha256Scope": "private actual Pi observations.jsonl captured in the HTTPS outage/replay run; digest recorded by actualReceipt",
   "releaseSha": null,
-  "firmwareRevision": "keyring-0.7.1",
+  "firmwareRevision": "keyring-0.7.2",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "96faff50f71bdf29adae1bc0259ee6a1b7fc04ae",
+    "sourceCommit": "e6895b1e50838b250859f048185a4bc5d1fc3eaa",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "96faff50f71bdf29adae1bc0259ee6a1b7fc04ae",
-    "lastPushedCommit": "96faff50f71bdf29adae1bc0259ee6a1b7fc04ae",
-    "latestCheckpoint": "Reproduced former-gateway authorization at the new epoch and tested an explicit ownership guard with the actual team API.",
-    "lastPushedCommitBeforeThisCheckpoint": "6255e974c831be4f66c1292a258e5dbe9183db08"
+    "latestLocalSourceCommit": "e6895b1e50838b250859f048185a4bc5d1fc3eaa",
+    "lastPushedCommit": "e6895b1e50838b250859f048185a4bc5d1fc3eaa",
+    "latestCheckpoint": "r18 rejects ambiguous raw BLE command JSON while preserving valid formatting and key order.",
+    "lastPushedCommitBeforeThisCheckpoint": "9e51f82a203215d8de6b240610d3c16163773d51"
   },
   "gatewayRevision": "0.2.8",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
@@ -155,7 +156,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Reproduce former Gateway authorization after handover and validate an owner binding candidate",
+    "executionRequest": "Reject ambiguous raw BLE command JSON on the production r18 firmware",
     "remainingCompletionDependencies": [
       "central deployment, settlement and recovery activation",
       "purchased JD9853 module initialization",
@@ -163,11 +164,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "96faff50f71bdf29adae1bc0259ee6a1b7fc04ae",
-    "sourceValidation": "Team loopback TLS 1.3 API reproduced former Gateway authorization. Candidate blocked issue/poll/authorize and preserved the rollback owner after runtime restart.",
+    "sourceCommit": "e6895b1e50838b250859f048185a4bc5d1fc3eaa",
+    "sourceValidation": "Three r18 firmware profiles built. Four raw command checks and four Feather host regression groups passed with ArduinoJson 6.21.5.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "Handover owner binding is a verified candidate. Team ownership mapping, atomic drain and actual Pi/Feather/r18 tests remain.",
+    "currentDependencyState": "r18 command validation is compiled and host tested. Actual Pi/Feather/r18 tests and team ownership/settlement integration remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -548,5 +549,16 @@
     "invalidOwnershipInputsRejected": 5,
     "productionIntegrationVerified": false,
     "sourceCommit": "96faff50f71bdf29adae1bc0259ee6a1b7fc04ae"
+  },
+  "rawBleCommandValidation": {
+    "evidence": "evidence/2026-11-10-command-wire/README.md",
+    "firmwareVersion": "keyring-0.7.2",
+    "arduinoJsonVersion": "6.21.5",
+    "unprovisionedProfilesBuilt": 3,
+    "r18HostGroupsPassed": 4,
+    "featherHostGroupsPassed": 4,
+    "flashPerformed": false,
+    "actualBleVerified": false,
+    "sourceCommit": "e6895b1e50838b250859f048185a4bc5d1fc3eaa"
   }
 }

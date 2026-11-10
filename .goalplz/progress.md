@@ -469,3 +469,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 실제 중앙 정본 매핑·원자적 drain/승인·운영 정산과 Pi/Feather 및 제작 PCB 검증은 남았다. 전체 goal은 active/progress다.
 
 후보·시험 증거 commit `96faff50f71bdf29adae1bc0259ee6a1b7fc04ae`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `6255e97..96faff5`다.
+
+## 2026-11-10 — r18 BLE 명령 원본 검사
+
+이전 goal turn은 handover 소유권 후보와 팀 mTLS 재현을 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- ArduinoJson에서 최상위와 중첩 중복 키가 파싱 후 정상 필드 수로 보이는 현상을 재현했다. r18 펌웨어 0.7.2는 원본 명령 프레임의 중복 키·이스케이프된 NUL·추가 데이터를 NVS/GPIO 처리 전에 거절한다. 정상 공백·키 순서·ASCII 이스케이프는 허용한다.
+- 기본·ST7789·JD9853 빌드, r18 호스트 4개 그룹, 기존 Feather 호스트 4개 그룹이 통과했다. [시험과 바이너리 해시](../keyring/evidence/2026-11-10-command-wire/README.md)
+- 실제 BLE 명령·Feather flash·Pi/제작 PCB 수용과 팀 운영 정산은 대기 중이다. 전체 goal은 active/progress다.
+
+구현·시험 증거 commit `e6895b1e50838b250859f048185a4bc5d1fc3eaa`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `9e51f82..e6895b1`이다.
