@@ -951,3 +951,12 @@ HTTPS 재시도 commit `3cc69fd9d14a08988475c26e203899f506c478e2`를 `origin/cod
 - 기존 격리 proxy 소스에서 Gateway별 자식 GET 경로를 확인했다. 모의·격리 CSE 회귀시험 소스를 보강했다. 이번 빌드·시험·Pi 실행·실물 영수증 관측은 미실행이다. 실물 명령 실행·정산과 r18 인수 검증은 남아 있으며 goal은 active/progress다.
 
 영수증 저장 확인 commit `6f61b3920ffb75c5c31efedab492695ed5d6eef4`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `de4e9e6..6f61b39`다.
+
+## 2026-11-11 — r18 명령 저널 연속성과 쓰기 확인
+
+직전 goal turn은 고정 CSE 영수증 저장 확인을 올린 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 브랜치 head는 직전과 같다.
+
+- 펌웨어 `keyring-0.7.8`은 NVS 부팅 복구 중 빈 슬롯 뒤에 기록이 있거나 epoch·grantRevision이 감소하면 새 실행을 막는다. 기존 format 1을 유지한다. PREPARED·COMPLETED commit 뒤 같은 키의 blob을 다시 읽어 바이트가 일치해야 기록을 RAM에 반영한다. PREPARED 확인 실패는 출력 시작을 막고, 완료 확인 실패는 출력을 끄고 `INDETERMINATE`를 보낸다. [저널 경계](../keyring/JOURNAL_RETENTION.md)
+- 중간 슬롯 유실, fence 역전, commit 뒤 불일치와 읽기 실패를 주입하는 호스트 시험 소스를 추가했다. 이번 빌드·시험·flash는 미실행이다. 끝쪽 기록만 유실된 경우를 식별하려면 독립 체크포인트가 필요하다. r18 실물 장애 시험과 Feather/Pi 명령 정산은 남아 있으며 goal은 active/progress다.
+
+저널 확인 commit `f7a356405c0b6fe26a299e6b3ca1210ea5aff581`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `d38f943..f7a3564`다.
