@@ -22,7 +22,7 @@ CORE/INTEGRATION의 실제 연결은 발급 기록과 실행 승인 기록을 �
 
 [CSE 원본 조회](receipt-native-source.mjs)는 중앙 설정의 Gateway별 전용 receipt 컨테이너와 `gw-<해시>` 하위 경로만 허용한다. Gateway의 `receipt:<commandId>` 요청 ID 규칙으로 자원명을 다시 계산하고 `m2m:cin`의 자원 ID와 생성 시각을 읽는다. 호출자가 고정된 CSE 주소에 인증하여 GET을 보내고 응답 RQI를 검증해야 한다. 매핑된 컨테이너에는 해당 Gateway만 영수증을 쓸 수 있도록 CSE 접근 정책을 배정한다.
 
-[정산 함수](receipt-settlement.mjs)는 중앙 `gatewayCommands`와 `receipts`의 `GATEWAY_COMMAND_AUTHORIZED` 이력을 조회한다. 팀의 `approvalHash`와 영수증 스키마 검증기를 공급한다. 당시 허용 기록은 발급 이후, 허용 만료 전, CSE 생성 시각 이하여야 한다. 임시 Mobius4의 `ct`는 UTC 초 단위이므로 같은 초의 밀리초 승인처럼 시각 순서가 불명확한 건 `REVIEW`로 남긴다. CSE 생성 시각은 보관 시각이며 장치 적용 시각은 별도 증거에서 확인한다.
+[정산 함수](receipt-settlement.mjs)는 중앙 `gatewayCommands`와 `receipts`의 `GATEWAY_COMMAND_AUTHORIZED` 이력을 조회한다. 팀의 `approvalHash`와 영수증 스키마 검증기를 공급한다. 당시 허용 기록은 발급 이후, 허용 만료 전, CSE 생성 시각 이하여야 한다. 임시 Mobius4의 `ct`는 UTC 초 단위다. 그 초의 중간에 같은 명령의 허용 기록이 있어 선후를 확정할 수 없으면 `AUTHORIZATION_ORDER_UNCERTAIN`으로 검토에 남긴다. 일치하는 허용 기록이 없는 경우에는 `HISTORICAL_AUTHORIZATION_REQUIRED`를 남긴다. CSE 생성 시각은 보관 시각이며 장치 적용 시각은 별도 증거에서 확인한다.
 
 | 결과 | 처리 |
 |---|---|
@@ -32,6 +32,8 @@ CORE/INTEGRATION의 실제 연결은 발급 기록과 실행 승인 기록을 �
 | `REVIEW` | 경로·발급·승인·readback·선택 ACK의 불일치, 또는 기존 기록과 내용 충돌이다. |
 
 인증·전송·중앙 저장소 장애는 호출자에 전달하며 정산 성공을 반환하지 않는다. CORE MQTT ACK를 함께 받았으면 안에 포함된 영수증까지 원본과 대조한다. CSE 원본을 계기로 먼저 정산하는 호출도 지원한다. [격리 POSIX 파일 구현](receipt-settlement-files.mjs)은 운영자가 지정한 소유자 전용 로컬 디렉터리에서 파일 동기화와 덮어쓰기 없는 링크로 한 기록을 확정한다. 운영 CORE는 `(gatewayId, commandId)` 고유 제약과 원자적 저장을 제공하고 ACK 수신기 또는 CSE 알림 소비자를 이 함수에 연결해야 한다.
+
+발급 내용과 일치하는 부정 결과는 `REVIEW`에 원본 상태와 ACK 코드를 함께 남긴다. 예를 들어 `REJECTED_NOT_AUTHORIZED`, `TIMEOUT_TIMEOUT`, `INDETERMINATE_RESTART_INTERRUPTED`를 구분한다. 이 분류는 대기열의 `last_result`에서 조회하며 성공 정산 행을 생성하지 않는다. 실행 여부가 불확실한 기록은 해당 명령을 자동 재발급하지 않는다.
 
 ### PostgreSQL 정산 저장 후보
 
@@ -74,7 +76,7 @@ const drainOne = createReceiptNotificationWorker({ inbox, resolveSettlement });
 
 ### 대기열 도달 전 유실 복구
 
-[복구 스윕](receipt-notification-recovery.mjs)은 팀 `IntegrationStore`가 저장한 스냅샷의 `gatewayCommands`와 `receipts`를 대조한다. `[from, until)` 구간의 `GATEWAY_COMMAND_AUTHORIZED` 중 허용 결과와 원래 발급 해시·claim·revision·epoch가 맞는 명령을 고른다. 명령당 구간 내 가장 이른 허용 시각을 기준으로 정렬한다. 발급이 구간 전이더라도 허용이 구간 내라면 포함한다.
+[복구 스윕](receipt-notification-recovery.mjs)은 팀 `IntegrationStore`가 저장한 스냅샷의 `gatewayCommands`와 `receipts`를 대조한다. `[from, until)` 구간의 `GATEWAY_COMMAND_AUTHORIZED` 중 허용 결과와 원래 발급 해시·claim·revision·epoch가 맞는 명령을 고른다. 구간 안에서 허용 이력을 찾지 못한 발급 명령은 마감 시각이 같은 구간에 들어오면 별도 복구 대상으로 포함한다. 명령마다 가장 이른 허용 시각이나 마감 시각을 기준으로 정렬한다. 거절이나 미확정 영수증도 CSE 원본을 확인했을 때만 대기열에 넣는다.
 
 ```js
 const sweep = createReceiptNotificationSweep({

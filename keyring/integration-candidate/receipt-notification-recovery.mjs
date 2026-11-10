@@ -4,6 +4,12 @@ import { commandReceiptName, InvalidNativeReceipt } from './receipt-native-sourc
 const containerPattern = /^(?:\/[A-Za-z0-9][A-Za-z0-9._-]{0,127}){2,8}$/;
 const hashPattern = /^[a-f0-9]{64}$/;
 
+function validIssuedCommand(commandId, command, payloadHash, hashPayload) {
+  return receiptIdentifier(commandId) && command?.commandId === commandId && receiptIdentifier(command.gatewayId)
+    && typeof payloadHash === 'string' && hashPattern.exec(payloadHash)?.[0] === payloadHash
+    && hashPayload(command) === payloadHash;
+}
+
 /** Build one paged sweep from a trusted, immutable team IntegrationStore snapshot. */
 export function createReceiptNotificationSweep({ snapshot, from, until, hashPayload, resolveRoute, inbox }) {
   const start = receiptInstant(from);
@@ -24,10 +30,21 @@ export function createReceiptNotificationSweep({ snapshot, from, until, hashPayl
     const prior = byCommand.get(commandId);
     if (prior && prior.timestamp <= timestamp) continue;
     const { command, payloadHash } = gatewayCommands[commandId] ?? {};
-    if (command?.commandId !== commandId || !receiptIdentifier(command.gatewayId)
-        || typeof payloadHash !== 'string' || hashPattern.exec(payloadHash)?.[0] !== payloadHash
-        || !matchesReceiptAuthorization(event, command, payloadHash) || hashPayload(command) !== payloadHash) continue;
-    byCommand.set(commandId, { commandId, gatewayId: command.gatewayId, issuedAt: command.issuedAt, timestamp });
+    if (!validIssuedCommand(commandId, command, payloadHash, hashPayload)
+        || !matchesReceiptAuthorization(event, command, payloadHash)) continue;
+    byCommand.set(commandId, { commandId, gatewayId: command.gatewayId, issuedAt: command.issuedAt,
+      timestamp, anchor: 'authorizedAt' });
+  }
+  // A denied or unapproved command can still produce an authenticated failure receipt.
+  // Look after its deadline without turning a missing CSE resource into a failure record.
+  for (const [commandId, record] of Object.entries(gatewayCommands)) {
+    if (byCommand.has(commandId)) continue;
+    const { command, payloadHash } = record ?? {};
+    const timestamp = receiptInstant(command?.deadline);
+    if (!(start <= timestamp && timestamp < end) || !(receiptInstant(command?.issuedAt) < timestamp)
+        || !validIssuedCommand(commandId, command, payloadHash, hashPayload)) continue;
+    byCommand.set(commandId, { commandId, gatewayId: command.gatewayId, issuedAt: command.issuedAt,
+      timestamp, anchor: 'deadline' });
   }
   const candidates = [...byCommand.values()].sort((left, right) => left.timestamp - right.timestamp
     || (left.commandId < right.commandId ? -1 : 1));
@@ -38,7 +55,8 @@ export function createReceiptNotificationSweep({ snapshot, from, until, hashPayl
     let offset = 0;
     if (after !== null) {
       const position = positions.get(after?.commandId);
-      if (position === undefined || receiptInstant(after.authorizedAt) !== candidates[position].timestamp) {
+      const candidate = candidates[position];
+      if (!candidate || receiptInstant(after[candidate.anchor]) !== candidate.timestamp) {
         throw new Error('INVALID_RECEIPT_RECOVERY_CURSOR');
       }
       offset = position + 1;
@@ -81,7 +99,7 @@ export function createReceiptNotificationSweep({ snapshot, from, until, hashPayl
     }
     if (offset + page.length < candidates.length) {
       const last = page.at(-1);
-      result.next = { commandId: last.commandId, authorizedAt: new Date(last.timestamp).toISOString() };
+      result.next = { commandId: last.commandId, [last.anchor]: new Date(last.timestamp).toISOString() };
     }
     return result;
   };

@@ -80,3 +80,25 @@ test('checks only missing work and reports absent or unavailable originals witho
     'NATIVE_RECEIPT_UNAVAILABLE', 'WAITING_FOR_NATIVE', 'NATIVE_RECEIPT_BINDING',
   ]);
 });
+
+test('discovers expired issued commands without a positive approval and never invents missing receipts', async () => {
+  const expired = (id, deadline) => {
+    const row = evidence(id, { allowed: false });
+    row.command.deadline = deadline;
+    row.payloadHash = hashPayload(row.command);
+    return row;
+  };
+  const deadline = '2026-11-10T09:00:15.000Z';
+  const queued = [];
+  const sweep = createReceiptNotificationSweep({ snapshot: snapshotFor(expired('denied', deadline),
+    expired('missing', deadline), expired('future', until)), from, until, hashPayload,
+  resolveRoute: ({ commandId }) => ({ cseKey: 'cse-a', receiptContainer, readNativeReceipt: async () => commandId === 'denied'
+    ? { gatewayId: 'gw-a', receipt: { commandId, status: 'REJECTED' } } : null }),
+  inbox: { has: async () => false, enqueue: async (entry) => { queued.push(entry); return true; } },
+  });
+  const first = await sweep({ limit: 1 });
+  assert.deepEqual(first.next, { commandId: 'denied', deadline });
+  assert.deepEqual(queued, [{ cseKey: 'cse-a', nativeRef: nativeRef('denied') }]);
+  assert.deepEqual(await sweep({ after: first.next }), { checked: 1, queued: 0, alreadyQueued: 0,
+    gaps: [{ commandId: 'missing', gatewayId: 'gw-a', reason: 'WAITING_FOR_NATIVE' }], next: null });
+});

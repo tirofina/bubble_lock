@@ -1,8 +1,10 @@
-import { bindAppliedReceipt } from './receipt-binding.mjs';
+import { bindAppliedReceipt, bindIssuedReceipt } from './receipt-binding.mjs';
 import { InvalidNativeReceipt } from './receipt-native-source.mjs';
 import { matchesReceiptAuthorization, receiptIdentifier, receiptInstant } from './receipt-authorization.mjs';
 
 const review = (reason) => ({ status: 'REVIEW', reason });
+const negativeStatuses = new Set(['REJECTED', 'TIMEOUT', 'INDETERMINATE']);
+const ackCodePattern = /^[A-Z][A-Z0-9_]{0,63}$/;
 
 function historicalApproval(history, command, payloadHash, storedAt) {
   const last = receiptInstant(storedAt);
@@ -28,7 +30,7 @@ export function createCommandReceiptSettlement({
       throw error;
     }
     if (native == null) return { status: 'WAITING_FOR_NATIVE' };
-    const { gatewayId, resourceId, storedAt, receipt } = native;
+    const { gatewayId, resourceId, storedAt, storedAtPrecision, receipt } = native;
     if (!receiptIdentifier(gatewayId) || !receiptIdentifier(receipt?.commandId) || !receiptIdentifier(resourceId)
         || !Number.isFinite(receiptInstant(storedAt)) || await validateNativeReceipt(receipt) !== true) {
       return review('INVALID_NATIVE_RECEIPT');
@@ -37,9 +39,29 @@ export function createCommandReceiptSettlement({
     const command = commandRecord?.command;
     if (!command || command.gatewayId !== gatewayId || command.commandId !== receipt.commandId
         || hashPayload(command) !== commandRecord.payloadHash) return review('ISSUED_COMMAND_BINDING');
+    if (negativeStatuses.has(receipt.status)) {
+      try {
+        bindIssuedReceipt({ trustedGatewayId: gatewayId, commandRecord, receipt });
+      } catch (error) {
+        return review(error.message);
+      }
+      if (ack !== undefined) return review('CORE_ACK_BINDING');
+      if (typeof receipt.ackCode !== 'string' || ackCodePattern.exec(receipt.ackCode)?.[0] !== receipt.ackCode) {
+        return review('INVALID_NATIVE_RECEIPT');
+      }
+      return review(`${receipt.status}_${receipt.ackCode}`);
+    }
     const history = await readAuthorizationHistory(receipt.commandId);
     const authorization = historicalApproval(history, command, commandRecord.payloadHash, storedAt);
-    if (!authorization) return review('HISTORICAL_AUTHORIZATION_REQUIRED');
+    if (!authorization) {
+      const start = receiptInstant(storedAt);
+      const ambiguous = storedAtPrecision === 'second' && history.some((record) => {
+        const timestamp = receiptInstant(record?.timestamp);
+        return start < timestamp && timestamp < start + 1000
+          && matchesReceiptAuthorization(record, command, commandRecord.payloadHash);
+      });
+      return review(ambiguous ? 'AUTHORIZATION_ORDER_UNCERTAIN' : 'HISTORICAL_AUTHORIZATION_REQUIRED');
+    }
 
     let bound;
     try {

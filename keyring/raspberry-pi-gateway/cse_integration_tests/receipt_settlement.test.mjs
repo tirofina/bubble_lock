@@ -81,9 +81,24 @@ test('holds missing, misnamed or unverifiable receipts without settling', async 
   assert.deepEqual(await settle({ nativeRef }), { status: 'REVIEW', reason: 'NATIVE_RECEIPT_NAME_BINDING' });
   cin.con = originalReceipt;
   cin.ct = '20261110T090002';
-  assert.deepEqual(await settle({ nativeRef }), { status: 'REVIEW', reason: 'HISTORICAL_AUTHORIZATION_REQUIRED' });
+  assert.deepEqual(await settle({ nativeRef }), { status: 'REVIEW', reason: 'AUTHORIZATION_ORDER_UNCERTAIN' });
+  const denied = setup({ readAuthorizationHistory: async () => [] });
+  assert.deepEqual(await denied.settle({ nativeRef }), { status: 'REVIEW', reason: 'HISTORICAL_AUTHORIZATION_REQUIRED' });
   const badSchema = setup({ validateNativeReceipt: async () => false });
   assert.deepEqual(await badSchema.settle({ nativeRef }), { status: 'REVIEW', reason: 'INVALID_NATIVE_RECEIPT' });
+});
+
+test('preserves bound negative outcomes without claiming application or requiring a positive authorization', async () => {
+  const { cin, settle } = setup({ readAuthorizationHistory: async () => assert.fail('unexpected positive authorization lookup'),
+    commitIfAbsent: async () => assert.fail('unexpected successful settlement') });
+  for (const [status, ackCode] of [['REJECTED', 'NOT_AUTHORIZED'], ['TIMEOUT', 'TIMEOUT'],
+    ['INDETERMINATE', 'RESTART_INTERRUPTED']]) {
+    cin.con = { ...originalReceipt, status, ackCode, readback: null };
+    assert.deepEqual(await settle({ nativeRef }), { status: 'REVIEW', reason: `${status}_${ackCode}` });
+  }
+  assert.deepEqual(await settle({ nativeRef, ack }), { status: 'REVIEW', reason: 'CORE_ACK_BINDING' });
+  cin.con = { ...cin.con, payloadHash: '0'.repeat(64) };
+  assert.deepEqual(await settle({ nativeRef }), { status: 'REVIEW', reason: 'ISSUED_COMMAND_BINDING' });
 });
 
 test('propagates settlement persistence failure', async () => {

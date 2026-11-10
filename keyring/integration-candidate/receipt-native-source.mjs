@@ -54,6 +54,6 @@ export function createNativeReceiptReader({ receiptContainers, retrieve }) {
       throw new InvalidNativeReceipt('INVALID_NATIVE_CONTENT_INSTANCE');
     }
     if (name !== commandReceiptName(receipt.commandId)) throw new InvalidNativeReceipt('NATIVE_RECEIPT_NAME_BINDING');
-    return { gatewayId, resourceId: cin.ri, storedAt, receipt };
+    return { gatewayId, resourceId: cin.ri, storedAt, storedAtPrecision: 'second', receipt };
   };
 }

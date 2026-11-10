@@ -6,12 +6,8 @@ const id = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$/;
 const validId = (value) => typeof value === 'string' && id.test(value);
 const validRevision = (value, min) => Number.isInteger(value) && value >= min && value <= 2147483647;
 
-/**
- * Check an applied readback against central records already authenticated by the caller.
- * trustedGatewayId comes from the authenticated route or the CSE resource ACL mapping.
- * The issued record and historical authorization come from central storage.
- */
-export function bindAppliedReceipt({ trustedGatewayId, commandRecord, authorization, receipt, ack }) {
+/** trustedGatewayId comes from the authenticated route or CSE resource ACL mapping. */
+export function bindIssuedReceipt({ trustedGatewayId, commandRecord, receipt }) {
   const command = commandRecord?.command;
   const payloadHash = commandRecord?.payloadHash;
   if (command?.version !== 1 || receipt?.version !== 1
@@ -22,6 +18,12 @@ export function bindAppliedReceipt({ trustedGatewayId, commandRecord, authorizat
       || typeof payloadHash !== 'string' || !hash.test(payloadHash) || receipt.payloadHash !== payloadHash) {
     throw new Error('ISSUED_COMMAND_BINDING');
   }
+  return { command, payloadHash };
+}
+
+/** Check an applied readback against the central issuance and historical authorization. */
+export function bindAppliedReceipt({ trustedGatewayId, commandRecord, authorization, receipt, ack }) {
+  const { command, payloadHash } = bindIssuedReceipt({ trustedGatewayId, commandRecord, receipt });
   const expiry = Date.parse(authorization?.expiresAt);
   const issued = Date.parse(command.issuedAt), deadline = Date.parse(command.deadline);
   if (authorization?.allowed !== true || authorization.payloadHash !== payloadHash
