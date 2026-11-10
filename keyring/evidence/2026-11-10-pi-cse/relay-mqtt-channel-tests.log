@@ -1,0 +1,9 @@
+test_explicit_env_wins_and_inherited_environment_is_restored (test_relay.FeatherRelayTests.test_explicit_env_wins_and_inherited_environment_is_restored) ... ok
+test_mqtt_application_responses_settle_real_outbox_without_http_posts (test_relay.FeatherRelayTests.test_mqtt_application_responses_settle_real_outbox_without_http_posts) ... ok
+test_readback_mismatch_fails_after_successful_publication (test_relay.FeatherRelayTests.test_readback_mismatch_fails_after_successful_publication) ... ok
+test_real_outbox_relay_matches_each_cse_readback (test_relay.FeatherRelayTests.test_real_outbox_relay_matches_each_cse_readback) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 1.741s
+
+OK

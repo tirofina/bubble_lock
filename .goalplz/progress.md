@@ -337,3 +337,16 @@ Pi Zero 2 W는 USB 데이터 포트에 연결됐고 초록 LED가 계속 켜져 
 실물 Pi에서 initial READ가 BlueZ notify callback에도 전달돼 JSON fragment 버퍼를 오염시키는 오류를 재현했다. 초기 READ를 observation 구독 이전으로 옮기고 모의 회귀시험의 수정 전 FAIL→후 PASS, 전체58개 통과를 확인했다. 보안·형식·generation 검사를 유지한 Gateway0.2.4 wheel을 Pi에 설치하고 소스 일치를 확인했다. 실제90초45개 관측·연결 상태18회 모두 정상, 사용자 버튼 입력으로 released/confirm/panic 수신·observer exit0을 확보했다.
 
 원격 main715ef58/COREd54a43a/WEB80ed37f는 시작 조회에서 이전과 같았다. PIN·SSH 암호·주소·raw BLE 로그는 공개하지 않았다. 전체 daemon/Pi→CSE/실물PCB/앱·웹 통합은 남았고 Docker API는 엔진 pipe 부재로 연결되지 않았다. [실물 Pi 실행 기록](../keyring/evidence/2026-11-10-pi-feather/README.md)
+
+## 2026-11-10 — 실물 Pi에서 HTTPS·MQTT·서버 장애 복구
+
+직전 `686f7b4`에서 Gateway0.2.4·Feather0.1.1·실물 BLE 증거를 업로드했다. 이번 DOC-REV2.0.0과 원격 main715ef58/COREd54a43a/WEB80ed37f를 재확인했고 팀 HEAD는 같았다. Docker 엔진이 다시 정상 응답한 뒤 사용자 목표의 임시 PC Mobius4 서버와 실물 Pi/Feather 경로를 진행했다.
+
+- 새 `relay.py` 벤치 도구는 실제 BLE·Gateway 관측 검증·SQLite·outbox 송신·제품 MQTT/HTTPS를 사용한다. 기존 DB를 거부하고 새 private 출력·명시적 환경 파일 격리·전체 제한시간·실패 receipt·송신 경로 집계·CSE canonical readback을 추가했다. 모의 BLE/HTTP와 실제 임시 SQLite 회귀시험4개 통과, 독립 read-only 검토에서 차단 결함 없음. 제품 Gateway/펌웨어는 이번에 변경하지 않았다.
+- 기존 개발 container/DB 네 개를 보존한 새 test-owned CSE/PostgreSQL/nginx/Mosquitto와 fresh PKI를 사용했다. Pi loopback에서 Windows loopback으로 SSH reverse tunnel 두 개를 사용했고 방화벽/LAN bind·운영 권한을 변경하지 않았다.
+- 실제 `released` 관측35개: HTTPS 정상5+정상5+CSE중단복구5, MQTT5(HTTPS0), broker중단 후 HTTPSfallback15(MQTT0). 모두 CSE 저장값을 읽어 원본 hash 일치. 마지막 cni35, 다섯 Pi SQLite outbox 각각0, private directory0700/DB0600 확인. 별도 Pi TLS probe 둘은 TLS1.3을 실측했다.
+- CSE만 중단했을 때 pending5/attempts1을 확인하고 같은 송신 프로세스에서 복구 후5건을 완료했다. MQTT 응답 구독 준비 후 broker만 중단한 별도 run은15건을 HTTPS로 완료했다. 해당 run의 관측2개 확인 시각은 broker중단 뒤이며, 중단 전 MQTT성공으로 표시하지 않았다. 정상MQTT5건은 별도 run이다.
+- 최초 host setup은 request_timeout 누락으로 실패/정리했고 수정한 새 폴더에서 재실행했다. 최초 stop 제어는 Docker inspect UTF8을CP949로읽다 실패하여 실제서버가 중단되지 않았다. 당시 `outage` 이름의 run은 정상HTTPS로 기록했고 실제장애는 `outage-02`다. 실패를 성공장애시험에 합산하지 않았다.
+- runner exit0·소유 container/broker/network 잔여0·SSH터널 종료·기존 개발 네 container running을 확인했다. 공개증거에는 raw관측·DB·개인키·PIN·SSH암호·실제BLE주소를 제외했다. [실행 증거](../keyring/evidence/2026-11-10-pi-cse/README.md)
+
+현재 goal은 active/progress/미완료다. 실물 관측→임시CSE 전송은 검증됐고, 전체 daemon의 중앙 승인 명령·ACK, pb:binarySwitch/Group·앱/웹, 제작PCB·전력/거리·SD전원손실·운영 principal/AE/ACP/grant·영상/release는 남았다. 이번 relay/증거를 역할 브랜치에 일반 commit/push한다.

@@ -91,3 +91,35 @@ cd ~/keyring-bench
 ```
 
 관측기가 실행 중일 때 두 버튼을 뗀 뒤 A0를 1초 누르고 떼고, 이어서 A1을 1초 누르고 뗀다. 수신된 상태만 콘솔에 출력되며 `released`, `confirm`, `panic`을 모두 받으면 종료 코드 0으로 끝난다. 시간 초과 결과의 `missing`은 해당 관측 시간에 수신하지 못한 상태를 뜻한다. 화면은 마지막 입력을 유지하고 BLE는 실제 해제 상태를 보낸다.
+
+## Pi에서 임시 CSE로 실제 관측 전달
+
+`relay.py`는 명시적으로 실행하는 MQTT/HTTPS 벤치 도구다. 실제 Feather에서 받은 관측을 `Gateway.observation`으로 검증하고 새 SQLite outbox에 기록한 뒤, 기존 `_outbox_loop`와 `TransportHub`로 전송한다. 각 oneM2M contentInstance를 HTTPS로 다시 읽어 요청 ID·응답 코드·자원 이름·payload 전체가 일치하는지 확인한다. command·authorize·credential·health loop와 전체 Gateway daemon은 시작하지 않는다.
+
+별도로 준비한 격리 CSE에 빈 관측 container와 새 시험 CA/client 인증서가 있어야 한다. 이 도구는 서버·자원·인증서를 생성하지 않는다. PC의 시험 CSE가 loopback에만 바인딩되어 있으면 별도 SSH reverse tunnel을 사용하며, Pi 쪽 HTTPS origin의 주소가 서버 인증서 SAN과 일치해야 한다. 인증서 검증을 해제하지 않는다.
+
+Git 밖의 private 환경 파일에 `GatewayConfig`의 필수 값을 지정한다. 벤치 CLI는 `--env` 파일만 설정 정본으로 읽으며, 부모 프로세스의 환경변수는 설정을 읽는 동안 격리한 뒤 원복한다. `MQTT_ENABLED=false`, `CORE_BRIDGE_ENABLED=false`, `BLE_GATT_PROFILE=core-v1`, `BLE_PAIR=true`, `FIRMWARE_REVISION_ALLOWLIST=feather-probe-0.1.1`을 사용한다. `BLE_DEVICES`에는 등록한 `keyring-feather-lab` 한 대만 넣는다. `TLS_CA_FILE`, `TLS_CERT_FILE`, `TLS_KEY_FILE`은 Pi의 절대 경로를 사용한다. 실제 주소·credential은 소스나 공개 로그에 넣지 않는다.
+
+MQTT 전송을 시험할 때는 같은 파일에서 `MQTT_ENABLED=true`와 실제 `MQTT_HOST`, `MQTT_PORT`를 지정한다. `CORE_BRIDGE_ENABLED=false`는 유지하며 broker의 client 인증서 CN·oneM2M 요청/응답 topic ACL을 시험 CSE와 맞춘다. MQTT 응답 구독이 준비된 후 BLE 수집을 시작하고 이 대기도 전체 제한시간에 포함한다. MQTT application 응답이 없으면 기존 전송기의 HTTPS fallback을 사용한다. receipt의 `deliveryChannels`는 성공한 전송만 `mqtt` 또는 `https`로 세며, MQTT 시도 후 HTTPS로 완료된 건은 `https`에 포함한다.
+
+`PC_API_URL`은 HTTPS 설정값이 필요하지만 이 도구는 API에 요청하지 않는다. `GATEWAY_DATABASE`도 존재하지 않는 절대 경로여야 한다. 도구는 기존 DB를 거절하고 실제 DB 경로를 새 출력 폴더의 `gateway.sqlite3`로 제한한다. 부모 폴더만 먼저 준비하고 `--output`에는 아직 없는 디렉터리를 지정한다. 아래 환경 파일 경로는 준비한 파일의 실제 경로로 바꾼다.
+
+```sh
+cd ~/keyring-bench
+.venv/bin/python keyring/firmware/feather_probe/relay.py \
+  --env /home/pi/keyring-private/relay.env \
+  --output /home/pi/keyring-private/relay-run-01 \
+  --frames 5 --seconds 90
+```
+
+실행 중에는 다른 BLE 관측기를 종료한다. `--frames`는 1~100개의 실제 관측을 선택하며 기본값은 5다. `--seconds`는 연결·수집·outbox 비우기·readback 전체의 제한시간이며 5~600초, 기본값은 90초다. 모든 버튼 종류를 자동으로 요구하지 않으므로 receipt의 `buttonStates`를 실제 시험한 입력 범위로 해석한다.
+
+출력 디렉터리는 0700, 내부 파일은 umask 077로 생성하고 DB의 lifetime `flock`을 유지한다. `observations.jsonl`과 SQLite는 private 원본이며 공개하지 않는다. `receipt.json`과 표준 출력에는 count·sequence·buttonState·SHA256·성공/실패 코드·TLS 검증 정책만 남는다. TLS 1.3 이상·서버 인증서/주소 검증·client 인증서 사용은 설정 정책이며, 도구가 handshake 버전을 실측했다고 표시하지 않는다. 수신·전송·readback 일부만 진행된 실패도 partial receipt와 0이 아닌 종료 코드를 남긴다. 같은 출력 디렉터리로 재실행하지 않는다.
+
+벤치 harness의 회귀시험은 별도 네 개이며 환경 파일 격리·복원, BLE/HTTP 모의와 새 SQLite outbox를 통한 성공 readback·불일치 거절, MQTT application 응답으로 완료된 전송의 경로 집계를 확인한다. 실물 BLE·CSE 시험과 구분한다. 저장소 루트의 PowerShell에서:
+
+```powershell
+$env:PYTHONPATH = (Join-Path $PWD 'keyring/raspberry-pi-gateway/src') + [IO.Path]::PathSeparator + (Join-Path $PWD 'keyring/raspberry-pi-gateway/tests')
+python -m unittest discover -s keyring/firmware/feather_probe/tests -v
+python keyring/firmware/feather_probe/relay.py --help
+```

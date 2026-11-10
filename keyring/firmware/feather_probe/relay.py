@@ -1,0 +1,290 @@
+"""Opt-in Pi bench: real Feather observations, MQTT/HTTPS delivery, CSE readback."""
+from __future__ import annotations
+
+import argparse
+import asyncio
+from collections import Counter
+from contextvars import ContextVar
+from dataclasses import replace
+import hashlib
+import json
+import logging
+import os
+from pathlib import Path
+from urllib.parse import quote
+import uuid
+
+from bubble_gateway.ble import BleFleet
+from bubble_gateway.config import GatewayConfig, read_env_file
+from bubble_gateway.model import canonical, payload_hash
+from bubble_gateway.service import Gateway
+from bubble_gateway.state_identity import configured_binding
+from bubble_gateway.store import Store
+from bubble_gateway.transport import TransportHub
+
+DEVICE_ID = "keyring-feather-lab"
+FIRMWARE = "feather-probe-0.1.1"
+
+
+class RelayFailure(RuntimeError):
+    pass
+
+
+class RelayTransport(TransportHub):
+    """Count the transport that settled a publish, without changing delivery logic."""
+    def __init__(self, config):
+        super().__init__(config)
+        self.delivery_channels = {"mqtt": 0, "https": 0}
+        self._publish_used_https = ContextVar("relay_publish_used_https", default=False)
+
+    async def _http_json(self, method, url, *, headers, body=None):
+        if method == "POST":
+            self._publish_used_https.set(True)
+        return await super()._http_json(method, url, headers=headers, body=body)
+
+    async def publish(self, rqi, container, payload):
+        token = self._publish_used_https.set(False)
+        try:
+            await super().publish(rqi, container, payload)
+            channel = "https" if self._publish_used_https.get() else "mqtt"
+            self.delivery_channels[channel] += 1
+        finally:
+            self._publish_used_https.reset(token)
+
+
+def summary_template() -> dict:
+    return {
+        "status": "failed", "error": None,
+        "capturedCount": 0, "publishedCount": 0, "readbackCount": 0,
+        "deliveryChannels": {"mqtt": 0, "https": 0},
+        "sequences": [], "buttonStates": [], "payloadSha256": [], "readbackSha256": [],
+        "tlsPolicy": {"minimumVersion": "TLSv1.3", "verifyServerCertificate": True,
+                      "verifyServerHostname": True, "clientCertificateRequired": True,
+                      "handshakeVersionMeasured": False},
+    }
+
+
+def validate_config(config: GatewayConfig) -> None:
+    if config.core_bridge_enabled:
+        raise RelayFailure("CORE_BRIDGE_MUST_BE_DISABLED")
+    if (set(config.ble_devices) != {DEVICE_ID} or not config.ble_pair
+            or config.ble_gatt_profile != "core-v1"
+            or config.firmware_revision_allowlist != (FIRMWARE,)):
+        raise RelayFailure("FEATHER_ENROLLMENT_REQUIRED")
+    if config.database.exists() or config.database.is_symlink():
+        raise RelayFailure("EXISTING_DATABASE_REFUSED")
+
+
+def load_config(path: Path) -> GatewayConfig:
+    """Use only the explicit bench file, before starting any async work."""
+    path = path.expanduser()
+    inherited = dict(os.environ)
+    try:
+        os.environ.clear()
+        read_env_file(path)
+        return GatewayConfig.from_env()
+    finally:
+        os.environ.clear()
+        os.environ.update(inherited)
+
+
+def write_receipt(output: Path, summary: dict) -> None:
+    with (output / "receipt.json").open("x", encoding="utf-8", newline="\n") as stream:
+        json.dump(summary, stream, ensure_ascii=True, indent=2)
+        stream.write("\n")
+
+
+async def run_capture(config: GatewayConfig, output: Path, frames: int, seconds: int) -> dict:
+    """Caller owns the new private directory and holds its lifetime flock."""
+    summary = summary_template()
+    captured: list[dict] = []
+    readback_hashes: list[str] = []
+    store = hub = fleet = gateway = sender = source = None
+    phase = "SETUP"
+    cleanup_errors: list[str] = []
+    complete = asyncio.Event()
+    callback_error = None
+
+    try:
+        validate_config(config)
+        database = output / "gateway.sqlite3"
+        if database.exists() or database.is_symlink():
+            raise RelayFailure("EXISTING_DATABASE_REFUSED")
+        config = replace(config, database=database)
+        source = (output / "observations.jsonl").open("x", encoding="utf-8", newline="\n")
+        store = Store(database, config.max_outbox_rows, config.max_outbox_bytes,
+                      config.max_commands, configured_binding(config))
+        hub, fleet = RelayTransport(config), BleFleet(config)
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store, gateway.transport = config, store, hub
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+
+        async def receive(raw: dict) -> None:
+            nonlocal callback_error
+            if len(captured) >= frames or callback_error:
+                return
+            before = gateway.counters["observations_queued"]
+            invalid_before = gateway.counters["observations_invalid"]
+            await gateway.observation(raw)
+            if gateway.counters["observations_invalid"] != invalid_before:
+                callback_error = "INVALID_OBSERVATION"
+                complete.set()
+                return
+            if gateway.counters["observations_queued"] != before:
+                payload = json.loads(canonical(raw))
+                captured.append(payload)
+                try:
+                    source.write(canonical(payload) + "\n")
+                    source.flush()
+                    os.fsync(source.fileno())
+                except OSError:
+                    callback_error = "CAPTURE_WRITE_FAILED"
+                    complete.set()
+                    return
+                if len(captured) == frames:
+                    complete.set()
+
+        async with asyncio.timeout(seconds):
+            phase = "CONNECT"
+            await hub.start()
+            if config.mqtt_enabled:
+                phase = "MQTT_READY"
+                await hub._ready.wait()
+            sender = asyncio.create_task(gateway._outbox_loop(), name="feather-cse-outbox")
+            await fleet.start(receive)
+            phase = "CAPTURE"
+            while not complete.is_set():
+                if sender.done():
+                    sender.result()
+                    raise RelayFailure("SENDER_STOPPED")
+                await asyncio.sleep(0.05)
+            if callback_error:
+                raise RelayFailure(callback_error)
+            await fleet.close()
+            fleet = None
+            phase = "DRAIN"
+            while store.counts()[0]:
+                if sender.done():
+                    sender.result()
+                    raise RelayFailure("SENDER_STOPPED")
+                await asyncio.sleep(0.05)
+            phase = "READBACK"
+            parent = quote(config.observation_container.rstrip("/"), safe="/:-._~")
+            for payload in captured:
+                identity = f"{payload['deviceId']}:{payload['bootId']}:{payload['sequence']}"
+                rqi = Store.request_id("observation", identity)
+                rn = "gw-" + hashlib.sha256(rqi.encode("utf-8")).hexdigest()
+                read_rqi = "verify-" + uuid.uuid4().hex
+                status, headers, body = await hub._http_json(
+                    "GET", config.cse_url + parent + "/" + rn,
+                    headers=hub._m2m_headers(read_rqi))
+                rsc = hub._response_rsc(status, headers, read_rqi)
+                cin = body.get("m2m:cin")
+                if (status != 200 or rsc != 2000 or not isinstance(cin, dict)
+                        or cin.get("rn") != rn or "con" not in cin
+                        or canonical(cin["con"]) != canonical(payload)):
+                    raise RelayFailure("READBACK_MISMATCH")
+                readback_hashes.append(payload_hash(cin["con"]))
+            summary["status"] = "passed"
+    except RelayFailure as exc:
+        summary["error"] = str(exc)
+    except TimeoutError:
+        summary["error"] = phase + "_TIMEOUT"
+    except asyncio.CancelledError:
+        summary["error"] = "INTERRUPTED"
+    except Exception:
+        summary["error"] = phase + "_FAILED"
+    finally:
+        # Every resource is attempted even if another cleanup operation fails.
+        if fleet is not None:
+            try:
+                await asyncio.wait_for(fleet.close(), 10)
+            except (Exception, asyncio.CancelledError):
+                cleanup_errors.append("BLE_CLOSE")
+        if gateway is not None:
+            gateway.stop.set()
+        if sender is not None:
+            sender.cancel()
+            try:
+                await asyncio.wait_for(asyncio.gather(sender, return_exceptions=True), 10)
+            except (Exception, asyncio.CancelledError):
+                cleanup_errors.append("SENDER_CLOSE")
+        if hub is not None:
+            try:
+                await asyncio.wait_for(hub.close(), 10)
+            except (Exception, asyncio.CancelledError):
+                cleanup_errors.append("HTTP_CLOSE")
+        if store is not None:
+            try:
+                store.close()
+            except Exception:
+                cleanup_errors.append("STORE_CLOSE")
+        if source is not None:
+            try:
+                source.close()
+            except Exception:
+                cleanup_errors.append("CAPTURE_CLOSE")
+        if cleanup_errors:
+            summary.update(status="failed", cleanupErrors=cleanup_errors)
+            summary["error"] = summary["error"] or "CLEANUP_FAILED"
+        summary.update(capturedCount=len(captured),
+                       publishedCount=gateway.counters["published"] if gateway else 0,
+                       deliveryChannels=dict(hub.delivery_channels) if hub else {"mqtt": 0, "https": 0},
+                       readbackCount=len(readback_hashes),
+                       sequences=[frame["sequence"] for frame in captured],
+                       buttonStates=[frame["buttonState"] for frame in captured],
+                       payloadSha256=[payload_hash(frame) for frame in captured],
+                       readbackSha256=readback_hashes)
+        capture_path = output / "observations.jsonl"
+        if capture_path.is_file():
+            try:
+                summary["sourceCaptureSha256"] = hashlib.sha256(capture_path.read_bytes()).hexdigest()
+            except OSError:
+                summary.update(status="failed", error=summary["error"] or "CAPTURE_HASH_FAILED")
+    return summary
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--env", type=Path, required=True, help="Private Gateway KEY=value configuration")
+    parser.add_argument("--output", type=Path, required=True, help="New private output directory; parent must exist")
+    parser.add_argument("--frames", type=int, default=5, help="Number of real observations to relay (1..100)")
+    parser.add_argument("--seconds", type=int, default=90, help="Total connect/capture/drain/readback budget (5..600)")
+    args = parser.parse_args()
+    if not 1 <= args.frames <= 100 or not 5 <= args.seconds <= 600:
+        parser.error("frames must be 1..100 and seconds must be 5..600")
+    if os.name != "posix":
+        parser.error("relay execution requires POSIX private files and flock; run on the Pi")
+    import fcntl
+
+    os.umask(0o077)
+    # Suppress libraries that could include addresses or HTTP headers in logs.
+    logging.disable(logging.CRITICAL)
+    output = args.output.expanduser().absolute()
+    try:
+        output.mkdir(mode=0o700, parents=False, exist_ok=False)
+    except OSError:
+        print(json.dumps({"status": "failed", "error": "NEW_PRIVATE_OUTPUT_REQUIRED"}), flush=True)
+        return 1
+    summary = summary_template()
+    try:
+        with (output / "gateway.lock").open("x") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            config = load_config(args.env)
+            summary = asyncio.run(run_capture(config, output, args.frames, args.seconds))
+            write_receipt(output, summary)
+    except KeyboardInterrupt:
+        summary.update(status="failed", error="INTERRUPTED")
+    except Exception:
+        summary.update(status="failed", error=summary["error"] or "CONFIG_OR_OUTPUT_FAILED")
+    if not (output / "receipt.json").exists():
+        try:
+            write_receipt(output, summary)
+        except OSError:
+            summary.update(status="failed", error="RECEIPT_WRITE_FAILED")
+    print(json.dumps(summary, ensure_ascii=True), flush=True)
+    return 0 if summary["status"] == "passed" else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

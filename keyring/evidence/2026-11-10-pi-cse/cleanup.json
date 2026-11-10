@@ -1,0 +1,14 @@
+{
+  "ownedContainersRemaining": 0,
+  "ownedBrokerContainersRemaining": 0,
+  "ownedNetworksRemaining": 0,
+  "runnerExitCode": 0,
+  "sshTunnelSessionsClosed": true,
+  "checkedAt": "2026-11-10T09:30:05.763894+00:00",
+  "existingDevelopmentContainers": {
+    "privacy-bubble-keyring-dev-mobius4-1": "running",
+    "privacy-bubble-keyring-dev-postgres-1": "running",
+    "privacy-bubble-keyring-dev-tls-1": "running",
+    "privacy-bubble-keyring-dev-broker-1": "running"
+  }
+}

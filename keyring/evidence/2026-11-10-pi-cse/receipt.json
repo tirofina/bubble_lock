@@ -1,0 +1,146 @@
+{
+  "date": "2026-11-10",
+  "role": "KEYRING",
+  "documentRevision": "2.0.0",
+  "baseCommit": "686f7b44b94cf5668df86cc97c2722a18024854b",
+  "gatewayVersion": "0.2.4",
+  "firmwareRevision": "feather-probe-0.1.1",
+  "status": "passed-isolated-observation-bench",
+  "goalComplete": false,
+  "physicalObservationCount": 35,
+  "publishedCount": 35,
+  "matchedCseReadbackCount": 35,
+  "finalCseContentInstanceCount": 35,
+  "observedButtonStates": [
+    "released"
+  ],
+  "runs": {
+    "https-initial": {
+      "receipt": "https-initial.json",
+      "count": 5,
+      "sequences": [
+        737,
+        738,
+        739,
+        740,
+        741
+      ],
+      "allPayloadHashesMatch": true,
+      "sourceCaptureSha256": "b27372f23c9dd34680f70bb898c5692e0cf4946520809734f2e342592e219977",
+      "exitCode": 0
+    },
+    "https-normal": {
+      "receipt": "https-normal.json",
+      "count": 5,
+      "sequences": [
+        814,
+        815,
+        816,
+        817,
+        818
+      ],
+      "allPayloadHashesMatch": true,
+      "sourceCaptureSha256": "24a7ef72d4c98bf0b22aa9afe6b199dc583847e8167b5ce261883b54b532cc29",
+      "exitCode": 0
+    },
+    "https-outage": {
+      "receipt": "https-outage.json",
+      "count": 5,
+      "sequences": [
+        826,
+        827,
+        828,
+        829,
+        830
+      ],
+      "allPayloadHashesMatch": true,
+      "sourceCaptureSha256": "0c25234a13f2542bb13ff4ed2fd39c8aa015375a435bc6b6156f90cf0b7d6efa",
+      "exitCode": 0
+    },
+    "mqtt-normal": {
+      "receipt": "mqtt-normal.json",
+      "count": 5,
+      "sequences": [
+        1039,
+        1040,
+        1041,
+        1042,
+        1043
+      ],
+      "allPayloadHashesMatch": true,
+      "sourceCaptureSha256": "9026e441d1e3212a0cef6c95eee982126cabc39ca2b684ec280bdf1df86e58fa",
+      "exitCode": 0
+    },
+    "mqtt-fallback": {
+      "receipt": "mqtt-fallback.json",
+      "count": 15,
+      "sequences": [
+        1060,
+        1061,
+        1062,
+        1063,
+        1064,
+        1065,
+        1066,
+        1067,
+        1068,
+        1069,
+        1070,
+        1071,
+        1072,
+        1073,
+        1074
+      ],
+      "allPayloadHashesMatch": true,
+      "sourceCaptureSha256": "03317550ad9513203087318a2410c46000fad6a6ecd094af6a5c4467a98fa94c",
+      "exitCode": 0
+    }
+  },
+  "mqttDeliveryChannels": {
+    "mqtt": 5,
+    "https": 0
+  },
+  "brokerLossDeliveryChannels": {
+    "mqtt": 0,
+    "https": 15
+  },
+  "cseOutage": {
+    "pendingDuringOutage": 5,
+    "attemptsDuringOutage": 1,
+    "pendingAfterRecovery": 0,
+    "samePiProcess": true
+  },
+  "harnessTests": {
+    "passed": 4,
+    "seconds": 1.741,
+    "exitCode": 0,
+    "scope": "mock BLE/HTTP, real temporary SQLite, actual product MQTT publish branch with mock application response",
+    "log": "relay-mqtt-channel-tests.log"
+  },
+  "tlsProbes": {
+    "https": "tls-probe.json",
+    "mqtt": "mqtt-tls-probe.json",
+    "actualVersion": "TLSv1.3",
+    "scope": "separate actual Pi handshakes; per-publication handshake not instrumented"
+  },
+  "cleanup": {
+    "ownedContainersRemaining": 0,
+    "ownedBrokerContainersRemaining": 0,
+    "ownedNetworksRemaining": 0,
+    "runnerExitCode": 0,
+    "sshTunnelSessionsClosed": true,
+    "checkedAt": "2026-11-10T09:30:05.763894+00:00",
+    "existingDevelopmentContainers": {
+      "privacy-bubble-keyring-dev-mobius4-1": "running",
+      "privacy-bubble-keyring-dev-postgres-1": "running",
+      "privacy-bubble-keyring-dev-tls-1": "running",
+      "privacy-bubble-keyring-dev-broker-1": "running"
+    }
+  },
+  "limits": [
+    "test-only PKI and synthetic admin mapping",
+    "observations and sender loop only; full Gateway daemon not started",
+    "no central authorization command, device actuation ACK, production PCB, app/web or SD power-loss acceptance"
+  ],
+  "sourceHashes": "source-sha256.json"
+}

@@ -7,7 +7,7 @@
   "date": "2026-11-10",
   "branch": "codex/keyring-namho",
   "status": "implemented",
-  "verificationStatus": "local builds and 58 Gateway tests passed; Feather/Pi authenticated BLE buttons verified; full daemon, Pi-to-CSE, central integration and production PCB pending",
+  "verificationStatus": "local builds and 58 Gateway tests passed; Feather/Pi authenticated BLE buttons verified; 35 actual observations matched CSE readback across HTTPS normal/outage replay, native MQTT and broker-loss HTTPS fallback; final CSE count35/outbox0 and fixture cleanup verified; full daemon, production principal/central integration and production PCB pending",
   "rubricIds": [
     "R01",
     "R02",
@@ -52,12 +52,14 @@
     "explicit legacy DB identity adoption after a cold snapshot with original data rows preserved",
     "MAX9850 mute/shutdown control requests at boot, periodic readback and before sleep",
     "shared-I2S installation/playback guard while headphone shutdown controls are unknown",
-    "three unprovisioned compile profiles built successfully on Windows; no hardware execution",
+    "three unprovisioned production-firmware compile profiles built successfully on Windows; production PCB execution pending",
     "per-connection BLE generation guards, pinned command writes and failed-handshake readiness fencing",
     "atomic first staging of native receipt and optional CORE ACK; no completed ACK regeneration during native retry/restart",
     "HTTP address scope reversed for native MQTT To; real disposable Mobius4/PostgreSQL storage/readback/idempotency/conflict/restart tests",
     "Real SQLite sender/CSE integration: reopened dedup, native receipt confirmation, persisted outage backoff, abrupt child exit after remote commit, conflicting outbox retention",
-    "Opt-in unprivileged Linux POSIX state CLI container runner: actual flock/fsync/permissions, committed WAL, ENOSPC, guarded adoption and concurrent-write rejection"
+    "Opt-in unprivileged Linux POSIX state CLI container runner: actual flock/fsync/permissions, committed WAL, ENOSPC, guarded adoption and concurrent-write rejection",
+    "Feather0.1.1 latched display and authenticated Pi BLE observations with BlueZ READ-before-NOTIFY handling in Gateway0.2.4",
+    "Opt-in real Feather/Pi relay harness with explicit env isolation, fresh private SQLite outbox, native HTTPS CSE readback and successful-channel MQTT/HTTPS accounting"
   ],
   "existingHardware": {
     "status": "source-snapshot-included-unverified",
@@ -72,7 +74,7 @@
   "pendingIntegration": [
     "PC-MOBIUS-CORE BLE extension and application receipt acceptance",
     "Deployment and end-to-end acceptance of main central authorization APIs and canonical claim/grant fields",
-    "AE/container/ACP and broker capability configuration",
+    "Production AE/container/ACP and broker capability configuration; isolated test CSE resources already provisioned",
     "Production PCB passkeys and BlueZ enrollment; Feather bench enrollment verified",
     "central PKI registration and mTLS credential deployment",
     "strict UTC device deadline contract if needed beyond relative BLE budget",
@@ -86,39 +88,47 @@
     "central-authorized Gateway snapshot restore activation"
   ],
   "notPerformed": [
-    "flash",
+    "production keyring PCB flash and bring-up; Feather bench flash verified",
     "lint",
-    "hardware validation",
-    "power/range measurement",
-    "integration demo",
+    "production PCB sensor, battery, charging, audio and actuator hardware validation",
+    "production PCB power/range measurement",
+    "full app/web/central authorization integration demo",
     "video evidence",
-    "real-device and CSE end-to-end tests",
-    "Gateway daemon/device hardware execution",
+    "production PCB to production-authorized CSE end-to-end acceptance; actual Feather/Pi to isolated CSE HTTPS observation relay verified",
+    "full Gateway daemon execution and real-device command/ACK/readback with authoritative central grants",
     "Pi-deployed state operator CLI and existing operational database snapshot/adoption"
   ],
-  "actualReceipt": "evidence/2026-10-30-posix-state/receipt.json",
+  "actualReceipt": "evidence/2026-11-10-pi-cse/receipt.json",
+  "actualReceiptPublicationStatus": "consolidated receipt complete; included with this commit",
   "temporaryServer": {
     "upstreamRevision": "e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8",
     "composeProject": "privacy-bubble-keyring-dev",
-    "status": "empty-resources-provisioned",
+    "status": "isolated-disposable-CSE-HTTPS-MQTT-and-fallback-device-relay-verified-and-cleaned",
     "provisioningReceipt": "dev/mobius4/provisioning-receipt.json",
-    "scope": "loopback-only development server; no device integration evidence"
+    "provisioningScope": "Historical compose project and provisioning receipt retained; current relay uses a separate DisposableMobius fixture with fresh test DB and PKI",
+    "scope": "actual Feather BLE to Pi private SQLite to native HTTPS/MQTT with test TLS/mTLS to disposable PC Mobius4/PostgreSQL through SSH loopback reverse tunnels; existing development/operational DB and PKI preserved"
   },
-  "logSha256": "772491be7821661d193122248ffe86d1732b6e789ac26d147c9fa0a882107ea1",
+  "logSha256": "0c25234a13f2542bb13ff4ed2fd39c8aa015375a435bc6b6156f90cf0b7d6efa",
+  "logSha256Scope": "private actual Pi observations.jsonl captured in the HTTPS outage/replay run; digest recorded by actualReceipt",
   "releaseSha": null,
   "firmwareRevision": "keyring-0.7.0",
+  "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "0017edac40815f9d3a812d7f858705496f7aaa3b",
+    "sourceCommit": "686f7b4",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "0017edac40815f9d3a812d7f858705496f7aaa3b",
-    "latestCheckpoint": "POSIX test runner/source pushed; Linux source/installed CLI10 each passed; Gateway0.2.3 runtime unchanged"
+    "latestLocalSourceCommit": "686f7b4",
+    "lastPushedCommit": "686f7b4",
+    "latestCheckpoint": "35 native HTTPS/MQTT observation readbacks, CSE outage replay and broker-loss HTTPS fallback verified; final cni35/outboxes0; fixture cleanup verified; this commit contains relay/evidence",
+    "lastPushedCommitBeforeThisCheckpoint": "686f7b44b94cf5668df86cc97c2722a18024854b"
   },
-  "gatewayRevision": "0.2.3",
-  "pendingValidationScope": "Actual central PKI/principal/AE/ACP/grants, INTEGRATION APIs, Pi/BlueZ/keyring/app/web, hardware power/range/video/release remain.",
+  "gatewayRevision": "0.2.4",
+  "pendingValidationScope": "Full Gateway daemon, production central PKI/principal/AE/ACP/grants and INTEGRATION APIs, production keyring PCB, app/web, power/range/video and release acceptance remain. Feather/Pi BLE and isolated native HTTPS/MQTT CSE observations/readback, CSE outage replay and broker-loss HTTPS fallback are verified.",
   "lastCompletionAudit": {
+    "historical": true,
+    "supersededBy": "2026-11-10 benchCheckpoint for current execution and verification state",
     "sourceRef": "0017edac40815f9d3a812d7f858705496f7aaa3b",
     "scope": "Plan and actual POSIX state operator evidence vs remaining Pi/central integration requirements",
     "outcome": "incomplete",
@@ -132,27 +142,32 @@
     "currentBuildTestAuthorization": "Latest user AGENTS requires related code verification; local mock tests/package build performed"
   },
   "goalExecutionState": {
-    "lastReportedGoalStatus": "blocked",
-    "previousConsecutiveBlockedTurns": 3,
+    "executionStatus": "active",
+    "currentGoalTurnClassification": "progress",
+    "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "continued KEYRING development: actual Linux state operator locking/filesystem/legacy adoption boundaries",
+    "executionRequest": "continued KEYRING development using actual Feather/Pi BLE and isolated PC Mobius4; 35 HTTPS/MQTT/failure-recovery readbacks verified and disposable resources cleaned",
     "remainingCompletionDependencies": [
       "central deployment, settlement and recovery activation",
       "purchased JD9853 module initialization",
       "named source references",
-      "real Pi/device/measurement/CSE integration/video/release evidence"
+      "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "0017edac40815f9d3a812d7f858705496f7aaa3b",
-    "sourceValidation": "Linux source/installed POSIX10 passed; prior CSE10 default56 MQTT6 firmware3 retained; full system incomplete",
+    "sourceCommit": "686f7b4",
+    "sourceValidation": "58 Gateway tests and actual Feather/Pi BLE verified in pushed checkpoint; new relay tests and 35 real observation CSE readbacks passed locally across HTTPS, CSE outage replay, MQTT and broker-loss HTTPS fallback; full system incomplete",
     "goalComplete": false,
-    "pendingInput": "Pi Zero 2 W operator is reconfiguring network. Await hostname/IP and first SSH. Main now contains authoritative commands/authorize/credentials API.",
-    "previousGoalTurnClassification": "no-progress",
-    "currentGoalTurnClassification": "no-progress",
-    "currentConsecutiveBlockedAuditTurns": 3,
-    "blockedAt": "2026-10-30T03:09:21.672985+00:00"
+    "pendingInput": null,
+    "currentDependencyState": "Pi SSH, authenticated BlueZ enrollment, physical buttons and isolated HTTPS/MQTT CSE observation paths available; production PCB delivery and central production integration remain",
+    "historicalBlock": {
+      "lastReportedGoalStatus": "blocked",
+      "consecutiveBlockedTurns": 3,
+      "goalTurnClassification": "no-progress",
+      "blockedAt": "2026-10-30T03:09:21.672985+00:00",
+      "supersededBy": "2026-11-10 active physical-bench implementation and validation"
+    }
   },
-  "actualReceiptScope": "Non-root Linux POSIX CLI10 from source and installed wheel; actual flock/fsync/permissions/WAL/ENOSPC/new legacy adoption and concurrent write detection",
+  "actualReceiptScope": "35 actual Feather/Pi observations with matching isolated CSE readback: HTTPS normal5+normal5+same-process CSE-outage-replay5, native MQTT5, broker-loss HTTPS-fallback15; all these relay frames are released; test PKI/principal and SSH tunnels, no production command or full-daemon acceptance",
   "localValidation": {
     "date": "2026-10-30",
     "sourceCommit": "0017edac40815f9d3a812d7f858705496f7aaa3b",
@@ -252,6 +267,7 @@
     "previousDefaultAndMqttReceipt": "evidence/2026-10-30-real-cse/receipt.json"
   },
   "completionDependencyAudit": {
+    "historical": true,
     "checkedAt": "2026-10-30T03:09:21.672985+00:00",
     "localHeadAtCheck": "ad17aac41aab7550fdc4ec75a464030a6834d241",
     "previousGoalTurnClassification": "no-progress",
@@ -325,6 +341,82 @@
     },
     "gatewayVersion": "0.2.4",
     "gatewayTestsPassed": 58,
-    "piFeatherReceipt": "evidence/2026-11-10-pi-feather/receipt.json"
+    "piFeatherReceipt": "evidence/2026-11-10-pi-feather/receipt.json",
+    "piCseHttps": {
+      "status": "verified-isolated-observation-scope",
+      "runsPassed": 3,
+      "observationsPerRun": 5,
+      "includesOutageRecoveryRun": true,
+      "totalStoredContentInstances": 15,
+      "readbackPayloadHashesMatched": true,
+      "buttonStatesObservedInTheseRuns": [
+        "released"
+      ],
+      "outage": {
+        "realCseStopped": true,
+        "pendingDuringOutage": 5,
+        "attemptsDuringOutage": 1,
+        "sameProcessReplayPassed": true,
+        "pendingAfter": 0,
+        "receipt": "evidence/2026-11-10-pi-cse/https-outage.json"
+      },
+      "tlsProbe": {
+        "measuredVersion": "TLSv1.3",
+        "scope": "separate actual Pi TLS probe; relay receipt TLS fields remain policy-only",
+        "receipt": "evidence/2026-11-10-pi-cse/tls-probe.json"
+      },
+      "receipts": [
+        "evidence/2026-11-10-pi-cse/https-initial.json",
+        "evidence/2026-11-10-pi-cse/https-normal.json",
+        "evidence/2026-11-10-pi-cse/https-outage.json",
+        "evidence/2026-11-10-pi-cse/https-final-checks.json"
+      ],
+      "limits": "test principal/PKI and disposable CSE through SSH reverse tunnel; no production PCB, full daemon, app/web or command authorization integration"
+    },
+    "piCseMqtt": {
+      "status": "verified-isolated-observation-scope",
+      "capturedCount": 5,
+      "publishedCount": 5,
+      "readbackCount": 5,
+      "deliveryChannels": {
+        "mqtt": 5,
+        "https": 0
+      },
+      "sequences": [
+        1039,
+        1040,
+        1041,
+        1042,
+        1043
+      ],
+      "buttonStatesObserved": [
+        "released"
+      ],
+      "brokerLossFallback": {
+        "brokerStoppedAfterMqttReady": true,
+        "capturedCount": 15,
+        "publishedCount": 15,
+        "readbackCount": 15,
+        "deliveryChannels": {
+          "mqtt": 0,
+          "https": 15
+        },
+        "firstSequence": 1060,
+        "lastSequence": 1074,
+        "buttonStatesObserved": [
+          "released"
+        ],
+        "exitCode": 0
+      },
+      "receipt": "evidence/2026-11-10-pi-cse/receipt.json",
+      "scope": "actual Pi native oneM2M MQTT application responses and HTTPS CSE readback, plus actual broker-loss HTTPS fallback; test principal/PKI only"
+    },
+    "piCseFinalization": {
+      "matchedObservationCount": 35,
+      "finalCseContentInstanceCount": 35,
+      "fixtureCleanupStatus": "verified-no-owned-resources-remaining",
+      "evidencePublicationStatus": "included-with-this-commit",
+      "cleanupReceipt": "evidence/2026-11-10-pi-cse/cleanup.json"
+    }
   }
 }
