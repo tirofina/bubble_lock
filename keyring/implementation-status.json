@@ -7,7 +7,7 @@
   "date": "2026-11-11",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Real Feather 0.2.0 and Pi produced two APPLIED GPIO command receipts through pinned scoped Mobius4. Both matched the Pi database, authenticated CSE callback and isolated PostgreSQL settlement. Visual LED confirmation, r18 firmware 0.7.9, physical power characterization, and Gateway offline journal history comparison remain unverified.",
+  "verificationStatus": "Feather 0.2.0 and Pi Gateway 0.2.28 produced two APPLIED GPIO command receipts that matched pinned Mobius4, the Pi database, authenticated CSE callback and isolated PostgreSQL settlement. Gateway 0.2.29 command readiness gating is source-only. Visual LED confirmation, r18 firmware 0.7.9, physical power characterization, and offline journal history comparison remain unverified.",
   "rubricIds": [
     "R01",
     "R02",
@@ -72,6 +72,7 @@
     "shared-I2S installation/playback guard while headphone shutdown controls are unknown",
     "three unprovisioned production-firmware compile profiles built successfully on Windows; production PCB execution pending",
     "per-connection BLE generation guards, pinned command writes and failed-handshake readiness fencing",
+    "per-device acknowledged-write readiness in health and fresh same-boot gating before Feather bench issuance",
     "atomic first staging of native receipt and optional CORE ACK; no completed ACK regeneration during native retry/restart",
     "HTTP address scope reversed for native MQTT To; real disposable Mobius4/PostgreSQL storage/readback/idempotency/conflict/restart tests",
     "Real SQLite sender/CSE integration: reopened dedup, native receipt confirmation, persisted outage backoff, abrupt child exit after remote commit, conflicting outbox retention",
@@ -157,17 +158,17 @@
   "firmwareRevision": "keyring-0.7.9",
   "benchFirmwareRevision": "feather-probe-0.2.0",
   "publication": {
-    "sourceCommit": "e6bf4c1b23a8be8cddce4e2d8e2716035995fff2",
+    "sourceCommit": "3bdd273a1a183fbb40d77d4b0288e647fcc72aa7",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "e6bf4c1b23a8be8cddce4e2d8e2716035995fff2",
-    "lastPushedCommit": "e6bf4c1b23a8be8cddce4e2d8e2716035995fff2",
-    "latestCheckpoint": "Bind real Feather ON and OFF receipts through Pi, pinned scoped Mobius4, callback and PostgreSQL settlement.",
-    "lastPushedCommitBeforeThisCheckpoint": "8694de0fdf59e02e97251e6d8032ea7f2daeaf62"
+    "latestLocalSourceCommit": "3bdd273a1a183fbb40d77d4b0288e647fcc72aa7",
+    "lastPushedCommit": "3bdd273a1a183fbb40d77d4b0288e647fcc72aa7",
+    "latestCheckpoint": "Require fresh Pi health with an acknowledged-write GATT session before issuing each Feather bench command.",
+    "lastPushedCommitBeforeThisCheckpoint": "1efe0ba36883254e74a0af2fae06ff2528e477b5"
   },
-  "gatewayRevision": "0.2.28",
+  "gatewayRevision": "0.2.29",
   "pendingValidationScope": "Visual Feather LED observation, r18 physical commands and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE MQTT ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
@@ -189,7 +190,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Build and flash Feather 0.2.0 and verify the authorized physical Pi and isolated Mobius4 LED command bench",
+    "executionRequest": "Prevent repeat bench issuance when the Pi can observe the Feather but has no current writable command GATT session",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -197,11 +198,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "e6bf4c1b23a8be8cddce4e2d8e2716035995fff2",
-    "sourceValidation": "Feather build and flash hash verification, Pi strict mTLS preflight, same-boot ON and OFF GPIO and native receipt delivery, authenticated CSE callback and PostgreSQL settlement verified. The evidence tool also rejected an applied ID declared as a prior expiration. Visual observation and r18 verification are pending.",
+    "sourceCommit": "3bdd273a1a183fbb40d77d4b0288e647fcc72aa7",
+    "sourceValidation": "Read the current plan, remote team heads and the real Feather expiration evidence. Gateway health and bench readiness gating plus regression source only. No build, test execution, deployment or physical retest was performed.",
     "goalComplete": false,
     "pendingInput": null,
-    "currentDependencyState": "The authorized Feather 0.2.0 and Pi command path was verified through isolated Mobius4 and PostgreSQL. Visual LED observation, firmware 0.7.9 build, physical BLE long-read and r18 NVS fault verification, Gateway 0.2.28 archive comparison execution, authoritative production CSE routes, approved journal reclaim and automatic external rollback detection contracts, production CORE, and r18 bring-up with physical power/range/wake capture and an external supply measurement remain.",
+    "currentDependencyState": "The Feather 0.2.0 and Pi Gateway 0.2.28 command path was verified through isolated Mobius4 and PostgreSQL. Gateway 0.2.29 readiness regression and physical retest, visual LED observation, firmware 0.7.9 build, physical BLE long-read and r18 NVS fault verification, archive comparison execution, authoritative production CSE routes, approved journal reclaim and automatic external rollback detection contracts, production CORE, and r18 bring-up with physical power/range/wake capture and an external supply measurement remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -1056,5 +1057,13 @@
     "priorExpiredCommands": 1,
     "physicalLedMatched": null,
     "sourceCommit": "e6bf4c1b23a8be8cddce4e2d8e2716035995fff2"
+  },
+  "featherBenchCommandReadiness": {
+    "reference": "raspberry-pi-gateway/TESTING.md#feather-led-onoff-시험",
+    "status": "source-only",
+    "gatewayVersion": "0.2.29",
+    "regressionsExecuted": false,
+    "physicalRetestExecuted": false,
+    "sourceCommit": "3bdd273a1a183fbb40d77d4b0288e647fcc72aa7"
   }
 }

@@ -986,3 +986,12 @@ HTTPS 재시도 commit `3cc69fd9d14a08988475c26e203899f506c478e2`를 `origin/cod
 - 같은 Feather 부팅에서 두 명령 모두 `APPLIED`였고 GPIO readback과 후속 관측이 각각 true와 false였다. Pi SQLite, Mobius4 원본, 팀 승인, 인증 콜백과 격리 PostgreSQL 정산이 일치했다. 성공 명령을 이전 만료 건으로 지정하면 대조 도구가 거절하는 것도 확인했다. Pi 시험 데몬과 SSH 터널은 종료했고, 명령 영수증 대기열은 0건, 관측 대기열은 1건이었다. LED 육안 확인과 r18 검증은 남아 있다. [증거와 해시](../keyring/evidence/2026-11-11-scoped-feather-led/receipt.json)
 
 벤치 보완 commit `e6bf4c1b23a8be8cddce4e2d8e2716035995fff2`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8694de0..e6bf4c1`이다. goal은 active/progress다.
+
+## 2026-11-11 — Feather 발급 전 Pi 명령 준비 확인
+
+직전 goal turn은 실물 Feather와 Pi Gateway 0.2.28의 ON/OFF 및 격리 정산 증거를 확보한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 브랜치 head는 직전과 같다.
+
+- Gateway `0.2.29`는 현재 GATT 세션이 응답형 명령 쓰기를 지원하는지 장치별 `commandReady`로 보고한다. LED 벤치는 같은 Feather 부팅의 관측과 활성 자격을 확인한다. 단계 trigger를 본 뒤 새 health를 기다리고, grant 발급 뒤 같은 Pi 부팅의 준비 상태를 재확인해야 명령을 보낸다. [시험 절차](../keyring/raspberry-pi-gateway/TESTING.md#feather-led-onoff-시험)
+- 준비 상태 필드 누락·false, 다른 부팅, 오래된 health를 다루는 회귀시험 소스를 추가했다. 빌드·시험·Pi 배포·실물 재시험은 미실행이다. 앞선 0.2.28의 실물 증거와 범위를 분리한다. goal은 active/progress다.
+
+준비 확인 commit `3bdd273a1a183fbb40d77d4b0288e647fcc72aa7`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1efe0ba..3bdd273`이다.
