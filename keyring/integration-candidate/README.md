@@ -68,6 +68,8 @@ const drainOne = createReceiptNotificationWorker({ inbox, resolveSettlement });
 
 [대기열 테이블](sql/002_receipt_notification_inbox.sql)은 `(cse_key, native_ref)`별로 중복 알림을 합친다. 수신 성공은 대기열 커밋 이후에만 반환한다. [작업자](receipt-notification-worker.mjs)는 제한 시간 동안 한 행을 맡고 원본을 조회해 정산한다. 일시 실패는 간격을 늘려 다시 시도한다. 한도를 넘겼거나 영수증이 검토로 분류되면 운영자가 확인할 상태와 코드가 남는다. 처리 도중 프로세스가 끝나면 기한 뒤 다른 작업자가 같은 URI를 처리할 수 있다.
 
+[전달 경로 기록](sql/003_receipt_delivery_provenance.sql)은 같은 트랜잭션에서 `CSE_CALLBACK`과 `RECOVERY_SWEEP`별 최초 시각을 남긴다. `queued_new`는 해당 경로가 대기열 행을 최초로 만들었는지 나타낸다. 이미 정산된 뒤 다른 경로의 알림이 오면 전달 기록만 추가된다. 이전 데이터에 없는 전달 경로는 추정하지 않는다.
+
 배치하려면 팀이 콜백의 CSE 인증 경계와 구독을 등록하고 DB 마이그레이션을 적용해야 한다. 사용 중인 Mobius4의 HTTP 알림은 전송 실패를 로그에 남긴다. 이번에는 실제 콜백·DB·재시도 시험을 실행하지 않았다. [Mobius4 HTTP 알림 처리](https://github.com/IoTKETI/mobius4/blob/e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8/cse/noti.js)
 
 ### 대기열 도달 전 유실 복구

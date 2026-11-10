@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createReceiptNotificationIngress } from '../../integration-candidate/receipt-notification-ingress.mjs';
+import { createPostgresReceiptInbox } from '../../integration-candidate/receipt-notification-postgres.mjs';
 import { createReceiptNotificationWorker } from '../../integration-candidate/receipt-notification-worker.mjs';
 
 const container = '/Mobius/bench/command-receipts-a';
@@ -14,13 +15,41 @@ const event = { nev: { net: 3, rep: { 'm2m:uri': nativeRef.slice(1) } } };
 
 test('verification only responds, and the receipt callback enqueues the canonical URI', async () => {
   const queued = [];
-  const receive = createReceiptNotificationIngress({ subscriptions: [registration], enqueue: async (entry) => queued.push(entry) });
+  const receive = createReceiptNotificationIngress({ subscriptions: [registration], enqueue: async (...args) => queued.push(args) });
   assert.deepEqual(await receive(delivery({ vrq: true })), {
     httpStatus: 200, headers: { 'x-m2m-rsc': '2000', 'x-m2m-ri': 'http-noti-test' },
   });
   assert.deepEqual(queued, []);
   assert.equal((await receive(delivery(event))).httpStatus, 200);
-  assert.deepEqual(queued, [{ cseKey: 'scoped', nativeRef }]);
+  assert.deepEqual(queued, [[{ cseKey: 'scoped', nativeRef }, 'CSE_CALLBACK']]);
+});
+
+test('records both delivery paths in the same transaction as their inbox insertion attempts', async () => {
+  const statements = [];
+  let hasInbox = false;
+  const client = { async query(sql, params) {
+    const statement = sql.trimStart();
+    if (statement.startsWith('INSERT INTO privacy_bubble.keyring_receipt_notification')) {
+      statements.push(['inbox', params]);
+      if (hasInbox) return { rowCount: 0 };
+      hasInbox = true;
+      return { rowCount: 1 };
+    }
+    if (statement.startsWith('INSERT INTO privacy_bubble.keyring_receipt_delivery')) {
+      statements.push(['delivery', params]);
+      return { rowCount: 1 };
+    }
+    if (statement === 'COMMIT') statements.push(['commit']);
+    return { command: statement };
+  }, release() {} };
+  const inbox = createPostgresReceiptInbox({ connect: async () => client });
+  const entry = { cseKey: 'scoped', nativeRef };
+  assert.equal(await inbox.enqueue(entry, 'RECOVERY_SWEEP'), true);
+  assert.equal(await inbox.enqueue(entry, 'CSE_CALLBACK'), false);
+  assert.deepEqual(statements, [
+    ['inbox', ['scoped', nativeRef]], ['delivery', ['scoped', nativeRef, 'RECOVERY_SWEEP', true]], ['commit'],
+    ['inbox', ['scoped', nativeRef]], ['delivery', ['scoped', nativeRef, 'CSE_CALLBACK', false]], ['commit'],
+  ]);
 });
 
 test('rejects a spoofed peer, cross-container URI, and full-body notification', async () => {

@@ -49,7 +49,7 @@ export function createReceiptNotificationIngress({ subscriptions, enqueue }) {
     const name = uri.slice(separator + 1);
     if (uri.slice(0, separator) !== binding.wireContainer || !exact(resourceName, name)) return reply(400, 4000);
     try {
-      await enqueue({ cseKey: verifiedCseKey, nativeRef: `${binding.receiptContainer}/${name}` });
+      await enqueue({ cseKey: verifiedCseKey, nativeRef: `${binding.receiptContainer}/${name}` }, 'CSE_CALLBACK');
     } catch {
       return reply(503, 5000);
     }

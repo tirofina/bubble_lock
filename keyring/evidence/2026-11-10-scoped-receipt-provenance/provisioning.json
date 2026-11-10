@@ -1,0 +1,15 @@
+{
+  "documentRevision": "2.0.0",
+  "scope": "isolated-receipt-delivery-provenance-deployment",
+  "observedAt": "2026-11-10T14:06:25.350Z",
+  "database": "keyring_receipt_dev",
+  "migrationSha256": "4f25f04b168b01bb3eba993819599539e477530f67e1865d5e5ac295d4690e79",
+  "migrationApplied": true,
+  "callbackRestartStatus": "SCOPED_RECEIPT_CALLBACK_READY",
+  "workerRestartStatus": "SCOPED_RECEIPT_PROCESS_READY",
+  "callbackLoopbackListenerObserved": true,
+  "mobiusAndRelayContainersPreserved": true,
+  "rows": { "keyring_receipt_notification": 0, "keyring_receipt_delivery": 0, "keyring_command_settlement": 0 },
+  "inspectionCliExecuted": false,
+  "physicalReceiptObserved": false
+}

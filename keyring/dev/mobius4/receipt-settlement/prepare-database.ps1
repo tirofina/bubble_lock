@@ -3,7 +3,8 @@ $project = 'privacy-bubble-keyring-receipt-dev'
 $migrations = @(
   (Join-Path $PSScriptRoot '../.local/scoped/command-api/team-source/pc-mobius/db/migrations/001_core_receipts.sql'),
   (Join-Path $PSScriptRoot '../../../integration-candidate/sql/001_command_receipt_settlement.sql'),
-  (Join-Path $PSScriptRoot '../../../integration-candidate/sql/002_receipt_notification_inbox.sql')
+  (Join-Path $PSScriptRoot '../../../integration-candidate/sql/002_receipt_notification_inbox.sql'),
+  (Join-Path $PSScriptRoot '../../../integration-candidate/sql/003_receipt_delivery_provenance.sql')
 )
 $sql = ($migrations | ForEach-Object { Get-Content -Raw -Encoding utf8 -LiteralPath $_ }) -join "`n"
 $privateRoot = Join-Path $PSScriptRoot '.local'

@@ -42,7 +42,11 @@ test('walks an authorization window with stable ties, discarding denied, duplica
         return { gatewayId: 'gw-a', receipt: { commandId } };
       } };
     },
-    inbox: { has: async () => false, enqueue: async (entry) => { queued.push(entry); return true; } },
+    inbox: { has: async () => false, enqueue: async (entry, source) => {
+      assert.equal(source, 'RECOVERY_SWEEP');
+      queued.push(entry);
+      return true;
+    } },
   });
   const first = await sweep({ limit: 1 });
   assert.deepEqual(first, { checked: 1, queued: 1, alreadyQueued: 0, gaps: [], next: { commandId: 'a', authorizedAt } });

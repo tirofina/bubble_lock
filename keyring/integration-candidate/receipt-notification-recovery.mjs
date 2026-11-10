@@ -73,7 +73,7 @@ export function createReceiptNotificationSweep({ snapshot, from, until, hashPayl
         gap('WAITING_FOR_NATIVE');
       } else if (native.gatewayId !== gatewayId || native.receipt?.commandId !== commandId) {
         gap('NATIVE_RECEIPT_BINDING');
-      } else if (await inbox.enqueue(entry)) {
+      } else if (await inbox.enqueue(entry, 'RECOVERY_SWEEP')) {
         result.queued++;
       } else {
         result.alreadyQueued++; // The callback or another sweep won the insert.

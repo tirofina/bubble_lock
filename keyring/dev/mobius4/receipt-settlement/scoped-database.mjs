@@ -11,6 +11,7 @@ export async function openScopedReceiptPool(applicationName) {
 
 export async function requireScopedReceiptSchema(pool) {
   const { rows } = await pool.query(`SELECT to_regclass('privacy_bubble.keyring_command_settlement') IS NOT NULL
-    AND to_regclass('privacy_bubble.keyring_receipt_notification') IS NOT NULL AS ready`);
+    AND to_regclass('privacy_bubble.keyring_receipt_notification') IS NOT NULL
+    AND to_regclass('privacy_bubble.keyring_receipt_delivery') IS NOT NULL AS ready`);
   if (rows[0]?.ready !== true) throw new Error('SCOPED_RECEIPT_SCHEMA_REQUIRED');
 }

@@ -140,6 +140,16 @@ node "$tool/callback.mjs"
 
 2026-11-10에 중계와 PC 수신기의 TLS 연결, 그리고 두 구독의 HTTP 201·oneM2M 2001 응답을 확인했다. 현재 Mobius4는 직접 URL로 등록하는 구독에서 발신 검증을 생략한다. 실제 명령 영수증이 생성될 때의 콜백 수신과 정산은 남아 있다. [콜백 시작 증거](../../evidence/2026-11-10-scoped-receipt-callback/startup.json) · [중계와 구독 준비 증거](../../evidence/2026-11-10-scoped-receipt-relay/provisioning.json)
 
+#### 명령별 영수증 증거 조회
+
+실제 명령 ID가 있으면 아래 명령으로 PostgreSQL 대기열, 전달 경로, 정산 기록을 한 번에 읽는다.
+
+```powershell
+node "$tool/inspect.mjs" --gateway gw-a --command $issuedCommandId
+```
+
+`deliveries`의 `CSE_CALLBACK`은 인증 콜백에서 수신한 기록이고 `RECOVERY_SWEEP`은 복구 조회가 대기열로 넘긴 기록이다. `queuedNew`가 참인 경로가 처음 대기열 행을 만들었다. `settlement`에는 최종 readback과 승인 이벤트 ID, 영수증 해시가 있다. 2026-11-10에 전달 경로 테이블을 전용 DB에 적용했고 콜백과 작업자의 재기동을 확인했다. 대기열·전달·정산 테이블은 모두 0행이었다. [배치 증거](../../evidence/2026-11-10-scoped-receipt-provenance/provisioning.json)
+
 ### Feather 벤치 명령 API
 
 PC의 `https://127.0.0.1:8787`에 팀 main `715ef58`의 mTLS API를 띄운다. 런처는 로컬 Git 객체에서 해당 팀 소스를 추출하고 scoped CA로 벤치 운영자 인증서를 발급한다. Git for Windows의 OpenSSL을 기본으로 사용한다. 첫 시작에 `gw-a`의 `keyring-feather-lab`과 벤치 주체 `scoped-feather-bench`를 등록한다. 이후 시작은 같은 등록을 읽고 저장된 자격 상태를 유지한다.
