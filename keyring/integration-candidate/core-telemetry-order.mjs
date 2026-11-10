@@ -5,6 +5,9 @@ const validSource = (source) => identity(source?.gatewayId) && identity(source?.
   && uint(source?.ownershipEpoch, 2147483647);
 const matches = (owner, source) => validSource(owner) && owner.gatewayId === source.gatewayId
   && owner.deviceId === source.deviceId && owner.ownershipEpoch === source.ownershipEpoch;
+const validBinding = (binding) => typeof binding?.payloadHash === 'string' && binding.payloadHash.length === 64
+  && /^[a-f0-9]{64}$/.test(binding.payloadHash) && typeof binding.cseRequestId === 'string'
+  && binding.cseRequestId.length === 51 && /^kr-[a-f0-9]{48}$/.test(binding.cseRequestId);
 
 /**
  * Serialize confirmed CSE updates inside one resource owner process.
@@ -16,11 +19,12 @@ export function createTelemetryOrder({ readOwner, readCursor, writeCursor, maxPe
   const lanes = new Map();
   const unresolvedWrites = new Set();
 
-  async function update(resource, source, payload, apply) {
+  async function update(resource, source, payload, apply, binding) {
     if (unresolvedWrites.has(resource)) return { status: 'REVIEW_PENDING' };
     const cursor = await readCursor(resource);
     if (cursor != null && (!validSource(cursor) || !uint(cursor.sequence, 4294967295)
-        || !['PENDING', 'APPLIED'].includes(cursor.phase))) {
+        || !['PENDING', 'APPLIED'].includes(cursor.phase)
+        || (cursor.binding !== undefined && !validBinding(cursor.binding)))) {
       throw new Error('INVALID_TELEMETRY_CURSOR');
     }
     if (cursor?.phase === 'PENDING') return { status: 'REVIEW_PENDING' };
@@ -29,12 +33,20 @@ export function createTelemetryOrder({ readOwner, readCursor, writeCursor, maxPe
         || (cursor.ownershipEpoch === source.ownershipEpoch && cursor.gatewayId !== source.gatewayId))) {
       return { status: 'REVIEW_BINDING' };
     }
+    if (binding && cursor?.ownershipEpoch === source.ownershipEpoch && cursor.sequence === payload.sequence) {
+      if (!cursor.binding) return { status: 'REVIEW_BINDING' };
+      if (cursor.binding.payloadHash !== binding.payloadHash || cursor.binding.cseRequestId !== binding.cseRequestId) {
+        return { status: 'CONFLICT' };
+      }
+      return { status: 'APPLIED', replayed: true };
+    }
     if (cursor && (source.ownershipEpoch < cursor.ownershipEpoch
         || (source.ownershipEpoch === cursor.ownershipEpoch && payload.sequence <= cursor.sequence))) {
       return { status: 'STALE_SEQUENCE' };
     }
 
     const next = { ...source, sequence: payload.sequence, phase: 'PENDING' };
+    if (binding) next.binding = binding;
     try {
       await writeCursor(resource, next);
       if (!matches(await readOwner(resource), source)) {
@@ -52,23 +64,24 @@ export function createTelemetryOrder({ readOwner, readCursor, writeCursor, maxPe
     }
   }
 
-  return function submit(resource, source, payload, apply) {
+  return function submit(resource, source, payload, apply, binding) {
     if (typeof resource !== 'string' || !resource || !validSource(source)
         || payload?.gatewayId !== source.gatewayId || payload?.deviceId !== source.deviceId
         || typeof payload?.state !== 'boolean' || !uint(payload?.sequence, 4294967295)
-        || typeof apply !== 'function') {
+        || typeof apply !== 'function' || (binding !== undefined && !validBinding(binding))) {
       return Promise.resolve({ status: 'INVALID_TELEMETRY_BINDING' });
     }
     let lane = lanes.get(resource);
     if (lane?.count >= maxPending) return Promise.resolve({ status: 'REVIEW_CAPACITY' });
     const context = { gatewayId: source.gatewayId, deviceId: source.deviceId, ownershipEpoch: source.ownershipEpoch };
     const message = structuredClone(payload);
+    const proof = binding && { payloadHash: binding.payloadHash, cseRequestId: binding.cseRequestId };
     if (!lane) {
       lane = { tail: Promise.resolve(), count: 0 };
       lanes.set(resource, lane);
     }
     ++lane.count;
-    const result = lane.tail.then(() => update(resource, context, message, apply));
+    const result = lane.tail.then(() => update(resource, context, message, apply, proof));
     lane.tail = result.catch(() => {});
     return result.finally(() => {
       if (--lane.count === 0) lanes.delete(resource);

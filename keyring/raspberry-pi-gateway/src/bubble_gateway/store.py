@@ -174,7 +174,7 @@ class Store:
             except CapacityError:
                 break
 
-    def due(self, *, core_epochs: dict[str, int] | None = None) -> dict | None:
+    def due(self, *, core_epochs: dict[str, int] | None = None, scoped_only: bool = False) -> dict | None:
         # Old ownership routes stay on disk and cannot block the active route.
         # Within the active route, only the oldest projection per device can run.
         epochs = canonical(core_epochs) if core_epochs is not None else None
@@ -194,8 +194,9 @@ class Store:
             )
             SELECT * FROM outbox WHERE next_attempt<=?2
               AND (container<>'@core/telemetry' OR rowid IN (SELECT head FROM core_heads))
+              AND (?3=0 OR container='@core/telemetry')
             ORDER BY created_at,rqi LIMIT 1
-        """, (epochs, time.time())).fetchone()
+        """, (epochs, time.time(), scoped_only)).fetchone()
         if row is None:
             return None
         result = dict(row)

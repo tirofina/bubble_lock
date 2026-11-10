@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:privacy-bubble:keyring:0.1.0:core-telemetry-receipt",
+  "title": "CORE scoped telemetry application receipt",
+  "description": "KEYRING candidate for a confirmed oneM2M SDT UPDATE. payloadHash is SHA-256 of the exact MQTT telemetry bytes.",
+  "type": "object",
+  "properties": {
+    "version": {"type": "integer", "const": 1},
+    "gatewayId": {"type": "string", "maxLength": 64, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+    "deviceId": {"type": "string", "maxLength": 64, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"},
+    "ownershipEpoch": {"type": "integer", "minimum": 0, "maximum": 2147483647},
+    "sequence": {"type": "integer", "minimum": 0, "maximum": 4294967295},
+    "payloadHash": {"type": "string", "minLength": 64, "maxLength": 64, "pattern": "^[a-f0-9]{64}$"},
+    "cseRequestId": {"type": "string", "minLength": 51, "maxLength": 51, "pattern": "^kr-[a-f0-9]{48}$"},
+    "responseStatus": {"type": "integer", "const": 2004}
+  },
+  "required": [
+    "version", "gatewayId", "deviceId", "ownershipEpoch", "sequence",
+    "payloadHash", "cseRequestId", "responseStatus"
+  ],
+  "additionalProperties": false
+}

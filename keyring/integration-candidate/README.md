@@ -63,3 +63,11 @@ topic read privacy-bubble/gateway/+/telemetry-epoch/+/+
 익명 listener, 브리지나 다른 경로에서도 같은 namespace에 발행할 수 없어야 한다. 현재 Mobius4 개발 프로필의 내부 익명 listener에는 이 수신 후보를 연결하지 않는다. 브로커가 retained publish도 차단해야 하며, 같은 SDT를 갱신하는 기존 unscoped 구독 경로는 전환 전에 종료한다. 중앙이 이전 writer의 전송을 종료하고 미확정 UPDATE를 처리한 뒤 새 ACL과 소유권을 배정한다. 기존 메시지에 새 epoch를 다시 붙이지 않는다.
 
 [격리 개발 프로필](../dev/mobius4/README.md#epoch-전용-mqtt-프로필)에서 중앙 소비자를 mTLS 브로커에 연결했다. 실제 두 Gateway 인증서의 토픽 ACL 격리, 교체 전 지연 메시지, SQLite 재기동과 CSE readback은 별도 시험으로 확인해야 한다. 앞선 동시 갱신 시험에는 시험용 소유권을 공급했다.
+
+## Epoch 관측의 적용 영수증
+
+Gateway 0.2.14는 `privacy-bubble/gateway/{gatewayId}/telemetry-result/{deviceId}/{epoch}`를 QoS 1로 구독한다. 브로커 ACL은 중앙 소비자에게만 해당 토픽의 쓰기를, 해당 Gateway 인증서에는 읽기를 허용한다. 중앙은 Mobius4의 UPDATE 응답 2004와 RQI를 확인하고 SDT cursor를 `APPLIED`로 저장한 뒤 [영수증](../../contracts/keyring/core-telemetry-receipt.schema.json)을 발행한다. 영수증에는 원래 관측 본문의 바이트 해시, Gateway·장치·epoch·sequence, CSE 요청 ID를 넣는다.
+
+Gateway는 기다리는 토픽·식별자·sequence·해시가 일치하는 영수증을 받아야 outbox 행을 완료한다. 응답 유실과 timeout은 SQLite 재시도로 이어진다. 중앙에 같은 epoch·sequence·해시의 적용 기록이 있으면 UPDATE를 다시 보내지 않고 영수증을 재발행한다. 같은 sequence의 다른 본문, 이전 epoch, 해시가 없는 이전 형식의 cursor, `PENDING` cursor에는 적용 영수증을 발행하지 않는다. 새 cursor가 저장된 뒤 이전 기록에 대한 개별 조회나 재발행은 제공하지 않는다.
+
+Scoped 관측 전송 작업자는 일반 관측과 명령 영수증 작업자와 분리된다. Gateway·중앙 소비자·응답 ACL을 함께 배치해야 하며, 기존 브로커와 중앙 소비자를 실행 중인 경우 새 설정을 적용해야 한다. 이 영수증 경로의 빌드와 실제 발행 시험은 아직 실행하지 않았다.

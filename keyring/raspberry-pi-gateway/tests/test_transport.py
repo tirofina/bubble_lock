@@ -8,9 +8,10 @@ from unittest.mock import AsyncMock, Mock, call
 
 import httpx
 
+from bubble_gateway.core_bridge import telemetry
 from bubble_gateway.model import iso_time, payload_hash, utc_now
 from bubble_gateway.transport import RemoteResponseError, TransportHub, _mqtt_to
-from helpers import command, config
+from helpers import command, config, observation
 
 
 class TransportMockTests(unittest.IsolatedAsyncioTestCase):
@@ -58,6 +59,36 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
         mqtt_cin = json.loads(self.hub._mqtt.publish.call_args.kwargs["payload"])["m2m:rqp"]["pc"]
         self.assertEqual(kwargs["body"], mqtt_cin)
         self.assertEqual(self.hub._pending, {})
+
+    async def test_scoped_core_requires_the_matching_application_receipt(self):
+        self.hub.config.core_telemetry_epochs = {"kr-test": 7}
+        self.hub.config.request_timeout = 1
+        self.hub._loop = asyncio.get_running_loop()
+        self.hub._mqtt = SimpleNamespace(publish=Mock(return_value=SimpleNamespace(rc=0)))
+        self.hub._ready.set()
+        projection = {**telemetry(observation(), 12), "ownershipEpoch": 7}
+        send = asyncio.create_task(self.hub.publish("scoped", "@core/telemetry", projection))
+        await asyncio.sleep(0)
+        args, kwargs = self.hub._mqtt.publish.call_args
+        self.assertEqual(args[0], "privacy-bubble/gateway/gw-test/telemetry-epoch/kr-test/7")
+        self.assertNotIn("ownershipEpoch", json.loads(kwargs["payload"]))
+        digest = hashlib.sha256(kwargs["payload"]).hexdigest()
+        receipt = dict(version=1, gatewayId="gw-test", deviceId="kr-test", ownershipEpoch=7,
+                       sequence=12, payloadHash=digest, cseRequestId="kr-" + "a" * 48, responseStatus=2004)
+        topic = "privacy-bubble/gateway/gw-test/telemetry-result/kr-test/7"
+
+        def receive(data, *, from_topic=topic, retain=False):
+            self.hub._on_message(None, None, SimpleNamespace(
+                topic=from_topic, payload=json.dumps(data).encode(), retain=retain))
+
+        receive({**receipt, "payloadHash": "0" * 64})
+        receive(receipt, from_topic=topic[:-1] + "8")
+        receive(receipt, retain=True)
+        await asyncio.sleep(0)
+        self.assertFalse(send.done())
+        receive(receipt)
+        await send
+        self.assertEqual(self.hub._core_pending, {})
 
     async def test_mqtt_application_denial_does_not_try_http(self):
         self.mqtt(4103)

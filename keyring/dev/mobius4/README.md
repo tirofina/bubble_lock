@@ -55,6 +55,8 @@ docker compose --env-file ./keyring/dev/mobius4/.local/compose.env -f ./keyring/
 
 브로커 ACL은 표의 발행 경로 앞에 `privacy-bubble/gateway/`를 붙여 사용한다. Nginx는 두 Gateway의 직접 SDT 갱신을 제한한다. 중앙 소비자가 장치의 활성 Gateway와 epoch를 확인하고, oneM2M의 응답 RSC 2004와 일치하는 요청 ID를 받은 뒤에만 SDT cursor를 적용 완료로 저장한다. 브로커 세션은 메모리에 있으며 디스크에 저장되는 cursor와 별개다.
 
+Gateway 0.2.14는 적용 영수증을 기다린다. 새 ACL은 해당 Gateway에만 `telemetry-result/{deviceId}/{epoch}` 읽기를, 중앙 소비자에만 쓰기를 부여한다. 이전 프로필을 실행 중이면 새 ACL과 소비자 소스를 함께 적용해야 한다. [적용 영수증 계약](../../integration-candidate/README.md#epoch-관측의-적용-영수증)
+
 기존 개발 이미지가 로컬에 있는 상태에서 역할 저장소 루트 기준으로 실행한다. `$teamCoreRoot`는 팀 main `715ef58`의 `pc-mobius`가 들어 있는 경로이고, `$mobius4Root`는 위에 고정한 upstream checkout이다.
 
 ```powershell

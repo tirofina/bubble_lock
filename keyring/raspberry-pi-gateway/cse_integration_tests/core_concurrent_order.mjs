@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createTelemetryOrder } from '../../integration-candidate/core-telemetry-order.mjs';
+import { createScopedTelemetryIngress } from '../../integration-candidate/core-telemetry-ingress.mjs';
 import { deliver, loadSdtProbe } from './core_sdt_fixture.mjs';
 
 const { tree, pki, bridge, tlsFetch, input: { paths, projections } } = await loadSdtProbe();
@@ -99,8 +101,33 @@ const unusedResource = '/synthetic-before-send';
 assert.equal((await ownerChanged(unusedResource, ownerA, older, () => assert.fail('old owner dispatched'))).status, 'NOT_OWNER');
 assert.equal(reopened.get('coreTelemetryCursors', unusedResource), null);
 
+const receiptResource = '/synthetic-receipt-replay';
+const receiptTopic = `privacy-bubble/gateway/${gatewayA}/telemetry-epoch/${ownerA.deviceId}/1`;
+const bytes = Buffer.from(JSON.stringify(older));
+function scoped(storage, apply) {
+  return createScopedTelemetryIngress({
+    resolveResource: () => receiptResource,
+    readOwner: () => ownerA,
+    readCursor: (path) => storage.get('coreTelemetryCursors', path),
+    writeCursor: (path, cursor) => storage.put('coreTelemetryCursors', path, cursor),
+    apply,
+  });
+}
+const recorded = await scoped(reopened, async () => ({ status: 'APPLIED' }))(receiptTopic, bytes, { retain: false });
+assert.equal(recorded.receipt.payloadHash, createHash('sha256').update(bytes).digest('hex'));
+assert.equal(recorded.receipt.responseStatus, 2004);
+const receiptStore = await new IntegrationStore(storePath).init();
+const retryReceipt = scoped(receiptStore, () => assert.fail('confirmed UPDATE ran again'));
+const replay = await retryReceipt(receiptTopic, bytes, { retain: false });
+assert.equal(replay.replayed, true);
+assert.deepEqual(replay.receipt, recorded.receipt);
+const conflict = await retryReceipt(receiptTopic, Buffer.from(JSON.stringify({ ...older, state: false })), { retain: false });
+assert.equal(conflict.status, 'CONFLICT');
+assert.equal(conflict.receipt, undefined);
+
 console.log(JSON.stringify({
   originalCompletionOrder: baseline.completed, serializedCompletionOrder: ordered.completed,
   oldOwnerAndOldEpochRejected: true, rollbackAccepted: true, unresolvedPreservedOnReload: true,
   staleAfterReloadRejected: true, ownerChangeBeforeDispatchBlocked: true, queueBoundEnforced: true,
+  matchingReceiptReplayed: true, conflictingReceiptRejected: true,
 }));

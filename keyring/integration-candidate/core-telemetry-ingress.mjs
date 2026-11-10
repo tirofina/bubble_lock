@@ -38,6 +38,12 @@ export function createScopedTelemetryIngress({ resolveResource, apply, ...orderi
     const source = { gatewayId, deviceId, ownershipEpoch };
     const requestId = 'kr-' + createHash('sha256').update(JSON.stringify(
       [resource, gatewayId, deviceId, ownershipEpoch, payload.sequence])).digest('hex').slice(0, 48);
-    return submit(resource, source, payload, (message) => apply({ resource, source, requestId, payload: message }));
+    const binding = { cseRequestId: requestId, payloadHash: createHash('sha256').update(bytes).digest('hex') };
+    const result = await submit(resource, source, payload,
+      (message) => apply({ resource, source, requestId, payload: message }), binding);
+    if (result.status !== 'APPLIED') return result;
+    return { ...result, receipt: {
+      version: 1, ...source, sequence: payload.sequence, ...binding, responseStatus: 2004,
+    } };
   };
 }

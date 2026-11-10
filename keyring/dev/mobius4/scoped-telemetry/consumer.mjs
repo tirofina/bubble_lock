@@ -68,8 +68,16 @@ mqtt.on('connect', () => {
 mqtt.on('error', () => console.error('SCOPED_BROKER_ERROR'));
 mqtt.on('message', (topic, bytes, packet) => {
   if (stopping) return;
-  const job = ingest(topic, bytes, packet).then(({ status }) => console.log(status),
-    () => console.error('SCOPED_INGRESS_ERROR'));
+  const job = ingest(topic, bytes, packet).then(({ status, receipt }) => {
+    console.log(status);
+    if (receipt && !stopping && mqtt.connected) {
+      const { gatewayId, deviceId, ownershipEpoch } = receipt;
+      mqtt.publish(`privacy-bubble/gateway/${gatewayId}/telemetry-result/${deviceId}/${ownershipEpoch}`,
+        JSON.stringify(receipt), { qos: 1, retain: false }, (error) => {
+          if (error) console.error('SCOPED_RECEIPT_PUBLISH_ERROR');
+        });
+    }
+  }).catch(() => console.error('SCOPED_INGRESS_ERROR'));
   pending.add(job);
   job.finally(() => pending.delete(job));
 });

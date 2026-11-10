@@ -8,6 +8,7 @@ import hashlib
 import json
 import logging
 import math
+import re
 import uuid
 from typing import Any
 from urllib.parse import quote, urlsplit
@@ -21,6 +22,8 @@ from .model import authorization_deadline, parse_time, payload_hash, utc_now
 LOG = logging.getLogger(__name__)
 MAX_BODY = 256 * 1024
 COMMAND_BATCH = 16
+CORE_RECEIPT_FIELDS = {"version", "gatewayId", "deviceId", "ownershipEpoch", "sequence",
+                       "payloadHash", "cseRequestId", "responseStatus"}
 
 
 class RemoteResponseError(RuntimeError):
@@ -118,6 +121,7 @@ class TransportHub:
         self._loop: asyncio.AbstractEventLoop | None = None
         self._ready = asyncio.Event()
         self._pending: dict[str, asyncio.Future] = {}
+        self._core_pending: dict[tuple[str, int, int, str], asyncio.Future[None]] = {}
         self._subscribe_mid: int | None = None
         self._closing = False
 
@@ -168,6 +172,8 @@ class TransportHub:
         subscriptions = [(self._response_topic, 1)] if self.config.m2m_mqtt_enabled else []
         if self.config.core_bridge_enabled:
             subscriptions.append((self._core_root + "/command", 1))
+            subscriptions.extend((self._core_receipt_topic(device, epoch), 1)
+                                 for device, epoch in (self.config.core_telemetry_epochs or {}).items())
         result, mid = client.subscribe(subscriptions)
         if result == mqtt.MQTT_ERR_SUCCESS:
             self._subscribe_mid = mid
@@ -190,12 +196,15 @@ class TransportHub:
 
     def _disconnected(self) -> None:
         self._ready.clear()
-        for future in self._pending.values():
+        for future in (*self._pending.values(), *self._core_pending.values()):
             if not future.done():
-                future.set_exception(ConnectionError("MQTT disconnected before oneM2M response"))
+                future.set_exception(ConnectionError("MQTT disconnected before application response"))
 
     def _on_message(self, _client: Any, _userdata: Any, message: Any) -> None:
         if message.retain or len(message.payload) > MAX_BODY:
+            return
+        if self.config.core_telemetry_epochs and message.topic.startswith(self._core_root + "/telemetry-result/"):
+            self._handle_core_receipt(message.topic, message.payload)
             return
         if self.config.core_bridge_enabled and message.topic == self._core_root + "/command":
             try:
@@ -224,6 +233,36 @@ class TransportHub:
         future = self._pending.get(response["rqi"])
         if future is not None and not future.done():
             future.set_result(response)
+
+    def _core_receipt_topic(self, device: str, epoch: int) -> str:
+        return f"{self._core_root}/telemetry-result/{device}/{epoch}"
+
+    def _handle_core_receipt(self, topic: str, raw: bytes) -> None:
+        if len(raw) > 2048:
+            return
+        try:
+            result = _object(raw)
+        except RemoteResponseError:
+            return
+        if set(result) != CORE_RECEIPT_FIELDS:
+            return
+        device, epoch, sequence = (result[key] for key in ("deviceId", "ownershipEpoch", "sequence"))
+        digest, request_id = result["payloadHash"], result["cseRequestId"]
+        if (type(result["version"]) is not int or result["version"] != 1
+                or result["gatewayId"] != self.config.gateway_id or not isinstance(device, str)
+                or type(epoch) is not int or self.config.core_telemetry_epochs.get(device) != epoch
+                or topic != self._core_receipt_topic(device, epoch)
+                or type(sequence) is not int or not 0 <= sequence <= 4294967295
+                or type(result["responseStatus"]) is not int or result["responseStatus"] != 2004
+                or not isinstance(digest, str) or not re.fullmatch(r"[a-f0-9]{64}", digest)
+                or not isinstance(request_id, str) or not re.fullmatch(r"kr-[a-f0-9]{48}", request_id)):
+            return
+        self._schedule(self._receive_core_receipt, (device, epoch, sequence, digest))
+
+    def _receive_core_receipt(self, key: tuple[str, int, int, str]) -> None:
+        future = self._core_pending.get(key)
+        if future is not None and not future.done():
+            future.set_result(None)
 
     def _queue_command(self, command: dict[str, Any]) -> None:
         try:
@@ -349,6 +388,8 @@ class TransportHub:
                     raise ValueError("CORE telemetry ownership assignment does not match the queued route")
                 topic = f"{self._core_root}/telemetry-epoch/{device_id}/{epoch}"
                 payload = {key: value for key, value in payload.items() if key != "ownershipEpoch"}
+                await self._publish_scoped_telemetry(topic, device_id, epoch, payload)
+                return
         info = self._mqtt.publish(topic, payload=_json(payload), qos=1, retain=False)
         if info.rc != mqtt.MQTT_ERR_SUCCESS:
             raise ConnectionError("CORE publish was not accepted")
@@ -357,6 +398,29 @@ class TransportHub:
             raise TimeoutError("CORE MQTT PUBACK timeout")
         # PUBACK proves broker ingress only. It does not assert CORE processing,
         # a oneM2M UPDATE or a physical device actuation.
+
+    async def _publish_scoped_telemetry(self, topic: str, device: str, epoch: int,
+                                        payload: dict[str, Any]) -> None:
+        sequence = payload.get("sequence")
+        if type(sequence) is not int or not 0 <= sequence <= 4294967295:
+            raise ValueError("Invalid scoped CORE telemetry sequence")
+        encoded = _json(payload)
+        key = (device, epoch, sequence, hashlib.sha256(encoded).hexdigest())
+        if key in self._core_pending:
+            raise RuntimeError("Scoped CORE telemetry is already in flight")
+        future = asyncio.get_running_loop().create_future()
+        self._core_pending[key] = future
+        try:
+            info = self._mqtt.publish(topic, payload=encoded, qos=1, retain=False)
+            if info.rc != mqtt.MQTT_ERR_SUCCESS:
+                raise ConnectionError("Scoped CORE publish was not queued")
+            await asyncio.wait_for(future, self.config.request_timeout)
+        finally:
+            self._core_pending.pop(key, None)
+            if not future.done():
+                future.cancel()
+            elif not future.cancelled():
+                future.exception()
 
     async def _api(self, method: str, suffix: str, body: dict[str, Any] | None = None,
                     correlation_id: str | None = None) -> dict[str, Any]:

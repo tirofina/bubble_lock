@@ -14,6 +14,7 @@
 | [ble-command.schema.json](ble-command.schema.json) | Gateway → 키링 | 중앙 명령을 제한된 실행 시간으로 변환한 BLE 명령 |
 | [ble-receipt.schema.json](ble-receipt.schema.json) | 키링 → Gateway | ACK, uptime, GPIO readback |
 | [observation.schema.json](observation.schema.json) | Gateway → CSE | Gateway 시각·실측 RSSI를 결합한 관측 |
+| [core-telemetry-receipt.schema.json](core-telemetry-receipt.schema.json) | CORE → Gateway | scoped 관측 본문의 SHA-256과 oneM2M SDT 적용 결과 |
 | [receipt.schema.json](receipt.schema.json) | Gateway → CSE | 정산 상태, 명령 hash, 시각의 근거, 장치 결과 |
 | [health.schema.json](health.schema.json) | Gateway → CSE | 실행 프로세스, credential, queue 및 연결 상태 |
 | [ble-journal-manifest.schema.json](ble-journal-manifest.schema.json) | 장치 → Gateway | frozen NVS journal manifest, KEYRING 확장 |
@@ -40,6 +41,8 @@
 `payloadHash`는 **중앙 command 전체**를 키 이름 오름차순, 공백 없는 JSON, UTF-8로 직렬화한 SHA256의 소문자 64자리다. 원본 command에는 payloadHash 자체를 넣지 않는다. Gateway가 BLE용 `remainingMs`를 줄이더라도 원본 명령 hash는 유지한다. 이 hash는 전자서명이 아니며 신원과 권한은 mTLS·ACL·BLE 보안 및 중앙 승인으로 따로 확인한다.
 
 동일 commandId와 hash의 재수신은 저장된 처리 결과와 연결한다. 같은 commandId에 다른 hash가 오면 충돌로 거절한다. 전송 ACK와 실제 적용 receipt는 구분한다. MQTT PUBACK만으로 장치 실행이나 oneM2M CREATE 성공을 주장하지 않는다.
+
+Scoped CORE 관측 영수증의 `payloadHash`는 발행한 MQTT 본문의 UTF-8 바이트 그대로 계산한다. `gatewayId`·`deviceId`·`ownershipEpoch`는 mTLS ACL로 제한한 발행·응답 토픽과 결속한다. `responseStatus=2004`는 oneM2M SDT UPDATE의 RQI가 일치했고 적용 기록을 저장했음을 뜻한다.
 
 ## 관측과 receipt의 해석
 

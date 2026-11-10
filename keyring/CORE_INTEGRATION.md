@@ -7,7 +7,7 @@
 - 펌웨어 `keyring-0.2.0`과 Gateway 기본 GATT profile `core-v1`은 팀 service `7f8a0001-4b6e-4f4e-9b0a-505249564255`, state `...0002...`, command `...0003...`, ack `...0004...`를 사용한다. 장치 식별을 위한 identity `...0005...`를 KEYRING extension으로 추가했다.
 - 기존 펌웨어 profile은 `KEYRING_LEGACY_GATT=1`, Gateway는 `BLE_GATT_PROFILE=keyring-v01`로 명시 선택한다. 자동 downgrade하지 않는다. 이번 작업에서 실제 firmware flash는 하지 않았다.
 - BLE 내부 프레임은 bootId·uptime·nullable battery와 sensorValues를 유지한다. UTC/RSSI는 Gateway가 관측하므로 CORE의 timestamp/batteryPct/rssiDbm으로 내보내는 변환을 별도로 둔다. UUID 일치만으로 팀의 BLE payload 전체와 동일하다고 주장하지 않는다. 이 확장·변환 계약은 CORE owner의 수용이 필요하다.
-- `CORE_BRIDGE_ENABLED=true`는 telemetry와 성공 ACK를 SQLite outbox에 추가하고 팀 MQTT topic으로 보낸다. direct oneM2M cin 원본도 유지한다. CORE projection은 broker PUBACK까지만 확인하며 CORE UPDATE·subscription evidence와 구분한다.
+- `CORE_BRIDGE_ENABLED=true`는 telemetry와 성공 ACK를 SQLite outbox에 추가하고 팀 MQTT topic으로 보낸다. direct oneM2M cin 원본도 유지한다. 기존 CORE v1 토픽은 broker PUBACK까지 확인한다. epoch 전용 경로의 적용 영수증은 별도 계약이다.
 - batteryPct는 실제 측정 SOC를 정수 반올림한다. battery 또는 RSSI가 없으면 CORE v1이 null을 허용하지 않으므로 projection을 보내지 않는다. 원본 nullable 관측은 cin에 보존한다. 0%나 -127 같은 가짜 측정값으로 채우지 않는다.
 - CORE가 deviceId:sequence로 dedup하므로 device별 uint32 sequence를 SQLite에 따로 유지한다. 원래 bootId/firmwareSequence를 함께 남긴다. sequence 소진 시 오류로 보존하며 자동 wrap하지 않는다. DB를 삭제하면 이 연속성을 잃으므로 일반 복구로 사용하지 않는다.
 - Gateway 0.2.11은 SQLite에서 장치별로 가장 먼저 대기열에 들어간 CORE 관측만 전송 대상으로 삼는다. 그 행이 재시도 대기 중이면 같은 장치의 최신 CORE 관측도 기다린다. 다른 장치의 CORE 관측과 native 관측·영수증은 계속 처리한다. [재시도 순서와 SDT 시험](evidence/2026-11-10-core-retry-order/README.md)
@@ -34,6 +34,8 @@ handover 후에는 이전 epoch뿐 아니라 대상 Gateway도 확인해야 한�
 Gateway 0.2.12와 KEYRING 수신 후보는 발행 시점의 epoch를 SQLite와 별도 MQTT 토픽에 보존한다. 중앙이 장치·epoch별 토픽의 쓰기 권한을 해당 Gateway 인증서에만 부여하면 수신 후보가 원래 소유권을 복원할 수 있다. 팀 CORE v1 본문은 유지한다. ACL, 중앙 라우팅, handover drain과 실제 CSE 적용 연결이 필요하다. [입력·ACL·전환 계약](integration-candidate/README.md#발행-당시-epoch를-보존하는-mqtt-수신-후보)
 
 격리 프로필에 전용 브로커와 중앙 소비자를 연결했다. Gateway 0.2.13의 native HTTPS 설정을 사용하면 epoch MQTT와 분리할 수 있다. 이번에는 빈 자원 생성·재조회와 소비자 구독까지 확인했다. 실제 토픽 거절과 handover 후 SDT 적용은 별도 시험 범위다. [서버 준비 기록](evidence/2026-11-10-core-scoped-stack/README.md)
+
+Gateway 0.2.14는 epoch 관측과 일치하는 CSE 적용 영수증을 받아야 해당 outbox 행을 완료한다. 중앙 소비자는 확인한 최신 cursor의 영수증을 재전송할 수 있다. Gateway, 소비자, 응답 ACL을 함께 적용해야 한다. [적용 영수증 계약](integration-candidate/README.md#epoch-관측의-적용-영수증)
 
 ## 소유권
 

@@ -289,10 +289,16 @@ class Gateway:
             cursor = batch[-1]["rowid"] if len(batch) == batch_size and batch[-1]["rowid"] < through else 0
             await self._pause(1)
 
-    async def _outbox_loop(self) -> None:
+    async def _outbox_loop(self, *, scoped: bool = False) -> None:
+        epochs = self.config.core_telemetry_epochs
+        if not scoped and epochs is not None:
+            # The scoped worker owns this lane, so awaiting its receipt never
+            # holds the native observation or command-receipt worker.
+            epochs = {}
         while not self.stop.is_set():
-            self.store.stage_receipts(self.config.receipt_container, self.config.core_bridge_enabled)
-            item = self.store.due(core_epochs=self.config.core_telemetry_epochs)
+            if not scoped:
+                self.store.stage_receipts(self.config.receipt_container, self.config.core_bridge_enabled)
+            item = self.store.due(core_epochs=epochs, scoped_only=scoped)
             if item is None:
                 await self._pause(0.5)
                 continue
@@ -303,10 +309,12 @@ class Gateway:
             except Exception as exc:
                 self.counters["publish_retries"] += 1
                 self.store.retry(item["rqi"], item["attempts"])
-                LOG.warning("oneM2M delivery deferred (%s)", type(exc).__name__)
+                LOG.warning("Gateway delivery deferred (%s)", type(exc).__name__)
             else:
                 self.store.delivered(item["rqi"])
                 self.counters["published"] += 1
+                if scoped:
+                    self.counters["core_applied_confirmed"] += 1
 
     def _enqueue_health(self) -> None:
         outbox, commands = self.store.counts()
@@ -339,6 +347,8 @@ class Gateway:
             await self.ble.start(self.observation)
             tasks = [asyncio.create_task(worker(), name=worker.__name__) for worker in (
                 self._credentials_loop, self._poll_loop, self._dispatch_loop, self._outbox_loop, self._health_loop)]
+            if self.config.core_telemetry_epochs is not None:
+                tasks.append(asyncio.create_task(self._outbox_loop(scoped=True), name="scoped_outbox"))
             stop_task = asyncio.create_task(self.stop.wait(), name="stop")
             tasks.append(stop_task)
             done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
