@@ -7,7 +7,7 @@
   "date": "2026-11-10",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Gateway 0.2.15 retire-core is source-only. The isolated handover consumer has earlier subscription and initial-owner evidence. Build, retirement execution, live handover and physical acceptance remain.",
+  "verificationStatus": "Gateway 0.2.16 BLE characterization is source-only. Prior Pi/Feather evidence covers observations; controlled distance, reconnect timing, r18 and power acceptance remain.",
   "rubricIds": [
     "R01",
     "R02",
@@ -77,7 +77,8 @@
     "separate scoped Mobius4 profile with exclusive broker ACLs, dedicated TLS identities, a persisted CSE consumer cursor, and optional native HTTPS routing",
     "scoped CSE application receipts bound to the original MQTT bytes, exact reply ACLs, and replay from the latest durable APPLIED cursor",
     "serialized scoped owner transitions with pending UPDATE fencing, monotonic rollback and a bench operator command",
-    "operator-only retirement of obsolete CORE telemetry after a durable cold archive and exact row fingerprint comparison"
+    "operator-only retirement of obsolete CORE telemetry after a durable cold archive and exact row fingerprint comparison",
+    "operator-only BlueZ range/reconnect recorder with hardware identity checks, post-handshake notifications and private monotonic evidence"
   ],
   "existingHardware": {
     "status": "source-snapshot-included-unverified",
@@ -134,17 +135,17 @@
   "firmwareRevision": "keyring-0.7.3",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "a95bd8482867ece24150cb6b6b1478565c6f73ba",
+    "sourceCommit": "30131330493c5f9d6400b5ff5ee63958f789602a",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "a95bd8482867ece24150cb6b6b1478565c6f73ba",
-    "lastPushedCommit": "a95bd8482867ece24150cb6b6b1478565c6f73ba",
-    "latestCheckpoint": "Added the operator-only retire-core command with a durable cold snapshot and targeted outbox cleanup. No database operation was executed.",
-    "lastPushedCommitBeforeThisCheckpoint": "a37a58014d1987fd6d5f47a215a65ff5477e9bbb"
+    "latestLocalSourceCommit": "30131330493c5f9d6400b5ff5ee63958f789602a",
+    "lastPushedCommit": "30131330493c5f9d6400b5ff5ee63958f789602a",
+    "latestCheckpoint": "Added the Pi BlueZ range/reconnect recorder and a regression source for excluding initial reads and stale generations. No BLE execution.",
+    "lastPushedCommitBeforeThisCheckpoint": "f61a0cea23f528abbae75151cfb65bfb1ef675df"
   },
-  "gatewayRevision": "0.2.15",
+  "gatewayRevision": "0.2.16",
   "pendingValidationScope": "Physical command and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
@@ -166,7 +167,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Provide cold archiving and selected outbox retirement for obsolete CORE telemetry epochs",
+    "executionRequest": "Prepare a repeatable physical Pi BLE range and reconnect capture for Feather and r18",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -174,11 +175,11 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "a95bd8482867ece24150cb6b6b1478565c6f73ba",
-    "sourceValidation": "CLI, receipt schema and POSIX regression source added. No build, test, execution or existing database change.",
+    "sourceCommit": "30131330493c5f9d6400b5ff5ee63958f789602a",
+    "sourceValidation": "CLI and session regression source only. No build, tests, BLE execution or physical measurements.",
     "goalComplete": false,
     "pendingInput": "Approval for the Feather command profile flash before physical LED and Pi/CSE receipt testing",
-    "currentDependencyState": "The retired CORE outbox operator path is available as source. POSIX CLI execution, live handover and scoped receipts, central authoritative integration and physical acceptance remain.",
+    "currentDependencyState": "The physical BLE capture path is ready as source. Pi execution, actual r18 and power evidence, scoped handover/receipt validation and central acceptance remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -684,5 +685,14 @@
     "dbOperationExecuted": false,
     "regressionExecuted": false,
     "sourceCommit": "a95bd8482867ece24150cb6b6b1478565c6f73ba"
+  },
+  "physicalBleCharacterization": {
+    "reference": "raspberry-pi-gateway/TESTING.md",
+    "gatewayVersion": "0.2.16",
+    "status": "source-only",
+    "supportedHardware": ["feather-bench", "r18-pcb"],
+    "physicalMeasurementExecuted": false,
+    "regressionExecuted": false,
+    "sourceCommit": "30131330493c5f9d6400b5ff5ee63958f789602a"
   }
 }

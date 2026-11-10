@@ -592,3 +592,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 이번 체크포인트는 소스 단계다. 빌드·시험·명령 실행과 기존 DB 변경은 없었다. 전체 goal은 active/progress다.
 
 구현 commit `a95bd8482867ece24150cb6b6b1478565c6f73ba`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `a37a580..a95bd84`다.
+
+## 2026-11-10 — Pi 실물 BLE 거리·재연결 기록 도구
+
+이전 goal turn은 종료된 CORE 행의 스냅샷·수동 정리 명령을 구현한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- Gateway 0.2.16은 BlueZ에서 Feather·r18 보드 revision을 대조하는 운영자용 `bubble-keyring-ble-characterize`를 추가했다. 운영자 실측 거리, 광고 RSSI와 나이, 알림 수, sequence 간격, 링크 종료부터 새 세션의 첫 알림까지의 단조 시각을 private JSON으로 기록한다.
+- 최초 READ와 끊긴 세션의 콜백을 알림 수에 포함하지 않는 회귀시험 소스를 추가했다. 주소와 원래 boot ID·센서 payload는 결과에 싣지 않는다. [현장 절차](../keyring/raspberry-pi-gateway/TESTING.md#실물-ble-거리재연결-기록)
+- 이번 체크포인트는 소스 단계다. 빌드·시험, BLE 접속, 거리·재연결·전원 실측은 미실행이다. 전체 goal은 active/progress다.
+
+구현 commit `30131330493c5f9d6400b5ff5ee63958f789602a`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `f61a0ce..3013133`다.
