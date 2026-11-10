@@ -6,7 +6,7 @@
   "contractRevision": "0.1.0-candidate",
   "date": "2026-11-10",
   "branch": "codex/keyring-namho",
-  "status": "implemented",
+  "status": "implementation-in-progress",
   "verificationStatus": "local builds and 58 Gateway tests passed; Feather/Pi authenticated BLE buttons verified; 35 actual observations matched CSE readback across HTTPS normal/outage replay, native MQTT and broker-loss HTTPS fallback; final CSE count35/outbox0 and fixture cleanup verified; full daemon, production principal/central integration and production PCB pending",
   "rubricIds": [
     "R01",
@@ -99,7 +99,7 @@
     "Pi-deployed state operator CLI and existing operational database snapshot/adoption"
   ],
   "actualReceipt": "evidence/2026-11-10-pi-cse/receipt.json",
-  "actualReceiptPublicationStatus": "consolidated receipt complete; included with this commit",
+  "actualReceiptPublicationStatus": "published in source commit dfa5129c2374070f8e3fcdf46fa85eefb2ca9663",
   "temporaryServer": {
     "upstreamRevision": "e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8",
     "composeProject": "privacy-bubble-keyring-dev",
@@ -114,14 +114,14 @@
   "firmwareRevision": "keyring-0.7.0",
   "benchFirmwareRevision": "feather-probe-0.1.1",
   "publication": {
-    "sourceCommit": "686f7b4",
+    "sourceCommit": "dfa5129c2374070f8e3fcdf46fa85eefb2ca9663",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "686f7b4",
-    "lastPushedCommit": "686f7b4",
-    "latestCheckpoint": "35 native HTTPS/MQTT observation readbacks, CSE outage replay and broker-loss HTTPS fallback verified; final cni35/outboxes0; fixture cleanup verified; this commit contains relay/evidence",
+    "latestLocalSourceCommit": "dfa5129c2374070f8e3fcdf46fa85eefb2ca9663",
+    "lastPushedCommit": "dfa5129c2374070f8e3fcdf46fa85eefb2ca9663",
+    "latestCheckpoint": "dfa5129 source/relay/tests/35-readback evidence pushed; cni35/outboxes0 and owned-resource cleanup verified; full system incomplete",
     "lastPushedCommitBeforeThisCheckpoint": "686f7b44b94cf5668df86cc97c2722a18024854b"
   },
   "gatewayRevision": "0.2.4",
@@ -154,7 +154,7 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "686f7b4",
+    "sourceCommit": "dfa5129c2374070f8e3fcdf46fa85eefb2ca9663",
     "sourceValidation": "58 Gateway tests and actual Feather/Pi BLE verified in pushed checkpoint; new relay tests and 35 real observation CSE readbacks passed locally across HTTPS, CSE outage replay, MQTT and broker-loss HTTPS fallback; full system incomplete",
     "goalComplete": false,
     "pendingInput": null,
@@ -415,7 +415,7 @@
       "matchedObservationCount": 35,
       "finalCseContentInstanceCount": 35,
       "fixtureCleanupStatus": "verified-no-owned-resources-remaining",
-      "evidencePublicationStatus": "included-with-this-commit",
+      "evidencePublicationStatus": "pushed in dfa5129c2374070f8e3fcdf46fa85eefb2ca9663",
       "cleanupReceipt": "evidence/2026-11-10-pi-cse/cleanup.json"
     }
   }

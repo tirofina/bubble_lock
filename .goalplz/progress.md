@@ -350,3 +350,5 @@ Pi Zero 2 W는 USB 데이터 포트에 연결됐고 초록 LED가 계속 켜져 
 - runner exit0·소유 container/broker/network 잔여0·SSH터널 종료·기존 개발 네 container running을 확인했다. 공개증거에는 raw관측·DB·개인키·PIN·SSH암호·실제BLE주소를 제외했다. [실행 증거](../keyring/evidence/2026-11-10-pi-cse/README.md)
 
 현재 goal은 active/progress/미완료다. 실물 관측→임시CSE 전송은 검증됐고, 전체 daemon의 중앙 승인 명령·ACK, pb:binarySwitch/Group·앱/웹, 제작PCB·전력/거리·SD전원손실·운영 principal/AE/ACP/grant·영상/release는 남았다. 이번 relay/증거를 역할 브랜치에 일반 commit/push한다.
+
+업로드 확인: 구현·회귀시험·35개 실물 관측 증거 commit `dfa5129c2374070f8e3fcdf46fa85eefb2ca9663`를 `origin/codex/keyring-namho`에 일반 push했고 exit0 / `686f7b4..dfa5129`를 확인했다. 이 뒤 기록 commit은 업로드 상태만 현행화한다.
