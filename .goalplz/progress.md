@@ -652,3 +652,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 빌드·회귀시험·Pi/Feather 실행은 미실행이다. 운영 CORE의 인증된 CSE 조회, 중앙 저장소, ACK 수신기 연결과 실제 장치 정산 증거가 남아 있다. 전체 goal은 active/progress다.
 
 구현 commit `4caa505c069dcd0b64b5cac9a30503544e043e5a`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `055bdc3..4caa505`다.
+
+## 2026-11-10 — 격리 Mobius4 명령 영수증 정산 경로
+
+직전 goal turn은 정산 후보와 진행 기록을 원격에 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 다시 확인했다.
+
+- scoped bootstrap과 TLS 프록시 설정에 Gateway A/B의 전용 명령 영수증 컨테이너를 추가했다. 각 Gateway 인증서에 자신의 컨테이너의 생성·이름 조회만 허용하는 경로를 구성했다. 기존 관측·상태·공용 영수증의 기존 정규 경로는 보존한다.
+- `receipt-settlement/settle.mjs`는 명령 ID에서 native 자원명을 계산하고 CORE 인증서로 CSE를 조회한다. TLS 1.3·서버 인증서·응답 RQI를 확인하고 KEYRING JSON Schema와 팀 원본의 `approvalHash`로 검증한다. 팀 API의 실제 발급·승인 기록은 같은 스냅샷에서 읽으며 별도 POSIX 정산 디렉터리에 결과를 기록한다. [설정과 실행](../keyring/dev/mobius4/README.md#명령-영수증-정산-준비)
+- 소스와 배치 절차를 반영했다. npm 설치·빌드·시험·기존 scoped TLS 교체·CSE 자원 생성·Pi/Feather 실행은 미실행이다. 운영 CORE 자동 수신과 중앙 DB 연결, 실제 장치 readback 및 재전송 영수증은 남아 있다. 전체 goal은 active/progress다.
+
+구현 commit `e5ffd4b5a8e899491b65097bcebe72932ea61156`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `3892946..e5ffd4b`다.
