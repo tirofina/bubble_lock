@@ -1748,3 +1748,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11. 직전 goal turn은 Mob
 - Pi 영수증, 중앙 명령, 중앙 영수증 누락을 구분하고 기존 검토 건수를 유지한다. 성공·취소·실행 미확정과 불일치의 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·대조 도구 실행·실제 Pi 및 팀 보관본 대조는 미수행이다. [기존 배포의 명령과 키링 저널 대조](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#기존-배포의-명령과-키링-저널-대조)
 
 소스 commit `fa98bddd2774b895d499373fb24393df5c7fe0ae`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `4f5052e..fa98bdd`다. goal은 active/progress다.
+
+## 2026-11-11 — MQTT 후보 승인 대기 전 HTTPS 명령 저장
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11. 직전 goal turn은 Pi 보관본과 중앙 정산 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f` 및 팀의 명령 목록·승인 계약을 확인했다.
+
+- Gateway 0.2.96은 HTTPS 명령 목록이 도착하면 유효한 명령을 먼저 SQLite에 저장한다. MQTT 후보는 남은 자리에서 정확한 중앙 binding을 확인한 뒤 저장한다. 기존 전체 배치 조회 도구는 두 경로의 결과를 합쳐 반환한다.
+- 목록 조회와 MQTT 후보 승인에는 전체 대기 기한을 적용한다. MQTT 승인 대기 중 HTTPS 명령 저장과 느린 요청 취소를 회귀시험 소스에 추가했다. 빌드·테스트·정적 분석·실제 Pi와 중앙 HTTPS/MQTT 경로 확인은 미수행이다. [Gateway 명령 수신](../keyring/raspberry-pi-gateway/README.md#저장소권한시간-동작)
+
+소스 commit `53f7ea6705d22e16b9d3c02d48508b6ea40b38f4`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `dd0fb20..53f7ea6`이다. goal은 active/progress다.
