@@ -84,7 +84,7 @@ class GatewayConfig:
     commands_enabled: bool = True
 
     @classmethod
-    def from_env(cls, values: Mapping[str, str] | None = None) -> "GatewayConfig":
+    def from_env(cls, values: Mapping[str, str] | None = None, *, require_tls_files: bool = True) -> "GatewayConfig":
         env = os.environ if values is None else values
 
         def required(name: str) -> str:
@@ -121,7 +121,7 @@ class GatewayConfig:
 
         def secret_file(name: str) -> Path:
             path = Path(required(name)).expanduser()
-            if not path.is_absolute() or not path.is_file():
+            if not path.is_absolute() or (require_tls_files and not path.is_file()):
                 raise ValueError(f"{name} must name an existing absolute file")
             return path
 

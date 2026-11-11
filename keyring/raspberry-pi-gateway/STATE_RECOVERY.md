@@ -65,6 +65,17 @@ CORE 브리지를 끈 데몬은 기존 CORE telemetry와 ACK를 SQLite에 남기
 
 보고서는 집계와 변경된 설정 이름을 stdout에 출력한다. 새 DB를 초기화하거나 기존 큐를 복사·삭제·전송하는 동작은 없다. 배포 전 기존 큐와 dispatch 중 명령을 원래 배포에서 대조하고 필요한 상태를 [격리 snapshot](#수동-snapshot)으로 보관한다. 집계가 비어 있어도 중앙 정산과 새 배포의 실제 신원·권한 확인은 남는다. 팀 저장소와 실제 Pi에서의 전환 시험은 대기 중이다.
 
+### 기존 배포의 명령과 키링 저널 대조
+
+Gateway 0.2.77의 `bubble-keyring-reconcile`은 전체 기기 비교에서 키링 보관본에 없는 Gateway 명령도 확인한다. 원본 배포 환경 파일과 같은 기기의 키링 저널, 격리 SQLite snapshot을 지정한다. 기존 Mobius4에 연결할 수 없는 경우 보관본만 비교한다.
+
+```sh
+bubble-keyring-reconcile --archive-only --env-file gateway-old.env \
+  --gateway-archive /path/to/gateway-archive --device-archive /path/to/device-archive
+```
+
+원래 환경 파일의 TLS 경로 선언은 유지할 수 있으며 보관본 비교에는 실제 인증서와 개인키가 필요 없다. `deviceComparison`은 키링 기록과 Pi 영수증의 대조 결과다. 이 모드에서 Mobius4 영수증은 `nativeReceiptSource: not-checked`로 남는다. `gatewayOnlyPending`은 키링 저널에 없는 해당 기기의 수신·dispatch 중 명령과 미전달 native·중앙 영수증을 보여준다. `count`에는 전체 건수, `commands`에는 최대 128개 명령 ID·payload hash·로컬 상태가 들어가며 전체 건수가 `reviewCount`에 포함된다. 이 결과만으로 명령이 장치에 전달됐는지나 중앙에서 정산됐는지 판정할 수 없다. 출력은 기기 명령 식별자를 포함하므로 원본 보관본과 함께 보관한다.
+
 ## 수동 snapshot
 
 `bubble-gateway-state snapshot`은 Python [sqlite3 backup API](https://docs.python.org/3.11/library/sqlite3.html#sqlite3.Connection.backup)로 committed WAL을 포함한 일관된 복사본을 만든다. live `.db` 파일만 복사하고 `-wal`을 놓치는 방식이 아니다. source connection은 read-only이며 command/fence/outbox 등 원본 data row를 수정하지 않는다. 새 private 폴더/파일만 만들고 기존 output을 덮어쓰거나 삭제하지 않는다.

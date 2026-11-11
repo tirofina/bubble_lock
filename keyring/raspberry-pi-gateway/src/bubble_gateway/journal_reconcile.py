@@ -9,10 +9,11 @@ from datetime import datetime, timezone
 import hashlib
 from pathlib import Path
 import re
+import sqlite3
 import sys
 
 from .ble import BleProtocolError, _object
-from .config import ID, GatewayConfig, read_env_file
+from .config import ID, GatewayConfig, env_file_values, read_env_file
 from .integration_evidence import inspect_integration_command
 from .journal_export import read_archive
 from .model import canonical, iso_time, parse_time, payload_hash, validate_command
@@ -23,9 +24,40 @@ from .transport import RemoteResponseError, TransportHub
 
 TEAM_STATE_MAX_BYTES = 32 * 1024 * 1024
 NATIVE_RECEIPT_MAX_BYTES = 16 * 1024
+GATEWAY_ONLY_COMMAND_LIMIT = 128
 
 
-def _read_gateway_archive(directory: Path, expected: dict, command_ids: list[str]) -> tuple[str, dict]:
+def _gateway_only_pending(db: sqlite3.Connection, device_id: str, command_ids: list[str],
+                          include_unstaged_central: bool) -> dict:
+    columns = {row["name"] for row in db.execute("PRAGMA table_info(commands)")}
+    central_unstaged = "receipt IS NOT NULL"
+    if "central_receipt_staged" in columns:
+        central_unstaged += " AND central_receipt_staged=0"
+    rows = db.execute(f"""
+        WITH candidates AS (
+            SELECT command_id, payload_hash, status,
+                (receipt IS NOT NULL AND receipt_delivered=0) AS native_pending,
+                (command_id IN (
+                    SELECT json_extract(CASE WHEN json_valid(payload) THEN payload END, '$.commandId')
+                    FROM outbox WHERE container='@central/receipt'
+                ) OR (?3 AND ({central_unstaged}))) AS central_pending
+            FROM commands
+            WHERE json_extract(CASE WHEN json_valid(payload) THEN payload END, '$.deviceId')=?1
+              AND command_id NOT IN (SELECT value FROM json_each(?2))
+        )
+        SELECT *, COUNT(*) OVER () AS total FROM candidates
+        WHERE status IN ('RECEIVED', 'DISPATCHING') OR native_pending OR central_pending
+        ORDER BY command_id LIMIT ?4
+    """, (device_id, canonical(command_ids), include_unstaged_central, GATEWAY_ONLY_COMMAND_LIMIT)).fetchall()
+    return {"count": rows[0]["total"] if rows else 0, "commands": [
+        {"commandId": row["command_id"], "payloadHash": row["payload_hash"], "gatewayStatus": row["status"],
+         "nativeReceiptPending": bool(row["native_pending"]), "centralReceiptPending": bool(row["central_pending"])}
+        for row in rows
+    ]}
+
+
+def _read_gateway_archive(directory: Path, expected: dict, command_ids: list[str], *,
+                          device_id: str | None, include_unstaged_central: bool) -> tuple[str, dict, dict | None]:
     with (directory / "manifest.json").open("rb") as stream:
         manifest = _object(stream.read(8193), 8192)
     archive_id = manifest.get("archiveId")
@@ -60,8 +92,9 @@ def _read_gateway_archive(directory: Path, expected: dict, command_ids: list[str
                              "WHERE command_id=?", (command_id,)).fetchone()
             if row is not None:
                 rows[command_id] = dict(row)
+        pending = None if device_id is None else _gateway_only_pending(db, device_id, command_ids, include_unstaged_central)
     verify_file()
-    return archive_id, rows
+    return archive_id, rows, pending
 
 
 def _bound_receipt(config, device_id, record, row):
@@ -117,9 +150,11 @@ def _captured_receipt(artifact, command_id, config):
 async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive: Path, *,
                     same_boot_command: str | None = None, board_revision: str | None = None,
                     firmware_revision: str | None = None, team_state: dict | None = None,
-                    native_receipt: dict | None = None) -> dict:
+                    native_receipt: dict | None = None, archive_only: bool = False) -> dict:
     if (team_state is not None or native_receipt is not None) and same_boot_command is None:
         raise ValueError("Saved receipt and team state comparison require a same-boot command")
+    if archive_only and (team_state is not None or native_receipt is not None):
+        raise ValueError("Archive-only comparison accepts only the Gateway and device archives")
     journal, records = read_archive(device_archive)
     identity = journal["identity"]
     device_id = identity["deviceId"]
@@ -138,10 +173,13 @@ async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive
                     "sameBoot": True, "sourceRecordCount": len(records), "desiredState": record["desiredState"],
                     "acceptedUptimeMs": record["acceptedUptimeMs"], "appliedUptimeMs": record["appliedUptimeMs"]}
         records = [record]
-    archive_id, rows = _read_gateway_archive(gateway_archive, configured_binding(config),
-                                             [record["commandId"] for record in records])
+    archive_id, rows, pending = _read_gateway_archive(
+        gateway_archive, configured_binding(config), [record["commandId"] for record in records],
+        device_id=device_id if selected is None else None,
+        include_unstaged_central=config.commands_enabled and config.central_receipts_enabled,
+    )
     captured = _captured_receipt(native_receipt, same_boot_command, config) if native_receipt is not None else None
-    transport = None if captured is not None else TransportHub(
+    transport = None if archive_only or captured is not None else TransportHub(
         replace(config, mqtt_enabled=False, core_bridge_enabled=False))
     results = []
     central = {"status": "journal_review_required", "originalApplicationMatched": False} if team_state is not None else None
@@ -169,6 +207,11 @@ async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive
             if selected is not None:
                 result["gatewayAckCode"] = receipt["ackCode"]
             result["gatewayReceiptSha256"] = payload_hash(receipt)
+            if archive_only:
+                result["result"] = "native_receipt_not_checked"
+                result["deviceComparison"] = _compared_result(
+                    record, receipt, expected_firmware=firmware_revision if selected is not None else None)
+                continue
             cin = captured
             if transport is not None:
                 try:
@@ -211,16 +254,19 @@ async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive
     finally:
         if transport is not None:
             await transport.close()
+    native_source = "not-checked" if archive_only else ("captured" if captured is not None else "live")
+    review_count = sum(row["result"] != "matched_applied" or not row["gatewayDelivered"]
+                       or (central is not None and not central["originalApplicationMatched"]) for row in results)
     return {"reportVersion": 1, "checkedAt": iso_time(), "gatewayId": config.gateway_id, "deviceId": device_id,
             "cseId": config.cse_id, "cseDeploymentId": config.cse_deployment_id, "receiptContainer": config.receipt_container,
-            "nativeReceiptSource": "captured" if captured is not None else "live",
+            "nativeReceiptSource": native_source,
             "gatewayArchiveId": archive_id, "deviceSnapshotId": journal["deviceSnapshot"]["snapshotId"],
             "deviceRecordsSha256": journal["files"][0]["sha256"], "recordCount": len(records),
             **({"selectedCommand": selected} if selected is not None else {}),
+            **({"gatewayOnlyPending": pending} if pending is not None else {}),
             **({"integrationSettlement": central} if central is not None else {}),
             "settlementStatus": "not-settled", "deviceJournalModified": False,
-            "reviewCount": sum(row["result"] != "matched_applied" or not row["gatewayDelivered"]
-                               or (central is not None and not central["originalApplicationMatched"]) for row in results),
+            "reviewCount": review_count + (pending["count"] if pending is not None else 0),
             "results": results}
 
 
@@ -234,15 +280,23 @@ def main():
     parser.add_argument("--board-revision", help="Expected board revision for --same-boot-command")
     parser.add_argument("--firmware-revision", help="Expected firmware revision for --same-boot-command")
     parser.add_argument("--team-state", type=Path, help="Private scoped integration runtime.json snapshot")
-    parser.add_argument("--native-receipt", type=Path, help="Saved pulse-receipt.json for offline same-boot comparison")
+    source = parser.add_mutually_exclusive_group()
+    source.add_argument("--native-receipt", type=Path, help="Saved pulse-receipt.json for offline same-boot comparison")
+    source.add_argument("--archive-only", action="store_true", help="Compare device and Gateway archives without network access")
     args = parser.parse_args()
     if args.same_boot_command is not None:
         if not ID.fullmatch(args.same_boot_command) or not args.board_revision or not args.firmware_revision:
             parser.error("--same-boot-command requires a valid command ID, --board-revision and --firmware-revision")
     elif any(value is not None for value in (args.board_revision, args.firmware_revision, args.team_state, args.native_receipt)):
         parser.error("Revision options, --team-state and --native-receipt require --same-boot-command")
+    if args.archive_only and args.team_state is not None:
+        parser.error("--archive-only does not take --team-state")
     try:
-        read_env_file(args.env_file)
+        if args.archive_only:
+            config = GatewayConfig.from_env(env_file_values(args.env_file), require_tls_files=False)
+        else:
+            read_env_file(args.env_file)
+            config = GatewayConfig.from_env()
         state = None
         if args.team_state is not None:
             with args.team_state.open("rb") as stream:
@@ -253,9 +307,10 @@ def main():
             with args.native_receipt.open("rb") as stream:
                 receipt_bytes = stream.read(NATIVE_RECEIPT_MAX_BYTES + 1)
             captured = _object(receipt_bytes, NATIVE_RECEIPT_MAX_BYTES)
-        report = asyncio.run(reconcile(GatewayConfig.from_env(), args.device_archive, args.gateway_archive,
+        report = asyncio.run(reconcile(config, args.device_archive, args.gateway_archive,
                                        same_boot_command=args.same_boot_command, board_revision=args.board_revision,
-                                       firmware_revision=args.firmware_revision, team_state=state, native_receipt=captured))
+                                       firmware_revision=args.firmware_revision, team_state=state, native_receipt=captured,
+                                       archive_only=args.archive_only))
         if state is not None:
             report["integrationStateSha256"] = hashlib.sha256(raw).hexdigest()
         if captured is not None:
