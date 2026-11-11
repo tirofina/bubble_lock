@@ -1757,3 +1757,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11. 직전 goal turn은 Pi 
 - 목록 조회와 MQTT 후보 승인에는 전체 대기 기한을 적용한다. MQTT 승인 대기 중 HTTPS 명령 저장과 느린 요청 취소를 회귀시험 소스에 추가했다. 빌드·테스트·정적 분석·실제 Pi와 중앙 HTTPS/MQTT 경로 확인은 미수행이다. [Gateway 명령 수신](../keyring/raspberry-pi-gateway/README.md#저장소권한시간-동작)
 
 소스 commit `53f7ea6705d22e16b9d3c02d48508b6ea40b38f4`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `dd0fb20..53f7ea6`이다. goal은 active/progress다.
+
+## 2026-11-11 — Mobius4 장치별 관측 재전송 순서
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R15. 직전 goal turn은 MQTT 후보 승인 대기 전 HTTPS 명령 저장을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f` 및 oneM2M 관측·중앙 전송 계약을 확인했다.
+
+- Gateway 0.2.97은 같은 Mobius4 컨테이너·장치의 관측을 SQLite 등록 순서대로 보낸다. 먼저 등록된 행이 재시도 대기 중이면 같은 장치의 새 부팅 관측도 그 뒤에서 대기한다. 다른 장치, 명령 영수증과 health는 기존 선택 규칙을 따른다.
+- 이전 native 관측 행은 저장 본문에서 장치 ID를 채운다. 기존 요청 ID, 본문, 재시도 시각과 CORE 보관 fingerprint는 이어서 사용한다. 재시작·부팅 변경·공유 health·영수증 선택을 다루는 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·실제 Pi 마이그레이션과 Mobius4 재전송은 미수행이다. [BLE·중앙 통신 구현 메모](../keyring/raspberry-pi-gateway/IO_NOTES.md)
+
+소스 commit `163fdf3be325eac3243199cce3ad036beae57338`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `aff79c1..163fdf3`이다. goal은 active/progress다.
