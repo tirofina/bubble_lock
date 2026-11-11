@@ -428,7 +428,15 @@ r18_bringup_firmware=keyring-0.7.18-bringup
 
 [격리 r18 MQTT 중계](../dev/mobius4/README.md#r18-관측-mqtt-중계)의 구독 준비를 확인한다. PC의 MQTT `127.0.0.1:8884`를 Pi의 `127.0.0.1:8884`에 전달하는 SSH 역방향 터널을 CSE·API 터널과 별도로 연다. 위 `prepare` 명령에서 새 세션 이름과 `--mqtt-port 8884`를 지정한다. Pi는 같은 Gateway B 인증서와 고정 ID를 사용한다.
 
-보드와 Pi를 켠 채 첫 관측을 수집하고, 같은 관측의 Pi 완료 로그에 `route=mqtt`가 기록됐는지 확인한다. MQTT 터널만 종료한 뒤 새 관측을 별도 파일로 수집한다. CSE·API 터널은 유지하고 새 관측의 완료 로그에서 `route=https-fallback`을 확인한다. 각 관측을 아래 `compare --pi-log`로 해당 Mobius4 내용에 연결한다. `created:false`는 경로가 기존 자원을 확인했다는 기록이다. 이 절차의 MQTT와 fallback 실물 시험은 미실행이다.
+보드 전원과 Pi Gateway 0.2.101 이상 프로세스를 유지한 채 첫 관측을 수집하고, 같은 관측의 Pi 완료 로그에 `route=mqtt created=true`가 기록됐는지 확인한다. MQTT 터널만 종료한 뒤 새 관측을 별도 파일로 수집한다. CSE·API 터널은 유지하고 새 관측의 완료 로그에서 `route=https-fallback created=true`를 확인한다. Gateway를 종료하고 같은 세션의 SQLite와 Pi 로그, 중앙 상태를 복사한 뒤 두 관측을 대조한다.
+
+```powershell
+python $tool compare --firmware-revision $r18BringupFirmware --usb-boot-log $r18UsbLog `
+  --capture $r18MqttCapture --fallback-capture $r18FallbackCapture `
+  --database $piDatabaseCopy --team-state $teamStateCopy --pi-log $r18GatewayLogCopy
+```
+
+`--fallback-capture`를 쓰면 두 관측의 장치와 Gateway 부팅, 컨테이너 고정 ID, Pi 완료 로그를 대조한다. 두 경로에서 각각 새 자원을 만들고 BLE와 중앙 순번이 증가해야 `transportTransitionMatched:true`를 반환한다. 두 중앙 이벤트 모두 `simulation:false`가 필요하다. `created:false`는 기존 자원을 확인한 경우다. 이 절차의 MQTT와 fallback 실물 시험은 미실행이다.
 
 ##### 관측 전달 증거 대조
 
@@ -453,7 +461,7 @@ python $tool compare --firmware-revision $r18BringupFirmware --usb-boot-log $r18
 
 `--bringup-report`와 `--firmware-image`는 함께 지정한다. 도구는 첫 구동 보고서가 `RECORDED`인지, 같은 USB 로그와 실행 이미지 해시가 들어 있는지, Mobius4 관측 순번이 첫 구동에서 받은 순번보다 큰지 확인한다. 일치하면 첫 구동 보고서와 펌웨어 파일의 해시를 `firstBringupEvidence`에 남긴다. 이전 펌웨어 또는 관측 전송만 진단할 때는 두 옵션을 생략할 수 있다.
 
-`--pi-log`는 Gateway 0.2.100 이후의 완료 로그에서 같은 요청 ID와 관측 본문 해시를 찾아 `nativeDelivery`에 연결한다. `mqtt`는 MQTT 응답으로, `https`는 HTTPS 전용 설정에서, `https-fallback`은 MQTT가 설정돼 있었지만 HTTPS CREATE 요청 응답으로 완료된 경로다. `created:false`이면 CSE에 있던 동일 자원을 확인한 결과다. 처음 생성한 경로를 이 값으로 판정할 수 없다. SQLite에 관측이 아직 대기 중이거나 로그의 경로가 충돌하면 대조가 실패한다. 기존 세션의 로그가 없으면 옵션을 생략한다.
+`--pi-log`는 Gateway 0.2.100 이후의 완료 로그에서 같은 요청 ID와 관측 본문 해시를 찾아 `nativeDelivery`에 연결한다. 0.2.101부터는 완료 로그와 health의 Gateway 부팅 ID도 대조한다. `mqtt`는 MQTT 응답으로, `https`는 HTTPS 전용 설정에서, `https-fallback`은 MQTT가 설정돼 있었지만 HTTPS CREATE 요청 응답으로 완료된 경로다. `created:false`이면 CSE에 있던 동일 자원을 확인한 결과다. 처음 생성한 경로를 이 값으로 판정할 수 없다. SQLite에 관측이 아직 대기 중이거나 로그의 경로가 충돌하면 대조가 실패한다. 기존 세션의 로그가 없으면 옵션을 생략한다.
 
 중앙 수용은 고정 팀 소스의 해시 함수로 Mobius4 관측 본문과 대조한다. `physicalRelayEvidenceMatched`는 Pi의 health 고정 ID가 맞고 같은 중앙 수용 이벤트에 `simulation:false`가 기록됐을 때 `true`다. `--require-physical`은 이 값이 `true`여야 성공 코드 0을 반환한다. 모의 이벤트, health ID 미고정 세션, 중앙 이벤트 미도착은 보고서를 출력하고 종료 코드 1을 반환한다. 중앙 수용만 진단할 때는 옵션을 생략하고 `centralTelemetryAccepted`를 확인한다. 최신 중앙 사본으로 같은 기록을 다시 대조할 수 있다.
 

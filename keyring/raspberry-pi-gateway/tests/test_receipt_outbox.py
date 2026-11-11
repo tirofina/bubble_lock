@@ -75,6 +75,7 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         gateway.config, gateway.store = config(), self.store
         gateway.config.commands_enabled = False
         gateway.config.native_observation_trace = True
+        gateway.boot_id = "gateway-test-boot"
         gateway.stop, gateway.counters = asyncio.Event(), Counter()
         gateway.transport = SimpleNamespace(publish=AsyncMock(return_value=NativeConfirmation("https", True)),
                                             native_delivery_hold=NativeDeliveryHold)
@@ -87,7 +88,8 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
             async with asyncio.timeout(1):
                 await gateway._outbox_loop()
         gateway.transport.publish.assert_awaited_once_with(rqi, BINDING["observationContainer"], sample)
-        self.assertIn(f"rqi={rqi} payloadSha256={payload_hash(sample)} route=https created=true", logged.output[0])
+        self.assertIn(f"rqi={rqi} payloadSha256={payload_hash(sample)} route=https created=true gatewayBootId=gateway-test-boot",
+                      logged.output[0])
         self.assertEqual(self.queued(BINDING["observationContainer"]), 0)
         self.assertEqual(self.queued(BINDING["receiptContainer"]), 2)
         self.assertEqual(self.queued("@core/ack"), 1)

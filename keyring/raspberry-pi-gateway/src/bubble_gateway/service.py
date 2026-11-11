@@ -563,9 +563,9 @@ class Gateway:
                 self.counters["published"] += 1
                 if (getattr(self.config, "native_observation_trace", False)
                         and isinstance(confirmation, NativeConfirmation) and item.get("native_observation_device_id")):
-                    LOG.info("Native observation confirmed rqi=%s payloadSha256=%s route=%s created=%s",
+                    LOG.info("Native observation confirmed rqi=%s payloadSha256=%s route=%s created=%s gatewayBootId=%s",
                              item["rqi"], payload_hash(item["payload"]), confirmation.route,
-                             "true" if confirmation.created else "false")
+                             "true" if confirmation.created else "false", self.boot_id)
                 if item["container"] == "@central/receipt":
                     self.counters["central_receipts_confirmed"] += 1
                 if item["container"] == "@central/telemetry":

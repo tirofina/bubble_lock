@@ -9,7 +9,7 @@ from bubble_gateway.model import central_observation_id, payload_hash
 from bubble_gateway.store import Store
 from helpers import BINDING, observation
 from pi_led_cycle import content_name
-from scoped_r18_observation import compare_observation, comparison_passed, inspect_location_response
+from scoped_r18_observation import compare_observation, compare_transport_transition, comparison_passed, inspect_location_response
 from scoped_r18_pulse import GATEWAY, PATHS, R18_BOARD, R18_DEVICE
 
 
@@ -153,6 +153,47 @@ class ScopedR18ObservationTests(unittest.TestCase):
         path.write_bytes(f"{prefix}{'b' * 64} route=https created=true\n".encode())
         with self.assertRaisesRegex(ValueError, "conflicts with the scoped observation"):
             compare()
+
+    def test_transport_transition_requires_two_creates_in_the_same_gateway_boot(self):
+        path = self.database.with_name("gateway.log")
+        first_rqi = Store.request_id("observation", f"{R18_DEVICE}:{self.usb['bootId']}:8")
+        second_rqi = Store.request_id("observation", f"{R18_DEVICE}:{self.usb['bootId']}:9")
+        stamp = "2026-11-11T09:00:06.000Z"
+        second = dict(self.observation, sequence=9, observedAt=stamp, receivedAt=stamp)
+        gateway_boot = self.capture["health"]["con"]["bootId"]
+        health_rqi = Store.request_id("health", f"{gateway_boot}:{stamp}")
+        fallback = dict(self.capture, startedAt="2026-11-11T09:00:04.000Z", capturedAt=stamp,
+                        native=dict(self.capture["native"], ri="cin-fallback", rn=content_name(second_rqi), con=second),
+                        health=dict(self.capture["health"], ri="cin-health-fallback", rn=content_name(health_rqi),
+                                    con=dict(self.capture["health"]["con"], observedAt=stamp)))
+        second_event = dict(self.event, eventId="telemetry-b", sequence=22, observationId=central_observation_id(second),
+                            observedAt=stamp, timestamp=stamp, payloadHash=payload_hash(second))
+        with closing(Store(self.database, 100, 100000, 20, self.binding)) as store:
+            store.observation(PATHS["observation"], second, central_enabled=True)
+            store.delivered(second_rqi)
+
+        first_line = (f"Native observation confirmed rqi={first_rqi} payloadSha256={payload_hash(self.observation)} "
+                      f"route=mqtt created=true gatewayBootId={gateway_boot}\n")
+        second_line = (f"Native observation confirmed rqi={second_rqi} payloadSha256={payload_hash(second)} "
+                       f"route=https-fallback created=true gatewayBootId={gateway_boot}\n")
+
+        def compare(events):
+            return compare_transport_transition(self.capture, fallback, self.usb, self.database, {"receipts": events},
+                                                payload_hash, pi_log=path)
+
+        path.write_bytes((first_line + second_line).encode())
+        report = compare([self.event, second_event])
+        self.assertTrue(report["transportTransitionMatched"])
+        self.assertTrue(report["httpsFallback"]["nativeDelivery"]["gatewayBootMatched"])
+        self.assertFalse(compare([self.event])["transportTransitionMatched"])
+        path.write_bytes((first_line + second_line.replace("created=true", "created=false")).encode())
+        self.assertFalse(compare([self.event, second_event])["transportTransitionMatched"])
+        path.write_bytes((first_line + second_line.replace(gateway_boot, "another-boot")).encode())
+        with self.assertRaisesRegex(ValueError, "belongs to another Gateway boot"):
+            compare([self.event, second_event])
+        fallback["health"]["con"]["bootId"] = "another-boot"
+        with self.assertRaisesRegex(ValueError, "do not share the scoped device and Gateway boot"):
+            compare([self.event, second_event])
 
     def test_simulated_central_acceptance_and_old_unpinned_database_do_not_match_physical_evidence(self):
         report = self.compare([dict(self.event, simulation=True)])

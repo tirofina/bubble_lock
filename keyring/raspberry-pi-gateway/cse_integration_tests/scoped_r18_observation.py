@@ -24,7 +24,8 @@ from scoped_r18_pulse import GATEWAY, PATHS, TELEMETRY_EVENT_FIELDS
 
 NATIVE_CONFIRMATION_LINE = re.compile(
     rb"Native observation confirmed rqi=(kr-[0-9a-f]{48}) payloadSha256=([0-9a-f]{64}) "
-    rb"route=(mqtt|https|https-fallback|https-readback) created=(true|false)$"
+    rb"route=(mqtt|https|https-fallback|https-readback) created=(true|false)"
+    rb"(?: gatewayBootId=([A-Za-z0-9][A-Za-z0-9._:-]{0,63}))?$"
 )
 
 
@@ -165,9 +166,10 @@ def bind_bringup_report(path, firmware_image, usb, observation):
             "firmwareImage": image, "lastBleSequence": max(sequences)}
 
 
-def bind_native_confirmation(path, rqi, observation):
+def bind_native_confirmation(path, rqi, observation, gateway_boot):
     expected_rqi = rqi.encode("ascii")
     expected_digest = payload_hash(observation).encode("ascii")
+    expected_boot = gateway_boot.encode("ascii")
     log_hash = hashlib.sha256()
     outcomes = set()
     with path.open("rb") as stream:
@@ -178,12 +180,17 @@ def bind_native_confirmation(path, rqi, observation):
                 continue
             if match[2] != expected_digest or (match[3], match[4]) == (b"https-readback", b"true"):
                 raise ValueError("Pi native confirmation conflicts with the scoped observation")
-            outcomes.add((match[3], match[4]))
+            if match[5] is not None and match[5] != expected_boot:
+                raise ValueError("Pi native confirmation belongs to another Gateway boot")
+            outcomes.add((match[3], match[4], match[5]))
     if len(outcomes) != 1:
         raise ValueError("Pi log must contain one unambiguous native confirmation for the scoped observation")
-    route, created = outcomes.pop()
-    return {"requestId": rqi, "route": route.decode("ascii"), "created": created == b"true",
-            "logSha256": log_hash.hexdigest()}
+    route, created, logged_boot = outcomes.pop()
+    evidence = {"requestId": rqi, "route": route.decode("ascii"), "created": created == b"true",
+                "logSha256": log_hash.hexdigest()}
+    if logged_boot is not None:
+        evidence["gatewayBootMatched"] = True
+    return evidence
 
 
 def compare_observation(capture, usb, database, team_state, hasher, *, portal_response=None, web_response=None,
@@ -250,7 +257,8 @@ def compare_observation(capture, usb, database, team_state, hasher, *, portal_re
     if pi_log is not None:
         if pending[native_request]:
             raise ValueError("Pi snapshot still has the scoped native observation pending")
-        report["nativeDelivery"] = bind_native_confirmation(pi_log, native_request, observation)
+        report["nativeDelivery"] = bind_native_confirmation(pi_log, native_request, observation,
+                                                             capture["health"]["con"]["bootId"])
     return report
 
 
@@ -259,6 +267,32 @@ def comparison_passed(report, *, require_physical):
             and (not require_physical or report["physicalRelayEvidenceMatched"])
             and all(report[key]["status"] == "matched"
                     for key in ("portalLocationResponse", "webLocationResponse") if key in report))
+
+
+def compare_transport_transition(mqtt_capture, fallback_capture, usb, database, team_state, hasher, *, pi_log,
+                                 bringup_report=None, firmware_image=None, portal_response=None, web_response=None):
+    if pi_log is None:
+        raise ValueError("Transport transition comparison requires the Pi Gateway log")
+    binding = ("teamRevision", "firmwareRevision", "usbLogSha256", "observationContainerRi", "healthContainerRi")
+    if (any(mqtt_capture.get(key) != fallback_capture.get(key) for key in binding)
+            or mqtt_capture["health"]["con"]["bootId"] != fallback_capture["health"]["con"]["bootId"]):
+        raise ValueError("Transport captures do not share the scoped device and Gateway boot")
+    if parse_time(fallback_capture["startedAt"]) < parse_time(mqtt_capture["capturedAt"]):
+        raise ValueError("Fallback capture must start after the MQTT capture")
+    before = compare_observation(mqtt_capture, usb, database, team_state, hasher, pi_log=pi_log,
+                                 bringup_report=bringup_report, firmware_image=firmware_image,
+                                 portal_response=portal_response, web_response=web_response)
+    after = compare_observation(fallback_capture, usb, database, team_state, hasher, pi_log=pi_log)
+    first, second = before["nativeDelivery"], after["nativeDelivery"]
+    if first["logSha256"] != second["logSha256"]:
+        raise ValueError("Pi Gateway log changed during the comparison")
+    matched = (comparison_passed(before, require_physical=True) and comparison_passed(after, require_physical=True)
+               and first.get("gatewayBootMatched") is True and second.get("gatewayBootMatched") is True
+               and first["route"] == "mqtt" and second["route"] == "https-fallback"
+               and first["created"] and second["created"] and before["nativeResourceId"] != after["nativeResourceId"]
+               and before["firmwareSequence"] < after["firmwareSequence"]
+               and before["centralEvent"]["sequence"] < after["centralEvent"]["sequence"])
+    return {"mqtt": before, "httpsFallback": after, "transportTransitionMatched": matched}
 
 
 async def capture_live(args, api, operator_dir, usb):
@@ -289,6 +323,7 @@ def main():
     compare.add_argument("--bringup-report", type=Path, help="first bring-up BLE report from the same USB boot")
     compare.add_argument("--firmware-image", type=Path, help="firmware.bin used for the first bring-up report")
     compare.add_argument("--pi-log", type=Path, help="Pi Gateway log containing the scoped native confirmation")
+    compare.add_argument("--fallback-capture", type=Path, help="later scoped capture to compare with the MQTT baseline")
     compare.add_argument("--portal-response", type=Path, help="saved central portal location response")
     compare.add_argument("--web-response", type=Path, help="saved live dashboard location response")
     args = parser.parse_args()
@@ -312,13 +347,22 @@ def main():
         team_utils = operator_dir / "team-source/pc-mobius/integration/src/integration-utils.mjs"
         portal_response = read_json(args.portal_response) if args.portal_response is not None else None
         web_response = read_json(args.web_response) if args.web_response is not None else None
-        report = compare_observation(artifact, usb, args.database, read_json(args.team_state),
-                                     lambda observation: hash_observation(team_utils, observation),
-                                     portal_response=portal_response, web_response=web_response,
-                                     bringup_report=args.bringup_report, firmware_image=args.firmware_image,
-                                     pi_log=args.pi_log)
+        team_state = read_json(args.team_state)
+
+        def hasher(observation):
+            return hash_observation(team_utils, observation)
+
+        options = dict(portal_response=portal_response, web_response=web_response, bringup_report=args.bringup_report,
+                       firmware_image=args.firmware_image, pi_log=args.pi_log)
+        if args.fallback_capture is not None:
+            report = compare_transport_transition(artifact, read_json(args.fallback_capture), usb, args.database,
+                                                  team_state, hasher, **options)
+            passed = report["transportTransitionMatched"]
+        else:
+            report = compare_observation(artifact, usb, args.database, team_state, hasher, **options)
+            passed = comparison_passed(report, require_physical=args.require_physical)
         print(json.dumps(report, indent=2))
-        raise SystemExit(0 if comparison_passed(report, require_physical=args.require_physical) else 1)
+        raise SystemExit(0 if passed else 1)
 
 
 if __name__ == "__main__":
