@@ -1603,3 +1603,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R11. 직전 goal turn은 r18
 - Gateway 0.2.81의 USB/BLE 기록과 격리 세션에 두 0.7.17 revision을 연결했다. 초기화 중 누름, 정기 상태 갱신과 요청 보존, 비상 버튼의 즉시 선택을 다루는 호스트 시험 소스와 USB 호환성 회귀 소스를 반영했다. 빌드·시험·정적 분석·업로드·Pi 접속·화면 확인은 미수행이다. [화면 초기 구동](../keyring/pcb/BRING_UP.md#화면만-연결한-두-번째-구동)
 
 소스 commit `7f5510c2e445419901a0af7dcb2926c3a63cd61e`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `5f38663..7f5510c`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 LCD 실물 관찰과 Pi 버튼 해제 기록 연결
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R05, R11. 직전 goal turn은 r18 화면 상태와 표시 요청 동기화를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 GATT·실물 증거 계약을 확인했다.
+
+- Gateway 0.2.82의 `bubble-keyring-display-evidence`는 USB 부팅이 일치한 Pi 캡처에서 확인·비상 버튼 해제 순번을 대조하고, 작업자 화면 판독과 사진·영상의 해시를 같은 비공개 보고서에 기록한다. 화면 문구·패널 라벨·테두리·색 순서의 판독 결과와 BLE 그리기 결과는 각각 남긴다.
+- 다른 캡처·부팅·세션, 해제 순번 오류와 같은 영상의 시간 역전을 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·실물 사진/영상·Pi 접속·도구 실행은 미수행이다. [화면 관찰 기록 연결](../keyring/raspberry-pi-gateway/TESTING.md#r18-화면-관찰-기록-연결)
+
+소스 commit `74e13423638c5d8fa6958028b5d4befed5fb445a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `b359917..74e1342`다. goal은 active/progress다.
