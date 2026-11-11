@@ -1612,3 +1612,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R05, R11. 직전 goal turn�
 - 다른 캡처·부팅·세션, 해제 순번 오류와 같은 영상의 시간 역전을 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·실물 사진/영상·Pi 접속·도구 실행은 미수행이다. [화면 관찰 기록 연결](../keyring/raspberry-pi-gateway/TESTING.md#r18-화면-관찰-기록-연결)
 
 소스 commit `74e13423638c5d8fa6958028b5d4befed5fb445a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `b359917..74e1342`다. goal은 active/progress다.
+
+## 2026-11-11 — BLE 재연결과 Pi 재시작 중 같은 부팅의 버튼 누계 보존
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R11. 직전 goal turn은 LCD 관찰과 Pi 버튼 해제 연결을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 Gateway의 순번·저장 계약을 확인했다.
+
+- Gateway 0.2.83은 관측, outbox, 부팅별 확인·비상 버튼 누계를 같은 SQLite 트랜잭션에서 저장한다. 재연결과 Pi 재시작 뒤에도 같은 부팅의 더 높은 순번에서 누계가 역행하면 전송하지 않는다. 누계가 빠진 관측은 기존 값을 유지하고 새 부팅은 독립 누계를 받는다.
+- 기존 DB는 새 열을 추가한 뒤 새 유효 관측부터 누계를 기록한다. 이전 버전이 관측 부팅을 갱신한 경우 다른 부팅에서 남은 누계는 사용하지 않는다. SQLite 업그레이드·재시작·BLE 재연결 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·실제 Pi 접속과 BLE 재연결·운영 DB 업그레이드는 미수행이다. [BLE 통신 메모](../keyring/raspberry-pi-gateway/IO_NOTES.md)
+
+소스 commit `7c7c207a5ff48f238041bb09c36a13821c28bf42`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `f3db5f7..7c7c207`다. goal은 active/progress다.
