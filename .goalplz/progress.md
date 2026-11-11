@@ -1982,3 +1982,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 Pi 재�
 - 응답 오류 뒤 늦은 유효 ACK, 다른 해시의 ACK, 원래 기한 내 ACK 누락을 다루는 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·실제 BlueZ 오류/ACK 시험·장비 실행은 미수행이다. [통신 메모](../keyring/raspberry-pi-gateway/IO_NOTES.md)
 
 소스 commit `6109701b7b3b9853b8e881835f5a7d023bb923d9`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `3ede1a8..6109701`이다. goal은 active/progress다.
+
+## 2026-11-11 — Pi 불확정 영수증과 장치 완료 기록 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 마지막 GATT 응답 오류 뒤 유효 ACK 보존을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 중앙의 `DISPATCH_UNCERTAIN` 영수증 계약을 확인했다.
+
+- Gateway 0.2.109의 저널 대조에서 명령 해시·grant revision·epoch·요청 상태가 맞는 장치 완료 기록을 Pi 미기록 또는 자체 불확정 영수증과 연결한다. `--archive-only`에서 같은 부팅의 명령 하나와 중앙 보관본을 함께 읽을 수 있다. 장치 적용 기록과 기존 중앙 불확정 수용을 보존하고 검토 상태를 유지한다.
+- 불확정·영수증 미기록·마지막 쓰기 미시도를 다루는 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·실제 Pi/장치 저널 및 중앙 재정산 시험은 미수행이다. [복구 대조 절차](../keyring/JOURNAL_RETENTION.md#pi-중단-뒤-장치-완료-기록-찾기)
+
+소스 commit `10fa65ccb81598b2a22a832a7d3ce59a56cc1967`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `d9b982b..10fa65c`이다. goal은 active/progress다.
