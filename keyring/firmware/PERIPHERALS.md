@@ -49,6 +49,8 @@ TPS2553 보조 전원에는 모터·스피커·백라이트가 연결된다. `au
 
 `keyring-0.7.14`는 alert 중 타이머가 `MAIN_FAULT_N`의 LOW를 감지하면 보조 전원을 차단하고 인터럽트 상태를 유지한다. 신호가 먼저 정상으로 돌아와도 모터 GPIO를 LOW로 내리고 확인한 뒤에만 화면 요청이 보조 전원을 켤 수 있다. 적용 확인 시점에 이 상태를 발견한 ON 명령은 `INDETERMINATE`를 반환한다. 활성 화면의 주기 갱신은 백라이트를 끄는 GPIO 전이를 만들지 않는다.
 
+`keyring-0.7.19`는 alert 시작 시 `AuxEnable` GPIO 쓰기와 HIGH 읽기값을 확인한다. 쓰기 실패·LOW 읽기 또는 작동 중 LOW 검출 시 보조 전원을 끄고 기존 인터럽트 처리로 이어진다. 적용 확인에서 실패하면 모터를 정지하고 `INDETERMINATE`로 처리한다. 읽기값은 enable GPIO에서 얻으며 실제 보조 전원 전압과 모터 구동은 실물에서 계측한다.
+
 `peripherals` worker 하나가 LCD와 microSD I/O를 모두 소유한다. CS18/10은 초기 HIGH이며 SPI transaction이 mode/속도를 전환한다. SD MISO11도 공통 SPI에 연결한다. 다른 task에서 이 SPI나 SD API를 직접 호출하면 안 된다. 모터 타이머·BLE callback에는 SPI/filesystem 작업이 없다. 절전은 audio/보조 전원/I/O/로그 queue가 유휴일 때만 진행하고 예약 시 worker 신규 I/O를 막는다. 긴 카드 지연은 절전을 막을 수 있다.
 
 ## 선택형 SD receipt 복사

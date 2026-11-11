@@ -19,6 +19,7 @@ struct esp_timer_create_args_t {
 uint64_t timeUs = 100000;
 bool faultHealthy = true;
 bool motorHigh;
+bool auxHigh, forceAuxLow, failAuxWrite;
 std::vector<std::pair<int, int>> writes;
 void (*timerCallback)(void *);
 
@@ -34,11 +35,17 @@ int esp_timer_start_periodic(esp_timer_handle_t, uint64_t period) {
     return ESP_OK;
 }
 int gpio_get_level(gpio_num_t pin) {
-    assert(pin == board::MainFaultN || pin == board::Motor);
-    return pin == board::MainFaultN ? faultHealthy : motorHigh;
+    if (pin == board::MainFaultN) return faultHealthy;
+    if (pin == board::Motor) return motorHigh;
+    assert(pin == board::AuxEnable);
+    return auxHigh && !forceAuxLow;
 }
 int gpio_set_level(gpio_num_t pin, int level) {
     writes.emplace_back(pin, level);
+    if (pin == board::AuxEnable) {
+        if (level && failAuxWrite) return -1;
+        auxHigh = level;
+    }
     return ESP_OK;
 }
 
@@ -85,4 +92,22 @@ int main() {
     tick();
     assert(!auxRail::busy() && !auxRail::displayVisible() && writes == railOff);
     std::puts("PASS display-only fault cancels the previous display window");
+
+    failAuxWrite = true;
+    assert(!auxRail::alert(true) && auxRail::alertInterrupted() && !auxHigh);
+    failAuxWrite = false;
+    assert(auxRail::alert(false));
+    forceAuxLow = true;
+    assert(!auxRail::alert(true) && auxRail::alertInterrupted() && !auxHigh);
+    assert(auxRail::alert(false));
+    forceAuxLow = false;
+    assert(auxRail::alert(true) && auxHigh);
+    motorHigh = true;
+    forceAuxLow = true;
+    assert(auxRail::alertInterrupted() && !auxHigh);
+    forceAuxLow = false;
+    assert(auxRail::alert(false) && auxRail::alertInterrupted());
+    motorHigh = false;
+    assert(auxRail::alert(false) && !auxRail::alertInterrupted());
+    std::puts("PASS auxiliary enable write and readback failures prevent or interrupt motor alert");
 }

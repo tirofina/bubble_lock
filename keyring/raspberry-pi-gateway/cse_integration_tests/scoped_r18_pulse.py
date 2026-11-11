@@ -14,7 +14,7 @@ from bubble_gateway.model import iso_time, parse_time, utc_now, validate_command
 from pi_led_cycle import ready_heartbeat, receipt_name, verify_observation_resource, verify_receipt, write_new_json
 from scoped_command_io import hash_observation, scoped_api, scoped_clients
 from scoped_feather_evidence import read_json
-from scoped_feather_pi import PARENT, R18_BOARD, R18_COMMAND_FIRMWARE, R18_DEVICE
+from scoped_feather_pi import PARENT, R18_BOARD, R18_COMMAND_FIRMWARE, R18_COMMAND_FIRMWARES, R18_DEVICE
 
 GATEWAY = "gw-b"
 SUBJECT = "scoped-r18-bench"
@@ -47,9 +47,13 @@ def pulse_journal_readiness(values):
     return {key: values[key] for key in ("detail", "journal", *fields)}
 
 
-async def run_pulse(operator_post, cse, central_proof, output, *, pins, observation_hasher, telemetry_proof):
+async def run_pulse(operator_post, cse, central_proof, output, *, pins, observation_hasher, telemetry_proof,
+                    firmware=R18_COMMAND_FIRMWARE):
     pins = validate_container_pins(pins)
-    write_new_json(output / "pulse-scope.json", {"gatewayId": GATEWAY, "containerPins": pins, "journalReadinessRequired": True})
+    if firmware not in R18_COMMAND_FIRMWARES:
+        raise ValueError("Unknown r18 command firmware")
+    write_new_json(output / "pulse-scope.json", {"gatewayId": GATEWAY, "containerPins": pins, "firmwareRevision": firmware,
+                                                "journalReadinessRequired": True})
     stop, trigger = output / "STOP", output / "PULSE"
 
     async def wait_for(check):
@@ -84,7 +88,7 @@ async def run_pulse(operator_post, cse, central_proof, output, *, pins, observat
             return None
         current = native["con"]
         if (current.get("gatewayId") != GATEWAY or current.get("deviceId") != R18_DEVICE
-                or current.get("firmwareRevision") != R18_COMMAND_FIRMWARE or current.get("state") is not False
+                or current.get("firmwareRevision") != firmware or current.get("state") is not False
                 or current.get("sensorValues", {}).get("fault") is not False
                 or (boot_id is not None and current.get("bootId") != boot_id)):
             return None
@@ -111,7 +115,7 @@ async def run_pulse(operator_post, cse, central_proof, output, *, pins, observat
         if native is None:
             return None
         heartbeat = ready_heartbeat(native["con"], GATEWAY, observation["bootId"], not_before,
-                                    firmware=R18_COMMAND_FIRMWARE, device_id=R18_DEVICE, board_revision=R18_BOARD)
+                                    firmware=firmware, device_id=R18_DEVICE, board_revision=R18_BOARD)
         if heartbeat is None:
             return None
         heartbeat["cseResource"] = {key: native[key] for key in ("ri", "pi")}
@@ -176,7 +180,7 @@ async def run_pulse(operator_post, cse, central_proof, output, *, pins, observat
             if not isinstance(resource["ct"], str) or not re.fullmatch(r"[0-9]{8}T[0-9]{6}", resource["ct"]):
                 raise RuntimeError("Invalid native r18 receipt identity")
             write_new_json(output / "pulse-receipt.json", {"cseReceipt": receipt, "cseResource": resource})
-            verify_receipt(command, receipt, boot_id, True, firmware=R18_COMMAND_FIRMWARE)
+            verify_receipt(command, receipt, boot_id, True, firmware=firmware)
             settled = await wait_for(lambda: central_proof(command, receipt))
             final_off, native_observation = await wait_for(
                 lambda: off_observation(boot_id=boot_id, after=parse_time(receipt["receivedAt"]),
@@ -207,8 +211,9 @@ async def run_pulse(operator_post, cse, central_proof, output, *, pins, observat
 
 async def run(output, seconds, pins):
     api, operator_dir = scoped_api("r18")
-    if (api["gatewayId"], api["deviceId"], api["subjectId"], api["boardRevision"], api["firmwareRevision"]) != (
-            GATEWAY, R18_DEVICE, SUBJECT, R18_BOARD, R18_COMMAND_FIRMWARE):
+    firmware = api["firmwareRevision"]
+    if ((api["gatewayId"], api["deviceId"], api["subjectId"], api["boardRevision"]) != (GATEWAY, R18_DEVICE, SUBJECT, R18_BOARD)
+            or firmware not in R18_COMMAND_FIRMWARES):
         raise RuntimeError("Configured scoped r18 profile differs from the pulse bench identity")
     state_path = operator_dir / "runtime.json"
     team_utils = operator_dir / "team-source/pc-mobius/integration/src/integration-utils.mjs"
@@ -227,7 +232,7 @@ async def run(output, seconds, pins):
                 asyncio.timeout(seconds)):
         output.mkdir(mode=0o700)
         await run_pulse(operator_post, cse, central_proof, output, pins=pins,
-                        observation_hasher=observation_hasher, telemetry_proof=telemetry_proof)
+                        observation_hasher=observation_hasher, telemetry_proof=telemetry_proof, firmware=firmware)
 
 
 if __name__ == "__main__":

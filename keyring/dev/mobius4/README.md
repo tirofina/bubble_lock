@@ -232,7 +232,7 @@ pnpm --dir $teamPackage install --frozen-lockfile --prod --ignore-scripts
 
 #### r18 격리 명령 API
 
-`r18` 프로필은 PC의 `127.0.0.1:8789`와 `.local/scoped/command-api-r18/`을 사용한다. `gw-b` 인증서에 `keyring-r18-lab`과 시험 주체 `scoped-r18-bench`를 등록한다. `READY`와 Pi의 인증된 기능 조회에는 `r18-hand-solder`, `keyring-0.7.14`가 함께 표시된다.
+`r18` 프로필은 PC의 `127.0.0.1:8789`와 `.local/scoped/command-api-r18/`을 사용한다. `gw-b` 인증서에 `keyring-r18-lab`과 시험 주체 `scoped-r18-bench`를 등록한다. 최신 프로필을 시작하면 `READY`와 Pi의 인증된 기능 조회에 `r18-hand-solder`, `keyring-0.7.19`가 함께 표시된다. 이전 0.7.14로 실행 중인 API는 새 0.7.19 Pi 명령 세션을 시작하기 전에 갱신한다.
 
 ```powershell
 $tool = './keyring/dev/mobius4'

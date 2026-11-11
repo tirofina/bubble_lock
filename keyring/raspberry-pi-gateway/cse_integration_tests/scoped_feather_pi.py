@@ -18,7 +18,9 @@ API_PORTS = {"legacy": 8787, "integration": 8788, "r18": 8789}
 INTEGRATION_TEAM_REVISION = "bc2a45dfcc014b7cdb0a57a03aca2c04ca8eb989"
 DISPLAY_FIRMWARE = "feather-probe-0.2.1"
 COMMAND_FIRMWARES = ("feather-probe-0.2.0", DISPLAY_FIRMWARE)
-R18_COMMAND_FIRMWARE = "keyring-0.7.14"
+R18_LEGACY_COMMAND_FIRMWARE = "keyring-0.7.14"
+R18_COMMAND_FIRMWARE = "keyring-0.7.19"
+R18_COMMAND_FIRMWARES = (R18_COMMAND_FIRMWARE, R18_LEGACY_COMMAND_FIRMWARE)
 R18_BRINGUP_FIRMWARES = (
     "keyring-0.7.15-bringup", "keyring-0.7.15-st7789-bringup", "keyring-0.7.15-jd9853-bringup",
     "keyring-0.7.16-st7789-bringup", "keyring-0.7.16-jd9853-bringup",
@@ -52,14 +54,14 @@ def load_tls(directory, slot="a"):
     return ca, cert, key, context
 
 
-def verify_integration_api(port, revision, context, *, mode="integration"):
+def verify_integration_api(port, revision, context, *, mode="integration", firmware=None):
     r18 = mode == "r18"
     gateway_id = "gw-b" if r18 else "gw-a"
     expected = {"status": "READY", "scope": "scoped-command-api", "mode": mode,
                 "teamRevision": revision, "gatewayId": gateway_id, "deviceId": R18_DEVICE if r18 else "keyring-feather-lab",
                 "features": ["dispatch-start", "receipts", "telemetry"]}
     if r18:
-        expected.update(boardRevision=R18_BOARD, firmwareRevision=R18_COMMAND_FIRMWARE)
+        expected["boardRevision"] = R18_BOARD
     try:
         with closing(http.client.HTTPSConnection("127.0.0.1", port, timeout=5, context=context)) as connection:
             connection.request("GET", f"/api/v1/gateways/{gateway_id}/bench-capabilities",
@@ -68,7 +70,12 @@ def verify_integration_api(port, revision, context, *, mode="integration"):
             if response.status != 200:
                 raise ScopedApiError("the forwarded port did not return the integration profile")
             body = response.read(4097)
-            if len(body) > 4096 or json.loads(body) != expected:
+            received = json.loads(body) if len(body) <= 4096 else None
+            if r18 and isinstance(received, dict):
+                advertised = received.get("firmwareRevision")
+                if advertised in R18_COMMAND_FIRMWARES and (firmware is None or advertised == firmware):
+                    expected["firmwareRevision"] = advertised
+            if received != expected or (r18 and "firmwareRevision" not in expected):
                 raise ScopedApiError("the forwarded API revision or capabilities differ from the prepared profile")
     except ScopedApiError:
         raise
@@ -103,13 +110,13 @@ def gateway_environment(profile, session, *, verify_api=False):
     if not tls.is_absolute():
         raise ValueError("Expected an absolute client TLS directory")
     ca, cert, key, context = load_tls(tls, slot)
-    default_firmware = R18_COMMAND_FIRMWARE if r18 else COMMAND_FIRMWARES[0]
+    default_firmware = R18_LEGACY_COMMAND_FIRMWARE if r18 else COMMAND_FIRMWARES[0]
     if observe_only:
         default_firmware = R18_BRINGUP_FIRMWARES[0]
     firmware = profile.get("firmwareRevision", default_firmware)
     if observe_only and firmware not in R18_BRINGUP_FIRMWARES:
         raise ValueError("Expected an observation-only r18 bring-up firmware")
-    if r18 and not observe_only and firmware != R18_COMMAND_FIRMWARE:
+    if r18 and not observe_only and firmware not in R18_COMMAND_FIRMWARES:
         raise ValueError("Expected the command-enabled r18 firmware")
     if not r18 and firmware not in COMMAND_FIRMWARES:
         raise ValueError("Unknown Feather command firmware")
@@ -163,7 +170,9 @@ def gateway_environment(profile, session, *, verify_api=False):
         if not isinstance(deployment, str) or not IDENTIFIER.fullmatch(deployment):
             raise ValueError("Expected a central API deployment ID")
         environment["PC_API_DEPLOYMENT_ID"] = deployment
-    if verify_api and mode != "legacy":
+    if verify_api and r18:
+        verify_integration_api(api, revision, context, mode=mode, firmware=None if observe_only else firmware)
+    elif verify_api and mode != "legacy":
         verify_integration_api(api, revision, context, mode=mode)
     return environment
 
@@ -183,6 +192,8 @@ def prepare(args, session):
         profile["mqttPort"] = args.mqtt_port
     if args.firmware_revision is not None:
         profile["firmwareRevision"] = args.firmware_revision
+    elif args.api_mode == "r18" and not args.observe_only:
+        profile["firmwareRevision"] = R18_COMMAND_FIRMWARE
     if args.api_mode != "legacy":
         profile["apiMode"] = args.api_mode
         profile["apiTeamRevision"] = INTEGRATION_TEAM_REVISION if args.api_team_revision is None else args.api_team_revision
@@ -264,14 +275,15 @@ def capture_r18(root, session, output):
     with bench_lock(root) as lock:
         environment = load_environment(session, verify_api=False)
         devices = json.loads(environment["BLE_DEVICES"])
+        firmware = environment["FIRMWARE_REVISION_ALLOWLIST"]
         if (environment["GATEWAY_ID"] != "gw-b" or environment.get("BLE_BOARD_REVISION") != R18_BOARD
-                or environment["FIRMWARE_REVISION_ALLOWLIST"] != R18_COMMAND_FIRMWARE or set(devices) != {R18_DEVICE}):
+                or firmware not in R18_COMMAND_FIRMWARES or set(devices) != {R18_DEVICE}):
             raise ValueError("The journal capture requires a prepared r18 session")
         os.set_inheritable(lock.fileno(), True)
         arguments = [sys.executable, "-m", "bubble_gateway.journal_cli", "--device-id", R18_DEVICE,
                      "--address", devices[R18_DEVICE], "--database", environment["GATEWAY_DATABASE"],
                      "--gatt-profile", environment["BLE_GATT_PROFILE"], "--board-revision", R18_BOARD,
-                     "--firmware-revision", R18_COMMAND_FIRMWARE, "--output", str(output)]
+                     "--firmware-revision", firmware, "--output", str(output)]
         os.execve(sys.executable, arguments, environment)
 
 
@@ -285,7 +297,7 @@ def main():
     setup.add_argument("--api-mode", choices=API_PORTS, default="legacy")
     setup.add_argument("--api-port", type=int, help="Override the selected API mode's Pi loopback port")
     setup.add_argument("--api-team-revision", help="Override the pinned full team commit for integration or r18")
-    setup.add_argument("--firmware-revision", choices=(*COMMAND_FIRMWARES, R18_COMMAND_FIRMWARE, *R18_BRINGUP_FIRMWARES))
+    setup.add_argument("--firmware-revision", choices=(*COMMAND_FIRMWARES, *R18_COMMAND_FIRMWARES, *R18_BRINGUP_FIRMWARES))
     setup.add_argument("--observe-only", action="store_true", help="Use an r18 bring-up image and disable command processing")
     setup.add_argument("--mqtt-port", type=int, help="Forwarded r18 MQTT ingress on a separate Pi loopback port")
     setup.add_argument("--receipt-container-ri", help="Use the selected Gateway's receipt pin in a fresh session")

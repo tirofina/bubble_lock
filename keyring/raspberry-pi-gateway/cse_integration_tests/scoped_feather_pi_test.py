@@ -7,7 +7,8 @@ import unittest
 from unittest.mock import Mock, patch
 
 from scoped_feather_pi import (INTEGRATION_TEAM_REVISION, R18_BOARD, R18_BRINGUP_FIRMWARES, R18_COMMAND_FIRMWARE, R18_DEVICE,
-                               ScopedApiError, capture_r18, export_environment, gateway_environment, verify_integration_api)
+                               R18_LEGACY_COMMAND_FIRMWARE, ScopedApiError, capture_r18, export_environment,
+                               gateway_environment, verify_integration_api)
 
 
 class ScopedPiProfileTests(unittest.TestCase):
@@ -63,7 +64,8 @@ class ScopedPiProfileTests(unittest.TestCase):
         root = Path.cwd()
         profile = {"version": 1, "address": "00:00:00:00:00:01", "csePort": 8760, "apiPort": 8789,
                     "tlsDirectory": str(root), "apiMode": "r18", "cseDeploymentId": "scoped-mobius4",
-                    "receiptContainerRi": "cnt-receipt", "observationContainerRi": "cnt-observation"}
+                    "receiptContainerRi": "cnt-receipt", "observationContainerRi": "cnt-observation",
+                    "firmwareRevision": R18_COMMAND_FIRMWARE}
         connection = Mock()
         expected = dict(self.capabilities, mode="r18", gatewayId="gw-b", deviceId=R18_DEVICE,
                         boardRevision=R18_BOARD, firmwareRevision=R18_COMMAND_FIRMWARE)
@@ -87,6 +89,13 @@ class ScopedPiProfileTests(unittest.TestCase):
             self.assertTrue(env["M2M_HEALTH_CONTAINER"].endswith("/command-health-b"))
             connection.request.assert_called_once_with("GET", "/api/v1/gateways/gw-b/bench-capabilities",
                                                        headers={"Accept": "application/json", "Cache-Control": "no-store"})
+            legacy = {key: value for key, value in profile.items() if key != "firmwareRevision"}
+            self.assertEqual(gateway_environment(legacy, root)["FIRMWARE_REVISION_ALLOWLIST"], R18_LEGACY_COMMAND_FIRMWARE)
+            with self.assertRaises(ScopedApiError):
+                gateway_environment(legacy, root, verify_api=True)
+            connection.getresponse.return_value.read.return_value = json.dumps(
+                dict(expected, firmwareRevision=R18_LEGACY_COMMAND_FIRMWARE)).encode()
+            gateway_environment(legacy, root, verify_api=True)
             connection.getresponse.return_value.read.return_value = json.dumps(self.capabilities).encode()
             with self.assertRaises(ScopedApiError):
                 gateway_environment(profile, root, verify_api=True)

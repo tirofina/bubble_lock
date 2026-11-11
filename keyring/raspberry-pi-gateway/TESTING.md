@@ -497,7 +497,7 @@ tool=keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_pi.py
 "$pi_python" "$tool" preflight --session "$r18_session"
 ```
 
-r18 모드는 중앙 API 포트 `8789`와 `gw-b` 전용 경로를 사용한다. Pi Gateway는 BLE 장치 ID, `r18-hand-solder` 보드, `keyring-0.7.14` 명령 펌웨어가 일치할 때 연결을 준비한다. 관측 또는 영수증 ID가 없는 이전 r18 세션은 검증된 두 ID로 새 세션을 만든다. `preflight` 후 승인된 시험에서만 `run`으로 해당 세션을 시작한다. Feather 명령 시험과 r18 명령 시험은 Pi 사용자당 같은 실행 잠금을 사용한다. r18의 모터 펄스는 [실물 명령 대조](../JOURNAL_RETENTION.md#r18-실물-명령-한-건-대조)의 절차에 연결한다.
+r18 모드는 중앙 API 포트 `8789`와 `gw-b` 전용 경로를 사용한다. 새 명령 세션은 `keyring-0.7.19`를 고정한다. Pi는 BLE 장치 ID, `r18-hand-solder` 보드와 지정한 펌웨어 revision을 대조하고 중앙 API의 기능 응답도 같은 revision으로 확인한다. 이전 0.7.14 명령 세션은 그 revision을 이어서 사용한다. 관측 또는 영수증 ID가 없는 이전 r18 세션은 검증된 두 ID로 새 세션을 만든다. `preflight` 후 승인된 시험에서만 `run`으로 해당 세션을 시작한다. Feather 명령 시험과 r18 명령 시험은 Pi 사용자당 같은 실행 잠금을 사용한다. r18의 모터 펄스는 [실물 명령 대조](../JOURNAL_RETENTION.md#r18-실물-명령-한-건-대조)의 절차에 연결한다.
 
 #### r18 단일 펄스 시험
 
@@ -543,7 +543,7 @@ env -i PATH=/usr/bin:/bin PYTHONPATH="$source_path" "$pi_python" -m bubble_gatew
 env -i PATH=/usr/bin:/bin PYTHONPATH="$source_path" "$pi_python" -m bubble_gateway.journal_reconcile \
   --env-file "$gateway_env" --device-archive "$private_r18_evidence/device" \
   --gateway-archive "$private_r18_evidence/gateway" --same-boot-command "$pulse_command_id" \
-  --board-revision r18-hand-solder --firmware-revision keyring-0.7.14 \
+  --board-revision r18-hand-solder --firmware-revision keyring-0.7.19 \
   --team-state "$team_state_copy" --native-receipt "$pulse_receipt_copy"
 ```
 

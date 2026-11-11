@@ -9,7 +9,8 @@ from bubble_gateway.store import Store
 from helpers import BINDING
 from pi_led_cycle import content_name, receipt_name, write_new_json
 from scoped_r18_evidence import inspect_pulse
-from scoped_r18_pulse import GATEWAY, PATHS, R18_COMMAND_FIRMWARE, R18_DEVICE
+from scoped_feather_pi import R18_LEGACY_COMMAND_FIRMWARE
+from scoped_r18_pulse import GATEWAY, PATHS, R18_DEVICE
 
 
 class R18EvidenceTests(unittest.TestCase):
@@ -109,7 +110,7 @@ class R18EvidenceTests(unittest.TestCase):
     def test_matches_central_application_but_rejects_conflicting_native_receipt(self):
         receipt = {key: self.command[key] for key in ("gatewayId", "deviceId", "commandId", "grantRevision", "ownershipEpoch")}
         receipt.update(version=1, payloadHash=self.command_hash, status="APPLIED", ackCode="APPLIED",
-                       readback={"state": True}, bootId=self.boot_id, firmwareRevision=R18_COMMAND_FIRMWARE,
+                       readback={"state": True}, bootId=self.boot_id, firmwareRevision=R18_LEGACY_COMMAND_FIRMWARE,
                        receivedAt="2026-11-11T09:00:04.000Z")
         digest = payload_hash(receipt)
         self.record.update(executionState="APPLIED_VERIFIED", lastReceiptHash=digest, readback={"state": True},

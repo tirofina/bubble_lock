@@ -69,7 +69,7 @@ void readRunningImageDigest(char (&hex)[65]) {
   hex[64] = '\0';
 }
 #else
-constexpr char FirmwareRevision[] = "keyring-0.7.14";
+constexpr char FirmwareRevision[] = "keyring-0.7.19";
 #endif
 constexpr bool ObservationOnly = KEYRING_R18_BRINGUP != 0;
 #if defined(KEYRING_LEGACY_GATT) && KEYRING_LEGACY_GATT

@@ -14,14 +14,15 @@ from bubble_gateway.model import canonical, iso_time, parse_time, payload_hash
 from pi_led_cycle import receipt_name, verify_observation_resource
 from scoped_feather_evidence import (interrupted_pi_result, read_json, read_optional, read_pi_commands,
                                     validate_interrupted_receipt)
-from scoped_r18_pulse import (GATEWAY, PATHS, R18_COMMAND_FIRMWARE, R18_DEVICE, TELEMETRY_EVENT_FIELDS, pulse_journal_readiness,
+from scoped_feather_pi import R18_COMMAND_FIRMWARES, R18_LEGACY_COMMAND_FIRMWARE
+from scoped_r18_pulse import (GATEWAY, PATHS, R18_DEVICE, TELEMETRY_EVENT_FIELDS, pulse_journal_readiness,
                              validate_container_pins)
 
 
-def check_receipt(receipt, command, boot_id):
+def check_receipt(receipt, command, boot_id, firmware):
     validate_interrupted_receipt(receipt, command, receipt["status"])
     if receipt["status"] == "APPLIED" and (receipt.get("bootId") != boot_id
-                                           or receipt.get("firmwareRevision") != R18_COMMAND_FIRMWARE):
+                                           or receipt.get("firmwareRevision") != firmware):
         raise ValueError("Applied receipt differs from the r18 baseline")
 
 
@@ -80,17 +81,20 @@ def inspect_pulse(directory, team_state, database=None):
     scope = read_optional(directory / "pulse-scope.json")
     pins = None
     journal_required = False
+    firmware = R18_LEGACY_COMMAND_FIRMWARE
     if scope is not None:
         if scope["gatewayId"] != GATEWAY:
             raise ValueError("r18 scope belongs to a different Gateway")
         pins = validate_container_pins(scope["containerPins"])
         journal_required = scope.get("journalReadinessRequired", False)
-        if type(journal_required) is not bool:
+        firmware = scope.get("firmwareRevision", firmware)
+        if type(journal_required) is not bool or firmware not in R18_COMMAND_FIRMWARES:
             raise ValueError("Invalid r18 journal readiness scope")
     report = {"intentCaptured": intent is not None, "issuedResponseCaptured": issued_file is not None,
               "cseReceiptCaptured": native_file is not None, "grantRevocationCaptured": revoked is not None,
               "cseContainerPinsCaptured": pins is not None, "postPulseObservationCaptured": False,
-              "postPulseCentralTelemetryVerified": False, "journalReadiness": None, "physicalPulseMeasured": None}
+              "postPulseCentralTelemetryVerified": False, "journalReadiness": None, "firmwareRevision": firmware,
+              "physicalPulseMeasured": None}
     if intent is None:
         if any(artifact is not None for artifact in (issued_file, native_file, result, observation_file, event_file)):
             raise ValueError("r18 artifacts have no matching local intent")
@@ -183,14 +187,14 @@ def inspect_pulse(directory, team_state, database=None):
         report.update(pi_proof)
     native_receipt = native_file["cseReceipt"] if native_file is not None else None
     if native_receipt is not None:
-        check_receipt(native_receipt, command, baseline["bootId"])
+        check_receipt(native_receipt, command, baseline["bootId"], firmware)
         report.update(cseAckCode=native_receipt["ackCode"], cseReceiptSha256=payload_hash(native_receipt))
     stored = stored_receipts.get(command_id)
     if command_id in stored_receipts and (not isinstance(stored, dict) or not isinstance(stored.get("receipt"), dict)):
         raise ValueError("Invalid saved central receipt")
     central_receipt = stored["receipt"] if stored is not None else None
     if central_receipt is not None:
-        check_receipt(central_receipt, command, baseline["bootId"])
+        check_receipt(central_receipt, command, baseline["bootId"], firmware)
         digest = payload_hash(central_receipt)
         if stored["receiptHash"] != digest or issued_record.get("lastReceiptHash") != digest:
             raise ValueError("Central receipt hash differs from the saved body")
@@ -203,7 +207,7 @@ def inspect_pulse(directory, team_state, database=None):
     if len({canonical(receipt) for receipt in receipts}) > 1:
         raise ValueError("Pi, CSE or central receipt bodies differ")
     if pi_receipt is not None:
-        check_receipt(pi_receipt, command, baseline["bootId"])
+        check_receipt(pi_receipt, command, baseline["bootId"], firmware)
     report.update(inspect_post_pulse(result, observation_file, event_file, command, baseline, native_receipt, team_state))
     return report
 
