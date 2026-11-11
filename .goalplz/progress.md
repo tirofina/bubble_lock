@@ -1459,3 +1459,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01~R03, R05. 직전 goal turn은 Feat
 - health·영수증 경로 교체, 잘못된 부모 영수증과 Pi SQLite를 다루는 회귀시험 소스를 추가했다. 이번에는 빌드·시험·정적 분석·서버 설정 실행·Pi 접속·BLE·실물 시험을 수행하지 않았다.
 
 소스 commit `41dfc0592ccb49f9c45c5cd61f13e877e842bdd3`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8ea6a6f..41dfc05`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 펄스 이후 OFF 관측의 중앙 수용 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01~R03, R05. 직전 goal turn은 r18 Mobius4 컨테이너 고정을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 중앙 수용 이벤트의 식별자 계산, 본문 해시와 중앙 순번 필드를 읽었다.
+
+- Gateway 0.2.66의 격리 r18 벤치는 grant 회수 뒤 Mobius4의 후속 OFF 관측을 고정된 팀 API 해시 함수로 계산해 `GATEWAY_TELEMETRY_ACCEPTED`에 대조한다. 중앙 응답이 늦어져도 먼저 저장한 펄스 결과와 관측 해시를 남긴다. 중앙 상태 사본으로 뒤늦게 대조할 수 있다. [r18 시험](../keyring/raspberry-pi-gateway/TESTING.md#r18-단일-펄스-시험)
+- 중앙 수용 지연, 본문 해시 불일치, 권한 회수 뒤 대조를 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·Pi 접속·BLE·실물 펄스 및 실제 중앙 수용 확인은 미수행이다.
+
+소스 commit `1899c00a420825642118a67ba4663f894819c1a2`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `c1baf6e..1899c00`다. goal은 active/progress다.
