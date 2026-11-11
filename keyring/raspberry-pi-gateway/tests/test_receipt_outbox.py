@@ -454,7 +454,7 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         expired_at = iso_time(utc_now() - timedelta(minutes=5))
         old = observation(observedAt=expired_at, receivedAt=expired_at)
         fresh = observation(sequence=2)
-        await gateway.observation(old)
+        self.store.observation(BINDING["observationContainer"], old, central_enabled=True)
         await gateway.observation(fresh)
         self.store.retry(self.store.due_central_telemetry()["rqi"], 0, minimum_delay=3600)
 
@@ -470,6 +470,51 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(gateway.counters["central_telemetry_stale"], 1)
         self.assertEqual(self.queued("@central/telemetry"), 0)
         self.assertEqual(self.queued(BINDING["observationContainer"]), 2)
+
+    async def test_already_expired_observation_still_stages_native_without_a_central_copy(self):
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.config.central_telemetry_enabled = True
+        gateway.config.central_telemetry_retention_seconds = 60
+        gateway.config.core_bridge_enabled = False
+        gateway.counters = Counter()
+        gateway._clock_ok = Mock(return_value=True)
+        expired_at = iso_time(utc_now() - timedelta(minutes=5))
+        old = observation(observedAt=expired_at, receivedAt=expired_at)
+        await gateway.observation(old, 500)
+        await gateway.observation(old, 500)
+        self.assertEqual(self.queued(BINDING["observationContainer"]), 1)
+        self.assertEqual(self.queued("@central/telemetry"), 0)
+        self.assertEqual(gateway.counters["central_telemetry_expired"], 1)
+        self.assertEqual(gateway.counters["observations_duplicate"], 1)
+        self.assertEqual(self.store.observation_heads(include_device_uptime=True), {"kr-test": ("boot-test", 1, None, 500)})
+
+    async def test_expired_central_backlog_frees_capacity_for_an_atomic_observation_retry(self):
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.config.central_telemetry_enabled = True
+        gateway.config.central_telemetry_retention_seconds = 60
+        gateway.config.core_bridge_enabled = False
+        gateway.counters = Counter()
+        gateway._clock_ok = Mock(return_value=True)
+        self.store.max_rows = 6  # Five noncritical slots.
+        container = BINDING["observationContainer"]
+        expired_at = iso_time(utc_now() - timedelta(minutes=5))
+        for sequence in (1, 2):
+            old = observation(sequence=sequence, observedAt=expired_at, receivedAt=expired_at)
+            self.store.observation(container, old, central_enabled=True)
+        self.store.retry(self.store.due_central_telemetry()["rqi"], 0, minimum_delay=3600)
+        self.store.delivered(Store.request_id("observation", "kr-test:boot-test:1"))
+        self.stage()  # Fill the remaining noncritical headroom with the receipt pair.
+
+        fresh = observation(sequence=3)
+        await gateway.observation(fresh)
+        self.assertEqual(self.queued(container), 2)
+        self.assertEqual(self.queued(BINDING["receiptContainer"]), 1)
+        self.assertEqual(self.store.due_central_telemetry()["payload"], fresh)
+        self.assertEqual(gateway.counters["central_telemetry_expired"], 2)
+        self.assertEqual(gateway.counters["observations_deferred_capacity"], 0)
+        self.assertEqual(self.store.observation_heads(), {"kr-test": ("boot-test", 3)})
 
     async def test_untrusted_clock_keeps_central_rows_waiting_for_retry(self):
         gateway = Gateway.__new__(Gateway)
@@ -543,7 +588,8 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
                                              central_delivery_held=Mock(return_value=True),
                                              native_delivery_hold=NativeDeliveryHold)
         expired_at = iso_time(utc_now() - timedelta(minutes=5))
-        await gateway.observation(observation(observedAt=expired_at, receivedAt=expired_at))
+        old = observation(observedAt=expired_at, receivedAt=expired_at)
+        self.store.observation(BINDING["observationContainer"], old, central_enabled=True)
         fresh = observation(sequence=2)
         await gateway.observation(fresh)
 

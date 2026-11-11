@@ -136,14 +136,36 @@ class Gateway:
         if self.store.finish(receipt["commandId"], receipt):
             self.counters[f"command_{receipt['status'].lower()}"] += 1
 
+    def _central_telemetry_cutoff(self) -> datetime | None:
+        if not self._clock_ok():
+            return None
+        return utc_now() - timedelta(seconds=self.config.central_telemetry_retention_seconds + CENTRAL_TELEMETRY_CLOCK_MARGIN)
+
+    def _expire_central_telemetry(self, cutoff: datetime | None) -> int:
+        expired = self.store.expire_central_telemetry(cutoff, CENTRAL_TELEMETRY_EXPIRY_BATCH) if cutoff is not None else 0
+        self.counters["central_telemetry_expired"] += expired
+        return expired
+
     async def observation(self, raw: dict, device_uptime_ms: int | None = None) -> None:
         try:
             payload = validate_observation(raw, self.config.gateway_id, self.config.ble_devices)
-            if self.store.observation(self.config.observation_container, payload, self.config.core_bridge_enabled,
-                                      core_epochs=self.config.core_telemetry_epochs,
-                                      central_enabled=self.config.central_telemetry_enabled,
-                                      device_uptime_ms=device_uptime_ms):
+            central_enabled = self.config.central_telemetry_enabled
+            cutoff = self._central_telemetry_cutoff() if central_enabled else None
+            already_expired = cutoff is not None and parse_time(payload["observedAt"]) < cutoff
+            args = (self.config.observation_container, payload, self.config.core_bridge_enabled)
+            options = dict(core_epochs=self.config.core_telemetry_epochs,
+                           central_enabled=central_enabled and not already_expired,
+                           device_uptime_ms=device_uptime_ms)
+            try:
+                queued = self.store.observation(*args, **options)
+            except CapacityError:
+                if cutoff is None or not self._expire_central_telemetry(cutoff):
+                    raise
+                queued = self.store.observation(*args, **options)
+            if queued:
                 self.counters["observations_queued"] += 1
+                if already_expired:
+                    self.counters["central_telemetry_expired"] += 1
             else:
                 self.counters["observations_duplicate"] += 1
         except CapacityError:
@@ -496,8 +518,6 @@ class Gateway:
         commands_enabled = getattr(self.config, "commands_enabled", True)
         receipt_attempts = 0
         next_expiry_check = 0.0
-        if central_route == "telemetry":
-            max_age = timedelta(seconds=self.config.central_telemetry_retention_seconds + CENTRAL_TELEMETRY_CLOCK_MARGIN)
         while not self.stop.is_set():
             if central_route == "receipt":
                 item = None
@@ -507,9 +527,7 @@ class Gateway:
             elif central_route == "telemetry":
                 now = time.monotonic()
                 if now >= next_expiry_check:
-                    expired = (self.store.expire_central_telemetry(utc_now() - max_age, CENTRAL_TELEMETRY_EXPIRY_BATCH)
-                               if self._clock_ok() else 0)
-                    self.counters["central_telemetry_expired"] += expired
+                    expired = self._expire_central_telemetry(self._central_telemetry_cutoff())
                     next_expiry_check = now if expired == CENTRAL_TELEMETRY_EXPIRY_BATCH else now + CENTRAL_TELEMETRY_EXPIRY_INTERVAL
                 item = None if self.transport.central_delivery_held() else self.store.due_central_telemetry()
             elif core_route == "ack":
@@ -544,8 +562,8 @@ class Gateway:
                 else:
                     self.store.mark_receipt_attempt(item["rqi"])
             try:
-                if (central_route == "telemetry" and self._clock_ok()
-                        and utc_now() - parse_time(item["payload"]["observedAt"]) > max_age):
+                cutoff = self._central_telemetry_cutoff() if central_route == "telemetry" else None
+                if cutoff is not None and parse_time(item["payload"]["observedAt"]) < cutoff:
                     self.store.delivered(item["rqi"])
                     self.counters["central_telemetry_expired"] += 1
                     continue
