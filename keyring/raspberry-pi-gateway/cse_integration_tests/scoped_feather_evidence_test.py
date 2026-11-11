@@ -236,19 +236,51 @@ class ScopedFeatherEvidenceTests(unittest.TestCase):
         self.assertEqual([item["commandId"] for item in evidence["observations"]], [command["commandId"], "led-off"])
         self.assertEqual([item["eventId"] for item in evidence["observations"]], [on["eventId"], off["eventId"]])
 
+    def write_interrupted_intent(self, directory, label, command, grant_id):
+        request = {key: command[key] for key in ("deviceId", "commandId", "desiredState", "deadline")}
+        request["grantId"] = grant_id
+        intent = {"gatewayId": "gw-a", "request": request, "cseReceiptName": receipt_name(command["commandId"])}
+        write_new_json(directory / f"led-{label}-intent.json", intent)
+        self.team["gatewayCommands"][command["commandId"]] = {
+            "command": command, "grantId": grant_id, "payloadHash": payload_hash(command),
+            "intentHash": payload_hash({**request, "gatewayId": "gw-a"}),
+        }
+
     def interrupted_fixture(self):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         directory = Path(temporary.name)
         command = self.step["command"]
-        request = {key: command[key] for key in ("deviceId", "commandId", "desiredState", "deadline")}
-        request["grantId"] = "grant-a"
-        intent = {"gatewayId": "gw-a", "request": request, "cseReceiptName": receipt_name(command["commandId"])}
-        (directory / "led-on-intent.json").write_text(json.dumps(intent), encoding="utf-8")
-        issued = self.team["gatewayCommands"][command["commandId"]]
-        issued.update(grantId=request["grantId"], payloadHash=payload_hash(command),
-                      intentHash=payload_hash({**request, "gatewayId": "gw-a"}))
+        self.write_interrupted_intent(directory, "on", command, "grant-a")
         return directory, command
+
+    def test_interrupted_cycle_recovers_only_the_display_step_that_was_recorded(self):
+        directory, _ = self.interrupted_fixture()
+        cycle, observed = self.display_fixture()
+        self.write_display_steps(directory, {"steps": cycle["steps"][:1]})
+        write_new_json(directory / "led-on-grant-revoked.json", {"grantId": "grant-a", "status": "REVOKED"})
+        write_new_json(directory / "display-on.json", observed[0])
+
+        result = inspect_interrupted_bench(directory, self.team)
+        on, off = result["steps"]
+        self.assertEqual(on["commandDisplayObserved"], dict(observed[0], matched=True))
+        self.assertNotIn("commandDisplayObserved", off)
+        self.assertIsNone(result["commandDisplayMatched"])
+        self.assertIsNone(result["centralSettlementVerified"])
+
+    def test_interrupted_cycle_rejects_screen_without_revocation_or_after_off_issuance(self):
+        directory, _ = self.interrupted_fixture()
+        cycle, observed = self.display_fixture()
+        self.write_display_steps(directory, {"steps": cycle["steps"][:1]})
+        off = cycle["steps"][1]["command"]
+        write_new_json(directory / "display-on.json", dict(observed[0], observedAt=off["issuedAt"]))
+        with self.assertRaisesRegex(ValueError, "requires a bench intent, readback and grant revocation"):
+            inspect_interrupted_bench(directory, self.team)
+
+        write_new_json(directory / "led-on-grant-revoked.json", {"grantId": "grant-a", "status": "REVOKED"})
+        self.write_interrupted_intent(directory, "off", off, "grant-b")
+        with self.assertRaisesRegex(ValueError, "outside the recorded command interval"):
+            inspect_interrupted_bench(directory, self.team)
 
     def test_interrupted_cycle_recovers_central_issue_without_the_http_response(self):
         directory, command = self.interrupted_fixture()

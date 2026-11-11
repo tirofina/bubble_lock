@@ -324,6 +324,7 @@ python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_led_cyc
 명령 발급 요청 전의 `led-*-intent.json`에 command ID와 CSE 자원명이 있다. 응답을 받기 전에 중단되면 새 명령을 보내기 전에 이 ID로 팀 상태와 원본 영수증을 대조한다. [격리 PostgreSQL 정산 작업자](../dev/mobius4/README.md#격리-postgresql-정산-실행)가 원본을 처리한 뒤 아래 절차로 증거를 묶는다. 중간에 중단하려면 `STOP` 파일을 만들고 실제 LED 상태를 확인한다.
 
 시험이 중단돼 `led-cycle.json`이 없으면 중단 뒤에 확보한 팀 상태와 Pi DB 사본으로 각 단계를 대조한다.
+출력 디렉터리에 `display-on.json`이나 `display-off.json`이 있으면 해당 단계의 명령 ID, GPIO readback, grant 회수 기록과 함께 대조한다. OFF 명령이 발급됐으면 ON 화면 기록은 발급 시각보다 앞서야 한다. 화면이 한 단계만 기록됐으면 해당 단계의 `commandDisplayObserved`에 결과가 나오고 전체 `commandDisplayMatched`는 `null`이다.
 
 ```powershell
 python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_evidence.py `

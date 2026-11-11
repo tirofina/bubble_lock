@@ -292,6 +292,8 @@ def inspect_interrupted_bench(directory, team_state, database=None):
     rows = read_pi_commands(database) if database is not None else {}
     seen = set()
     steps = []
+    display_records = []
+    off_issued_at = None
     bench_identity = None
     for label, state in STEPS:
         prefix = f"led-{label.lower()}"
@@ -299,6 +301,9 @@ def inspect_interrupted_bench(directory, team_state, database=None):
             read_optional(directory / f"{prefix}-{suffix}.json")
             for suffix in ("intent", "issued", "readback", "grant-revoked")
         )
+        display = read_optional(directory / f"display-{label.lower()}.json")
+        if display is not None and (intent is None or readback is None or revocation is None):
+            raise ValueError("Screen observation requires a bench intent, readback and grant revocation")
         if intent is None:
             if issued_file is not None or readback is not None:
                 raise ValueError("Bench artifacts have no matching local intent")
@@ -329,6 +334,8 @@ def inspect_interrupted_bench(directory, team_state, database=None):
             continue
         issued_record = issued[command_id]
         command = match_integration_issuance(request, issued_record, GATEWAY, DEVICE, state)
+        if label == "OFF":
+            off_issued_at = command["issuedAt"]
         if issued_file is not None and (canonical(issued_file["command"]) != canonical(command)
                                         or issued_file["cseReceiptName"] != intent["cseReceiptName"]):
             raise ValueError("Captured issuance differs from the team snapshot")
@@ -355,9 +362,20 @@ def inspect_interrupted_bench(directory, team_state, database=None):
             result["cseResourceId"] = resource["ri"]
             result["cseResourceCreated"] = resource["ct"]
             result["cseReceiptSha256"] = payload_hash(readback["cseReceipt"])
+            if display is not None:
+                if firmware != DISPLAY_FIRMWARE:
+                    raise ValueError("Command display evidence requires the Feather display firmware")
+                display_records.append((result, readback, display))
     if rows.keys() - seen:
         raise ValueError("Pi database contains commands outside the bench intents")
-    return {"steps": steps, "physicalLedObserved": None, "centralSettlementVerified": None}
+    for result, readback, display in display_records:
+        next_issued_at = off_issued_at if result["step"] == "ON" else None
+        result["commandDisplayObserved"] = check_display_observation(readback, display, next_issued_at=next_issued_at)
+    display_matched = None
+    if len(display_records) == len(STEPS):
+        display_matched = all(step["commandDisplayObserved"]["matched"] for step in steps)
+    return {"steps": steps, "physicalLedObserved": None, "centralSettlementVerified": None,
+            "commandDisplayMatched": display_matched}
 
 
 if __name__ == "__main__":
