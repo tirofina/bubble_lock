@@ -1721,3 +1721,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11. 직전 goal turn은 BLE
 - 부분 전송 타임아웃과 최종 조각 응답 타임아웃을 구분하는 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·실제 Pi/Feather/r18 전송과 중앙 정산은 미수행이다. [BLE 전송 및 재연결](../keyring/raspberry-pi-gateway/BLE_SESSIONS.md)
 
 소스 commit `ea72bd3656e85e432b17063da7b52eb59dd7923c`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1a43288..ea72bd3`이다. goal은 active/progress다.
+
+## 2026-11-11 — Pi 재시작 시 마지막 BLE 조각 확인
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11. 직전 goal turn은 종결 조각 전 BLE 실패 정산을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀의 `DISPATCH_NOT_SENT` 수용 규칙을 확인했다.
+
+- Gateway 0.2.93은 실행 의도에 종결 조각 미시도 상태를 저장하고, 마지막 BLE 쓰기 직전에 해당 명령 ID·payload hash로 전송 가능성을 커밋한다. 저장이 실패하면 마지막 조각 쓰기를 차단한다. 저장 후 세션·권한·전송 기한을 다시 확인한다.
+- 재시작 시 마지막 조각 미시도가 확인된 행은 `DISPATCH_NOT_SENT`로 정산한다. 마지막 조각이 전달됐을 수 있는 행과 열이 없던 기존 DB의 행은 `RESTART_INTERRUPTED`를 사용한다. 마이그레이션, 저장 실패, 저장 중 시계 변경, 재시작 분기 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·실제 Pi SQLite 마이그레이션·재시작·BLE·중앙 정산은 미수행이다. [상태 복구](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md)
+
+소스 commit `5646e6c2fe5ab315ac9b5e4562fd8ccc64d8854c`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `25bfd17..5646e6c`다. goal은 active/progress다.
