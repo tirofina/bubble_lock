@@ -43,6 +43,7 @@ class PreflightTests(unittest.TestCase):
         self.addCleanup(os.umask, old_mask)
 
     def invoke(self, *, expected_error=None):
+        existing = set(self.state.iterdir())
         with (patch.dict(os.environ, self.env, clear=True),
               patch.object(sys, "argv", ["bubble-gateway", "--check-config"]),
               patch("bubble_gateway.__main__.logging.basicConfig")):
@@ -56,7 +57,7 @@ class PreflightTests(unittest.TestCase):
                     main()
                     self.assertIn("Gateway configuration check passed", log.output[-1])
             self.assertNotIn(str(self.root), "\n".join(log.output))
-        self.assertEqual(list(self.state.iterdir()), [])
+        self.assertEqual(set(self.state.iterdir()), existing)
 
     def test_valid_tls_and_state_config_never_open_database_or_start_gateway(self):
         self.invoke()
@@ -201,3 +202,24 @@ class PreflightTests(unittest.TestCase):
     def test_database_cannot_be_its_own_lifetime_lock(self):
         self.env["GATEWAY_DATABASE"] = str(self.state / "gateway.lock")
         self.invoke(expected_error="different files")
+
+    def test_missing_nested_database_directory_is_not_created(self):
+        self.env["GATEWAY_DATABASE"] = str(self.state / "gateway-a" / "gateway.sqlite3")
+        self.invoke()
+
+    def test_service_account_needs_writable_state_directory(self):
+        with patch("bubble_gateway.config.os.access", return_value=False) as access:
+            self.invoke(expected_error="cannot write to or traverse the SQLite state directory")
+        access.assert_called_once_with(self.state, os.W_OK | os.X_OK)
+
+    def test_existing_sqlite_wal_must_be_writable_by_service_account(self):
+        wal = self.state / "gateway.sqlite3-wal"
+        wal.write_bytes(b"existing synthetic WAL")
+        access = os.access
+        with patch("bubble_gateway.config.os.access", side_effect=lambda path, mode: path != wal and access(path, mode)):
+            self.invoke(expected_error="lacks required access to the SQLite WAL")
+        self.assertEqual(wal.read_bytes(), b"existing synthetic WAL")
+
+    def test_sqlite_sidecar_must_be_a_regular_file(self):
+        (self.state / "gateway.sqlite3-shm").mkdir()
+        self.invoke(expected_error="SQLite shared memory must be a regular file inside STATE_DIRECTORY")

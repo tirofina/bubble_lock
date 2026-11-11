@@ -265,8 +265,26 @@ def check_state_directory(database: Path) -> None:
     lock = database.with_suffix(".lock")
     if database == lock:
         raise DeploymentConfigError("GATEWAY_DATABASE and its lock must be different files")
-    for path in (database, lock):
+    state_files = (
+        ("SQLite database", database),
+        ("Gateway lock", lock),
+        ("SQLite WAL", database.with_name(database.name + "-wal")),
+        ("SQLite shared memory", database.with_name(database.name + "-shm")),
+        ("SQLite rollback journal", database.with_name(database.name + "-journal")),
+    )
+    for label, path in state_files:
+        if path.is_symlink():
+            raise DeploymentConfigError(f"{label} must not be a symbolic link")
         resolved = path.resolve()
-        if (path.is_symlink() or (path.exists() and not path.is_file()) or
-                resolved == root or not resolved.is_relative_to(root)):
-            raise DeploymentConfigError("GATEWAY_DATABASE and its lock must be files inside STATE_DIRECTORY")
+        if resolved == root or not resolved.is_relative_to(root) or (path.exists() and not path.is_file()):
+            raise DeploymentConfigError(f"{label} must be a regular file inside STATE_DIRECTORY")
+
+    parent = database.parent
+    while not parent.exists() and parent != parent.parent:
+        parent = parent.parent
+    if not parent.is_dir() or not os.access(parent, os.W_OK | os.X_OK):
+        raise DeploymentConfigError("Gateway service account cannot write to or traverse the SQLite state directory")
+    for label, path in state_files:
+        mode = os.W_OK if path == lock else os.R_OK | os.W_OK
+        if path.exists() and not os.access(path, mode):
+            raise DeploymentConfigError(f"Gateway service account lacks required access to the {label}")

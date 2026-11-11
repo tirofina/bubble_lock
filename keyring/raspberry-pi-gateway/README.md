@@ -120,7 +120,7 @@ sudo -u bubble-gateway env STATE_DIRECTORY=/var/lib/privacy-bubble-gateway \
   --env-file /etc/privacy-bubble/gateway.env --check-config
 ```
 
-`--check-config`는 로컬 CA 및 인증서·개인키를 로드하고 키 일치를 확인한다. `STATE_DIRECTORY`가 있으면 SQLite와 잠금 파일의 해석된 경로가 그 안에 있는지 확인한다. 기존 DB를 열거나 생성하지 않는다. 서버 인증, 중앙 등록 상태, BlueZ 권한은 실제 연결 단계에서 확인한다.
+`--check-config`는 로컬 CA 및 인증서·개인키를 로드하고 키 일치를 확인한다. 0.2.88은 `STATE_DIRECTORY`를 지정한 배포에서 DB·잠금 파일과 SQLite의 WAL·공유 메모리·롤백 저널이 해당 경로 안에 있는지 확인한다. 서비스 계정에는 상태 디렉터리의 쓰기·탐색 권한, 기존 SQLite 파일의 읽기·쓰기 권한, 기존 잠금 파일의 쓰기 권한이 필요하다. 기존 DB의 배포 식별자와 스키마는 읽기 전용 연결로 검사한다. 새 DB는 생성하지 않는다. 서버 인증, 중앙 등록 상태, BlueZ 권한은 실제 연결 단계에서 확인한다.
 
 컨테이너 ID를 설정한 명령 Gateway는 같은 환경 파일에서 `--check-command-route`로 CSE 영수증 컨테이너와 중앙 자격, 활성 명령 목록을 HTTPS GET으로 확인할 수 있다. [격리 Pi 사용 절차](TESTING.md#pi-명령-세션)
 
