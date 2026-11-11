@@ -1928,3 +1928,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R15. 직전 goal turn은 r18 BLE 
 - 회귀시험 소스는 관측만 수용된 경우, 수용 순번이 뒤바뀐 경우, 모의 비상 사건을 거절하는 경로를 다룬다. 빌드·테스트·정적 분석·실제 Pi·Mobius4 조회·r18 버튼 시험은 미수행이다. [시험 절차](../keyring/raspberry-pi-gateway/TESTING.md#r18-버튼-사건-시험)
 
 소스 commit `6c46cb3b3d335d06ada928347d831f21ef206a3e`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `82513ab..6c46cb3`이다. goal은 active/progress다.
+
+## 2026-11-11 — 서버 전환 시 CORE 전송 순번 이어받기
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 버튼 전이와 중앙 안전 사건의 대조 도구를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 조회했다.
+
+- Gateway 0.2.104의 `plan-cutover`는 새 배포 DB에서 보존할 CORE 순번과 대상 범위의 원본 대기 건수를 집계한다. `prepare-cutover`는 양쪽 잠금 아래에서 같은 Gateway ID의 유지 장치별 마지막 할당 순번을 새 binding DB에 기록한다. 새 DB와 상위 디렉터리를 동기화하고, 같은 CORE 범위에 대기 건이 있으면 준비를 중단한다. 원본 DB와 대기열·명령·영수증은 기존 배포에 보존한다.
+- 대기 중단, 재실행 보호, 권한, 원본 보존과 이어지는 순번을 다루는 POSIX 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·실제 Pi 준비 명령·서버 전환은 미수행이다. [전환 절차](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#새-배포-db에-core-순번-이어받기)
+
+소스 commit `3a1c423409d324d4a290bf41b13010ca0d2d7611`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `41cd094..3a1c423`이다. goal은 active/progress다.

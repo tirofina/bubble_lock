@@ -1878,5 +1878,12 @@
     "regressionsExecuted": false,
     "physicalButtonIncidentVerified": false,
     "sourceCommit": "6c46cb3b3d335d06ada928347d831f21ef206a3e"
+  },
+  "gatewayCutoverCoreSequence": {
+    "reference": "raspberry-pi-gateway/STATE_RECOVERY.md#새-배포-db에-core-순번-이어받기",
+    "gatewayVersion": "0.2.104",
+    "regressionsExecuted": false,
+    "physicalDeploymentCutoverVerified": false,
+    "sourceCommit": "3a1c423409d324d4a290bf41b13010ca0d2d7611"
   }
 }
