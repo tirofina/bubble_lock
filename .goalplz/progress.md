@@ -1784,3 +1784,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05, R15. 직전 goal turn은 Mob
 - Feather 0.2.1 화면 시험이 중단되면 검증 도구가 남아 있는 화면 기록을 명령 ID·GPIO readback·grant 회수에 결합한다. OFF 발급 뒤의 ON 화면 기록은 거부하고 한 단계만 있으면 전체 화면 일치 여부를 비워 둔다. 회귀시험 소스와 절차를 추가했다. 빌드·테스트·정적 분석·장비 업로드·실제 화면 확인은 미수행이다. [중단 복구 절차](../keyring/raspberry-pi-gateway/TESTING.md#기존-scoped-mobius4에서-feather-led-시험)
 
 소스 commit `90b30183bbbba82ddc067319e712b8301bcbd49f`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `5d3266d..90b3018`이다. goal은 active/progress다.
+
+## 2026-11-11 — r18 실물 관측 전달 판정
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R15. 직전 goal turn은 중단된 Feather 화면 기록 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f` 및 main의 중앙 텔레메트리 수용 이벤트에서 `simulation`의 전달을 확인했다.
+
+- r18 실물 관측 대조 절차에 `--require-physical`을 추가했다. Pi DB의 고정 health 컨테이너와 중앙 수용 이벤트의 `simulation:false`가 확인돼야 성공 코드를 반환한다. 모의 이벤트, 기존 health ID 미고정 DB, 중앙 이벤트 미도착, 포털/웹 불일치를 다루는 회귀시험 소스를 보강했다.
+- Pi 관측 세션 준비 명령에 실제로 사용할 펌웨어 revision을 넘기도록 예시를 갱신했다. 빌드·테스트·정적 분석·제작 PCB와 Pi 실물 시험·중앙/웹 실물 연동은 미수행이다. [r18 관측 전달 대조](../keyring/raspberry-pi-gateway/TESTING.md#관측-전달-증거-대조)
+
+소스 commit `f2c3126aefa850089feae80e736a15eff8e96b41`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `0250b64..f2c3126`이다. goal은 active/progress다.
