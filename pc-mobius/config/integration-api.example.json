@@ -4,6 +4,13 @@
     "cert": ".local/pki/server.pem",
     "ca": ".local/pki/ca.pem"
   },
+  "oidc": {
+    "issuer": "https://identity.example.com",
+    "audience": "privacy-bubble-api",
+    "jwksUri": "https://identity.example.com/.well-known/jwks.json",
+    "cacheMs": 300000,
+    "clockSkewSec": 30
+  },
   "principals": [
     {
       "principalId": "gateway-1",
@@ -13,8 +20,19 @@
     {
       "principalId": "guardian-1",
       "mtlsFingerprint": "<guardian certificate fingerprint256>",
-      "scopes": ["consent:write", "grant:write", "grant:revoke", "policy:approve", "bubble:command", "mcp:run"]
+      "oidcIssuer": "https://identity.example.com",
+      "oidcSubject": "<registered guardian OIDC subject>",
+      "scopes": ["portal:read", "household:write", "device:write", "consent:write", "grant:write", "grant:revoke", "command:request", "incident:write", "incident:resolve", "policy:approve", "bubble:command", "mcp:run"]
+    },
+    {
+      "principalId": "visitor-1",
+      "oidcIssuer": "https://identity.example.com",
+      "oidcSubject": "<registered visitor OIDC subject>",
+      "scopes": ["portal:read", "command:request", "incident:write"]
     }
+  ],
+  "households": [
+    { "householdId": "household-1", "name": "우리 가족", "ownerId": "guardian-1", "members": [{ "principalId": "visitor-1", "role": "visitor" }] }
   ],
   "gateways": [
     {

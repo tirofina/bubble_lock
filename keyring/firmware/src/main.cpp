@@ -5,6 +5,7 @@
 #include <BLESecurity.h>
 #include <Preferences.h>
 #include <Wire.h>
+#include <freertos/semphr.h>
 #include <driver/gpio.h>
 #include <esp_bt.h>
 #include <esp_timer.h>
@@ -75,11 +76,11 @@ bool audioInitAttempted = false;
 uint64_t nextScreenAt = 0;
 uint64_t lastSensorRead = 0;
 uint8_t detailSection = 0;
-bool audioPermitted() { return connected && authenticated && !sleepPreparing && headphone.speakerAllowed(); }
+bool audioPermitted() { return connected && authenticated && !sleepPreparing && headphone.audioAllowed(); }
 void initializeAudioWhenQuiet() {
   if (KEYRING_ENABLE_AUDIO && !audioInitAttempted && headphone.speakerAllowed()) {
     audioInitAttempted = true;
-    audio.begin(audioPermitted);
+    audio.begin(audioPermitted, &headphone);
   }
 }
 
@@ -194,7 +195,15 @@ struct Button {
 };
 Button confirm{board::Confirm}, panic{board::Panic};
 
+SemaphoreHandle_t i2cMutex = nullptr;
+class I2cTransaction {
+public:
+  I2cTransaction() : acquired(i2cMutex && xSemaphoreTake(i2cMutex, pdMS_TO_TICKS(5)) == pdTRUE) {}
+  ~I2cTransaction() { if (acquired) xSemaphoreGive(i2cMutex); }
+  const bool acquired;
+};
 bool readRegisters(uint8_t address, uint8_t reg, uint8_t *data, size_t count) {
+  I2cTransaction transaction; if (!transaction.acquired) return false;
   Wire.beginTransmission(address); Wire.write(reg);
   if (Wire.endTransmission(false) != 0) return false;
   if (Wire.requestFrom(address, static_cast<uint8_t>(count)) != count) {
@@ -205,16 +214,19 @@ bool readRegisters(uint8_t address, uint8_t reg, uint8_t *data, size_t count) {
   return true;
 }
 bool writeRegister(uint8_t address, uint8_t reg, uint8_t value) {
+  I2cTransaction transaction; if (!transaction.acquired) return false;
   Wire.beginTransmission(address); Wire.write(reg); Wire.write(value);
   return Wire.endTransmission() == 0;
 }
 bool writeRegister16(uint8_t address, uint8_t reg, uint16_t value) {
+  I2cTransaction transaction; if (!transaction.acquired) return false;
   Wire.beginTransmission(address); Wire.write(reg);
   Wire.write(static_cast<uint8_t>(value >> 8)); Wire.write(static_cast<uint8_t>(value));
   return Wire.endTransmission() == 0;
 }
 bool accelReady = false;
 void initSensors() {
+  i2cMutex = xSemaphoreCreateMutex();
   Wire.begin(board::I2cSda, board::I2cScl, 100000);
   Wire.setTimeOut(20);
   uint8_t id = 0;
@@ -345,7 +357,7 @@ void publishObservation() {
     values["journalCapacity"] = JournalSlots;
     values["wake"] = powerState::wakeCause(); values["wakePins"] = powerState::wakePins();
     values["power"] = powerState::status();
-    values["audio"] = headphone.speakerAllowed() ? audio.status() : "blocked_headphone";
+    values["audio"] = headphone.audioAllowed() ? audio.status() : "blocked_headphone";
     values["headphone"] = headphone.status();
     values["display"] = peripherals.displayStatus(); values["sd"] = peripherals.sdStatus();
     values["sdDropped"] = peripherals.droppedLogs();
@@ -757,7 +769,7 @@ void setup() {
 void loop() {
   uint64_t now = uptime();
   if (headphone.poll(now)) observationDirty = true;
-  if (!headphone.speakerAllowed()) audio.stop();
+  if (!headphone.audioAllowed()) audio.stop();
   if (!provisioned) { delay(100); return; }
   initializeAudioWhenQuiet();
   if (connected) powerState::activity(now);

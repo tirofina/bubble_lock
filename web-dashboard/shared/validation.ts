@@ -52,8 +52,8 @@ function checkReceiptIdentity(receipt: CoreReceipt): void {
   if (receipt.members !== undefined) {
     if (receipt.memberCount !== receipt.members.length ||
         new Set(receipt.members.map((member) => member.memberId)).size !== receipt.members.length ||
-        receipt.members.some((member) => member.memberCommandId !== `${receipt.commandId}:${member.memberId}`)) {
-      throw new ContractError('Group members do not match the count or commandId suffix contract');
+        new Set(receipt.members.map((member)=>member.memberCommandId)).size!==receipt.members.length) {
+      throw new ContractError('Group members require distinct member and command identities matching the count');
     }
   }
 }

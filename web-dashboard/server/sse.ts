@@ -7,6 +7,11 @@ import { ContractError } from '../shared/validation.ts';
 import { integrationAudit } from '../shared/integration.ts';
 import { loadReplay } from './replay.ts';
 import type { ReplaySnapshot } from './replay.ts';
+import { loadLocationFeed } from './location-feed.ts';
+import type { LocationFeed } from './location-feed.ts';
+import { readFile } from 'node:fs/promises';
+import { createPortalHandler } from './portal.ts';
+import type { PortalHandler, PortalOptions } from './portal.ts';
 
 export function parseResumeSequence(value: string | undefined | null): number {
   if (value === undefined || value === null) return 0;
@@ -21,15 +26,31 @@ function json(response: ServerResponse, status: number, body: unknown): void {
   response.end(JSON.stringify(body));
 }
 
-export function createReplayServer(replay: ReplaySnapshot): Server {
-  return createServer((request, response) => {
+export function createReplayServer(replay: ReplaySnapshot, locationFeed?: LocationFeed, portal?:PortalHandler): Server {
+  return createServer(async (request, response) => {
+    try {
     const url = new URL(request.url ?? '/', 'http://127.0.0.1');
+    if(portal&&url.pathname.startsWith('/api/auth/')&&await portal.handleAuth(request,response))return;
+    if(url.pathname.startsWith('/api/portal/')&&portal) {void portal.handle(request,response,url);return;}
+    if(url.pathname==='/api/locations'&&portal?.mode==='live') {void portal.handle(request,response,new URL('/api/portal/locations',url));return;}
+    if(portal&&!await portal.authorizeOperator(request,response))return;
     if (request.method !== 'GET') {
       response.setHeader('Allow', 'GET');
       json(response, 405, { error: 'method_not_allowed' });
       return;
     }
     switch (url.pathname) {
+      case '/api/evidence':
+        void readFile(new URL('../../docs/rubric-audit.json',import.meta.url),'utf8').then((text)=>json(response,200,JSON.parse(text))).catch(()=>json(response,503,{message:'구현 대조 기록을 준비하고 있습니다.'}));
+        return;
+      case '/api/locations':
+        if (!locationFeed) { json(response, 503, { error: 'location_feed_pending' }); return; }
+        void locationFeed.readSnapshot().then((snapshot) => {
+          if (!response.destroyed) json(response, 200, snapshot);
+        }).catch(() => {
+          if (!response.destroyed) json(response, 503, { error: 'location_feed_unavailable', message: '위치 파일과 수신기 좌표 설정을 확인하세요.' });
+        });
+        return;
       case '/api/source':
         json(response, 200, {
           source: replay.source,
@@ -88,18 +109,31 @@ export function createReplayServer(replay: ReplaySnapshot): Server {
     const heartbeat = setInterval(() => response.write(': heartbeat\n\n'), 15_000);
     heartbeat.unref();
     response.on('close', () => clearInterval(heartbeat));
+    }catch{if(!response.headersSent)json(response,503,{message:'대시보드 연결 상태를 확인하세요.'});else response.end();}
   });
 }
 
 export interface StartReplayOptions {
   readonly port?: number;
   readonly receiptFile?: string;
+  readonly locationFile?: string;
+  readonly gatewayLocationsFile?: string;
+  readonly locationSimulation?: boolean;
+  readonly portalStatePath?: string;
+  readonly portal?: PortalOptions;
 }
 
 /** Loopback is deliberately fixed; port 0 is supported for integration tests. */
 export async function startReplayServer(options: StartReplayOptions = {}) {
   const replay = await loadReplay(options.receiptFile);
-  const server = createReplayServer(replay);
+  const locationFeed = await loadLocationFeed({
+    emptyLive:Boolean(options.portal?.auth),
+    ...(options.locationFile === undefined ? {} : { locationFile: options.locationFile }),
+    ...(options.gatewayLocationsFile === undefined ? {} : { gatewayLocationsFile: options.gatewayLocationsFile }),
+    ...(options.locationSimulation === undefined ? {} : { simulation: options.locationSimulation }),
+  });
+  const portal=await createPortalHandler(locationFeed,{...options.portal,...(options.portalStatePath===undefined?{}:{statePath:options.portalStatePath})});
+  const server = createReplayServer(replay, locationFeed, portal);
   const listening = once(server, 'listening');
   server.listen(options.port ?? 4174, '127.0.0.1');
   await listening;

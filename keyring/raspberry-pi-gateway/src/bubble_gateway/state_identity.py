@@ -157,7 +157,7 @@ def legacy_ownership(db: sqlite3.Connection, expected: dict) -> None:
                     raise StateIdentityError("STATE_LEGACY_RECEIPT_MISMATCH")
     if "outbox" in names:
         allowed = {expected[k] for k in ("observationContainer", "receiptContainer", "healthContainer")}
-        allowed |= {"@core/telemetry", "@core/ack"}
+        allowed |= {"@core/telemetry", "@core/ack", "@central/telemetry"}
         for row in db.execute("SELECT container,payload FROM outbox"):
             payload = json.loads(row["payload"])
             if row["container"] not in allowed or not isinstance(payload, dict):

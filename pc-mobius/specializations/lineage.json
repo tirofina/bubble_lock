@@ -1,0 +1,50 @@
+{
+  "profile": "r4-common-1.0",
+  "status": "PASS",
+  "scope": "전체 import closure 컴파일 및 boolean state 생성/필수/타입 검사",
+  "officialCdtCommit": "a59a0152ff414a069c2bb7baafb91e84924aea0f",
+  "officialCdtSource": "https://git.onem2m.org/XMLSchemas/ts-0004/-/tree/a59a0152ff414a069c2bb7baafb91e84924aea0f",
+  "officialSdtCommit": "bfd17410668af2966147978b782c9b2583e146ba",
+  "corrections": [
+    {
+      "file": "CDT-commonTypes.xsd",
+      "type": "geoJsonCoordinates",
+      "reason": "원본 XML entity 및 PCRE 전용 문법",
+      "implementation": "XSD 1.0 좌표 배열 문법; 좌표 범위·최대 중첩 3단 유지",
+      "semanticGate": "Polygon closure/minimum vertices는 위치 서비스의 GeoJSON 검증으로 처리"
+    }
+  ],
+  "files": [
+    {
+      "path": "specializations/reference/CDT-commonTypes-r4.xsd",
+      "sha256": "46b4ca75a101f18d17eb062b074a92c954003d54f97aa31d2359b30a2a2f57a8",
+      "bytes": 69824
+    },
+    {
+      "path": "specializations/reference/COD-mod-binarySwitch.xsd",
+      "sha256": "3c7ffdd67ff6be34dc5b85e4ef382a5b220d6967e40fcd4b52c303de894ab4b6",
+      "bytes": 6910
+    },
+    {
+      "path": "specializations/r4/binarySwitch-r4-profile.xsd",
+      "sha256": "cc81e4712aa1fbc1c85e8fc36d677dd531db7a009feef8586f2208e58e59b8cd",
+      "bytes": 1237
+    },
+    {
+      "path": "specializations/r4/CDT-commonTypes.xsd",
+      "sha256": "b7ff1a7f5f94ad64f4a31ccdf4100c86f0f3dbefe42ecea363dba0e523c1d4b2",
+      "bytes": 72107
+    },
+    {
+      "path": "specializations/r4/CDT-enumerationTypes.xsd",
+      "sha256": "e6489b7036dda0693ee598fce9138af858da5789e98ae98a8f2f33071e6072fd",
+      "bytes": 76260
+    }
+  ],
+  "capabilities": {
+    "state": "mandatory boolean RW",
+    "action": false,
+    "instance": false,
+    "geoJsonCoordinates": "해당 binarySwitch profile 외부"
+  }
+}

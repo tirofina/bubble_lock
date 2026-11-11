@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "generatedAt": "2026-11-11T04:04:46.612Z",
+  "runtimeMode": "LOCAL_SIMULATION",
+  "transport": "actual-TLS1.3-mTLS",
+  "workerProcessIds": [
+    "95820",
+    "77420"
+  ],
+  "imageDigest": "sha256:1d68d7835075e341a532e582b7c946216dff5cd13f9975fefcc87d51430b37b3",
+  "modelHash": "5c3e1d3bee87fef6946ecf7eb0c2c9b86b8605b76b9585709d57a9517dc4a2a8",
+  "checks": [
+    "actual-worker-process-health",
+    "mtls-central-authorized-training",
+    "durable-idempotent-training-retry",
+    "authoritative-base-model-fence",
+    "coordinator-task-scope",
+    "current-consent-revision-fence",
+    "enrolled-coordinator-fingerprint",
+    "untrusted-client-ca",
+    "trusted-server-ca",
+    "explicit-local-runtime-mode",
+    "worker-process-restart-replay",
+    "coordinator-epoch-fence",
+    "signed-http-updates-numerical-fedavg",
+    "stopped-consent-training-and-serving-fence"
+  ],
+  "externalGate": "ESTIMED 계정·VM 할당 receipt 연결"
+}

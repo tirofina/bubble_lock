@@ -1,9 +1,11 @@
 import type { AuditFixture, ResourceFixture } from '../shared/index.ts';
 
 export class ReadError extends Error {
-  constructor(message: string) {
+  readonly status:number|undefined;
+  constructor(message: string,status?:number) {
     super(message);
     this.name = 'ReadError';
+    this.status=status;
   }
 }
 
@@ -18,12 +20,12 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
 export async function getJson(url: string | URL, signal: AbortSignal, headers?: HeadersInit) {
   const response = await fetch(url, {
     method: 'GET',
-    credentials: 'omit',
+    credentials: typeof url==='string'&&url.startsWith('/api/')?'same-origin':'omit',
     redirect: 'error',
     headers: { Accept: 'application/json', ...headers },
     signal: AbortSignal.any([signal, AbortSignal.timeout(12000)]),
   });
-  if (!response.ok) throw new ReadError(`조회 실패: HTTP ${response.status} ${response.statusText}`);
+  if (!response.ok) throw new ReadError(`조회 연결 확인: HTTP ${response.status} ${response.statusText}`,response.status);
   const rsc = response.headers.get('X-M2M-RSC');
   if (rsc !== null && rsc !== '2000') throw new ReadError(`oneM2M 조회 실패: RSC ${rsc}`);
   const value: unknown = await response.json();

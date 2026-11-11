@@ -1,0 +1,1 @@
+PASS: boot, register sequence, exclusive control, cancel, retry, readback, readiness timeout, NACK, drift and permission

@@ -1,3 +1,4 @@
+import { encodeBinarySwitch, SDT_PROFILES } from './sdt-adapter.mjs';
 const ACCEPTED_ONE_M2M_STATUS = new Set([200, 204]);
 const ACK_STATES = new Set(['RECEIVED', 'FORWARDED', 'APPLIED', 'READBACK_VERIFIED', 'RETRY_PENDING']);
 const COMMAND_KEYS = ['version', 'gatewayId', 'deviceId', 'commandId', 'claimId', 'desiredState', 'issuedAt', 'deadline', 'grantRevision', 'ownershipEpoch'];
@@ -93,6 +94,7 @@ export class GatewayBridge {
     maxDedupEntries = 4096,
     receiptJournal = null,
     oneM2MTransport = 'http',
+    sdtProfile = 'pb-legacy-1.0',
     cseId = 'Mobius4',
     oneM2MRequestTopic = '/oneM2M/req/{originator}/{cseId}/json',
     oneM2MResponseTopic = '/oneM2M/resp/{originator}/{cseId}/json'
@@ -107,6 +109,8 @@ export class GatewayBridge {
     this.resourcePath = resourcePath;
     if (!['http', 'mqtt'].includes(oneM2MTransport)) throw new Error('oneM2M transport uses http or mqtt');
     this.oneM2MTransport = oneM2MTransport;
+    if(!Object.hasOwn(SDT_PROFILES,sdtProfile))throw Error('SDT profile을 확인하세요.');
+    this.sdtProfile=sdtProfile;
     this.cseId = cseId;
     this.telemetryTopic = topicFor(telemetryTopic, gatewayId);
     this.commandTopic = topicFor(commandTopic, gatewayId);
@@ -183,7 +187,7 @@ export class GatewayBridge {
           'X-M2M-RI': requestId,
           'Idempotency-Key': requestId
         },
-        body: JSON.stringify({ 'pb:binarySwitch': { state: payload.state } })
+        body: JSON.stringify(encodeBinarySwitch({state:payload.state},{profile:this.sdtProfile}))
       });
     } catch (error) {
       this.inFlightTelemetry.delete(dedupKey);
@@ -207,6 +211,7 @@ export class GatewayBridge {
       dedupKey,
       requestId,
       oneM2MResource: this.resourcePath,
+      sdtProfile: this.sdtProfile,
       responseStatus: response.status,
       status: applied ? 'APPLIED' : 'REVIEW',
       timestamp: this.clock(),
@@ -224,7 +229,7 @@ export class GatewayBridge {
       fr: this.originator,
       rqi: requestId,
       rvi: this.rvi,
-      pc: { 'pb:binarySwitch': { state: payload.state } }
+      pc: encodeBinarySwitch({state:payload.state},{profile:this.sdtProfile})
     };
     const pending = { dedupKey, payload, requestId, receipt: null };
     this.pendingOneM2M.set(requestId, pending);

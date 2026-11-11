@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createIntegrationRuntime } from '../integration/src/integration-runtime.mjs';
 import { approvalHash } from '../integration/src/integration-utils.mjs';
+import { registerMcpSimulation } from '../integration/src/mcp-domain-tools.mjs';
 
 async function fixture() {
   const runtime = await createIntegrationRuntime({ clock: () => '2026-11-10T00:00:00.000Z' });
@@ -32,7 +33,10 @@ test('Gateway certificates require explicit service scopes before privileged API
 
 test('MCP execute, resume and replay keep the original run owner', async () => {
   const { runtime, principal } = await fixture();
-  const run = await runtime.mcpOrchestrator.startRun({ principal, toolCalls: [{ serverId: 'oneM2M', tool: 'read' }], idempotencyKey: 'private-run' });
+  registerMcpSimulation(runtime.mcpOrchestrator, { clock: runtime.policyService.clock });
+  const consent = await runtime.policyService.createConsent({ principal, subjectId: 'household-1', purpose: 'MCP 조회', scopes: ['bubble:read'] });
+  const grant = await runtime.policyService.createGrant({ principal, consentId: consent.consentId, scopes: ['bubble:read'] });
+  const run = await runtime.mcpOrchestrator.startRun({ principal, grantId: grant.grantId, toolCalls: [{ serverId: 'oneM2M', tool: 'discoverDevices' }], idempotencyKey: 'private-run' });
   const other = { principalId: 'other-user', scopes: ['mcp:run'] };
   for (const path of ['/v1/mcp/execute', '/v1/mcp/resume']) {
     assert.equal((await runtime.api.handle({ method: 'POST', path, principal: other, body: { runId: run.runId } })).status, 403);
@@ -40,7 +44,8 @@ test('MCP execute, resume and replay keep the original run owner', async () => {
   const replay = await runtime.api.handle({ method: 'POST', path: '/v1/mcp/runs', principal: other, body: { toolCalls: [], idempotencyKey: 'private-run' } });
   assert.equal(replay.status, 403);
   assert.equal(runtime.store.get('mcpRuns', run.runId).cursor, 0);
-  runtime.mcpOrchestrator.registerServer({ serverId: 'oneM2M', tools: { read: async () => 'approved-result' } });
+  assert.equal((await runtime.api.handle({ method: 'POST', path: '/v1/mcp/execute', principal, body: { runId: run.runId } })).status, 403);
+  await runtime.mcpOrchestrator.approveRun({ principal, runId: run.runId, approvalHash: run.approvalHash });
   assert.equal((await runtime.api.handle({ method: 'POST', path: '/v1/mcp/execute', principal, body: { runId: run.runId } })).body.status, 'COMPLETED');
 });
 

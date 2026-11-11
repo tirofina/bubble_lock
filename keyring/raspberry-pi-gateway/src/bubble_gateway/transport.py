@@ -276,6 +276,16 @@ class TransportHub:
             raise RemoteResponseError("existing oneM2M resource has different content", 4105, status)
 
     async def publish(self, rqi: str, container: str, payload: dict[str, Any]) -> None:
+        if container == "@central/receipt":
+            result = await self._api("POST", "/receipts", payload, rqi)
+            if result.get("status") not in {"ACCEPTED", "DUPLICATE"} or result.get("commandId") != payload.get("commandId"):
+                raise RemoteResponseError("Central command receipt binding required")
+            return
+        if container == "@central/telemetry":
+            result = await self._api("POST", "/telemetry", payload, rqi)
+            if result.get("status") not in {"ACCEPTED", "DUPLICATE", "STALE"} or result.get("deviceId") != payload.get("deviceId"):
+                raise RemoteResponseError("Central telemetry receipt binding required")
+            return
         if container.startswith("@core/"):
             await self._publish_core(container, payload)
             return
@@ -379,6 +389,12 @@ class TransportHub:
 
     async def credential_status(self) -> dict[str, Any]:
         return await self._api("GET", "/credentials/status")
+
+    async def dispatch_start(self, command_dict: dict[str, Any], payload_hash: str) -> dict[str, Any]:
+        body = {key: command_dict[key] for key in
+                ("commandId", "deviceId", "claimId", "grantRevision", "ownershipEpoch")}
+        body["payloadHash"] = payload_hash
+        return await self._api("POST", "/dispatch-start", body, command_dict["commandId"])
 
     async def close(self) -> None:
         self._disconnected()

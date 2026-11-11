@@ -1,0 +1,22 @@
+{
+  "contractId": "privacy-bubble.fl-numeric.v1",
+  "docRevision": "2.0.0",
+  "source": "deliverables/privacy_bubble_expert_v3/review_assets/round03/contracts_round03.json#fl_update_trust",
+  "runtimeModes": ["LOCAL_SIMULATION", "ESTIMED"],
+  "model": {"dtype": "float32", "byteOrder": "little-endian", "W": [8, 3], "b": [3], "bytes": 108, "artifactLimitBytes": 65536},
+  "training": {"learningRate": 0.05, "batchSize": 32, "localEpochs": 2, "rounds": 10, "aggregation": "sample-weighted-FedAvg", "minimumUniqueParticipants": 2},
+  "dataset": {"kind": "synthetic-mobility-v1", "rowsPerClient": 600, "split": [360, 120, 120], "clientSeeds": [101, 202, 303, 404], "evaluationSeeds": [101, 202, 303], "sampleCount": {"min": 64, "max": 360}},
+  "identity": {"binding": ["verified transport principalId", "canonical originator", "registered participant", "task", "dataset"], "signature": "Ed25519", "signaturePayload": "canonical sorted JSON of required update fields"},
+  "requiredUpdateFields": ["participantId", "datasetId", "taskId", "taskVersion", "roundId", "coordinatorEpoch", "baseModelVersion", "baseModelHash", "featureSchemaVersion", "consentRevision", "sampleCount", "localTrainReceiptHash", "artifactDigest", "artifactRef", "signature", "localTrainReceipt", "artifactBytes"],
+  "consentChecks": ["selection", "update acceptance", "aggregation commit", "publication", "artifact serving"],
+  "commit": {"uniqueKey": ["taskId", "roundId", "baseModelVersion"], "cas": ["coordinatorEpoch", "baseModelHash", "baseModelVersion", "updateSetHash", "consentPolicyRevision"], "publicationFence": ["servingGeneration", "manifestHash", "coordinatorEpoch", "consentPolicyRevision", "current lineage consent"]},
+  "storage": {"local": "IntegrationStore atomic snapshot and task serialization", "multiHost": "PostgresIntegrationStore row lock, version CAS, unique FL commit, model generation fence and atomic publication outbox"},
+  "resources": ["/flAE/participants/{id}", "/flAE/datasets/{id}/metadata", "/flAE/tasks/{id}/metadata", "/flAE/tasks/{id}/status", "/flAE/tasks/{id}/rounds/{round}/updates/{client}", "/flAE/tasks/{id}/results/{modelVersion}"],
+  "estimedWorker": {"health": "GET /v1/fl/health", "train": "POST /v1/fl/train", "requiredIdentity": ["hostId", "processId", "imageDigest", "runtimeMode"], "transport": "TLS1.3 mTLS with enrolled coordinator fingerprint", "authorization": "participant-specific mTLS GET /v1/fl/participant-state with authoritative round context before and after training", "result": "Ed25519 signed requiredUpdateFields", "restart": "durable task/round/participant/epoch intent hash and signed update cache", "command": "node scripts/run-fl-worker.mjs --config=../.local/fl/worker.json"},
+  "publication": {"adapter": "FlOneM2mPublisher", "runtimeConfig": "core.fl.publication", "protocol": "oneM2M R4 HTTP with request/response identifier verification", "artifacts": "base64 float32 bytes and immutable manifest CIN", "fences": ["model hash", "manifest hash", "monotonic serving generation", "immutable CIN content"], "access": "dedicated ACP grants coordinator originator only; user model serving uses current central consent/lineage fence"},
+  "tests": {"unitAndFault": "node --test test/fl-coordinator.test.mjs", "threeSeedRunner": "node scripts/run-fl-verification.mjs", "actualMtlsWorker": "python -m unittest discover -s tests/integration -p test_fl_worker.py -v", "actualCsePublication": "node scripts/run-fl-cse-verification.mjs --config=<private-cse-config.json>", "postgresConcurrency": "node scripts/verify-postgres.mjs --config=<private-postgres-config.json>"},
+  "fixtures": ["F01", "F02", "F03", "F04", "F05", "F06", "F07", "F08", "F09", "F10", "F11"],
+  "acceptance": ["A13", "A14", "A15"],
+  "localEvidence": ["three seeds with ten numerical rounds each", "two actual worker process lifetimes over TLS1.3", "actual Mobius4 PostgreSQL oneM2M publication readback", "actual two-process PostgreSQL transaction races"],
+  "externalEvidence": ["ESTIMED account and allocation ticket", "ESTIMED VM image deployment receipt", "external VM endpoint and host/process/image identity", "cross-host PostgreSQL race receipt"]
+}

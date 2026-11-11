@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "last_updated": "2026-11-10T18:19:57+09:00",
+  "extractions": {
+    "MAX9850ETI__07c924": {
+      "file": "MAX9850ETI__07c924.json",
+      "mpn": "MAX9850ETI+",
+      "category": "audio",
+      "source_pdf": null,
+      "source_pdf_hash": "",
+      "extraction_date": "2026-11-10",
+      "extraction_score": 9.5,
+      "extraction_version": 2,
+      "pin_count": 29
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "contractId":"privacy-bubble.gateway-registration.v1",
+  "docRevision":"2.0.0",
+  "identitySource":"verified TLS client certificate and trusted bootstrap provisioning",
+  "bootstrapScope":"AE_CREATE",
+  "registration":{"method":"POST","path":"/v1/gateway-registrations","scope":"gateway:register","fields":["bootstrapId","bootstrapToken","requestId","csrPem"],"phases":["PREPARED","REGISTERED","ACTIVE"],"idempotency":"bootstrapId, original principal, requestId and CSR hash","responseFields":["gatewayId","registrationId","aei","status","credential"],"credentialFields":["certificatePem","caPem","expiresAt","credentialRevision"]},
+  "binding":{"key":"principalId","unique":"aei","receiptFields":["aei","resourceId","resourcePath","requestId","rsc","payloadHash","endpoint"],"atomicCommit":["registration receipt","principal binding","bootstrap CONSUMED"]},
+  "credential":{"format":"X509 client certificate","publicKey":"RSA >= 2048 or EC prime256v1","ca":false,"extendedKeyUsage":"clientAuth","subject":"server enrolled principalId","san":["urn:privacy-bubble:principal:{principalId}","urn:privacy-bubble:ae:{aei}"]},
+  "lost":{"method":"POST","path":"/v1/gateway-lifecycle/lost","scope":"gateway:manage","fields":["gatewayId","reason","idempotencyKey"],"ownerFence":"guardian in every affected household or explicit gateway:admin","unit":"Gateway AE-ID and mTLS credential","atomicCommit":["binding revision increment","Gateway LOST","credential REVOKED","affected household canonical grants REVOKED","session termination intent"],"sessionTermination":["PENDING","COMPLETED"],"allowedAfterLost":"GET /api/v1/gateways/{ownedGatewayId}/credentials/status"},
+  "separateDeviceScope":"individual keyring incident/deviceTrust isolation preserves other devices' automation",
+  "evidence":{"local":["real oneM2M HTTP exchange","real CA CSR signature","TLS1.3 certificate authentication","actual Gateway TLS socket termination","restart and transaction rollback"],"deploymentTodo":["production CSE bootstrap/workload authorization","production CA key service and trust","physical Gateway/BLE device"]}
+}

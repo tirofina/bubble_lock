@@ -1,0 +1,11 @@
+test_deployment_identity_restart_and_rollback (test_edge_deployment.EdgeDeploymentTests.test_deployment_identity_restart_and_rollback) ... ok
+test_deployed_worker_mtls_authority_and_restart (test_fl_worker.FlWorkerTests.test_deployed_worker_mtls_authority_and_restart) ... ok
+test_real_mtls_command_hash_authorization_and_revoke (test_gateway_api.CentralGatewayTests.test_real_mtls_command_hash_authorization_and_revoke) ... ok
+test_empty_responses_and_transport_limits (test_mtls_transport.MtlsTransportTests.test_empty_responses_and_transport_limits) ... ok
+test_signed_bearer_over_tls_and_gateway_certificate_binding (test_oidc_api.OidcApiTests.test_signed_bearer_over_tls_and_gateway_certificate_binding) ... ok
+test_node_bff_https_ca_and_enrolled_oidc_token (test_portal_upstream.PortalUpstreamTests.test_node_bff_https_ca_and_enrolled_oidc_token) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 10.410s
+
+OK

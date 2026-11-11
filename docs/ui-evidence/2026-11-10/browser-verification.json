@@ -1,0 +1,61 @@
+{
+  "generatedAt": "2026-11-10T09:24:26.092608+00:00",
+  "status": "PASS",
+  "scope": "LOCAL_BROWSER_SIMULATED_DEVICE_DATA",
+  "url": "http://127.0.0.1:5173/#/user/map",
+  "checks": [
+    "사용자·운영 별도 진입 및 메뉴",
+    "실제 지도 타일·GPS/MEC 위치 핀·수신기 중심 BLE 원",
+    "키링 C -87dBm → 추정 반경25m",
+    "보호자가 visitor-demo에 키링 B만 3분 공유 승인",
+    "방문자 지도에 승인한 키링 B 1개 표시",
+    "방문자 공유 종료 후 지도0개와 회수 완료 표시",
+    "화면 갱신 주기4초와 모의 출처 표시"
+  ],
+  "previousChecks": [
+    "390×844 모바일 페이지 가로 넘침 점검",
+    "방문자 명령요청→보호자 승인→QUEUE",
+    "도움 요청 생성·처리 완료",
+    "운영86events/4services/17rubric UI"
+  ],
+  "consoleObservations": [
+    "브라우저 메시지 채널 비동기 응답 경고 관측"
+  ],
+  "artifacts": [
+    {
+      "path": "docs/ui-evidence/2026-11-10/portal-landing.jpg",
+      "sha256": "f08f43ece495ff2b1efc6ba86538d83ee85450959ddf20dc68a0b8cf4f22583e",
+      "capturedAt": "2026-11-10T08:30:23.885200+00:00"
+    },
+    {
+      "path": "docs/ui-evidence/2026-11-10/portal-mobile-map.jpg",
+      "sha256": "2c7729c45c8735710bd6ec37e8093214f57200df7eb9b3d35fd489661674a728",
+      "capturedAt": "2026-11-10T08:40:11.918594+00:00"
+    },
+    {
+      "path": "docs/ui-evidence/2026-11-10/portal-operator.jpg",
+      "sha256": "2c87fa38c5dc0c36656c23f239cbc067fa5d04a1a25c62fb3b2aa34e9bead7ee",
+      "capturedAt": "2026-11-10T08:40:54.194975+00:00"
+    },
+    {
+      "path": "docs/ui-evidence/2026-11-10/portal-map-verified.png",
+      "sha256": "72ccac69bfd67e98194eb6e0a6e9b25757789bfde9d997afe6880812ef101ea3",
+      "capturedAt": "2026-11-10T09:24:02.194827+00:00"
+    },
+    {
+      "path": "docs/ui-evidence/2026-11-10/portal-visitor-approved.png",
+      "sha256": "dfb3f86aefdb27ef59af5b32c308c7d6f272cb79ee5ab2650399b9f4441d9308",
+      "capturedAt": "2026-11-10T09:23:16.888974+00:00"
+    },
+    {
+      "path": "docs/ui-evidence/2026-11-10/portal-visitor-revoked.png",
+      "sha256": "0419e842760e130662a499a2cfa1c1e8ed308bd7bf887c882ae77bd6de0c7bff",
+      "capturedAt": "2026-11-10T09:23:51.130162+00:00"
+    },
+    {
+      "path": "docs/ui-evidence/2026-11-10/portal-final-map.png",
+      "sha256": "7b71e6f39f61e737a1f8eaba2f97eab8d570f678c014eda74ab4d753634a8ace",
+      "capturedAt": "2026-11-11T04:08:11.587283+00:00"
+    }
+  ]
+}

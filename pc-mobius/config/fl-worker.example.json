@@ -1,0 +1,16 @@
+{
+  "host": "127.0.0.1",
+  "publicHost": "vm.example.test",
+  "port": 9443,
+  "hostId": "ESTIMED-assigned-host-id",
+  "runtimeMode": "ESTIMED",
+  "statePath": "worker-state.json",
+  "tls": { "ca": "pki/ca.pem", "cert": "pki/server.pem", "key": "pki/server.key" },
+  "coordinatorEndpoint": "https://coordinator.example.test:8787",
+  "upstreamTls": { "ca": "pki/central-ca.pem", "cert": "pki/participant.pem", "key": "pki/participant.key" },
+  "coordinators": [{ "fingerprint": "ENROLLED_COORDINATOR_SHA256_FINGERPRINT", "taskIds": ["mobility"], "participantIds": ["client-1"] }],
+  "participants": [{
+    "taskId": "mobility", "taskVersion": 1, "participantId": "client-1", "privateKeyFile": "keys/client-1-ed25519.pem",
+    "dataset": { "datasetId": "mobility-client-1", "datasetVersion": 1, "seed": 101, "clientIndex": 0 }
+  }]
+}

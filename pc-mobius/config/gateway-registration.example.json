@@ -1,0 +1,27 @@
+{
+  "core": {
+    "registration": {
+      "cse": {
+        "endpoint": "https://cse.internal.example",
+        "cseBase": "/Mobius",
+        "workloadOriginator": "C-registration-workload",
+        "workloadHeaders": {"authorization":"Bearer <server-workload-token>"}
+      },
+      "issuer": {
+        "caFile": ".local/pki/gateway-ca.pem",
+        "caKeyFile": ".local/pki/gateway-ca.key",
+        "openssl": "openssl",
+        "validityDays": 1
+      },
+      "bootstraps": [{
+        "bootstrapId":"bootstrap-pi-02",
+        "gatewayId":"pi-02",
+        "principalId":"gateway-pi-02",
+        "fingerprint":"<verified bootstrap certificate SHA256 fingerprint>",
+        "devices":{"keyring-D":"household-1"},
+        "tokenHash":"0000000000000000000000000000000000000000000000000000000000000000",
+        "expiresAt":"2026-11-11T00:00:00.000Z"
+      }]
+    }
+  }
+}

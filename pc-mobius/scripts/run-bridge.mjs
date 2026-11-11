@@ -10,7 +10,8 @@ const receiptPath = process.env.MOBIUS4_RECEIPT_PATH ?? './receipts/gateway-brid
 const oneM2MTransport = process.env.MOBIUS4_ONEM2M_TRANSPORT ?? 'http';
 const cseId = process.env.MOBIUS4_CSE_ID ?? 'Mobius4';
 const client = mqtt.connect(mqttUrl, { clientId: `pb-core-${gatewayId}`, clean: true, reconnectPeriod: 2000 });
-const bridge = new GatewayBridge({ mqttClient: client, baseUrl, originator, gatewayId, cseId, oneM2MTransport, receiptJournal: new ReceiptJournal(receiptPath) });
+const sdtProfile=process.env.MOBIUS4_SDT_PROFILE??'r4-common-1.0';
+const bridge = new GatewayBridge({ mqttClient: client, baseUrl, originator, gatewayId, cseId, oneM2MTransport, sdtProfile, receiptJournal: new ReceiptJournal(receiptPath) });
 
 client.on('connect', async () => {
   const ready = await bridge.start();

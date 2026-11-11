@@ -1,0 +1,415 @@
+{
+  "generatedAt": "2026-11-10T09:33:44.432Z",
+  "status": "PASS",
+  "runtime": "actual-postgresql",
+  "version": "17.11",
+  "namespace": "verification-1794303219315-3fee7f9f",
+  "processIds": [
+    46048,
+    56132,
+    51968,
+    137568,
+    76068,
+    1040,
+    146920,
+    66360,
+    152872,
+    111200,
+    128924,
+    60372,
+    61408,
+    129844,
+    122284,
+    13904,
+    10124,
+    109276
+  ],
+  "cases": [
+    {
+      "name": "PG01 two-process same-command claim and policy idempotency",
+      "status": "PASS",
+      "durationMs": 308
+    },
+    {
+      "name": "PG02 revocation SQL lock precedes concurrent authorization",
+      "status": "PASS",
+      "durationMs": 520,
+      "evidence": {
+        "sqlWaitEvent": "Lock",
+        "authorizedAfterRevoke": false
+      }
+    },
+    {
+      "name": "PG03 process termination before COMMIT rolls back state and outbox",
+      "status": "PASS",
+      "durationMs": 235
+    },
+    {
+      "name": "PG04 database commit journal outbox resumes once after append-before-delivery failure",
+      "status": "PASS",
+      "durationMs": 42
+    },
+    {
+      "name": "PG05 FL prepared model versus second-process consent CAS and publication fence",
+      "status": "PASS",
+      "durationMs": 643
+    },
+    {
+      "name": "PG06 committed state is restored by a fresh process",
+      "status": "PASS",
+      "durationMs": 321
+    },
+    {
+      "name": "PG07 two coordinator processes share one FL commit key and monotonic epoch",
+      "status": "PASS",
+      "durationMs": 343
+    },
+    {
+      "name": "PG08 runtime API joins policy and Gateway SQL transactions",
+      "status": "PASS",
+      "durationMs": 54
+    },
+    {
+      "name": "PG09 expiry removes canonical detail, SQL receipt copies and JSONL with a deletion receipt",
+      "status": "PASS",
+      "durationMs": 22
+    },
+    {
+      "name": "PG10 two Gateway processes share one lane, generation, dispatch-start and final native receipt",
+      "status": "PASS",
+      "durationMs": 1940,
+      "evidence": {
+        "serverClaimCount": 1,
+        "receiptCount": 1,
+        "physicalExecutionCount": null,
+        "desiredGeneration": 2
+      }
+    },
+    {
+      "name": "PG11 DB clock is sampled after the waiting authority lock is acquired",
+      "status": "PASS",
+      "durationMs": 641,
+      "evidence": {
+        "sqlWaitEvent": "Lock",
+        "clockSampleAfterRelease": true
+      }
+    }
+  ],
+  "commitCount": 52,
+  "commits": [
+    {
+      "version": "1",
+      "lock_key": "gateways:gw-db",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "5d4c696b5e7d35c7320e5369f6735f4687f18496b0fd6706be3b14d5248cc853"
+    },
+    {
+      "version": "2",
+      "lock_key": "policy:createConsent",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "901ca6e685af78d4cb5c0daae2ab2fb9963414e45bf818c5b4523dfc1df52608"
+    },
+    {
+      "version": "3",
+      "lock_key": "policy:createGrant",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "ead565ea168bef84cb915ca93eadacf01335980efdde90147e89aca5855e1e1a"
+    },
+    {
+      "version": "4",
+      "lock_key": "gateway:claim:same-command",
+      "writer_id": "56132:31ee219f-55a5-469a-8d2a-d25977e14674",
+      "state_sha256": "f2a70f7e81ea986bfe48c98e863a8f58ab2e4b512b645637969e84b8ac4e68fe"
+    },
+    {
+      "version": "5",
+      "lock_key": "policy:approvePolicy",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "c65f3ba9d9c854c79596403b6f74b8e6db9a4af912a744b808441bcd70126f08"
+    },
+    {
+      "version": "6",
+      "lock_key": "grant-revoke-test",
+      "writer_id": "51968:ed8b4917-6446-4607-979f-d8d20e12f515",
+      "state_sha256": "38e527bcd25a1577cee517bc4b5a05d4c4fa1b1762e5e4dc8b8643bdd1516563"
+    },
+    {
+      "version": "7",
+      "lock_key": "gateway:authorize:gw-db",
+      "writer_id": "137568:7bdb0b37-e4bb-43c5-acc7-9b68d91aeecd",
+      "state_sha256": "3a30a4a3bb5c3e8cd613f47050a82539728c454e078aae5bba6bab770536998d"
+    },
+    {
+      "version": "8",
+      "lock_key": "receipts",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "8bf903da0bef24f523b54ee97aa18bc5683a846117f3096288eb307ebd49f94f"
+    },
+    {
+      "version": "9",
+      "lock_key": "fl:pg-model",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "c5905a6cfbeaa73ab1a0f633d11c8948d9a45925a8d7b4bb7da99e5f173853a1"
+    },
+    {
+      "version": "10",
+      "lock_key": "fl:pg-model",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "b3ca77303861006930c40e7ac1f489503d7276ef1061c95c604a2af7e05a3753"
+    },
+    {
+      "version": "11",
+      "lock_key": "fl:pg-model",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "27e39726fd0680987835fd80d6729cd9527b7574f76f3af9724bd26140fdf177"
+    },
+    {
+      "version": "12",
+      "lock_key": "fl:pg-model",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "a6f0343cfbfeb983f9349177aa7e2ab64daa66eb47d7381185f76bc230e8ab11"
+    },
+    {
+      "version": "13",
+      "lock_key": "fl:pg-model",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "8a5f2a9fc122226c0bb99dbb701746355890d93e28b5bd111dd690490b09673b"
+    },
+    {
+      "version": "14",
+      "lock_key": "fl:pg-model",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "67aafb82258180419cf2bad7f22941261fe6753f97b8e3c0c92e342c91f51c26"
+    },
+    {
+      "version": "15",
+      "lock_key": "fl:pg-model",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "791a2e0c1dd4b5744a6e50727217c3e071c79257faef1b71970094a4f238ac83"
+    },
+    {
+      "version": "16",
+      "lock_key": "fl:pg-model",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "aa61ac0e280ee8644e2ddb0dba2e1fde062541940bf865370fa76d40a790ec8f"
+    },
+    {
+      "version": "17",
+      "lock_key": "fl:pg-model",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "d83d4093c49aa4d12d36a80ee6e97496ce35c8ff576aa1923d0ed425706650ed"
+    },
+    {
+      "version": "18",
+      "lock_key": "fl:pg-model",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "9d8f769f3d175b562e267618bc49b0ba7f60bc56cd1e3ec4b267773d5f3c8406"
+    },
+    {
+      "version": "19",
+      "lock_key": "fl:pg-model",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "64362f4114bf4d41722d27ce9618eb9e8268e5df3a4054ab8fe9cf79bbc01920"
+    },
+    {
+      "version": "20",
+      "lock_key": "fl:pg-model",
+      "writer_id": "1040:b700fbab-67bf-4e4d-9e7f-cc68b6e695ae",
+      "state_sha256": "a70b9120792437d7af0b4744ef7a16c0df854dc069e89a4faa5f2e479316595d"
+    },
+    {
+      "version": "21",
+      "lock_key": "fl:pg-model",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "26d79e4fe8915c5730c9c1eb7e271e8919c22141dd1c4ae1ef50d86f9c2e2a8b"
+    },
+    {
+      "version": "22",
+      "lock_key": "fl:pg-model",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "caf938c96caa6d722c073f08efbc1f7e3f6c3d550c338269f47f67429266906c"
+    },
+    {
+      "version": "23",
+      "lock_key": "fl:pg-model",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "6d2a75abb8a9c9d435cc1fc7d009479c87553b907e1d74e92ef9b81712f1ed83"
+    },
+    {
+      "version": "24",
+      "lock_key": "fl:pg-model",
+      "writer_id": "146920:a117388c-8147-45b5-b98d-69fccdc89c80",
+      "state_sha256": "2c38ba24bd44cff15b334480c8c45751875b0d962cb5d76a8cb1e06a610e9033"
+    },
+    {
+      "version": "25",
+      "lock_key": "fl:pg-model",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "ecdc2c3779b032a710b720e73c2bf2702ec5c0f7106b9afff581c2aa4ccf6e43"
+    },
+    {
+      "version": "26",
+      "lock_key": "fl:pg-fence",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "31c509801e15b8786556250345d89c5aef6a9b05b5835ce48906d8b56cad5188"
+    },
+    {
+      "version": "27",
+      "lock_key": "fl:pg-fence",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "7324db2310e960401212bfa14cce8d0752c9e14ee729b1a27cb2592651705302"
+    },
+    {
+      "version": "28",
+      "lock_key": "fl:pg-fence",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "b103666fdb6b3afbd086990d687c6e00e8cf76e64f69810bbf81f90b5df921b8"
+    },
+    {
+      "version": "29",
+      "lock_key": "fl:pg-fence",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "0fd113e32ed2142e24382211f9536ba15115f6394c7030da99de6742eafee954"
+    },
+    {
+      "version": "30",
+      "lock_key": "fl:pg-fence",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "ccd873a17887fa7cb0652a37f5ffe86d6a6f367c19780ca43027772077ebd3db"
+    },
+    {
+      "version": "31",
+      "lock_key": "fl:pg-fence",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "f9ae0b8784bbf43b1a42d8982c60aa269f0bca73d27d8021b01b364a1837252d"
+    },
+    {
+      "version": "32",
+      "lock_key": "fl:pg-fence",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "a555333855f83fd9425d0f1f00ddada888baff47fadc9d899c06ead137268eb0"
+    },
+    {
+      "version": "33",
+      "lock_key": "fl:pg-fence",
+      "writer_id": "111200:3a3f3352-63cf-43d7-8d73-56e1e9c121bc",
+      "state_sha256": "4974ab5b2817ff38b6520162b0a3945226a1db79ae954d06c1a97d4fc1fad1e2"
+    },
+    {
+      "version": "34",
+      "lock_key": "fl:pg-fence",
+      "writer_id": "111200:3a3f3352-63cf-43d7-8d73-56e1e9c121bc",
+      "state_sha256": "6d831c64b460afd6f536a09b3820051081dfe052bbca36569cc06b66543cc319"
+    },
+    {
+      "version": "35",
+      "lock_key": "fl:pg-fence",
+      "writer_id": "111200:3a3f3352-63cf-43d7-8d73-56e1e9c121bc",
+      "state_sha256": "1c41bf1e952e655d87af7ec31fee070ddd5a823d60955bf324e7e7e405d7010d"
+    },
+    {
+      "version": "36",
+      "lock_key": "fl:pg-fence",
+      "writer_id": "152872:ee328c9e-0321-4ba1-b854-d7f18e05907e",
+      "state_sha256": "27e5939cc0e17c478b79be6a1336c4f18b5c3cf37252b256259cad7a6002f0ea"
+    },
+    {
+      "version": "37",
+      "lock_key": "location-privacy-migration",
+      "writer_id": "66976:83ad9dd8-1b76-41ea-971a-dadf08e75312",
+      "state_sha256": "094521a1c7ee3e3a4be98e6685d3ebb9536539302cc6bc682e8681e53936cd8e"
+    },
+    {
+      "version": "38",
+      "lock_key": "households:household-db",
+      "writer_id": "66976:83ad9dd8-1b76-41ea-971a-dadf08e75312",
+      "state_sha256": "ae81541a2d4ec6e24070c1aea3d34752ea5215622dd0c840da0efaf99cf5ac6b"
+    },
+    {
+      "version": "39",
+      "lock_key": "api:POST:/v1/consents",
+      "writer_id": "66976:83ad9dd8-1b76-41ea-971a-dadf08e75312",
+      "state_sha256": "32b8af4763b91572881becbf87cf2450e5fdcb13c29d144da8353882d53e6554"
+    },
+    {
+      "version": "40",
+      "lock_key": "receipts",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "eb6de9f7ec7afff198174dd4bef8590653c36e28669051f69a34a211a5561631"
+    },
+    {
+      "version": "41",
+      "lock_key": "locationPayloads:expired-location",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "7ddfc1cd5347dddf69d8c920eb6699845957c416e8819aaf6d4c1795e7a32a16"
+    },
+    {
+      "version": "42",
+      "lock_key": "retention:expiry",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "d8497a63d8129be2f67eed709de858ed0e8dd8282461c5701f4c3c98f9d5be09"
+    },
+    {
+      "version": "43",
+      "lock_key": "receipts",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "ae3929a083e0b95abf4c22ce93a46c86f3132e88a656c312a14d9cc7eb7e75fe"
+    },
+    {
+      "version": "44",
+      "lock_key": "policy:createConsent",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "d3e20817d4502b6a351080bf0fdb005078c5da1040d5c5877ab66f6516329fa4"
+    },
+    {
+      "version": "45",
+      "lock_key": "policy:createGrant",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "9d3a117730a0efd748272bb884a363e5cc86c581f71e67e469a6782fe3fb8670"
+    },
+    {
+      "version": "46",
+      "lock_key": "gateway:claim:receipt-command",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "dff16475413f3ba0b6c0b6da8939cfdfe46686fa16ee3241f9dd064a537aa394"
+    },
+    {
+      "version": "47",
+      "lock_key": "gateway:authorize:gw-db",
+      "writer_id": "60372:e351b412-be4e-4da2-ad90-b420df12dd83",
+      "state_sha256": "4bb9eb168a803b6a7389f2438dfeaab08861dd1cd0fff73212964e586d890a44"
+    },
+    {
+      "version": "48",
+      "lock_key": "gateway:authorize:gw-db",
+      "writer_id": "128924:97518c30-4de7-4df7-8903-d34240066d1a",
+      "state_sha256": "96eb2f8e4b6da76f43631ad2032a346537fdd250fb417c0309eb16d2f6750808"
+    },
+    {
+      "version": "49",
+      "lock_key": "gateway:authorize:gw-db",
+      "writer_id": "129844:acc57e5b-c08e-4ab2-9f9b-7111aeecd0de",
+      "state_sha256": "eac2f94341d09de9ce1b5628f3921ec4cc463f9628908819c7b5cfc8e09ebddc"
+    },
+    {
+      "version": "50",
+      "lock_key": "gateway:authorize:gw-db",
+      "writer_id": "61408:50b581d3-17c5-4f43-92a4-cb4388ceefd1",
+      "state_sha256": "64aac168fdc9dc7e3fc2c40671b3e121f47bf1c6b341ec87adb7bcbbc9d6a4d3"
+    },
+    {
+      "version": "51",
+      "lock_key": "grant:grant-e9661880-a464-40a4-8b33-aea0d0bdbf2f",
+      "writer_id": "66976:6cd988d2-826e-45c1-8d82-fdbaa7f2c533",
+      "state_sha256": "98a7c21df661fbf34b0c595de9a4070666c9e985dfe858debba7dc2c8a7a932b"
+    },
+    {
+      "version": "52",
+      "lock_key": "gateway:receipt:receipt-command",
+      "writer_id": "122284:e2a1a2d5-ea3a-4b91-b128-9f0f4edfe56e",
+      "state_sha256": "4b6ff6a311ec7db148ef0bf094c3a83d16268328b4dee1f72b8f890f4b6b2f26"
+    }
+  ],
+  "sourceCommit": "902392fa90cd31d688cba1f7db5e067f5486a31b",
+  "journalSha256": "e4a19da8dbdd24d045de2d8e4ea7a5ec5390a2d5e379dcdb808ba5fac2b05417"
+}

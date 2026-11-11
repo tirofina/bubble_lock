@@ -1,0 +1,207 @@
+{
+  "contractId": "privacy-bubble.oneM2M.test",
+  "contractVersion": "2.0.0",
+  "docRevision": "2.0.0",
+  "owner": "PC-MOBIUS-CORE",
+  "standards": [
+    "TS-0001",
+    "TS-0004",
+    "TS-0023"
+  ],
+  "cse": {
+    "baseResource": "Mobius",
+    "releaseVersionIndicator": "4",
+    "originator": "pb-core-admin-local",
+    "httpBase": "http://127.0.0.1:7599/Mobius",
+    "mqttTopicRoot": "/oneM2M/req"
+  },
+  "headers": {
+    "X-M2M-RVI": "4",
+    "X-M2M-Origin": "pb-core-admin-local",
+    "X-M2M-RI": "privacy-bubble-{sequence}"
+  },
+  "resourceModel": {
+    "ae": {
+      "rn": "privacy-bubble-test-ae",
+      "api": "Nprivacy-bubble",
+      "rr": true
+    },
+    "flexContainer": {
+      "rn": "bubbleState",
+      "cnd": "org.onem2m.common.moduleclass.binarySwitch",
+      "attributes": {
+        "state": true
+      }
+    },
+    "subscription": {
+      "rn": "bubbleState-sub",
+      "nu": [
+        "mqtt://127.0.0.1:1883/privacy-bubble/notify"
+      ]
+    },
+    "group": {
+      "rn": "privacy-bubble-group",
+      "mt": 28,
+      "mid": [
+        "/Mobius/privacy-bubble-test-ae/bubbleState"
+      ]
+    }
+  },
+  "steps": [
+    {
+      "id": "create-ae",
+      "operation": "CREATE",
+      "resourceType": 2,
+      "path": "",
+      "contentFormat": "application/json;ty=2",
+      "body": {
+        "m2m:ae": {
+          "rn": "privacy-bubble-test-ae",
+          "api": "Nprivacy-bubble",
+          "rr": true
+        }
+      },
+      "expectedResponseStatus": 201,
+      "evidence": "ae.resourceId"
+    },
+    {
+      "id": "create-state",
+      "operation": "CREATE",
+      "resourceType": 28,
+      "path": "/privacy-bubble-test-ae",
+      "contentFormat": "application/json;ty=28",
+      "body": {
+        "cod:binSh": {
+          "rn": "bubbleState",
+          "cnd": "org.onem2m.common.moduleclass.binarySwitch",
+          "state": true
+        }
+      },
+      "expectedResponseStatus": 201,
+      "evidence": "flexContainer.resourceId"
+    },
+    {
+      "id": "create-subscription",
+      "operation": "CREATE",
+      "resourceType": 23,
+      "path": "/privacy-bubble-test-ae/bubbleState",
+      "contentFormat": "application/json;ty=23",
+      "body": {
+        "m2m:sub": {
+          "rn": "bubbleState-sub",
+          "nu": [
+            "mqtt://127.0.0.1:1883/privacy-bubble/notify"
+          ],
+          "nct": 1,
+          "enc": {
+            "net": [
+              1
+            ]
+          }
+        }
+      },
+      "expectedResponseStatus": 201,
+      "evidence": "subscription.resourceId"
+    },
+    {
+      "id": "update-state",
+      "operation": "UPDATE",
+      "resourceType": 28,
+      "path": "/privacy-bubble-test-ae/bubbleState",
+      "contentFormat": "application/json",
+      "body": {
+        "cod:binSh": {
+          "state": false
+        }
+      },
+      "expectedResponseStatus": 200,
+      "evidence": "flexContainer.state=false"
+    },
+    {
+      "id": "discover-state",
+      "operation": "RETRIEVE",
+      "resourceType": 28,
+      "path": "/privacy-bubble-test-ae?fu=1&ty=28&cnd=org.onem2m.common.moduleclass.binarySwitch",
+      "contentFormat": "application/json",
+      "expectedResponseStatus": 200,
+      "evidence": "m2m:uril contains canonical binarySwitch resource URI"
+    },
+    {
+      "id": "readback-state",
+      "operation": "RETRIEVE",
+      "resourceType": 28,
+      "path": "/privacy-bubble-test-ae/bubbleState",
+      "contentFormat": "application/json",
+      "expectedResponseStatus": 200,
+      "evidence": "cod:binSh.state=false"
+    },
+    {
+      "id": "create-group",
+      "operation": "CREATE",
+      "resourceType": 9,
+      "path": "",
+      "contentFormat": "application/json;ty=9",
+      "body": {
+        "m2m:grp": {
+          "rn": "privacy-bubble-group",
+          "mt": 28,
+          "mnm": 1,
+          "mid": [
+            "/Mobius/privacy-bubble-test-ae/bubbleState"
+          ]
+        }
+      },
+      "expectedResponseStatus": 201,
+      "evidence": "group.resourceId"
+    },
+    {
+      "id": "group-fanout",
+      "operation": "UPDATE",
+      "resourceType": 9,
+      "path": "/privacy-bubble-group/fopt",
+      "contentFormat": "application/json",
+      "body": {
+        "cod:binSh": {
+          "state": true
+        }
+      },
+      "expectedResponseStatus": 200,
+      "evidence": "m2m:agr.m2m:rsp[].rsc and individual member readback"
+    }
+  ],
+  "mqtt": {
+    "requestTopic": "/oneM2M/req/{originator}/{cseId}/json",
+    "responseTopic": "/oneM2M/resp/{originator}/{cseId}/json",
+    "notificationTopic": "privacy-bubble/notify",
+    "qos": 1,
+    "retain": false,
+    "correlation": "X-M2M-RI"
+  },
+  "acceptance": {
+    "statusCodes": [
+      200,
+      201,
+      204
+    ],
+    "requiredHeaders": [
+      "X-M2M-RVI",
+      "X-M2M-RI"
+    ],
+    "receiptFields": [
+      "contractId",
+      "contractVersion",
+      "stepId",
+      "requestId",
+      "status",
+      "timestamp",
+      "responseStatus"
+    ],
+    "redBlueGreen": "Every contract change receives Red and Blue review before Green review."
+  },
+  "wireProfile": "r4-common-1.0",
+  "compatibility": {
+    "previousVersion": "1.0.0",
+    "adapter": "src/sdt-adapter.mjs",
+    "legacyProfile": "pb-legacy-1.0"
+  }
+}

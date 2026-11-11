@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Privacy Bubble interoperability profile 1.0.
+     Derived implementation fixture: TS-0023 v4.8.1 normative clauses 5.3.1.12/6.2/6.4.3.
+     Official R5 reference schema is preserved separately as COD-mod-binarySwitch.xsd.
+     Project change: R4 m2m namespace, TS-0023 v4.8.1 6.3.2 binarySwitch -> binSh wire name,
+     inline complex type, minimal state-only child payload for runtime gate.
+     Optional dataGenerationTime/action/instance resources are outside this profile's selected capabilities.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+ xmlns:m2m="http://www.onem2m.org/xml/protocols"
+ xmlns:cod="http://www.onem2m.org/xml/protocols/commondomain"
+ targetNamespace="http://www.onem2m.org/xml/protocols/commondomain" elementFormDefault="unqualified">
+ <xs:import namespace="http://www.onem2m.org/xml/protocols" schemaLocation="CDT-commonTypes.xsd"/>
+ <xs:element name="binSh" substitutionGroup="m2m:sg_flexContainerResource">
+ <xs:complexType>
+  <xs:complexContent><xs:extension base="m2m:flexContainerResource"><xs:sequence>
+   <xs:element name="state" type="xs:boolean"/>
+  </xs:sequence></xs:extension></xs:complexContent>
+ </xs:complexType></xs:element>
+</xs:schema>

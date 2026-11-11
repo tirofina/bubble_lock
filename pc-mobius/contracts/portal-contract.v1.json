@@ -1,0 +1,41 @@
+{
+  "contractId": "privacy-bubble.portal.v1",
+  "contractVersion": "1.0.0",
+  "owner": "PC-MOBIUS-INTEGRATION",
+  "basePath": "/v1/portal",
+  "snapshotSchema": "portal.schema.json",
+  "authentication": {
+    "transport": "TLSv1.3",
+    "principal": "verified certificate or signed OIDC access token plus server enrollment",
+    "scopeRule": "OIDC token scopes intersect enrolled scopes",
+    "householdRule": "member principalId bound to provisioned household",
+    "deviceRule": "guardian plus enrolled gateway.devices[deviceId] equals householdId"
+  },
+  "idempotency": {"inputField": "idempotencyKey", "requiredOn": "POST", "namespace": ["principalId", "action"], "maxLength": 128, "intentHash": "SHA256 canonical input", "completedReplay": "stored response", "concurrency": "serialized portal mutations"},
+  "responses": {"success": 200, "authentication": 401, "validationOrAuthorization": 403, "unknownRoute": 404},
+  "routes": {
+    "GET /snapshot": {"scope": "portal:read", "response": "portal.schema.json"},
+    "GET /location-access": {"scope": "portal:read", "response": {"deviceIds": "string[]", "householdIds": "string[]", "role": "guardian|visitor"}, "visitorFence": "active household guardian location:read grant with current consent, revision and expiry"},
+    "GET /locations": {"scope": "portal:read", "response": {"observations": "array of deviceId, gatewayId?, observedAt, simulation, service?, location?:{lat,lon,source:gps|mec,accuracyM?}, rssiDbm?"}, "fences": ["location-access", "registered device household", "MEC source grant household", "current source grant revision", "server UE mapping", "24-hour retention"]},
+    "POST /households": {"scope": "household:write", "input": {"required": ["name"], "optional": []}, "response": "household"},
+    "POST /devices": {"scope": "device:write", "role": "guardian", "input": {"required": ["householdId", "deviceId", "gatewayId", "label"], "optional": []}, "response": "device"},
+    "POST /consents": {"scope": "consent:write", "role": "guardian", "input": {"required": ["householdId", "purpose", "scopes"], "optional": ["ttlSec"]}, "response": "consent"},
+    "POST /grants": {"scope": "grant:write", "role": "guardian", "input": {"required": ["consentId", "scopes"], "optional": ["purpose", "ttlSec"]}, "response": "grant"},
+    "POST /consents/revoke": {"scope": "consent:write", "role": "guardian", "ownerBound": true, "input": {"required": ["consentId"], "optional": ["reason"]}, "response": "consent"},
+    "POST /grants/revoke": {"scope": "grant:revoke", "role": "guardian", "ownerBound": true, "input": {"required": ["grantId"], "optional": ["reason"]}, "response": "grant"},
+    "POST /incidents": {"scope": "incident:write", "input": {"required": ["householdId", "kind", "message"], "optional": ["deviceId"]}, "response": "incident"},
+    "POST /incidents/resolve": {"scope": "incident:resolve", "role": "guardian", "input": {"required": ["incidentId"], "optional": []}, "response": "incident"},
+    "POST /commands/request": {"scope": "command:request", "input": {"required": ["householdId", "deviceIds", "desiredState", "reason"], "optional": ["ttlSec"]}, "response": "commandRequest"},
+    "POST /commands/approve": {"scope": "bubble:command", "role": "guardian", "input": {"required": ["requestId", "grantId"], "optional": []}, "response": "commandRequest"},
+    "POST /notifications/read": {"scope": "portal:read", "ownerBound": true, "input": {"required": ["notificationId"], "optional": []}, "response": "notification"}
+  },
+  "commandLifecycle": {
+    "PENDING": "Guardian approval pending",
+    "PARTIAL": "Some canonical commands queued; retry original approval with same commandIds",
+    "QUEUED": "Canonical commands persisted for authenticated gateway polling",
+    "EXPIRED": "Computed effectiveStatus for expired PENDING/PARTIAL requests",
+    "executionEvidence": "Gateway ACK and readback receipts",
+    "fences": ["household guardian", "grant owner", "device subject", "active consent", "grant revision", "credential revision", "ownership epoch", "deadline"]
+  },
+  "demo": {"factory": "integration/src/portal-demo.mjs#createPortalDemo", "principals": ["guardian-demo", "visitor-demo", "operator-demo"], "householdId": "household-demo", "gatewayId": "pi-01", "deviceIds": ["keyring-A", "keyring-B", "keyring-C"], "transport": "local sandbox queue", "operatorMembership": "visitor"}
+}

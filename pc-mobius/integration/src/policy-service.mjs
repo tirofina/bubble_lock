@@ -8,6 +8,10 @@ export class PolicyService {
     this.clock = clock;
     this.issuer = issuer;
     this.audience = audience;
+    for (const name of ['createConsent', 'createGrant', 'approvePolicy']) {
+      const operation = this[name].bind(this);
+      this[name] = (...args) => this.store.transaction(`policy:${name}`, () => operation(...args));
+    }
   }
 
   async receipt(event) {
@@ -47,9 +51,15 @@ export class PolicyService {
     return principal;
   }
 
+  subjectAuthority(principalId, subjectId) {
+    const household = this.store.get('households', subjectId);
+    return !household || household.members.some((member) => member.principalId === principalId && member.role === 'guardian');
+  }
+
   async createConsent({ principal, subjectId, purpose, scopes, ttlSec = 3600 }) {
     this.authorize(principal, 'consent:write');
     requireString(subjectId, 'subjectId');
+    if (!this.subjectAuthority(principal.principalId, subjectId)) throw new Error('Household guardian binding required');
     requireString(purpose, 'purpose');
     requireArray(scopes, 'scopes');
     if (scopes.some((scope) => typeof scope !== 'string' || scope.trim().length === 0)) throw new Error('String scopes required');
@@ -88,6 +98,7 @@ export class PolicyService {
     if (!grant || grant.status !== 'ACTIVE') return { allowed: false, reason: 'grant-status', grant };
     if (Date.parse(grant.expiresAt) <= Date.parse(nowIso(this.clock))) return { allowed: false, reason: 'grant-expired', grant };
     const consent = this.store.get('consents', grant.consentId);
+    if (!this.subjectAuthority(grant.principalId, grant.subjectId)) return { allowed: false, reason: 'household-authority', grant };
     if (!consent || consent.status !== 'ACTIVE' || consent.revision !== grant.revision
         || Date.parse(consent.expiresAt) <= Date.parse(nowIso(this.clock))) return { allowed: false, reason: 'consent-status', grant };
     if (scope && !grant.scopes.includes(scope) && !grant.scopes.includes('*')) return { allowed: false, reason: 'grant-scope', grant };
@@ -97,13 +108,16 @@ export class PolicyService {
 
   async revokeGrant({ principal, grantId, reason = 'operator-revocation' }) {
     this.authorize(principal, 'grant:revoke');
+    return this.store.transaction(`grant:${grantId}`, async () => {
     const grant = this.store.get('grants', grantId);
     if (!grant) throw new Error('Grant is required');
     if (grant.principalId !== principal.principalId) throw new Error('Grant owner binding required');
-    const next = { ...grant, status: 'REVOKED', revokedAt: nowIso(this.clock), revokedBy: principal.principalId, revokeReason: reason, revision: grant.revision + 1 };
+    const revocationCommittedAt = nowIso(this.clock);
+    const next = { ...grant, status: 'REVOKED', revokedAt: revocationCommittedAt, revocationCommittedAt, revokedBy: principal.principalId, revokeReason: reason, revision: grant.revision + 1 };
     await this.store.put('grants', grantId, next);
-    await this.receipt({ type: 'GRANT_REVOKED', grantId, principalId: principal.principalId, reason });
+    await this.receipt({ type: 'GRANT_REVOKED', grantId, principalId: principal.principalId, revocationCommittedAt, reason });
     return next;
+    });
   }
 
   async approvePolicy({ principal, policy, idempotencyKey }) {

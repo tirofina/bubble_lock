@@ -16,6 +16,9 @@
 // #define KEYRING_ENABLE_AUDIO 1
 // #define KEYRING_AUDIO_FREQUENCY 880
 // #define KEYRING_AUDIO_AMPLITUDE 512
+// Select one output: 1 speaker (default), 2 MAX9850 stereo headphone PCM.
+// #define KEYRING_AUDIO_OUTPUT 2
+// #define KEYRING_HEADPHONE_VOLUME 0x20
 // One physical panel per device; both controller profiles are supported in source.
 // 0 = disabled, 1 = ST7789 1.54 inch 240x240, 2 = JD9853 2.01 inch candidate 240x296.
 // #define KEYRING_DISPLAY_PROFILE 1
@@ -35,6 +38,6 @@
 // #define KEYRING_ENABLE_POWER_MONITOR 1
 // #define KEYRING_POWER_SAMPLE_MS 2000UL
 // #define KEYRING_POWER_SHUNT_MILLIOHMS 100
-// Default1 manages the populated r18 MAX9850 as muted/shutdown, not playback.
+// Default1 manages MAX9850 shutdown and the selected headphone PCM lifecycle.
 // Set0 only for a selected board without this DAC; it bypasses the shared-I2S quiet-state guard.
 // #define KEYRING_MANAGE_HEADPHONE_STANDBY 1

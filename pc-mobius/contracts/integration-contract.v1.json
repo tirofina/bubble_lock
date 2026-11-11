@@ -6,20 +6,24 @@
   "dependsOn": ["privacy-bubble.oneM2M.test", "privacy-bubble.raspberrypi-gateway"],
   "standards": ["TS-0001", "TS-0004", "TS-0023", "ETSI-MEC-010", "ETSI-MEC-011"],
   "surfaces": {
+    "gatewayRegistration": {"contract":"gateway-registration.v1.json","registerPath":"/v1/gateway-registrations","lostPath":"/v1/gateway-lifecycle/lost","binding":"transactional AE-ID, bootstrap consumption and certificate revision"},
     "api": { "basePath": "/v1", "contentType": "application/json", "idempotencyHeader": "Idempotency-Key" },
-    "auth": { "oidcIssuer": "privacy-bubble-oidc", "audience": "privacy-bubble-api", "mtls": true, "originatorBinding": true, "httpPrincipalSource": "verified-client-certificate-and-server-enrollment" },
+    "auth": { "oidcIssuer": "deployment-pinned-HTTPS-issuer", "audience": "privacy-bubble-api", "mtls": true, "originatorBinding": true, "httpPrincipalSource": "verified-client-certificate-or-signed-OIDC-access-token-and-server-enrollment", "oidcAlgorithms": ["RS256", "ES256"], "oidcFences": ["signature", "issuer", "audience", "subject-enrollment", "expiry", "nbf", "scope-intersection"], "gatewayPrincipalSource": "verified-client-certificate-and-server-enrollment" },
+    "portal": { "basePath": "/v1/portal", "contract": "portal-contract.v1.json", "snapshotSchema": "portal.schema.json", "roles": ["guardian", "visitor"], "idempotencyField": "idempotencyKey", "commandStatus": ["PENDING", "PARTIAL", "QUEUED"], "visitorLocationFence": "current-household-location-grant" },
     "gateway": {
       "basePath": "/api/v1/gateways/{gatewayId}",
       "aliases": ["/v1/gateways/{gatewayId}"],
-      "routes": { "GET /commands?limit=16": "commands[]", "GET /credentials/status": "credential-status.schema.json", "POST /authorize": "authorization.schema.json", "POST /commands": "command.schema.json" },
+      "routes": { "GET /commands?limit=16": "commands[]", "GET /credentials/status": "credential-status.schema.json", "POST /authorize": "authorization.schema.json", "POST /dispatch-start": "authorization.schema.json -> current claim revalidation and IN_FLIGHT", "POST /receipts": "receipt.schema.json -> ACCEPTED|DUPLICATE and canonical claim settlement", "POST /commands": "command.schema.json", "POST /telemetry": "observation.schema.json -> ACCEPTED|DUPLICATE|STALE" },
       "schemas": "contracts/keyring/",
       "payloadHash": "SHA256(sorted-key-compact-UTF8-JSON)",
-      "fences": ["gateway-certificate", "device-subject", "grant-revision", "consent", "credential-revision", "ownership-epoch", "deadline"]
+      "fences": ["gateway-certificate", "device-subject", "grant-revision", "consent", "credential-revision", "ownership-epoch", "deadline", "five-second-reservation", "desired-generation", "exact-readback"],
+      "desiredGeneration": "Server authority binds monotonic device generation to commandId/claimId/payloadHash; native v1 wire resolves generation through that immutable binding.",
+      "receiptRetentionDays": 7
     },
     "mec": { "services": ["Location", "RNIS"], "callbackPath": "/v1/mec/callback", "dedupKey": "eventId" },
     "handover": { "states": ["DETACHED", "DRAINING", "ACTIVE", "ROLLED_BACK"], "epoch": "uint64" },
     "fl": { "vmRuntime": "ESTIMED", "roundStates": ["RUNNING", "RECOVERED", "COMPLETED"], "artifactFence": true },
-    "mcp": { "servers": ["oneM2M", "MEC", "Audit"], "checkpoint": true, "resume": true, "approvalHash": true }
+    "mcp": { "servers": ["oneM2M", "MEC", "Audit"], "protocolVersion": "2025-11-25", "supportedProtocolVersions": ["2025-11-25", "2025-06-18"], "transport": "Streamable HTTP", "toolsContract": "mcp-tools.v1.json", "checkpoint": true, "resume": true, "approvalHash": true, "approvalRequired": true, "currentGrantPerStep": true, "durableOperationDedup": true, "states": ["PENDING_APPROVAL", "APPROVED", "RUNNING", "PAUSED", "COMPLETED"] }
   },
   "rubricMapping": {
     "R06": "release-manifest-and-replay",

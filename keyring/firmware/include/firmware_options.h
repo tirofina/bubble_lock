@@ -29,6 +29,12 @@
 #ifndef KEYRING_AUDIO_AMPLITUDE
 #define KEYRING_AUDIO_AMPLITUDE 512
 #endif
+#ifndef KEYRING_AUDIO_OUTPUT
+#define KEYRING_AUDIO_OUTPUT 1 // 1 MAX98357A speaker, 2 MAX9850 headphones.
+#endif
+#ifndef KEYRING_HEADPHONE_VOLUME
+#define KEYRING_HEADPHONE_VOLUME 0x20 // -45.5dB amplifier attenuation; PCM gain is separate.
+#endif
 #ifndef KEYRING_DISPLAY_PROFILE
 #define KEYRING_DISPLAY_PROFILE 0 // 0 disabled, 1 ST7789 240x240, 2 JD9853 240x296 candidate
 #endif
@@ -78,7 +84,7 @@
 #define KEYRING_MANAGE_HEADPHONE_STANDBY 1
 #endif
 
-// Configuration errors fail at build time; this task does not run a build.
+// Configuration boundaries are checked at build time.
 static_assert(KEYRING_ENABLE_SLEEP == 0 || KEYRING_ENABLE_SLEEP == 1, "Sleep option must be 0 or 1");
 static_assert(KEYRING_IDLE_SLEEP_MS >= 10000UL && KEYRING_IDLE_SLEEP_MS <= 3600000UL, "Idle sleep range is 10s..1h");
 static_assert(KEYRING_SLEEP_POLL_MS >= 1000UL && KEYRING_SLEEP_POLL_MS <= 300000UL, "Sleep timer range is 1s..5min");
@@ -87,6 +93,9 @@ static_assert(KEYRING_WAKE_DURATION >= 0 && KEYRING_WAKE_DURATION <= 3, "LIS2DW1
 static_assert(KEYRING_ENABLE_AUDIO == 0 || KEYRING_ENABLE_AUDIO == 1, "Audio option must be 0 or 1");
 static_assert(KEYRING_AUDIO_FREQUENCY >= 100 && KEYRING_AUDIO_FREQUENCY <= 4000, "Cue frequency range is 100..4000Hz");
 static_assert(KEYRING_AUDIO_AMPLITUDE >= 0 && KEYRING_AUDIO_AMPLITUDE <= 2048, "Cue amplitude range is 0..2048 PCM counts");
+static_assert(KEYRING_AUDIO_OUTPUT == 1 || KEYRING_AUDIO_OUTPUT == 2, "Select speaker or headphones");
+static_assert(KEYRING_HEADPHONE_VOLUME >= 0x10 && KEYRING_HEADPHONE_VOLUME <= 0x27, "Headphone attenuation code range is 0x10..0x27");
+static_assert(KEYRING_AUDIO_OUTPUT != 2 || KEYRING_MANAGE_HEADPHONE_STANDBY == 1, "Headphone playback requires managed DAC control");
 static_assert(KEYRING_DISPLAY_PROFILE >= 0 && KEYRING_DISPLAY_PROFILE <= 2, "Choose a fitted display profile");
 static_assert(KEYRING_LCD_ROTATION >= 0 && KEYRING_LCD_ROTATION <= 3, "LCD rotation range is 0..3");
 static_assert(KEYRING_LCD_X_OFFSET >= 0 && KEYRING_LCD_X_OFFSET <= 255 && KEYRING_LCD_Y_OFFSET >= 0 && KEYRING_LCD_Y_OFFSET <= 255, "LCD offsets are unsigned bytes");

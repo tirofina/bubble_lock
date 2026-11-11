@@ -4,6 +4,7 @@
 !.env.example
 *.pem
 *.key
+*.mec-key
 *.p12
 *.pfx
 **/provisioning.h

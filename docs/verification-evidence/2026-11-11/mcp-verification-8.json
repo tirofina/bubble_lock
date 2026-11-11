@@ -1,0 +1,75 @@
+{
+  "status": "PASS",
+  "generatedAt": "2026-11-10T09:34:56.859Z",
+  "contract": "privacy-bubble.mcp.v1",
+  "protocolVersion": "2025-11-25",
+  "supportedProtocolVersions": [
+    "2025-11-25",
+    "2025-06-18"
+  ],
+  "scope": "LOCAL_HTTP_REAL_WIRE",
+  "serverCount": 3,
+  "serverDomains": [
+    "oneM2M",
+    "MEC",
+    "Audit"
+  ],
+  "domainAdapters": "TEST_FIXTURES",
+  "hardwareExecution": "SEPARATE_ACK_READBACK_EVIDENCE",
+  "rubric": [
+    "R17",
+    "A08",
+    "A19",
+    "W15",
+    "W16"
+  ],
+  "testProcessExit": 0,
+  "files": [
+    {
+      "name": "14cae514092f87e8.json",
+      "bytes": 9191,
+      "sha256": "df9a3961ba82635c01a6957d1ffc8b76fd069f3838ca252a00c3a5e27f54e5f5"
+    },
+    {
+      "name": "259c109ceb7f1795.json",
+      "bytes": 15584,
+      "sha256": "66972207ba958b08be31d602d455c220151c8aaa3d8b294f0a766c4e01aa8dbd"
+    },
+    {
+      "name": "2c1b0153ef2be90b.json",
+      "bytes": 11298,
+      "sha256": "350e83fe9f4e9ebd06861153588493772fc2b14db714a72939e9561482eed71e"
+    },
+    {
+      "name": "326abd07848e47a1.json",
+      "bytes": 10972,
+      "sha256": "c58277d8369ad3ee6cbca52b5be128d7273b4b0ab4e482cb0e83e77a02357ef2"
+    },
+    {
+      "name": "3a5d446195f645e4.json",
+      "bytes": 18951,
+      "sha256": "b48ed7b01f6af76962bb482bad0343a585b6f5e077f9c2245e0616b6846d5855"
+    },
+    {
+      "name": "9ed48d592186844b.json",
+      "bytes": 18169,
+      "sha256": "f6825b3ebb5cdda8a0bd37ed9d439f5495839ec9ad3c6e472bb767c168cc4435"
+    },
+    {
+      "name": "ba25d38688010916.json",
+      "bytes": 7404,
+      "sha256": "bd40ec858738cb33395a6a63a6f7bc36ca22712a3bbdf3e343f26aee36a06fd7"
+    },
+    {
+      "name": "c003d317f6d74f7f.json",
+      "bytes": 8848,
+      "sha256": "61c41e1c2d0994af77538378ada6b089deff409b93ca5b8634c5d24af2f2f9e2"
+    },
+    {
+      "name": "tests.log",
+      "bytes": 2428,
+      "sha256": "92c175262b8094f0fd25f7adbb61915ffbc1676da2cf1b6076ec1cb3c9a3b885"
+    }
+  ],
+  "output": "C:\\Users\\user\\OneDrive\\문서\\ChatGPT\\모비우스4 보안\\bubble_lock\\.local\\mcp-verification\\1794303295685-ba759725"
+}

@@ -1,0 +1,70 @@
+{
+  "oidc": {
+    "issuer": "https://identity.example.com",
+    "clientId": "bubble-lock-dashboard",
+    "audience": "privacy-bubble-api",
+    "redirectUri": "https://dashboard.example.com/api/auth/callback",
+    "scopes": [
+      "openid",
+      "offline_access",
+      "portal:read",
+      "household:write",
+      "device:write",
+      "consent:write",
+      "grant:write",
+      "grant:revoke",
+      "command:request",
+      "bubble:command",
+      "incident:write",
+      "incident:resolve",
+      "dashboard:read"
+    ],
+    "sessionTtlSec": 28800,
+    "idleTtlSec": 1800,
+    "loginTtlSec": 300,
+    "maxSessions": 1024,
+    "maxPendingLogins": 256,
+    "principals": [
+      {
+        "principalId": "guardian-1",
+        "oidcIssuer": "https://identity.example.com",
+        "oidcSubject": "<registered guardian OIDC subject>",
+        "scopes": [
+          "portal:read",
+          "household:write",
+          "device:write",
+          "consent:write",
+          "grant:write",
+          "grant:revoke",
+          "command:request",
+          "bubble:command",
+          "incident:write",
+          "incident:resolve"
+        ]
+      },
+      {
+        "principalId": "visitor-1",
+        "oidcIssuer": "https://identity.example.com",
+        "oidcSubject": "<registered visitor OIDC subject>",
+        "scopes": [
+          "portal:read",
+          "command:request",
+          "incident:write"
+        ]
+      },
+      {
+        "principalId": "operator-1",
+        "oidcIssuer": "https://identity.example.com",
+        "oidcSubject": "<registered operator OIDC subject>",
+        "scopes": [
+          "dashboard:read",
+          "portal:read"
+        ]
+      }
+    ]
+  },
+  "api": {
+    "baseUrl": "https://127.0.0.1:8787",
+    "caFile": ".local/pki/ca.pem"
+  }
+}

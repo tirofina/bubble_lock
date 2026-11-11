@@ -1,0 +1,16 @@
+{
+  "mcp": {
+    "ports": {"oneM2M": 8791, "MEC": 8792, "Audit": 8793},
+    "allowedOrigins": ["https://dashboard.example.com"],
+    "oneM2m": {
+      "baseUrl": "https://cse.example.com",
+      "householdGroups": {"household-1": "/Mobius/household-1/devices"},
+      "bindings": [{"householdId": "household-1", "deviceId": "keyring-1", "resourcePath": "/Mobius/relay-1/keyring-1/binarySwitch"}]
+    }
+  },
+  "mcpServers": [
+    {"serverId": "oneM2M", "audience": "privacy-bubble-mcp-onem2m", "endpoint": "https://127.0.0.1:8791/mcp", "catalogAccessTokenEnv": "MCP_ONEM2M_CATALOG_TOKEN", "accessTokenEnvByPrincipal": {"guardian-1": "MCP_ONEM2M_GUARDIAN_TOKEN"}},
+    {"serverId": "MEC", "audience": "privacy-bubble-mcp-mec", "endpoint": "https://127.0.0.1:8792/mcp", "catalogAccessTokenEnv": "MCP_MEC_CATALOG_TOKEN", "accessTokenEnvByPrincipal": {"guardian-1": "MCP_MEC_GUARDIAN_TOKEN"}},
+    {"serverId": "Audit", "audience": "privacy-bubble-mcp-audit", "endpoint": "https://127.0.0.1:8793/mcp", "catalogAccessTokenEnv": "MCP_AUDIT_CATALOG_TOKEN", "accessTokenEnvByPrincipal": {"guardian-1": "MCP_AUDIT_GUARDIAN_TOKEN"}}
+  ]
+}

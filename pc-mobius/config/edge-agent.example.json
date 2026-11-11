@@ -1,0 +1,23 @@
+{
+  "host": "127.0.0.1",
+  "port": 9443,
+  "hostId": "edge-A",
+  "region": "seoul",
+  "zones": ["home"],
+  "capacity": 2,
+  "statePath": "/var/lib/bubble-lock/edge-agent.json",
+  "tls": {"ca": "/etc/bubble-lock/ca.pem", "cert": "/etc/bubble-lock/edge-agent.pem", "key": "/etc/bubble-lock/edge-agent.key"},
+  "controllers": [{"fingerprint": "<enrolled controller SHA-256 certificate fingerprint>", "appIds": ["integration-api"]}],
+  "applications": [{
+    "appId": "integration-api",
+    "version": "1.0.0",
+    "executable": "/usr/bin/node",
+    "cwd": "/opt/bubble-lock",
+    "args": ["/opt/bubble-lock/pc-mobius/scripts/run-integration-api.mjs"],
+    "env": {"PRIVACY_BUBBLE_API_CONFIG": "/etc/bubble-lock/integration-api.json", "PRIVACY_BUBBLE_INTEGRATION_PORT": "8787"},
+    "healthUrl": "https://127.0.0.1:8787/healthz",
+    "capabilities": ["policy", "handover"],
+    "artifacts": [{"name": "scripts/run-integration-api.mjs", "path": "/opt/bubble-lock/pc-mobius/scripts/run-integration-api.mjs", "sha256": "<SHA-256 from installed release manifest>"}]
+  }],
+  "healthTls": {"ca": "/etc/bubble-lock/ca.pem", "cert": "/etc/bubble-lock/controller.pem", "key": "/etc/bubble-lock/controller.key"}
+}

@@ -1,0 +1,93 @@
+{
+  "generatedAt": "2026-11-11T04:07:58.240483+00:00",
+  "artifacts": [
+    {
+      "source": "pc-mobius/receipts/acp-real-cse.json",
+      "originalSHA256": "6b140db589ddc5e26101e9d24f1d901e15d82f246dab62f4fc9040803b16af7a",
+      "path": "docs/verification-evidence/2026-11-11/acp-real-cse.json",
+      "sha256": "7673333b07daed2d91230bb06d4d36edbaa930b24507ef1157856b0ccd3a13bc",
+      "status": "PASS",
+      "scope": "actual-Mobius4-two-CSE-HTTP"
+    },
+    {
+      "source": "pc-mobius/receipts/handover-real-cse.json",
+      "originalSHA256": "e36a5d603e3bf74faa0f156e534b05a26846e1c2b1a1589454eb31c4b0f7e7f8",
+      "path": "docs/verification-evidence/2026-11-11/handover-real-cse.json",
+      "sha256": "7b8bd4fba29eaf511fcd2c66a8a2d71e64cc54c6dae554ee1c8972d7a88cb5df",
+      "status": "PASS",
+      "scope": "actual-mobius4-loopback-http"
+    },
+    {
+      "source": "pc-mobius/receipts/interop-real-cse.json",
+      "originalSHA256": "0c7dec236e1dfec2ba7e21311c2ca0a37075e64131eb3c7b7d2ec6955c4fb24a",
+      "path": "docs/verification-evidence/2026-11-11/interop-real-cse.json",
+      "sha256": "b22d2c73dc351f7a949773c9305e6543fd71a92d35776ccfd4dd1bd565854fae",
+      "status": "PASS",
+      "scope": "actual-Mobius4-two-CSE-HTTP"
+    },
+    {
+      "source": "pc-mobius/receipts/location-privacy-real-cse.json",
+      "originalSHA256": "21b3ab20ee47c1d0d83c26d806da8e7e01682080785d845848ed9b1494926c36",
+      "path": "docs/verification-evidence/2026-11-11/location-privacy-real-cse.json",
+      "sha256": "7be47b410054da0c1badcd24ac46c332126bfdb7428f4773345e21a9c9bbcded",
+      "status": "PASS",
+      "scope": "actual-mobius4-http"
+    },
+    {
+      "source": ".local/fl-verification/1794299758009-84107461/report.json",
+      "originalSHA256": "da9ed8de88998d072c9d92c1d6513b582d551413dbdc76fd0219f2d22a2dcacf",
+      "path": "docs/verification-evidence/2026-11-11/fl-verification-4.json",
+      "sha256": "6941792a72919a28b2527afa7e9f99a2b99e6ae35616e90bdd41003d624b92d6",
+      "status": "PASS",
+      "scope": "LOCAL_SIMULATION"
+    },
+    {
+      "source": ".local/fl-worker-verification/1794369886170-d889e833/report.json",
+      "originalSHA256": "cd6a92beeea4ec045900b049c505648cf7b9209dce3b0669d09190724108bc24",
+      "path": "docs/verification-evidence/2026-11-11/fl-worker-verification-5.json",
+      "sha256": "ad16d4cde8edfa03d32e4340bdb43b0e3a8ecde04ba36a53e8eb87ac5f52cb48",
+      "status": "PASS",
+      "scope": "actual-TLS1.3-mTLS"
+    },
+    {
+      "source": ".local/fl-cse-verification/1794302210327-be73f881/report.json",
+      "originalSHA256": "0ef869e4682f30f5b1ab3b814c4b07340e190a40014b1e3632b00374368be222",
+      "path": "docs/verification-evidence/2026-11-11/fl-cse-verification-6.json",
+      "sha256": "042bdf1aad988b1a588c74749797295aa155779a93046c6b639c69e1bdb5721f",
+      "status": "PASS",
+      "scope": "LOCAL_SIMULATION"
+    },
+    {
+      "source": ".local/edge-deployment-verification/1794369883982-aeefe6cd/report.json",
+      "originalSHA256": "6217b4e73e54a4d5ecffd8dd7a8388f9ea2023c9e1653b3322d8149e2ee3a37b",
+      "path": "docs/verification-evidence/2026-11-11/edge-deployment-verification-7.json",
+      "sha256": "6072c9b078a0f4f2ce66c2cb7d09c77d422cb320f053a03f02b1317f9bd8fd63",
+      "status": "PASS",
+      "scope": null
+    },
+    {
+      "source": ".local/mcp-verification/1794303295685-ba759725/report.json",
+      "originalSHA256": "2e010b7b33b14444f010af43409a65c749754258ec723e55e62edff0d23f4a72",
+      "path": "docs/verification-evidence/2026-11-11/mcp-verification-8.json",
+      "sha256": "9acbfe90c7d5f0dc5b7008de5930e0c3f696814e1fdcde12eefeabc5e3910db2",
+      "status": "PASS",
+      "scope": null
+    },
+    {
+      "source": ".local/postgres/verification/verification-1794303219315-3fee7f9f/report.json",
+      "originalSHA256": "bc714946b357571cad08b309ae6235be7ba7f3f54c086d4b2da20f0c8209a08c",
+      "path": "docs/verification-evidence/2026-11-11/postgres-9.json",
+      "sha256": "6c615dfbdb133584c9786a2cae25d09c356200c1a05b364a773bd60639edbd91",
+      "status": "PASS",
+      "scope": null
+    },
+    {
+      "source": ".local/postgres/migration-proof/report.json",
+      "originalSHA256": "2645f27ac404e399a342f8b874c297e4b39ab33ff1022feccf1c030ae55c620f",
+      "path": "docs/verification-evidence/2026-11-11/postgres-10.json",
+      "sha256": "8cecb81fe81cb51ddb99e212f2b10c0c19bb0adc22bece3521ac181959ca4a42",
+      "status": "PASS",
+      "scope": null
+    }
+  ]
+}

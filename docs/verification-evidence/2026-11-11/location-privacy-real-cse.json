@@ -1,0 +1,38 @@
+{
+  "status": "PASS",
+  "recordedAt": "2026-11-11T04:06:25.276Z",
+  "transport": "actual-mobius4-http",
+  "observationSource": "simulated-gps-ble-fixture",
+  "simulation": true,
+  "providers": 2,
+  "checks": [
+    {
+      "name": "actual-cse-encrypted-reference-readback",
+      "status": "PASS",
+      "rsc": 2000,
+      "requestId": "fb7663c0-c9ea-40dc-9870-47d6bb9f4f9b",
+      "resourceId": "ot3xvpyhol",
+      "referenceHash": "1411ac4cdf7ccab138bdd1c24c5f5ab8ec9bd94ddd02af268e6ca564620aab4d",
+      "expiry": "20261112T040625"
+    },
+    {
+      "name": "approved-recipient-read-and-other-recipient-review",
+      "status": "PASS",
+      "readExpiresAt": "2026-11-11T04:06:30.243Z"
+    },
+    {
+      "name": "state-json-contains-ciphertext-and-references",
+      "status": "PASS",
+      "stateHash": "bc60392b9f501c876230c04935bb2952fe09f54878bd3b2977202e7601dc9225"
+    },
+    {
+      "name": "restart-key-and-current-lease-read",
+      "status": "PASS"
+    },
+    {
+      "name": "revocation-committed-before-next-decrypt-read",
+      "status": "PASS"
+    }
+  ],
+  "sourceHash": "784e67abe9960ebf39f00231da22d123deefcb4660081b3c62cfb38a83ff55ae"
+}

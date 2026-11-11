@@ -6,6 +6,10 @@ import { join } from 'node:path';
 import test from 'node:test';
 // @ts-expect-error The adjacent Node module is exercised directly across the branch boundary.
 import { createIntegrationRuntime } from '../../pc-mobius/integration/src/integration-runtime.mjs';
+// @ts-expect-error FL's adjacent Node client exercises signed numerical updates.
+import { enrollLocalClient, buildLocalUpdate } from '../../pc-mobius/integration/src/fl-client.mjs';
+// @ts-expect-error MCP simulation fixtures use the same schema and approval lifecycle as the wire runtime.
+import { registerMcpSimulation } from '../../pc-mobius/integration/src/mcp-domain-tools.mjs';
 // @ts-expect-error CORE emits the production receipt objects used by the dashboard.
 import { GatewayBridge } from '../../pc-mobius/src/gateway-bridge.mjs';
 import { startReplayServer } from '../server/sse.ts';
@@ -20,21 +24,23 @@ test('replays actual merged INTEGRATION policy MEC handover FL and MCP journals'
   t.after(() => rm(directory, { recursive: true, force: true }));
   const receiptPath = join(directory, 'journal.jsonl');
   const runtime = await createIntegrationRuntime({ receiptPath });
+  t.after(() => runtime.close());
   const principal = runtime.policyService.bindPrincipal({
     oidcToken: { sub: 'web-test', scope: 'consent:write grant:write policy:approve mcp:run' },
     mtlsPeer: { verified: true, fingerprint: 'test-fingerprint' },
   });
   const consent = await runtime.policyService.createConsent({ principal, subjectId: 'household-web-test', purpose: 'compatibility', scopes: ['bubble:read'] });
-  await runtime.policyService.createGrant({ principal, consentId: consent.consentId, scopes: ['bubble:read'] });
+  const grant = await runtime.policyService.createGrant({ principal, consentId: consent.consentId, scopes: ['bubble:read'] });
   await runtime.mecIngress.ingest({ eventId: 'web-mec-event', service: 'Location', eventType: 'UE_LOCATION_UPDATE', ueId: 'keyring-web' });
   runtime.handoverCoordinator.registerEdge({ edgeId: 'web-edge' });
-  await runtime.handoverCoordinator.handover({ ueId: 'keyring-web', targetEdgeId: 'web-edge' });
-  runtime.flCoordinator.registerVm({ vmId: 'web-vm', labels: ['privacy'] });
-  const round = await runtime.flCoordinator.createRound({ taskId: 'web-task', requiredLabels: ['privacy'], consentRevision: 1 });
-  await runtime.flCoordinator.submitUpdate({ roundId: round.roundId, participantId: 'web-vm', artifactHash: 'sha256:web-model', consentRevision: 1 });
+  await runtime.handoverCoordinator.handover({ ueId: 'keyring-web', targetEdgeId: 'web-edge', grantId: grant.grantId });
+  const clients = [await enrollLocalClient(runtime.flCoordinator, { participantId: 'web-vm-a', taskId: 'web-task', seed: 101, clientIndex: 0 }), await enrollLocalClient(runtime.flCoordinator, { participantId: 'web-vm-b', taskId: 'web-task', seed: 202, clientIndex: 1 })];
+  const round = await runtime.flCoordinator.createRound({ taskId: 'web-task', requiredLabels: ['privacy'] });
+  for (const client of clients) await runtime.flCoordinator.submitUpdate(buildLocalUpdate(runtime.flCoordinator, client, round));
   await runtime.flCoordinator.finalizeRound(round.roundId);
-  runtime.mcpOrchestrator.registerServer({ serverId: 'Audit', tools: { read: async () => ({ result: 'verified' }) } });
-  const run = await runtime.mcpOrchestrator.startRun({ principal, toolCalls: [{ serverId: 'Audit', tool: 'read' }], idempotencyKey: 'web-run' });
+  registerMcpSimulation(runtime.mcpOrchestrator);
+  const run = await runtime.mcpOrchestrator.startRun({ principal, grantId: grant.grantId, toolCalls: [{ serverId: 'oneM2M', tool: 'discoverDevices' }], idempotencyKey: 'web-run' });
+  await runtime.mcpOrchestrator.approveRun({ principal, runId: run.runId, approvalHash: run.approvalHash });
   await runtime.mcpOrchestrator.execute(run.runId);
 
   const replay = await loadReplay(receiptPath);

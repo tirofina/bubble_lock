@@ -2,6 +2,29 @@
 
 ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.7.0.
 
+## 2026-11-10 MAX9850 PCM 컴파일 및 host 시험
+
+승인 generation·deadline·GPIO mute와 MAX9850 DAC 순서를 연결한 최종 소스로 4개 환경을 컴파일했다. 아래 결과는 `LOCAL_COMPILE_AND_MOCK_IO`이며 [receipt·소스 및 산출물 SHA-256](../evidence/2026-11-10-headphone-pcm/receipt.json), [컴파일 로그](../evidence/2026-11-10-headphone-pcm/compile.log), [host 시험 로그](../evidence/2026-11-10-headphone-pcm/host-test.log)에 결속한다.
+
+| environment | 선택 기능 | 결과 | RAM bytes | flash bytes | firmware.bin bytes |
+|---|---|---|---:|---:|---:|
+| keyring_compile_minimal | 기본 기능·DAC standby | PASS | 58160 | 807929 | 808288 |
+| keyring_compile_st7789 | ST7789·스피커·SD·sleep | PASS | 59484 | 890773 | 891184 |
+| keyring_compile_jd9853 | JD9853·스피커·SD·sleep | PASS | 59484 | 890397 | 890816 |
+| keyring_compile_headphone | MAX9850 PCM·MCLK·sleep | PASS | 59180 | 847725 | 848144 |
+
+최종 incremental matrix는 exit 0, 4 succeeded, 21.320초다. 도구는 PlatformIO 6.1.18, espressif32 6.9.0, Arduino 2.0.17이다. 실제 `headphone_standby.cpp`를 Zig 0.13.0 C++로 빌드한 host 시험은 모의 I2C·clock에서 초기화·레지스터 순서·배타 제어·취소·재시도·readback·ready timeout·NACK·설정 drift·권한 전이를 통과했다.
+
+```powershell
+$env:PLATFORMIO_BUILD_DIR = 'C:/Users/user/.cache/bubble-keyring-pcm/build'
+python -m platformio run -e keyring_compile_minimal -e keyring_compile_st7789 -e keyring_compile_jd9853 -e keyring_compile_headphone
+python test/run_headphone_host.py --output ../../.local/firmware-pcm/host
+```
+
+4개 compile 환경은 `KEYRING_IGNORE_PROVISIONING`으로 공개 기본 설정을 사용한다. 실물 TODO는 provisioning·flash, MCLK/LRCLK/BCLK/SDIN 파형, status bit 물리 극성, 헤드폰 음량·click/pop·전류, deadline·연결 해제 시 출력 정착 시간이다. 기준 핀과 제조사 Rev4 근거는 [MAX9850 PCM 설명](HEADPHONE_STANDBY.md)에 연결한다.
+
+## 2026-10-29 원본 컴파일 기록
+
 2026-10-29 사용자 명시 허가로 개발 dependency 설치와 세 프로필의 로컬 빌드를 수행했고 모두 통과했다. 실제 flash/COM·장비 시험은 실행하지 않았다. source commit은3c27f4d이며 [원본 로그·receipt·SHA256](../evidence/2026-10-29-local-validation/README.md)에 실제 환경과 실패·수정 이력도 보존했다.
 
 | environment | 선택 기능 |

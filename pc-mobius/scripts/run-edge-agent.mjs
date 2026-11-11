@@ -1,0 +1,20 @@
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { IntegrationStore } from '../integration/src/integration-store.mjs';
+import { EdgeSupervisor, createEdgeAgentServer } from '../integration/src/edge-deployment.mjs';
+import { createMtlsFetch } from '../integration/src/fl-worker.mjs';
+
+const path = process.env.BUBBLE_EDGE_CONFIG ?? process.argv[2];
+if (!path) throw Error('BUBBLE_EDGE_CONFIG 설정 경로를 지정하세요.');
+const config = JSON.parse(await readFile(resolve(path), 'utf8'));
+const material = async (settings) => Object.fromEntries(await Promise.all(['key', 'cert', 'ca'].map(async (key) => [key, await readFile(resolve(settings[key]))])));
+const tls = await material(config.tls);
+const healthFetch = config.healthTls ? createMtlsFetch(await material(config.healthTls)) : globalThis.fetch;
+const store = await new IntegrationStore(resolve(config.statePath)).init();
+const supervisor = new EdgeSupervisor({ ...config, store, healthFetch });
+const server = createEdgeAgentServer({ supervisor, tls, controllers: config.controllers });
+const host = config.host ?? '127.0.0.1';
+server.listen(config.port ?? 9443, host, () => console.log(JSON.stringify({ status: 'READY', role: 'EDGE-DEPLOYMENT', hostId: config.hostId, endpoint: `https://${host}:${server.address().port}` })));
+let closing = false;
+const close = async () => { if (closing) return; closing = true; server.closeAllConnections(); await new Promise((resolveClose) => server.close(resolveClose)); healthFetch.close?.(); await store.close(); };
+process.on('SIGINT', () => void close()); process.on('SIGTERM', () => void close());

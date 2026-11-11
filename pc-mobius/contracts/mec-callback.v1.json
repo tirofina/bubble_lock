@@ -1,0 +1,30 @@
+{
+  "contractId": "privacy-bubble.mec-callback.v1",
+  "docRevision": "2.0.0",
+  "source": "privacy_bubble_expert_v3/review_assets/round03/contracts_round03.json",
+  "rubricIds": ["R15", "R16", "A16", "A17", "A18"],
+  "services": {
+    "Location": { "discoveryName": "LocationService", "root": "/location/v2", "collection": "/subscriptions/userTracking", "scope": "mec:location" },
+    "RNIS": { "discoveryName": "RadioNetworkInformationService", "root": "/rni/v2", "collection": "/subscriptions", "scope": "mec:rnis" }
+  },
+  "operations": { "create": "POST 201 + resourceURL/Location", "read": "GET 200", "update": "PUT 200/204 + capability", "delete": "DELETE 204/404/410", "discovery": "GET /mec_service_mgmt/v1/services?ser_name={service}" },
+  "callback": {
+    "route": "/callbacks/{Location|RNIS}/{token}",
+    "tokenBits": 256,
+    "storedToken": "SHA256 + AES-256-GCM encrypted delivery secret",
+    "authMode": "enrolled provider principal + verified mTLS fingerprint",
+    "maxPayloadBytes": 65536,
+    "binding": ["providerId", "serviceId", "endpointVersion", "subscriptionId", "generation", "intentId", "intentRevision", "grantId", "grantRevision", "ueSubject", "schemaHash", "expiresAt"],
+    "normalizedFields": ["sourceType", "ueId", "observedAt", "receivedAt", "clockQuality", "uncertainty", "simulation", "eventId", "sequence"],
+    "statuses": ["ACCEPTED", "DUPLICATE", "IDENTITY_REVIEW", "BINDING_REVIEW", "SCHEMA_REVIEW", "TOMBSTONE", "EXPIRED", "REVOKED", "INTENT_REVIEW", "CORRELATION_PENDING", "TIME_REVIEW", "TIME_UNKNOWN"],
+    "ackAfter": "ciphertext + dedup + watermark + outbox + receipt transaction commit",
+    "http": { "acceptedOrReviewed": 202, "schemaReview": 400, "bindingReview": 403 }
+  },
+  "time": { "staleMs": 30000, "futureToleranceMs": 2000, "automaticPolicyClockQuality": "VERIFIED" },
+  "retention": { "dedupHours": 24, "ciphertextHours": 24, "auditDays": 30, "tombstone": "retain through provider cleanup and 24 hours after cleanup" },
+  "retry": { "baseSeconds": [1, 2, 4, 8, 16, 30], "jitterFraction": 0.2, "maximumAttempts": 10, "budgetSeconds": 300, "exhaustion": "FOLLOWUP with owner and nextCheckAt" },
+  "lifecycle": ["CREATING", "CREATE_UNCERTAIN", "ACTIVE", "CANCEL_REQUESTED", "DELETE_UNCERTAIN", "PROVIDER_DELETED", "TOMBSTONED"],
+  "recovery": { "reconcileSeconds": 30, "uncertainCreate": "known URI or callback/correlator owner match in provider list", "replacement": "complete inventory absence receipt + old generation tombstone + fresh token", "restart": "restore desired state, actual IDs, retry budget, encrypted delivery secret and tombstones" },
+  "deploymentGate": ["actual endpoint allowlist", "Swagger document hash and operationIds", "callback schema validator", "deploymentVerified", "provider certificate fingerprint", "verified source clock", "reachable TLS callback"],
+  "verification": { "command": "npm run integration:mec", "tests": "test/mec-http.test.mjs", "fixtures": ["M01", "M02", "M03", "M04", "M05", "M06", "M07", "M08", "M09"], "transport": "real HTTP to local simulated vendor", "physicalEvidence": "G-MEC endpoint deployment receipts" }
+}

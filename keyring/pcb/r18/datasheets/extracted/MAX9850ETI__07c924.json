@@ -1,0 +1,293 @@
+{
+  "mpn": "MAX9850ETI+",
+  "manufacturer": "Analog Devices / Maxim Integrated",
+  "category": "audio",
+  "package": "TQFN-28-EP 5x5mm",
+  "description": "\uc2a4\ud14c\ub808\uc624 DAC\uc640 DirectDrive \ud5e4\ub4dc\ud3f0 \uc99d\ud3ed\uae30",
+  "topology": "other",
+  "pins": [
+    {
+      "number": "1",
+      "name": "LRCLK",
+      "type": "digital",
+      "direction": "bidirectional",
+      "function": "CLK",
+      "description": "\ucc44\ub110 \uc120\ud0dd\uacfc \uc0d8\ud50c \ud074\ub85d"
+    },
+    {
+      "number": "2",
+      "name": "BCLK",
+      "type": "digital",
+      "direction": "bidirectional",
+      "function": "CLK",
+      "description": "\ub514\uc9c0\ud138 \ub370\uc774\ud130 \ube44\ud2b8 \ud074\ub85d"
+    },
+    {
+      "number": "3",
+      "name": "SDIN",
+      "type": "digital",
+      "direction": "input",
+      "description": "\uc9c1\ub82c PCM \ub370\uc774\ud130 \uc785\ub825"
+    },
+    {
+      "number": "4",
+      "name": "DVDD",
+      "type": "power",
+      "direction": "input",
+      "voltage_abs_max": 4,
+      "required_external": "1uF to DGND"
+    },
+    {
+      "number": "5",
+      "name": "MCLK",
+      "type": "digital",
+      "direction": "input",
+      "function": "CLK",
+      "voltage_abs_max": 4
+    },
+    {
+      "number": "6",
+      "name": "DGND",
+      "type": "ground",
+      "direction": "passive",
+      "description": "\ub514\uc9c0\ud138 \uc811\uc9c0"
+    },
+    {
+      "number": "7",
+      "name": "ADD",
+      "type": "digital",
+      "direction": "input",
+      "voltage_abs_max": 4
+    },
+    {
+      "number": "8",
+      "name": "GPIO",
+      "type": "bidirectional",
+      "direction": "bidirectional",
+      "voltage_abs_max": 4
+    },
+    {
+      "number": "9",
+      "name": "INR",
+      "type": "analog",
+      "direction": "input",
+      "description": "\uc624\ub978\ucabd \ub77c\uc778 \uc785\ub825"
+    },
+    {
+      "number": "10",
+      "name": "INL",
+      "type": "analog",
+      "direction": "input",
+      "description": "\uc67c\ucabd \ub77c\uc778 \uc785\ub825"
+    },
+    {
+      "number": "11",
+      "name": "OUTR",
+      "type": "analog",
+      "direction": "output",
+      "description": "\uc624\ub978\ucabd \ub77c\uc778 \ucd9c\ub825"
+    },
+    {
+      "number": "12",
+      "name": "OUTL",
+      "type": "analog",
+      "direction": "output",
+      "description": "\uc67c\ucabd \ub77c\uc778 \ucd9c\ub825"
+    },
+    {
+      "number": "13",
+      "name": "REF",
+      "type": "analog",
+      "direction": "output",
+      "required_external": "1uF to AGND"
+    },
+    {
+      "number": "14",
+      "name": "AGND",
+      "type": "ground",
+      "direction": "passive",
+      "description": "\uc544\ub0a0\ub85c\uadf8 \uc811\uc9c0"
+    },
+    {
+      "number": "15",
+      "name": "NREG",
+      "type": "power",
+      "direction": "output",
+      "required_external": "1uF to AGND"
+    },
+    {
+      "number": "16",
+      "name": "PREG",
+      "type": "power",
+      "direction": "output",
+      "required_external": "1uF to AGND"
+    },
+    {
+      "number": "17",
+      "name": "AVDD",
+      "type": "power",
+      "direction": "input",
+      "voltage_abs_max": 4,
+      "required_external": "1uF to AGND"
+    },
+    {
+      "number": "18",
+      "name": "HPR",
+      "type": "analog",
+      "direction": "output",
+      "description": "\uc624\ub978\ucabd DirectDrive \ud5e4\ub4dc\ud3f0 \ucd9c\ub825"
+    },
+    {
+      "number": "19",
+      "name": "HPL",
+      "type": "analog",
+      "direction": "output",
+      "description": "\uc67c\ucabd DirectDrive \ud5e4\ub4dc\ud3f0 \ucd9c\ub825"
+    },
+    {
+      "number": "20",
+      "name": "SVSS",
+      "type": "power",
+      "direction": "input",
+      "required_external": "PVSS"
+    },
+    {
+      "number": "21",
+      "name": "HPS",
+      "type": "digital",
+      "direction": "input",
+      "has_internal_pullup": true,
+      "description": "100k pull-up; \uc811\uc810 \uac10\uc9c0\ub97c \uc0dd\ub7b5\ud560 \ub54c float"
+    },
+    {
+      "number": "22",
+      "name": "PVSS",
+      "type": "power",
+      "direction": "output",
+      "required_external": "2.2uF to PGND and SVSS"
+    },
+    {
+      "number": "23",
+      "name": "C1N",
+      "type": "analog",
+      "direction": "passive",
+      "required_external": "0.47uF to C1P"
+    },
+    {
+      "number": "24",
+      "name": "PGND",
+      "type": "ground",
+      "direction": "passive",
+      "description": "charge pump \uc811\uc9c0"
+    },
+    {
+      "number": "25",
+      "name": "C1P",
+      "type": "analog",
+      "direction": "passive",
+      "required_external": "0.47uF to C1N"
+    },
+    {
+      "number": "26",
+      "name": "PVDD",
+      "type": "power",
+      "direction": "input",
+      "voltage_abs_max": 4,
+      "required_external": "1uF to PGND; AVDD"
+    },
+    {
+      "number": "27",
+      "name": "SCL",
+      "type": "digital",
+      "direction": "input",
+      "voltage_abs_max": 4
+    },
+    {
+      "number": "28",
+      "name": "SDA",
+      "type": "bidirectional",
+      "direction": "bidirectional",
+      "voltage_abs_max": 4
+    },
+    {
+      "number": "EP",
+      "name": "EP",
+      "type": "ground",
+      "direction": "passive",
+      "required_external": "AGND"
+    }
+  ],
+  "features": {
+    "i2c": true,
+    "i2s": true,
+    "headphone_mute_register": 2,
+    "headphone_mute_mask": 128,
+    "hps_pullup_ohms": 100000
+  },
+  "absolute_maximum_ratings": {
+    "vin_max_v": 4,
+    "junction_temp_max_c": 150
+  },
+  "recommended_operating_conditions": {
+    "vin_min_v": 1.8,
+    "vin_max_v": 3.6,
+    "temp_min_c": -40,
+    "temp_max_c": 85
+  },
+  "electrical_characteristics": {
+    "sample_rate_min_hz": 8000,
+    "sample_rate_max_hz": 48000,
+    "i2c_max_hz": 400000,
+    "mclk_16khz_min_integer_hz": 2560000,
+    "mclk_ic_divide_1_max_hz": 13000000
+  },
+  "application_circuit": {
+    "charge_pump_flying_cap_uf": 0.47,
+    "pvss_cap_uf": 2.2,
+    "supply_bypass_uf": 1,
+    "integer_clock_ratio": "MCLK/(16*LRCLK)=NLSB, NLSB>=10",
+    "topology": "stereo DAC, inverting charge pump and headphone amplifier",
+    "input_cap_recommended": "1uF ceramic per supply",
+    "flying_cap_recommended": "0.47uF ceramic C1P-C1N",
+    "output_cap_recommended": "2.2uF PVSS-PGND",
+    "notes": "\ub0b4\ubd80 charge pump 667kHz; integer mode NLSB=MCLK/(16*LRCLK)>=10; HPS float \ub0b4\ubd80 pull-up \uc0ac\uc6a9"
+  },
+  "spice_specs": null,
+  "extraction_metadata": {
+    "source_pdf": null,
+    "source_url": "https://www.analog.com/media/en/technical-documentation/data-sheets/max9850.pdf",
+    "datasheet_revision": "Rev 4; 8/19",
+    "extracted_from_pages": [
+      2,
+      12,
+      16,
+      18,
+      23,
+      24,
+      26,
+      27,
+      28,
+      32,
+      33
+    ],
+    "total_pdf_pages": 36,
+    "extraction_version": 2,
+    "extraction_date": "2026-11-10",
+    "evidence_mode": "MANUFACTURER_DOCUMENT",
+    "board_scope": "U16 PCM pin/clock/control mapping",
+    "score_breakdown": {
+      "total": 9.5,
+      "pin_coverage": 10.0,
+      "voltage_ratings": 10.0,
+      "application_info": 10.0,
+      "electrical_characteristics": 10.0,
+      "spice_specs": 5.0,
+      "issues": [
+        "No spice_specs section (could derive from electrical_characteristics)"
+      ],
+      "sufficient": true
+    },
+    "extraction_score": 9.5,
+    "retry_count": 0
+  }
+}

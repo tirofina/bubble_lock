@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bubble-lock.local/contracts/portal.schema.json",
+  "title": "Privacy Bubble Portal Snapshot",
+  "type": "object",
+  "required": ["schemaVersion", "generatedAt", "principal", "households", "devices", "consents", "grants", "incidents", "commandRequests", "notifications"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {"const": "1.0.0"},
+    "generatedAt": {"$ref": "#/definitions/timestamp"},
+    "principal": {"type": "object", "required": ["principalId", "role"], "additionalProperties": false, "properties": {"principalId": {"$ref": "#/definitions/id"}, "role": {"enum": ["guardian", "visitor"]}}},
+    "households": {"type": "array", "items": {"$ref": "#/definitions/household"}},
+    "devices": {"type": "array", "items": {"$ref": "#/definitions/device"}},
+    "consents": {"type": "array", "items": {"$ref": "#/definitions/consent"}},
+    "grants": {"type": "array", "items": {"$ref": "#/definitions/grant"}},
+    "locationLeases": {"type":"array","items":{"$ref":"#/definitions/locationLease"}},
+    "incidents": {"type": "array", "items": {"$ref": "#/definitions/incident"}},
+    "commandRequests": {"type": "array", "items": {"$ref": "#/definitions/commandRequest"}},
+    "notifications": {"type": "array", "maxItems": 100, "items": {"$ref": "#/definitions/notification"}}
+  },
+  "definitions": {
+    "locationLease": {
+      "type":"object","additionalProperties":false,
+      "required":["leaseId","householdId","recipientId","deviceIds","purpose","incidentId","grantId","grantRevision","consentRevision","approvedBy","status","createdAt","expiresAt"],
+      "properties":{
+        "leaseId":{"$ref":"#/definitions/id"},"householdId":{"$ref":"#/definitions/id"},"recipientId":{"$ref":"#/definitions/id"},
+        "deviceIds":{"type":"array","minItems":1,"maxItems":1000,"uniqueItems":true,"items":{"$ref":"#/definitions/id"}},
+        "purpose":{"type":"string","minLength":1},"incidentId":{"$ref":"#/definitions/id"},"grantId":{"$ref":"#/definitions/id"},
+        "grantRevision":{"type":"integer","minimum":1},"consentRevision":{"type":"integer","minimum":1},"approvedBy":{"$ref":"#/definitions/id"},
+        "status":{"enum":["ACTIVE","REVOKED"]},"effectiveStatus":{"enum":["ACTIVE","INACTIVE","REVOKED"]},
+        "createdAt":{"$ref":"#/definitions/timestamp"},"expiresAt":{"$ref":"#/definitions/timestamp"},"revokedAt":{"$ref":"#/definitions/timestamp"}
+      }
+    },
+    "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "timestamp": {"type": "string", "format": "date-time"},
+    "idempotencyKey": {"type": "string", "minLength": 1, "maxLength": 128},
+    "scopes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["bubble:command", "location:read", "mec:location", "mec:rnis", "fl:participate"]}},
+    "desiredState": {"type": "object", "required": ["state"], "additionalProperties": false, "properties": {"state": {"type": "boolean"}}},
+    "household": {
+      "type": "object", "required": ["householdId", "name", "ownerId", "members", "createdAt"], "additionalProperties": false,
+      "properties": {
+        "householdId": {"$ref": "#/definitions/id"}, "name": {"type": "string", "minLength": 1, "maxLength": 80}, "ownerId": {"$ref": "#/definitions/id"}, "createdAt": {"$ref": "#/definitions/timestamp"},
+        "members": {"type": "array", "items": {"type": "object", "required": ["principalId", "role"], "additionalProperties": false, "properties": {"principalId": {"$ref": "#/definitions/id"}, "role": {"enum": ["guardian", "visitor"]}}}}
+      }
+    },
+    "device": {
+      "type": "object", "required": ["deviceId", "householdId", "gatewayId", "label", "registeredAt"], "additionalProperties": false,
+      "properties": {"deviceId": {"$ref": "#/definitions/id"}, "householdId": {"$ref": "#/definitions/id"}, "gatewayId": {"$ref": "#/definitions/id"}, "label": {"type": "string", "minLength": 1, "maxLength": 80}, "registeredAt": {"$ref": "#/definitions/timestamp"}}
+    },
+    "consent": {
+      "type": "object", "required": ["consentId", "subjectId", "purpose", "scopes", "principalId", "revision", "status", "createdAt", "expiresAt", "consentHash"],
+      "properties": {"consentId": {"$ref": "#/definitions/id"}, "subjectId": {"$ref": "#/definitions/id"}, "purpose": {"type": "string"}, "scopes": {"$ref": "#/definitions/scopes"}, "principalId": {"$ref": "#/definitions/id"}, "revision": {"type": "integer", "minimum": 1}, "status": {"enum": ["ACTIVE", "REVOKED"]}, "effectiveStatus": {"enum": ["ACTIVE", "REVOKED", "EXPIRED"]}, "createdAt": {"$ref": "#/definitions/timestamp"}, "expiresAt": {"$ref": "#/definitions/timestamp"}, "consentHash": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}
+    },
+    "grant": {
+      "type": "object", "required": ["grantId", "consentId", "subjectId", "principalId", "purpose", "scopes", "revision", "status", "createdAt", "expiresAt", "approvalHash"],
+      "properties": {"grantId": {"$ref": "#/definitions/id"}, "consentId": {"$ref": "#/definitions/id"}, "subjectId": {"$ref": "#/definitions/id"}, "principalId": {"$ref": "#/definitions/id"}, "purpose": {"type": "string"}, "scopes": {"$ref": "#/definitions/scopes"}, "revision": {"type": "integer", "minimum": 1}, "status": {"enum": ["ACTIVE", "REVOKED"]}, "effectiveStatus": {"enum": ["ACTIVE", "REVOKED", "EXPIRED", "INACTIVE"]}, "createdAt": {"$ref": "#/definitions/timestamp"}, "expiresAt": {"$ref": "#/definitions/timestamp"}, "approvalHash": {"type": "string", "pattern": "^[a-f0-9]{64}$"}}
+    },
+    "incident": {
+      "type": "object", "required": ["incidentId", "householdId", "deviceId", "kind", "message", "status", "createdBy", "createdAt"],
+      "properties": {"incidentId": {"$ref": "#/definitions/id"}, "householdId": {"$ref": "#/definitions/id"}, "deviceId": {"anyOf": [{"$ref": "#/definitions/id"}, {"type": "null"}]}, "kind": {"enum": ["HELP", "LOST", "SAFETY"]}, "message": {"type": "string", "minLength": 1, "maxLength": 500}, "status": {"enum": ["OPEN", "RESOLVED"]}, "createdBy": {"$ref": "#/definitions/id"}, "createdAt": {"$ref": "#/definitions/timestamp"}, "resolvedBy": {"$ref": "#/definitions/id"}, "resolvedAt": {"$ref": "#/definitions/timestamp"}}
+    },
+    "commandRequest": {
+      "type": "object", "required": ["requestId", "householdId", "deviceIds", "desiredState", "reason", "requestedBy", "requestedAt", "expiresAt", "status", "commands"],
+      "properties": {"requestId": {"$ref": "#/definitions/id"}, "householdId": {"$ref": "#/definitions/id"}, "deviceIds": {"type": "array", "minItems": 1, "maxItems": 16, "uniqueItems": true, "items": {"$ref": "#/definitions/id"}}, "desiredState": {"$ref": "#/definitions/desiredState"}, "reason": {"type": "string", "minLength": 1, "maxLength": 500}, "requestedBy": {"$ref": "#/definitions/id"}, "requestedAt": {"$ref": "#/definitions/timestamp"}, "expiresAt": {"$ref": "#/definitions/timestamp"}, "status": {"enum": ["PENDING", "PARTIAL", "QUEUED"]}, "effectiveStatus": {"enum": ["PENDING", "PARTIAL", "QUEUED", "EXPIRED"]}, "commands": {"type": "array", "items": {"$ref": "urn:privacy-bubble:keyring:0.1.0:command"}}, "approvedBy": {"$ref": "#/definitions/id"}, "approvedAt": {"$ref": "#/definitions/timestamp"}, "grantId": {"$ref": "#/definitions/id"}, "approvalHash": {"type": "string", "pattern": "^[a-f0-9]{64}$"}, "approvalError": {"type": "string"}}
+    },
+    "notification": {
+      "type": "object", "required": ["notificationId", "householdId", "principalId", "type", "title", "createdAt", "readAt"], "additionalProperties": false,
+      "properties": {"notificationId": {"$ref": "#/definitions/id"}, "householdId": {"$ref": "#/definitions/id"}, "principalId": {"$ref": "#/definitions/id"}, "type": {"type": "string"}, "title": {"type": "string"}, "createdAt": {"$ref": "#/definitions/timestamp"}, "readAt": {"anyOf": [{"$ref": "#/definitions/timestamp"}, {"type": "null"}]}}
+    }
+  }
+}

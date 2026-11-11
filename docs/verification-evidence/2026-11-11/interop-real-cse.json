@@ -1,0 +1,365 @@
+{
+  "contractId": "privacy-bubble.actual-two-provider-interop.v1",
+  "generatedAt": "2026-11-10T09:00:46.169Z",
+  "status": "PASS",
+  "rubricIds": [
+    "A01",
+    "A02",
+    "A03",
+    "A04",
+    "R11"
+  ],
+  "providers": 2,
+  "clientImplementations": [
+    "direct-fetch-http",
+    "OneM2mEdgeClient-sdk"
+  ],
+  "providerClientCombinations": 4,
+  "transport": "actual-Mobius4-two-CSE-HTTP",
+  "cseImplementation": "Mobius4 4.24.5",
+  "schema": {
+    "envelope": "cod:binSh",
+    "cnd": "org.onem2m.common.moduleclass.binarySwitch",
+    "stateType": "boolean"
+  },
+  "groupScope": "oneM2M CSE /fopt aggregate member RSC + member GET readback",
+  "applicationGroupScope": "GroupDispatcher command/claim/Gateway/readback 별도 계약",
+  "physicalHardware": "별도 키링·BLE receipt",
+  "runnerSHA256": "73a91a35e676e53df2e93f6466cf650fb24eae0be90ad5f3d31bdca04bcfa041",
+  "receipts": [
+    {
+      "providerId": "provider-1",
+      "cseId": "/edge-a",
+      "cseEndpoint": "http://127.0.0.1:14794",
+      "providerAeId": "CeWHqq",
+      "providerAePath": "/Mobius/interop-c06f449f43-p0",
+      "members": [
+        {
+          "path": "/Mobius/interop-c06f449f43-p0/switch-0",
+          "ri": "otqatwa9gq"
+        },
+        {
+          "path": "/Mobius/interop-c06f449f43-p0/switch-1",
+          "ri": "btd1f2oljz"
+        }
+      ],
+      "clients": [
+        {
+          "clientAeId": "CqAqO8",
+          "mode": "direct-http",
+          "discovery": {
+            "filter": {
+              "fu": 1,
+              "ty": 28,
+              "cnd": "org.onem2m.common.moduleclass.binarySwitch"
+            },
+            "rsc": 2000,
+            "resourceUris": [
+              "/Mobius/interop-c06f449f43-p0/switch-0",
+              "/Mobius/interop-c06f449f43-p0/switch-1"
+            ],
+            "unmatchedCndCount": 0
+          },
+          "stateOperations": [
+            {
+              "state": true,
+              "updateRsc": 2004,
+              "readbackRsc": 2000,
+              "readback": true
+            },
+            {
+              "state": false,
+              "updateRsc": 2004,
+              "readbackRsc": 2000,
+              "readback": false
+            }
+          ]
+        },
+        {
+          "clientAeId": "CexK3p",
+          "mode": "independent-sdk",
+          "discovery": {
+            "filter": {
+              "fu": 1,
+              "ty": 28,
+              "cnd": "org.onem2m.common.moduleclass.binarySwitch"
+            },
+            "rsc": 2000,
+            "resourceUris": [
+              "/Mobius/interop-c06f449f43-p0/switch-0",
+              "/Mobius/interop-c06f449f43-p0/switch-1"
+            ],
+            "unmatchedCndCount": 0
+          },
+          "stateOperations": [
+            {
+              "state": true,
+              "updateRsc": 2004,
+              "readbackRsc": 2000,
+              "readback": true
+            },
+            {
+              "state": false,
+              "updateRsc": 2004,
+              "readbackRsc": 2000,
+              "readback": false
+            }
+          ]
+        }
+      ],
+      "fanout": [
+        {
+          "operation": "ACTUAL_CSE_FOPT_SET",
+          "state": true,
+          "aggregateRsc": 2000,
+          "memberResults": [
+            {
+              "uri": "Mobius/interop-c06f449f43-p0/switch-0",
+              "rsc": 2004
+            },
+            {
+              "uri": "Mobius/interop-c06f449f43-p0/switch-1",
+              "rsc": 2004
+            }
+          ],
+          "readback": [
+            {
+              "uri": "/Mobius/interop-c06f449f43-p0/switch-0",
+              "state": true,
+              "rsc": 2000
+            },
+            {
+              "uri": "/Mobius/interop-c06f449f43-p0/switch-1",
+              "state": true,
+              "rsc": 2000
+            }
+          ]
+        },
+        {
+          "operation": "ACTUAL_CSE_FOPT_SET",
+          "state": false,
+          "aggregateRsc": 2000,
+          "memberResults": [
+            {
+              "uri": "Mobius/interop-c06f449f43-p0/switch-0",
+              "rsc": 2004
+            },
+            {
+              "uri": "Mobius/interop-c06f449f43-p0/switch-1",
+              "rsc": 2004
+            }
+          ],
+          "readback": [
+            {
+              "uri": "/Mobius/interop-c06f449f43-p0/switch-0",
+              "state": false,
+              "rsc": 2000
+            },
+            {
+              "uri": "/Mobius/interop-c06f449f43-p0/switch-1",
+              "state": false,
+              "rsc": 2000
+            }
+          ]
+        },
+        {
+          "operation": "ACTUAL_CSE_FOPT_PARTIAL_PERMISSION",
+          "clientMode": "independent-sdk",
+          "aggregateRsc": 2000,
+          "desiredState": true,
+          "memberResults": [
+            {
+              "uri": "Mobius/interop-c06f449f43-p0/switch-0",
+              "rsc": 2004
+            },
+            {
+              "uri": "Mobius/interop-c06f449f43-p0/switch-1",
+              "rsc": 4103
+            }
+          ],
+          "readback": [
+            {
+              "uri": "/Mobius/interop-c06f449f43-p0/switch-0",
+              "state": true,
+              "rsc": 2000
+            },
+            {
+              "uri": "/Mobius/interop-c06f449f43-p0/switch-1",
+              "state": false,
+              "rsc": 2000
+            }
+          ],
+          "settledMembers": 1,
+          "permissionReviewMembers": 1
+        }
+      ]
+    },
+    {
+      "providerId": "provider-2",
+      "cseId": "/edge-b",
+      "cseEndpoint": "http://127.0.0.1:11823",
+      "providerAeId": "C9wYjS",
+      "providerAePath": "/Mobius/interop-c06f449f43-p1",
+      "members": [
+        {
+          "path": "/Mobius/interop-c06f449f43-p1/switch-0",
+          "ri": "wj1rbycsr8"
+        },
+        {
+          "path": "/Mobius/interop-c06f449f43-p1/switch-1",
+          "ri": "p9ochwcw6q"
+        }
+      ],
+      "clients": [
+        {
+          "clientAeId": "ClbqKa",
+          "mode": "direct-http",
+          "discovery": {
+            "filter": {
+              "fu": 1,
+              "ty": 28,
+              "cnd": "org.onem2m.common.moduleclass.binarySwitch"
+            },
+            "rsc": 2000,
+            "resourceUris": [
+              "/Mobius/interop-c06f449f43-p1/switch-0",
+              "/Mobius/interop-c06f449f43-p1/switch-1"
+            ],
+            "unmatchedCndCount": 0
+          },
+          "stateOperations": [
+            {
+              "state": true,
+              "updateRsc": 2004,
+              "readbackRsc": 2000,
+              "readback": true
+            },
+            {
+              "state": false,
+              "updateRsc": 2004,
+              "readbackRsc": 2000,
+              "readback": false
+            }
+          ]
+        },
+        {
+          "clientAeId": "CVR2A3",
+          "mode": "independent-sdk",
+          "discovery": {
+            "filter": {
+              "fu": 1,
+              "ty": 28,
+              "cnd": "org.onem2m.common.moduleclass.binarySwitch"
+            },
+            "rsc": 2000,
+            "resourceUris": [
+              "/Mobius/interop-c06f449f43-p1/switch-0",
+              "/Mobius/interop-c06f449f43-p1/switch-1"
+            ],
+            "unmatchedCndCount": 0
+          },
+          "stateOperations": [
+            {
+              "state": true,
+              "updateRsc": 2004,
+              "readbackRsc": 2000,
+              "readback": true
+            },
+            {
+              "state": false,
+              "updateRsc": 2004,
+              "readbackRsc": 2000,
+              "readback": false
+            }
+          ]
+        }
+      ],
+      "fanout": [
+        {
+          "operation": "ACTUAL_CSE_FOPT_SET",
+          "state": true,
+          "aggregateRsc": 2000,
+          "memberResults": [
+            {
+              "uri": "Mobius/interop-c06f449f43-p1/switch-0",
+              "rsc": 2004
+            },
+            {
+              "uri": "Mobius/interop-c06f449f43-p1/switch-1",
+              "rsc": 2004
+            }
+          ],
+          "readback": [
+            {
+              "uri": "/Mobius/interop-c06f449f43-p1/switch-0",
+              "state": true,
+              "rsc": 2000
+            },
+            {
+              "uri": "/Mobius/interop-c06f449f43-p1/switch-1",
+              "state": true,
+              "rsc": 2000
+            }
+          ]
+        },
+        {
+          "operation": "ACTUAL_CSE_FOPT_SET",
+          "state": false,
+          "aggregateRsc": 2000,
+          "memberResults": [
+            {
+              "uri": "Mobius/interop-c06f449f43-p1/switch-0",
+              "rsc": 2004
+            },
+            {
+              "uri": "Mobius/interop-c06f449f43-p1/switch-1",
+              "rsc": 2004
+            }
+          ],
+          "readback": [
+            {
+              "uri": "/Mobius/interop-c06f449f43-p1/switch-0",
+              "state": false,
+              "rsc": 2000
+            },
+            {
+              "uri": "/Mobius/interop-c06f449f43-p1/switch-1",
+              "state": false,
+              "rsc": 2000
+            }
+          ]
+        },
+        {
+          "operation": "ACTUAL_CSE_FOPT_PARTIAL_PERMISSION",
+          "clientMode": "independent-sdk",
+          "aggregateRsc": 2000,
+          "desiredState": true,
+          "memberResults": [
+            {
+              "uri": "Mobius/interop-c06f449f43-p1/switch-0",
+              "rsc": 2004
+            },
+            {
+              "uri": "Mobius/interop-c06f449f43-p1/switch-1",
+              "rsc": 4103
+            }
+          ],
+          "readback": [
+            {
+              "uri": "/Mobius/interop-c06f449f43-p1/switch-0",
+              "state": true,
+              "rsc": 2000
+            },
+            {
+              "uri": "/Mobius/interop-c06f449f43-p1/switch-1",
+              "state": false,
+              "rsc": 2000
+            }
+          ],
+          "settledMembers": 1,
+          "permissionReviewMembers": 1
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "status": "PASS",
+  "measurementScope": "LOCAL_TWO_TLS_AGENTS_REAL_NODE_PROCESSES",
+  "physicalHosts": 1,
+  "virtualEdgeAgents": 2,
+  "checks": [
+    "mTLS host inventory and pinned application",
+    "unregistered controller certificate",
+    "zone eligibility",
+    "capability eligibility",
+    "actual integration API process deployment and identity health",
+    "same intent uses existing process",
+    "operation intent hash binding",
+    "supervisor restart adopts exact process identity",
+    "second host agent starts independent process",
+    "source process release after target readiness",
+    "old epoch release fence",
+    "current target remains healthy",
+    "PID reuse or foreign health identity fence",
+    "on-host artifact verification",
+    "failed target startup stops child and records rollback"
+  ],
+  "processIds": [
+    158272,
+    57812
+  ],
+  "measuredAt": "2026-11-11T04:04:45.080Z"
+}

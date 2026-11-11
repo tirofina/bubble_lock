@@ -1,0 +1,736 @@
+{
+  "status": "PASS",
+  "generatedAt": "2026-11-10T09:16:52.587Z",
+  "runtimeMode": "LOCAL_SIMULATION",
+  "publicationTransport": "actual-oneM2M-HTTP",
+  "endpoint": "http://127.0.0.1:14794",
+  "checks": [
+    "model-bytes-readback",
+    "manifest-hash-readback",
+    "task-round-update-metadata",
+    "immutable-idempotent-retry",
+    "artifact-tamper-fence",
+    "serving-generation-fence",
+    "revoked-consent-serving-fence"
+  ],
+  "publication": {
+    "modelHash": "5c3e1d3bee87fef6946ecf7eb0c2c9b86b8605b76b9585709d57a9517dc4a2a8",
+    "manifestHash": "a279dd6aaa77db2a38abf7e4ebc5b836d136ca0952e0e4f587bc16b7f67ed83f",
+    "modelVersion": 1,
+    "servingGeneration": 1,
+    "resource": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/results/v-1",
+    "currentModel": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/currentModel",
+    "taskMetadata": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/metadata",
+    "roundResource": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/rounds/round-1",
+    "updateMetadataCount": 2,
+    "transport": "oneM2M-HTTP",
+    "aeId": "CFjjfa"
+  },
+  "trace": [
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c",
+      "ri": "CFjjfa",
+      "duplicate": false,
+      "payloadHash": "dd845d8da5f6fc24691bfb90c6f1f9d37f1c1441f06d2e310da57bf152212b79"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/fl-model-acp",
+      "ri": "s4dynrebmr",
+      "duplicate": false,
+      "payloadHash": "586eda6af8877d6fb10192b1ed86b1de627fe380fd9c3e7ccecc1a71f222a7d4"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/participants",
+      "ri": "dstbje1502",
+      "duplicate": false,
+      "payloadHash": "5b682e5719cdea46a51cbe6627c5f157bf139e51fbba968d733ffa6b13d9440e"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/datasets",
+      "ri": "riiu5bpz6j",
+      "duplicate": false,
+      "payloadHash": "97eb68c9f78d51e347b37aced61807ffea1549c647508a7b79e880a1977724e8"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks",
+      "ri": "9l8nhj2vgk",
+      "duplicate": false,
+      "payloadHash": "d4c6268e7fba80c2cd7019cfebf229224c9d6adc718b18cceea42aaeb49a78ae"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945",
+      "ri": "yqyzke5x1n",
+      "duplicate": false,
+      "payloadHash": "7d866847d77e40427c05feffc2efa78e4403552044fe4d19329f0c775c97d49a"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/rounds",
+      "ri": "96ijzhp1kh",
+      "duplicate": false,
+      "payloadHash": "de6f77066bcb03d92016a55c5c900b091d3998721d415c0a84043984880ec744"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/results",
+      "ri": "2b4m9e81la",
+      "duplicate": false,
+      "payloadHash": "0caf02c0f560ddf16907d6ec934dea3c615ef74a0ee762738782c481ffb7cdca"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/currentModel",
+      "ri": "679rksapu7",
+      "duplicate": false,
+      "payloadHash": "92ee80aa5bb25e696fc2a67007e295c495e0cb10f4064edc5124310e7090c17e"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/metadata",
+      "ri": "q48he167pv",
+      "duplicate": false,
+      "payloadHash": "0accc4aac5d625b5966492380dbdfc6ebb139c6d5c91b104da0f14817eb4d88d"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/status",
+      "ri": "dts3xv7pj3",
+      "duplicate": false,
+      "payloadHash": "9e1b6b0e808ec2029a53f8be62d857f07c38cb21c7078e0d683e4761a698e347"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/metadata/task-v-1",
+      "ri": "q1wrb9x6p1",
+      "duplicate": false,
+      "payloadHash": "05dafba94f861da3f36ac883035de0ab0ee0e36d24c365c84a662f16877dc1a7"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/rounds/round-1",
+      "ri": "am0ngqnmwh",
+      "duplicate": false,
+      "payloadHash": "f402cc238d8bc43ef98c82716a6b5a74074e23209f9e9588178dbf296a6654a0"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/rounds/round-1/updates",
+      "ri": "sk558jyhox",
+      "duplicate": false,
+      "payloadHash": "27d3c9b6fa00f5d4809a5921dbdbf43d7ff4c372015aab226a0736d2d9c0924a"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/participants/p-16c2885525297d1180848aea",
+      "ri": "jy3klhml6y",
+      "duplicate": false,
+      "payloadHash": "66780ba05954eb348ff16a99193c18d9b3cac77e52d2401599718cb475ac8ede"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/datasets/d-502f32e6dc86bf8e97ecc97d",
+      "ri": "j520vyz0ai",
+      "duplicate": false,
+      "payloadHash": "091e2415cae5520ac24473efa78990115bde988e3833fb6c5d85c4d2c7e8c0ec"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/participants/p-16c2885525297d1180848aea/r-9416ab1fd2590704e2103d2f",
+      "ri": "n9v8lam23u",
+      "duplicate": false,
+      "payloadHash": "e087c1793a128b247905e457c585817c19bd93809d47e56ff5f41434ebc5209b"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/datasets/d-502f32e6dc86bf8e97ecc97d/split-14e5117db6f626bd5e260de1",
+      "ri": "vkhu6q0zq8",
+      "duplicate": false,
+      "payloadHash": "26d65a30a1418901ce56eb4c4154756ca2affcfa254a6cb7f5717ad59684b459"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/rounds/round-1/updates/p-16c2885525297d1180848aea",
+      "ri": "ie8n2xnttg",
+      "duplicate": false,
+      "payloadHash": "576513e7a58006d8ee2009ea62c5c9f61f0f49bbdd26ac0ef94d8dc52157fea3"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/participants/p-5704de18fc6045e4d08c3a26",
+      "ri": "vebf5pzem8",
+      "duplicate": false,
+      "payloadHash": "5f29978e556aa125b8e19bdfd2a65754ff5c043416caca118322844a95f9b8d8"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/datasets/d-8cd64da0f25d96986b4e547a",
+      "ri": "gtd4zvsfj4",
+      "duplicate": false,
+      "payloadHash": "67bc938f39647be449ace2be45769c054463d41467af4c3a00eac0dbb0f456d4"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/participants/p-5704de18fc6045e4d08c3a26/r-9416ab1fd2590704e2103d2f",
+      "ri": "q1ftoutl56",
+      "duplicate": false,
+      "payloadHash": "b25de0046a90f0e846e6f3d71ad8ff6d83956230c019559c36a5dfe48fadcc33"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/datasets/d-8cd64da0f25d96986b4e547a/split-8184f7547eed642bd86121af",
+      "ri": "hnzo0ks486",
+      "duplicate": false,
+      "payloadHash": "97a01d7f2cc63e57f9955cf95c3b526019756d18030abff3466a4e0fc0678960"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/rounds/round-1/updates/p-5704de18fc6045e4d08c3a26",
+      "ri": "zsinjocr4m",
+      "duplicate": false,
+      "payloadHash": "f52572ac46202e70c4bd63f2d4527e492e35db685a7143ffef525e48c2513582"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/rounds/r-1",
+      "ri": "40kicrx4ds",
+      "duplicate": false,
+      "payloadHash": "4602d4df74bbd18bab8a50c59f286325d7a8de42dbda3886c3fad9903af3506a"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/results/v-1",
+      "ri": "4hr4m01nr9",
+      "duplicate": false,
+      "payloadHash": "67f38df97f1fd2547d7341d6ee38ed0ea81c4de811d9b3493d6eea9995bf16e8"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/currentModel/g-1",
+      "ri": "56iafvd74u",
+      "duplicate": false,
+      "payloadHash": "3689f7b4e8f86cb6eb816c32ceee2fc5dde8e688f78b9033a5af8f352ab3e18b"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/status/g-1",
+      "ri": "j2zfyhkzgp",
+      "duplicate": false,
+      "payloadHash": "fea764dda82f4dd6fd26a2ad1d466070df3fca93f19204499fbde741448ab8b2"
+    },
+    {
+      "operation": "MODEL_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/results/v-1",
+      "modelHash": "5c3e1d3bee87fef6946ecf7eb0c2c9b86b8605b76b9585709d57a9517dc4a2a8",
+      "manifestHash": "a279dd6aaa77db2a38abf7e4ebc5b836d136ca0952e0e4f587bc16b7f67ed83f"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c",
+      "ri": "CFjjfa",
+      "duplicate": true,
+      "payloadHash": "a41078e4a2eb19da53e4417ac78fcea57f6214ed3314731a14a920454e36c01e"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/fl-model-acp",
+      "ri": "s4dynrebmr",
+      "duplicate": true,
+      "payloadHash": "1a37cb2fdc0e473951d8b505cf4e9735efed2f2132db234aec225445afda9f3e"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/participants",
+      "ri": "dstbje1502",
+      "duplicate": true,
+      "payloadHash": "5b682e5719cdea46a51cbe6627c5f157bf139e51fbba968d733ffa6b13d9440e"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/datasets",
+      "ri": "riiu5bpz6j",
+      "duplicate": true,
+      "payloadHash": "97eb68c9f78d51e347b37aced61807ffea1549c647508a7b79e880a1977724e8"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks",
+      "ri": "9l8nhj2vgk",
+      "duplicate": true,
+      "payloadHash": "d4c6268e7fba80c2cd7019cfebf229224c9d6adc718b18cceea42aaeb49a78ae"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945",
+      "ri": "yqyzke5x1n",
+      "duplicate": true,
+      "payloadHash": "7d866847d77e40427c05feffc2efa78e4403552044fe4d19329f0c775c97d49a"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/rounds",
+      "ri": "96ijzhp1kh",
+      "duplicate": true,
+      "payloadHash": "c2c785faf6d8d8a5d794d0801755a4175f37cbbfa789b43603c7e9fd4abffad0"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/results",
+      "ri": "2b4m9e81la",
+      "duplicate": true,
+      "payloadHash": "09aa2037187d26d2a9c076d611cf2fb18c67ed757639bbeb3ecc8468cf7138b6"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/currentModel",
+      "ri": "679rksapu7",
+      "duplicate": true,
+      "payloadHash": "eff3f438adea5b24232e2101fda4a7483d25fcc0e888083a6fb1bf9cb6be6bda"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/metadata",
+      "ri": "q48he167pv",
+      "duplicate": true,
+      "payloadHash": "599066cd12780dbe2bf05ef8f03ddaf20430539af14c871b631ade42128dcbbe"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/status",
+      "ri": "dts3xv7pj3",
+      "duplicate": true,
+      "payloadHash": "450a76c337e0b26782608bdbd8d0a741892b95aba6a4ac3928195029c25c67f6"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/metadata/task-v-1",
+      "ri": "q1wrb9x6p1",
+      "duplicate": true,
+      "payloadHash": "05dafba94f861da3f36ac883035de0ab0ee0e36d24c365c84a662f16877dc1a7"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/rounds/round-1",
+      "ri": "am0ngqnmwh",
+      "duplicate": true,
+      "payloadHash": "f402cc238d8bc43ef98c82716a6b5a74074e23209f9e9588178dbf296a6654a0"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/rounds/round-1/updates",
+      "ri": "sk558jyhox",
+      "duplicate": true,
+      "payloadHash": "057226432ccdd4c8823b34229daf2ef48b952f1d26d27486b37c08e1d86fc0e8"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/participants/p-16c2885525297d1180848aea",
+      "ri": "jy3klhml6y",
+      "duplicate": true,
+      "payloadHash": "df4b3243368792a91484ebfef0adadf0d566a991f8e71fa170467b5b8364f104"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/datasets/d-502f32e6dc86bf8e97ecc97d",
+      "ri": "j520vyz0ai",
+      "duplicate": true,
+      "payloadHash": "9c260b2c03d2eaf06e188f77d89ece54c9c735655810599b8c90801864511939"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/participants/p-16c2885525297d1180848aea/r-9416ab1fd2590704e2103d2f",
+      "ri": "n9v8lam23u",
+      "duplicate": true,
+      "payloadHash": "e087c1793a128b247905e457c585817c19bd93809d47e56ff5f41434ebc5209b"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/datasets/d-502f32e6dc86bf8e97ecc97d/split-14e5117db6f626bd5e260de1",
+      "ri": "vkhu6q0zq8",
+      "duplicate": true,
+      "payloadHash": "26d65a30a1418901ce56eb4c4154756ca2affcfa254a6cb7f5717ad59684b459"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/rounds/round-1/updates/p-16c2885525297d1180848aea",
+      "ri": "ie8n2xnttg",
+      "duplicate": true,
+      "payloadHash": "576513e7a58006d8ee2009ea62c5c9f61f0f49bbdd26ac0ef94d8dc52157fea3"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/participants/p-5704de18fc6045e4d08c3a26",
+      "ri": "vebf5pzem8",
+      "duplicate": true,
+      "payloadHash": "d4d07cc767e9ace8c4e0137cf0359da31167eb50456c6ba5f0a97a78a5b13bda"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/datasets/d-8cd64da0f25d96986b4e547a",
+      "ri": "gtd4zvsfj4",
+      "duplicate": true,
+      "payloadHash": "cd8fd31694da87b4fffc65686465d763941784ec25e65f7954eb2259cbc627e5"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/participants/p-5704de18fc6045e4d08c3a26/r-9416ab1fd2590704e2103d2f",
+      "ri": "q1ftoutl56",
+      "duplicate": true,
+      "payloadHash": "b25de0046a90f0e846e6f3d71ad8ff6d83956230c019559c36a5dfe48fadcc33"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/datasets/d-8cd64da0f25d96986b4e547a/split-8184f7547eed642bd86121af",
+      "ri": "hnzo0ks486",
+      "duplicate": true,
+      "payloadHash": "97a01d7f2cc63e57f9955cf95c3b526019756d18030abff3466a4e0fc0678960"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/rounds/round-1/updates/p-5704de18fc6045e4d08c3a26",
+      "ri": "zsinjocr4m",
+      "duplicate": true,
+      "payloadHash": "f52572ac46202e70c4bd63f2d4527e492e35db685a7143ffef525e48c2513582"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/rounds/r-1",
+      "ri": "40kicrx4ds",
+      "duplicate": true,
+      "payloadHash": "4602d4df74bbd18bab8a50c59f286325d7a8de42dbda3886c3fad9903af3506a"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/results/v-1",
+      "ri": "4hr4m01nr9",
+      "duplicate": true,
+      "payloadHash": "67f38df97f1fd2547d7341d6ee38ed0ea81c4de811d9b3493d6eea9995bf16e8"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/currentModel/g-1",
+      "ri": "56iafvd74u",
+      "duplicate": true,
+      "payloadHash": "3689f7b4e8f86cb6eb816c32ceee2fc5dde8e688f78b9033a5af8f352ab3e18b"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/status/g-1",
+      "ri": "j2zfyhkzgp",
+      "duplicate": true,
+      "payloadHash": "fea764dda82f4dd6fd26a2ad1d466070df3fca93f19204499fbde741448ab8b2"
+    },
+    {
+      "operation": "MODEL_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/results/v-1",
+      "modelHash": "5c3e1d3bee87fef6946ecf7eb0c2c9b86b8605b76b9585709d57a9517dc4a2a8",
+      "manifestHash": "a279dd6aaa77db2a38abf7e4ebc5b836d136ca0952e0e4f587bc16b7f67ed83f"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c",
+      "ri": "CFjjfa",
+      "duplicate": true,
+      "payloadHash": "fd01307ef298b7360fbab74325012ace789dc178ce573e017995c85f2c0826e6"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/fl-model-acp",
+      "ri": "s4dynrebmr",
+      "duplicate": true,
+      "payloadHash": "1a37cb2fdc0e473951d8b505cf4e9735efed2f2132db234aec225445afda9f3e"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/participants",
+      "ri": "dstbje1502",
+      "duplicate": true,
+      "payloadHash": "5b682e5719cdea46a51cbe6627c5f157bf139e51fbba968d733ffa6b13d9440e"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/datasets",
+      "ri": "riiu5bpz6j",
+      "duplicate": true,
+      "payloadHash": "97eb68c9f78d51e347b37aced61807ffea1549c647508a7b79e880a1977724e8"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks",
+      "ri": "9l8nhj2vgk",
+      "duplicate": true,
+      "payloadHash": "d4c6268e7fba80c2cd7019cfebf229224c9d6adc718b18cceea42aaeb49a78ae"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945",
+      "ri": "yqyzke5x1n",
+      "duplicate": true,
+      "payloadHash": "7d866847d77e40427c05feffc2efa78e4403552044fe4d19329f0c775c97d49a"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/rounds",
+      "ri": "96ijzhp1kh",
+      "duplicate": true,
+      "payloadHash": "c2c785faf6d8d8a5d794d0801755a4175f37cbbfa789b43603c7e9fd4abffad0"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/results",
+      "ri": "2b4m9e81la",
+      "duplicate": true,
+      "payloadHash": "09aa2037187d26d2a9c076d611cf2fb18c67ed757639bbeb3ecc8468cf7138b6"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/currentModel",
+      "ri": "679rksapu7",
+      "duplicate": true,
+      "payloadHash": "eff3f438adea5b24232e2101fda4a7483d25fcc0e888083a6fb1bf9cb6be6bda"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/metadata",
+      "ri": "q48he167pv",
+      "duplicate": true,
+      "payloadHash": "599066cd12780dbe2bf05ef8f03ddaf20430539af14c871b631ade42128dcbbe"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/status",
+      "ri": "dts3xv7pj3",
+      "duplicate": true,
+      "payloadHash": "450a76c337e0b26782608bdbd8d0a741892b95aba6a4ac3928195029c25c67f6"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/metadata/task-v-1",
+      "ri": "q1wrb9x6p1",
+      "duplicate": true,
+      "payloadHash": "05dafba94f861da3f36ac883035de0ab0ee0e36d24c365c84a662f16877dc1a7"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/rounds/round-1",
+      "ri": "am0ngqnmwh",
+      "duplicate": true,
+      "payloadHash": "f402cc238d8bc43ef98c82716a6b5a74074e23209f9e9588178dbf296a6654a0"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/rounds/round-1/updates",
+      "ri": "sk558jyhox",
+      "duplicate": true,
+      "payloadHash": "057226432ccdd4c8823b34229daf2ef48b952f1d26d27486b37c08e1d86fc0e8"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/participants/p-16c2885525297d1180848aea",
+      "ri": "jy3klhml6y",
+      "duplicate": true,
+      "payloadHash": "df4b3243368792a91484ebfef0adadf0d566a991f8e71fa170467b5b8364f104"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/datasets/d-502f32e6dc86bf8e97ecc97d",
+      "ri": "j520vyz0ai",
+      "duplicate": true,
+      "payloadHash": "9c260b2c03d2eaf06e188f77d89ece54c9c735655810599b8c90801864511939"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/participants/p-16c2885525297d1180848aea/r-9416ab1fd2590704e2103d2f",
+      "ri": "n9v8lam23u",
+      "duplicate": true,
+      "payloadHash": "e087c1793a128b247905e457c585817c19bd93809d47e56ff5f41434ebc5209b"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/datasets/d-502f32e6dc86bf8e97ecc97d/split-14e5117db6f626bd5e260de1",
+      "ri": "vkhu6q0zq8",
+      "duplicate": true,
+      "payloadHash": "26d65a30a1418901ce56eb4c4154756ca2affcfa254a6cb7f5717ad59684b459"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/rounds/round-1/updates/p-16c2885525297d1180848aea",
+      "ri": "ie8n2xnttg",
+      "duplicate": true,
+      "payloadHash": "576513e7a58006d8ee2009ea62c5c9f61f0f49bbdd26ac0ef94d8dc52157fea3"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/participants/p-5704de18fc6045e4d08c3a26",
+      "ri": "vebf5pzem8",
+      "duplicate": true,
+      "payloadHash": "d4d07cc767e9ace8c4e0137cf0359da31167eb50456c6ba5f0a97a78a5b13bda"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/datasets/d-8cd64da0f25d96986b4e547a",
+      "ri": "gtd4zvsfj4",
+      "duplicate": true,
+      "payloadHash": "cd8fd31694da87b4fffc65686465d763941784ec25e65f7954eb2259cbc627e5"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/participants/p-5704de18fc6045e4d08c3a26/r-9416ab1fd2590704e2103d2f",
+      "ri": "q1ftoutl56",
+      "duplicate": true,
+      "payloadHash": "b25de0046a90f0e846e6f3d71ad8ff6d83956230c019559c36a5dfe48fadcc33"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/datasets/d-8cd64da0f25d96986b4e547a/split-8184f7547eed642bd86121af",
+      "ri": "hnzo0ks486",
+      "duplicate": true,
+      "payloadHash": "97a01d7f2cc63e57f9955cf95c3b526019756d18030abff3466a4e0fc0678960"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/rounds/round-1/updates/p-5704de18fc6045e4d08c3a26",
+      "ri": "zsinjocr4m",
+      "duplicate": true,
+      "payloadHash": "f52572ac46202e70c4bd63f2d4527e492e35db685a7143ffef525e48c2513582"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/rounds/r-1",
+      "ri": "40kicrx4ds",
+      "duplicate": true,
+      "payloadHash": "4602d4df74bbd18bab8a50c59f286325d7a8de42dbda3886c3fad9903af3506a"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/results/v-1",
+      "ri": "4hr4m01nr9",
+      "duplicate": true,
+      "payloadHash": "67f38df97f1fd2547d7341d6ee38ed0ea81c4de811d9b3493d6eea9995bf16e8"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/currentModel/g-2",
+      "ri": "j1y223pf7z",
+      "duplicate": false,
+      "payloadHash": "ba09a1e965daabf83f423902f70b4910cb0f846dc5dc540bafcbd354b7bcd6e5"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/status/g-2",
+      "ri": "b1qox2mpi1",
+      "duplicate": false,
+      "payloadHash": "bc2e0d5f537b11d126795e41dfb8cf55d09fb78125acc48818cc22cd6130a026"
+    },
+    {
+      "operation": "MODEL_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/results/v-1",
+      "modelHash": "5c3e1d3bee87fef6946ecf7eb0c2c9b86b8605b76b9585709d57a9517dc4a2a8",
+      "manifestHash": "a279dd6aaa77db2a38abf7e4ebc5b836d136ca0952e0e4f587bc16b7f67ed83f"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c",
+      "ri": "CFjjfa",
+      "duplicate": true,
+      "payloadHash": "fd01307ef298b7360fbab74325012ace789dc178ce573e017995c85f2c0826e6"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/fl-model-acp",
+      "ri": "s4dynrebmr",
+      "duplicate": true,
+      "payloadHash": "1a37cb2fdc0e473951d8b505cf4e9735efed2f2132db234aec225445afda9f3e"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/participants",
+      "ri": "dstbje1502",
+      "duplicate": true,
+      "payloadHash": "5b682e5719cdea46a51cbe6627c5f157bf139e51fbba968d733ffa6b13d9440e"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/datasets",
+      "ri": "riiu5bpz6j",
+      "duplicate": true,
+      "payloadHash": "97eb68c9f78d51e347b37aced61807ffea1549c647508a7b79e880a1977724e8"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks",
+      "ri": "9l8nhj2vgk",
+      "duplicate": true,
+      "payloadHash": "d4c6268e7fba80c2cd7019cfebf229224c9d6adc718b18cceea42aaeb49a78ae"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945",
+      "ri": "yqyzke5x1n",
+      "duplicate": true,
+      "payloadHash": "7d866847d77e40427c05feffc2efa78e4403552044fe4d19329f0c775c97d49a"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/rounds",
+      "ri": "96ijzhp1kh",
+      "duplicate": true,
+      "payloadHash": "c2c785faf6d8d8a5d794d0801755a4175f37cbbfa789b43603c7e9fd4abffad0"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/results",
+      "ri": "2b4m9e81la",
+      "duplicate": true,
+      "payloadHash": "09aa2037187d26d2a9c076d611cf2fb18c67ed757639bbeb3ecc8468cf7138b6"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/currentModel",
+      "ri": "679rksapu7",
+      "duplicate": true,
+      "payloadHash": "7661a6743d1a6ff93ffe0b3057da1cd5708b0e7453d19be3dc0077b1977ca3a3"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/metadata",
+      "ri": "q48he167pv",
+      "duplicate": true,
+      "payloadHash": "599066cd12780dbe2bf05ef8f03ddaf20430539af14c871b631ade42128dcbbe"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/status",
+      "ri": "dts3xv7pj3",
+      "duplicate": true,
+      "payloadHash": "544a8841b3906acc12e84e6328159ae8e885d42d29835afa92020d6f1b3afadd"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/metadata/task-v-1",
+      "ri": "q1wrb9x6p1",
+      "duplicate": true,
+      "payloadHash": "05dafba94f861da3f36ac883035de0ab0ee0e36d24c365c84a662f16877dc1a7"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/rounds/round-1",
+      "ri": "am0ngqnmwh",
+      "duplicate": true,
+      "payloadHash": "f402cc238d8bc43ef98c82716a6b5a74074e23209f9e9588178dbf296a6654a0"
+    },
+    {
+      "operation": "ENSURE_READBACK",
+      "path": "/Mobius/fl-proof-6546651c/tasks/task-2fb76c116f3a87a790986945/rounds/round-1/updates",
+      "ri": "sk558jyhox",
+      "duplicate": true,
+      "payloadHash": "057226432ccdd4c8823b34229daf2ef48b952f1d26d27486b37c08e1d86fc0e8"
+    }
+  ],
+  "externalGate": "ESTIMED 계정·할당·VM 배포 receipt 별도 연결"
+}

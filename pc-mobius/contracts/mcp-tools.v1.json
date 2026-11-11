@@ -1,0 +1,58 @@
+{
+  "contractId": "privacy-bubble.mcp.v1",
+  "protocolVersion": "2025-11-25",
+  "supportedProtocolVersions": ["2025-11-25", "2025-06-18"],
+  "schemaVersion": "https://json-schema.org/draft/2020-12/schema",
+  "servers": {
+    "oneM2M": {
+      "audience": "privacy-bubble-mcp-onem2m",
+      "tools": [
+        {
+          "name": "discoverDevices", "description": "승인한 가구의 기기 자원을 조회합니다.", "requiredScope": "bubble:read", "readOnly": true,
+          "inputSchema": {"type":"object","additionalProperties":false,"properties":{"groupId":{"type":"string","minLength":1,"maxLength":128}}},
+          "outputSchema": {"type":"object","additionalProperties":false,"required":["deviceIds","resourcePaths","observedAt"],"properties":{"deviceIds":{"type":"array","maxItems":256,"items":{"type":"string","maxLength":128}},"resourcePaths":{"type":"array","maxItems":256,"items":{"type":"string","maxLength":512}},"observedAt":{"type":"string","format":"date-time"}}}
+        },
+        {
+          "name": "readGrant", "description": "현재 소유자의 승인 권한을 조회합니다.", "requiredScope": "bubble:read", "readOnly": true,
+          "inputSchema": {"type":"object","additionalProperties":false,"required":["grantId"],"properties":{"grantId":{"type":"string","minLength":1,"maxLength":128}}},
+          "outputSchema": {"type":"object","additionalProperties":false,"required":["grantId","revision","status","scopes","expiresAt"],"properties":{"grantId":{"type":"string"},"revision":{"type":"integer","minimum":1},"status":{"enum":["ACTIVE","REVOKED","EXPIRED"]},"scopes":{"type":"array","items":{"type":"string"},"maxItems":32},"expiresAt":{"type":"string","format":"date-time"}}}
+        },
+        {
+          "name": "draftPolicy", "description": "검토할 정책 초안을 저장합니다.", "requiredScope": "bubble:command", "readOnly": false,
+          "inputSchema": {"type":"object","additionalProperties":false,"required":["grantId","ueId","targetEdgeId"],"properties":{"grantId":{"type":"string","minLength":1,"maxLength":128},"ueId":{"type":"string","minLength":1,"maxLength":128},"targetEdgeId":{"type":"string","minLength":1,"maxLength":128}}},
+          "outputSchema": {"type":"object","additionalProperties":false,"required":["draftId","policyHash"],"properties":{"draftId":{"type":"string"},"policyHash":{"type":"string","pattern":"^[a-f0-9]{64}$"}}}
+        },
+        {
+          "name": "applyApprovedPolicy", "description": "현재 승인된 정책의 전달 상태를 연결합니다.", "requiredScope": "bubble:command", "readOnly": false,
+          "inputSchema": {"type":"object","additionalProperties":false,"required":["policyId"],"properties":{"policyId":{"type":"string","minLength":1,"maxLength":128}}},
+          "outputSchema": {"type":"object","additionalProperties":false,"required":["policyId","status","revision","executionId"],"properties":{"policyId":{"type":"string"},"status":{"enum":["APPROVED","QUEUED"]},"revision":{"type":"integer","minimum":1},"executionId":{"type":"string"}}}
+        }
+      ]
+    },
+    "MEC": {
+      "audience": "privacy-bubble-mcp-mec",
+      "tools": [
+        {
+          "name": "reconcileApprovedIntent", "description": "수락한 MEC 사건을 현재 승인 정책으로 조정합니다.", "requiredScope": "mec:location", "readOnly": false,
+          "inputSchema": {"type":"object","additionalProperties":false,"required":["eventId"],"properties":{"eventId":{"type":"string","minLength":1,"maxLength":128}}},
+          "outputSchema": {"type":"object","additionalProperties":false,"required":["eventId","status"],"properties":{"eventId":{"type":"string"},"status":{"enum":["RECONCILED","PENDING","REVIEW"]},"policyId":{"type":"string"}}}
+        }
+      ]
+    },
+    "Audit": {
+      "audience": "privacy-bubble-mcp-audit",
+      "tools": [
+        {
+          "name": "readExecution", "description": "현재 소유자의 실행 checkpoint를 조회합니다.", "requiredScope": "audit:read", "readOnly": true,
+          "inputSchema": {"type":"object","additionalProperties":false,"required":["runId"],"properties":{"runId":{"type":"string","minLength":1,"maxLength":128}}},
+          "outputSchema": {"type":"object","additionalProperties":false,"required":["runId","status","cursor","outputCount"],"properties":{"runId":{"type":"string"},"status":{"enum":["PENDING_APPROVAL","APPROVED","RUNNING","PAUSED","REVIEW","COMPLETED"]},"cursor":{"type":"integer","minimum":0},"outputCount":{"type":"integer","minimum":0}}}
+        },
+        {
+          "name": "appendRunEvidence", "description": "승인한 실행의 근거 hash를 기록합니다.", "requiredScope": "audit:write", "readOnly": false,
+          "inputSchema": {"type":"object","additionalProperties":false,"required":["evidenceHash"],"properties":{"evidenceHash":{"type":"string","pattern":"^[a-f0-9]{64}$"}}},
+          "outputSchema": {"type":"object","additionalProperties":false,"required":["evidenceId","evidenceHash","recordedAt"],"properties":{"evidenceId":{"type":"string"},"evidenceHash":{"type":"string","pattern":"^[a-f0-9]{64}$"},"recordedAt":{"type":"string","format":"date-time"}}}
+        }
+      ]
+    }
+  }
+}

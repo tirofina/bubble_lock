@@ -1,0 +1,140 @@
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Copyright Notification
+
+The oneM2M Partners authorize you to copy this document, provided that you retain all copyright and other proprietary notices
+contained in the original materials on any copies of the materials and that you comply strictly with these terms.
+This copyright permission does not constitute an endorsement of the products or services, nor does it encompass the granting of
+any patent rights. The oneM2M Partners assume no responsibility for errors or omissions in this document.
+
+(c) 2026, oneM2M Partners Type 1. All rights reserved.
+
+
+Notice of Disclaimer & Limitation of Liability
+
+The information provided in this document is directed solely to professionals who have the appropriate degree of experience to understand
+and interpret its contents in accordance with generally accepted engineering or other professional standards and applicable regulations.
+No recommendation as to products or vendors is made or should be implied.
+
+NO REPRESENTATION OR WARRANTY IS MADE THAT THE INFORMATION IS TECHNICALLY ACCURATE OR SUFFICIENT OR CONFORMS TO ANY STATUTE,
+GOVERNMENTAL RULE OR REGULATION, AND FURTHER, NO REPRESENTATION OR WARRANTY IS MADE OF MERCHANTABILITY OR FITNESS FOR ANY
+PARTICULAR PURPOSE OR AGAINST INFRINGEMENT OF INTELLECTUAL PROPERTY RIGHTS.
+NO oneM2M PARTNER TYPE 1 SHALL BE LIABLE, BEYOND THE AMOUNT OF ANY SUM RECEIVED IN PAYMENT BY THAT PARTNER FOR THIS DOCUMENT, WITH RESPECT TO
+ANY CLAIM, AND IN NO EVENT SHALL oneM2M BE LIABLE FOR LOST PROFITS OR OTHER INCIDENTAL OR CONSEQUENTIAL DAMAGES.
+oneM2M EXPRESSLY ADVISES ANY AND ALL USE OF OR RELIANCE UPON THIS INFORMATION PROVIDED IN THIS DOCUMENT IS AT THE RISK OF THE USER.
+
+-->
+
+<xs:schema targetNamespace="http://www.onem2m.org/xml/protocols/commondomain"
+    xmlns="http://www.w3.org/2001/XMLSchema" 
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:m2m="https://git.onem2m.org/XMLSchemas/ts-0004/tree/5.6.0" 
+    xmlns:agd="https://git.onem2m.org/XMLSchemas/ts-0023/tree/5.6.0/agriculturedomain" 
+    xmlns:cid="https://git.onem2m.org/XMLSchemas/ts-0023/tree/5.6.0/citydomain" 
+    xmlns:cod="https://git.onem2m.org/XMLSchemas/ts-0023/tree/5.6.0/commondomain" 
+    xmlns:hed="https://git.onem2m.org/XMLSchemas/ts-0023/tree/5.6.0/healthdomain" 
+    xmlns:hod="https://git.onem2m.org/XMLSchemas/ts-0023/tree/5.6.0/homedomain" 
+    xmlns:ind="https://git.onem2m.org/XMLSchemas/ts-0023/tree/5.6.0/industrydomain"  
+    xmlns:mad="https://git.onem2m.org/XMLSchemas/ts-0023/tree/5.6.0/managementdomain" 
+    xmlns:mdd="https://git.onem2m.org/XMLSchemas/ts-0023/tree/5.6.0/metadatadomain" 
+    xmlns:psd="https://git.onem2m.org/XMLSchemas/ts-0023/tree/5.6.0/publicsafetydomain" 
+    xmlns:rad="https://git.onem2m.org/XMLSchemas/ts-0023/tree/5.6.0/railwaydomain" 
+    xmlns:ved="https://git.onem2m.org/XMLSchemas/ts-0023/tree/5.6.0/vehiculardomain" 
+    xmlns:hd="https://git.onem2m.org/XMLSchemas/ts-0023/tree/5.6.0/horizontaldomain" 
+    elementFormDefault="unqualified" 
+    attributeFormDefault="unqualified"
+    >
+
+    <xs:import namespace="https://git.onem2m.org/XMLSchemas/ts-0004/tree/5.6.0" schemaLocation="CDT-subscription.xsd" />
+    <xs:import namespace="https://git.onem2m.org/XMLSchemas/ts-0004/tree/5.6.0" schemaLocation="CDT-commonTypes.xsd" />
+
+    <xs:include schemaLocation="HD-enumerationTypes.xsd" />
+    <xs:include schemaLocation="COD-commonTypes.xsd" />
+
+
+    <xs:include schemaLocation="COD-act-toggle.xsd" />
+<xs:element name="binarySwitch" type="cod:binarySwitch" substitutionGroup="m2m:sg_flexContainerResource" />
+    <xs:complexType name="binarySwitch" >
+        <xs:complexContent>
+            <!-- Inherit Common Attributes from data type "flexContainerResource" -->
+            <xs:extension base="m2m:flexContainerResource">
+                <xs:sequence>
+
+                    <!-- Resource Specific Attributes -->
+
+                        <xs:element name="dataGenerationTime" minOccurs="0" type="m2m:timestamp" />
+                        <xs:element name="state" type="xs:boolean" />
+
+
+                    <!-- Child Resources -->
+
+                    <xs:choice minOccurs="0" maxOccurs="1">
+                        <xs:element name="childResource" type="m2m:childResourceRef" minOccurs="1" maxOccurs="unbounded" />
+                        <xs:choice minOccurs="1" maxOccurs="unbounded">
+                            <xs:element ref="cod:toggle" />
+
+                            <xs:element ref="m2m:subscription" />
+                            <xs:element ref="cod:binarySwitchInst" />
+                        </xs:choice>
+                    </xs:choice>
+
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <xs:element name="binarySwitchAnnc" type="cod:binarySwitchAnnc" substitutionGroup="m2m:sg_announcedFlexContainerResource" />
+    <xs:complexType name="binarySwitchAnnc">
+        <xs:complexContent>
+            <!-- Inherit Common Attributes from data type "announcedFlexContainerResource" -->
+            <xs:extension base="m2m:announcedFlexContainerResource">
+                <xs:sequence>
+
+                    <!-- Resource Specific Attributes -->
+
+                        <xs:element name="dataGenerationTime" minOccurs="0" type="m2m:timestamp" />
+                        <xs:element name="state" minOccurs="0" type="xs:boolean" />
+
+
+                    <!-- Child Resources -->
+
+                    <xs:choice minOccurs="0" maxOccurs="1">
+                        <xs:element name="childResource" type="m2m:childResourceRef" minOccurs="1" maxOccurs="unbounded" />
+                        <xs:choice minOccurs="1" maxOccurs="unbounded">
+                            <xs:element ref="cod:toggle" />
+                            <xs:element ref="cod:toggleAnnc" />
+
+                            <xs:element ref="m2m:subscription" />
+                        </xs:choice>
+                    </xs:choice>
+
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+
+    <!-- FlexContainerInstance specialization -->
+
+    <xs:element name="binarySwitchInst" type="cod:binarySwitchInst" substitutionGroup="m2m:sg_flexContainerInstanceResource" />
+    <xs:complexType name="binarySwitchInst" >
+        <xs:complexContent>
+            <!-- Inherit Common Attributes from data type "flexContainerInstanceResource" -->
+            <xs:extension base="m2m:flexContainerInstanceResource">
+                <xs:sequence>
+
+                    <!-- Resource Specific Attributes -->
+
+                        <xs:element name="dataGenerationTime" minOccurs="0" type="m2m:timestamp" />
+                        <xs:element name="state" type="xs:boolean" />
+
+
+                    <!-- No Child Resources -->
+
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+</xs:schema>

@@ -8,7 +8,9 @@ import { PolicyService } from '../integration/src/policy-service.mjs';
 import { MecAdapter, MecCallbackIngress, MecPolicyReconciler } from '../integration/src/mec-adapter.mjs';
 import { HandoverCoordinator } from '../integration/src/handover-coordinator.mjs';
 import { FlCoordinator } from '../integration/src/fl-coordinator.mjs';
+import { enrollLocalClient, buildLocalUpdate } from '../integration/src/fl-client.mjs';
 import { McpOrchestrator } from '../integration/src/mcp-orchestrator.mjs';
+import { registerMcpSimulation } from '../integration/src/mcp-domain-tools.mjs';
 import { IntegrationApiGateway } from '../integration/src/api-gateway.mjs';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -36,10 +38,11 @@ test('MEC Location/RNIS callback dedup and policy reconciliation', async () => {
   const grant = await policy.createGrant({ principal, consentId: consent.consentId, scopes: ['mec:location'] });
   const handover = new HandoverCoordinator({ store });
   handover.registerEdge({ edgeId: 'edge-a', health: 'HEALTHY', load: 0.5, capabilities: ['Location'] });
-  const ingress = new MecCallbackIngress({ store, locationAdapter: new MecAdapter({ serviceName: 'Location' }), rnisAdapter: new MecAdapter({ serviceName: 'RNIS' }) });
+  const approved = await policy.approvePolicy({ principal, idempotencyKey: 'mec-fixture', policy: { grantId: grant.grantId, ueId: 'keyring-1', geofence: { type: 'circle', lat: 37.5, lon: 127, radiusM: 100 } } });
+  const ingress = new MecCallbackIngress({ store, policyService: policy, locationAdapter: new MecAdapter({ serviceName: 'Location' }), rnisAdapter: new MecAdapter({ serviceName: 'RNIS', queryImpl: async () => ({ simulation: true }) }) });
   const reconciler = new MecPolicyReconciler({ store, policyService: policy, handoverCoordinator: handover });
   ingress.onEvent((event) => reconciler.reconcileApprovedIntent(event));
-  const event = { eventId: 'mec-1', service: 'Location', eventType: 'UE_LOCATION_UPDATE', ueId: 'keyring-1', location: { lat: 37.5, lon: 127 }, health: { status: 'HEALTHY' }, intent: { grantId: grant.grantId, geofence: { type: 'circle', lat: 37.5, lon: 127, radiusM: 100 } } };
+  const event = { eventId: 'mec-1', simulation: true, service: 'Location', eventType: 'UE_LOCATION_UPDATE', ueId: 'keyring-1', location: { lat: 37.5, lon: 127 }, health: { status: 'HEALTHY' }, intent: { policyId: approved.policyId, grantId: grant.grantId } };
   const first = await ingress.ingest(event);
   const second = await ingress.ingest(event);
   assert.equal(first.status, 'RECONCILED');
@@ -61,17 +64,15 @@ test('handover epoch, security context, rollback', async () => {
   assert.equal(rolled.epoch, 2);
 });
 
-test('ESTIMED FL selection, artifact fence, recovery, round completion', async () => {
+test('local numeric FL selection, signed updates, artifact fence and recovery', async () => {
   const { store } = await fixture();
   const fl = new FlCoordinator({ store });
-  fl.registerVm({ vmId: 'vm-a', labels: ['privacy', 'estimed'], capacity: 2, attested: true });
-  fl.registerVm({ vmId: 'vm-b', labels: ['privacy', 'estimed'], capacity: 1, attested: true });
-  const round = await fl.createRound({ taskId: 'task-1', requiredLabels: ['privacy', 'estimed'], minParticipants: 2, consentRevision: 1 });
-  await fl.submitUpdate({ roundId: round.roundId, participantId: 'vm-a', artifactHash: 'hash-a', consentRevision: 1 });
-  await fl.submitUpdate({ roundId: round.roundId, participantId: 'vm-b', artifactHash: 'hash-b', consentRevision: 1 });
-  assert.equal(fl.serveArtifact(round.roundId, 'hash-a').artifactHash, 'hash-a');
+  const clients = [await enrollLocalClient(fl, { participantId: 'vm-a', taskId: 'task-1', seed: 101, clientIndex: 0 }), await enrollLocalClient(fl, { participantId: 'vm-b', taskId: 'task-1', seed: 202, clientIndex: 1 })];
+  const round = await fl.createRound({ taskId: 'task-1', requiredLabels: ['privacy'], minParticipants: 2 });
+  for (const client of clients) await fl.submitUpdate(buildLocalUpdate(fl, client, round));
   const complete = await fl.finalizeRound(round.roundId);
   assert.equal(complete.state, 'COMPLETED');
+  assert.equal(fl.serveArtifact(round.roundId, complete.modelHash).artifactHash, complete.modelHash);
   const recovered = await fl.recover(round.roundId);
   assert.equal(recovered.checkpoint.resumed, true);
 });
@@ -79,10 +80,13 @@ test('ESTIMED FL selection, artifact fence, recovery, round completion', async (
 test('MCP multi-server approval hash, checkpoint, resume, persistent run', async () => {
   const { store, policy, principal } = await fixture();
   const mcp = new McpOrchestrator({ store, policyService: policy });
-  mcp.registerServer({ serverId: 'oneM2M', tools: { discoverDevices: async () => ({ count: 2 }) } });
-  mcp.registerServer({ serverId: 'MEC', tools: { reconcileApprovedIntent: async () => ({ reconciled: true }) } });
-  mcp.registerServer({ serverId: 'Audit', tools: { appendRunEvidence: async () => ({ recorded: true }) } });
-  const run = await mcp.startRun({ principal, toolCalls: [{ serverId: 'oneM2M', tool: 'discoverDevices' }, { serverId: 'MEC', tool: 'reconcileApprovedIntent' }, { serverId: 'Audit', tool: 'appendRunEvidence' }], idempotencyKey: 'run-1' });
+  registerMcpSimulation(mcp);
+  const scopes = ['bubble:read', 'mec:location', 'audit:write'];
+  const consent = await policy.createConsent({ principal, subjectId: 'household-1', purpose: 'MCP 검토', scopes });
+  const grant = await policy.createGrant({ principal, consentId: consent.consentId, scopes });
+  const run = await mcp.startRun({ principal, grantId: grant.grantId, toolCalls: [{ serverId: 'oneM2M', tool: 'discoverDevices' }, { serverId: 'MEC', tool: 'reconcileApprovedIntent', input: { eventId: 'test-event' } }, { serverId: 'Audit', tool: 'appendRunEvidence', input: { evidenceHash: 'a'.repeat(64) } }], idempotencyKey: 'run-1' });
+  assert.equal(run.status, 'PENDING_APPROVAL');
+  await mcp.approveRun({ principal, runId: run.runId, approvalHash: run.approvalHash });
   await mcp.execute(run.runId, { maxSteps: 1 });
   const resumed = await mcp.resume(run.runId);
   assert.equal(resumed.status, 'COMPLETED');

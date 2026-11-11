@@ -124,3 +124,25 @@ test('keeps negative or absent time differences unknown', () => {
   assert.equal(stageDurationMs(later, earlier), null);
   assert.equal(stageDurationMs({ status: 'pending' }, later), null);
 });
+
+for (const summaryFirst of [true, false]) test(`중앙 발급 멤버 명령 ID를 그룹에 연결: summaryFirst=${summaryFirst}`, async () => {
+  const events=(await loadReplay()).events;
+  const summaryEvent=events.find((event)=>event.type==='group.summary'&&event.receipt.status==='SETTLED');
+  const ackEvent=events.find((event)=>event.type==='command.ack'&&event.receipt.ackState==='READBACK_VERIFIED');
+  assert.ok(summaryEvent?.type==='group.summary');assert.ok(ackEvent?.type==='command.ack');
+  const rawSummary=summaryEvent.receipt;const rawAck=ackEvent.receipt;
+  assert.ok(rawSummary?.members);assert.ok(rawAck?.payload);
+  const memberCommandId='issued-command-7bade687';
+  const summary={...rawSummary,commandId:'group-issued',memberCount:1,appliedCount:1,members:[{...rawSummary.members[0],memberCommandId}]};
+  const ack={...rawAck,commandId:memberCommandId,payload:{...rawAck.payload,commandId:memberCommandId}};
+  const adapter=createReceiptAdapter();
+  const state=reduceTimeline((summaryFirst?[summary,ack]:[ack,summary]).map(adapter.adaptReceipt));
+  assert.deepEqual(Object.keys(state.commands),['group-issued']);
+  const command=state.commands['group-issued'];assert.ok(command);
+  assert.equal(command.members['keyringA']?.commandId,memberCommandId);
+  assert.equal(command.members['keyringA']?.readbackVerified,true);
+  assert.equal(command.applied.status,'pending');
+  assert.equal(command.verified.status,'complete');
+  const mismatched=adapter.adaptReceipt({...ack,gatewayId:'other-gateway'});
+  assert.equal(timelineReducer(state,mismatched).commands['group-issued']?.members['keyringA']?.gatewayId,'pi-01');
+});

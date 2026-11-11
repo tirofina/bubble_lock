@@ -1,0 +1,46 @@
+TAP version 13
+# Subtest: AE 생성과 실제 CA CSR 서명은 원자 binding·bootstrap 소진·한 번 발급으로 연결된다
+ok 1 - AE 생성과 실제 CA CSR 서명은 원자 binding·bootstrap 소진·한 번 발급으로 연결된다
+  ---
+  duration_ms: 433.5377
+  type: 'test'
+  ...
+# Subtest: bootstrap 등록은 인증 주체·인증서·token·원래 CSR intent를 검사한다
+ok 2 - bootstrap 등록은 인증 주체·인증서·token·원래 CSR intent를 검사한다
+  ---
+  duration_ms: 317.7301
+  type: 'test'
+  ...
+# Subtest: AE CREATE 응답 손실은 workload GET으로 복구하고 소진 후 issuer 재시작을 이어간다
+ok 3 - AE CREATE 응답 손실은 workload GET으로 복구하고 소진 후 issuer 재시작을 이어간다
+  ---
+  duration_ms: 359.592
+  type: 'test'
+  ...
+# Subtest: LOST는 binding revision·credential·정본 grant·세션 종료를 묶고 재시작 provisioning에도 보존한다
+ok 4 - LOST는 binding revision·credential·정본 grant·세션 종료를 묶고 재시작 provisioning에도 보존한다
+  ---
+  duration_ms: 355.8751
+  type: 'test'
+  ...
+# Subtest: 상실 트랜잭션 저장 장애는 함께 롤백하고 세션 종료 장애는 현재 권한 회수 상태로 재개한다
+ok 5 - 상실 트랜잭션 저장 장애는 함께 롤백하고 세션 종료 장애는 현재 권한 회수 상태로 재개한다
+  ---
+  duration_ms: 370.6374
+  type: 'test'
+  ...
+# Subtest: 실제 TLS1.3 API는 bootstrap 전용 경로·새 인증서 binding·LOST socket 종료와 상태 polling을 집행한다
+ok 6 - 실제 TLS1.3 API는 bootstrap 전용 경로·새 인증서 binding·LOST socket 종료와 상태 polling을 집행한다
+  ---
+  duration_ms: 1122.7118
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3201.1239

@@ -54,6 +54,8 @@ class Store:
         try:
             with self.db:
                 self.db.execute("BEGIN IMMEDIATE")
+                if "central_receipt_staged" not in {row[1] for row in self.db.execute("PRAGMA table_info(commands)")}:
+                    self.db.execute("ALTER TABLE commands ADD COLUMN central_receipt_staged INTEGER NOT NULL DEFAULT 0")
                 install(self.db, binding)
         except Exception:
             self.db.close()
@@ -124,13 +126,15 @@ class Store:
         with self.db:
             self._enqueue(self.request_id(kind, identity), container, payload, critical)
 
-    def observation(self, container: str, payload: dict, core_enabled: bool = False) -> bool:
+    def observation(self, container: str, payload: dict, core_enabled: bool = False, central_enabled: bool = False) -> bool:
         with self.db:
             previous = self.db.execute("SELECT boot_id,sequence FROM observations WHERE device_id=?", (payload["deviceId"],)).fetchone()
             if previous and previous["boot_id"] == payload["bootId"] and payload["sequence"] <= previous["sequence"]:
                 return False
             identity = f"{payload['deviceId']}:{payload['bootId']}:{payload['sequence']}"
             self._enqueue(self.request_id("observation", identity), container, payload)
+            if central_enabled:
+                self._enqueue(self.request_id("central-telemetry", identity), "@central/telemetry", payload)
             if core_enabled and measurable(payload):
                 previous_core = self.db.execute("SELECT wire_sequence FROM core_sequences WHERE device_id=?", (payload["deviceId"],)).fetchone()
                 wire_sequence = previous_core["wire_sequence"] + 1 if previous_core else 0
@@ -143,15 +147,17 @@ class Store:
                             (payload["deviceId"], payload["bootId"], payload["sequence"]))
         return True
 
-    def stage_receipts(self, container: str, core_enabled: bool = False) -> None:
-        """Choose both routes atomically on first staging, not on every retry."""
-        rows = self.db.execute("SELECT command_id,receipt FROM commands WHERE receipt IS NOT NULL AND receipt_delivered=0 LIMIT 128").fetchall()
+    def stage_receipts(self, container: str, core_enabled: bool = False, central_enabled: bool = False) -> None:
+        """Stage native, optional CORE and central receipt routes atomically."""
+        rows = self.db.execute("SELECT command_id,receipt,receipt_delivered,central_receipt_staged FROM commands WHERE receipt IS NOT NULL AND (receipt_delivered=0 OR (?=1 AND central_receipt_staged=0)) LIMIT 128", (int(central_enabled),)).fetchall()
         for row in rows:
             try:
                 with self.db:
                     receipt = json.loads(row["receipt"])
-                    created = self._enqueue(self.request_id("receipt", row["command_id"]), container,
-                                            receipt, True, row["command_id"])
+                    created = False
+                    if not row["receipt_delivered"]:
+                        created = self._enqueue(self.request_id("receipt", row["command_id"]), container,
+                                                receipt, True, row["command_id"])
                     # The retained native row (then receipt_delivered after its
                     # confirmation) is the durable staging marker. Recreating a
                     # completed ACK here would bypass the native retry backoff.
@@ -159,6 +165,9 @@ class Store:
                         projected = acknowledgement(receipt)
                         if projected is not None:
                             self._enqueue(self.request_id("core-ack", row["command_id"]), "@core/ack", projected, True)
+                    if central_enabled and not row["central_receipt_staged"]:
+                        self._enqueue(self.request_id("central-receipt", row["command_id"]), "@central/receipt", receipt, True)
+                        self.db.execute("UPDATE commands SET central_receipt_staged=1 WHERE command_id=?", (row["command_id"],))
             except CapacityError:
                 break
 

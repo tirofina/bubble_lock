@@ -34,6 +34,7 @@ if (mode === 'setup') {
   if (!existsSync(envPython)) run('python-environment', python, ['-m', 'venv', join(root, '.venv')]);
   python = envPython;
   run('gateway-install', python, ['-m', 'pip', 'install', '-e', join(root, 'keyring/raspberry-pi-gateway')]);
+  run('verification-install', python, ['-m', 'pip', 'install', '-r', join(root,'tests/requirements.txt')]);
 } else {
   npm('core-tests', 'pc-mobius', 'test');
   npm('web-tests', 'web-dashboard', 'test');
@@ -43,7 +44,9 @@ if (mode === 'setup') {
   });
   run('cross-runtime-mtls', python, ['-m', 'unittest', 'discover', '-s', 'tests/integration', '-v'], root, { PYTHONIOENCODING: 'utf-8' });
   if (mode === 'verify') {
+    run('sdt-xsd-closure',python,['pc-mobius/scripts/build-sdt-closure.py'],root,{PYTHONIOENCODING:'utf-8'});
     npm('core-contract', 'pc-mobius', 'run', 'validate');
+    npm('canonical-sdt-contract','pc-mobius','run','validate','--','contracts/oneM2M-test-contract.v2.json');
     npm('integration-contract', 'pc-mobius', 'run', 'integration:validate');
     npm('onem2m-dry-run', 'pc-mobius', 'run', 'dry-run');
     npm('integration-demo', 'pc-mobius', 'run', 'integration');

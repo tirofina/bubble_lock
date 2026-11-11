@@ -1,0 +1,55 @@
+{
+  "description": "서울광장 공공지점 주변의 모의 키링 위치와 BLE 신호 예시",
+  "gateways": [
+    {
+      "gatewayId": "pi-01",
+      "label": "서울광장 수신기 · 모의",
+      "position": { "lat": 37.56585, "lon": 126.97805 },
+      "simulation": true,
+      "referenceRssiDbm": -59,
+      "pathLossExponent": 2
+    }
+  ],
+  "records": [
+    {
+      "eventId": "location-demo-keyring-A",
+      "service": "Location",
+      "eventType": "UE_LOCATION_UPDATE",
+      "ueId": "keyring-A",
+      "label": "키링 A",
+      "location": { "lat": 37.56588, "lon": 126.97808, "accuracyM": 4 },
+      "timestamp": "2026-11-10T08:10:00.000Z",
+      "simulation": true
+    },
+    {
+      "deviceId": "keyring-B",
+      "label": "키링 B",
+      "locationSource": "gps",
+      "location": { "lat": 37.56573, "lon": 126.97812, "accuracyM": 8 },
+      "observedAt": "2026-11-10T08:10:01.000Z",
+      "simulation": true
+    },
+    {
+      "deviceId": "keyring-A",
+      "gatewayId": "pi-01",
+      "rssiDbm": -59,
+      "observedAt": "2026-11-10T08:10:02.000Z",
+      "simulation": true
+    },
+    {
+      "deviceId": "keyring-B",
+      "gatewayId": "pi-01",
+      "rssiDbm": -75,
+      "observedAt": "2026-11-10T08:10:03.000Z",
+      "simulation": true
+    },
+    {
+      "deviceId": "keyring-C",
+      "label": "키링 C · BLE",
+      "gatewayId": "pi-01",
+      "rssiDbm": -87,
+      "observedAt": "2026-11-10T08:10:04.000Z",
+      "simulation": true
+    }
+  ]
+}

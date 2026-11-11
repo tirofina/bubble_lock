@@ -1,0 +1,272 @@
+{
+  "receiptId": "keyring-max9850-pcm-2026-11-10",
+  "generatedAt": "2026-11-10T09:30:46.514362+00:00",
+  "evidenceMode": "LOCAL_COMPILE_AND_MOCK_IO",
+  "result": "PASS",
+  "command": "python -m platformio run -e keyring_compile_minimal -e keyring_compile_st7789 -e keyring_compile_jd9853 -e keyring_compile_headphone",
+  "buildDirectory": "C:/Users/user/.cache/bubble-keyring-pcm/build",
+  "tools": {
+    "platformio": "6.1.18",
+    "espressif32": "6.9.0",
+    "arduino": "2.0.17",
+    "hostCompiler": "ziglang 0.13.0"
+  },
+  "environments": [
+    {
+      "environment": "keyring_compile_minimal",
+      "result": "PASS",
+      "ramBytes": 58160,
+      "flashBytes": 807929,
+      "artifacts": [
+        {
+          "name": "firmware.bin",
+          "bytes": 808288,
+          "sha256": "e31167c645cf8c45cb64a496d4d3ae3dfa2ffa47fdb6c6bca679ff29fd0b50bd"
+        },
+        {
+          "name": "firmware.elf",
+          "bytes": 19761060,
+          "sha256": "f473f1b5277a66a7562522093f2976ab5d89f738db7b3c52d9f2ae4fe25e4e60"
+        },
+        {
+          "name": "bootloader.bin",
+          "bytes": 15104,
+          "sha256": "2a71d69b471e20c2bac7fb469f3c6a807b3ebee780e348e5889db0da849ca363"
+        },
+        {
+          "name": "partitions.bin",
+          "bytes": 3072,
+          "sha256": "b16b1b27ccfeecedd026631c54e77065d3913bca810cad5cfe77525fc9938f75"
+        }
+      ]
+    },
+    {
+      "environment": "keyring_compile_st7789",
+      "result": "PASS",
+      "ramBytes": 59484,
+      "flashBytes": 890773,
+      "artifacts": [
+        {
+          "name": "firmware.bin",
+          "bytes": 891184,
+          "sha256": "9a74c45402a2501948e707e67386ef0c29906033fa684cec4a150aa6e2d5667a"
+        },
+        {
+          "name": "firmware.elf",
+          "bytes": 21608196,
+          "sha256": "098f28dff82ee55c9175a638e423fa3fa1b4e27fc585802ded77e3bd70f3f8ca"
+        },
+        {
+          "name": "bootloader.bin",
+          "bytes": 15104,
+          "sha256": "2a71d69b471e20c2bac7fb469f3c6a807b3ebee780e348e5889db0da849ca363"
+        },
+        {
+          "name": "partitions.bin",
+          "bytes": 3072,
+          "sha256": "b16b1b27ccfeecedd026631c54e77065d3913bca810cad5cfe77525fc9938f75"
+        }
+      ]
+    },
+    {
+      "environment": "keyring_compile_jd9853",
+      "result": "PASS",
+      "ramBytes": 59484,
+      "flashBytes": 890397,
+      "artifacts": [
+        {
+          "name": "firmware.bin",
+          "bytes": 890816,
+          "sha256": "4a047d41c38c51ce0c17e9f993658be47e3b457579d27ce18e6d43c360c4a77d"
+        },
+        {
+          "name": "firmware.elf",
+          "bytes": 21605092,
+          "sha256": "d3347f69f1d01086fb9d66f8e38a9953695cb62b7bd8b74a396ccdfabbaf28e6"
+        },
+        {
+          "name": "bootloader.bin",
+          "bytes": 15104,
+          "sha256": "2a71d69b471e20c2bac7fb469f3c6a807b3ebee780e348e5889db0da849ca363"
+        },
+        {
+          "name": "partitions.bin",
+          "bytes": 3072,
+          "sha256": "b16b1b27ccfeecedd026631c54e77065d3913bca810cad5cfe77525fc9938f75"
+        }
+      ]
+    },
+    {
+      "environment": "keyring_compile_headphone",
+      "result": "PASS",
+      "ramBytes": 59180,
+      "flashBytes": 847725,
+      "artifacts": [
+        {
+          "name": "firmware.bin",
+          "bytes": 848144,
+          "sha256": "a5128264feb1d789e34fca25d216021b6f86bba008ae00219fa6c14bba5a62ac"
+        },
+        {
+          "name": "firmware.elf",
+          "bytes": 20357412,
+          "sha256": "490ba974a1b2129d02ddbd25a7b0045716cc263266a54ae5d609c8acf0b1b6ae"
+        },
+        {
+          "name": "bootloader.bin",
+          "bytes": 15104,
+          "sha256": "2a71d69b471e20c2bac7fb469f3c6a807b3ebee780e348e5889db0da849ca363"
+        },
+        {
+          "name": "partitions.bin",
+          "bytes": 3072,
+          "sha256": "b16b1b27ccfeecedd026631c54e77065d3913bca810cad5cfe77525fc9938f75"
+        }
+      ]
+    }
+  ],
+  "hostTest": {
+    "command": "python keyring/firmware/test/run_headphone_host.py --output .local/firmware-pcm/host",
+    "result": "PASS",
+    "scope": [
+      "actual C++ DAC driver",
+      "mock I2C and clock",
+      "boot",
+      "register sequence",
+      "exclusive control",
+      "cancellation",
+      "retry",
+      "readback",
+      "readiness timeout",
+      "NACK",
+      "configuration drift",
+      "permission"
+    ]
+  },
+  "logs": [
+    {
+      "path": "compile.log",
+      "sha256": "8500855bb6e201f9fa4518183eb22d2e082cf1a3ac13affce1b0c832342c85d4"
+    },
+    {
+      "path": "host-test.log",
+      "sha256": "49a4ca8c76defe9355be010c573e4e8af33594baf7d31b522af95a35addac749"
+    }
+  ],
+  "sourceArtifacts": [
+    {
+      "path": "keyring/firmware/include/audio_alert.h",
+      "sha256": "4df749b33e360a22f783cae84db765a6a00e5e7dcaca0f38edf41a33f626f094"
+    },
+    {
+      "path": "keyring/firmware/include/aux_rail.h",
+      "sha256": "043f4f7b01b2f7ef0fe73a928cd87f3f6b0be69271773931a8b2c632f87a8190"
+    },
+    {
+      "path": "keyring/firmware/include/board_r18.h",
+      "sha256": "f4ec4e1e4c2e4c4830ac1e0ea833a2f1eefa2faed7b4205fcfeec4f5608d8594"
+    },
+    {
+      "path": "keyring/firmware/include/firmware_options.h",
+      "sha256": "9d7a315a249ea834daf8c9df1f48e3408ea2662970e1a28d32f54ef61e3fb58e"
+    },
+    {
+      "path": "keyring/firmware/include/headphone_standby.h",
+      "sha256": "9d0ead39706468cb0876f106c25bcda3047dd6accf9def9e35ca78b8e4de7caf"
+    },
+    {
+      "path": "keyring/firmware/include/jd9853_display.h",
+      "sha256": "5ae800cb8ff2ac5960ad27655e0a78924d4c9fff3ee0db3a54c0b66cb5be06c3"
+    },
+    {
+      "path": "keyring/firmware/include/motion_wake.h",
+      "sha256": "9572f9128ed5597c924edf3040b9ed1166bf6d57ea175ad3ea74673b73da179c"
+    },
+    {
+      "path": "keyring/firmware/include/peripherals.h",
+      "sha256": "925e001801ebc6e21b19754223531d365044bcd9ac5ce1693696b1412ee92403"
+    },
+    {
+      "path": "keyring/firmware/include/power_state.h",
+      "sha256": "918917dc2a961b1922f118d81cb39ee90d921f22e6577e69cc14e5634813f653"
+    },
+    {
+      "path": "keyring/firmware/include/provisioning.example.h",
+      "sha256": "54c95ca9983adec78ec7f50e19578e4d0edde11f2974086e4e8e3c688fa35a8e"
+    },
+    {
+      "path": "keyring/firmware/include/supply_monitor.h",
+      "sha256": "25a6942160c4bd687dcec8e6c1fb66b48b8df46251f2474c50f9769fb2b966b6"
+    },
+    {
+      "path": "keyring/firmware/partitions.csv",
+      "sha256": "a51a3bd376becd1d347271a3f611506c187644c9060d06519dd27979ea6ade21"
+    },
+    {
+      "path": "keyring/firmware/platformio.ini",
+      "sha256": "1795b5be7fd4e12421a5f08c495c688fea7fff4b08645d4480124098f288cff9"
+    },
+    {
+      "path": "keyring/firmware/src/audio_alert.cpp",
+      "sha256": "8c18d15d42fe1a7e87c76b1458e27ad42ff5e735e63cd085f9363e2102fbfc7b"
+    },
+    {
+      "path": "keyring/firmware/src/aux_rail.cpp",
+      "sha256": "31607d9e3d452135abd4ea2364075c89b9710e53a3ef720cd7a410710c1f24f6"
+    },
+    {
+      "path": "keyring/firmware/src/headphone_standby.cpp",
+      "sha256": "a75e983965757833a5dc3ababf345ab2e0034f964026aba3cfd9dec5b6f73e26"
+    },
+    {
+      "path": "keyring/firmware/src/jd9853_display.cpp",
+      "sha256": "2b0c9c5020415f45a672dfb548736a2808ed3207a27dbcb816b1382dfb766a9c"
+    },
+    {
+      "path": "keyring/firmware/src/main.cpp",
+      "sha256": "702ff359cbda87b6e958f388c4f9a712938f07e405535468283c236ea4f6bf29"
+    },
+    {
+      "path": "keyring/firmware/src/motion_wake.cpp",
+      "sha256": "7370b2f7d5fde958bddd816e8e3cd8b3a46c611ff0ac7fae408f5ac631799bc6"
+    },
+    {
+      "path": "keyring/firmware/src/peripherals.cpp",
+      "sha256": "e9e2bea402ed10f926419b987da07a863a19a84029117589f4e6fd537813a617"
+    },
+    {
+      "path": "keyring/firmware/src/power_state.cpp",
+      "sha256": "581dbe445fefe21bd5d72979a4b4a54a8f71947ca7b5b57236dba4cf010bcf8e"
+    },
+    {
+      "path": "keyring/firmware/src/supply_monitor.cpp",
+      "sha256": "fb1ec1b31cd87dca6fd9c0bfe79b2b2e50d180e46b491912a158c43f150236f5"
+    },
+    {
+      "path": "keyring/firmware/test/host/Arduino.h",
+      "sha256": "786ad736f40edd211e3650b0e0684c8ee1e95589b5aa53d93b94142d09f98e36"
+    },
+    {
+      "path": "keyring/firmware/test/host/esp_timer.h",
+      "sha256": "bf3dab651ba8e40c4cdda8db3866617f494b5d6bcbb852d791bb2775f6b43cf1"
+    },
+    {
+      "path": "keyring/firmware/test/host/headphone_test.cpp",
+      "sha256": "53df92c2f71c4c7ebff0f0fc883b8053bb4182d73981f032807a80a25be97012"
+    },
+    {
+      "path": "keyring/firmware/test/run_headphone_host.py",
+      "sha256": "26664d9c85f0bf3b6eca891ab9e8a1d3e4cddaa680e52d399cdcaa12b533d2b6"
+    }
+  ],
+  "hardware": {
+    "status": "TODO",
+    "topics": [
+      "flash and provisioning",
+      "MCLK/LRCLK/BCLK/SDIN scope capture",
+      "status-register physical polarity",
+      "headphone analog output/level/click/pop/current",
+      "deadline and disconnect physical settling"
+    ]
+  }
+}

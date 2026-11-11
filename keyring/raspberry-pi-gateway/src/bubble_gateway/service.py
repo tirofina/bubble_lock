@@ -106,7 +106,8 @@ class Gateway:
     async def observation(self, raw: dict) -> None:
         try:
             payload = validate_observation(raw, self.config.gateway_id, self.config.ble_devices)
-            if self.store.observation(self.config.observation_container, payload, self.config.core_bridge_enabled):
+            if self.store.observation(self.config.observation_container, payload, self.config.core_bridge_enabled,
+                                      getattr(self.config, "central_telemetry_enabled", False)):
                 self.counters["observations_queued"] += 1
             else:
                 self.counters["observations_duplicate"] += 1
@@ -236,7 +237,19 @@ class Gateway:
             self._finish(command, digest, "REJECTED", fence_error)
             return
         try:
+            try:
+                dispatch_response = await self.transport.dispatch_start(command, digest)
+                dispatch_deadline = authorization_deadline(command, digest, dispatch_response)
+            except asyncio.CancelledError:
+                raise
+            except (ValueError, PermissionError, TypeError, OverflowError):
+                self._finish(command, digest, "REJECTED", "NOT_AUTHORIZED", "Dispatch-start current claim verification completed before BLE")
+                return
+            except Exception:
+                self._finish(command, digest, "REJECTED", "DISPATCH_NOT_SENT", "Dispatch-start acknowledgement pending; durable local journal confirms BLE call was not entered")
+                return
             budget_ms = remaining_ms - int((time.monotonic() - started) * 1000)
+            budget_ms = min(budget_ms, int((dispatch_deadline - utc_now()).total_seconds() * 1000) - 250)
             if budget_ms <= 0:
                 self._finish(command, digest, "REJECTED", "EXPIRED", "Deadline elapsed during durable intent recording; BLE not sent")
                 return
@@ -273,7 +286,7 @@ class Gateway:
 
     async def _outbox_loop(self) -> None:
         while not self.stop.is_set():
-            self.store.stage_receipts(self.config.receipt_container, self.config.core_bridge_enabled)
+            self.store.stage_receipts(self.config.receipt_container, self.config.core_bridge_enabled, getattr(self.config, "central_receipts_enabled", False))
             item = self.store.due()
             if item is None:
                 await self._pause(0.5)

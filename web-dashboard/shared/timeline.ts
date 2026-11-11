@@ -48,6 +48,14 @@ function memberIdentity(commandId: string): { commandId: string; memberId: strin
     ? { commandId: commandId.slice(0, separator), memberId: commandId.slice(separator + 1) }
     : { commandId, memberId: commandId };
 }
+function mappedMember(state: TimelineState, commandId: string) {
+  for (const command of Object.values(state.commands)) {
+    for (const member of Object.values(command.members)) {
+      if (member.commandId === commandId) return { commandId: command.commandId, memberId: member.memberId };
+    }
+  }
+  return memberIdentity(commandId);
+}
 function newMember(memberId: string, commandId: string, deviceId: string, gatewayId: string | null): MemberTimeline {
   return { ...emptyStages(), memberId, commandId, deviceId, gatewayId, ack: false, readbackVerified: false, readback: null, ackState: null, retryPending: false };
 }
@@ -108,7 +116,8 @@ export function timelineReducer(state: TimelineState, event: DashboardEvent): Ti
   const rawCommandId = event.type === 'command.accepted' ? event.acceptance.commandId : event.receipt.commandId;
   if (rawCommandId === undefined) return next;
   const identity = event.type === 'group.summary' || event.type === 'command.accepted'
-    ? { commandId: rawCommandId, memberId: rawCommandId } : memberIdentity(rawCommandId);
+    ? { commandId: rawCommandId, memberId: rawCommandId } : mappedMember(state, rawCommandId);
+  const commands = { ...state.commands };
   const command = state.commands[identity.commandId] ?? {
     ...emptyStages(), commandId: identity.commandId, groupId: null, members: {},
   };
@@ -126,6 +135,7 @@ export function timelineReducer(state: TimelineState, event: DashboardEvent): Ti
       const receipt = event.receipt;
       if (receipt.deviceId === undefined) break;
       const member = command.members[identity.memberId] ?? newMember(identity.memberId, rawCommandId, receipt.deviceId, receipt.gatewayId ?? null);
+      if (member.deviceId !== receipt.deviceId || (member.gatewayId !== null && receipt.gatewayId !== undefined && member.gatewayId !== receipt.gatewayId)) break;
       const changed = event.type === 'command.dispatched'
         ? { ...member, sent: observed(member.sent, receipt.timestamp, 'DISPATCHED receipt.timestamp') }
         : applyAck(member, receipt);
@@ -135,7 +145,16 @@ export function timelineReducer(state: TimelineState, event: DashboardEvent): Ti
     case 'group.summary': {
       const members = { ...command.members };
       for (const item of event.receipt.members ?? []) {
-        const member = members[item.memberId] ?? newMember(item.memberId, item.memberCommandId, item.deviceId, item.gatewayId);
+        const previousIdentity = mappedMember(state, item.memberCommandId);
+        const previousCommand = state.commands[previousIdentity.commandId];
+        const previousMember = previousCommand?.members[previousIdentity.memberId];
+        const matching = previousMember?.commandId === item.memberCommandId && previousMember.deviceId === item.deviceId
+          && (previousMember.gatewayId === null || previousMember.gatewayId === item.gatewayId) ? previousMember : undefined;
+        const member = members[item.memberId] ?? (matching ? { ...matching, memberId: item.memberId, gatewayId: item.gatewayId }
+          : newMember(item.memberId, item.memberCommandId, item.deviceId, item.gatewayId));
+        if (member.commandId !== item.memberCommandId || member.deviceId !== item.deviceId || member.gatewayId !== item.gatewayId) continue;
+        if (matching && previousCommand && previousCommand.commandId !== command.commandId && previousCommand.groupId === null
+          && Object.keys(previousCommand.members).length === 1) delete commands[previousCommand.commandId];
         // Summary ACK time is CORE receipt time, not a missing device-stage time.
         members[item.memberId] = {
           ...member,
@@ -150,7 +169,7 @@ export function timelineReducer(state: TimelineState, event: DashboardEvent): Ti
     case 'receipt.review': break;
     default: return assertNever(event);
   }
-  return { ...next, commands: { ...state.commands, [identity.commandId]: updated } };
+  return { ...next, commands: { ...commands, [identity.commandId]: updated } };
 }
 
 export function reduceTimeline(events: readonly DashboardEvent[]): TimelineState {

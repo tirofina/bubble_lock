@@ -4,6 +4,8 @@
 #include <driver/i2s.h>
 #include <esp_intr_alloc.h>
 #include <esp_timer.h>
+#include <rom/gpio.h>
+#include <soc/gpio_sig_map.h>
 #include "audio_alert.h"
 #include "board_r18.h"
 #include "firmware_options.h"
@@ -14,13 +16,27 @@ constexpr uint32_t SampleRate = 16000;
 constexpr size_t Frames = 64;
 constexpr float Tau = 6.28318530718f;
 uint64_t nowMs() { return static_cast<uint64_t>(esp_timer_get_time()) / 1000; }
-void mute() { gpio_set_level(static_cast<gpio_num_t>(board::AmpMute), 1); }
+void mute() {
+  gpio_set_level(static_cast<gpio_num_t>(board::AmpMute), 1);
+  if (KEYRING_AUDIO_OUTPUT == 2) {
+    // Hardware data gate: timer/link cancellation wins over queued DMA. Keep
+    // clocks running until the worker completes DAC mute/shutdown over I2C.
+    gpio_set_level(static_cast<gpio_num_t>(board::I2sDout), 0);
+    gpio_matrix_out(board::I2sDout, SIG_GPIO_OUT_IDX, false, false);
+  }
+}
+void headphoneClock(bool enabled) {
+  if (KEYRING_AUDIO_OUTPUT != 2) return;
+  if (!enabled) gpio_set_level(static_cast<gpio_num_t>(board::HeadphoneMclk), 0);
+  gpio_matrix_out(board::HeadphoneMclk, enabled ? I2S0_MCLK_OUT_IDX : SIG_GPIO_OUT_IDX, false, false);
+}
 }
 
-bool AudioAlert::begin(Permit allow) {
+bool AudioAlert::begin(Permit allow, HeadphoneStandby *headphone) {
   mute();
   outputAllowed = allow;
-  if (!KEYRING_ENABLE_AUDIO || !allow) return false;
+  dac = headphone;
+  if (!KEYRING_ENABLE_AUDIO || !allow || (KEYRING_AUDIO_OUTPUT == 2 && !dac)) return false;
   i2s_config_t config = {};
   config.mode = static_cast<i2s_mode_t>(I2S_MODE_MASTER | I2S_MODE_TX);
   config.sample_rate = SampleRate;
@@ -32,10 +48,11 @@ bool AudioAlert::begin(Permit allow) {
   config.dma_buf_count = 4;
   config.dma_buf_len = 128;
   config.use_apll = false;
+  config.mclk_multiple = I2S_MCLK_MULTIPLE_256;
   config.tx_desc_auto_clear = true;
   if (i2s_driver_install(Port, &config, 0, nullptr) != ESP_OK) { fail(); return false; }
   i2s_pin_config_t pins = {};
-  pins.mck_io_num = I2S_PIN_NO_CHANGE; // MAX98357A needs no MCLK; GPIO13 belongs to headphone DAC.
+  pins.mck_io_num = KEYRING_AUDIO_OUTPUT == 2 ? board::HeadphoneMclk : I2S_PIN_NO_CHANGE;
   pins.bck_io_num = board::I2sBclk;
   pins.ws_io_num = board::I2sLrclk;
   pins.data_out_num = board::I2sDout;
@@ -43,8 +60,10 @@ bool AudioAlert::begin(Permit allow) {
   if (i2s_set_pin(Port, &pins) != ESP_OK || i2s_zero_dma_buffer(Port) != ESP_OK || i2s_stop(Port) != ESP_OK) {
     mute(); i2s_driver_uninstall(Port); fail(); return false;
   }
+  mute();
+  headphoneClock(false);
   portENTER_CRITICAL(&mux); configured = true; portEXIT_CRITICAL(&mux);
-  if (xTaskCreate(entry, "speaker-cue", 4096, this, 2, &worker) != pdPASS) {
+  if (xTaskCreate(entry, "audio-cue", 4096, this, 2, &worker) != pdPASS) {
     i2s_driver_uninstall(Port); fail(); return false;
   }
   return true;
@@ -55,7 +74,7 @@ bool AudioAlert::startUntil(uint64_t deadlineMs) {
   if (!KEYRING_ENABLE_AUDIO || !worker || deadlineMs <= now ||
       deadlineMs - now > board::MotorMaxOnMs) return false;
   portENTER_CRITICAL(&mux);
-  const bool allowed = configured && !fault && outputAllowed && outputAllowed() &&
+  const bool allowed = configured && !fault && !armed && !running && outputAllowed && outputAllowed() &&
       gpio_get_level(static_cast<gpio_num_t>(board::AuxEnable)) &&
       gpio_get_level(static_cast<gpio_num_t>(board::Motor));
   if (allowed) { ++generation; deadline = deadlineMs; armed = true; }
@@ -100,12 +119,20 @@ bool AudioAlert::current(uint32_t token, uint64_t &deadlineMs, bool unmute) {
       gpio_get_level(static_cast<gpio_num_t>(board::Motor)) &&
       gpio_get_level(static_cast<gpio_num_t>(board::MainFaultN));
   deadlineMs = deadline;
-  if (valid && unmute) gpio_set_level(static_cast<gpio_num_t>(board::AmpMute), 0);
+  if (valid && unmute) {
+    if (KEYRING_AUDIO_OUTPUT == 2) gpio_matrix_out(board::I2sDout, I2S0O_SD_OUT_IDX, false, false);
+    else gpio_set_level(static_cast<gpio_num_t>(board::AmpMute), 0);
+  }
   portEXIT_CRITICAL(&mux);
   return valid;
 }
 
 void AudioAlert::entry(void *context) { static_cast<AudioAlert *>(context)->run(); }
+bool AudioAlert::dacPermit(void *context) {
+  auto *audio = static_cast<AudioAlert *>(context);
+  uint64_t stopAt = 0;
+  return audio->current(audio->workerToken, stopAt, false);
+}
 
 void AudioAlert::run() {
   int16_t pcm[Frames * 2] = {};
@@ -113,18 +140,27 @@ void AudioAlert::run() {
     ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
     portENTER_CRITICAL(&mux);
     const uint32_t token = generation;
+    workerToken = token;
     const bool start = configured && !fault && armed;
     if (start) running = true;
     portEXIT_CRITICAL(&mux);
     if (!start) continue;
     uint64_t stopAt = 0;
+    headphoneClock(true);
     if (!current(token, stopAt, false) || i2s_zero_dma_buffer(Port) != ESP_OK || i2s_start(Port) != ESP_OK) {
       // A cancelled/expired request is ordinary; an actual driver error is sticky.
+      if (current(token, stopAt, false)) fail();
+    } else if (KEYRING_AUDIO_OUTPUT == 2 && !dac->beginPlayback(dacPermit, this)) {
       if (current(token, stopAt, false)) fail();
     } else {
       float phase = 0;
       uint32_t frameNumber = 0;
+      uint64_t nextDacCheck = nowMs();
       while (current(token, stopAt, false)) {
+        if (KEYRING_AUDIO_OUTPUT == 2 && nowMs() >= nextDacCheck) {
+          if (!dac->checkPlayback()) { fail(); break; }
+          nextDacCheck = nowMs() + 20;
+        }
         const uint64_t blockStart = nowMs();
         for (size_t n = 0; n < Frames; ++n) {
           const uint64_t sampleAt = blockStart + n * 1000 / SampleRate;
@@ -148,8 +184,10 @@ void AudioAlert::run() {
     mute();
     if (generation == token) armed = false;
     portEXIT_CRITICAL(&mux);
+    if (KEYRING_AUDIO_OUTPUT == 2 && !dac->finishPlayback()) fail();
     // Mute precedes stopping both LRCLK/BCLK; no single-clock shutdown sequence.
     if (i2s_stop(Port) != ESP_OK || i2s_zero_dma_buffer(Port) != ESP_OK) fail();
+    headphoneClock(false);
     portENTER_CRITICAL(&mux); running = false; portEXIT_CRITICAL(&mux);
   }
 }

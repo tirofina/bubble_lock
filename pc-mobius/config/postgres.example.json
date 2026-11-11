@@ -1,0 +1,14 @@
+{
+  "database": {
+    "connectionString": "postgresql://bubble_runtime:REPLACE_LOCAL_SECRET@127.0.0.1:15432/bubble_policy",
+    "namespace": "bubble-lock",
+    "lockTimeoutMs": 10000,
+    "statementTimeoutMs": 30000
+  },
+  "core": {
+    "mec": {
+      "encryptionKey": "REPLACE_WITH_SHARED_32_BYTE_BASE64_KEY",
+      "autoReconcile": false
+    }
+  }
+}

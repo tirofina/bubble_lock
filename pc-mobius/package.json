@@ -12,13 +12,22 @@
     "release-manifest": "node scripts/build-release-manifest.mjs",
     "replay-receipt": "node scripts/replay-receipt.mjs",
     "integration": "node scripts/run-integration.mjs",
+    "integration:mec": "node scripts/run-mec-verification.mjs",
+    "fl:verify": "node scripts/run-fl-verification.mjs",
+    "fl:worker": "node scripts/run-fl-worker.mjs",
+    "fl:cse": "node scripts/run-fl-cse-verification.mjs",
     "integration:api": "node scripts/run-integration-api.mjs",
     "integration:validate": "node scripts/validate-integration.mjs",
     "integration:evidence": "node scripts/build-integration-evidence.mjs",
-    "integration:replay": "node scripts/replay-integration.mjs"
+    "integration:replay": "node scripts/replay-integration.mjs",
+    "mcp:servers": "node scripts/run-mcp-servers.mjs",
+    "mcp:verify": "node scripts/run-mcp-verification.mjs"
   },
   "dependencies": {
-    "mqtt": "^5.14.0"
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "mqtt": "^5.14.0",
+    "pg": "^8.23.1"
   },
   "engines": {
     "node": ">=22"

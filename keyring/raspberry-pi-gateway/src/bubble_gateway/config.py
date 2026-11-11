@@ -61,6 +61,8 @@ class GatewayConfig:
     max_commands: int
     core_bridge_enabled: bool
     ble_gatt_profile: str
+    central_telemetry_enabled: bool = True
+    central_receipts_enabled: bool = True
 
     @classmethod
     def from_env(cls) -> "GatewayConfig":
@@ -157,4 +159,6 @@ class GatewayConfig:
             max_outbox_bytes=int(number("MAX_OUTBOX_BYTES", "33554432", 1048576, 1073741824)),
             max_commands=int(number("MAX_COMMANDS", "100000", 100, 10000000)),
             core_bridge_enabled=core_bridge, ble_gatt_profile=profile,
+            central_telemetry_enabled=boolean("CENTRAL_TELEMETRY_ENABLED", "true"),
+            central_receipts_enabled=boolean("CENTRAL_RECEIPTS_ENABLED", "true"),
         )

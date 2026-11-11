@@ -17,7 +17,7 @@ export function Section({ id, number, title, children }: {
 export function Timestamp({ at }: { readonly at: string }) {
   const korean = new Date(new Date(at).getTime() + 9 * 60 * 60 * 1000).toISOString();
   return <time className="stage-time" dateTime={at} title={`원본: ${at}`}>
-    <span className="stage-date">{korean.slice(0, 10)}</span>{korean.slice(11, -1)} <span className="caption">KST</span>
+    <span className="stage-date">{korean.slice(0, 10)}</span>{' '}{korean.slice(11, -1)} <span className="caption">KST</span>
   </time>;
 }
 

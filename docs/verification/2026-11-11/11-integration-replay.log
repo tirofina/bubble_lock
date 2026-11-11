@@ -1,0 +1,12 @@
+
+> privacy-bubble-pc-mobius-core@0.1.0 integration:replay
+> node scripts/replay-integration.mjs
+
+{
+  "input": "receipts/integration-demo.json",
+  "contractId": "privacy-bubble.integration.v1",
+  "docRevision": "2.0.0",
+  "owner": "PC-MOBIUS-INTEGRATION",
+  "status": "PASS",
+  "replay": "PASS"
+}

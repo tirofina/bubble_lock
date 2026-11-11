@@ -63,9 +63,10 @@ export interface CoreMember {
   readonly memberCommandId: string;
   readonly deviceId: string;
   readonly gatewayId: string;
-  readonly status: 'DISPATCHED' | AckState;
+  readonly status: 'PENDING' | 'DISPATCHED' | AckState;
   readonly attempts: number;
   readonly ackTimestamp?: string;
+  readonly error?: string;
 }
 
 /** Fields emitted by CORE are retained, not renamed or augmented. */
@@ -84,6 +85,7 @@ export interface CoreReceipt {
   readonly dedupKey?: string;
   readonly requestId?: string;
   readonly oneM2MResource?: string;
+  readonly sdtProfile?: 'r4-common-1.0'|'pb-legacy-1.0'|'r5-long-1.0'|'home-legacy-1.0';
   readonly responseStatus?: number;
   readonly responseBody?: string;
   readonly transport?: 'mqtt' | 'oneM2M-http' | 'oneM2M-mqtt';

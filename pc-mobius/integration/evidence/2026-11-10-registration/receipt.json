@@ -1,0 +1,100 @@
+{
+  "receiptId": "gateway-registration-local-tls-2026-11-10",
+  "generatedAt": "2026-11-10T09:35:53.812710+00:00",
+  "evidenceMode": "LOCAL_REAL_PROTOCOL",
+  "result": "PASS",
+  "command": "node --test pc-mobius/test/gateway-registration.test.mjs",
+  "testCount": 6,
+  "tools": {
+    "node": "v22.19.0",
+    "openssl": "OpenSSL 3.4.0 22 Oct 2024 (Library: OpenSSL 3.4.0 22 Oct 2024)"
+  },
+  "protocols": [
+    "oneM2M HTTP AE CREATE/workload GET",
+    "OpenSSL CA and CSR signing",
+    "TLS1.3 authenticated API server/client"
+  ],
+  "fixtures": {
+    "cse": "LOCAL_HTTP_TEST_SERVICE",
+    "ca": "EPHEMERAL_TEST_CA",
+    "gateway": "NODE_HTTPS_CLIENT"
+  },
+  "checks": [
+    "bootstrap principal/certificate/token/CSR intent binding",
+    "AE receipt and principal binding transaction",
+    "bootstrap consumption and credential issuance recovery",
+    "lost response reconciliation",
+    "binding revision and credential/grant revocation",
+    "storage rollback and session termination recovery",
+    "bootstrap-only API route",
+    "new certificate runtime resolution",
+    "actual keep-alive TLS socket termination",
+    "LOST own-gateway credential status polling",
+    "foreign gateway status authorization"
+  ],
+  "sourceArtifacts": [
+    {
+      "path": "pc-mobius/config/gateway-registration.example.json",
+      "sha256": "4907981fbed539b8f64953209d98bc0e0dc1b55c1b0ee1e3bbb2dfbdec9d112c"
+    },
+    {
+      "path": "pc-mobius/contracts/gateway-registration.v1.json",
+      "sha256": "12fdabebe6e92c1a69836fc0659692e9c51eb2155f8463c84e8baa056deafa8a"
+    },
+    {
+      "path": "pc-mobius/integration/src/api-gateway.mjs",
+      "sha256": "bfbf8753fb6643d6f2ecf0515c6b17a8b78dc6e367f169e7dd2ccf99739f815c"
+    },
+    {
+      "path": "pc-mobius/integration/src/api-server.mjs",
+      "sha256": "f1a217f436ab868ece0d182b0f8d7ecccd594bcea22872690ff9dd23db534a46"
+    },
+    {
+      "path": "pc-mobius/integration/src/gateway-control.mjs",
+      "sha256": "d5da9dd67d87bdbcf4a3b05ae6187fd6be7f02ac371701cddb6abaec4df5b671"
+    },
+    {
+      "path": "pc-mobius/integration/src/gateway-credential-issuer.mjs",
+      "sha256": "b9a8d9701afafab75170cbdbf25d85138f21d0b5d8d5f75dcba73812440fc05f"
+    },
+    {
+      "path": "pc-mobius/integration/src/gateway-registration-cse.mjs",
+      "sha256": "5497d92da91c053aee4ec424772ffbab6cb7855b7df79f36d8864ee5ebd49de5"
+    },
+    {
+      "path": "pc-mobius/integration/src/gateway-registration.mjs",
+      "sha256": "df6378f113f2caf8dc7dafb9a8228da2b41c3f1d21b85f4b835256de0deba4c5"
+    },
+    {
+      "path": "pc-mobius/integration/src/integration-runtime.mjs",
+      "sha256": "9ada0e9fcf4037d5f5548eeb03bc1ba451c7af4bae8099a452aae277e12f9b13"
+    },
+    {
+      "path": "pc-mobius/integration/src/integration-store.mjs",
+      "sha256": "c7031ab6c99b2e30f8ed959c9e457b4a02551facba1375a10b5af69fd418139f"
+    },
+    {
+      "path": "pc-mobius/integration/src/policy-service.mjs",
+      "sha256": "9a264a5d27b9753fb515f92213a66d3890f7b765910c0b775cd2d4356e21868f"
+    },
+    {
+      "path": "pc-mobius/test/gateway-registration.test.mjs",
+      "sha256": "65d9c5e978e3efac3d4925bad4c242444a9da9520818bf3fc0063d7a9e62156b"
+    }
+  ],
+  "logs": [
+    {
+      "path": "tests.log",
+      "sha256": "f3eebac190c32d0d09946df6361f315a09b9afec49343e9de8599d0d3d000f98"
+    }
+  ],
+  "deployment": {
+    "status": "TODO",
+    "topics": [
+      "production CSE bootstrap/workload permissions",
+      "production CA key and trust chain",
+      "Gateway CSR/certificate installation",
+      "physical Gateway TLS termination receipt"
+    ]
+  }
+}

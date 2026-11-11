@@ -1,0 +1,262 @@
+{
+  "status": "PASS",
+  "generatedAt": "2026-11-10T08:57:26.166Z",
+  "transport": "actual-mobius4-loopback-http",
+  "cseVersion": "4.24.5",
+  "sourceRevision": "3da4d8523694b5077e348ab1c9e769fb3a30df24",
+  "postgres": "PostgreSQL 17.11 on x86_64-windows, compiled by msvc-19.44.35229, 64-bit",
+  "acceptedObservations": 10,
+  "targetWatermark": 9,
+  "handoverEpoch": 2,
+  "rollbackEpoch": 3,
+  "identities": [
+    {
+      "edgeId": "edge-a",
+      "cseId": "/edge-a",
+      "aeId": "CqHb6R",
+      "aeRi": "CqHb6R",
+      "resources": {
+        "observations": {
+          "path": "/Mobius/handover-relay/observations",
+          "ri": "j6acq6w2x3",
+          "ty": 3
+        },
+        "switch": {
+          "path": "/Mobius/handover-relay/switch",
+          "ri": "2vcdsw3adg",
+          "ty": 28
+        }
+      },
+      "groups": [
+        {
+          "logicalId": "switches",
+          "path": "/Mobius/handover-relay/switches",
+          "ri": "7vba0i0j7x",
+          "memberUris": [
+            "/Mobius/handover-relay/switch"
+          ]
+        }
+      ],
+      "subscriptions": [
+        {
+          "logicalId": "state",
+          "path": "/Mobius/handover-relay/switch/state-sub",
+          "ri": "3xwmyan63e",
+          "notificationUri": "http://127.0.0.1:3646/edge-a?subscription=%2FMobius%2Fhandover-relay%2Fswitch%2Fstate-sub"
+        }
+      ]
+    },
+    {
+      "edgeId": "edge-b",
+      "cseId": "/edge-b",
+      "aeId": "CzFA3z",
+      "aeRi": "CzFA3z",
+      "resources": {
+        "observations": {
+          "path": "/Mobius/handover-relay/observations",
+          "ri": "dxlnyr9qkq",
+          "ty": 3
+        },
+        "switch": {
+          "path": "/Mobius/handover-relay/switch",
+          "ri": "ti9anbkst7",
+          "ty": 28
+        }
+      },
+      "groups": [
+        {
+          "logicalId": "switches",
+          "path": "/Mobius/handover-relay/switches",
+          "ri": "w7xshyckto",
+          "memberUris": [
+            "/Mobius/handover-relay/switch"
+          ]
+        }
+      ],
+      "subscriptions": [
+        {
+          "logicalId": "state",
+          "path": "/Mobius/handover-relay/switch/state-sub",
+          "ri": "624ccc1sva",
+          "notificationUri": "http://127.0.0.1:3646/edge-b?subscription=%2FMobius%2Fhandover-relay%2Fswitch%2Fstate-sub"
+        }
+      ]
+    }
+  ],
+  "sdt": [
+    {
+      "operation": "CREATE",
+      "payload": {
+        "cod:binSh": {
+          "ty": 28,
+          "et": "20271110T085725",
+          "ct": "20261110T085725",
+          "lt": "20261110T085725",
+          "ri": "2vcdsw3adg",
+          "rn": "switch",
+          "pi": "CqHb6R",
+          "st": 0,
+          "cnd": "org.onem2m.common.moduleclass.binarySwitch",
+          "cs": 14,
+          "acpi": [
+            "/Mobius/handover-relay/handover-acp"
+          ],
+          "lbl": [
+            "pb-owner:47084740da753f04de4423f4",
+            "pb-notify-probe:ac293429"
+          ],
+          "state": true
+        }
+      }
+    },
+    {
+      "operation": "UPDATE_FALSE",
+      "status": 200,
+      "rsc": 2004,
+      "rqiMatches": true,
+      "payload": {
+        "cod:binSh": {
+          "ty": 28,
+          "et": "20271110T085725",
+          "ct": "20261110T085725",
+          "lt": "20261110T085725",
+          "ri": "2vcdsw3adg",
+          "rn": "switch",
+          "pi": "CqHb6R",
+          "st": 1,
+          "cnd": "org.onem2m.common.moduleclass.binarySwitch",
+          "cs": 15,
+          "acpi": [
+            "/Mobius/handover-relay/handover-acp"
+          ],
+          "lbl": [
+            "pb-owner:47084740da753f04de4423f4",
+            "pb-notify-probe:ac293429"
+          ],
+          "state": false
+        }
+      }
+    },
+    {
+      "operation": "GET_FALSE",
+      "status": 200,
+      "rsc": 2000,
+      "rqiMatches": true,
+      "payload": {
+        "cod:binSh": {
+          "ty": 28,
+          "et": "20271110T085725",
+          "ct": "20261110T085725",
+          "lt": "20261110T085725",
+          "ri": "2vcdsw3adg",
+          "rn": "switch",
+          "pi": "CqHb6R",
+          "st": 1,
+          "cnd": "org.onem2m.common.moduleclass.binarySwitch",
+          "cs": 15,
+          "acpi": [
+            "/Mobius/handover-relay/handover-acp"
+          ],
+          "lbl": [
+            "pb-owner:47084740da753f04de4423f4",
+            "pb-notify-probe:ac293429"
+          ],
+          "state": false
+        }
+      }
+    },
+    {
+      "operation": "CND_DISCOVERY",
+      "status": 200,
+      "rsc": 2000,
+      "rqiMatches": true,
+      "payload": {
+        "m2m:uril": [
+          "Mobius/handover-relay/switch"
+        ]
+      }
+    },
+    {
+      "operation": "STRING_STATE_REVIEW",
+      "status": 400,
+      "rsc": 4000,
+      "rqiMatches": true,
+      "payload": {
+        "m2m:dbg": "state must be of type boolean"
+      }
+    },
+    {
+      "operation": "UNKNOWN_CND_REVIEW",
+      "status": 501,
+      "rsc": 4125,
+      "rqiMatches": true,
+      "payload": {
+        "m2m:dbg": "no schema registered for containerDefinition urn:fixture:unknown"
+      }
+    },
+    {
+      "operation": "LEGACY_NORMALIZED",
+      "receipt": {
+        "type": "SDT_SERIALIZATION",
+        "sourceVersion": "pb-legacy-1.0",
+        "targetVersion": "r4-common-1.0",
+        "sourceEnvelope": "pb:binarySwitch",
+        "targetEnvelope": "cod:binSh",
+        "operation": "UPDATE",
+        "sourceHash": "1ce3bbc7d332ae14922174013cf178e30f1aaf2aa3772e439360c8816dec8788",
+        "targetHash": "d093ba373d174d0373d5df61246fae2b1365b1b793fda52c8d26fcc727ecc97f"
+      },
+      "status": 200,
+      "rsc": 2004,
+      "rqiMatches": true,
+      "payload": {
+        "cod:binSh": {
+          "ty": 28,
+          "et": "20271110T085725",
+          "ct": "20261110T085725",
+          "lt": "20261110T085725",
+          "ri": "2vcdsw3adg",
+          "rn": "switch",
+          "pi": "CqHb6R",
+          "st": 2,
+          "cnd": "org.onem2m.common.moduleclass.binarySwitch",
+          "cs": 15,
+          "acpi": [
+            "/Mobius/handover-relay/handover-acp"
+          ],
+          "lbl": [
+            "pb-owner:47084740da753f04de4423f4",
+            "pb-notify-probe:ac293429"
+          ],
+          "state": false
+        }
+      },
+      "readback": {
+        "cod:binSh": {
+          "ty": 28,
+          "et": "20271110T085725",
+          "ct": "20261110T085725",
+          "lt": "20261110T085725",
+          "ri": "2vcdsw3adg",
+          "rn": "switch",
+          "pi": "CqHb6R",
+          "st": 2,
+          "cnd": "org.onem2m.common.moduleclass.binarySwitch",
+          "cs": 15,
+          "acpi": [
+            "/Mobius/handover-relay/handover-acp"
+          ],
+          "lbl": [
+            "pb-owner:47084740da753f04de4423f4",
+            "pb-notify-probe:ac293429"
+          ],
+          "state": false
+        }
+      }
+    }
+  ],
+  "registrySHA256": "b3780469f8ff962de7c0bdb04e2f8247e122d72f98a1f478b5ddae30ff799eac",
+  "runtimeEvidenceDirectory": "C:\\Users\\user\\OneDrive\\문서\\ChatGPT\\모비우스4 보안\\bubble_lock\\.local\\handover-cse\\1794301037422_77d10f",
+  "physicalHardware": "별도 BLE/키링 수용 receipt",
+  "schemaAndIdentity": "actual-CSE"
+}
