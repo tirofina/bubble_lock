@@ -57,4 +57,6 @@ USB 초기 구동 줄의 `panel`과 `motor=0 aux=0 fault=0`을 확인한다. 확
 
 Pi JSON의 `bringup.usbBoot.displayProfile`은 USB 로그와 일치한 빌드 선택값이다. Gateway 0.2.81의 `bringup.displayTest`에는 확인·비상 패턴을 그렸을 때의 버튼 누계와 같은 시험에서 수신한 버튼 누계를 대조한 결과가 들어간다. `buttonFramesMatched`는 펌웨어 그리기 함수와 BLE 관측의 대조 결과다. 테두리·색상·문구는 패널에서 직접 확인한다. JD9853은 기존 초기화 경로를 쓰며 구매한 패널의 전원·감마 설정과 실제 표시가 남아 있다. [패널 설정](../firmware/PERIPHERALS.md#jd9853-미확인-범위)
 
+Gateway 0.2.82의 [화면 관찰 기록 연결](../raspberry-pi-gateway/TESTING.md#r18-화면-관찰-기록-연결)은 버튼을 뗀 뒤 찍은 사진 또는 영상의 해시와 Pi의 버튼 해제 순번을 한 보고서에 남긴다.
+
 passkey·BLE 주소·원시 관측은 로컬 증거에 보관한다. 빌드·플래시·전원 인가·Pi 접속은 미실행이다.

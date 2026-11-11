@@ -92,6 +92,30 @@ bubble-keyring-ble-characterize --mode bringup --hardware r18-pcb \
 
 0.7.16·0.7.17 ST7789·JD9853 프로필은 마지막 `health` 프레임의 화면 상태와 `displayDrawnPresses`도 확인한다. 각 패턴을 확인할 시간을 두고 버튼을 순서대로 누르고 떼며, 비상 버튼을 뗀 뒤에도 `health`가 한 번 더 전송될 때까지 기록한다. 화면 작업자·버스 오류나 다른 프로필이 보고되면 `MISMATCH`다. 현재 시험의 버튼 누계와 대조할 그리기 기록이 없으면 `INSUFFICIENT`다. 실제 화면의 테두리·색·글자는 별도 사진이나 영상에 남긴다.
 
+### r18 화면 관찰 기록 연결
+
+같은 PCB 전원을 유지하고 USB 로그를 지정해 Pi 초기 구동 기록을 만든다. 확인 버튼을 뗀 직후 다음 버튼을 누르기 전에 `CONFIRM`을 찍고, 비상 버튼을 뗀 직후 `PANIC`을 찍는다. 두 장의 사진이나 두 장면이 담긴 영상 한 개를 사용할 수 있다. 화면이 보이지 않으면 관찰한 상태만 적는다.
+
+관찰 JSON의 `captureSha256`에는 Pi JSON 원본의 SHA-256을 소문자로 넣는다. `releaseSequence`는 `bringup.buttonSequences`의 세 번째와 다섯 번째 값이다. `displaySize`는 화면에 표시된 가로·세로를 적고, `borderVisible`은 테두리 네 변이 보이는지 기록한다. 판독할 수 없는 항목은 `null`로 남긴다. 예시의 해시와 순번은 실제 값으로 바꾼다. [관찰 JSON Schema](../../contracts/keyring/r18-display-observations.schema.json)
+
+```json
+{
+  "version": 1,
+  "captureSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "observations": [
+    {"button": "confirm", "releaseSequence": 22, "panelLabel": "ST7789 LCD", "screenText": "CONFIRM", "borderVisible": true, "colorOrder": ["red", "green", "blue"], "displaySize": [240, 240], "mediaOffsetMs": null},
+    {"button": "panic", "releaseSequence": 24, "panelLabel": "ST7789 LCD", "screenText": "PANIC", "borderVisible": true, "colorOrder": ["red", "green", "blue"], "displaySize": [240, 240], "mediaOffsetMs": null}
+  ]
+}
+```
+
+```sh
+bubble-keyring-display-evidence --capture r18-bringup.json --observations lcd-observations.json \
+  --confirm-media confirm.jpg --panic-media panic.jpg --output lcd-evidence.json
+```
+
+한 영상을 사용하면 두 인자에 같은 파일을 지정하고 각 장면의 영상 시작 기준 시각을 `mediaOffsetMs`에 밀리초로 넣는다. 결과에는 USB·Pi·관찰 기록·미디어의 해시와 `operatorObservationStatus`, `buttonFramesMatched`가 들어간다. 도구는 작업자가 기입한 값과 BLE 순번을 대조한다. 영상 프레임이나 패널의 실제 해상도는 별도로 확인한다. 원본 사진과 영상은 비공개로 보관한다.
+
 Gateway 0.2.36의 자격 전환 영수증 회귀시험 소스는 MQTT·HTTPS 생성 후 조회, 중복, 인스턴스·부모·본문 불일치, 조회 시간 초과, HTTPS 보류 중 일반 heartbeat의 독립 전송을 다룬다. 격리 Mobius4 시험 소스는 두 전송 경로에서 실제 저장 조회가 발생하는지 확인한다. 이번 빌드·시험·Pi 배포·CSE 연결은 미실행이다.
 
 Gateway 0.2.35의 회귀시험 소스는 자격 전환을 기록한 뒤 일반 큐 포화와 DB 재개를 거쳐도 순서·요청 ID·본문이 유지되는지 다룬다. 기존 DB에 새 테이블 추가, 보관본 포함, 완료 이력 상한, 기록 실패 시 실행 차단, LED 벤치의 이력 제외도 포함한다. 이번 빌드·시험·Pi/CSE 전송은 미실행이다.
