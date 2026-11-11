@@ -1676,3 +1676,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R11. 직전 goal turn은 Feather 
 - 새 하위 디렉터리를 만들기 전의 사전 점검과 상태 디렉터리 및 WAL 접근 거부, 잘못된 보조 파일 유형의 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·Pi 배포·systemd 실행·실제 SQLite 권한 검증은 미수행이다. [Pi 배포 절차](../keyring/raspberry-pi-gateway/README.md#수동-실행-또는-systemd-배포)
 
 소스 commit `efaeb5698a87af465bf9fcfbf5d958bc0a60af10`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `76d4542..efaeb56`이다. goal은 active/progress다.
+
+## 2026-11-11 — r18 관측의 Pi 상태 경로와 중앙 모의 표시 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05, R15. 직전 goal turn은 Pi 배포 계정의 SQLite 상태 권한 점검을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f` 및 중앙 관측 수용 이벤트의 `simulation` 필드를 확인했다.
+
+- r18 관측 대조 도구는 Mobius4 health의 컨테이너를 Pi DB에 고정한 ID와 비교한다. Pi 전송 큐에 같은 health 요청이 남아 있으면 경로와 본문도 비교한다. ID가 없던 기존 Pi DB는 고정 ID 확인 결과를 `null`로 표시한다.
+- 중앙 수용 여부와 실물 전달 증거 일치를 별도로 보고한다. 고정된 health ID 및 중앙 수용 이벤트의 `simulation:false`가 모두 확인돼야 실물 전달 증거 일치를 표시한다. 바뀐 health ID, 남은 health 본문 불일치, 모의 수용, 이전 DB의 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·대조 도구 실행·r18·Pi·Mobius4 실물 통합은 미수행이다. [관측 전달 증거 대조](../keyring/raspberry-pi-gateway/TESTING.md#관측-전달-증거-대조)
+
+소스 commit `59f784b1b34d711d414e428f490579695a9b33a1`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `f67bae8..59f784b`다. goal은 active/progress다.
