@@ -1946,3 +1946,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · PCB schematic/layout/BOM/assembly revi
 - 격리 Pi 관측 비교에 작업자가 다시 읽은 보드 식별표를 연결할 수 있다. 조립 기록의 해시를 첫 부팅·펌웨어·Pi 관측 대조 결과에 추가한다. 회귀시험 소스를 추가했으며 테스트·빌드·정적 분석·KiCad 실행·실제 조립 기록 및 첫 구동은 미수행이다. [인수 절차](../keyring/pcb/BRING_UP.md#실물-조립-기록)
 
 소스 commit `e9f4e9d39d166a20c47c731d7d3b71134216561e`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `5d7765e..e9f4e9d`이다. goal은 active/progress다.
+
+## 2026-11-11 — r18 깨우기 원인의 중앙 전달 확인
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 조립 인수 기록을 첫 부팅과 관측 대조에 연결해 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 조회했다.
+
+- r18 격리 펄스의 `--wake-report`가 같은 부팅의 더 새 OFF health에서 깨우기 원인과 핀을 확인한다. 고정된 Mobius4 자원의 본문 해시를 중앙의 실물 관측 수용 이벤트와 대조한 뒤 명령 준비를 표시한다. 발급 직전에 health를 다시 확인한다.
+- 오프라인 도구는 동일 관측 ID와 원본 해시를 다시 대조한다. 다른 핀·누락 관측·다른 관측 ID를 다루는 회귀시험 소스를 추가했다. 테스트·빌드·정적 분석·실제 Pi/Mobius4·r18 깨우기 및 명령 시험은 미수행이다. [실행 절차](../keyring/raspberry-pi-gateway/TESTING.md#r18-pi-명령-세션)
+
+소스 commit `4ecee4f1f3a13f6c4ceb506aa886333935966b02`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `c8a4e76..4ecee4f`이다. goal은 active/progress다.

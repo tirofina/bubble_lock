@@ -1892,5 +1892,12 @@
     "regressionsExecuted": false,
     "physicalAssemblyRecorded": false,
     "sourceCommit": "e9f4e9d39d166a20c47c731d7d3b71134216561e"
+  },
+  "r18WakeRelayEvidence": {
+    "reference": "raspberry-pi-gateway/TESTING.md#r18-pi-명령-세션",
+    "firmwareRevision": "keyring-0.7.21-sleep",
+    "regressionsExecuted": false,
+    "physicalWakeRelayVerified": false,
+    "sourceCommit": "4ecee4f1f3a13f6c4ceb506aa886333935966b02"
   }
 }
