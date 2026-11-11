@@ -1176,3 +1176,12 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - SQLite 용량과 재시작, 장치별 순서, 중앙 응답 ID, `STALE`과 만료를 다루는 회귀시험 소스를 추가했다. 빌드·시험·중앙 API 연결·Pi 검증은 미실행이다. 최신 중앙 배포의 Gateway·장치·가구 등록을 적용한 실제 연동 증거가 남아 있다.
 
 소스 commit `fe03e8ddb64a319d61a50328f526f45bce15084c`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `c7f7cab..fe03e8d`다. goal은 active/progress다.
+
+## 2026-11-11 — 최신 중앙 API 격리 벤치 준비
+
+직전 goal turn은 중앙 BLE 관측 전달을 올린 progress다. DOC-REV 2.0.0과 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 최신 런타임의 가구·장치 등록과 mTLS 경로를 읽었다.
+
+- 새 `integration` 프로필은 최신 팀 소스·계약을 `.local/scoped/command-api-integration/`에 고정하고, 루프백 `8788`에서 시험용 Gateway·가구·장치를 등록하도록 구성했다. 해당 인증서에만 중앙 승인·영수증·관측 경로를 허용한다. Pi 프로필과 PC LED 도구에 같은 모드 선택을 추가했다. [격리 API 준비](../keyring/dev/mobius4/README.md#최신-integration-api-벤치)
+- `start-scoped-command-api.ps1 -Mode integration -PrepareOnly`가 exit 0을 반환했다. 팀 소스·계약 아카이브 SHA-256은 `d71f006b9a64576376115303227d8e9b4aa9e8ce5010429e98316cb3f3475b3a`다. 로컬 시험용 운영자 인증서를 발급했다. 팀 Node 의존성 설치와 새 API 시작·등록, 테스트·빌드·Pi 실행은 미실행이다.
+
+소스 commit `fbac3d11035c3de3275e858140a7364fb861f362`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `647696d..fbac3d1`다. goal은 active/progress다.
