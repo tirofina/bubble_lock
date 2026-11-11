@@ -1766,3 +1766,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R15. 직전 goal turn은 MQT
 - 이전 native 관측 행은 저장 본문에서 장치 ID를 채운다. 기존 요청 ID, 본문, 재시도 시각과 CORE 보관 fingerprint는 이어서 사용한다. 재시작·부팅 변경·공유 health·영수증 선택을 다루는 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·실제 Pi 마이그레이션과 Mobius4 재전송은 미수행이다. [BLE·중앙 통신 구현 메모](../keyring/raspberry-pi-gateway/IO_NOTES.md)
 
 소스 commit `163fdf3be325eac3243199cce3ad036beae57338`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `aff79c1..163fdf3`이다. goal은 active/progress다.
+
+## 2026-11-11 — Mobius4와 CORE MQTT 전송 작업 분리
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R11. 직전 goal turn은 Mobius4 장치별 관측 재전송 순서를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀 CORE ACK·텔레메트리 계약을 확인했다.
+
+- Gateway 0.2.98은 Mobius4 native 전송, CORE ACK, CORE 텔레메트리를 독립 작업에서 처리한다. Mobius4 응답 대기 중에도 새 명령의 ACK를 기존 SQLite 트랜잭션으로 등록하고 MQTT로 보낼 수 있다. CORE 텔레메트리는 설정된 ownership epoch와 장치별 순서를 유지한다.
+- Mobius4 대기 중 CORE ACK와 기본 텔레메트리 전송, 명령 비활성 모드, native 우선순위와 중복 ACK 회귀시험 소스를 보강했다. 빌드·테스트·정적 분석·실제 Pi·Mobius4·MQTT 브로커 검증은 미수행이다. [영수증과 CORE ACK의 대기열](../keyring/raspberry-pi-gateway/RECEIPT_ROUTING.md)
+
+소스 commit `4a51cc2d262e86c1f6d35535a21f7c63d8094bcd`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `01f86df..4a51cc2`다. goal은 active/progress다.
