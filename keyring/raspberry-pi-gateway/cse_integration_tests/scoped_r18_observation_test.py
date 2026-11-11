@@ -38,12 +38,16 @@ class ScopedR18ObservationTests(unittest.TestCase):
                       "docRevision": "2.0.0", "eventId": "telemetry-a", "gatewayId": GATEWAY, "deviceId": R18_DEVICE,
                       "observationId": central_observation_id(self.observation), "payloadHash": payload_hash(self.observation),
                       "observedAt": stamp, "timestamp": stamp, "sequence": 21, "simulation": False}
-        binding = dict(BINDING, bindingVersion=3, gatewayId=GATEWAY, originator="Sscoped-r18-gateway-b", cseId="Mobius4",
-                       cseDeploymentId="scoped-mobius4", pcApiDeploymentId="scoped-command-api-r18",
-                       observationContainer=PATHS["observation"], observationContainerRi="cnt-observation")
-        with closing(Store(self.database, 100, 100000, 20, binding)) as store:
+        self.binding = dict(BINDING, bindingVersion=3, gatewayId=GATEWAY, originator="Sscoped-r18-gateway-b", cseId="Mobius4",
+                            cseDeploymentId="scoped-mobius4", pcApiDeploymentId="scoped-command-api-r18",
+                            observationContainer=PATHS["observation"], observationContainerRi="cnt-observation",
+                            healthContainer=PATHS["health"], healthContainerRi="cnt-health")
+        self.create_database(self.database, self.binding)
+
+    def create_database(self, database, binding):
+        with closing(Store(database, 100, 100000, 20, binding)) as store:
             store.observation(PATHS["observation"], self.observation, central_enabled=True)
-            store.delivered(rqi)
+            store.delivered(Store.request_id("observation", f"{R18_DEVICE}:{self.usb['bootId']}:{self.observation['sequence']}"))
 
     def compare(self, events):
         return compare_observation(self.capture, self.usb, self.database, {"receipts": events}, payload_hash)
@@ -54,6 +58,8 @@ class ScopedR18ObservationTests(unittest.TestCase):
         self.assertTrue(report["centralTelemetryAccepted"])
         self.assertFalse(report["nativePendingOnPi"])
         self.assertTrue(report["centralPendingOnPi"])
+        self.assertTrue(report["healthContainerVerified"])
+        self.assertTrue(report["physicalRelayEvidenceMatched"])
         self.assertEqual(report["piWatermarkSequence"], 8)
         self.assertEqual(report["centralEvent"]["eventId"], "telemetry-a")
         with self.assertRaisesRegex(ValueError, "inconsistent GATEWAY_TELEMETRY_ACCEPTED"):
@@ -66,6 +72,32 @@ class ScopedR18ObservationTests(unittest.TestCase):
         self.capture["health"]["pi"] = "cnt-other"
         with self.assertRaisesRegex(ValueError, "pinned container"):
             self.compare([self.event])
+        self.capture["healthContainerRi"] = "cnt-other"
+        with self.assertRaisesRegex(ValueError, "differs from the Pi database binding"):
+            self.compare([self.event])
+
+    def test_pending_health_body_is_compared_with_mobius4(self):
+        with closing(Store(self.database, 100, 100000, 20, self.binding)) as store:
+            store.enqueue_heartbeat(self.capture["health"]["con"])
+        self.assertTrue(self.compare([self.event])["healthPendingOnPi"])
+        self.capture["health"]["con"]["outboxDepth"] = 7
+        with self.assertRaisesRegex(ValueError, "Pending Pi payload .* differs"):
+            self.compare([self.event])
+
+    def test_simulated_central_acceptance_and_old_unpinned_database_do_not_match_physical_evidence(self):
+        report = self.compare([dict(self.event, simulation=True)])
+        self.assertTrue(report["centralTelemetryAccepted"])
+        self.assertTrue(report["centralEvent"]["simulation"])
+        self.assertFalse(report["physicalRelayEvidenceMatched"])
+
+        old_db = self.database.with_name("unpinned.sqlite3")
+        old_binding = dict(self.binding)
+        old_binding.pop("healthContainerRi")
+        self.create_database(old_db, old_binding)
+        report = compare_observation(self.capture, self.usb, old_db, {"receipts": [self.event]}, payload_hash)
+        self.assertTrue(report["centralTelemetryAccepted"])
+        self.assertIsNone(report["healthContainerVerified"])
+        self.assertFalse(report["physicalRelayEvidenceMatched"])
 
     def test_location_projection_matches_both_routes_and_checks_scope_and_expiry(self):
         stamp = self.observation["observedAt"]

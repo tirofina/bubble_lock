@@ -436,7 +436,9 @@ python $tool compare --firmware-revision $r18BringupFirmware --usb-boot-log $r18
   --capture $r18ObservationCapture --database $piDatabaseCopy --team-state $teamStateCopy
 ```
 
-`compare`는 Pi의 같은 부팅에서 관측 순번이 저장됐는지 확인한다. 해당 전송이 아직 큐에 있으면 Pi 본문도 대조한다. 중앙은 고정 팀 소스의 해시 함수로 Mobius4 본문을 계산해 수용 이벤트와 비교한다. 상태 사본에 중앙 이벤트가 아직 없으면 `centralTelemetryAccepted:false`와 종료 코드 1을 출력한다. 최신 중앙 사본으로 같은 기록을 다시 대조할 수 있다.
+`compare`는 Pi의 같은 부팅에서 관측 순번이 저장됐는지 확인하고, 관측·health 컨테이너를 SQLite에 고정한 자원 ID와 대조한다. 해당 관측이나 health가 Pi 전송 큐에 남아 있으면 본문도 비교한다. 기존 health ID 미고정 세션은 `healthContainerVerified:null`로 보고한다.
+
+중앙 수용은 고정 팀 소스의 해시 함수로 Mobius4 관측 본문과 대조한다. `physicalRelayEvidenceMatched`는 Pi의 health 고정 ID가 맞고 같은 중앙 수용 이벤트에 `simulation:false`가 기록됐을 때 `true`다. `centralTelemetryAccepted`는 중앙 수용 결과를 별도로 표시하며, 상태 사본에 이벤트가 아직 없으면 종료 코드 1을 반환한다. 최신 중앙 사본으로 같은 기록을 다시 대조할 수 있다.
 
 ##### 중앙 위치 API와 웹 응답 대조
 

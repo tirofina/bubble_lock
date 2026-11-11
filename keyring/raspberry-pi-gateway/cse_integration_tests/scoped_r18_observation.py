@@ -50,7 +50,7 @@ def bound_observation(native, health, *, usb, firmware, observation_pin, health_
     if health["rn"] != content_name(health_request):
         raise ValueError("Invalid r18 heartbeat resource name")
     request = verify_observation_resource({**observation, "cseResource": native}, R18_DEVICE, observation_pin)
-    return observation, request
+    return observation, request, health_request
 
 
 async def read_observation_candidate(cse, *, usb, firmware, observation_pin, health_pin, started_at, require_rssi=False):
@@ -137,37 +137,48 @@ def compare_observation(capture, usb, database, team_state, hasher, *, portal_re
                               started_at=parse_time(capture["startedAt"]), captured_at=parse_time(capture["capturedAt"]))
     if bound is None:
         raise ValueError("CSE observation and health differ from the captured USB boot")
-    observation, native_request = bound
+    observation, native_request, health_request = bound
     observation_id = central_observation_id(observation)
     expected = {"gatewayId": GATEWAY, "originator": "Sscoped-r18-gateway-b", "cseId": "Mobius4",
                 "cseDeploymentId": CSE_DEPLOYMENT, "pcApiDeploymentId": "scoped-command-api-r18",
-                "observationContainer": PATHS["observation"], "observationContainerRi": capture["observationContainerRi"]}
+                "observationContainer": PATHS["observation"], "observationContainerRi": capture["observationContainerRi"],
+                "healthContainer": PATHS["health"]}
     central_request = Store.request_id("central-telemetry", observation_id)
     with closing(readonly(database)) as db:
         db.execute("BEGIN")
         identity = metadata(db)
         if identity is None or any(identity["binding"].get(key) != value for key, value in expected.items()):
             raise ValueError("Pi database does not belong to the scoped observation route")
+        health_pin = identity["binding"].get("healthContainerRi")
+        if health_pin is not None and health_pin != capture["healthContainerRi"]:
+            raise ValueError("CSE health container differs from the Pi database binding")
         head = db.execute("SELECT boot_id,sequence FROM observations WHERE device_id=?", (R18_DEVICE,)).fetchone()
         if (head is None or head["boot_id"] != observation["bootId"]
                 or head["sequence"] < observation["sequence"] or db.execute("SELECT 1 FROM commands LIMIT 1").fetchone()):
             raise ValueError("Pi observation watermark or command journal differs from the bring-up capture")
         pending = {}
-        for request, route in ((native_request, PATHS["observation"]), (central_request, "@central/telemetry")):
+        for request, route, payload in (
+                (native_request, PATHS["observation"], observation),
+                (central_request, "@central/telemetry", observation),
+                (health_request, PATHS["health"], capture["health"]["con"])):
             row = db.execute("SELECT container,payload FROM outbox WHERE rqi=?", (request,)).fetchone()
-            if row is not None and (row["container"] != route or row["payload"] != canonical(observation)):
-                raise ValueError("Pending Pi observation body differs from the CSE record")
+            if row is not None and (row["container"] != route or row["payload"] != canonical(payload)):
+                raise ValueError(f"Pending Pi payload for {route} differs from the CSE record")
             pending[request] = row is not None
     digest = hasher(observation)
     event = inspect_integration_observation(dict(observation, payloadHash=digest), team_state, allow_pending=True)
+    simulation = event.get("simulation") if event is not None else None
     report = {"deviceId": R18_DEVICE, "firmwareRevision": observation["firmwareRevision"],
               "usbLogSha256": usb["logSha256"], "firmwareSequence": observation["sequence"],
               "observationId": observation_id, "payloadHash": digest,
               "piWatermarkSequence": head["sequence"], "commandReady": False,
               "nativeResourceId": capture["native"]["ri"], "healthResourceId": capture["health"]["ri"],
               "nativePendingOnPi": pending[native_request], "centralPendingOnPi": pending[central_request],
+              "healthPendingOnPi": pending[health_request], "healthContainerVerified": True if health_pin is not None else None,
               "centralTelemetryAccepted": event is not None,
-              "centralEvent": None if event is None else {key: event[key] for key in TELEMETRY_EVENT_FIELDS}}
+              "physicalRelayEvidenceMatched": health_pin is not None and simulation is False,
+              "centralEvent": None if event is None else {
+                  **{key: event[key] for key in TELEMETRY_EVENT_FIELDS}, "simulation": simulation}}
     if portal_response is not None:
         report["portalLocationResponse"] = inspect_location_response(portal_response, observation, event)
     if web_response is not None:
