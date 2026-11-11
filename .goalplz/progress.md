@@ -1339,3 +1339,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R05, R15. 직전 goal turn�
 - 지연 도착과 해시 불일치를 다루는 회귀시험 소스를 추가했다. 빌드·회귀시험·도구 실행·Feather 플래시와 최신 Pi 실물 시험은 미실행이다.
 
 소스 commit `10a3721f400f5ae5ef7b8aa24032cfc876782113`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `80398a0..10a3721`이다. goal은 active/progress다.
+
+## 2026-11-11 — 중앙 API Retry-After 동안 Pi 대기열 유지
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10, R15. 직전 goal turn은 OFF 뒤 중앙 수용 기록을 추가한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 팀 중앙 관측 수용과 CORE·웹의 재전송 경계를 확인했다.
+
+- Gateway `0.2.56`은 중앙 API의 `Retry-After` 동안 새 중앙 전송을 선택하지 않아 기존 행의 시도 횟수와 예약 시각을 보존한다. 새 명령 영수증은 SQLite 명령 저널에 남고 대기가 끝나면 등록한다. 별도 Mobius4 origin은 전송할 수 있고, 신뢰 가능한 시계로 만료된 중앙 관측은 계속 정리한다. origin 대기 자체는 현재 프로세스의 기존 메모리 상태를 사용한다. [중앙 관측 전달](../keyring/raspberry-pi-gateway/IO_NOTES.md#중앙-관측-전달)
+- 중앙 보류 및 해제, 시도 횟수 보존, 만료와 Mobius4 전송을 다루는 회귀시험 소스를 추가했다. 빌드·시험·Pi 실행 및 Feather 0.2.1 화면 검증은 미실행이다.
+
+소스 commit `6ff3fc1cbb99c107c5a5c377c8ffda63d6a9a9ce`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `315c0f0..6ff3fc1`이다. goal은 active/progress다.
