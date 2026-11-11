@@ -1865,3 +1865,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11. 직전 goal turn은 r18
 - 새 Pi 명령 세션·격리 API 프로필은 0.7.19를 고정한다. 이전 0.7.14의 Pi 프로필과 오프라인 기록을 읽는 경로를 유지한다. GPIO 쓰기·읽기 실패와 API revision 불일치 회귀시험 소스를 보강했다. 빌드·테스트·정적 분석·격리 명령 API 재시작·플래시·실물 GPIO/전압·모터 시험은 미수행이다. [보조 전원 동작](../keyring/firmware/PERIPHERALS.md#공용-전원spi절전)
 
 소스 commit `3b2edcc91e19a7812cc93dd6ec1d2cd8fbbd730a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `02a73d3..3b2edcc`다. goal은 active/progress다.
+
+## 2026-11-11 — 격리 r18 명령 API의 0.7.19 전환
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11. 직전 goal turn은 펌웨어의 보조 전원 GPIO 확인과 명령 프로필 변경을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀의 명령 readback 수용 계약을 확인했다.
+
+- `https://127.0.0.1:8789`의 기존 격리 r18 API가 0.7.14 프로필을 사용했고, 연결된 클라이언트와 저장된 명령은 0건이었다. 해당 루프백 프로세스를 종료한 뒤 기존 파일·인증서·팀 소스로 0.7.19 프로필을 시작했다.
+- 새 리스너는 `r18-hand-solder`, `keyring-0.7.19`, 팀 commit `bc2a45d`로 `READY`를 보고했다. 상태 파일 SHA-256은 재시작 전후 같았고 저장된 명령은 0건이다. 빌드·회귀시험·정적 분석·Pi 사전 확인·플래시·실물 명령 시험은 미수행이다. [격리 명령 API](../keyring/dev/mobius4/README.md#r18-격리-명령-api)
+
+배포한 프로필 소스는 `3b2edcc91e19a7812cc93dd6ec1d2cd8fbbd730a`이며 `origin/codex/keyring-namho`에 있다. goal은 active/progress다.

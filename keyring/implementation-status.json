@@ -1818,5 +1818,18 @@
     "regressionsExecuted": false,
     "physicalPowerVerified": false,
     "sourceCommit": "3b2edcc91e19a7812cc93dd6ec1d2cd8fbbd730a"
+  },
+  "r18CommandApiProfileDeployment": {
+    "reference": "dev/mobius4/README.md#r18-격리-명령-api",
+    "endpoint": "https://127.0.0.1:8789",
+    "teamRevision": "bc2a45dfcc014b7cdb0a57a03aca2c04ca8eb989",
+    "boardRevision": "r18-hand-solder",
+    "firmwareRevision": "keyring-0.7.19",
+    "listenerReady": true,
+    "storedCommands": 0,
+    "runtimeSha256BeforeAndAfter": "f7ae6b12ba1ae1afa315723e5bd345dab303d5219a48b7962c33d980ae260555",
+    "piPreflightExecuted": false,
+    "physicalCommandVerified": false,
+    "sourceCommit": "3b2edcc91e19a7812cc93dd6ec1d2cd8fbbd730a"
   }
 }
