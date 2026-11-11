@@ -1,13 +1,16 @@
 param(
   [switch]$PrepareOnly,
-  [string]$OpenSslPath = 'C:/Program Files/Git/usr/bin/openssl.exe'
+  [string]$OpenSslPath = 'C:/Program Files/Git/usr/bin/openssl.exe',
+  [ValidateSet('legacy', 'integration')][string]$Mode = 'legacy'
 )
 
 $ErrorActionPreference = 'Stop'
 $profileRoot = Join-Path $PSScriptRoot '.local/scoped'
 $tlsRoot = Join-Path $profileRoot 'tls'
-$apiRoot = Join-Path $profileRoot 'command-api'
-$revision = '715ef58df6c901480eb71fb3b9278e8df6547d93'
+$Mode = $Mode.ToLowerInvariant()
+$selection = (Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot 'scoped-command-profiles.json') | ConvertFrom-Json).$Mode
+$apiRoot = Join-Path $profileRoot $selection.directory
+$revision = $selection.revision
 $revisionPath = Join-Path $apiRoot 'team-revision'
 foreach ($name in @('ca.pem', 'server.pem', 'server.key', 'gateway-a.pem')) {
   if (-not (Test-Path -LiteralPath (Join-Path $tlsRoot $name) -PathType Leaf)) {
@@ -22,7 +25,9 @@ if (-not (Test-Path -LiteralPath $apiRoot)) {
   New-Item -ItemType Directory -Path $apiRoot | Out-Null
   $archive = Join-Path $apiRoot 'team-source.zip'
   $repository = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '../../..')).Path
-  git -C $repository archive --format=zip --output=$archive $revision pc-mobius
+  $sourcePaths = @('pc-mobius')
+  if ($Mode -eq 'integration') { $sourcePaths += 'contracts/keyring' }
+  git -C $repository archive --format=zip --output=$archive $revision @sourcePaths
   if ($LASTEXITCODE -ne 0) { throw 'Could not extract the pinned team source.' }
   Expand-Archive -LiteralPath $archive -DestinationPath (Join-Path $apiRoot 'team-source')
   $operatorKey = Join-Path $apiRoot 'operator.key'
@@ -43,6 +48,17 @@ if (-not (Test-Path -LiteralPath $apiRoot)) {
 if (-not (Test-Path -LiteralPath $revisionPath) -or (Get-Content -LiteralPath $revisionPath) -ne $revision) {
   throw 'The existing command API folder has an incomplete or different team source. Keep it for recovery.'
 }
-if ($PrepareOnly) { return }
-node (Join-Path $PSScriptRoot 'scoped-command-api.mjs')
+if ($PrepareOnly) {
+  Write-Output "SCOPED_COMMAND_API_PREPARED $Mode $revision"
+  return
+}
+if ($Mode -eq 'integration') {
+  $modules = Join-Path $apiRoot 'team-source/pc-mobius/node_modules'
+  foreach ($name in @('ajv', 'ajv-formats', 'pg', 'mqtt')) {
+    if (-not (Test-Path -LiteralPath (Join-Path $modules $name) -PathType Container)) {
+      throw 'Install the pinned team package dependencies in command-api-integration/team-source/pc-mobius before starting.'
+    }
+  }
+}
+node (Join-Path $PSScriptRoot 'scoped-command-api.mjs') $Mode
 if ($LASTEXITCODE -ne 0) { throw 'Scoped command API exited with an error.' }

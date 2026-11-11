@@ -1,0 +1,12 @@
+{
+  "legacy": {
+    "directory": "command-api",
+    "revision": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+    "port": 8787
+  },
+  "integration": {
+    "directory": "command-api-integration",
+    "revision": "bc2a45dfcc014b7cdb0a57a03aca2c04ca8eb989",
+    "port": 8788
+  }
+}

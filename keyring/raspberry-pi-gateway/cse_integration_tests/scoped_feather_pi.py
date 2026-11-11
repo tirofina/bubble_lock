@@ -11,6 +11,7 @@ import sys
 GATEWAY_SOURCE = Path(__file__).resolve().parents[1] / "src"
 PARENT = "/Mobius/privacy-bubble-test-ae"
 CSE_DEPLOYMENT = "scoped-mobius4"
+API_PORTS = {"legacy": 8787, "integration": 8788}
 
 
 def require_private(path, kind):
@@ -37,6 +38,9 @@ def gateway_environment(profile, session):
     cse, api = profile["csePort"], profile["apiPort"]
     if any(type(port) is not int or not 1024 <= port <= 65535 for port in (cse, api)) or cse == api:
         raise ValueError("Use two different unprivileged Pi loopback ports")
+    mode = profile.get("apiMode", "legacy")
+    if mode not in API_PORTS:
+        raise ValueError("Unknown scoped API mode")
     tls = Path(profile["tlsDirectory"])
     if not tls.is_absolute():
         raise ValueError("Expected an absolute client TLS directory")
@@ -56,6 +60,9 @@ def gateway_environment(profile, session):
         "GATEWAY_DATABASE": str(session / "gateway.sqlite3"), "POLL_INTERVAL": "1", "REQUEST_TIMEOUT": "5",
         "HEARTBEAT_INTERVAL": "5",
     }
+    if mode == "integration":
+        environment.update(PC_DISPATCH_START_REQUIRED="true", CENTRAL_RECEIPTS_ENABLED="true",
+                           CENTRAL_TELEMETRY_ENABLED="true")
     if "cseDeploymentId" in profile:
         if profile["cseDeploymentId"] != CSE_DEPLOYMENT:
             raise ValueError("Expected the scoped Mobius4 deployment")
@@ -75,8 +82,11 @@ def prepare(args, session):
         address = stream.read(32).strip().upper()
         if stream.read(1):
             raise ValueError("The address file must contain only one paired Feather address")
+    api_port = API_PORTS[args.api_mode] if args.api_port is None else args.api_port
     profile = {"version": 1, "address": address, "tlsDirectory": str(args.tls_dir.absolute()),
-               "csePort": args.cse_port, "apiPort": args.api_port, "cseDeploymentId": CSE_DEPLOYMENT}
+               "csePort": args.cse_port, "apiPort": api_port, "cseDeploymentId": CSE_DEPLOYMENT}
+    if args.api_mode == "integration":
+        profile["apiMode"] = args.api_mode
     if args.receipt_container_ri is not None:
         profile["receiptContainerRi"] = args.receipt_container_ri
     gateway_environment(profile, session)
@@ -96,7 +106,7 @@ def load_environment(session):
         profile = json.loads(stream.read(8193))
     fields = {"version", "address", "tlsDirectory", "csePort", "apiPort"}
     if (not isinstance(profile, dict) or not fields <= profile.keys()
-            or profile.keys() - fields - {"cseDeploymentId", "receiptContainerRi"}):
+            or profile.keys() - fields - {"cseDeploymentId", "receiptContainerRi", "apiMode"}):
         raise ValueError("Expected a prepared Feather command session")
     return gateway_environment(profile, session)
 
@@ -119,7 +129,8 @@ def main():
     setup.add_argument("--address-file", type=Path, required=True)
     setup.add_argument("--tls-dir", type=Path, required=True)
     setup.add_argument("--cse-port", type=int, default=8760)
-    setup.add_argument("--api-port", type=int, default=8787)
+    setup.add_argument("--api-mode", choices=API_PORTS, default="legacy")
+    setup.add_argument("--api-port", type=int, help="Override the selected API mode's Pi loopback port")
     setup.add_argument("--receipt-container-ri", help="Use the scoped gw-a receipt pin in a fresh session")
     start = modes.add_parser("run", help="Start the Gateway for an explicitly prepared session")
     check = modes.add_parser("preflight", help="Check the pinned receipt and central command routes over mTLS")

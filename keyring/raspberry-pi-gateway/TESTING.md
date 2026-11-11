@@ -232,7 +232,9 @@ tool=keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_pi.py
   --address-file "$paired_address_file" --tls-dir "$scoped_gateway_tls"
 ```
 
-`prepare`는 로컬 TLS 파일을 읽고 `~/.local/state/privacy-bubble-feather-command/<세션>/profile.json`을 만든다. Pi 포워딩 포트가 8760과 8787과 다르면 `--cse-port`와 `--api-port`를 함께 지정한다. 실행 단계에서 상속된 Gateway 환경변수를 사용하지 않는다.
+`prepare`는 로컬 TLS 파일을 읽고 `~/.local/state/privacy-bubble-feather-command/<세션>/profile.json`을 만든다. 포워딩 포트를 바꿀 때는 `--cse-port` 또는 `--api-port`를 지정한다. 실행 환경은 저장한 프로필에서 구성한다.
+
+최신 팀 API를 쓰는 새 세션에는 `--api-mode integration`을 지정한다. 기본 포워딩 포트는 CSE `8760`, API `8788`이며, PC의 `scoped_feather_led_cycle.py`에도 같은 모드를 지정한다. 기존 세션은 프로필의 기본 모드 `legacy`로 실행된다. [최신 중앙 벤치](../dev/mobius4/README.md#최신-integration-api-벤치)
 
 격리 TLS 프록시에 컨테이너 권한을 준비한 경우, 새 세션의 `prepare`에 `--receipt-container-ri "$gw_a_receipt_ri"`를 추가한다. 이 값에는 PC 준비 도구의 `SCOPED_RECEIPT_PIN gw-a` 출력에서 읽은 ID를 넣는다.
 

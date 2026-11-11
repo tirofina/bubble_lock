@@ -10,7 +10,8 @@ import httpx
 
 from pi_led_cycle import run_led_cycle
 
-PROFILE = Path(__file__).resolve().parents[2] / "dev/mobius4/.local/scoped"
+BENCH_ROOT = Path(__file__).resolve().parents[2] / "dev/mobius4"
+PROFILE = BENCH_ROOT / ".local/scoped"
 PARENT = "/Mobius/privacy-bubble-test-ae"
 PATHS = {"observation": f"{PARENT}/command-observations-a", "receipt": f"{PARENT}/command-receipts-a",
          "health": f"{PARENT}/health"}
@@ -33,19 +34,23 @@ async def exchange(client, method, path, headers, body=None):
         return response.status_code, response.headers, json.loads(data) if data else None
 
 
-async def run(output, seconds):
+async def run(output, seconds, *, api_mode="legacy"):
     environment = dict(line.split("=", 1) for line in (PROFILE / "compose.env").read_text(encoding="utf-8-sig").splitlines()
                        if line and not line.startswith("#"))
     port = int(environment["KEYRING_CSE_TLS_PORT"])
     if not 1 <= port <= 65535 or not environment.get("CSE_ADMIN"):
         raise ValueError("Scoped CSE configuration required")
     core_tls = tls_context(PROFILE / "tls/client.pem", PROFILE / "tls/client.key")
-    operator_tls = tls_context(PROFILE / "command-api/operator.pem", PROFILE / "command-api/operator.key")
+    profiles = json.loads((BENCH_ROOT / "scoped-command-profiles.json").read_text(encoding="utf-8"))
+    api = profiles[api_mode]
+    operator_dir = PROFILE / api["directory"]
+    operator_tls = tls_context(operator_dir / "operator.pem", operator_dir / "operator.key")
     output.mkdir(mode=0o700)
     defaults = {"Accept": "application/json", "Cache-Control": "no-store"}
     async with (
         httpx.AsyncClient(base_url=f"https://127.0.0.1:{port}", verify=core_tls, trust_env=False, timeout=5) as core,
-        httpx.AsyncClient(base_url="https://127.0.0.1:8787", verify=operator_tls, trust_env=False, timeout=5) as operator,
+        httpx.AsyncClient(base_url=f"https://127.0.0.1:{api['port']}", verify=operator_tls,
+                          trust_env=False, timeout=5) as operator,
         asyncio.timeout(seconds),
     ):
         async def cse(method, path):
@@ -75,5 +80,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True, type=Path, help="New private local directory for triggers and evidence")
     parser.add_argument("--seconds", type=int, default=600, choices=range(30, 1801), metavar="30..1800")
+    parser.add_argument("--api-mode", choices=("legacy", "integration"), default="legacy")
     args = parser.parse_args()
-    asyncio.run(run(args.output.resolve(), args.seconds))
+    asyncio.run(run(args.output.resolve(), args.seconds, api_mode=args.api_mode))

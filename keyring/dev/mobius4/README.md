@@ -191,6 +191,21 @@ Pi에는 scoped CA의 `ca.pem`, `gateway-a.pem`, `gateway-a.key`를 소유자 �
 
 정산 명령의 `--team-root`에는 `.local/scoped/command-api/team-source`, `--state`에는 같은 폴더의 `runtime.json`을 넣는다. 다른 연결 설정은 [Feather 명령 프로필](../../firmware/feather_probe/README.md#내장-led를-쓰는-명령-프로필)과 [Scoped LED 시험 절차](../../raspberry-pi-gateway/TESTING.md#기존-scoped-mobius4에서-feather-led-시험)를 따른다. 2026-11-10에는 로컬 API 리스너와 장치 등록까지 준비했다. [API 배치 증거](../../evidence/2026-11-10-scoped-command-api/provisioning.json)
 
+#### 최신 INTEGRATION API 벤치
+
+팀 main `bc2a45d`는 새 포트 `127.0.0.1:8788`과 `.local/scoped/command-api-integration/`을 사용한다. 이 폴더에 고정한 팀 소스, 계약, 운영자 인증서와 중앙 상태를 둔다. 첫 실행에서 `gw-a`, 시험용 가구와 장치 `keyring-feather-lab`을 등록한다. 기존 등록은 동일한 Gateway·가구·장치인지 대조한다.
+
+```powershell
+$tool = './keyring/dev/mobius4'
+& "$tool/start-scoped-command-api.ps1" -Mode integration -PrepareOnly
+npm --prefix "$tool/.local/scoped/command-api-integration/team-source/pc-mobius" ci --omit=dev --ignore-scripts
+& "$tool/start-scoped-command-api.ps1" -Mode integration
+```
+
+`READY`의 `mode`가 `integration`이면, Pi의 시험 세션을 새로 준비하면서 `--api-mode integration`을 지정한다. SSH 포워딩의 PC·Pi API 포트는 둘 다 `8788`을 사용한다. 이 모드는 Gateway 0.2.47 이상의 `dispatch-start`, 중앙 영수증과 중앙 관측을 켠다. PC의 LED 도구에도 `--api-mode integration`을 사용한다. [Pi 세션 설정](../../raspberry-pi-gateway/TESTING.md#pi-명령-세션)
+
+중앙 정산의 정본은 최신 프로필의 `runtime.json`에 있는 `gatewayCommands`와 `gatewayDeviceReceipts`다. `gatewayTelemetry`에는 수용한 관측의 식별자와 암호화된 위치 참조가 남는다. 기존 벤치의 콜백·PostgreSQL 정산 도구는 기존 프로필을 읽는다.
+
 ### 격리 소유권 전환
 
 새 소비자와 ACL을 배치한 뒤 아래 명령을 쓴다. `Forward`는 A의 epoch 7에서 B의 8로, `Rollback`은 B의 8에서 A의 9로 전환한다. 이전 epoch 토픽은 지연 관측 재현을 위해 격리 ACL에 남긴다. 실제 활성 소유권은 소비자가 대조한다.

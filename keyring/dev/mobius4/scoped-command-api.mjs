@@ -4,16 +4,23 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 
-const revision = '715ef58df6c901480eb71fb3b9278e8df6547d93';
+const mode = process.argv[2] ?? 'legacy';
+const profiles = JSON.parse(await readFile(new URL('./scoped-command-profiles.json', import.meta.url), 'utf8'));
+if (!Object.hasOwn(profiles, mode)) throw new Error('Unknown scoped command API profile.');
+const { directory, revision, port } = profiles[mode];
+const integrated = mode === 'integration';
 const profile = new URL('./.local/scoped/', import.meta.url);
-const local = new URL('command-api/', profile);
+const local = new URL(`${directory}/`, profile);
 const team = new URL('team-source/pc-mobius/integration/src/', local);
 const gatewayId = 'gw-a';
 const deviceId = 'keyring-feather-lab';
 const subjectId = 'scoped-feather-bench';
 const operatorId = 'scoped-command-operator';
 const gatewayPrincipalId = 'scoped-command-gateway-a';
-const port = 8787;
+
+// Keep inherited database and key settings out of the loopback-only bench process.
+delete process.env.BUBBLE_DATABASE_URL;
+delete process.env.BUBBLE_MEC_ENCRYPTION_KEY;
 
 if ((await readFile(new URL('team-revision', local), 'utf8')).trim() !== revision) {
   throw new Error('Pinned team command API source is required.');
@@ -34,11 +41,15 @@ const gatewayPath = `/api/v1/gateways/${gatewayId}`;
 const gatewayRoutes = new Set([
   `GET ${gatewayPath}/commands`, `GET ${gatewayPath}/credentials/status`, `POST ${gatewayPath}/authorize`,
 ]);
+if (integrated) {
+  for (const path of ['dispatch-start', 'receipts', 'telemetry']) gatewayRoutes.add(`POST ${gatewayPath}/${path}`);
+}
 const operatorRoutes = new Set([
   'POST /v1/consents', 'POST /v1/grants', 'POST /v1/grants/revoke', `POST ${gatewayPath}/commands`,
 ]);
 const denied = (status, error) => ({ status, headers: { 'content-type': 'application/json' }, body: { error } });
 let runtimeApi;
+let runtime;
 const server = createIntegrationServer({ tls: { ca, cert, key }, principals, api: {
   async handle(request) {
     if (!runtimeApi) return denied(503, 'Scoped command API is starting');
@@ -60,7 +71,7 @@ const server = createIntegrationServer({ tls: { ca, cert, key }, principals, api
 server.listen(port, '127.0.0.1');
 await once(server, 'listening');
 try {
-  const runtime = await createIntegrationRuntime({
+  runtime = await createIntegrationRuntime({
     statePath: fileURLToPath(new URL('runtime.json', local)),
     receiptPath: fileURLToPath(new URL('integration-receipts.jsonl', local)),
   });
@@ -75,10 +86,35 @@ try {
   } else {
     await runtime.gatewayControl.enroll(enrollment);
   }
+  if (integrated) {
+    await runtime.store.transaction(`scoped-enrollment:${subjectId}`, async () => {
+      const household = runtime.store.get('households', subjectId);
+      if (household) {
+        if (household.ownerId !== operatorId || !household.members.some(
+          ({ principalId, role }) => principalId === operatorId && role === 'guardian',
+        )) throw new Error('Existing scoped household does not match the operator.');
+      } else {
+        await runtime.portalService.provisionHousehold({ householdId: subjectId, name: 'Feather bench', ownerId: operatorId });
+      }
+      const device = runtime.store.get('portalDevices', deviceId);
+      if (device) {
+        if (device.householdId !== subjectId || device.gatewayId !== gatewayId) {
+          throw new Error('Existing scoped device does not match its Gateway and household.');
+        }
+      } else {
+        const bootstrapOperator = { principalId: operatorId, scopes: ['portal:read', 'device:write'] };
+        await runtime.portalService.registerDevice(bootstrapOperator, {
+          householdId: subjectId, gatewayId, deviceId, label: 'Feather bench',
+          idempotencyKey: 'scoped-feather-device-registration',
+        });
+      }
+    });
+  }
   runtimeApi = runtime.api;
   console.log(JSON.stringify({ status: 'READY', scope: 'scoped-command-api', endpoint: `https://127.0.0.1:${port}`,
-    teamRevision: revision, gatewayId, deviceId, subjectId }));
+    mode, teamRevision: revision, gatewayId, deviceId, subjectId }));
 } catch (error) {
   server.close();
+  await runtime?.close?.();
   throw error;
 }
