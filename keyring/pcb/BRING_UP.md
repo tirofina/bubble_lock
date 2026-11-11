@@ -10,6 +10,30 @@ KEYRING / 남호 · DOC-REV 2.0.0 · 준비 소스만 반영.
 2. 전원 인가 전에 J2 배터리 하네스가 pin 1 VBAT, pin 2 GND에 맞는지 확인한다. J9 스위치 배선은 원본 커넥터 표를 따른다. 첫 단계에서는 외장 화면·스피커·모터와 SD를 분리한다.
 3. 승인된 전원 조건에서 입력 전원과 보드의 +3V3 안정 여부를 실측한다. USB 연결 방식과 배터리 연결 유무를 기록한다. 반복 리셋이나 `MAIN_FAULT_N` 활성 상태면 출력 시험으로 넘어가지 않는다.
 
+### 실물 조립 기록
+
+보드에 붙인 시험용 식별표가 보이도록 앞뒤를 각각 촬영한다. 조립 revision은 실크 인쇄나 조립 기록에 적힌 값을 옮긴다. 확인할 수 없으면 `null`과 `unknown`을 기록한다. 아래 JSON은 파일 형식 예시다.
+
+```json
+{
+  "version": 1,
+  "boardTag": "r18-01",
+  "assemblyRevision": null,
+  "revisionSource": "unknown",
+  "population": "unknown",
+  "lcdModel": "none"
+}
+```
+
+`revisionSource`는 `silkscreen`, `assembly-record`, `unknown` 중에서 고른다. `population`은 `bare`, `partial`, `assembled`, `unknown`을 사용한다. `lcdModel`에는 연결된 패널에 따라 `st7789`, `jd9853`, `none`, `unknown`을 기록한다. JSON은 UTF-8로 저장한다.
+
+```powershell
+bubble-keyring-assembly-evidence --inventory keyring/pcb/r18/source-inventory.json `
+  --notes $r18AssemblyNotes --front $r18FrontPhoto --back $r18BackPhoto --output $r18AssemblyRecord
+```
+
+Gateway 0.2.105의 도구는 프로젝트·회로도·PCB·reference별 BOM·커넥터 표의 실제 바이트를 인계 목록과 대조하고, 사진 두 장과 입력 기록의 SHA-256을 남긴다. 사진에 붙인 식별표와 조립 상태는 작업자가 확인한다. 조립 기록과 사진은 Git 밖에 보관한다. 같은 보드를 시험할 때 식별표를 다시 읽어 [Pi 관측 대조](../raspberry-pi-gateway/TESTING.md#관측-전달-증거-대조)에 연결한다.
+
 ## 관측 펌웨어 올리기
 
 로컬 `firmware/include/provisioning.h`에 장치별 passkey와 장치 ID를 설정한다. USB 데이터 연결은 J1을 사용한다. 원본 BOM의 내부 서비스 버튼은 SW3 RESET과 SW4 BOOT다. USB 포트가 잡히지 않으면 보드의 전원 상태와 이 두 버튼의 실장부터 확인한다. GPIO43은 LCD reset에 연결돼 있으므로 콘솔은 USB CDC를 사용한다.

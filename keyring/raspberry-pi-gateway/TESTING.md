@@ -477,6 +477,8 @@ python $tool compare --firmware-revision $r18BringupFirmware --usb-boot-log $r18
 
 `--bringup-report`와 `--firmware-image`는 함께 지정한다. 도구는 첫 구동 보고서가 `RECORDED`인지, 같은 USB 로그와 실행 이미지 해시가 들어 있는지, Mobius4 관측 순번이 첫 구동에서 받은 순번보다 큰지 확인한다. 일치하면 첫 구동 보고서와 펌웨어 파일의 해시를 `firstBringupEvidence`에 남긴다. 이전 펌웨어 또는 관측 전송만 진단할 때는 두 옵션을 생략할 수 있다.
 
+같은 보드의 [실물 조립 기록](../pcb/BRING_UP.md#실물-조립-기록)이 있으면 `compare`에 `--assembly-record $r18AssemblyRecord --assembly-board-tag $observedBoardTag`를 함께 지정한다. `$observedBoardTag`는 첫 구동 때 보드에서 다시 확인한 값이다. 일치하면 보고서의 `assemblyEvidence`에 조립 revision, 기록 해시와 작업자가 확인한 연결 근거를 남긴다. 조립 기록에 적힌 LCD 모델과 USB 부팅의 패널 프로필이 모두 알려져 있으면 두 값도 대조한다.
+
 `--pi-log`는 Gateway 0.2.100 이후의 완료 로그에서 같은 요청 ID와 관측 본문 해시를 찾아 `nativeDelivery`에 연결한다. 0.2.101부터는 완료 로그와 health의 Gateway 부팅 ID도 대조한다. `mqtt`는 MQTT 응답으로, `https`는 HTTPS 전용 설정에서, `https-fallback`은 MQTT가 설정돼 있었지만 HTTPS CREATE 요청 응답으로 완료된 경로다. `created:false`이면 CSE에 있던 동일 자원을 확인한 결과다. 처음 생성한 경로를 이 값으로 판정할 수 없다. SQLite에 관측이 아직 대기 중이거나 로그의 경로가 충돌하면 대조가 실패한다. 기존 세션의 로그가 없으면 옵션을 생략한다.
 
 중앙 수용은 고정 팀 소스의 해시 함수로 Mobius4 관측 본문과 대조한다. `physicalRelayEvidenceMatched`는 Pi의 health 고정 ID가 맞고 같은 중앙 수용 이벤트에 `simulation:false`가 기록됐을 때 `true`다. `--require-physical`은 이 값이 `true`여야 성공 코드 0을 반환한다. 모의 이벤트, health ID 미고정 세션, 중앙 이벤트 미도착은 보고서를 출력하고 종료 코드 1을 반환한다. 중앙 수용만 진단할 때는 옵션을 생략하고 `centralTelemetryAccepted`를 확인한다. 최신 중앙 사본으로 같은 기록을 다시 대조할 수 있다.

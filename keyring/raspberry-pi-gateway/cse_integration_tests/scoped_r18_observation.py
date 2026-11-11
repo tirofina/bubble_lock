@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import re
 
+from bubble_gateway.assembly_evidence import assembly_reference
 from bubble_gateway.ble_characterize import read_firmware_image, read_usb_boot
 from bubble_gateway.config import ID
 from bubble_gateway.integration_evidence import inspect_integration_observation
@@ -322,11 +323,16 @@ def main():
                          help="require the pinned Pi health container and a non-simulated central event")
     compare.add_argument("--bringup-report", type=Path, help="first bring-up BLE report from the same USB boot")
     compare.add_argument("--firmware-image", type=Path, help="firmware.bin used for the first bring-up report")
+    compare.add_argument("--assembly-record", type=Path, help="r18 intake record for the board under test")
+    compare.add_argument("--assembly-board-tag", help="board tag observed again at bring-up")
     compare.add_argument("--pi-log", type=Path, help="Pi Gateway log containing the scoped native confirmation")
     compare.add_argument("--fallback-capture", type=Path, help="later scoped capture to compare with the MQTT baseline")
     compare.add_argument("--portal-response", type=Path, help="saved central portal location response")
     compare.add_argument("--web-response", type=Path, help="saved live dashboard location response")
     args = parser.parse_args()
+    if args.mode == "compare" and (args.assembly_record is not None or args.assembly_board_tag is not None):
+        if not (args.assembly_record and args.assembly_board_tag and args.bringup_report and args.firmware_image):
+            parser.error("assembly evidence requires both assembly options and the first bring-up report and image")
     api, operator_dir = scoped_api("r18")
     usb = read_usb_boot(args.usb_boot_log, R18_BOARD, args.firmware_revision)
     if any(usb[key] for key in ("motorActive", "auxEnabled", "mainFault")):
@@ -361,6 +367,9 @@ def main():
         else:
             report = compare_observation(artifact, usb, args.database, team_state, hasher, **options)
             passed = comparison_passed(report, require_physical=args.require_physical)
+        if args.assembly_record is not None:
+            report["assemblyEvidence"] = assembly_reference(args.assembly_record, args.assembly_board_tag,
+                                                            R18_BOARD, usb.get("displayProfile"))
         print(json.dumps(report, indent=2))
         raise SystemExit(0 if passed else 1)
 

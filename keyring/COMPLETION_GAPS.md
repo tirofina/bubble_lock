@@ -16,7 +16,7 @@ Gateway 0.2.5는 Pi 임시 사용자 systemd에서 실제 Feather 관측 27개�
 
 | 계획서 요구 | 현재 자료/실행 증거 | 남은 작업·입력 |
 |---|---|---|
-| KiCad schematic/PCB/BOM/assembly revision | [r18 snapshot/inventory](pcb/r18/README.md), [핀 정정](pcb/HARDWARE_FIRMWARE_MAP.md), 원본222개 파일 보존 | 실제 조립 revision·배선·부품·패널 식별과 실물 수용 |
+| KiCad schematic/PCB/BOM/assembly revision | [r18 snapshot/inventory](pcb/r18/README.md), [핀 정정](pcb/HARDWARE_FIRMWARE_MAP.md), 원본222개 파일 보존, [실물 조립 기록 도구](pcb/BRING_UP.md#실물-조립-기록) 소스 | 실제 조립 revision·배선·부품·패널 식별과 실물 수용 |
 | firmware source/build/flash 명령 | [소스](firmware/README.md), [기본/ST7789/JD9853 빌드3개](firmware/BUILD_PROFILES.md), Feather0.1.1 실제 flash·부팅·버튼·화면 유지 | 제작 PCB의 provisioning·flash·동작 결과. ESP32-S3의 기존3개는 unprovisioned compile |
 | GATT/profile/payload schema | [인터페이스](INTERFACE_NOTES.md), [schema](../contracts/keyring/README.md), [BLE 세션 회귀](evidence/2026-10-30-ble-sessions/README.md), 실제 Pi/Feather pairing·identity·fragment 수신과90초45개 관측 | 제작 PCB의 CORE 확장 수용·명령·재연결 수용시험 |
 | sensor/button/LED/battery/charger | Feather의 두 버튼 입력·ST7789 화면 전환/유지 확인, [센서/GPIO](firmware/README.md), [INA219](firmware/POWER_MONITOR.md), [주변장치](firmware/PERIPHERALS.md), [DAC standby](firmware/HEADPHONE_STANDBY.md) | 제작 PCB의 센서 calibration/오류/wake/출력·전력 측정·구매 JD9853 init/geometry. LED·충전·온도 gate는 하드웨어 경로 |

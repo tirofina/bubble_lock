@@ -18,6 +18,7 @@ bubble-gateway-state = "bubble_gateway.state_archive:main"
 bubble-keyring-ble-characterize = "bubble_gateway.ble_characterize:main"
 bubble-keyring-power-evidence = "bubble_gateway.power_evidence:main"
 bubble-keyring-display-evidence = "bubble_gateway.display_evidence:main"
+bubble-keyring-assembly-evidence = "bubble_gateway.assembly_evidence:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
