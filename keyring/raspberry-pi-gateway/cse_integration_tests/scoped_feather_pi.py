@@ -133,7 +133,8 @@ def gateway_environment(profile, session, *, verify_api=False):
             raise ValueError("Expected the scoped Mobius4 deployment")
         environment["M2M_CSE_DEPLOYMENT_ID"] = profile["cseDeploymentId"]
     for field, variable in (("receiptContainerRi", "M2M_RECEIPT_CONTAINER_RI"),
-                            ("observationContainerRi", "M2M_OBSERVATION_CONTAINER_RI")):
+                            ("observationContainerRi", "M2M_OBSERVATION_CONTAINER_RI"),
+                            ("healthContainerRi", "M2M_HEALTH_CONTAINER_RI")):
         if field in profile:
             ri = profile[field]
             if profile.get("cseDeploymentId") != CSE_DEPLOYMENT or not isinstance(ri, str) or not IDENTIFIER.fullmatch(ri):
@@ -142,6 +143,9 @@ def gateway_environment(profile, session, *, verify_api=False):
     if r18 and ("M2M_RECEIPT_CONTAINER_RI" not in environment or "M2M_OBSERVATION_CONTAINER_RI" not in environment
                 or environment["M2M_RECEIPT_CONTAINER_RI"] == environment["M2M_OBSERVATION_CONTAINER_RI"]):
         raise ValueError("Expected distinct scoped r18 receipt and observation container IDs")
+    if r18 and environment.get("M2M_HEALTH_CONTAINER_RI") in (
+            environment["M2M_RECEIPT_CONTAINER_RI"], environment["M2M_OBSERVATION_CONTAINER_RI"]):
+        raise ValueError("Expected a distinct scoped r18 health container ID")
     if "pcApiDeploymentId" in profile:
         deployment = profile["pcApiDeploymentId"]
         if not isinstance(deployment, str) or not IDENTIFIER.fullmatch(deployment):
@@ -174,6 +178,8 @@ def prepare(args, session):
         profile["receiptContainerRi"] = args.receipt_container_ri
     if args.observation_container_ri is not None:
         profile["observationContainerRi"] = args.observation_container_ri
+    if args.health_container_ri is not None:
+        profile["healthContainerRi"] = args.health_container_ri
     if args.pc_api_deployment_id is not None:
         profile["pcApiDeploymentId"] = args.pc_api_deployment_id
     gateway_environment(profile, session)
@@ -193,7 +199,7 @@ def load_environment(session, *, verify_api=True):
     with profile_path.open(encoding="utf-8") as stream:
         profile = json.loads(stream.read(8193))
     fields = {"version", "address", "tlsDirectory", "csePort", "apiPort"}
-    optional = {"cseDeploymentId", "receiptContainerRi", "observationContainerRi", "pcApiDeploymentId",
+    optional = {"cseDeploymentId", "receiptContainerRi", "observationContainerRi", "healthContainerRi", "pcApiDeploymentId",
                 "apiMode", "apiTeamRevision", "firmwareRevision", "observeOnly"}
     if (not isinstance(profile, dict) or not fields <= profile.keys()
             or profile.keys() - fields - optional):
@@ -269,6 +275,7 @@ def main():
     setup.add_argument("--observe-only", action="store_true", help="Use an r18 bring-up image and disable command processing")
     setup.add_argument("--receipt-container-ri", help="Use the selected Gateway's receipt pin in a fresh session")
     setup.add_argument("--observation-container-ri", help="Use the selected Gateway's observation pin in a fresh session")
+    setup.add_argument("--health-container-ri", help="Use the selected Gateway's health pin in a fresh session")
     setup.add_argument("--pc-api-deployment-id", help="Bind a fresh session to the chosen central datastore ID")
     start = modes.add_parser("run", help="Start the Gateway for an explicitly prepared session")
     check = modes.add_parser("preflight", help="Check pinned CSE containers and the central command route over mTLS")

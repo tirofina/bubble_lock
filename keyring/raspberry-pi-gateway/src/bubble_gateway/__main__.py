@@ -42,6 +42,10 @@ async def check_command_route(config: GatewayConfig) -> dict:
         if config.observation_container_ri is not None:
             stage = "CSE observation parent lookup"
             observation_pin = await hub.verify_observation_route()
+        health_pin = None
+        if config.health_container_ri is not None:
+            stage = "CSE health parent lookup"
+            health_pin = await hub.verify_health_route()
         stage = "central credential status"
         credential = validate_credential_status(await hub.credential_status(), config.gateway_id)
         if credential["status"] != "ACTIVE":
@@ -57,6 +61,8 @@ async def check_command_route(config: GatewayConfig) -> dict:
             report["commandsEnabled"] = False
         if observation_pin is not None:
             report["observationContainerRi"] = observation_pin
+        if health_pin is not None:
+            report["healthContainerRi"] = health_pin
         return report
     except DeploymentConfigError:
         raise

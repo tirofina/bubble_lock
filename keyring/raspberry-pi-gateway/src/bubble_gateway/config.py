@@ -5,12 +5,28 @@ import json
 import os
 import re
 import ssl
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlsplit
 
 ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,63}\Z")
+
+
+def container_pins(routes: Iterable[tuple[str, str | None]]) -> dict[str, str]:
+    pins: dict[str, str] = {}
+    for path, pin in routes:
+        if pin is not None and pins.setdefault(path, pin) != pin:
+            raise ValueError("Shared native container requires matching resource IDs")
+    return pins
+
+
+def configured_container_pins(config: GatewayConfig) -> dict[str, str]:
+    return container_pins((
+        (config.receipt_container, config.receipt_container_ri),
+        (config.observation_container, config.observation_container_ri),
+        (config.health_container, getattr(config, "health_container_ri", None)),
+    ))
 
 
 def env_file_values(path: Path) -> dict[str, str]:
@@ -82,6 +98,7 @@ class GatewayConfig:
     observation_container_ri: str | None = None
     ble_board_revision: str | None = None
     commands_enabled: bool = True
+    health_container_ri: str | None = None
 
     @classmethod
     def from_env(cls, values: Mapping[str, str] | None = None, *, require_tls_files: bool = True) -> "GatewayConfig":
@@ -173,19 +190,21 @@ class GatewayConfig:
         pc_deployment = identifier("PC_API_DEPLOYMENT_ID") if "PC_API_DEPLOYMENT_ID" in env else None
         receipt_ri = identifier("M2M_RECEIPT_CONTAINER_RI") if "M2M_RECEIPT_CONTAINER_RI" in env else None
         observation_ri = identifier("M2M_OBSERVATION_CONTAINER_RI") if "M2M_OBSERVATION_CONTAINER_RI" in env else None
+        health_ri = identifier("M2M_HEALTH_CONTAINER_RI") if "M2M_HEALTH_CONTAINER_RI" in env else None
         if receipt_ri is not None and deployment is None:
             raise ValueError("M2M_RECEIPT_CONTAINER_RI requires M2M_CSE_DEPLOYMENT_ID")
         if observation_ri is not None and deployment is None:
             raise ValueError("M2M_OBSERVATION_CONTAINER_RI requires M2M_CSE_DEPLOYMENT_ID")
+        if health_ri is not None and deployment is None:
+            raise ValueError("M2M_HEALTH_CONTAINER_RI requires M2M_CSE_DEPLOYMENT_ID")
         observation_container = container("M2M_OBSERVATION_CONTAINER")
         receipt_container = container("M2M_RECEIPT_CONTAINER")
         health_container = container("M2M_HEALTH_CONTAINER")
         commands_enabled = boolean("COMMANDS_ENABLED", "true")
         if not commands_enabled and receipt_container in (observation_container, health_container):
             raise ValueError("Observation-only mode requires a separate receipt container")
-        if (observation_container == receipt_container and observation_ri is not None
-                and receipt_ri is not None and observation_ri != receipt_ri):
-            raise ValueError("Shared observation and receipt container requires matching resource IDs")
+        container_pins(((observation_container, observation_ri), (receipt_container, receipt_ri),
+                        (health_container, health_ri)))
         return cls(
             gateway_id=identifier("GATEWAY_ID"), originator=identifier("M2M_ORIGINATOR"),
             cse_id=identifier("M2M_CSE_ID"), cse_url=endpoint("M2M_CSE_URL", True),
@@ -218,6 +237,7 @@ class GatewayConfig:
             central_telemetry_retention_seconds=number("CENTRAL_TELEMETRY_RETENTION_SECONDS", "86400", 1, 86400),
             pc_api_deployment_id=pc_deployment,
             observation_container_ri=observation_ri,
+            health_container_ri=health_ri,
             ble_board_revision=board_revision,
             commands_enabled=commands_enabled,
         )

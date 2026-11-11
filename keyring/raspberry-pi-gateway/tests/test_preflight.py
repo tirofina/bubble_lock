@@ -62,7 +62,8 @@ class PreflightTests(unittest.TestCase):
         self.invoke()
 
     def check_route(self, *, credential_status="ACTIVE", commands=None, observed_parent="cnt-pinned",
-                    observed_observation_parent="cnt-observation", expected_error=None):
+                    observed_observation_parent="cnt-observation", observed_health_parent="cnt-health",
+                    expected_error=None):
         self.env.update(M2M_CSE_DEPLOYMENT_ID="scoped-mobius4", M2M_RECEIPT_CONTAINER_RI="cnt-pinned",
                         MQTT_ENABLED="true", MQTT_HOST="broker.invalid")
         endpoints = []
@@ -78,6 +79,10 @@ class PreflightTests(unittest.TestCase):
             if url.endswith("/test/obs"):
                 return 200, httpx.Headers({"X-M2M-RI": headers["X-M2M-RI"], "X-M2M-RSC": "2000"}), {
                     "m2m:cnt": {"ty": 3, "ri": observed_observation_parent},
+                }
+            if url.endswith("/test/health"):
+                return 200, httpx.Headers({"X-M2M-RI": headers["X-M2M-RI"], "X-M2M-RSC": "2000"}), {
+                    "m2m:cnt": {"ty": 3, "ri": observed_health_parent},
                 }
             if url.endswith("/credentials/status"):
                 return 200, httpx.Headers(), {
@@ -110,6 +115,8 @@ class PreflightTests(unittest.TestCase):
                     self.assertEqual(report["activeCommands"], 0)
                 if "M2M_OBSERVATION_CONTAINER_RI" in self.env:
                     self.assertEqual(report["observationContainerRi"], self.env["M2M_OBSERVATION_CONTAINER_RI"])
+                if "M2M_HEALTH_CONTAINER_RI" in self.env:
+                    self.assertEqual(report["healthContainerRi"], self.env["M2M_HEALTH_CONTAINER_RI"])
             daemon.assert_not_awaited()
             mqtt_client.assert_not_called()
         self.assertEqual(list(self.state.iterdir()), [])
@@ -135,6 +142,23 @@ class PreflightTests(unittest.TestCase):
     def test_command_route_reports_existing_active_commands(self):
         self.assertEqual(len(self.check_route(commands=[{"commandId": "existing"}],
                                               expected_error="command list is not empty")), 3)
+
+    def test_command_route_checks_pinned_health_before_central_api(self):
+        self.env["M2M_HEALTH_CONTAINER_RI"] = "cnt-health"
+        self.assertEqual(self.check_route()[:2], ["https://example.invalid/test/receipts", "https://example.invalid/test/health"])
+        self.assertEqual(len(self.check_route(observed_health_parent="cnt-replaced",
+                                              expected_error="CSE health parent lookup failed")), 2)
+
+    def test_health_pin_requires_deployment_and_matches_shared_path(self):
+        self.env["M2M_HEALTH_CONTAINER_RI"] = "cnt-health"
+        with self.assertRaisesRegex(ValueError, "M2M_HEALTH_CONTAINER_RI requires M2M_CSE_DEPLOYMENT_ID"):
+            GatewayConfig.from_env(self.env)
+        self.env.update(M2M_CSE_DEPLOYMENT_ID="scoped-mobius4", M2M_OBSERVATION_CONTAINER_RI="cnt-other",
+                        M2M_OBSERVATION_CONTAINER=self.env["M2M_HEALTH_CONTAINER"])
+        with self.assertRaisesRegex(ValueError, "Shared native container requires matching resource IDs"):
+            GatewayConfig.from_env(self.env)
+        self.env["M2M_OBSERVATION_CONTAINER_RI"] = "cnt-health"
+        self.assertEqual(GatewayConfig.from_env(self.env).health_container_ri, "cnt-health")
 
     def test_observation_only_preflight_never_reads_commands(self):
         self.env.update(COMMANDS_ENABLED="false", M2M_OBSERVATION_CONTAINER_RI="cnt-observation")

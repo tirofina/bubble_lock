@@ -9,7 +9,8 @@ import {receiptIdentifier} from '../../integration-candidate/receipt-authorizati
 
 const args = process.argv.slice(2);
 const scopedActions = ['--scoped', '--scoped-command-receipts', '--scoped-feather-command-observation',
-  '--scoped-r18-telemetry', '--scoped-pin-command-receipts', '--scoped-pin-command-observation', '--scoped-pin-r18-observation'];
+  '--scoped-r18-telemetry', '--scoped-pin-command-receipts', '--scoped-pin-command-observation',
+  '--scoped-pin-r18-observation', '--scoped-pin-r18-health'];
 if (args.length && (args.length !== 1 || !scopedActions.includes(args[0]))) {
   throw new Error(`Usage: node bootstrap.mjs [${scopedActions.join(' | ')}]`);
 }
@@ -20,7 +21,8 @@ const r18TelemetryOnly = args[0] === '--scoped-r18-telemetry';
 const pinReceiptRoutes = args[0] === '--scoped-pin-command-receipts';
 const pinObservationRoute = args[0] === '--scoped-pin-command-observation';
 const pinR18ObservationRoute = args[0] === '--scoped-pin-r18-observation';
-const pinning = pinReceiptRoutes || pinObservationRoute || pinR18ObservationRoute;
+const pinR18HealthRoute = args[0] === '--scoped-pin-r18-health';
+const pinning = pinReceiptRoutes || pinObservationRoute || pinR18ObservationRoute || pinR18HealthRoute;
 const fullProfile = !commandReceiptsOnly && !commandObservationOnly && !r18TelemetryOnly && !pinning;
 const root = new URL(scoped ? './.local/scoped/' : './.local/', import.meta.url);
 const environment = Object.fromEntries((await readFile(new URL('compose.env', root), 'utf8'))
@@ -201,4 +203,6 @@ else if (pinObservationRoute) await preparePinnedRoutes({'gw-a': scopedFeatherCo
   'observation-gw-a.conf', 'SCOPED_OBSERVATION_PIN');
 else if (pinR18ObservationRoute) await preparePinnedRoutes({'gw-b': scopedR18CommandObservationContainer},
   'observation-gw-b.conf', 'SCOPED_OBSERVATION_PIN');
+else if (pinR18HealthRoute) await preparePinnedRoutes({'gw-b': scopedR18CommandHealthContainer},
+  'health-gw-b.conf', 'SCOPED_HEALTH_PIN');
 else await provisionEmptyResources();

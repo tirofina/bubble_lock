@@ -368,12 +368,13 @@ Feather 명령 프로필 `0.2.0`과 두 SSH 포워딩이 준비되면 같은 Fea
 tool=keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_pi.py
 "$pi_python" "$tool" prepare --session "$r18_observation_session" --api-mode r18 --observe-only \
   --address-file "$r18_address_file" --tls-dir "$scoped_gateway_b_tls" \
-  --receipt-container-ri "$gw_b_receipt_ri" --observation-container-ri "$gw_b_observation_ri"
+  --receipt-container-ri "$gw_b_receipt_ri" --observation-container-ri "$gw_b_observation_ri" \
+  --health-container-ri "$gw_b_health_ri"
 "$pi_python" "$tool" preflight --session "$r18_observation_session"
 "$pi_python" "$tool" run --session "$r18_observation_session"
 ```
 
-사전 확인은 컨테이너 ID 두 개와 중앙 자격을 대조해 `commandsEnabled:false`를 보고한다. 실행 중에는 BLE 관측·health와 중앙 텔레메트리를 전송하며, 명령 조회·실행·장치 명령 영수증 전송은 중지 상태다. 같은 BLE 장치를 쓰는 초기 구동 기록 도구와 Gateway는 순차적으로 실행한다. 실제 연결은 `command-health-b`에서 `commandReady:false`를, 전송은 `command-observations-b`와 중앙 `GATEWAY_TELEMETRY_ACCEPTED`에서 같은 관측을 확인한다. 명령 시험에는 별도의 [r18 Pi 명령 세션](#r18-pi-명령-세션)을 준비한다.
+사전 확인은 지정된 컨테이너 ID와 중앙 자격을 대조해 `commandsEnabled:false`를 보고한다. 실행 중에는 BLE 관측·health와 중앙 텔레메트리를 전송하며, 명령 조회·실행·장치 명령 영수증 전송은 중지 상태다. 같은 BLE 장치를 쓰는 초기 구동 기록 도구와 Gateway는 순차적으로 실행한다. 실제 연결은 `command-health-b`에서 `commandReady:false`를, 전송은 `command-observations-b`와 중앙 `GATEWAY_TELEMETRY_ACCEPTED`에서 같은 관측을 확인한다. 명령 시험에는 별도의 [r18 Pi 명령 세션](#r18-pi-명령-세션)을 준비한다.
 
 ##### 관측 전달 증거 대조
 
@@ -422,7 +423,8 @@ python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_r18_portal_capt
 tool=keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_pi.py
 "$pi_python" "$tool" prepare --session "$r18_session" --api-mode r18 \
   --address-file "$r18_address_file" --tls-dir "$scoped_gateway_b_tls" \
-  --receipt-container-ri "$gw_b_receipt_ri" --observation-container-ri "$gw_b_observation_ri"
+  --receipt-container-ri "$gw_b_receipt_ri" --observation-container-ri "$gw_b_observation_ri" \
+  --health-container-ri "$gw_b_health_ri"
 "$pi_python" "$tool" preflight --session "$r18_session"
 ```
 

@@ -1,11 +1,11 @@
 param([switch]$FeatherObservationsOnly, [switch]$R18TelemetryOnly,
-  [switch]$PinReceiptRoutes, [switch]$PinObservationRoute, [switch]$PinR18ObservationRoute)
+  [switch]$PinReceiptRoutes, [switch]$PinObservationRoute, [switch]$PinR18ObservationRoute, [switch]$PinR18HealthRoute)
 
 $ErrorActionPreference = 'Stop'
 $selectedOperations = @($FeatherObservationsOnly, $R18TelemetryOnly, $PinReceiptRoutes,
-  $PinObservationRoute, $PinR18ObservationRoute) | Where-Object { $_.IsPresent }
+  $PinObservationRoute, $PinR18ObservationRoute, $PinR18HealthRoute) | Where-Object { $_.IsPresent }
 if (@($selectedOperations).Count -gt 1) { throw 'Select one scoped operation.' }
-$pinning = $PinReceiptRoutes -or $PinObservationRoute -or $PinR18ObservationRoute
+$pinning = $PinReceiptRoutes -or $PinObservationRoute -or $PinR18ObservationRoute -or $PinR18HealthRoute
 $environmentPath = Join-Path $PSScriptRoot '.local/scoped/compose.env'
 if (-not (Test-Path -LiteralPath $environmentPath)) { throw 'Run prepare-scoped.ps1 first.' }
 foreach ($key in @('MOBIUS4_ROOT', 'SCOPED_TEAM_STORE', 'DB_PW', 'CSE_ADMIN', 'KEYRING_CSE_TLS_PORT', 'KEYRING_MQTT_TLS_PORT')) {
@@ -26,6 +26,8 @@ try {
       '--scoped-pin-command-observation'
     } elseif ($PinR18ObservationRoute) {
       '--scoped-pin-r18-observation'
+    } elseif ($PinR18HealthRoute) {
+      '--scoped-pin-r18-health'
     } else {
       '--scoped-pin-command-receipts'
     }

@@ -8,6 +8,7 @@ map "$ssl_client_s_dn:$request_method:$request_uri" $scoped_cse_allowed {
     default 0;
     include /etc/nginx/keyring-receipt-routes/receipt-*.conf;
     include /etc/nginx/keyring-receipt-routes/observation-*.conf;
+    include /etc/nginx/keyring-receipt-routes/health-*.conf;
     ~^CN=scoped-core: 1;
     ~^CN=scoped-gateway-a:GET:/Mobius/privacy-bubble-test-ae/featherState$ 1;
     "~^CN=scoped-gateway-[ab]:POST:/Mobius/privacy-bubble-test-ae/(observations|receipts|health)$" 1;

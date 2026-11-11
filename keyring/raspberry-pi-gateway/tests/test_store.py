@@ -156,6 +156,7 @@ class StoreTests(unittest.TestCase):
         cfg.cse_deployment_id = "scoped-mobius4"
         cfg.receipt_container_ri = "cnt-original"
         cfg.observation_container_ri = "cnt-observation"
+        cfg.health_container_ri = "cnt-health"
         cfg.cse_url = "https://old-address.invalid"
         binding = configured_binding(cfg)
         self.assertEqual(binding["bindingVersion"], 2)
@@ -181,6 +182,12 @@ class StoreTests(unittest.TestCase):
             cfg.observation_container_ri = different_pin
             with self.subTest(observation_pin=different_pin), self.assertRaisesRegex(
                     StateIdentityError, "STATE_OBSERVATION_CONTAINER_MISMATCH"):
+                Store(deployment_db, 100, 100000, 20, configured_binding(cfg))
+        cfg.observation_container_ri = "cnt-observation"
+        for different_pin in ("cnt-recreated", None):
+            cfg.health_container_ri = different_pin
+            with self.subTest(health_pin=different_pin), self.assertRaisesRegex(
+                    StateIdentityError, "STATE_HEALTH_CONTAINER_MISMATCH"):
                 Store(deployment_db, 100, 100000, 20, configured_binding(cfg))
         with self.assertRaisesRegex(StateIdentityError, "STATE_CSE_DEPLOYMENT_MISMATCH"):
             self.open_store(bindingVersion=2, cseDeploymentId="scoped-mobius4")

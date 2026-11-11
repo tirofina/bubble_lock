@@ -20,7 +20,7 @@ from urllib.parse import quote, urlsplit
 
 import httpx
 import paho.mqtt.client as mqtt
-from .config import ID, tls_context
+from .config import ID, configured_container_pins, tls_context
 from .core_bridge import command as core_command
 from .model import authorization_deadline, central_observation_id, parse_time, payload_hash, utc_now
 
@@ -57,6 +57,7 @@ class NativeDeliveryHold(NamedTuple):
     receipt_container: str | None = None
     credential_receipts: bool = False
     observation_container: str | None = None
+    health_container: str | None = None
 
 
 def _retry_after(value: str | None) -> float | None:
@@ -401,13 +402,6 @@ class TransportHub:
             raise RemoteResponseError("oneM2M HTTP response has no valid result code", status_code=status) from exc
         return rsc
 
-    def _container_pin(self, container: str) -> str | None:
-        if container == self.config.receipt_container and self.config.receipt_container_ri is not None:
-            return self.config.receipt_container_ri
-        if container == self.config.observation_container:
-            return self.config.observation_container_ri
-        return None
-
     def _native_mqtt_ready(self) -> bool:
         return self.config.m2m_mqtt_enabled and self._mqtt is not None and self._ready.is_set()
 
@@ -420,10 +414,13 @@ class TransportHub:
         if not self._native_mqtt_ready():
             return NativeDeliveryHold(all_native=True)
         # These routes require HTTPS verification even when MQTT can create the CIN.
-        receipt_container = self.config.receipt_container if self.config.receipt_container_ri is not None else None
-        observation_container = self.config.observation_container if self.config.observation_container_ri is not None else None
-        return NativeDeliveryHold(receipt_container=receipt_container, credential_receipts=True,
-                                  observation_container=observation_container)
+        pins = configured_container_pins(self.config)
+        return NativeDeliveryHold(
+            receipt_container=self.config.receipt_container if self.config.receipt_container in pins else None,
+            credential_receipts=True,
+            observation_container=self.config.observation_container if self.config.observation_container in pins else None,
+            health_container=self.config.health_container if self.config.health_container in pins else None,
+        )
 
     async def _verify_container(self, path: str, pin: str) -> None:
         rqi = "receipt-parent-" + uuid.uuid4().hex
@@ -446,6 +443,13 @@ class TransportHub:
         if pin is None:
             raise ValueError("An observation container ID is required")
         await self._verify_container(_resource_path(self.config.observation_container), pin)
+        return pin
+
+    async def verify_health_route(self) -> str:
+        pin = self.config.health_container_ri
+        if pin is None:
+            raise ValueError("A health container ID is required")
+        await self._verify_container(_resource_path(self.config.health_container), pin)
         return pin
 
     @staticmethod
@@ -478,7 +482,7 @@ class TransportHub:
         if (status != 200 or rsc != 2000 or not isinstance(existing, dict)
                 or existing.get("rn") != rn or "con" not in existing):
             raise RemoteResponseError("unable to establish existing content identity", rsc, status)
-        pin = self._container_pin(container)
+        pin = configured_container_pins(self.config).get(container)
         if pin is not None:
             self._receipt_content_identity(existing, rn, rsc, status, pin=pin)
         return existing
@@ -524,7 +528,7 @@ class TransportHub:
         cin = {"rn": rn, "cnf": "application/json:0", "con": payload}
         if len(_json(cin)) > MAX_BODY:
             raise ValueError("outgoing content exceeds size limit")
-        pin = self._container_pin(container)
+        pin = configured_container_pins(self.config).get(container)
         credential_receipt = "credentialTransition" in payload and container == self.config.health_container
         if credential_receipt:
             deferred = self._http_deferral(self._cse_origin)

@@ -11,14 +11,16 @@ from pathlib import Path
 from typing import Any
 
 from .model import canonical, iso_time, payload_hash
-from .config import ID
+from .config import ID, container_pins
 
 BASE_TABLES = ("commands", "fences", "observations", "outbox", "core_sequences")
 DATA_TABLES = (*BASE_TABLES, "credential_receipts", "http_retry_windows")
 META = "gateway_state"
 BINDING_KEYS = {"bindingVersion", "gatewayId", "originator", "cseId", "rvi",
                 "observationContainer", "receiptContainer", "healthContainer"}
-DEPLOYMENT_KEYS = {"cseDeploymentId", "receiptContainerRi", "observationContainerRi", "pcApiDeploymentId"}
+NATIVE_CONTAINERS = ("receiptContainer", "observationContainer", "healthContainer")
+CONTAINER_PIN_KEYS = {name + "Ri" for name in NATIVE_CONTAINERS}
+DEPLOYMENT_KEYS = {"cseDeploymentId", "pcApiDeploymentId"} | CONTAINER_PIN_KEYS
 
 
 class StateIdentityError(RuntimeError):
@@ -39,6 +41,9 @@ def configured_binding(config: Any) -> dict[str, Any]:
         binding["receiptContainerRi"] = config.receipt_container_ri
     if config.observation_container_ri is not None:
         binding["observationContainerRi"] = config.observation_container_ri
+    health_pin = getattr(config, "health_container_ri", None)
+    if health_pin is not None:
+        binding["healthContainerRi"] = health_pin
     if config.pc_api_deployment_id is not None:
         binding.update(bindingVersion=3, pcApiDeploymentId=config.pc_api_deployment_id)
     return binding
@@ -54,11 +59,11 @@ def _valid_binding(binding: Any) -> bool:
     present = binding.keys() & DEPLOYMENT_KEYS
     if any(not isinstance(binding[key], str) or ID.fullmatch(binding[key]) is None for key in present):
         return False
-    if present & {"receiptContainerRi", "observationContainerRi"} and "cseDeploymentId" not in present:
+    if present & CONTAINER_PIN_KEYS and "cseDeploymentId" not in present:
         return False
-    if ({"receiptContainerRi", "observationContainerRi"} <= present
-            and binding["observationContainer"] == binding["receiptContainer"]
-            and binding["observationContainerRi"] != binding["receiptContainerRi"]):
+    try:
+        container_pins((binding[name], binding.get(name + "Ri")) for name in NATIVE_CONTAINERS)
+    except ValueError:
         return False
     if "pcApiDeploymentId" in present:
         return binding["bindingVersion"] == 3
@@ -114,6 +119,8 @@ def match(record: dict, expected: dict, *, require_live: bool = True) -> None:
         raise StateIdentityError("STATE_RECEIPT_CONTAINER_MISMATCH")
     if record["binding"].get("observationContainerRi") != expected.get("observationContainerRi"):
         raise StateIdentityError("STATE_OBSERVATION_CONTAINER_MISMATCH")
+    if record["binding"].get("healthContainerRi") != expected.get("healthContainerRi"):
+        raise StateIdentityError("STATE_HEALTH_CONTAINER_MISMATCH")
     if record["binding"].get("pcApiDeploymentId") != expected.get("pcApiDeploymentId"):
         raise StateIdentityError("STATE_PC_API_DEPLOYMENT_MISMATCH")
     if canonical(record["binding"]) != canonical(expected):

@@ -40,6 +40,12 @@ Gateway 0.2.55의 선택 설정 `M2M_OBSERVATION_CONTAINER_RI`는 CSE에서 관�
 
 Gateway는 전송 전에 HTTPS GET으로 컨테이너 이름과 `ri`의 일치를 확인한다. MQTT와 HTTPS는 확인된 ID로 관측을 생성하고, 응답 및 저장본의 부모·자원 ID·본문을 대조한 뒤 완료를 기록한다. 같은 이름에 다른 자원이 생겼거나 확인에 실패하면 관측은 원래 요청 ID로 SQLite에 남는다. `--check-command-route`도 관측 ID가 설정돼 있으면 중앙 요청 전에 이를 검사한다. 이름 경로 GET, 자원 ID CREATE와 자식 GET에 Gateway 권한을 부여한다.
 
+### Gateway 상태 컨테이너 ID 고정
+
+Gateway 0.2.79의 선택 설정 `M2M_HEALTH_CONTAINER_RI`는 heartbeat와 자격 상태 전환 영수증을 기존 CSE 컨테이너에 연결한다. `M2M_CSE_DEPLOYMENT_ID`와 새 DB 경로를 함께 사용한다. 기존 DB의 값이 바뀌거나 빠지면 `STATE_HEALTH_CONTAINER_MISMATCH`로 시작을 중단한다. 여러 경로가 같은 컨테이너 이름을 공유하면 그 이름에 지정된 ID가 모두 일치해야 하며, 해당 이름의 전송은 같은 ID로 보호된다.
+
+전송 전에 이름 경로로 ID를 확인하고, 자원 ID로 CREATE한 뒤 저장된 원본의 부모·ID·본문을 다시 대조한다. 경로가 교체되거나 HTTPS 재시도가 대기 중이면 기존 행을 SQLite에 남긴다. `--check-command-route`는 health ID가 설정된 경우 중앙 API를 읽기 전에 확인한다. Gateway에 이름 경로 GET, ID 경로 CREATE 및 자식 GET 권한을 부여한다.
+
 ## 중앙 API 배포 전환
 
 Gateway 0.2.54는 새 DB에서 `PC_API_DEPLOYMENT_ID`를 지정하면 중앙 API 저장소의 운영자 배정 ID를 binding v3에 기록한다. 동일한 Mobius4를 쓰는 경우에도 중앙 저장소 ID가 달라지거나 설정에서 빠지면 `STATE_PC_API_DEPLOYMENT_MISMATCH`로 중단한다. `--check-config`와 `--check-command-route`는 기존 DB의 binding을 읽기 전용으로 먼저 검사한다. 명령·관측 재전송은 데몬 시작 때 같은 검사를 통과해야 한다.

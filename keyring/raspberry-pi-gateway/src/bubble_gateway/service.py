@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Literal
 
 from .ble import BleFleet
-from .config import GatewayConfig, ID
+from .config import GatewayConfig, ID, configured_container_pins
 from .model import (authorization_deadline, canonical, iso_time, parse_time, payload_hash, utc_now,
                     validate_command, validate_credential_status, validate_observation)
 from .store import CapacityError, Store
@@ -63,6 +63,7 @@ class Gateway:
             "cseDeploymentId": self.config.cse_deployment_id,
             "receiptContainerRi": self.config.receipt_container_ri,
             "observationContainerRi": self.config.observation_container_ri,
+            "healthContainerRi": getattr(self.config, "health_container_ri", None),
             "apiUrl": self.config.api_url, "pcDispatchStartRequired": self.config.pc_dispatch_start_required,
             "commandsEnabled": self.config.commands_enabled,
             "pcApiDeploymentId": self.config.pc_api_deployment_id,
@@ -441,6 +442,7 @@ class Gateway:
                                       held_receipt_container=hold.receipt_container,
                                       hold_credential_receipts=hold.credential_receipts,
                                       held_observation_container=hold.observation_container,
+                                      held_health_container=hold.health_container,
                                       disabled_command_receipt_container=None if commands_enabled else self.config.receipt_container)
             if item is None:
                 await self._pause(0.5)
@@ -449,9 +451,7 @@ class Gateway:
                 receipt_attempts = min(receipt_attempts + 1, RECEIPT_BURST) if item["is_receipt"] else 0
             delivery_options = {}
             if (item["command_id"] is not None and item["container"] == self.config.receipt_container
-                    and (self.config.receipt_container_ri is not None
-                         or (self.config.observation_container_ri is not None
-                             and self.config.observation_container == self.config.receipt_container))):
+                    and self.config.receipt_container in configured_container_pins(self.config)):
                 if item["attempts"]:
                     delivery_options["confirm_existing"] = True
                 else:

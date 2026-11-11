@@ -72,9 +72,12 @@ class HttpRetryAfterTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(hub.native_delivery_hold(), NativeDeliveryHold(
                     receipt_container=cfg.receipt_container, credential_receipts=True,
                     observation_container=cfg.observation_container))
+                cfg.health_container_ri = "cnt-health"
+                self.assertEqual(hub.native_delivery_hold().health_container, cfg.health_container)
                 hub._mqtt = None
                 cfg.receipt_container_ri = None
                 cfg.observation_container_ri = None
+                cfg.health_container_ri = None
 
                 clock.return_value = 145.0
                 self.assertEqual(hub.native_delivery_hold(), NativeDeliveryHold())
@@ -212,12 +215,9 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(kwargs["body"], mqtt_cin)
         self.assertEqual(self.hub._pending, {})
 
-    def pin_container(self, observed_ri, *, readback_changes=None, readback_error=None, observation=False):
-        if observation:
-            self.container = self.hub.config.observation_container
-            self.hub.config.observation_container_ri = "cnt-original"
-        else:
-            self.hub.config.receipt_container_ri = "cnt-original"
+    def pin_container(self, observed_ri, *, readback_changes=None, readback_error=None, route="receipt"):
+        self.container = getattr(self.hub.config, f"{route}_container")
+        setattr(self.hub.config, f"{route}_container_ri", "cnt-original")
 
         async def exchange(method, url, *, headers, body=None):
             response = httpx.Headers({"X-M2M-RI": headers["X-M2M-RI"]})
@@ -238,7 +238,7 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
         self.pin_container(observed_ri, **options)
 
     async def test_observation_pin_blocks_create_on_recreated_container(self):
-        self.pin_container("cnt-recreated", observation=True)
+        self.pin_container("cnt-recreated", route="observation")
         self.mqtt(2001)
         with self.assertRaises(ReceiptParentMismatch):
             await self.hub.publish(self.rqi, self.container, self.payload)
@@ -247,7 +247,7 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
                          [("GET", "https://cse.invalid/test/observations")])
 
     async def test_observation_pin_uses_pinned_target_and_confirms_readback(self):
-        self.pin_container("cnt-original", observation=True)
+        self.pin_container("cnt-original", route="observation")
         self.mqtt(target="cnt-original")
         await self.hub.publish(self.rqi, self.container, self.payload)
         self.assertEqual([entry.args for entry in self.hub._http_json.await_args_list],
@@ -262,6 +262,23 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
         self.hub._mqtt.publish.assert_not_called()
         self.assertEqual([entry.args for entry in self.hub._http_json.await_args_list],
                          [("GET", "https://cse.invalid/test/receipts")])
+
+    async def test_health_pin_blocks_recreated_route_and_confirms_credential_receipt(self):
+        self.pin_container("cnt-recreated", route="health")
+        self.mqtt(2001)
+        with self.assertRaises(ReceiptParentMismatch):
+            await self.hub.publish(self.rqi, self.container, self.payload)
+        self.hub._mqtt.publish.assert_not_called()
+
+        self.hub._http_json.reset_mock()
+        self.payload = {"credentialTransition": {"sequence": 1}}
+        self.pin_container("cnt-original", route="health")
+        self.mqtt(2001, target="cnt-original", confirmation_parent="cnt-original")
+        await self.hub.publish(self.rqi, self.container, self.payload)
+        self.hub._mqtt.publish.assert_called_once()
+        self.assertEqual([entry.args for entry in self.hub._http_json.await_args_list], [
+            ("GET", "https://cse.invalid/test/health"), ("GET", "https://cse.invalid/test/health/" + self.rn),
+        ])
 
     async def test_pin_uses_same_native_target_on_mqtt_timeout_and_https_fallback(self):
         self.pin_receipt_container("cnt-original")

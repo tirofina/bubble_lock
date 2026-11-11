@@ -52,6 +52,10 @@
     "healthContainer": {
       "type": "string",
       "pattern": "^/"
+    },
+    "healthContainerRi": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$"
     }
   },
   "required": [
@@ -64,7 +68,10 @@
     "receiptContainer",
     "healthContainer"
   ],
-  "dependentRequired": { "receiptContainerRi": ["cseDeploymentId"], "observationContainerRi": ["cseDeploymentId"] },
+  "dependentRequired": {
+    "receiptContainerRi": ["cseDeploymentId"], "observationContainerRi": ["cseDeploymentId"],
+    "healthContainerRi": ["cseDeploymentId"]
+  },
   "oneOf": [
     { "properties": { "bindingVersion": { "const": 1 } },
       "not": { "anyOf": [{ "required": ["cseDeploymentId"] }, { "required": ["pcApiDeploymentId"] }] } },

@@ -326,6 +326,7 @@ class Store:
             prefer_receipts: bool | None = None, skip_native: bool = False, skip_core: bool = False,
             held_receipt_container: str | None = None, hold_credential_receipts: bool = False,
             held_observation_container: str | None = None,
+            held_health_container: str | None = None,
             disabled_command_receipt_container: str | None = None) -> dict | None:
         # Old ownership routes stay on disk and cannot block the active route.
         # Within the active route, only the oldest projection per device can run.
@@ -347,10 +348,11 @@ class Store:
               AND (?8 IS NULL OR container<>?8)
               AND (?9 IS NULL OR (command_id IS NULL AND container NOT IN ('@core/ack', ?9)))
               AND (?10=0 OR container NOT IN ('@core/ack', '@core/telemetry'))
+              AND (?11 IS NULL OR container<>?11)
             ORDER BY CASE WHEN is_receipt=?4 THEN 0 ELSE 1 END, created_at,rqi LIMIT 1
         """, (epochs, time.time(), scoped_only, prefer_receipts, skip_native,
               held_receipt_container, hold_credential_receipts, held_observation_container,
-              disabled_command_receipt_container, skip_core)).fetchone()
+              disabled_command_receipt_container, skip_core, held_health_container)).fetchone()
         return self._outbox_row(row)
 
     def due_central_receipt(self) -> dict | None:
