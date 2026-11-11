@@ -1567,3 +1567,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R11, R12. 직전 goal turn은 비활�
 - `--archive-only`는 원래 배포 환경 파일로 격리 SQLite binding을 확인하고 키링 저널과 로컬 영수증을 비교한다. TLS 파일과 서버 연결 없이 처리하며 native 영수증은 미확인으로 남긴다. Pi에만 남은 명령, 독립 중앙 영수증, 기기 범위와 미접속을 다루는 회귀시험 소스를 추가했다. 빌드·시험·도구 실행·Pi 접속·서버 전환은 미수행이다. [보관본 대조 절차](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#기존-배포의-명령과-키링-저널-대조)
 
 소스 commit `50e26c6596d4549d2decec438cdc4ccbf728469e`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `5a1cf6a..50e26c6`다. goal은 active/progress다.
+
+## 2026-11-11 — Pi에만 남은 명령의 기존 CSE 영수증 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R11, R12. 직전 goal turn은 Pi·키링 보관본 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀의 dispatch-start·명령 영수증 정산 계약을 확인했다.
+
+- Gateway 0.2.78의 `--check-gateway-only-native`는 기존 환경 파일을 독립적으로 읽고 격리 보관본 binding과 기존 CSE의 영수증 컨테이너 ID를 확인한다. 키링 보관본에 없는 명령의 로컬 영수증을 원래 요청 ID의 CSE contentInstance와 대조하고 본문 해시·원본 ID·저장 시각을 기록한다.
+- 로컬·CSE 영수증 누락과 본문 불일치를 별도로 표시하고, 일치한 행도 중앙 정산과 장치 근거를 확인할 목록에 남긴다. 정상·누락·다른 본문·다른 컨테이너를 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·실제 CSE 조회·Pi 접속·배포 전환은 미수행이다. [기존 CSE 대조 절차](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#기존-배포의-명령과-키링-저널-대조)
+
+소스 commit `9b1cad8517b9c62c2a69f4a971441038e788b192`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `912c91f..9b1cad8`다. goal은 active/progress다.
