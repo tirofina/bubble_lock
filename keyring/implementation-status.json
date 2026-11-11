@@ -173,18 +173,18 @@
   "firmwareRevision": "keyring-0.7.14",
   "benchFirmwareRevision": "feather-probe-0.2.1",
   "publication": {
-    "sourceCommit": "3815c184f4bcb5abbddb462fde2fc4a51bda4d4b",
+    "sourceCommit": "5a72c9408c1af2bfc288fceae20e76032606382e",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "3815c184f4bcb5abbddb462fde2fc4a51bda4d4b",
-    "lastPushedCommit": "3815c184f4bcb5abbddb462fde2fc4a51bda4d4b",
-    "latestCheckpoint": "Retain initial USB sensor states and use the final BLE sensor and INA219 states for r18 bring-up.",
-    "lastPushedCommitBeforeThisCheckpoint": "f0dc0ba43d7a7938edbc30348ad3ed9db7bdc5a7"
+    "latestLocalSourceCommit": "5a72c9408c1af2bfc288fceae20e76032606382e",
+    "lastPushedCommit": "5a72c9408c1af2bfc288fceae20e76032606382e",
+    "latestCheckpoint": "Reconcile one r18 command against the captured boot, board and firmware revision.",
+    "lastPushedCommitBeforeThisCheckpoint": "4efbc5ac9d86a4dcb02939f97cb743d471925f03"
   },
-  "gatewayRevision": "0.2.59",
-  "pendingValidationScope": "Gateway 0.2.59 initial and final r18 sensor capture and r18 0.7.15-bringup USB replay, Gateway 0.2.57 HTTPS Retry-After restart and SQLite schema upgrade, central Retry-After outbox hold, pinned Mobius4 observation delivery, central API datastore binding and deployment transition, health snapshot admission during CSE outages, independent central receipt staging and delivery, central telemetry retention and independent delivery, central receipt replay and database upgrade, central dispatch-start and pinned-receipt restart and replay, Feather 0.2.1 flash and visible ST7789 command state, r18 physical commands and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE MQTT ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
+  "gatewayRevision": "0.2.60",
+  "pendingValidationScope": "Gateway 0.2.60 single-command r18 journal reconciliation and pulse measurement, Gateway 0.2.59 initial and final r18 sensor capture and r18 0.7.15-bringup USB replay, Gateway 0.2.57 HTTPS Retry-After restart and SQLite schema upgrade, central Retry-After outbox hold, pinned Mobius4 observation delivery, central API datastore binding and deployment transition, health snapshot admission during CSE outages, independent central receipt staging and delivery, central telemetry retention and independent delivery, central receipt replay and database upgrade, central dispatch-start and pinned-receipt restart and replay, Feather 0.2.1 flash and visible ST7789 command state, r18 physical commands and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE MQTT ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
     "supersededBy": "2026-11-10 benchCheckpoint for current execution and verification state",
@@ -205,7 +205,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Distinguish initial USB sensor state from final BLE sensor and INA219 state under DOC-REV 2.0.0",
+    "executionRequest": "Reconcile one r18 command against the same capture boot under DOC-REV 2.0.0",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -214,8 +214,8 @@
     ],
     "latestRemoteCore": "d54a43a",
     "latestRemoteMain": "bc2a45d",
-    "sourceCommit": "3815c184f4bcb5abbddb462fde2fc4a51bda4d4b",
-    "sourceValidation": "The current rubric and team heads were read. Gateway 0.2.59 retains boot sensor statuses from USB and distinguishes final BLE sensor or INA219 regressions from missing data. Regression source was updated. Builds, tests and device execution were not run in this checkpoint.",
+    "sourceCommit": "5a72c9408c1af2bfc288fceae20e76032606382e",
+    "sourceValidation": "The current rubric and team heads were read. Gateway 0.2.60 selects one command from the journal capture boot and compares its firmware, device record, Gateway receipt and native CSE receipt. Regression source was added. Builds, tests, CSE lookups and device execution were not run in this checkpoint.",
     "goalComplete": false,
     "pendingInput": null,
     "currentDependencyState": "The Feather 0.2.0 and Pi Gateway 0.2.43 command path matched isolated Mobius4 and PostgreSQL on the pinned 715ef58 API. The operator saw no LED change during either command. Feather 0.2.1 mirrors the command GPIO readback on the ST7789. The latest Pi integration workflow and LCD response still need hardware evidence, as do r18 first power-on, physical reconnect, battery, LCD, charger, sensor, NVS fault, power, range and wake. Production CSE, CORE and release acceptance remain.",
@@ -1418,5 +1418,12 @@
     "regressionsExecuted": false,
     "piVerified": false,
     "sourceCommit": "3815c184f4bcb5abbddb462fde2fc4a51bda4d4b"
+  },
+  "r18SameBootCommandReconciliation": {
+    "reference": "JOURNAL_RETENTION.md#r18-실물-명령-한-건-대조",
+    "gatewayVersion": "0.2.60",
+    "regressionsExecuted": false,
+    "piVerified": false,
+    "sourceCommit": "5a72c9408c1af2bfc288fceae20e76032606382e"
   }
 }

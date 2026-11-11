@@ -1375,3 +1375,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05, R15. 직전 goal turn은 r18
 - 회귀시험 소스를 추가했다. 빌드·회귀시험·USB/BLE 실물 캡처와 별도 전원 레일 실측은 미실행이다.
 
 소스 commit `3815c184f4bcb5abbddb462fde2fc4a51bda4d4b`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `f0dc0ba..3815c18`이다. goal은 active/progress다.
+
+## 2026-11-11 — r18 실물 명령 한 건을 같은 부팅과 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R03, R05. 직전 goal turn은 r18 초기·최종 센서 증거를 보강한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. CORE의 ACK/readback 경로, 팀 receipt의 boot ID·시간 필드와 r18 펄스 상한을 확인했다.
+
+- Gateway `0.2.60`의 `bubble-keyring-reconcile --same-boot-command`는 정확한 명령 ID, 수집 boot ID, 보드·펌웨어 revision을 대조한다. 보고서는 장치 저널의 수신·적용 uptime과 Pi ACK, Mobius4 원본 영수증 대조 결과를 남긴다. r18의 펄스 길이와 소등 시점은 계측기로 따로 기록한다. [r18 실물 명령 한 건 대조](../keyring/JOURNAL_RETENTION.md#r18-실물-명령-한-건-대조)
+- 같은 부팅, 명령 누락, 다른 부팅·revision, 영수증 펌웨어 불일치를 다루는 회귀시험 소스를 추가했다. 빌드·회귀시험·Mobius4 조회·Pi 및 r18 실물 시험은 미실행이다.
+
+소스 commit `5a72c9408c1af2bfc288fceae20e76032606382e`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `4efbc5a..5a72c94`다. goal은 active/progress다.
