@@ -21,6 +21,8 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.4.0 · implemented 
 
 화면은 BLE 연결/인증, 실제 배터리 또는 `--`, 버튼, 모터 GPIO, motion event 수, journal/fault, SD 상태를 표시한다. grant 승인·물리적 진동 확인을 뜻하지 않는다. passkey·장치 ID·command ID·사용자 위치를 화면에 표시하지 않는다. 폰트는 라이브러리 기본 ASCII이며 한국어 폰트는 포함하지 않았다.
 
+r18 0.7.23에서 확인·비상을 누르면 두 LCD의 정식 프로필에 `Last: CONFIRM` 또는 `Last: PANIC`이 표시된다. 버튼을 떼어도 다음 유효 입력이나 재부팅까지 마지막 값을 기억한다. BLE `buttonState`는 누름과 해제를 그대로 알린다. 버튼 요청은 즉시 그리기 대상으로 등록되며 LCD 초기화가 끝나면 처리된다. 백라이트는 설정 시간이 지나면 꺼진다.
+
 SPI GPIO는 MOSI38/SCK39, LCD CS18/DC8/RESET43이다. UART0 TX는 RESET43과 충돌하므로 USB CDC만 사용한다. LCD logic VDD는 main +3V3, 백라이트 공급은 별도 LCD_BL_SUPPLY다.
 
 ### JD9853 미확인 범위

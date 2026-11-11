@@ -78,10 +78,6 @@ bool Peripherals::takeScreen(KeyringScreen &screen, bool due, bool &requestDispl
   portEXIT_CRITICAL(&mux);
   return available;
 }
-void Peripherals::show() {
-  portENTER_CRITICAL(&mux); const bool ready = displayReady; portEXIT_CRITICAL(&mux);
-  if (ready) { auxRail::displayFor(KEYRING_LCD_SHOW_MS); xTaskNotifyGive(worker); }
-}
 void Peripherals::logReceipt(const char *jsonLine, size_t length) {
   if (!KEYRING_ENABLE_SD_LOG) return;
   portENTER_CRITICAL(&mux); const bool ready = sdReady; portEXIT_CRITICAL(&mux);
@@ -223,7 +219,7 @@ void Peripherals::draw(const KeyringScreen &screen) {
     if (screen.batteryLow) display.print(" LOW");
   } else display.print("--");
   display.setTextColor(White); display.setCursor(8, 90);
-  display.print(screen.panic ? "Button: PANIC" : screen.confirm ? "Button: CONFIRM" : "Button: RELEASED");
+  display.print(screen.panic ? "Last: PANIC" : screen.confirm ? "Last: CONFIRM" : "Last: --");
   display.setCursor(8, 116); display.print(screen.motor ? "Motor GPIO: ON" : "Motor GPIO: OFF");
   display.setCursor(8, 142); display.print("Motion: "); display.print(screen.motionEvents);
   display.setCursor(8, 168); display.setTextColor(screen.fault || !screen.journal ? Red : White);

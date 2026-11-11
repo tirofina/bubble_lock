@@ -116,13 +116,13 @@ bubble-keyring-reconcile --archive-only --env-file gateway-old.env \
 
 Pi 벤치에서는 [r18 Pi 시험 증거 보관](raspberry-pi-gateway/TESTING.md#r18-pi-시험-증거-보관)의 `export-env`와 `capture-r18`을 사용해 기존 세션 설정을 장치 저널·SQLite 보관본에 연결한다.
 
-Gateway 0.2.60은 장치 저널을 수집한 부팅에서 실행한 명령 한 건을 골라 비교한다. 정식 r18 펌웨어로 실행한 시험의 정확한 command ID와 저널을 수집할 때의 보드·펌웨어 revision을 지정한다. 최신 정식 r18 펌웨어 revision은 `keyring-0.7.22`이며 이전 기록은 당시 revision을 사용한다.
+Gateway 0.2.60은 장치 저널을 수집한 부팅에서 실행한 명령 한 건을 골라 비교한다. 정식 r18 펌웨어로 실행한 시험의 정확한 command ID와 저널을 수집할 때의 보드·펌웨어 revision을 지정한다. 최신 정식 r18 펌웨어 revision은 `keyring-0.7.23`이며 이전 기록은 당시 revision을 사용한다.
 
 ```sh
 bubble-keyring-reconcile --env-file "$GATEWAY_ENV" \
   --device-archive "$DEVICE_ARCHIVE" --gateway-archive "$GATEWAY_ARCHIVE" \
   --same-boot-command "$COMMAND_ID" --board-revision r18-hand-solder \
-  --firmware-revision keyring-0.7.22
+  --firmware-revision keyring-0.7.23
 ```
 
 대상 명령이 없거나 다른 부팅에서 실행됐거나 수집한 identity의 revision이 다르면 CSE 조회 전에 중단한다. `selectedCommand`에는 장치 저널의 수신·적용 uptime이, 명령 결과에는 Gateway ACK 코드와 Mobius4 원본 영수증 대조가 남는다. 완료 기록의 영수증 펌웨어도 수집 identity와 일치해야 `matched_applied`가 된다. 최초 적용을 확인할 때는 `gatewayAckCode: APPLIED`와 `gatewayDelivered: true`를 함께 확인한다.

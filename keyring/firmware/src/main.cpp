@@ -46,13 +46,13 @@ extern "C" esp_err_t __wrap_nvs_flash_init() {
 namespace {
 #if KEYRING_R18_BRINGUP
 #if KEYRING_R18_BRINGUP_DISPLAY == 1
-constexpr char FirmwareRevision[] = "keyring-0.7.22-st7789-bringup";
+constexpr char FirmwareRevision[] = "keyring-0.7.23-st7789-bringup";
 constexpr char BringupPanelField[] = " panel=st7789";
 #elif KEYRING_R18_BRINGUP_DISPLAY == 2
-constexpr char FirmwareRevision[] = "keyring-0.7.22-jd9853-bringup";
+constexpr char FirmwareRevision[] = "keyring-0.7.23-jd9853-bringup";
 constexpr char BringupPanelField[] = " panel=jd9853";
 #else
-constexpr char FirmwareRevision[] = "keyring-0.7.22-bringup";
+constexpr char FirmwareRevision[] = "keyring-0.7.23-bringup";
 constexpr char BringupPanelField[] = "";
 #endif
 char bringupBootRecord[320] = {};
@@ -69,9 +69,9 @@ void readRunningImageDigest(char (&hex)[65]) {
   hex[64] = '\0';
 }
 #elif KEYRING_ENABLE_SLEEP
-constexpr char FirmwareRevision[] = "keyring-0.7.22-sleep";
+constexpr char FirmwareRevision[] = "keyring-0.7.23-sleep";
 #else
-constexpr char FirmwareRevision[] = "keyring-0.7.22";
+constexpr char FirmwareRevision[] = "keyring-0.7.23";
 #endif
 constexpr bool ObservationOnly = KEYRING_R18_BRINGUP != 0;
 #if defined(KEYRING_LEGACY_GATT) && KEYRING_LEGACY_GATT
@@ -357,10 +357,6 @@ struct Button {
 };
 Button confirm{board::Confirm}, panic{board::Panic};
 ButtonPresses buttonPresses;
-#if KEYRING_R18_BRINGUP_DISPLAY
-enum class DisplayTestButton { None, Confirm, Panic };
-DisplayTestButton displayTestButton = DisplayTestButton::None;
-#endif
 
 bool readRegisters(uint8_t address, uint8_t reg, uint8_t *data, size_t count) {
   Wire.beginTransmission(address); Wire.write(reg);
@@ -1194,14 +1190,9 @@ void loop() {
   bool changedConfirm = confirm.update(now), changedPanic = panic.update(now);
   const bool buttonTransition = previousPanic != panic.pressed ||
       previousConfirm != (confirm.pressed && !panic.pressed);
-  buttonPresses.record(changedConfirm && confirm.pressed, changedPanic && panic.pressed, panic.pressed);
-#if KEYRING_R18_BRINGUP_DISPLAY
-  if (changedPanic && panic.pressed) displayTestButton = DisplayTestButton::Panic;
-  else if (changedConfirm && confirm.pressed && !panic.pressed) displayTestButton = DisplayTestButton::Confirm;
-#endif
-  const bool showScreen = (changedConfirm && confirm.pressed) || (changedPanic && panic.pressed);
-  const bool requestDisplay = KEYRING_R18_BRINGUP_DISPLAY && showScreen && digitalRead(board::MainFaultN) != LOW;
-  if (showScreen && !KEYRING_R18_BRINGUP_DISPLAY) peripherals.show();
+  const bool pressedButton = buttonPresses.record(changedConfirm && confirm.pressed,
+                                                  changedPanic && panic.pressed, panic.pressed);
+  const bool requestDisplay = KEYRING_DISPLAY_PROFILE && pressedButton && digitalRead(board::MainFaultN) != LOW;
   if (changedConfirm || changedPanic) observationDirty = true;
   if (confirm.pressed || panic.pressed || changedConfirm || changedPanic) powerState::activity(now);
   if (motion.poll(now)) { powerState::activity(now); observationDirty = true; }
@@ -1227,10 +1218,9 @@ void loop() {
     KeyringScreen screen;
     screen.linked = connected; screen.authenticated = authenticated;
     screen.batteryValid = sensors.fuel; screen.battery = sensors.battery; screen.batteryLow = sensors.batteryLow;
-    screen.confirm = confirm.pressed; screen.panic = panic.pressed;
+    screen.confirm = buttonPresses.last == ButtonPress::Confirm;
+    screen.panic = buttonPresses.last == ButtonPress::Panic;
 #if KEYRING_R18_BRINGUP_DISPLAY
-    screen.confirm = displayTestButton == DisplayTestButton::Confirm;
-    screen.panic = displayTestButton == DisplayTestButton::Panic;
     screen.confirmPress = buttonPresses.confirm;
     screen.panicPress = buttonPresses.panic;
 #endif

@@ -17,7 +17,7 @@ def main():
     production = source[source.index("std::string jsonText("):source.index("void publishReceipt(")]
     (output / "button_observation_subject.inc").write_text(production, encoding="utf-8")
     lcd = (firmware / "src" / "peripherals.cpp").read_text(encoding="utf-8")
-    screen = lcd[lcd.index("void Peripherals::update("):lcd.index("void Peripherals::show(")]
+    screen = lcd[lcd.index("void Peripherals::update("):lcd.index("void Peripherals::logReceipt(")]
     (output / "button_screen_subject.inc").write_text(screen, encoding="utf-8")
     subprocess.run(["cl", "/nologo", "/utf-8", "/std:c++14", "/EHsc", "/W4", "/I" + str(output),
                     "/I" + str(firmware / "include"), "/I" + str(args.arduinojson.resolve()), str(test),

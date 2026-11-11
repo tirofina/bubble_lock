@@ -27,7 +27,6 @@ class Peripherals {
 public:
   void begin();
   void update(const KeyringScreen &screen, bool requestDisplay = false);
-  void show();
   void logReceipt(const char *jsonLine, size_t length);
   bool busy();
   bool prepareSleep(); // Freeze new worker I/O only when no I/O or queued receipt exists.

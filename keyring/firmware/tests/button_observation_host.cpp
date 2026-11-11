@@ -35,10 +35,10 @@ struct {
 } sensors;
 struct BLECharacteristic { uint16_t getHandle() const { return 1; } } attribute;
 struct BLE2902 {};
-struct BLEServer { uint8_t getGattsIf() const { return 1; } } fixtureServer, *server = &fixtureServer;
 struct Frame { uint32_t generation, subscription; };
 using esp_gatt_if_t = uint8_t;
 constexpr esp_gatt_if_t ESP_GATT_IF_NONE = 255;
+esp_gatt_if_t gattInterface = 1;
 constexpr int ESP_OK = 0;
 void portENTER_CRITICAL(bool *lock) { assert(!*lock); *lock = true; }
 void portEXIT_CRITICAL(bool *lock) { assert(*lock); *lock = false; }
@@ -106,7 +106,7 @@ struct {
 #include "button_observation_subject.inc"
 
 DynamicJsonDocument readFrame(unsigned section) {
-  const auto &frame = observationTx.sections[section];
+  const auto &frame = observationTx.sections[section].data;
   assert(!frame.empty() && frame.size() <= 512 && frame.back() == '\n');
   DynamicJsonDocument doc(2048);
   assert(!deserializeJson(doc, frame));
@@ -138,13 +138,18 @@ int main() {
   std::memset(deviceId, 'k', sizeof(deviceId) - 1);
   std::memset(bootId, 'b', sizeof(bootId) - 1);
   observationTx.characteristic = &attribute;
-  assert(buttonPresses.confirm == 0 && buttonPresses.panic == 0);
+  portENTER_CRITICAL(&linkMux);
+  observationTx.setSubscribed(true);
+  portEXIT_CRITICAL(&linkMux);
+  assert(buttonPresses.confirm == 0 && buttonPresses.panic == 0 && buttonPresses.last == ButtonPress::None);
   confirm.pressed = true;
-  buttonPresses.record(true, false, false);
+  assert(buttonPresses.record(true, false, false));
+  assert(buttonPresses.last == ButtonPress::Confirm);
   publishObservation();
   assert(readFrame(0)["buttonState"] == "confirm");
   confirm.pressed = false;
-  buttonPresses.record(false, false, false);
+  assert(!buttonPresses.record(false, false, false));
+  assert(buttonPresses.last == ButtonPress::Confirm);
   detailSection = 0; // Replace the unsent detail after a release.
   publishObservation();
   auto released = readFrame(0);
@@ -155,15 +160,18 @@ int main() {
   assert(!released["sensorValues"]["batteryAlert"].as<bool>());
   std::puts("PASS released replacement frame retains the earlier press count");
 
-  buttonPresses.record(true, true, true);
-  buttonPresses.record(true, false, true);
-  buttonPresses.record(false, false, false);
+  assert(buttonPresses.record(true, true, true));
+  assert(!buttonPresses.record(true, false, true));
+  assert(!buttonPresses.record(false, false, false));
   assert(buttonPresses.confirm == 1 && buttonPresses.panic == 1);
+  assert(buttonPresses.last == ButtonPress::Panic);
   std::puts("PASS panic wins simultaneous presses, a held panic suppresses confirm, and release adds no press");
 
   buttonPresses.confirm = buttonPresses.panic = UINT32_MAX;
-  buttonPresses.record(true, false, false);
-  buttonPresses.record(false, true, true);
+  assert(buttonPresses.record(true, false, false));
+  assert(buttonPresses.last == ButtonPress::Confirm);
+  assert(buttonPresses.record(false, true, true));
+  assert(buttonPresses.last == ButtonPress::Panic);
   assert(buttonPresses.confirm == UINT32_MAX && buttonPresses.panic == UINT32_MAX);
   sensors.battery = 20;
   sensors.batteryLow = true;
@@ -174,7 +182,7 @@ int main() {
   assert(energy["sensorValues"]["batteryAlert"].as<bool>());
   assert(energy["sensorValues"]["buttonPresses"][0].as<uint32_t>() == UINT32_MAX);
   assert(energy["sensorValues"]["buttonPresses"][1].as<uint32_t>() == UINT32_MAX);
-  std::printf("PASS saturated counters and INA219 fit in %zu bytes\n", observationTx.sections[1].size());
+  std::printf("PASS saturated counters and INA219 fit in %zu bytes\n", observationTx.sections[1].data.size());
 
   headphone.state.assign(600, 'x'); // Force the real bounded-frame fallback.
   sensors.fuel = false;

@@ -19,11 +19,12 @@ INTEGRATION_TEAM_REVISION = "bc2a45dfcc014b7cdb0a57a03aca2c04ca8eb989"
 DISPLAY_FIRMWARE = "feather-probe-0.2.1"
 COMMAND_FIRMWARES = ("feather-probe-0.2.0", DISPLAY_FIRMWARE)
 R18_LEGACY_COMMAND_FIRMWARE = "keyring-0.7.14"
-R18_COMMAND_FIRMWARE = "keyring-0.7.22"
-R18_SLEEP_COMMAND_FIRMWARE = "keyring-0.7.22-sleep"
-R18_SLEEP_COMMAND_FIRMWARES = (R18_SLEEP_COMMAND_FIRMWARE, "keyring-0.7.20-sleep", "keyring-0.7.21-sleep")
+R18_COMMAND_FIRMWARE = "keyring-0.7.23"
+R18_SLEEP_COMMAND_FIRMWARE = "keyring-0.7.23-sleep"
+R18_SLEEP_COMMAND_FIRMWARES = (R18_SLEEP_COMMAND_FIRMWARE, "keyring-0.7.20-sleep", "keyring-0.7.21-sleep",
+                              "keyring-0.7.22-sleep")
 R18_COMMAND_FIRMWARES = (R18_COMMAND_FIRMWARE, R18_LEGACY_COMMAND_FIRMWARE, "keyring-0.7.19", "keyring-0.7.21",
-                         *R18_SLEEP_COMMAND_FIRMWARES)
+                         "keyring-0.7.22", *R18_SLEEP_COMMAND_FIRMWARES)
 R18_BRINGUP_FIRMWARES = (
     "keyring-0.7.15-bringup", "keyring-0.7.15-st7789-bringup", "keyring-0.7.15-jd9853-bringup",
     "keyring-0.7.16-st7789-bringup", "keyring-0.7.16-jd9853-bringup",
@@ -31,6 +32,7 @@ R18_BRINGUP_FIRMWARES = (
     "keyring-0.7.18-bringup", "keyring-0.7.18-st7789-bringup", "keyring-0.7.18-jd9853-bringup",
     "keyring-0.7.21-bringup", "keyring-0.7.21-st7789-bringup", "keyring-0.7.21-jd9853-bringup",
     "keyring-0.7.22-bringup", "keyring-0.7.22-st7789-bringup", "keyring-0.7.22-jd9853-bringup",
+    "keyring-0.7.23-bringup", "keyring-0.7.23-st7789-bringup", "keyring-0.7.23-jd9853-bringup",
 )
 R18_BOARD = "r18-hand-solder"
 R18_DEVICE = "keyring-r18-lab"
