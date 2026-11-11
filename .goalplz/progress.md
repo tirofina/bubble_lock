@@ -1658,3 +1658,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R10, R11. 원격 main `bc2a45d`, CORE 
 - 연속 SQLite 실패와 BLE 응답 타임아웃, 저장 대기 중 취소를 회귀시험으로 다뤘다. 첫 전체 실행의 기존 관측 마이그레이션 테스트 실패를 변경 전 HEAD에서도 재현했다. 잘못 옮겨진 세 줄을 원래 용량 테스트로 되돌린 뒤 Gateway 단위 테스트 224개와 Python wheel 빌드가 통과했다. Pi 배포와 Feather 재플래시·실물 확인은 미수행이다.
 
 소스 commit `3f5b5a068140a120210b22ea6fcc378fcd129171`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8df2ff2..3f5b5a0`이다. goal은 active/progress다.
+
+## 2026-11-11 — Feather 화면의 단계별 육안 기록
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05, R11. 직전 goal turn은 수신한 장치 영수증의 SQLite 저장 재시도를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 장치 ACK/readback 증거 계약을 확인했다.
+
+- Feather 0.2.1 화면은 각 단계 완료 후 명령 ID와 시각을 복사할 필요 없이 눈으로 본 문구만 입력한다. PC 도구는 해당 단계의 readback과 grant 회수 응답을 대조하고 명령 ID·PC UTC·화면 문구를 기록한다. OFF 발급 의도가 이미 기록된 뒤의 ON 입력과 같은 파일의 덮어쓰기를 거절한다.
+- 기존 증거 대조 도구가 단계별 파일과 이전 JSON 배열을 읽는다. 화면 미표시와 문구 불일치는 관찰값으로 보존한다. 기록 경로의 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·기록 도구 실행·Feather flash·Pi 접속·실제 화면 확인은 미수행이다. [실물 화면 기록 절차](../keyring/raspberry-pi-gateway/TESTING.md#기존-scoped-mobius4에서-feather-led-시험)
+
+소스 commit `657bf8ae6a639062f17ca3c395c01871ef9c37c5`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1798a71..657bf8a`다. goal은 active/progress다.

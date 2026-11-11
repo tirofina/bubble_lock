@@ -205,7 +205,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Retry storage of observed device receipts under DOC-REV 2.0.0 and retain the operator's Feather LED result",
+    "executionRequest": "Record live Feather ST7789 text against each completed command under DOC-REV 2.0.0",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -214,8 +214,8 @@
     ],
     "latestRemoteCore": "d54a43a",
     "latestRemoteMain": "bc2a45d",
-    "sourceCommit": "3f5b5a068140a120210b22ea6fcc378fcd129171",
-    "sourceValidation": "224 local Gateway unit tests and the 0.2.87 Python wheel build passed. The previous HEAD reproduced an existing test assertion failure that was fixed by restoring the capacity checks to their original test. Pi access, hardware commands, flash and live database migration were not performed.",
+    "sourceCommit": "657bf8ae6a639062f17ca3c395c01871ef9c37c5",
+    "sourceValidation": "Source covers command-bound screen records, an unreadable display, duplicate records and the ON interval. Tests, build, static analysis, tool execution, hardware, flash and Pi were not performed for this checkpoint.",
     "goalComplete": false,
     "pendingInput": null,
     "currentDependencyState": "The Feather 0.2.0 and Pi Gateway 0.2.43 command path matched isolated Mobius4 and PostgreSQL on the pinned 715ef58 API. The operator saw no LED change during either command. Feather 0.2.1 mirrors the command GPIO readback on the ST7789. The latest Pi integration workflow and LCD response still need hardware evidence, as do r18 first power-on, physical reconnect, battery, LCD, charger, sensor, NVS fault, power, range and wake. Production CSE, CORE and release acceptance remain.",
@@ -1656,5 +1656,12 @@
     "wheelBuildPassed": true,
     "piVerified": false,
     "sourceCommit": "3f5b5a068140a120210b22ea6fcc378fcd129171"
+  },
+  "scopedFeatherDisplayRecording": {
+    "reference": "raspberry-pi-gateway/TESTING.md#기존-scoped-mobius4에서-feather-led-시험",
+    "firmwareRevision": "feather-probe-0.2.1",
+    "regressionsExecuted": false,
+    "physicalDisplayVerified": false,
+    "sourceCommit": "657bf8ae6a639062f17ca3c395c01871ef9c37c5"
   }
 }
