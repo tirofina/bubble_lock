@@ -170,7 +170,7 @@
   "logSha256": "0c25234a13f2542bb13ff4ed2fd39c8aa015375a435bc6b6156f90cf0b7d6efa",
   "logSha256Scope": "private actual Pi observations.jsonl captured in the HTTPS outage/replay run; digest recorded by actualReceipt",
   "releaseSha": null,
-  "firmwareRevision": "keyring-0.7.14",
+  "firmwareRevision": "keyring-0.7.19",
   "benchFirmwareRevision": "feather-probe-0.2.1",
   "publication": {
     "sourceCommit": "dc18ac12a1da621fb11b37a1651323ad0f93837a",
@@ -1810,5 +1810,13 @@
     "regressionsExecuted": false,
     "physicalCommandVerified": false,
     "sourceCommit": "cde0dce987e8c07bb247cd9a2345fd4b9b2325ef"
+  },
+  "r18AuxEnableReadback": {
+    "reference": "firmware/PERIPHERALS.md#공용-전원spi절전",
+    "firmwareRevision": "keyring-0.7.19",
+    "buildExecuted": false,
+    "regressionsExecuted": false,
+    "physicalPowerVerified": false,
+    "sourceCommit": "3b2edcc91e19a7812cc93dd6ec1d2cd8fbbd730a"
   }
 }

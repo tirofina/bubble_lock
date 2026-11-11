@@ -1856,3 +1856,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11. 직전 goal turn은 임
 - 중단 증거 대조에서 새 시험의 기준 저널 기록을 요구한다. 초기 가득 참, grant 이후 오류, 이전 증거 호환을 다루는 회귀시험 소스와 절차를 추가했다. 빌드·테스트·정적 분석·실제 Pi와 r18 명령 및 grant 회수 검증은 미수행이다. [r18 단일 펄스 시험](../keyring/raspberry-pi-gateway/TESTING.md#r18-단일-펄스-시험)
 
 소스 commit `cde0dce987e8c07bb247cd9a2345fd4b9b2325ef`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `83febd1..cde0dce`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 모터 명령의 보조 전원 GPIO 확인
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11. 직전 goal turn은 r18 단일 펄스의 저널 준비 확인을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀의 `APPLIED` readback 수용 조건을 확인했다.
+
+- 정식 r18 펌웨어 0.7.19는 alert 시작 때 `AuxEnable` GPIO 쓰기 결과와 HIGH 읽기값을 확인한다. 실패하면 보조 전원을 해제하고, 작동 중 LOW 검출도 기존 alert 인터럽트 경로로 처리한다. 적용 시점의 실패는 장치 저널의 PREPARED와 `INDETERMINATE` 흐름을 따른다.
+- 새 Pi 명령 세션·격리 API 프로필은 0.7.19를 고정한다. 이전 0.7.14의 Pi 프로필과 오프라인 기록을 읽는 경로를 유지한다. GPIO 쓰기·읽기 실패와 API revision 불일치 회귀시험 소스를 보강했다. 빌드·테스트·정적 분석·격리 명령 API 재시작·플래시·실물 GPIO/전압·모터 시험은 미수행이다. [보조 전원 동작](../keyring/firmware/PERIPHERALS.md#공용-전원spi절전)
+
+소스 commit `3b2edcc91e19a7812cc93dd6ec1d2cd8fbbd730a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `02a73d3..3b2edcc`다. goal은 active/progress다.
