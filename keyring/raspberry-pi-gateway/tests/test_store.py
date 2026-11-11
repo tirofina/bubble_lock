@@ -249,6 +249,42 @@ class StoreTests(unittest.TestCase):
         with self.assertRaises(CapacityError):
             self.store.observation(BINDING["observationContainer"], observation(), True)
         self.assertEqual(self.store.observation_heads(), {})
+
+    def test_button_press_floor_survives_missing_sample_and_database_reopen(self):
+        container = BINDING["observationContainer"]
+        self.store.observation(container, observation(sensorValues={"buttonPresses": [5, 3]}), True, central_enabled=True)
+        self.store.observation(container, observation(sequence=2), True, central_enabled=True)
+        self.store.close()
+        self.store = self.open_store()
+        self.assertEqual(self.store.observation_heads(include_button_presses=True), {"kr-test": ("boot-test", 2, (5, 3))})
+        before = self.rows()
+        for presses in ([4, 3], [6, 2]):
+            with self.subTest(presses=presses), self.assertRaisesRegex(ValueError, "counts regressed"):
+                self.store.observation(container, observation(sequence=3, sensorValues={"buttonPresses": presses}),
+                                       True, central_enabled=True)
+        self.assertEqual(self.rows(), before)
+        self.assertTrue(self.store.observation(container, observation(sequence=3, sensorValues={"buttonPresses": [6, 3]})))
+
+        # A previous Gateway version updates only the boot and sequence columns.
+        with self.store.db:
+            self.store.db.execute("UPDATE observations SET boot_id='boot-new',sequence=4")
+        self.assertEqual(self.store.observation_heads(include_button_presses=True), {"kr-test": ("boot-new", 4)})
+        self.assertTrue(self.store.observation(container, observation(bootId="boot-new", sequence=5,
+                                                                      sensorValues={"buttonPresses": [0, 1]})))
+        self.assertEqual(self.store.observation_heads(include_button_presses=True), {"kr-test": ("boot-new", 5, (0, 1))})
+
+    def test_migrates_previous_observation_table_without_inventing_button_counts(self):
+        with self.store.db:
+            self.store.db.execute("DROP TABLE observations")
+            self.store.db.execute("CREATE TABLE observations(device_id TEXT PRIMARY KEY, boot_id TEXT NOT NULL, "
+                                  "sequence INTEGER NOT NULL)")
+            self.store.db.execute("INSERT INTO observations VALUES ('kr-test','boot-test',3)")
+        self.store.close()
+        self.store = self.open_store()
+        self.assertEqual(self.store.observation_heads(include_button_presses=True), {"kr-test": ("boot-test", 3)})
+        container = BINDING["observationContainer"]
+        self.assertTrue(self.store.observation(container, observation(sequence=4, sensorValues={"buttonPresses": [1, 0]})))
+        self.assertEqual(self.store.observation_heads(include_button_presses=True), {"kr-test": ("boot-test", 4, (1, 0))})
         self.assertEqual(self.store.db.execute("SELECT COUNT(*) FROM core_sequences").fetchone()[0], 0)
         self.store.enqueue("receipt", "synthetic", BINDING["receiptContainer"], {}, critical=True)
         self.assertEqual(self.store.counts()[0], 1)

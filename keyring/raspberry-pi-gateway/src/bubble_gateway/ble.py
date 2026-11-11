@@ -20,7 +20,8 @@ from typing import Any, Awaitable, Callable
 
 from bleak import BleakClient, BleakScanner
 from .core_bridge import CORE_SERVICE, CORE_IDENTITY, CORE_OBSERVATION, CORE_COMMAND, CORE_RECEIPT
-from .model import iso_time, utc_now, valid_battery_alert
+from .model import (ObservationHead, button_presses_regressed, iso_time, observation_button_presses,
+                    utc_now, valid_battery_alert)
 
 LOG = logging.getLogger(__name__)
 SERVICE = "8b8f0001-8e7a-4f36-a8c2-1c9b5d620001"
@@ -162,6 +163,7 @@ class _Peer:
     anchor: tuple[str, int, datetime, float] | None = None
     # The latest queued boot, sequence and uptime survive a BLE reconnect.
     observation_watermark: tuple[str, int, int | None] | None = None
+    button_presses: tuple[int, int] | None = None
     rssi: int | None = None
     rssi_monotonic: float | None = None
     last_error: str | None = None
@@ -190,7 +192,7 @@ class BleFleet:
     async def start(self, observation_callback: Callable[[dict[str, Any]], Awaitable[None]], *,
                     trace: Callable[[dict[str, Any]], None] | None = None,
                     trace_observation: bool = False,
-                    observation_heads: dict[str, tuple[str, int]] | None = None) -> None:
+                    observation_heads: dict[str, ObservationHead] | None = None) -> None:
         if self._tasks:
             raise RuntimeError("BLE fleet already started")
         self._closed.clear()
@@ -201,7 +203,8 @@ class BleFleet:
         self._tasks.append(asyncio.create_task(self._scan(), name="ble-scan"))
         for peer in self._peers.values():
             head = committed.get(peer.device_id)
-            peer.observation_watermark = (*head, None) if head is not None else None
+            peer.observation_watermark = (head[0], head[1], None) if head is not None else None
+            peer.button_presses = head[2] if head is not None and len(head) == 3 else None
             self._tasks.append(asyncio.create_task(self._watch(peer), name=f"ble-{peer.device_id}"))
             self._tasks.append(asyncio.create_task(self._deliver(peer), name=f"ble-data-{peer.device_id}"))
 
@@ -389,12 +392,17 @@ class BleFleet:
         if "ina219" in frame["sensorValues"]:
             _power_reading(frame["sensorValues"]["ina219"], frame["uptimeMs"])
         boot_id, sequence, device_uptime = frame["bootId"], frame["sequence"], frame["uptimeMs"]
+        presses = observation_button_presses(frame["sensorValues"])
         previous = peer.observation_watermark
+        previous_presses = None
         if previous is not None and previous[0] == boot_id:
             if sequence <= previous[1]:
                 return
             if previous[2] is not None and device_uptime < previous[2]:
                 raise BleProtocolError("observation uptime regressed within the same boot")
+            previous_presses = peer.button_presses
+            if button_presses_regressed(previous_presses, presses):
+                raise BleProtocolError("button press counts regressed within the same boot")
         received = utc_now()
         received_monotonic = time.monotonic()
         rssi_fresh = (peer.rssi_monotonic is not None
@@ -416,6 +424,7 @@ class BleFleet:
             LOG.error("BLE observation queue full for %s; session interrupted", peer.device_id)
         else:
             peer.observation_watermark = (boot_id, sequence, device_uptime)
+            peer.button_presses = presses if presses is not None else previous_presses
             peer.anchor = (boot_id, device_uptime, received, received_monotonic)
             if notification and peer.ready.is_set() and self._trace is not None:
                 fields = {"sequence": frame["sequence"]}

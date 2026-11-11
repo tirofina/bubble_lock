@@ -522,8 +522,10 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
         client.identity["bootId"] = "boot-1"
         return client
 
-    def notify_observation(self, client, sequence, uptime_ms):
+    def notify_observation(self, client, sequence, uptime_ms, *, presses=None):
         frame = dict(client.frame(sequence), uptimeMs=uptime_ms)
+        if presses is not None:
+            frame["sensorValues"] = dict(frame["sensorValues"], buttonPresses=presses)
         client.callbacks[self.fleet.observation_uuid](None, bytearray((json.dumps(frame) + "\n").encode()))
 
     async def test_wrong_enrolled_board_never_subscribes_or_becomes_command_ready(self):
@@ -573,10 +575,24 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.peer.last_error, "invalid_observation")
 
     async def test_new_boot_admits_its_lower_sequence_and_uptime(self):
-        await self.reconnect(before_disconnect=lambda client: self.notify_observation(client, 6, 600))
+        _, current = await self.reconnect(before_disconnect=lambda client: self.notify_observation(client, 6, 600, presses=[5, 3]))
         self.assertEqual(self.peer.observations.qsize(), 3)
         self.assertEqual(self.peer.observation_watermark, ("boot-2", 1, 100))
         self.assertEqual(self.peer.anchor[:2], ("boot-2", 100))
+        self.notify_observation(current, 2, 200, presses=[0, 1])
+        self.assertEqual(self.peer.button_presses, (0, 1))
+
+    async def test_same_boot_reconnect_keeps_button_floor_across_missing_counters(self):
+        _, current = await self.reconnect(factory=self.same_boot_factory,
+                                          before_disconnect=lambda client: self.notify_observation(client, 6, 600, presses=[5, 3]))
+        self.notify_observation(current, 7, 700)
+        self.assertEqual(self.peer.button_presses, (5, 3))
+        self.notify_observation(current, 8, 800, presses=[6, 2])
+        self.assertEqual(self.peer.observations.qsize(), 3)
+        self.assertEqual(self.peer.observation_watermark, ("boot-1", 7, 700))
+        self.assertEqual(self.peer.button_presses, (5, 3))
+        self.assertFalse(self.peer.ready.is_set())
+        self.assertEqual(self.peer.last_error, "invalid_observation")
 
     async def test_start_uses_committed_sequence_without_reusing_a_clock_anchor(self):
         self.peer.discovered = object()
@@ -593,6 +609,23 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
                 self.notify_observation(self.clients[0], 7, 700)
                 self.assertEqual(self.peer.observation_watermark, ("boot-1", 7, 700))
                 self.assertEqual(self.peer.anchor[:2], ("boot-1", 700))
+            finally:
+                await self.fleet.close()
+
+    async def test_start_uses_committed_button_floor_without_admitting_regressed_frame(self):
+        self.peer.discovered = object()
+        self.peer.seen.set()
+        deliver = AsyncMock()
+        with (patch("bubble_gateway.ble.BleakClient", side_effect=self.factory),
+              patch.object(self.fleet, "_scan", new_callable=AsyncMock)):
+            await self.fleet.start(deliver, observation_heads={"kr-test": ("boot-1", 6, (5, 3))})
+            try:
+                await self.ready(1)
+                self.notify_observation(self.clients[0], 7, 700, presses=[4, 3])
+                deliver.assert_not_awaited()
+                self.assertEqual(self.peer.observation_watermark, ("boot-1", 6, None))
+                self.assertEqual(self.peer.button_presses, (5, 3))
+                self.assertFalse(self.peer.ready.is_set())
             finally:
                 await self.fleet.close()
 

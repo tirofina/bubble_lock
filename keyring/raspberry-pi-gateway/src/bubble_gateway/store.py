@@ -10,7 +10,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Callable
 
-from .model import canonical, central_observation_id, iso_time
+from .model import (ObservationHead, button_presses_regressed, canonical, central_observation_id,
+                    iso_time, observation_button_presses)
 from .core_bridge import telemetry, measurable, acknowledgement
 from .state_identity import preflight, install
 
@@ -36,6 +37,14 @@ class CapacityError(RuntimeError):
     pass
 
 
+def _stored_button_presses(row: sqlite3.Row) -> tuple[int, int] | None:
+    # An older Gateway can advance the observation boot without writing the new columns.
+    confirm, panic = row["confirm_presses"], row["panic_presses"]
+    if row["button_presses_boot_id"] != row["boot_id"] or type(confirm) is not int or type(panic) is not int:
+        return None
+    return confirm, panic
+
+
 class Store:
     def __init__(self, path: Path, max_rows: int, max_bytes: int, max_commands: int, binding: dict):
         path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -58,7 +67,10 @@ class Store:
                 device_id TEXT PRIMARY KEY, epoch INTEGER NOT NULL, revision INTEGER NOT NULL
             );
             CREATE TABLE IF NOT EXISTS observations (
-                device_id TEXT PRIMARY KEY, boot_id TEXT NOT NULL, sequence INTEGER NOT NULL
+                device_id TEXT PRIMARY KEY, boot_id TEXT NOT NULL, sequence INTEGER NOT NULL,
+                button_presses_boot_id TEXT,
+                confirm_presses INTEGER CHECK(confirm_presses BETWEEN 0 AND 4294967295),
+                panic_presses INTEGER CHECK(panic_presses BETWEEN 0 AND 4294967295)
             );
             CREATE TABLE IF NOT EXISTS outbox (
                 rqi TEXT PRIMARY KEY, container TEXT NOT NULL, payload TEXT NOT NULL,
@@ -93,6 +105,13 @@ class Store:
                 columns = {row["name"] for row in self.db.execute("PRAGMA table_info(commands)")}
                 if "central_receipt_staged" not in columns:
                     self.db.execute("ALTER TABLE commands ADD COLUMN central_receipt_staged INTEGER NOT NULL DEFAULT 0")
+                observation_columns = {row["name"] for row in self.db.execute("PRAGMA table_info(observations)")}
+                if "button_presses_boot_id" not in observation_columns:
+                    self.db.execute("ALTER TABLE observations ADD COLUMN button_presses_boot_id TEXT")
+                for name in ("confirm_presses", "panic_presses"):
+                    if name not in observation_columns:
+                        self.db.execute(f"ALTER TABLE observations ADD COLUMN {name} INTEGER "
+                                        f"CHECK({name} BETWEEN 0 AND 4294967295)")
                 self.db.execute("""
                     CREATE INDEX IF NOT EXISTS commands_pending_central_receipt ON commands(central_receipt_staged)
                     WHERE receipt IS NOT NULL AND central_receipt_staged=0
@@ -243,10 +262,17 @@ class Store:
 
     def observation(self, container: str, payload: dict, core_enabled: bool = False, *,
                     core_epochs: dict[str, int] | None = None, central_enabled: bool = False) -> bool:
+        presses = observation_button_presses(payload["sensorValues"])
         with self.db:
-            previous = self.db.execute("SELECT boot_id,sequence FROM observations WHERE device_id=?", (payload["deviceId"],)).fetchone()
-            if previous and previous["boot_id"] == payload["bootId"] and payload["sequence"] <= previous["sequence"]:
-                return False
+            previous = self.db.execute("SELECT * FROM observations WHERE device_id=?", (payload["deviceId"],)).fetchone()
+            if previous is not None and previous["boot_id"] == payload["bootId"]:
+                if payload["sequence"] <= previous["sequence"]:
+                    return False
+                previous_presses = _stored_button_presses(previous)
+                if button_presses_regressed(previous_presses, presses):
+                    raise ValueError("Button press counts regressed within the same boot")
+                if presses is None:
+                    presses = previous_presses
             identity = f"{payload['deviceId']}:{payload['bootId']}:{payload['sequence']}"
             self._enqueue(self.request_id("observation", identity), container, payload)
             if core_enabled and (core_epochs is not None or measurable(payload)):
@@ -263,13 +289,23 @@ class Store:
             if central_enabled:
                 rqi = self.request_id("central-telemetry", central_observation_id(payload))
                 self._enqueue(rqi, "@central/telemetry", payload)
-            self.db.execute("INSERT INTO observations(device_id,boot_id,sequence) VALUES(?,?,?) ON CONFLICT(device_id) DO UPDATE SET boot_id=excluded.boot_id,sequence=excluded.sequence",
-                            (payload["deviceId"], payload["bootId"], payload["sequence"]))
+            presses_boot = payload["bootId"] if presses is not None else None
+            self.db.execute("""
+                INSERT INTO observations(device_id,boot_id,sequence,button_presses_boot_id,confirm_presses,panic_presses)
+                VALUES(?,?,?,?,?,?)
+                ON CONFLICT(device_id) DO UPDATE SET boot_id=excluded.boot_id,sequence=excluded.sequence,
+                    button_presses_boot_id=excluded.button_presses_boot_id,
+                    confirm_presses=excluded.confirm_presses,panic_presses=excluded.panic_presses
+            """, (payload["deviceId"], payload["bootId"], payload["sequence"], presses_boot, *(presses or (None, None))))
         return True
 
-    def observation_heads(self) -> dict[str, tuple[str, int]]:
-        return {row["device_id"]: (row["boot_id"], row["sequence"])
-                for row in self.db.execute("SELECT device_id,boot_id,sequence FROM observations")}
+    def observation_heads(self, *, include_button_presses: bool = False) -> dict[str, ObservationHead]:
+        heads: dict[str, ObservationHead] = {}
+        for row in self.db.execute("SELECT * FROM observations"):
+            head = (row["boot_id"], row["sequence"])
+            presses = _stored_button_presses(row) if include_button_presses else None
+            heads[row["device_id"]] = (*head, presses) if presses is not None else head
+        return heads
 
     def stage_receipts(self, container: str, core_enabled: bool = False) -> None:
         """Stage the native receipt and its optional CORE ACK in one transaction."""

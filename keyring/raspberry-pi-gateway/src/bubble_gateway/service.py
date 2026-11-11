@@ -519,7 +519,7 @@ class Gateway:
                 workers.extend((self._poll_loop, self._dispatch_loop))
             workers.extend((self._outbox_loop, self._health_loop))
             await self.transport.start()
-            await self.ble.start(self.observation, observation_heads=self.store.observation_heads())
+            await self.ble.start(self.observation, observation_heads=self.store.observation_heads(include_button_presses=True))
             tasks = [asyncio.create_task(worker(), name=worker.__name__) for worker in workers]
             if self.config.core_telemetry_epochs is not None:
                 tasks.append(asyncio.create_task(self._outbox_loop(scoped=True), name="scoped_outbox"))
