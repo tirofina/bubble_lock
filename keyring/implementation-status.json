@@ -1952,5 +1952,13 @@
     "regressionsExecuted": false,
     "physicalDisplayLatchVerified": false,
     "sourceCommit": "5f7960db58b31c9c1427314bca2f6d63189ce57d"
+  },
+  "r18BringupDisplayPatternCompletion": {
+    "reference": "firmware/PERIPHERALS.md",
+    "firmwareRevisions": ["keyring-0.7.24-st7789-bringup", "keyring-0.7.24-jd9853-bringup"],
+    "gatewayVersion": "0.2.113",
+    "regressionsExecuted": false,
+    "physicalPatternVerified": false,
+    "sourceCommit": "873fc6a1d19cda79189d082b6f8fc129ec423243"
   }
 }

@@ -2018,3 +2018,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 중앙 �
 - Gateway 0.2.112와 격리 Mobius4 시험 설정에 새 버전을 연결하고 화면·관측 호스트 시험 소스를 현재 GATT 구조에 맞췄다. 빌드·테스트·정적 분석·API 재시작·플래시·두 패널 실물 확인은 미수행이다. [주변장치 설명](../keyring/firmware/PERIPHERALS.md)
 
 소스 commit `5f7960db58b31c9c1427314bca2f6d63189ce57d`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `e890490..5f7960d`이다. goal은 active/progress다.
+
+## 2026-11-11 — r18 LCD 첫 구동 패턴 완료 조건
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 r18 두 패널의 마지막 버튼 표시를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 관측 계약을 확인했다.
+
+- ST7789·JD9853의 0.7.24 첫 구동 프로필은 논리 화면 크기가 시험 패턴을 담지 못하면 `geometry_error`를 보낸다. 버튼 그리기 누계는 패턴과 문구 출력 뒤 백라이트 조건이 유지된 때 기록한다. 실물 색과 문구는 작업자가 확인한다.
+- Gateway 0.2.113과 Pi 시험 도구에 두 revision을 추가했다. 회귀시험 소스는 새 USB 프로필과 크기 오류를 다룬다. 빌드·테스트·정적 분석·플래시·패널 화면 확인은 미수행이다. [LCD 설정](../keyring/firmware/PERIPHERALS.md)
+
+소스 commit `873fc6a1d19cda79189d082b6f8fc129ec423243`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8dd1dbc..873fc6a`이다. goal은 active/progress다.
