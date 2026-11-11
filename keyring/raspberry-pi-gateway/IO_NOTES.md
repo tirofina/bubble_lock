@@ -25,4 +25,6 @@ Gateway 0.2.47에서 `CENTRAL_TELEMETRY_ENABLED=true`를 사용하면 검증한 
 
 중앙 송신은 장치별로 가장 오래된 미전송 관측부터 처리한다. 재시도 중인 장치가 있어도 다른 장치의 관측은 진행한다. 재시작과 재시도에는 동일 본문과 `Idempotency-Key`를 사용한다. 중앙 응답의 장치 ID와 Gateway·장치·부팅 ID·순번으로 계산한 `observationId`를 확인한다. `ACCEPTED`와 `DUPLICATE`는 확인, `STALE`은 중앙이 더 새 관측을 보유한 결과로 집계한다.
 
+Gateway 0.2.49부터 중앙 관측 전송은 전용 작업에서 중앙 응답을 기다린다. Mobius4 관측과 명령 영수증은 응답 대기 중에도 기존 전송 작업에서 진행할 수 있다. 두 작업은 같은 SQLite 대기열을 사용하며 각 항목은 담당 작업만 선택한다. 중앙 API가 `Retry-After`를 보내면 해당 HTTPS origin의 대기 규칙을 적용한다.
+
 Pi의 시계가 정상이고 관측 시각에서 24시간 2초가 지났으면 중앙 전송 대기열의 해당 항목을 만료로 집계한다. 중앙 보관 기간 상한은 24시간이다. Mobius4 전송은 해당 경로에서 처리한다. 이 경로는 원격 main `bc2a45d`의 INTEGRATION API 계약을 따른다.

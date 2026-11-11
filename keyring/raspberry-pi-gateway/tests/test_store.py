@@ -194,7 +194,7 @@ class StoreTests(unittest.TestCase):
         self.store.close()
         self.store = self.open_store()
         self.assertFalse(self.store.observation(container, payload, central_enabled=True))
-        item = self.store.due(central_telemetry_enabled=True, skip_native=True)
+        item = self.store.due_central_telemetry()
         self.assertEqual((item["container"], item["payload"]), ("@central/telemetry", payload))
         self.store.delivered(item["rqi"])
         self.assertEqual(self.store.due()["payload"], payload)
@@ -213,14 +213,14 @@ class StoreTests(unittest.TestCase):
             self.store.retry(first_rqi, 0)
             self.store.close()
             self.store = self.open_store()
-            remaining = self.store.due(central_telemetry_enabled=True, skip_native=True)
+            remaining = self.store.due_central_telemetry()
             self.assertEqual(remaining["payload"], other)
             self.store.delivered(remaining["rqi"])
-            self.assertIsNone(self.store.due(central_telemetry_enabled=True, skip_native=True))
+            self.assertIsNone(self.store.due_central_telemetry())
 
         with patch("bubble_gateway.store.time.time", return_value=2000):
             for payload in (first, second):
-                item = self.store.due(central_telemetry_enabled=True, skip_native=True)
+                item = self.store.due_central_telemetry()
                 self.assertEqual(item["payload"], payload)
                 self.store.delivered(item["rqi"])
 

@@ -244,13 +244,49 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
 
         gateway._pause = idle
         async with asyncio.timeout(1):
-            await gateway._outbox_loop()
+            await gateway._outbox_loop(central_telemetry=True)
         gateway.transport.publish.assert_awaited_once()
         self.assertEqual(gateway.transport.publish.await_args.args[1:], ("@central/telemetry", fresh))
         self.assertEqual(gateway.counters["central_telemetry_expired"], 1)
         self.assertEqual(gateway.counters["central_telemetry_stale"], 1)
         self.assertEqual(self.queued("@central/telemetry"), 0)
         self.assertEqual(self.queued(BINDING["observationContainer"]), 2)
+
+    async def test_native_delivery_continues_while_central_observation_awaits_confirmation(self):
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.config.central_telemetry_enabled = True
+        gateway.config.core_bridge_enabled = False
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+        gateway._clock_ok = Mock(return_value=True)
+        awaiting_central, release_central = asyncio.Event(), asyncio.Event()
+        native_observation_sent = asyncio.Event()
+
+        async def publish(_rqi, container, _payload, **_options):
+            if container == "@central/telemetry":
+                awaiting_central.set()
+                await release_central.wait()
+                return {"status": "ACCEPTED"}
+            if container == gateway.config.observation_container:
+                native_observation_sent.set()
+
+        gateway.transport = SimpleNamespace(publish=AsyncMock(side_effect=publish),
+                                             native_delivery_hold=Mock(return_value=NativeDeliveryHold()))
+        await gateway.observation(observation())
+        async with asyncio.timeout(1), asyncio.TaskGroup() as workers:
+            workers.create_task(gateway._outbox_loop(central_telemetry=True))
+            await awaiting_central.wait()
+            workers.create_task(gateway._outbox_loop())
+            await native_observation_sent.wait()
+            self.assertEqual(self.native_delivered(), 1)
+            self.assertEqual(self.queued(gateway.config.observation_container), 0)
+            self.assertEqual(self.queued("@central/telemetry"), 1)
+            gateway.stop.set()
+            release_central.set()
+
+        self.assertEqual(self.queued("@central/telemetry"), 0)
+        self.assertEqual(gateway.counters["central_telemetry_confirmed"], 1)
+        self.assertEqual(gateway.transport.publish.await_count, 3)
 
     async def test_outbox_worker_does_not_spin_publishing_ack_while_native_is_backed_off(self):
         gateway = Gateway.__new__(Gateway)

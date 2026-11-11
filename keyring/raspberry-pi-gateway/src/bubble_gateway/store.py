@@ -264,7 +264,7 @@ class Store:
     def due(self, *, core_epochs: dict[str, int] | None = None, scoped_only: bool = False,
             prefer_receipts: bool | None = None, skip_native: bool = False,
             held_receipt_container: str | None = None, hold_credential_receipts: bool = False,
-            central_receipts_enabled: bool = False, central_telemetry_enabled: bool = False) -> dict | None:
+            central_receipts_enabled: bool = False) -> dict | None:
         # Old ownership routes stay on disk and cannot block the active route.
         # Within the active route, only the oldest projection per device can run.
         epochs = canonical(core_epochs) if core_epochs is not None else None
@@ -281,24 +281,33 @@ class Store:
                          AND assignment.value = json_extract(message, '$.ownershipEpoch')
                     ) END
                 GROUP BY json_extract(message, '$.deviceId')
-            ), central_heads AS (
-                SELECT MIN(rowid) AS head FROM outbox
-                WHERE ?9=1 AND container='@central/telemetry'
-                GROUP BY CASE WHEN json_valid(payload) THEN json_extract(payload, '$.deviceId') END
             )
             SELECT *, (command_id IS NOT NULL OR container IN ('@core/ack', '@central/receipt')) AS is_receipt
             FROM outbox WHERE next_attempt<=?2
               AND (container<>'@core/telemetry' OR rowid IN (SELECT head FROM core_heads))
-              AND (container<>'@central/telemetry' OR rowid IN (SELECT head FROM central_heads))
+              AND container<>'@central/telemetry'
               AND (?3=0 OR container='@core/telemetry')
-              AND (?5=0 OR container IN ('@core/ack', '@core/telemetry', '@central/receipt', '@central/telemetry'))
+              AND (?5=0 OR container IN ('@core/ack', '@core/telemetry', '@central/receipt'))
               AND (?6 IS NULL OR container<>?6)
               AND (?7=0 OR NOT EXISTS (SELECT 1 FROM credential_receipts AS credentials WHERE credentials.rqi=outbox.rqi))
               AND (?8=1 OR container<>'@central/receipt')
             ORDER BY CASE WHEN is_receipt=?4 THEN 0 ELSE 1 END, created_at,rqi LIMIT 1
         """, (epochs, time.time(), scoped_only, prefer_receipts, skip_native,
-              held_receipt_container, hold_credential_receipts, central_receipts_enabled,
-              central_telemetry_enabled)).fetchone()
+              held_receipt_container, hold_credential_receipts, central_receipts_enabled)).fetchone()
+        return self._outbox_row(row)
+
+    def due_central_telemetry(self) -> dict | None:
+        # Include deferred heads so a retry cannot reorder a device's observations.
+        row = self.db.execute("""
+            SELECT * FROM outbox WHERE next_attempt<=? AND rowid IN (
+                SELECT MIN(rowid) FROM outbox WHERE container='@central/telemetry'
+                GROUP BY CASE WHEN json_valid(payload) THEN json_extract(payload, '$.deviceId') END
+            ) ORDER BY created_at,rqi LIMIT 1
+        """, (time.time(),)).fetchone()
+        return self._outbox_row(row)
+
+    @staticmethod
+    def _outbox_row(row: sqlite3.Row | None) -> dict | None:
         if row is None:
             return None
         result = dict(row)

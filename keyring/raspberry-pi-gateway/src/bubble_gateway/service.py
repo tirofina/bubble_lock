@@ -395,7 +395,7 @@ class Gateway:
             cursor = batch[-1]["rowid"] if len(batch) == batch_size and batch[-1]["rowid"] < through else 0
             await self._pause(1)
 
-    async def _outbox_loop(self, *, scoped: bool = False) -> None:
+    async def _outbox_loop(self, *, scoped: bool = False, central_telemetry: bool = False) -> None:
         epochs = self.config.core_telemetry_epochs
         central_receipts = self.config.central_receipts_enabled
         receipt_attempts = 0
@@ -404,21 +404,24 @@ class Gateway:
             # holds the native observation or command-receipt worker.
             epochs = {}
         while not self.stop.is_set():
-            if not scoped:
+            if not scoped and not central_telemetry:
                 self.store.stage_receipts(self.config.receipt_container, self.config.core_bridge_enabled,
                                           central_enabled=central_receipts)
                 self.store.stage_credential_receipt()
-            prefer_receipts = None if scoped else receipt_attempts < RECEIPT_BURST
-            hold = NativeDeliveryHold() if scoped else self.transport.native_delivery_hold()
-            item = self.store.due(core_epochs=epochs, scoped_only=scoped, prefer_receipts=prefer_receipts,
-                                  skip_native=hold.all_native, held_receipt_container=hold.receipt_container,
-                                  hold_credential_receipts=hold.credential_receipts,
-                                  central_receipts_enabled=central_receipts,
-                                  central_telemetry_enabled=self.config.central_telemetry_enabled)
+            if central_telemetry:
+                item = self.store.due_central_telemetry()
+            else:
+                prefer_receipts = None if scoped else receipt_attempts < RECEIPT_BURST
+                hold = NativeDeliveryHold() if scoped else self.transport.native_delivery_hold()
+                item = self.store.due(core_epochs=epochs, scoped_only=scoped, prefer_receipts=prefer_receipts,
+                                      skip_native=hold.all_native, held_receipt_container=hold.receipt_container,
+                                      hold_credential_receipts=hold.credential_receipts,
+                                      central_receipts_enabled=central_receipts)
             if item is None:
                 await self._pause(0.5)
                 continue
-            receipt_attempts = min(receipt_attempts + 1, RECEIPT_BURST) if item["is_receipt"] else 0
+            if not central_telemetry:
+                receipt_attempts = min(receipt_attempts + 1, RECEIPT_BURST) if item["is_receipt"] else 0
             delivery_options = {}
             if (item["command_id"] is not None and item["container"] == self.config.receipt_container
                     and self.config.receipt_container_ri is not None):
@@ -488,6 +491,8 @@ class Gateway:
                 self._credentials_loop, self._poll_loop, self._dispatch_loop, self._outbox_loop, self._health_loop)]
             if self.config.core_telemetry_epochs is not None:
                 tasks.append(asyncio.create_task(self._outbox_loop(scoped=True), name="scoped_outbox"))
+            if self.config.central_telemetry_enabled:
+                tasks.append(asyncio.create_task(self._outbox_loop(central_telemetry=True), name="central_telemetry_outbox"))
             stop_task = asyncio.create_task(self.stop.wait(), name="stop")
             tasks.append(stop_task)
             done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
