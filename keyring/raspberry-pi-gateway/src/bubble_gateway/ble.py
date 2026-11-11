@@ -16,7 +16,7 @@ import re
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Any, Awaitable, Callable
+from typing import Any, AsyncIterator, Awaitable, Callable
 
 from bleak import BleakClient, BleakScanner
 from .core_bridge import CORE_SERVICE, CORE_IDENTITY, CORE_OBSERVATION, CORE_COMMAND, CORE_RECEIPT
@@ -31,6 +31,8 @@ COMMAND = "8b8f0004-8e7a-4f36-a8c2-1c9b5d620001"
 RECEIPT = "8b8f0005-8e7a-4f36-a8c2-1c9b5d620001"
 MAX_FRAME = 4096
 FRAME_TIMEOUT = 5.0
+GATT_SETUP_TIMEOUT = 30.0
+BLE_DISCONNECT_TIMEOUT = 15.0
 IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,63}\Z")
 MAX_UPTIME_MS = 9007199254740991
 RECEIPT_ANCHOR_MAX_AGE = 60.0
@@ -48,6 +50,10 @@ class BleProtocolError(RuntimeError):
 
 class BleUnavailable(ConnectionError):
     """An enrolled keyring currently has no authenticated GATT session."""
+
+
+class BleHandshakeTimeout(BleUnavailable):
+    """The connected keyring did not finish GATT setup in time."""
 
 def _r18_bringup(identity: dict[str, Any]) -> bool:
     return identity["boardRevision"] == "r18-hand-solder" and identity["firmwareRevision"].endswith("-bringup")
@@ -280,6 +286,70 @@ class BleFleet:
                 or (peer.observation_timeout is not None and peer.observation_timeout.expired())):
             raise BleUnavailable("authenticated BLE session changed")
 
+    @contextlib.asynccontextmanager
+    async def _connection(self, peer: _Peer, client: Any, generation: int) -> AsyncIterator[None]:
+        try:
+            await client.connect()
+            peer.client = client
+            yield
+        finally:
+            # Fence the old callbacks even if BlueZ does not complete disconnect.
+            self._lost(peer, generation)
+            try:
+                async with asyncio.timeout(BLE_DISCONNECT_TIMEOUT):
+                    await client.disconnect()
+            except Exception as exc:
+                LOG.warning("BLE disconnect incomplete for %s (%s)", peer.device_id, type(exc).__name__)
+
+    async def _prepare_gatt(self, peer: _Peer, client: Any, generation: int) -> tuple[bool, str | None]:
+        self._require_session(peer, client, generation, ready=False)
+        service = client.services.get_service(self.service)
+        if service is None:
+            raise BleProtocolError("required service missing")
+        identity = _object(await client.read_gatt_char(self.identity_uuid), 512)
+        self._require_session(peer, client, generation, ready=False)
+        required = {"version", "deviceId", "firmwareRevision", "boardRevision", "bootId"}
+        if set(identity) != required or type(identity.get("version")) is not int or identity["version"] != 1:
+            raise BleProtocolError("invalid identity shape")
+        if identity.get("deviceId") != peer.device_id:
+            raise BleProtocolError("identity does not match enrollment")
+        if any(not isinstance(identity.get(key), str) or not 1 <= len(identity[key]) <= 64
+               for key in ("firmwareRevision", "boardRevision", "bootId")):
+            raise BleProtocolError("invalid identity revision")
+        if IDENTIFIER.fullmatch(identity["bootId"]) is None:
+            raise BleProtocolError("invalid identity boot ID")
+        allowed = self.config.firmware_revision_allowlist
+        if allowed and identity["firmwareRevision"] not in allowed:
+            raise BleProtocolError("firmware revision not allowed")
+        board = getattr(self.config, "ble_board_revision", None)
+        if board is not None and identity["boardRevision"] != board:
+            raise BleProtocolError("board revision does not match enrollment")
+        peer.identity = identity
+        command_ready = False
+        handshake_error = None
+        # BlueZ may still list writable handles from the full image.
+        if getattr(self.config, "commands_enabled", True) and not _r18_bringup(identity):
+            command = service.get_characteristic(self.command_uuid)
+            if command is not None and "write" in command.properties:
+                receipt = service.get_characteristic(self.receipt_uuid)
+                if receipt is not None and not {"notify", "indicate"}.isdisjoint(receipt.properties):
+                    await client.start_notify(self.receipt_uuid,
+                        lambda _, data: self._receipt_fragment(peer, data, generation))
+                    self._require_session(peer, client, generation, ready=False)
+                    command_ready = True
+                else:
+                    handshake_error = "receipt_characteristic_unavailable"
+        # BlueZ emits READ values through PropertiesChanged as well. Read before
+        # subscribing so full JSON cannot enter the LF-framed notification buffer.
+        current = _object(await client.read_gatt_char(self.observation_uuid), 512)
+        self._require_session(peer, client, generation, ready=False)
+        self._queue_observation(peer, current)
+        self._require_session(peer, client, generation, ready=False)
+        await client.start_notify(self.observation_uuid,
+            lambda _, data: self._observation_fragment(peer, data, generation))
+        self._require_session(peer, client, generation, ready=False)
+        return command_ready, handshake_error
+
     async def _watch(self, peer: _Peer) -> None:
         delay = 1.0
         while not self._closed.is_set():
@@ -298,55 +368,12 @@ class BleFleet:
                 client = BleakClient(peer.discovered, pair=self.config.ble_pair,
                                      timeout=max(30.0, self.config.request_timeout),
                                      disconnected_callback=lambda _, session=generation: self._lost(peer, session))
-                async with client:
-                    peer.client = client
-                    self._require_session(peer, client, generation, ready=False)
-                    service = client.services.get_service(self.service)
-                    if service is None:
-                        raise BleProtocolError("required service missing")
-                    identity = _object(await client.read_gatt_char(self.identity_uuid), 512)
-                    self._require_session(peer, client, generation, ready=False)
-                    required = {"version", "deviceId", "firmwareRevision", "boardRevision", "bootId"}
-                    if set(identity) != required or type(identity.get("version")) is not int or identity["version"] != 1:
-                        raise BleProtocolError("invalid identity shape")
-                    if identity.get("deviceId") != peer.device_id:
-                        raise BleProtocolError("identity does not match enrollment")
-                    if any(not isinstance(identity.get(key), str) or not 1 <= len(identity[key]) <= 64
-                           for key in ("firmwareRevision", "boardRevision", "bootId")):
-                        raise BleProtocolError("invalid identity revision")
-                    if IDENTIFIER.fullmatch(identity["bootId"]) is None:
-                        raise BleProtocolError("invalid identity boot ID")
-                    allowed = self.config.firmware_revision_allowlist
-                    if allowed and identity["firmwareRevision"] not in allowed:
-                        raise BleProtocolError("firmware revision not allowed")
-                    board = getattr(self.config, "ble_board_revision", None)
-                    if board is not None and identity["boardRevision"] != board:
-                        raise BleProtocolError("board revision does not match enrollment")
-                    peer.identity = identity
-                    command_ready = False
-                    handshake_error = None
-                    # BlueZ may still list writable handles from the full image.
-                    if getattr(self.config, "commands_enabled", True) and not _r18_bringup(identity):
-                        command = service.get_characteristic(self.command_uuid)
-                        if command is not None and "write" in command.properties:
-                            receipt = service.get_characteristic(self.receipt_uuid)
-                            if receipt is not None and not {"notify", "indicate"}.isdisjoint(receipt.properties):
-                                await client.start_notify(self.receipt_uuid,
-                                    lambda _, data, session=generation: self._receipt_fragment(peer, data, session))
-                                self._require_session(peer, client, generation, ready=False)
-                                command_ready = True
-                            else:
-                                handshake_error = "receipt_characteristic_unavailable"
-                    # BlueZ also publishes READ values through PropertiesChanged.
-                    # Read before subscribing so full JSON cannot enter the LF-
-                    # framed notification buffer through the notify callback.
-                    current = _object(await client.read_gatt_char(self.observation_uuid), 512)
-                    self._require_session(peer, client, generation, ready=False)
-                    self._queue_observation(peer, current)
-                    self._require_session(peer, client, generation, ready=False)
-                    await client.start_notify(self.observation_uuid,
-                        lambda _, data, session=generation: self._observation_fragment(peer, data, session))
-                    self._require_session(peer, client, generation, ready=False)
+                async with self._connection(peer, client, generation):
+                    try:
+                        async with asyncio.timeout(GATT_SETUP_TIMEOUT):
+                            command_ready, handshake_error = await self._prepare_gatt(peer, client, generation)
+                    except TimeoutError as exc:
+                        raise BleHandshakeTimeout("GATT setup did not complete before its deadline") from exc
                     peer.command_writable = command_ready
                     peer.ready.set()
                     peer.last_error = handshake_error

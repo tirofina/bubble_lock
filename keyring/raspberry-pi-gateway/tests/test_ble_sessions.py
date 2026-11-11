@@ -468,10 +468,10 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
                 self.identity = dict(version=1, deviceId="kr-test", firmwareRevision="keyring-0.7.0",
                                      boardRevision="r18", bootId=f"boot-{number}")
 
-            async def __aenter__(self):
-                return self
+            async def connect(self):
+                self.is_connected = True
 
-            async def __aexit__(self, *_args):
+            async def disconnect(self):
                 self.is_connected = False
 
             async def start_notify(self, uuid, callback):
@@ -844,6 +844,47 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
             finally:
                 self.watcher.cancel()
                 await asyncio.gather(self.watcher, return_exceptions=True)
+
+    async def test_stalled_reads_and_subscriptions_reconnect_even_if_disconnect_stalls(self):
+        reasons = []
+
+        async def never_replies(*_args):
+            await asyncio.Future()
+
+        def factory(*args, **kwargs):
+            client = self.factory(*args, **kwargs)
+            if len(self.clients) == 1:
+                client.read_gatt_char = AsyncMock(side_effect=never_replies)
+            elif len(self.clients) == 2:
+                async def notify(uuid, callback):
+                    client.callbacks[uuid] = callback
+                    if uuid == self.fleet.observation_uuid:
+                        await never_replies()
+
+                client.start_notify = notify
+                client.disconnect = AsyncMock(side_effect=never_replies)
+            return client
+
+        async def advertise(_seconds):
+            reasons.append(self.peer.last_error)
+            self.peer.seen.set()
+
+        self.fleet._pause = advertise
+        self.peer.discovered = object()
+        self.peer.seen.set()
+        self.peer.ready.set = Mock(wraps=self.peer.ready.set)
+        with (patch("bubble_gateway.ble.BleakClient", side_effect=factory),
+              patch("bubble_gateway.ble.GATT_SETUP_TIMEOUT", 0.02),
+              patch("bubble_gateway.ble.BLE_DISCONNECT_TIMEOUT", 0.02)):
+            self.watcher = asyncio.create_task(self.fleet._watch(self.peer))
+            await self.ready(3)
+
+        self.assertEqual(reasons, ["BleHandshakeTimeout", "BleHandshakeTimeout"])
+        self.assertFalse(self.clients[0].is_connected)
+        self.clients[1].disconnect.assert_awaited_once()
+        self.peer.ready.set.assert_called_once()
+        self.clients[1].callbacks[self.fleet.observation_uuid](None, bytearray(b"{}\n"))
+        self.assertIsNotNone(self.fleet.command_session("kr-test"))
 
     async def test_old_observation_cannot_poison_new_frame_buffer(self):
         old, current = await self.reconnect()

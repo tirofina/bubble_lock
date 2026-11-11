@@ -200,10 +200,10 @@ class CentralDispatchTests(unittest.IsolatedAsyncioTestCase):
                 self.callbacks = {}
                 self.buffer = bytearray()
 
-            async def __aenter__(self):
-                return self
+            async def connect(self):
+                self.is_connected = True
 
-            async def __aexit__(self, *_args):
+            async def disconnect(self):
                 self.is_connected = False
 
             async def start_notify(self, uuid, callback):
