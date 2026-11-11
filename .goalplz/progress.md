@@ -1955,3 +1955,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 조립 �
 - 오프라인 도구는 동일 관측 ID와 원본 해시를 다시 대조한다. 다른 핀·누락 관측·다른 관측 ID를 다루는 회귀시험 소스를 추가했다. 테스트·빌드·정적 분석·실제 Pi/Mobius4·r18 깨우기 및 명령 시험은 미수행이다. [실행 절차](../keyring/raspberry-pi-gateway/TESTING.md#r18-pi-명령-세션)
 
 소스 commit `4ecee4f1f3a13f6c4ceb506aa886333935966b02`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `c8a4e76..4ecee4f`이다. goal은 active/progress다.
+
+## 2026-11-11 — r18 첫 BLE 읽기와 구독 사이의 버튼 전이
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R15. 직전 goal turn은 깨우기 원인과 중앙 관측 연결을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 BLE GATT 관측 계약을 조회했다.
+
+- r18 0.7.22는 센서 관측을 준비한 뒤 첫 BLE 광고를 시작한다. 인증된 관측 읽기의 첫 offset으로 만든 스냅샷 이후에 감지된 버튼 전이는 같은 연결에서 알림 구독이 열릴 때까지 대기한다. 새 읽기 또는 연결 종료가 이전 대기를 폐기한다.
+- Gateway 0.2.106, Pi 시험 도구와 격리 Mobius4 명령 설정에 새 버전을 반영했다. 읽기 중 전이·재읽기·다른 피어 연결을 다루는 호스트 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·API 재시작·플래시·실제 BlueZ 첫 연결 시험은 미수행이다. [펌웨어 설명](../keyring/firmware/README.md#센서버튼저전력)
+
+소스 commit `78fcc9cd41380cf6311d517d42c21b21104c5ef8`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `246b415..78fcc9c`이다. goal은 active/progress다.

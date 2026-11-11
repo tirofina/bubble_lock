@@ -1899,5 +1899,14 @@
     "regressionsExecuted": false,
     "physicalWakeRelayVerified": false,
     "sourceCommit": "4ecee4f1f3a13f6c4ceb506aa886333935966b02"
+  },
+  "r18GattInitialRead": {
+    "reference": "firmware/README.md#센서버튼저전력",
+    "firmwareRevision": "keyring-0.7.22",
+    "gatewayVersion": "0.2.106",
+    "buildExecuted": false,
+    "regressionsExecuted": false,
+    "physicalFirstConnectionVerified": false,
+    "sourceCommit": "78fcc9cd41380cf6311d517d42c21b21104c5ef8"
   }
 }
