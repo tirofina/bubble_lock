@@ -22,6 +22,8 @@ CORE_BRIDGE_ENABLED의 projection 선택은 영수증 최초 staging 시 고정�
 
 Gateway 0.2.46에서 `CENTRAL_RECEIPTS_ENABLED=true`를 사용하면 같은 SQLite 명령 저널의 영수증을 중앙 `POST /receipts`에도 보낸다. 재시도와 재시작에는 같은 본문과 `Idempotency-Key`를 사용한다. 중앙의 `ACCEPTED` 또는 `DUPLICATE` 응답이 원래 command ID, claim ID, 영수증 SHA-256과 일치해야 전송을 완료한다.
 
+Gateway 0.2.110은 응답의 `executionState`도 대조한다. 신규 수용 응답은 영수증에 따라 `APPLIED_VERIFIED`, `SETTLED_CANCELLED`, `DISPATCH_UNCERTAIN` 중 해당 값이어야 한다. 불확정 영수증의 중복 응답은 원래 영수증 해시가 같고 중앙이 나중에 적용 또는 취소로 정산한 경우도 확인으로 처리한다. 상태가 누락되거나 일치하지 않으면 대기열에 보존하고 같은 영수증으로 재시도한다.
+
 중앙용 항목과 최초 등록 표시는 같은 SQLite 트랜잭션에 저장한다. 기능을 켜면 기존 Mobius4 전달이 완료된 영수증도 중앙 대기열에 등록한다. 이 설정은 같은 중앙 배포의 DB에 적용한다. 새 중앙 배포를 시험할 때는 새 Gateway 상태 DB를 사용한다. 중앙 응답으로 Mobius4 전달 완료 여부를 바꾸지 않는다. CSE 전송이 보류된 동안에도 중앙 영수증을 보낼 수 있다.
 
 Gateway 0.2.51은 중앙 명령 영수증을 전용 작업에서 보낸다. Mobius4 요청과 중앙 영수증 요청은 각자의 응답을 기다리며, 한 작업이 I/O를 기다리는 동안 다른 작업에서 같은 SQLite 저널의 영수증을 대기열에 등록할 수 있다. 각 전송 작업은 자기 경로의 행만 선택한다. 최초 대기열 등록 트랜잭션과 경로별 재시도 시각은 기존 DB에서 이어진다. 중앙 영수증과 중앙 관측에는 같은 HTTPS origin의 `Retry-After` 규칙을 적용한다.

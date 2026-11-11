@@ -14,6 +14,12 @@ COMMAND_KEYS = frozenset({"version", "gatewayId", "deviceId", "commandId", "clai
                           "desiredState", "issuedAt", "deadline", "grantRevision", "ownershipEpoch"})
 MAX_REVISION = 2147483647
 MAX_UPTIME_MS = 9007199254740991
+# DOC-REV 2.0.0, PC-MOBIUS-INTEGRATION gateway-control.mjs.
+CENTRAL_CANCEL_ACKS = frozenset({
+    "REJECTED_EPOCH", "REJECTED_GRANT", "EXPIRED", "CONFLICT", "INVALID", "JOURNAL_FULL",
+    "CLOCK_UNTRUSTED", "CREDENTIAL_UNKNOWN", "CREDENTIAL_LOST", "CREDENTIAL_REVOKED", "CREDENTIAL_EXPIRED",
+    "NOT_AUTHORIZED", "DISPATCH_NOT_SENT", "STALE_EPOCH", "STALE_GRANT",
+})
 
 
 def utc_now() -> datetime:
@@ -45,6 +51,18 @@ def payload_hash(value: Any) -> str:
 
 def central_observation_id(observation: dict) -> str:
     return payload_hash({key: observation[key] for key in ("gatewayId", "deviceId", "bootId", "sequence")})
+
+
+def central_receipt_execution_state(receipt: dict) -> str:
+    status, code = receipt.get("status"), receipt.get("ackCode")
+    if status == "APPLIED" and code in ("APPLIED", "DUPLICATE"):
+        return "APPLIED_VERIFIED"
+    if status == "REJECTED" and isinstance(code, str) and code in CENTRAL_CANCEL_ACKS:
+        if "appliedAt" in receipt and receipt["appliedAt"] is None:
+            return "SETTLED_CANCELLED"
+    if status in ("TIMEOUT", "INDETERMINATE") or (status == "REJECTED" and code == "ALREADY_DISPATCHED"):
+        return "DISPATCH_UNCERTAIN"
+    raise ValueError("Receipt has no central execution state for this status and ACK")
 
 
 def validate_command(raw: Any, gateway_id: str, devices: dict[str, str]) -> dict:

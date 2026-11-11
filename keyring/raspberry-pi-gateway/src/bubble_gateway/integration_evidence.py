@@ -4,7 +4,8 @@ from datetime import timedelta
 import re
 
 from .config import ID
-from .model import canonical, central_observation_id, iso_time, parse_time, payload_hash, validate_command
+from .model import (canonical, central_observation_id, central_receipt_execution_state, iso_time,
+                    parse_time, payload_hash, validate_command)
 
 COMMAND_BINDING = ("gatewayId", "deviceId", "commandId", "claimId", "grantRevision", "ownershipEpoch")
 
@@ -85,19 +86,13 @@ def inspect_integration_receipt(command, receipt, team_state):
             or stored.get("receiptHash") != receipt_digest or canonical(stored.get("receipt")) != canonical(receipt)):
         raise ValueError("Central receipt does not match the Pi receipt")
 
-    status, code = receipt["status"], receipt["ackCode"]
-    if status == "APPLIED":
-        expected_state = "APPLIED_VERIFIED"
-        if (code not in {"APPLIED", "DUPLICATE"}
-                or canonical(record.get("readback")) != canonical(command["desiredState"])
+    expected_state = central_receipt_execution_state(receipt)
+    if expected_state == "APPLIED_VERIFIED":
+        if (canonical(record.get("readback")) != canonical(command["desiredState"])
                 or canonical(receipt.get("readback")) != canonical(command["desiredState"])):
             raise ValueError("Central application readback differs from the command")
-    else:
-        expected_state = "DISPATCH_UNCERTAIN"
-        if status == "REJECTED" and code != "ALREADY_DISPATCHED":
-            expected_state = "SETTLED_CANCELLED"
-            if receipt["appliedAt"] is not None or record.get("settlementReason") != code:
-                raise ValueError("Central cancellation reason differs from the Pi receipt")
+    elif expected_state == "SETTLED_CANCELLED" and record.get("settlementReason") != receipt["ackCode"]:
+        raise ValueError("Central cancellation reason differs from the Pi receipt")
     generation = record.get("desiredGeneration", 0)
     if record.get("executionState") != expected_state or type(generation) is not int or generation < 0:
         raise ValueError("Invalid central settlement state or device generation")

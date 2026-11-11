@@ -475,9 +475,10 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
     async def test_central_receipt_retries_with_stable_key_and_exact_binding(self):
         self.hub.config.central_receipts_enabled = True
         cmd = command()
-        receipt = {"commandId": cmd["commandId"], "status": "APPLIED"}
+        receipt = {"commandId": cmd["commandId"], "status": "APPLIED", "ackCode": "APPLIED"}
         confirmation = {"status": "ACCEPTED", "commandId": cmd["commandId"],
-                        "claimId": cmd["claimId"], "receiptHash": payload_hash(receipt)}
+                        "claimId": cmd["claimId"], "receiptHash": payload_hash(receipt),
+                        "executionState": "APPLIED_VERIFIED"}
         for status in ("ACCEPTED", "DUPLICATE"):
             with self.subTest(status=status):
                 self.hub._http_json.return_value = (200, httpx.Headers(), dict(confirmation, status=status))
@@ -488,11 +489,38 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(exchange.kwargs["headers"]["Idempotency-Key"], self.rqi)
                 self.assertEqual(exchange.kwargs["headers"]["X-Correlation-ID"], self.rqi)
                 self.assertEqual(exchange.kwargs["body"], receipt)
-        for key in ("status", "commandId", "claimId", "receiptHash"):
+        for key in ("status", "commandId", "claimId", "receiptHash", "executionState"):
             with self.subTest(mismatch=key):
                 self.hub._http_json.return_value = (200, httpx.Headers(), dict(confirmation, **{key: "wrong"}))
                 with self.assertRaises(RemoteResponseError):
                     await self.hub.publish(self.rqi, "@central/receipt", receipt, expected_claim_id=cmd["claimId"])
+
+    async def test_uncertain_receipt_replay_can_confirm_a_later_central_settlement(self):
+        self.hub.config.central_receipts_enabled = True
+        cmd = command()
+        for local_status, ack, initial_state in (
+                ("INDETERMINATE", "RESTART_INTERRUPTED", "DISPATCH_UNCERTAIN"),
+                ("TIMEOUT", "TIMEOUT", "DISPATCH_UNCERTAIN"),
+                ("REJECTED", "ALREADY_DISPATCHED", "DISPATCH_UNCERTAIN"),
+                ("REJECTED", "DISPATCH_NOT_SENT", "SETTLED_CANCELLED")):
+            with self.subTest(local_status=local_status, ack=ack):
+                receipt = {"commandId": cmd["commandId"], "status": local_status, "ackCode": ack, "appliedAt": None}
+                reply = {"status": "ACCEPTED", "commandId": cmd["commandId"], "claimId": cmd["claimId"],
+                         "receiptHash": payload_hash(receipt), "executionState": initial_state}
+                self.hub._http_json.return_value = (200, httpx.Headers(), reply)
+                result = await self.hub.publish(self.rqi, "@central/receipt", receipt, expected_claim_id=cmd["claimId"])
+                self.assertEqual(result["executionState"], initial_state)
+                self.hub._http_json.return_value = (200, httpx.Headers(), dict(reply, executionState="APPLIED_VERIFIED"))
+                with self.assertRaises(RemoteResponseError):
+                    await self.hub.publish(self.rqi, "@central/receipt", receipt, expected_claim_id=cmd["claimId"])
+                self.hub._http_json.return_value = (200, httpx.Headers(), dict(reply, status="DUPLICATE",
+                                                                             executionState="APPLIED_VERIFIED"))
+                if initial_state == "DISPATCH_UNCERTAIN":
+                    result = await self.hub.publish(self.rqi, "@central/receipt", receipt, expected_claim_id=cmd["claimId"])
+                    self.assertEqual(result["executionState"], "APPLIED_VERIFIED")
+                else:
+                    with self.assertRaises(RemoteResponseError):
+                        await self.hub.publish(self.rqi, "@central/receipt", receipt, expected_claim_id=cmd["claimId"])
 
     async def test_central_telemetry_requires_the_bound_observation_id(self):
         self.hub.config.central_telemetry_enabled = True

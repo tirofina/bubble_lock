@@ -22,7 +22,8 @@ import httpx
 import paho.mqtt.client as mqtt
 from .config import ID, configured_container_pins, tls_context
 from .core_bridge import command as core_command
-from .model import authorization_deadline, central_observation_id, parse_time, payload_hash, utc_now
+from .model import (authorization_deadline, central_observation_id, central_receipt_execution_state,
+                    parse_time, payload_hash, utc_now)
 
 if TYPE_CHECKING:
     from .store import Store
@@ -605,8 +606,16 @@ class TransportHub:
                                        claim_id: str | None) -> dict[str, Any]:
         if not self.config.central_receipts_enabled or not isinstance(claim_id, str) or not ID.fullmatch(claim_id):
             raise ValueError("Central receipt route requires an enabled route and a bound claim")
+        expected_state = central_receipt_execution_state(receipt)
         result = await self._api("POST", "/receipts", receipt, rqi, idempotency_key=rqi)
-        if (result.get("status") not in ("ACCEPTED", "DUPLICATE")
+        status, state = result.get("status"), result.get("executionState")
+        # Replaying an uncertain receipt can return a later settlement for the
+        # same command. The original receipt hash is still required below.
+        state_matches = state == expected_state or (
+            status == "DUPLICATE" and expected_state == "DISPATCH_UNCERTAIN"
+            and state in ("APPLIED_VERIFIED", "SETTLED_CANCELLED")
+        )
+        if (status not in ("ACCEPTED", "DUPLICATE") or not state_matches
                 or result.get("commandId") != receipt["commandId"]
                 or result.get("claimId") != claim_id
                 or result.get("receiptHash") != payload_hash(receipt)):
