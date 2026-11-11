@@ -1703,3 +1703,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02. 직전 goal turn은 Pi의 원격 
 - BlueZ 연결이 유지되는 상태에서 알림만 멈춘 경우, 진행 중인 명령 대기 해제, 이전 세션·중복 알림의 시간 갱신 차단을 다루는 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·Pi BlueZ 및 실물 Feather/r18 재연결 시험은 미수행이다. [BLE 재연결](../keyring/raspberry-pi-gateway/BLE_SESSIONS.md#재연결과-관측-시각-기준)
 
 소스 commit `1be3c200ea61994b3777fd94a4dedb300d2a3327`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `7323a88..1be3c20`이다. goal은 active/progress다.
+
+## 2026-11-11 — BLE 초기 GATT 설정과 연결 해제의 대기 제한
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02. 직전 goal turn은 관측 알림이 멈춘 BLE 연결 복구를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀 BLE 관측·영수증 계약을 확인했다.
+
+- Gateway 0.2.91은 연결 뒤 identity와 첫 관측 읽기 및 알림 구독에 총 30초를 적용한다. 설정 제한을 넘으면 이전 세션 콜백을 무효화한 뒤 BlueZ 해제를 최대 15초 기다린다. BlueZ 응답을 받지 못한 경우 로그를 남기고 기존 재접속 대기로 넘어간다.
+- 멈춘 읽기와 구독, 응답 없는 해제, 뒤늦은 이전 알림을 모의 회귀시험 소스에 추가했다. 빌드·테스트·정적 분석·실제 Pi BlueZ와 Feather/r18 재연결은 미수행이다. [BLE 재연결](../keyring/raspberry-pi-gateway/BLE_SESSIONS.md#재연결과-관측-시각-기준)
+
+소스 commit `6e82b5aa28e276db9acbdbaf05c416ae20b08428`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `9866b8e..6e82b5a`다. goal은 active/progress다.
