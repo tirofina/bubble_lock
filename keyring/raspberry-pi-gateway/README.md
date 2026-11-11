@@ -79,6 +79,7 @@ sudoedit /etc/privacy-bubble/gateway.env
 | `M2M_RVI` | 예시 `3`을 그대로 확정값으로 사용하지 않고 Mobius capability probe 결과로 결정 |
 | `MQTT_WRAPPED_PRIMITIVE` | 기본 `false`는 flat oneM2M primitive. PC capability probe에서 `m2m:rqp` wrapper가 필요한 경우에만 `true`로 설정하며 다른 형식의 자동 재시도는 하지 않음 |
 | `BLE_DEVICES` | `deviceId → 실제 BLE 주소` JSON 객체. 1~32대, 중복 주소 불허 |
+| `BLE_OBSERVATION_TIMEOUT` | 새 관측 알림 없이 연결을 유지할 최대 시간. 기본 30초, 범위 5~300초. 초과하면 해당 장치를 다시 연결함. |
 | `FIRMWARE_REVISION_ALLOWLIST` | 쉼표로 구분한 정확한 firmwareRevision. 비워 두면 추가 revision 제한만 생략 |
 | `BLE_BOARD_REVISION` | 설정하면 해당 Gateway의 BLE 장치가 읽어 준 boardRevision이 이 값과 일치해야 구독과 명령 준비가 진행됨 |
 

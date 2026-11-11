@@ -152,6 +152,7 @@ class _Peer:
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
     identity: dict[str, Any] = field(default_factory=dict)
     observation_frames: _Frames = field(default_factory=_Frames)
+    observation_timeout: asyncio.Timeout | None = None
     receipt_frames: _Frames = field(default_factory=_Frames)
     observations: asyncio.Queue = field(default_factory=lambda: asyncio.Queue(maxsize=128))
     pending: asyncio.Future | None = None
@@ -173,6 +174,7 @@ class _Peer:
 class BleFleet:
     def __init__(self, config: Any):
         self.config = config
+        self._observation_timeout = getattr(config, "ble_observation_timeout", 30.0)
         if config.ble_gatt_profile == "core-v1":
             self.service, self.identity_uuid, self.observation_uuid, self.command_uuid, self.receipt_uuid = (
                 CORE_SERVICE, CORE_IDENTITY, CORE_OBSERVATION, CORE_COMMAND, CORE_RECEIPT)
@@ -274,7 +276,8 @@ class BleFleet:
     def _require_session(peer: _Peer, client: Any, generation: int, *, ready: bool = True) -> None:
         if (peer.generation != generation or peer.client is not client or client is None
                 or peer.disconnected.is_set() or not client.is_connected
-                or (ready and not peer.ready.is_set())):
+                or (ready and not peer.ready.is_set())
+                or (peer.observation_timeout is not None and peer.observation_timeout.expired())):
             raise BleUnavailable("authenticated BLE session changed")
 
     async def _watch(self, peer: _Peer) -> None:
@@ -354,7 +357,15 @@ class BleFleet:
                                           advertisingRssiDbm=peer.rssi if fresh else None,
                                           advertisingAgeMs=round(age * 1000) if fresh else None)
                     delay = 1.0
-                    await peer.disconnected.wait()
+                    try:
+                        async with asyncio.timeout(self._observation_timeout) as timeout:
+                            peer.observation_timeout = timeout
+                            await peer.disconnected.wait()
+                    except TimeoutError:
+                        self._protocol_failure(peer, "observation_notification_timeout")
+                        LOG.warning("BLE observation notifications timed out for %s", peer.device_id)
+                    finally:
+                        peer.observation_timeout = None
             except asyncio.CancelledError:
                 raise
             except Exception as exc:
@@ -432,6 +443,9 @@ class BleFleet:
             peer.observation_watermark = (boot_id, sequence, device_uptime)
             peer.button_presses = presses if presses is not None else previous_presses
             peer.anchor = (boot_id, device_uptime, received, received_monotonic)
+            timeout = peer.observation_timeout
+            if notification and timeout is not None and not timeout.expired():
+                timeout.reschedule(asyncio.get_running_loop().time() + self._observation_timeout)
             if notification and peer.ready.is_set() and self._trace is not None:
                 fields = {"sequence": frame["sequence"]}
                 sensor = frame["sensorValues"]

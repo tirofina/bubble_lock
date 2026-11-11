@@ -665,6 +665,43 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
         current.callbacks[self.fleet.observation_uuid](None, bytearray((json.dumps(frame) + "\n").encode()))
         self.assertEqual(events[-1]["observation"], frame)
 
+    async def test_observation_timeout_disconnects_silent_peer_and_fences_pending_command(self):
+        reconnect_reasons = []
+
+        async def advertise(_seconds):
+            reconnect_reasons.append(self.peer.last_error)
+            self.peer.seen.set()
+
+        self.fleet._pause = advertise
+        self.peer.discovered = object()
+        self.peer.seen.set()
+        with patch("bubble_gateway.ble.BleakClient", side_effect=self.factory):
+            self.watcher = asyncio.create_task(self.fleet._watch(self.peer))
+            await self.ready(1)
+            original_session = self.fleet.command_session("kr-test")
+            pending = self.peer.pending = asyncio.get_running_loop().create_future()
+            self.peer.observation_timeout.reschedule(asyncio.get_running_loop().time())
+            with self.assertRaises(BleUnavailable):
+                await asyncio.wait_for(pending, timeout=1)
+            await self.ready(2)
+        self.assertEqual(reconnect_reasons, ["observation_notification_timeout"])
+        self.assertFalse(self.clients[0].is_connected)
+        self.assertIsNotNone(original_session)
+        self.assertNotEqual(self.fleet.command_session("kr-test"), original_session)
+
+    async def test_only_a_new_observation_from_current_session_extends_timeout(self):
+        old, current = await self.reconnect()
+        timeout = self.peer.observation_timeout
+        deadline = asyncio.get_running_loop().time() + 1
+        timeout.reschedule(deadline)
+
+        self.notify_observation(old, 2, 101)
+        self.notify_observation(current, 1, 100)
+        self.assertEqual(timeout.when(), deadline)
+
+        self.notify_observation(current, 2, 101)
+        self.assertGreater(timeout.when(), deadline)
+
     async def test_diagnostic_trace_distinguishes_missing_unknown_and_known_battery_alerts(self):
         events = []
         self.fleet._trace = events.append

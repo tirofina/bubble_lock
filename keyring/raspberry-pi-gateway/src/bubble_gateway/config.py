@@ -99,6 +99,7 @@ class GatewayConfig:
     ble_board_revision: str | None = None
     commands_enabled: bool = True
     health_container_ri: str | None = None
+    ble_observation_timeout: float = 30.0
 
     @classmethod
     def from_env(cls, values: Mapping[str, str] | None = None, *, require_tls_files: bool = True) -> "GatewayConfig":
@@ -221,6 +222,7 @@ class GatewayConfig:
             ble_devices=devices, ble_pair=pair,
             ble_scan_seconds=number("BLE_SCAN_SECONDS", "5", 1, 30),
             ble_command_timeout=number("BLE_COMMAND_TIMEOUT", "15", 1, 30),
+            ble_observation_timeout=number("BLE_OBSERVATION_TIMEOUT", "30", 5, 300),
             firmware_revision_allowlist=revisions, database=database,
             poll_interval=number("POLL_INTERVAL", "2", 0.5, 60),
             heartbeat_interval=number("HEARTBEAT_INTERVAL", "30", 5, 3600),
