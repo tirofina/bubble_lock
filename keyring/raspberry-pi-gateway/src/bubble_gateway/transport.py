@@ -152,6 +152,7 @@ class TransportHub:
         self.config = config
         self._api_url = _https_base(config.api_url)
         self._cse_url = _https_base(config.cse_url, origin_only=True)
+        self._api_origin = _https_origin(self._api_url)
         self._cse_origin = _https_origin(self._cse_url)
         for segment in (config.originator, config.cse_id):
             if not isinstance(segment, str) or not segment or any(char in segment for char in "/+#\x00"):
@@ -378,6 +379,9 @@ class TransportHub:
 
     def _native_mqtt_ready(self) -> bool:
         return self.config.m2m_mqtt_enabled and self._mqtt is not None and self._ready.is_set()
+
+    def central_delivery_held(self) -> bool:
+        return self._http_deferral(self._api_origin) is not None
 
     def native_delivery_hold(self) -> NativeDeliveryHold:
         if self._http_deferral(self._cse_origin) is None:

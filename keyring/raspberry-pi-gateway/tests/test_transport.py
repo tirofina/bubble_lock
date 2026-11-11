@@ -80,6 +80,33 @@ class HttpRetryAfterTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(requests[0].headers["X-M2M-RI"], requests[-1].headers["X-M2M-RI"])
         self.assertEqual(requests[0].content, requests[-1].content)
 
+    async def test_team_api_delay_leaves_the_distinct_cse_origin_available(self):
+        cfg = config()
+        cfg.api_url, cfg.cse_url = "https://api.invalid", "https://cse.invalid"
+        hub = TransportHub(cfg)
+        hosts = []
+
+        def respond(request):
+            hosts.append(request.url.host)
+            if request.url.host == "cse.invalid":
+                return httpx.Response(201, headers={"X-M2M-RI": request.headers["X-M2M-RI"], "X-M2M-RSC": "2001"})
+            if len(hosts) == 1:
+                return httpx.Response(429, headers={"Retry-After": "30"})
+            return httpx.Response(200, json={"status": "ACTIVE"})
+
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            hub._http = client
+            with patch("bubble_gateway.transport.monotonic", return_value=100.0) as clock:
+                with self.assertRaises(HttpRetryDeferred):
+                    await hub.credential_status()
+                self.assertTrue(hub.central_delivery_held())
+                self.assertEqual(hub.native_delivery_hold(), NativeDeliveryHold())
+                await hub.publish("native-request", "/test/observations", {"synthetic": True})
+                clock.return_value = 130.0
+                self.assertFalse(hub.central_delivery_held())
+                self.assertEqual(await hub.credential_status(), {"status": "ACTIVE"})
+        self.assertEqual(hosts, ["api.invalid", "cse.invalid", "api.invalid"])
+
 
 class TransportMockTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):

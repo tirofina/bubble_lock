@@ -414,8 +414,10 @@ class Gateway:
             epochs = {}
         while not self.stop.is_set():
             if central_route == "receipt":
-                self.store.stage_central_receipts()
-                item = self.store.due_central_receipt()
+                item = None
+                if not self.transport.central_delivery_held():
+                    self.store.stage_central_receipts()
+                    item = self.store.due_central_receipt()
             elif central_route == "telemetry":
                 now = time.monotonic()
                 if now >= next_expiry_check:
@@ -423,7 +425,7 @@ class Gateway:
                                if self._clock_ok() else 0)
                     self.counters["central_telemetry_expired"] += expired
                     next_expiry_check = now if expired == CENTRAL_TELEMETRY_EXPIRY_BATCH else now + CENTRAL_TELEMETRY_EXPIRY_INTERVAL
-                item = self.store.due_central_telemetry()
+                item = None if self.transport.central_delivery_held() else self.store.due_central_telemetry()
             else:
                 if not scoped:
                     self.store.stage_receipts(self.config.receipt_container, self.config.core_bridge_enabled)

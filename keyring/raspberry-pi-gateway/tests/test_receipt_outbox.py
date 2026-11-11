@@ -220,6 +220,7 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         gateway.config.core_bridge_enabled = False
         gateway.stop, gateway.counters = asyncio.Event(), Counter()
         gateway.transport = SimpleNamespace(publish=AsyncMock(side_effect=RemoteResponseError("unmatched")),
+                                             central_delivery_held=Mock(return_value=False),
                                              native_delivery_hold=Mock(return_value=NativeDeliveryHold(all_native=True)))
 
         async def idle(_seconds):
@@ -262,6 +263,7 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
                 native_sent.set()
 
         gateway.transport = SimpleNamespace(publish=AsyncMock(side_effect=publish),
+                                             central_delivery_held=Mock(return_value=False),
                                              native_delivery_hold=Mock(return_value=NativeDeliveryHold()))
         async with asyncio.timeout(1), asyncio.TaskGroup() as workers:
             workers.create_task(gateway._outbox_loop(central_route="receipt"))
@@ -286,6 +288,7 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         gateway.stop, gateway.counters = asyncio.Event(), Counter()
         gateway._clock_ok = Mock(return_value=True)
         gateway.transport = SimpleNamespace(publish=AsyncMock(return_value={"status": "STALE"}),
+                                             central_delivery_held=Mock(return_value=False),
                                              native_delivery_hold=Mock(return_value=NativeDeliveryHold(all_native=True)))
         expired_at = iso_time(utc_now() - timedelta(minutes=5))
         old = observation(observedAt=expired_at, receivedAt=expired_at)
@@ -314,7 +317,7 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         gateway.config.core_bridge_enabled = False
         gateway.stop, gateway.counters = asyncio.Event(), Counter()
         gateway._clock_ok = Mock(return_value=False)
-        gateway.transport = SimpleNamespace(publish=AsyncMock())
+        gateway.transport = SimpleNamespace(publish=AsyncMock(), central_delivery_held=Mock(return_value=False))
         expired_at = iso_time(utc_now() - timedelta(hours=25))
         await gateway.observation(observation(observedAt=expired_at, receivedAt=expired_at))
         first = self.store.due_central_telemetry()
@@ -349,6 +352,7 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
                 native_observation_sent.set()
 
         gateway.transport = SimpleNamespace(publish=AsyncMock(side_effect=publish),
+                                             central_delivery_held=Mock(return_value=False),
                                              native_delivery_hold=Mock(return_value=NativeDeliveryHold()))
         await gateway.observation(observation())
         async with asyncio.timeout(1), asyncio.TaskGroup() as workers:
@@ -365,6 +369,52 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.queued("@central/telemetry"), 0)
         self.assertEqual(gateway.counters["central_telemetry_confirmed"], 1)
         self.assertEqual(gateway.transport.publish.await_count, 3)
+
+    async def test_central_hold_preserves_attempts_and_allows_expiry_and_native_delivery(self):
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.config.central_receipts_enabled = gateway.config.central_telemetry_enabled = True
+        gateway.config.central_telemetry_retention_seconds = 60
+        gateway.config.core_bridge_enabled = False
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+        gateway._clock_ok = Mock(return_value=True)
+        gateway.transport = SimpleNamespace(publish=AsyncMock(return_value={"status": "ACCEPTED"}),
+                                             central_delivery_held=Mock(return_value=True),
+                                             native_delivery_hold=NativeDeliveryHold)
+        expired_at = iso_time(utc_now() - timedelta(minutes=5))
+        await gateway.observation(observation(observedAt=expired_at, receivedAt=expired_at))
+        fresh = observation(sequence=2)
+        await gateway.observation(fresh)
+
+        async def idle(_seconds):
+            gateway.stop.set()
+
+        gateway._pause = idle
+        async with asyncio.timeout(1):
+            await gateway._outbox_loop(central_route="receipt")
+            self.assertIsNone(self.store.due_central_receipt())
+            gateway.stop.clear()
+            await gateway._outbox_loop(central_route="telemetry")
+            gateway.transport.publish.assert_not_awaited()
+            self.assertEqual(self.store.due_central_telemetry()["attempts"], 0)
+            self.assertEqual(self.queued("@central/telemetry"), 1)
+            self.assertEqual(gateway.counters["central_telemetry_expired"], 1)
+
+            gateway.stop.clear()
+            await gateway._outbox_loop()
+            self.assertEqual(self.native_delivered(), 1)
+            self.assertEqual(self.queued(gateway.config.observation_container), 0)
+
+            gateway.transport.central_delivery_held.return_value = False
+            gateway.stop.clear()
+            await gateway._outbox_loop(central_route="receipt")
+            self.assertEqual(gateway.counters["central_receipts_confirmed"], 1)
+            gateway.stop.clear()
+            await gateway._outbox_loop(central_route="telemetry")
+            self.assertEqual(gateway.transport.publish.await_args.args[1:], ("@central/telemetry", fresh))
+
+        self.assertEqual(gateway.counters["publish_retries"], 0)
+        self.assertEqual(self.store.counts()[0], 0)
 
     async def test_outbox_worker_does_not_spin_publishing_ack_while_native_is_backed_off(self):
         gateway = Gateway.__new__(Gateway)
