@@ -59,6 +59,7 @@ class Gateway:
             "cseDeploymentId": self.config.cse_deployment_id,
             "receiptContainerRi": self.config.receipt_container_ri,
             "apiUrl": self.config.api_url, "pcDispatchStartRequired": self.config.pc_dispatch_start_required,
+            "centralReceiptsEnabled": self.config.central_receipts_enabled,
             "rvi": self.config.rvi,
             "mqttEnabled": self.config.mqtt_enabled, "mqttHost": self.config.mqtt_host,
             "m2mMqttEnabled": self.config.m2m_mqtt_enabled,
@@ -393,6 +394,7 @@ class Gateway:
 
     async def _outbox_loop(self, *, scoped: bool = False) -> None:
         epochs = self.config.core_telemetry_epochs
+        central_receipts = self.config.central_receipts_enabled
         receipt_attempts = 0
         if not scoped and epochs is not None:
             # The scoped worker owns this lane, so awaiting its receipt never
@@ -400,13 +402,15 @@ class Gateway:
             epochs = {}
         while not self.stop.is_set():
             if not scoped:
-                self.store.stage_receipts(self.config.receipt_container, self.config.core_bridge_enabled)
+                self.store.stage_receipts(self.config.receipt_container, self.config.core_bridge_enabled,
+                                          central_enabled=central_receipts)
                 self.store.stage_credential_receipt()
             prefer_receipts = None if scoped else receipt_attempts < RECEIPT_BURST
             hold = NativeDeliveryHold() if scoped else self.transport.native_delivery_hold()
             item = self.store.due(core_epochs=epochs, scoped_only=scoped, prefer_receipts=prefer_receipts,
                                   skip_native=hold.all_native, held_receipt_container=hold.receipt_container,
-                                  hold_credential_receipts=hold.credential_receipts)
+                                  hold_credential_receipts=hold.credential_receipts,
+                                  central_receipts_enabled=central_receipts)
             if item is None:
                 await self._pause(0.5)
                 continue
@@ -419,6 +423,8 @@ class Gateway:
                 else:
                     self.store.mark_receipt_attempt(item["rqi"])
             try:
+                if item["container"] == "@central/receipt":
+                    delivery_options["expected_claim_id"] = self.store.central_receipt_claim(item["payload"])
                 await self.transport.publish(item["rqi"], item["container"], item["payload"], **delivery_options)
             except asyncio.CancelledError:
                 raise
@@ -430,6 +436,8 @@ class Gateway:
             else:
                 self.store.delivered(item["rqi"])
                 self.counters["published"] += 1
+                if item["container"] == "@central/receipt":
+                    self.counters["central_receipts_confirmed"] += 1
                 if scoped:
                     self.counters["core_applied_confirmed"] += 1
 

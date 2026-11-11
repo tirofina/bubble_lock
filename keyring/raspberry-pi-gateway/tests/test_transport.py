@@ -338,6 +338,28 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
                          [call("POST", "/authorize", body, cmd["commandId"]),
                           call("POST", "/dispatch-start", body, cmd["commandId"])])
 
+    async def test_central_receipt_retries_with_stable_key_and_exact_binding(self):
+        self.hub.config.central_receipts_enabled = True
+        cmd = command()
+        receipt = {"commandId": cmd["commandId"], "status": "APPLIED"}
+        confirmation = {"status": "ACCEPTED", "commandId": cmd["commandId"],
+                        "claimId": cmd["claimId"], "receiptHash": payload_hash(receipt)}
+        for status in ("ACCEPTED", "DUPLICATE"):
+            with self.subTest(status=status):
+                self.hub._http_json.return_value = (200, httpx.Headers(), dict(confirmation, status=status))
+                result = await self.hub.publish(self.rqi, "@central/receipt", receipt, expected_claim_id=cmd["claimId"])
+                self.assertEqual(result["status"], status)
+                exchange = self.hub._http_json.await_args
+                self.assertEqual(exchange.args, ("POST", "https://api.invalid/api/v1/gateways/gw-test/receipts"))
+                self.assertEqual(exchange.kwargs["headers"]["Idempotency-Key"], self.rqi)
+                self.assertEqual(exchange.kwargs["headers"]["X-Correlation-ID"], self.rqi)
+                self.assertEqual(exchange.kwargs["body"], receipt)
+        for key in ("status", "commandId", "claimId", "receiptHash"):
+            with self.subTest(mismatch=key):
+                self.hub._http_json.return_value = (200, httpx.Headers(), dict(confirmation, **{key: "wrong"}))
+                with self.assertRaises(RemoteResponseError):
+                    await self.hub.publish(self.rqi, "@central/receipt", receipt, expected_claim_id=cmd["claimId"])
+
     async def test_conflict_requires_exact_existing_content(self):
         rn = "gw-" + hashlib.sha256(self.rqi.encode()).hexdigest()
         read_rqi = "read-" + hashlib.sha256(self.rqi.encode()).hexdigest()

@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, Mock, patch
 from bubble_gateway.model import iso_time, payload_hash
 from bubble_gateway.service import Gateway
 from bubble_gateway.store import Store
-from bubble_gateway.transport import NativeDeliveryHold
+from bubble_gateway.transport import NativeDeliveryHold, RemoteResponseError
 from helpers import BINDING, command, config
 
 
@@ -153,6 +153,75 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         self.store.max_rows = 2
         self.stage()
         self.assertEqual(self.store.counts()[0], 2)
+
+    async def test_central_receipt_staging_is_atomic_and_confirmation_survives_restart(self):
+        central_rqi = self.store.request_id("central-receipt", self.cmd["commandId"])
+        self.store.max_rows = 2
+        self.store.stage_receipts(BINDING["receiptContainer"], True, central_enabled=True)
+        self.assertEqual(self.store.counts()[0], 0)
+        self.assertEqual(self.store.db.execute("SELECT central_receipt_staged FROM commands").fetchone()[0], 0)
+
+        self.store.max_rows = 3
+        self.store.stage_receipts(BINDING["receiptContainer"], True, central_enabled=True)
+        self.assertEqual(self.store.counts()[0], 3)
+        self.store.delivered(central_rqi)
+        self.store.close()
+        self.store = self.open_store()
+        self.store.stage_receipts(BINDING["receiptContainer"], True, central_enabled=True)
+        self.assertEqual(self.native_delivered(), 0)
+        self.assertEqual(self.queued("@central/receipt"), 0)
+        self.assertEqual(self.queued("@core/ack"), 1)
+        self.assertEqual(self.queued(BINDING["receiptContainer"]), 1)
+
+    async def test_central_route_can_stage_receipt_already_confirmed_by_native_cse(self):
+        self.stage()
+        self.store.delivered(self.native_rqi)
+        self.store.delivered(self.ack_rqi)
+        with self.store.db:
+            self.store.db.execute("DROP INDEX commands_pending_central_receipt")
+            self.store.db.execute("ALTER TABLE commands DROP COLUMN central_receipt_staged")
+        self.store.close()
+        self.store = self.open_store()
+        self.store.stage_receipts(BINDING["receiptContainer"], True, central_enabled=True)
+        self.assertEqual(self.native_delivered(), 1)
+        self.assertEqual(self.queued("@central/receipt"), 1)
+        self.assertIsNone(self.store.due())
+        item = self.store.due(central_receipts_enabled=True)
+        self.assertEqual(item["payload"], self.receipt)
+        self.assertEqual(self.store.central_receipt_claim(item["payload"]), self.cmd["claimId"])
+
+    async def test_central_worker_retries_same_receipt_while_native_cse_is_held(self):
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.config.central_receipts_enabled = True
+        gateway.config.core_bridge_enabled = False
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+        gateway.transport = SimpleNamespace(publish=AsyncMock(side_effect=RemoteResponseError("unmatched")),
+                                             native_delivery_hold=Mock(return_value=NativeDeliveryHold(all_native=True)))
+
+        async def idle(_seconds):
+            gateway.stop.set()
+
+        gateway._pause = idle
+        with patch("bubble_gateway.store.time.time", return_value=1000):
+            async with asyncio.timeout(1):
+                await gateway._outbox_loop()
+        rqi = self.store.request_id("central-receipt", self.cmd["commandId"])
+        args = (rqi, "@central/receipt", self.receipt)
+        gateway.transport.publish.assert_awaited_once_with(*args, expected_claim_id=self.cmd["claimId"])
+        self.assertEqual(self.queued("@central/receipt"), 1)
+
+        self.store.close()
+        gateway.store = self.store = self.open_store()
+        gateway.stop.clear()
+        gateway.transport.publish = AsyncMock()
+        with patch("bubble_gateway.store.time.time", return_value=2000):
+            async with asyncio.timeout(1):
+                await gateway._outbox_loop()
+        gateway.transport.publish.assert_awaited_once_with(*args, expected_claim_id=self.cmd["claimId"])
+        self.assertEqual(self.queued("@central/receipt"), 0)
+        self.assertEqual(self.queued(BINDING["receiptContainer"]), 1)
+        self.assertEqual(self.native_delivered(), 0)
 
     async def test_outbox_worker_does_not_spin_publishing_ack_while_native_is_backed_off(self):
         gateway = Gateway.__new__(Gateway)

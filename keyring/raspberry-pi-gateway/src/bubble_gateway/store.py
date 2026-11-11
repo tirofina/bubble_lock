@@ -36,7 +36,8 @@ class Store:
                 command_id TEXT PRIMARY KEY, payload_hash TEXT NOT NULL,
                 payload TEXT NOT NULL, status TEXT NOT NULL,
                 received_at TEXT NOT NULL, receipt TEXT,
-                receipt_delivered INTEGER NOT NULL DEFAULT 0
+                receipt_delivered INTEGER NOT NULL DEFAULT 0,
+                central_receipt_staged INTEGER NOT NULL DEFAULT 0
             );
             CREATE TABLE IF NOT EXISTS fences (
                 device_id TEXT PRIMARY KEY, epoch INTEGER NOT NULL, revision INTEGER NOT NULL
@@ -67,6 +68,13 @@ class Store:
             with self.db:
                 self.db.execute("BEGIN IMMEDIATE")
                 install(self.db, binding)
+                columns = {row["name"] for row in self.db.execute("PRAGMA table_info(commands)")}
+                if "central_receipt_staged" not in columns:
+                    self.db.execute("ALTER TABLE commands ADD COLUMN central_receipt_staged INTEGER NOT NULL DEFAULT 0")
+                self.db.execute("""
+                    CREATE INDEX IF NOT EXISTS commands_pending_central_receipt ON commands(central_receipt_staged)
+                    WHERE receipt IS NOT NULL AND central_receipt_staged=0
+                """)
         except Exception:
             self.db.close()
             raise
@@ -203,35 +211,56 @@ class Store:
         return {row["device_id"]: (row["boot_id"], row["sequence"])
                 for row in self.db.execute("SELECT device_id,boot_id,sequence FROM observations")}
 
-    def stage_receipts(self, container: str, core_enabled: bool = False) -> None:
-        """Choose both routes atomically on first staging, not on every retry."""
+    def stage_receipts(self, container: str, core_enabled: bool = False, *, central_enabled: bool = False) -> None:
+        """Stage new receipt routes atomically without recreating completed deliveries."""
         # Already staged native receipts can remain undelivered during backoff.
         # They must not consume slots in the batch of receipts that still need staging.
         rows = self.db.execute("""
-            SELECT command_id,receipt FROM commands
+            SELECT command_id,receipt,receipt_delivered,central_receipt_staged FROM commands
             WHERE receipt IS NOT NULL AND receipt_delivered=0
               AND NOT EXISTS (SELECT 1 FROM outbox WHERE outbox.command_id=commands.command_id)
             ORDER BY commands.rowid LIMIT 128
         """).fetchall()
+        if central_enabled:
+            native_ids = {row["command_id"] for row in rows}
+            central_rows = self.db.execute("""
+                SELECT command_id,receipt,receipt_delivered,central_receipt_staged FROM commands
+                WHERE receipt IS NOT NULL AND central_receipt_staged=0
+                ORDER BY commands.rowid LIMIT 128
+            """)
+            rows.extend(row for row in central_rows if row["command_id"] not in native_ids)
         for row in rows:
             try:
                 with self.db:
                     receipt = json.loads(row["receipt"])
-                    created = self._enqueue(self.request_id("receipt", row["command_id"]), container,
-                                            receipt, True, row["command_id"])
+                    command_id = row["command_id"]
+                    created = (not row["receipt_delivered"]
+                               and self._enqueue(self.request_id("receipt", command_id), container,
+                                                 receipt, True, command_id))
                     # The retained native row (then receipt_delivered after its
                     # confirmation) is the durable staging marker. Recreating a
                     # completed ACK here would bypass the native retry backoff.
                     if created and core_enabled:
                         projected = acknowledgement(receipt)
                         if projected is not None:
-                            self._enqueue(self.request_id("core-ack", row["command_id"]), "@core/ack", projected, True)
+                            self._enqueue(self.request_id("core-ack", command_id), "@core/ack", projected, True)
+                    if central_enabled and not row["central_receipt_staged"]:
+                        self._enqueue(self.request_id("central-receipt", command_id), "@central/receipt", receipt, True)
+                        self.db.execute("UPDATE commands SET central_receipt_staged=1 WHERE command_id=?", (command_id,))
             except CapacityError:
                 break
 
+    def central_receipt_claim(self, receipt: dict) -> str:
+        row = self.db.execute("SELECT payload,receipt FROM commands WHERE command_id=?",
+                              (receipt["commandId"],)).fetchone()
+        if row is None or row["receipt"] != canonical(receipt):
+            raise ValueError("Central receipt does not match the local command journal")
+        return json.loads(row["payload"])["claimId"]
+
     def due(self, *, core_epochs: dict[str, int] | None = None, scoped_only: bool = False,
             prefer_receipts: bool | None = None, skip_native: bool = False,
-            held_receipt_container: str | None = None, hold_credential_receipts: bool = False) -> dict | None:
+            held_receipt_container: str | None = None, hold_credential_receipts: bool = False,
+            central_receipts_enabled: bool = False) -> dict | None:
         # Old ownership routes stay on disk and cannot block the active route.
         # Within the active route, only the oldest projection per device can run.
         epochs = canonical(core_epochs) if core_epochs is not None else None
@@ -249,16 +278,17 @@ class Store:
                     ) END
                 GROUP BY json_extract(message, '$.deviceId')
             )
-            SELECT *, (command_id IS NOT NULL OR container='@core/ack') AS is_receipt
+            SELECT *, (command_id IS NOT NULL OR container IN ('@core/ack', '@central/receipt')) AS is_receipt
             FROM outbox WHERE next_attempt<=?2
               AND (container<>'@core/telemetry' OR rowid IN (SELECT head FROM core_heads))
               AND (?3=0 OR container='@core/telemetry')
-              AND (?5=0 OR container IN ('@core/ack', '@core/telemetry'))
+              AND (?5=0 OR container IN ('@core/ack', '@core/telemetry', '@central/receipt'))
               AND (?6 IS NULL OR container<>?6)
               AND (?7=0 OR NOT EXISTS (SELECT 1 FROM credential_receipts AS credentials WHERE credentials.rqi=outbox.rqi))
+              AND (?8=1 OR container<>'@central/receipt')
             ORDER BY CASE WHEN is_receipt=?4 THEN 0 ELSE 1 END, created_at,rqi LIMIT 1
         """, (epochs, time.time(), scoped_only, prefer_receipts, skip_native,
-              held_receipt_container, hold_credential_receipts)).fetchone()
+              held_receipt_container, hold_credential_receipts, central_receipts_enabled)).fetchone()
         if row is None:
             return None
         result = dict(row)

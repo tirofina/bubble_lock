@@ -16,6 +16,12 @@ Gateway 0.2.30의 송신 worker는 재시도 시각이 된 native 명령 영수�
 
 CORE_BRIDGE_ENABLED의 projection 선택은 영수증 최초 staging 시 고정한다. 이미 대기 중인 native 영수증에 설정 변경만으로 CORE ACK를 과거로 소급 생성하지 않는다. 이미 있는 outbox 항목은 유지한다. DB 삭제·수동 outbox 재작성으로 재전송을 유도하지 않는다.
 
+## 중앙 명령 영수증 정산
+
+Gateway 0.2.46에서 `CENTRAL_RECEIPTS_ENABLED=true`를 사용하면 같은 SQLite 명령 저널의 영수증을 중앙 `POST /receipts`에도 보낸다. 재시도와 재시작에는 같은 본문과 `Idempotency-Key`를 사용한다. 중앙의 `ACCEPTED` 또는 `DUPLICATE` 응답이 원래 command ID, claim ID, 영수증 SHA-256과 일치해야 전송을 완료한다.
+
+중앙용 항목과 최초 등록 표시는 같은 SQLite 트랜잭션에 저장한다. 기능을 켜면 기존 Mobius4 전달이 완료된 영수증도 중앙 대기열에 등록한다. 이 설정은 같은 중앙 배포의 DB에 적용한다. 새 중앙 배포를 시험할 때는 새 Gateway 상태 DB를 사용한다. 중앙 응답으로 Mobius4 전달 완료 여부를 바꾸지 않는다. CSE 전송이 보류된 동안에도 중앙 영수증을 보낼 수 있다.
+
 ## 회귀 시험
 
 R02/R03/R10에 연결한 KEYRING 제안 ID이며 원래 A01~A26 정의를 대체하지 않는다.

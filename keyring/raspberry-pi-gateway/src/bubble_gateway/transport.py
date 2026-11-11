@@ -461,11 +461,13 @@ class TransportHub:
                                    credential_receipt=credential_receipt)
 
     async def publish(self, rqi: str, container: str, payload: dict[str, Any], *,
-                      confirm_existing: bool = False) -> dict[str, Any] | None:
+                      confirm_existing: bool = False, expected_claim_id: str | None = None) -> dict[str, Any] | None:
         if container.startswith("@core/"):
             return await self._publish_core(container, payload)
         if not isinstance(rqi, str) or not 1 <= len(rqi) <= 128:
             raise ValueError("invalid request ID")
+        if container == "@central/receipt":
+            return await self._publish_central_receipt(rqi, payload, expected_claim_id)
         path = _resource_path(container)
         rn = "gw-" + hashlib.sha256(rqi.encode("utf-8")).hexdigest()
         cin = {"rn": rn, "cnf": "application/json:0", "con": payload}
@@ -537,6 +539,18 @@ class TransportHub:
             return
         raise RemoteResponseError("oneM2M HTTPS request rejected", rsc, status)
 
+    async def _publish_central_receipt(self, rqi: str, receipt: dict[str, Any],
+                                       claim_id: str | None) -> dict[str, Any]:
+        if not self.config.central_receipts_enabled or not isinstance(claim_id, str) or not ID.fullmatch(claim_id):
+            raise ValueError("Central receipt route requires an enabled route and a bound claim")
+        result = await self._api("POST", "/receipts", receipt, rqi, idempotency_key=rqi)
+        if (result.get("status") not in ("ACCEPTED", "DUPLICATE")
+                or result.get("commandId") != receipt["commandId"]
+                or result.get("claimId") != claim_id
+                or result.get("receiptHash") != payload_hash(receipt)):
+            raise RemoteResponseError("Central receipt confirmation does not match the queued receipt")
+        return result
+
     async def _publish_core(self, target: str, payload: dict[str, Any]) -> dict[str, Any] | None:
         if target not in {"@core/telemetry", "@core/ack"} or not self.config.core_bridge_enabled:
             raise ValueError("Unsupported CORE outbox target")
@@ -589,11 +603,13 @@ class TransportHub:
                 future.exception()
 
     async def _api(self, method: str, suffix: str, body: dict[str, Any] | None = None,
-                    correlation_id: str | None = None) -> dict[str, Any]:
+                   correlation_id: str | None = None, *, idempotency_key: str | None = None) -> dict[str, Any]:
         request_id = str(uuid.uuid4())
         headers = {"Accept": "application/json", "Content-Type": "application/json",
                    "X-Request-ID": request_id, "X-Correlation-ID": correlation_id or request_id,
                    "Cache-Control": "no-store"}
+        if idempotency_key is not None:
+            headers["Idempotency-Key"] = idempotency_key
         status, _, document = await self._http_json(
             method, self._api_url + self._gateway_path + suffix, headers=headers, body=body)
         if status != 200:

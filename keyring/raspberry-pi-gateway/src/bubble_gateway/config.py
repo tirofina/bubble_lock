@@ -67,6 +67,7 @@ class GatewayConfig:
     cse_deployment_id: str | None = None
     receipt_container_ri: str | None = None
     pc_dispatch_start_required: bool = False
+    central_receipts_enabled: bool = False
 
     @classmethod
     def from_env(cls) -> "GatewayConfig":
@@ -181,6 +182,7 @@ class GatewayConfig:
             core_bridge_enabled=core_bridge, ble_gatt_profile=profile, core_telemetry_epochs=epochs,
             cse_deployment_id=deployment, receipt_container_ri=receipt_ri,
             pc_dispatch_start_required=boolean("PC_DISPATCH_START_REQUIRED", "false"),
+            central_receipts_enabled=boolean("CENTRAL_RECEIPTS_ENABLED", "false"),
         )
 
 
