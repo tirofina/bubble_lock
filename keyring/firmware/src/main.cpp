@@ -41,7 +41,7 @@ extern "C" esp_err_t __wrap_nvs_flash_init() {
 
 namespace {
 #if KEYRING_R18_BRINGUP
-constexpr char FirmwareRevision[] = "keyring-0.7.13-bringup";
+constexpr char FirmwareRevision[] = "keyring-0.7.14-bringup";
 #else
 constexpr char FirmwareRevision[] = "keyring-0.7.14";
 #endif
@@ -1033,7 +1033,8 @@ void setup() {
       ObservationOnly ? "disabled" : storageHealthy ? "ready" : "error",
       radioSleepEnabled ? "enabled" : "unavailable");
   if (ObservationOnly) {
-    Serial.printf("KEYRING bringup: motor=%d aux=%d fault=%d fuel=%s accel=%s motion=%s\n",
+    Serial.printf("KEYRING bringup: board=%s firmware=%s boot=%s motor=%d aux=%d fault=%d fuel=%s accel=%s motion=%s\n",
+        board::Revision, FirmwareRevision, bootId,
         static_cast<int>(readState()), gpio_get_level(static_cast<gpio_num_t>(board::AuxEnable)),
         digitalRead(board::MainFaultN) == LOW, sensors.fuel ? "ok" : "unavailable",
         sensors.accel ? "ok" : "unavailable", motion.ready() ? "ready" : "unavailable");

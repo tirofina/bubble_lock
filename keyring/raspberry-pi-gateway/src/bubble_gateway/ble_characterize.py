@@ -24,6 +24,27 @@ WAKE_CASES = {"confirm": ("button", 1 << 6), "panic": ("button", 1 << 7),
 BATTERY_THRESHOLDS = (20, 25)
 BATTERY_STAGES = ("initialClear", "clearInBand", "lowAlert", "alertInBand", "recovered")
 BRINGUP_BUTTON_STATES = ("released", "confirm", "released", "panic", "released")
+USB_LOG_LIMIT = 1 << 20
+USB_BOOT_LINE = re.compile(
+    r"KEYRING bringup: board=(?P<board>\S+) firmware=(?P<firmware>\S+) boot=(?P<boot>[0-9a-f]{32}) "
+    r"motor=(?P<motor>[01]) aux=(?P<aux>[01]) fault=(?P<fault>[01]) "
+    r"fuel=(?:ok|unavailable) accel=(?:ok|unavailable) motion=(?:ready|unavailable)"
+)
+
+
+def read_usb_boot(path: Path, board: str, firmware: str) -> dict:
+    with path.open("rb") as stream:
+        raw = stream.read(USB_LOG_LIMIT + 1)
+    if len(raw) > USB_LOG_LIMIT:
+        raise ValueError("USB log exceeds the bring-up log limit")
+    lines = [line for line in raw.decode("utf-8-sig", errors="replace").splitlines()
+             if line.startswith("KEYRING bringup:")]
+    record = USB_BOOT_LINE.fullmatch(lines[0]) if len(lines) == 1 else None
+    if record is None or record["board"] != board or record["firmware"] != firmware:
+        raise ValueError("USB log must contain one matching r18 bring-up record")
+    return {"bootId": record["boot"], "logSha256": hashlib.sha256(raw).hexdigest(),
+            "motorActive": record["motor"] == "1", "auxEnabled": record["aux"] == "1",
+            "mainFault": record["fault"] == "1"}
 
 
 def wake_result(sessions: list[dict], rows: list[dict], expected: str, release_ms: int | None) -> dict:
@@ -272,7 +293,7 @@ def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mo
               truncated: bool, dropped: int, expected_wake: str | None = None,
               release_ms: int | None = None, include_power: bool = False,
               battery_thresholds: tuple[int, int] = BATTERY_THRESHOLDS,
-              verify_button_continuity: bool = False) -> dict:
+              verify_button_continuity: bool = False, usb_boot: dict | None = None) -> dict:
     sessions = {}
     boots = {}
     rows = []
@@ -338,6 +359,18 @@ def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mo
     power = power_result(measured, rows, mode) if include_power else None
     battery = battery_result(rows, *battery_thresholds) if mode == "battery" else None
     bringup = bringup_result(measured, rows) if mode == "bringup" else None
+    if bringup is not None and usb_boot is not None:
+        observed_boots = {session["boot"] for session in measured if session["notificationCount"]}
+        same_boot = observed_boots == {boots.get(usb_boot["bootId"])} if observed_boots else None
+        pins_safe = not (usb_boot["motorActive"] or usb_boot["auxEnabled"] or usb_boot["mainFault"])
+        bringup["usbBoot"] = {key: usb_boot[key] for key in ("logSha256", "motorActive", "auxEnabled", "mainFault")}
+        bringup["usbBoot"].update(sameBoot=same_boot, pinsSafe=pins_safe)
+        if same_boot is None:
+            bringup["missing"].append("usbBootMatch")
+        elif not same_boot:
+            bringup["mismatches"].append("usbBootMismatch")
+        if not pins_safe:
+            bringup["mismatches"].append("usbPinsUnsafe")
     continuity = button_continuity_result(measured, reconnects, rows) if verify_button_continuity else None
     status = "RECORDED"
     if truncated:
@@ -369,7 +402,7 @@ def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mo
     return report
 
 
-async def characterize(args: argparse.Namespace) -> dict:
+async def characterize(args: argparse.Namespace, *, usb_boot: dict | None = None) -> dict:
     board = BOARD_REVISIONS[args.hardware]
     config = SimpleNamespace(
         gateway_id=args.gateway_id, ble_devices={args.device_id: args.address},
@@ -458,7 +491,7 @@ async def characterize(args: argparse.Namespace) -> dict:
                           truncated=truncated, dropped=dropped, expected_wake=args.expect_wake,
                           release_ms=release_ms, include_power=args.include_power,
                           battery_thresholds=tuple(args.battery_thresholds or BATTERY_THRESHOLDS),
-                          verify_button_continuity=args.verify_button_continuity)}
+                          verify_button_continuity=args.verify_button_continuity, usb_boot=usb_boot)}
     if args.mode == "wake":
         report["wake"].update(operatorIdleSeconds=args.idle_seconds, releaseAtMs=release_ms)
     if args.mode == "battery":
@@ -484,6 +517,7 @@ def main() -> None:
     parser.add_argument("--battery-source", choices=("physical-pack", "gauge-fixture"), help="battery mode only")
     parser.add_argument("--battery-thresholds", nargs=2, type=int, metavar=("WARN", "RECOVER"),
                         help="battery mode only; firmware percentages (default: 20 25)")
+    parser.add_argument("--usb-boot-log", type=Path, help="private USB CDC capture from one r18 bring-up boot")
     parser.add_argument("--database", type=Path, required=True, help="Gateway state path; used only to find its lock")
     parser.add_argument("--output", type=Path, required=True, help="new private JSON file under an existing directory")
     args = parser.parse_args()
@@ -514,6 +548,16 @@ def main() -> None:
     if args.mode == "bringup" and not _r18_bringup({
             "boardRevision": BOARD_REVISIONS[args.hardware], "firmwareRevision": args.firmware_revision}):
         parser.error("bringup mode requires r18-pcb and an observation-only -bringup firmware revision")
+    usb_boot = None
+    if args.usb_boot_log is not None:
+        if args.mode != "bringup" or not args.usb_boot_log.is_file():
+            parser.error("--usb-boot-log requires bringup mode and an existing capture file")
+        try:
+            usb_boot = read_usb_boot(args.usb_boot_log, BOARD_REVISIONS[args.hardware], args.firmware_revision)
+        except ValueError as exc:
+            parser.error(str(exc))
+        except OSError:
+            parser.error("could not read the USB capture file")
     lock_path = args.database.with_suffix(".lock")
     if (args.output.exists() or args.output.is_symlink() or not args.output.parent.is_dir()
             or args.output.resolve() in {args.database.resolve(), lock_path.resolve()}):
@@ -533,7 +577,7 @@ def main() -> None:
             else:
                 print("BLE capture started. For reconnect mode, wait for observations, interrupt the link and restore it.",
                       flush=True)
-            report = asyncio.run(characterize(args))
+            report = asyncio.run(characterize(args, usb_boot=usb_boot))
         content = (canonical(report) + "\n").encode("utf-8")
         with args.output.open("xb") as handle:
             handle.write(content)

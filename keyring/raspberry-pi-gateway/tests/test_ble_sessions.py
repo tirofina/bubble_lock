@@ -1,13 +1,16 @@
 """Connection replacement races using fake GATT clients; no scanner or radio."""
 import asyncio
+import hashlib
 import json
+import tempfile
 import time
 import unittest
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
 from bubble_gateway.ble import BleFleet, BleProtocolError, BleUnavailable
-from bubble_gateway.ble_characterize import summarize
+from bubble_gateway.ble_characterize import read_usb_boot, summarize
 from bubble_gateway.model import payload_hash
 from helpers import command, config, device_receipt
 
@@ -146,6 +149,8 @@ class BatteryCaptureTests(unittest.TestCase):
 
 class BringupCaptureTests(unittest.TestCase):
     board = "r18-hand-solder"
+    firmware = "keyring-0.7.14-bringup"
+    boot = "0123456789abcdef" * 2
 
     def events(self, *, split_at=None, command_ready=False):
         events = []
@@ -179,9 +184,50 @@ class BringupCaptureTests(unittest.TestCase):
             add("notification", generation, sequence=sequence, observation=observation, **energy)
         return events
 
-    def report(self, events):
+    def report(self, events, *, usb_boot=None):
         return summarize(events, 0, len(events) * 1_000_000, board=self.board, mode="bringup",
-                         truncated=False, dropped=0)
+                         truncated=False, dropped=0, usb_boot=usb_boot)
+
+    def usb_log(self):
+        line = (f"KEYRING bringup: board={self.board} firmware={self.firmware} boot={self.boot} "
+                "motor=0 aux=0 fault=0 fuel=ok accel=ok motion=ready\r\n")
+        return ("BOOT\r\n" + line).encode("utf-8")
+
+    def test_usb_log_requires_one_record_with_the_configured_board_and_firmware(self):
+        raw = self.usb_log()
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "usb.log"
+            path.write_bytes(raw)
+            self.assertEqual(read_usb_boot(path, self.board, self.firmware),
+                             {"bootId": self.boot, "logSha256": hashlib.sha256(raw).hexdigest(),
+                              "motorActive": False, "auxEnabled": False, "mainFault": False})
+            for bad in (raw + raw, raw.replace(b"motor=0", b"motor=?"), raw.replace(b"0.7.14", b"0.7.13"),
+                        raw.replace(b"r18-hand-solder", b"other-board")):
+                with self.subTest(log=bad):
+                    path.write_bytes(bad)
+                    with self.assertRaisesRegex(ValueError, "one matching r18 bring-up record"):
+                        read_usb_boot(path, self.board, self.firmware)
+
+    def test_usb_boot_match_is_required_when_supplied_and_raw_identity_is_private(self):
+        usb = {"bootId": self.boot, "logSha256": hashlib.sha256(self.usb_log()).hexdigest(),
+               "motorActive": False, "auxEnabled": False, "mainFault": False}
+        events = [dict(row, bootId=self.boot) for row in self.events()]
+        report = self.report(events, usb_boot=usb)
+        self.assertEqual(report["status"], "RECORDED")
+        self.assertTrue(report["bringup"]["usbBoot"]["sameBoot"])
+        self.assertNotIn(self.boot, json.dumps(report))
+        report = self.report(self.events(), usb_boot=dict(usb, auxEnabled=True))
+        self.assertEqual(report["status"], "MISMATCH")
+        self.assertEqual(report["bringup"]["mismatches"], ["usbBootMismatch", "usbPinsUnsafe"])
+        report = self.report(events[:1], usb_boot=usb)
+        self.assertEqual(report["status"], "INSUFFICIENT")
+        self.assertIn("usbBootMatch", report["bringup"]["missing"])
+
+        next_boot = [dict(row, bootId="other-boot", generation=2, atNs=row["atNs"] + len(events) * 1_000_000)
+                     for row in events[:2]]
+        report = self.report(events + next_boot, usb_boot=usb)
+        self.assertEqual(report["status"], "MISMATCH")
+        self.assertIn("usbBootMismatch", report["bringup"]["mismatches"])
 
     def test_one_session_records_buttons_sensors_power_and_health_without_raw_frame(self):
         report = self.report(self.events())

@@ -20,18 +20,19 @@ Gateway 0.2.37의 회귀시험 소스는 BlueZ가 쓰기 특성을 캐시한 상
 
 ## r18 초기 구동 기록
 
-Gateway 0.2.38의 `--mode bringup`은 페어링된 r18과 `-bringup` 펌웨어에서 인증된 BLE 알림을 수집한다. 기존 Gateway를 중지하고 그 서비스와 같은 `--database` 경로를 지정한다. 기록 도구는 그 경로에서 잠금 이름만 얻는다. Mobius나 중앙 API에 연결하지 않고 새 로컬 JSON을 기록한다.
+Gateway의 `--mode bringup`은 페어링된 r18과 `-bringup` 펌웨어에서 인증된 BLE 알림을 수집한다. 기존 Gateway를 중지하고 그 서비스와 같은 `--database` 경로를 지정한다. 기록 도구는 그 경로에서 잠금 이름만 얻는다. Mobius나 중앙 API에 연결하지 않고 새 로컬 JSON을 기록한다. Gateway 0.2.48은 `--usb-boot-log`가 주어지면 0.7.14-bringup의 USB 기록과 BLE 부팅을 대조한다. 한 번 부팅한 로그를 UTF-8로 저장하고 같은 보드 전원을 유지한 채 실행한다.
 
 ```sh
 bubble-keyring-ble-characterize --mode bringup --hardware r18-pcb \
   --gateway-id "$GATEWAY_ID" --device-id "$KEYRING_ID" --address "$KEYRING_ADDRESS" \
-  --firmware-revision keyring-0.7.13-bringup --distance-cm "$MEASURED_DISTANCE_CM" --seconds 90 \
+  --firmware-revision keyring-0.7.14-bringup --distance-cm "$MEASURED_DISTANCE_CM" --seconds 90 \
+  --usb-boot-log "$PRIVATE_EVIDENCE/r18-usb.log" \
   --database "$GATEWAY_DATABASE" --output "$PRIVATE_EVIDENCE/r18-bringup.json"
 ```
 
 첫 알림 안내까지 두 버튼을 뗀 채 기다린다. 이후 확인 버튼을 약 2초 누르고 떼고, 약 2초 뒤 비상 버튼을 같은 방식으로 한 번 누르고 뗀다. 최초 알림부터 같은 BLE 세션에서 각 눌림과 떼기, 해당 누계 증가, 배터리·3축·움직임 설정, INA219 정상 샘플, 장치 저널·절전 비활성, `commandReady:false`와 출력·fault 상태를 대조한다. 재연결 뒤 받은 관측으로 빠진 단계를 채우지 않는다. 수집된 출력 또는 fault가 활성화됐거나 명령이 준비됐으면 `MISMATCH`를 기록한다. 필요한 관측이 빠지면 `INSUFFICIENT`다.
 
-`RECORDED`는 위 항목을 한 세션에서 수신했다는 뜻이다. INA219는 3.3V 부하 측 계측이며 입력·충전 전류는 별도 실측으로 남긴다. JSON은 단계별 sequence와 필요한 진단 필드만 남기고 BLE 주소와 원래 boot ID를 내보내지 않는다. 빌드·회귀시험·실물 캡처는 미실행이다.
+`RECORDED`는 위 항목을 한 세션에서 수신했다는 뜻이다. USB 로그를 공급하면 `bringup.usbBoot`에 파일 SHA-256, GPIO 읽기값과 부팅 일치 여부가 추가된다. USB와 BLE의 부팅이 다르거나 수집 중 새 부팅의 알림이 들어오거나 USB 출력·fault가 활성 상태이면 `MISMATCH`다. INA219는 3.3V 부하 측 계측이며 입력·충전 전류는 별도 실측으로 남긴다. JSON은 BLE 주소와 원래 부팅 ID를 내보내지 않는다. 빌드·회귀시험·실물 캡처는 미실행이다.
 
 Gateway 0.2.36의 자격 전환 영수증 회귀시험 소스는 MQTT·HTTPS 생성 후 조회, 중복, 인스턴스·부모·본문 불일치, 조회 시간 초과, HTTPS 보류 중 일반 heartbeat의 독립 전송을 다룬다. 격리 Mobius4 시험 소스는 두 전송 경로에서 실제 저장 조회가 발생하는지 확인한다. 이번 빌드·시험·Pi 배포·CSE 연결은 미실행이다.
 
@@ -101,7 +102,7 @@ Gateway 0.2.39의 `--verify-button-continuity`는 첫 알림이 있던 연결의
 ```sh
 bubble-keyring-ble-characterize --mode reconnect --hardware r18-pcb --verify-button-continuity \
   --gateway-id "$GATEWAY_ID" --device-id "$KEYRING_ID" --address "$KEYRING_ADDRESS" \
-  --firmware-revision keyring-0.7.13-bringup --distance-cm "$MEASURED_DISTANCE_CM" --seconds 90 \
+  --firmware-revision keyring-0.7.14-bringup --distance-cm "$MEASURED_DISTANCE_CM" --seconds 90 \
   --database "$GATEWAY_DATABASE" --output "$PRIVATE_EVIDENCE/r18-reconnect.json"
 ```
 

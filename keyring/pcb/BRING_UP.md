@@ -22,19 +22,19 @@ pio run -e keyring_r18_bringup -t upload --upload-port <COM_PORT>
 pio device monitor --port <COM_PORT> --baud 115200
 ```
 
-USB 로그의 `KEYRING bringup`에서 `motor=0 aux=0 fault=0`을 기대한다. motor·aux는 부팅 때의 GPIO readback이며 전압이나 실제 부하 상태는 별도 측정으로 확인한다. `fuel`, `accel`, `motion`은 첫 샘플과 인터럽트 설정 결과다. 센서 오류는 기록하고 Pi 관측에서 복구 여부를 확인한다.
+USB 모니터를 연 상태에서 한 번 부팅해 `KEYRING bringup` 줄이 포함된 UTF-8 로그를 로컬에 저장한다. 이 줄에는 보드·펌웨어 revision, 부팅 ID, `motor`, `aux`, `fault`가 기록된다. 기대값은 `motor=0 aux=0 fault=0`이다. motor·aux는 GPIO readback이며 전압과 부하 상태는 계측한다. `fuel`, `accel`, `motion`은 첫 샘플과 인터럽트 설정 결과다. Pi에서 초기 구동을 기록할 때까지 보드 전원을 유지한다.
 
 이 프로필은 로컬 설정이 켜져 있어도 LCD·오디오 재생·SD·deep sleep을 비활성화하고 USB100을 유지한다. 명령용 NVS와 BLE 명령·저널 특성을 열지 않는다. BLE bonding과 센서 초기화는 일반 경로를 사용하며, 장착된 MAX9850의 mute/shutdown 설정은 기존 설정을 따른다.
 
 ## Pi와 확인할 항목
 
-[BlueZ 등록 절차](../raspberry-pi-gateway/README.md#bluez-등록)를 따라 장치별로 페어링한다. 격리 Gateway에서 `BLE_GATT_PROFILE=core-v1`, `FIRMWARE_REVISION_ALLOWLIST=keyring-0.7.13-bringup`과 시험 전용 DB를 사용한다. Gateway health에서 보드 `r18-hand-solder`, 새 부팅 ID, `connected:true`, `commandReady:false`를 확인한다. BlueZ에 이전 쓰기 특성이 캐시돼 있어도 Gateway 0.2.37은 이 revision을 관측 전용으로 처리한다.
+[BlueZ 등록 절차](../raspberry-pi-gateway/README.md#bluez-등록)를 따라 장치별로 페어링한다. 격리 Gateway에서 `BLE_GATT_PROFILE=core-v1`, `FIRMWARE_REVISION_ALLOWLIST=keyring-0.7.14-bringup`과 시험 전용 DB를 사용한다. Gateway health에서 보드 `r18-hand-solder`, 새 부팅 ID, `connected:true`, `commandReady:false`를 확인한다. Gateway는 `-bringup` revision을 관측 전용으로 처리한다.
 
-버튼·센서·전원과 Gateway의 명령 차단 상태는 Gateway 0.2.38의 [Pi 초기 구동 기록 모드](../raspberry-pi-gateway/TESTING.md#r18-초기-구동-기록)에서 한 번에 기록할 수 있다. 기록 시에는 같은 DB 경로를 사용하는 Gateway를 중지한다. 이 모드는 BLE 관측으로 판정하며 전원 레일의 실측은 별도로 남긴다.
+버튼·센서·전원과 Gateway의 명령 차단 상태는 Gateway 0.2.48의 [Pi 초기 구동 기록 모드](../raspberry-pi-gateway/TESTING.md#r18-초기-구동-기록)에서 기록한다. `--usb-boot-log`에 위 로그를 제공하면 BLE와 같은 부팅인지도 대조한다. 기록 시에는 같은 DB 경로를 사용하는 Gateway를 중지한다. 전원 레일의 실측은 별도로 남긴다.
 
 | 확인 항목 | 증거 |
 |---|---|
-| 부팅·전원 | board revision, 빌드 산출물 해시, USB 로그, +3V3 실측, 입력 전원 조건 |
+| 부팅·전원 | board revision, 빌드 산출물 해시, USB 로그 해시와 BLE 부팅 일치 결과, +3V3 실측, 입력 전원 조건 |
 | 버튼 | 확인·비상을 각각 누르고 떼며 같은 부팅의 `buttonState`와 각 누름 누계를 기록 |
 | 센서·전원 | `sensors`의 배터리·가속도·motion 상태, `energy`의 INA219 상태와 3.3V 부하 측 값, `health`의 `journal:disabled`를 같은 부팅에서 기록 |
 | 재연결 | [Pi 재연결 전후 버튼 누계 기록](../raspberry-pi-gateway/TESTING.md#r18-재연결-전후-버튼-누계-기록)에서 링크 복구 시간, 동일 부팅, sequence·누계 연속성 확인 |
