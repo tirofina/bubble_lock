@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime, timezone
+import hashlib
 import json
 from pathlib import Path
 import tempfile
@@ -30,6 +31,7 @@ class R18PulseTests(unittest.IsolatedAsyncioTestCase):
         self.replace_receipt_route = False
         self.journal = {"detail": "health", "journal": "ready", "journalUsed": 31, "journalPrepared": 1, "journalCapacity": 32}
         self.fail_journal_after_grant = False
+        self.firmware = R18_COMMAND_FIRMWARE
         self.proof = AsyncMock(return_value={"dispatchEventId": "dispatch-a", "settlementEventId": "settlement-a"})
         self.telemetry_proof = AsyncMock(side_effect=self.central_observation)
 
@@ -53,13 +55,13 @@ class R18PulseTests(unittest.IsolatedAsyncioTestCase):
                       "con": {"gatewayId": GATEWAY, "bootId": "gateway-boot", "observedAt": timestamp,
                               "credentialStatus": "ACTIVE", "devices": [
                                   {"deviceId": R18_DEVICE, "bootId": "r18-boot", "boardRevision": R18_BOARD,
-                                   "firmwareRevision": R18_COMMAND_FIRMWARE, "connected": True, "commandReady": True}]}}
+                                   "firmwareRevision": self.firmware, "connected": True, "commandReady": True}]}}
         elif path == PATHS["observation"] + "/la":
             sequence = 6 if self.issued else 5
             rqi = Store.request_id("observation", f"{R18_DEVICE}:r18-boot:{sequence}")
             native = {"ty": 4, "rn": content_name(rqi), "ri": f"cin-{sequence}", "pi": "cnt-observation",
                       "con": {"gatewayId": GATEWAY, "deviceId": R18_DEVICE, "bootId": "r18-boot",
-                              "firmwareRevision": R18_COMMAND_FIRMWARE, "state": False, "sequence": sequence,
+                              "firmwareRevision": self.firmware, "state": False, "sequence": sequence,
                               "observedAt": timestamp, "receivedAt": timestamp,
                               "sensorValues": {"fault": False, **self.journal}}}
         else:
@@ -67,7 +69,7 @@ class R18PulseTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(path, f"{PATHS['receipt']}/{receipt_name(command['commandId'])}")
             receipt = {key: command[key] for key in ("gatewayId", "deviceId", "commandId", "grantRevision", "ownershipEpoch")}
             receipt.update(payloadHash=payload_hash(command), status="APPLIED", ackCode="APPLIED",
-                           firmwareRevision=R18_COMMAND_FIRMWARE, bootId="r18-boot", receivedAt=timestamp,
+                           firmwareRevision=self.firmware, bootId="r18-boot", receivedAt=timestamp,
                            readback={"state": True})
             native = {"ty": 4, "rn": receipt_name(command["commandId"]), "ri": "cin-receipt",
                       "pi": "cnt-receipt", "ct": "20261111T000000", "con": receipt}
@@ -100,13 +102,14 @@ class R18PulseTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(self.posts, [])
             (self.output / self.trigger).touch()
 
-    async def exercise(self):
+    async def exercise(self, wake=None):
         with (patch("scoped_r18_pulse.utc_now", return_value=self.now),
               patch("pi_led_cycle.utc_now", return_value=self.now),
               patch("builtins.print", side_effect=self.trigger_after_ready)):
             async with asyncio.timeout(1):
                 await run_pulse(self.post, self.cse, self.proof, self.output, pins=self.pins,
-                                observation_hasher=payload_hash, telemetry_proof=self.telemetry_proof)
+                                observation_hasher=payload_hash, telemetry_proof=self.telemetry_proof,
+                                firmware=self.firmware, wake=wake)
 
     async def test_one_command_then_same_boot_off_and_revocation(self):
         await self.exercise()
@@ -174,6 +177,22 @@ class R18PulseTests(unittest.IsolatedAsyncioTestCase):
             await self.exercise()
         self.assertEqual(self.posts, [])
         self.assertFalse((self.output / "pulse-intent.json").exists())
+
+    async def test_wrong_wake_boot_blocks_the_pulse_before_grant(self):
+        self.firmware = R18_SLEEP_COMMAND_FIRMWARE
+        wake = {"reportSha256": "a" * 64, "bootIdSha256": hashlib.sha256(b"previous-boot").hexdigest(), "sequence": 1}
+        with self.assertRaisesRegex(ValueError, "later observation from the recorded wake boot"):
+            await self.exercise(wake=wake)
+        self.assertEqual(self.posts, [])
+        self.assertFalse((self.output / "PULSE").exists())
+
+    async def test_later_observation_from_the_wake_boot_can_arm_the_pulse(self):
+        self.firmware = R18_SLEEP_COMMAND_FIRMWARE
+        wake = {"reportSha256": "a" * 64, "bootIdSha256": hashlib.sha256(b"r18-boot").hexdigest(), "sequence": 4}
+        await self.exercise(wake=wake)
+        self.assertEqual(self.posts.count(self.command_path), 1)
+        scope = json.loads((self.output / "pulse-scope.json").read_text(encoding="utf-8"))
+        self.assertEqual(scope["wakeReportSha256"], wake["reportSha256"])
 
     async def test_journal_error_after_grant_revokes_without_issuing(self):
         self.fail_journal_after_grant = True

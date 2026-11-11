@@ -4,17 +4,21 @@ import argparse
 import asyncio
 from datetime import timedelta
 from functools import partial
+import hashlib
+import json
 from pathlib import Path
 import re
 import uuid
 
+from bubble_gateway.ble_characterize import WAKE_CASES, boot_id_sha256
 from bubble_gateway.config import ID
 from bubble_gateway.integration_evidence import inspect_integration_command, inspect_integration_observation
 from bubble_gateway.model import iso_time, parse_time, utc_now, validate_command
 from pi_led_cycle import ready_heartbeat, receipt_name, verify_observation_resource, verify_receipt, write_new_json
 from scoped_command_io import PROFILE, hash_observation, scoped_api, scoped_clients, tls_context
 from scoped_feather_evidence import read_json
-from scoped_feather_pi import PARENT, R18_BOARD, R18_COMMAND_FIRMWARE, R18_COMMAND_FIRMWARES, R18_DEVICE, verify_integration_api
+from scoped_feather_pi import (PARENT, R18_BOARD, R18_COMMAND_FIRMWARE, R18_COMMAND_FIRMWARES, R18_DEVICE,
+                               R18_SLEEP_COMMAND_FIRMWARE, verify_integration_api)
 
 GATEWAY = "gw-b"
 SUBJECT = "scoped-r18-bench"
@@ -47,13 +51,46 @@ def pulse_journal_readiness(values):
     return {key: values[key] for key in ("detail", "journal", *fields)}
 
 
+def read_pulse_wake_report(path, firmware):
+    raw = path.read_bytes()
+    capture = json.loads(raw)
+    expected = {"mode": "wake", "hardware": "r18-pcb", "status": "RECORDED", "gatewayId": GATEWAY,
+                "deviceId": R18_DEVICE, "boardRevision": R18_BOARD, "firmwareRevision": firmware, "gattProfile": "core-v1"}
+    if (firmware != R18_SLEEP_COMMAND_FIRMWARE or not isinstance(capture, dict)
+            or type(capture.get("version")) is not int or capture["version"] != 1
+            or any(capture.get(key) != value for key, value in expected.items())):
+        raise ValueError("Wake report does not match the scoped r18 sleep firmware and device")
+    wake = capture.get("wake")
+    if not isinstance(wake, dict):
+        raise ValueError("Wake report lacks a matched cause, new boot hash or observation sequence")
+    case, digest, sequence = wake.get("expected"), wake.get("bootIdSha256"), wake.get("sequence")
+    if (wake.get("matched") is not True or wake.get("newBoot") is not True
+            or not isinstance(case, str) or case not in WAKE_CASES or type(wake.get("pins")) is not int
+            or (wake.get("cause"), wake["pins"]) != WAKE_CASES[case]
+            or not isinstance(digest, str) or re.fullmatch(r"[a-f0-9]{64}", digest) is None
+            or type(sequence) is not int or not 0 <= sequence <= 4294967295):
+        raise ValueError("Wake report lacks a matched cause, new boot hash or observation sequence")
+    return {"reportSha256": hashlib.sha256(raw).hexdigest(), "case": case, "bootIdSha256": digest,
+            "sequence": sequence}
+
+
+def check_pulse_wake_baseline(wake, baseline):
+    if (boot_id_sha256(baseline["bootId"]) != wake["bootIdSha256"]
+            or baseline["sequence"] <= wake["sequence"]):
+        raise ValueError("Pulse baseline must be a later observation from the recorded wake boot")
+
+
 async def run_pulse(operator_post, cse, central_proof, output, *, pins, observation_hasher, telemetry_proof,
-                    firmware=R18_COMMAND_FIRMWARE):
+                    firmware=R18_COMMAND_FIRMWARE, wake=None):
     pins = validate_container_pins(pins)
     if firmware not in R18_COMMAND_FIRMWARES:
         raise ValueError("Unknown r18 command firmware")
-    write_new_json(output / "pulse-scope.json", {"gatewayId": GATEWAY, "containerPins": pins, "firmwareRevision": firmware,
-                                                "journalReadinessRequired": True})
+    if wake is not None and firmware != R18_SLEEP_COMMAND_FIRMWARE:
+        raise ValueError("Wake evidence requires the r18 sleep firmware")
+    scope_record = {"gatewayId": GATEWAY, "containerPins": pins, "firmwareRevision": firmware, "journalReadinessRequired": True}
+    if wake is not None:
+        scope_record["wakeReportSha256"] = wake["reportSha256"]
+    write_new_json(output / "pulse-scope.json", scope_record)
     stop, trigger = output / "STOP", output / "PULSE"
 
     async def wait_for(check):
@@ -132,6 +169,8 @@ async def run_pulse(operator_post, cse, central_proof, output, *, pins, observat
 
     waiting_since = utc_now()
     baseline, armed = await wait_for(lambda: ready(waiting_since))
+    if wake is not None:
+        check_pulse_wake_baseline(wake, baseline)
     boot_id = baseline["bootId"]
     await verify_receipt_route()
     if trigger.exists():
@@ -160,6 +199,8 @@ async def run_pulse(operator_post, cse, central_proof, output, *, pins, observat
                 or checked[0]["cseResource"]["pi"] != baseline["cseResource"]["pi"] or stop.exists()):
             raise RuntimeError("The r18 or Pi session changed or stopped before command issuance")
         baseline, readiness = checked
+        if wake is not None:
+            check_pulse_wake_baseline(wake, baseline)
         command_id = f"r18-pulse-{uuid.uuid4().hex}"
         intent = {"deviceId": R18_DEVICE, "commandId": command_id, "grantId": grant_id,
                   "desiredState": {"state": True}, "deadline": iso_time(utc_now() + timedelta(seconds=25))}
@@ -209,13 +250,14 @@ async def run_pulse(operator_post, cse, central_proof, output, *, pins, observat
     print("R18_PULSE_CENTRAL_TELEMETRY_VERIFIED", flush=True)
 
 
-async def run(output, seconds, pins, *, firmware_revision=None):
+async def run(output, seconds, pins, *, firmware_revision=None, wake_report=None):
     api, operator_dir = scoped_api("r18")
     firmware = api["firmwareRevision"] if firmware_revision is None else firmware_revision
     if ((api["gatewayId"], api["deviceId"], api["subjectId"], api["boardRevision"]) != (GATEWAY, R18_DEVICE, SUBJECT, R18_BOARD)
             or firmware not in R18_COMMAND_FIRMWARES
             or firmware not in (api["firmwareRevision"], *api.get("alternateFirmwareRevisions", ()))):
         raise RuntimeError("Configured scoped r18 profile differs from the pulse bench identity")
+    wake = read_pulse_wake_report(wake_report, firmware) if wake_report is not None else None
     gateway_tls = tls_context(PROFILE / "tls/gateway-b.pem", PROFILE / "tls/gateway-b.key")
     await asyncio.to_thread(verify_integration_api, api["port"], api["revision"], gateway_tls, mode="r18", firmware=firmware)
     state_path = operator_dir / "runtime.json"
@@ -235,7 +277,7 @@ async def run(output, seconds, pins, *, firmware_revision=None):
                 asyncio.timeout(seconds)):
         output.mkdir(mode=0o700)
         await run_pulse(operator_post, cse, central_proof, output, pins=pins,
-                        observation_hasher=observation_hasher, telemetry_proof=telemetry_proof, firmware=firmware)
+                        observation_hasher=observation_hasher, telemetry_proof=telemetry_proof, firmware=firmware, wake=wake)
 
 
 if __name__ == "__main__":
@@ -243,6 +285,7 @@ if __name__ == "__main__":
     parser.add_argument("--output", required=True, type=Path, help="New private directory for the trigger and evidence")
     parser.add_argument("--seconds", type=int, default=600, choices=range(30, 1801), metavar="30..1800")
     parser.add_argument("--firmware-revision", choices=R18_COMMAND_FIRMWARES, help="Command firmware selected on the scoped API and Pi")
+    parser.add_argument("--wake-report", type=Path, help="Require the command baseline to follow this Pi wake report")
     for role in PATHS:
         parser.add_argument(f"--{role}-container-ri", required=True, help=f"Provisioned gw-b {role} container ID")
     args = parser.parse_args()
@@ -250,4 +293,4 @@ if __name__ == "__main__":
         pins = validate_container_pins({role: getattr(args, f"{role}_container_ri") for role in PATHS})
     except ValueError as error:
         parser.error(str(error))
-    asyncio.run(run(args.output.resolve(), args.seconds, pins, firmware_revision=args.firmware_revision))
+    asyncio.run(run(args.output.resolve(), args.seconds, pins, firmware_revision=args.firmware_revision, wake_report=args.wake_report))

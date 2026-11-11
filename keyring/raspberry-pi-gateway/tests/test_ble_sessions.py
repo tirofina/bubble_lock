@@ -39,6 +39,12 @@ class WakeCaptureTests(unittest.TestCase):
                 self.assertEqual(report["status"], status)
                 self.assertEqual(len(report["sessions"]), 2)
                 self.assertEqual(report["wake"]["releaseToFirstNotificationMs"], 16)
+                if status == "RECORDED":
+                    self.assertEqual(report["wake"]["bootIdSha256"], hashlib.sha256(boot.encode()).hexdigest())
+                    self.assertEqual(report["wake"]["sequence"], 2)
+                    self.assertNotIn(boot, json.dumps(report))
+                else:
+                    self.assertNotIn("bootIdSha256", report["wake"])
 
     def test_power_capture_deduplicates_same_boot_and_requires_first_wake_boot(self):
         board = "r18-hand-solder"

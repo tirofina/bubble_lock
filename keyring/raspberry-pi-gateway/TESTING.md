@@ -209,7 +209,7 @@ bubble-keyring-ble-characterize --mode wake --hardware r18-pcb \
   --database "$GATEWAY_DATABASE" --output "$PRIVATE_EVIDENCE/r18-wake-confirm.json"
 ```
 
-`--expect-wake`는 `confirm`, `panic`, `motion`, `timer`를 선택한다. 최초 복구 알림의 부팅이 이전과 달라야 하고, 같은 부팅의 health 알림에 기대 원인과 핀 마스크가 있어야 한다. 확인 GPIO6은 64, 비상 GPIO7은 128이며 두 핀이 함께 보고되면 개별 버튼 항목에 맞지 않는다. 나중에 다른 부팅에서 받은 원인은 첫 복구 기록에 합치지 않는다. 초기 연결과 복구 수신에 각각 최대 `--seconds`를 사용한다. BLE 해제 후 첫 알림까지의 값에는 의도한 유휴 대기 시간이 포함된다. 실제 절전 진입 시각·소비전류는 외부 계측으로 기록한다.
+`--expect-wake`는 `confirm`, `panic`, `motion`, `timer`를 선택한다. 최초 복구 알림의 부팅이 이전과 달라야 하고, 같은 부팅의 health 알림에 기대 원인과 핀 마스크가 있어야 한다. 확인 GPIO6은 64, 비상 GPIO7은 128이며 두 핀이 함께 보고되면 개별 버튼 항목에 맞지 않는다. 나중에 다른 부팅에서 받은 원인은 첫 복구 기록에 합치지 않는다. Gateway 0.2.102는 일치한 부팅의 `bootIdSha256`과 health 관측 순번을 `wake`에 기록한다. 초기 연결과 복구 수신에 각각 최대 `--seconds`를 사용한다. BLE 해제 후 첫 알림까지의 값에는 의도한 유휴 대기 시간이 포함된다. 실제 절전 진입 시각·소비전류는 외부 계측으로 기록한다.
 
 ### r18 BLE 시험의 전원 샘플
 
@@ -501,6 +501,8 @@ r18 모드는 중앙 API 포트 `8789`와 `gw-b` 전용 경로를 사용한다. 
 
 `keyring-0.7.20-sleep`으로 절전 후 명령 경로까지 확인할 때는 [격리 API](../dev/mobius4/README.md#r18-격리-명령-api)를 같은 revision으로 시작하고, Pi `prepare`에 `--firmware-revision keyring-0.7.20-sleep`을 추가해 새 세션을 만든다. 아래 펄스 도구에도 같은 옵션을 넘긴다. 장치 저널 수집은 저장된 Pi 세션의 revision을 사용한다.
 
+깨운 부팅에서 실행했음을 확인하려면 먼저 `gw-b`·`keyring-r18-lab`으로 [wake 보고서](#r18-wake-기록)를 만든다. 도구가 BLE를 닫으면 보드 전원을 유지하고 다시 잠들기 전에 Pi 명령 세션을 시작한다. 펄스 도구에 `--wake-report $r18WakeReport`를 추가한다. 보고서의 부팅 해시와 같은 부팅에서 받은 더 새 OFF 기준 관측이 있어야 `R18_PULSE_READY`가 나온다.
+
 #### r18 단일 펄스 시험
 
 격리 r18 API와 Pi 세션을 시작하고, 출력 계측기를 준비한 뒤 PC에서 새 비공개 폴더를 출력 경로로 지정한다. 관측·영수증은 Pi `preflight`에서 일치한 ID를, health는 같은 [Mobius4 배치](../dev/mobius4/README.md#r18-격리-명령-api)의 확인값을 쓴다.
@@ -530,6 +532,8 @@ python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_r18_evidence.py
 ```
 
 `issuanceInTeamSnapshot`이 `false`면 제공한 상태 사본에 발급 기록이 없다. `centralApplicationVerified`가 `true`면 같은 명령의 적용 영수증과 중앙 실행·정산 기록이 일치한다. `pulse-scope.json`이 있으면 저장된 관측·health·영수증의 부모와 선택한 Pi DB의 관측·영수증 ID를 대조한다. 이전 기록은 `cseContainerPinsCaptured: false`로 표시한다. `postPulseCentralTelemetryVerified`가 `true`면 해당 명령 뒤의 OFF 관측 해시가 중앙 상태 사본의 이벤트와 일치한다. 계측 파일을 지정하지 않으면 `physicalPulseMeasured`는 비워 둔다.
+
+wake 보고서를 사용한 펄스는 오프라인 대조에도 원본을 `--wake-report $r18WakeReport`로 지정한다. 펄스 시작 시 저장한 보고서 SHA-256, 기준 관측의 부팅 및 순번이 일치하면 `postWakeEvidence`를 반환한다. 최초 `APPLIED` Mobius4 영수증과 중앙 정산까지 확인되면 `postWakeApplicationVerified:true`를 반환한다.
 
 ##### r18 펄스 계측값 연결
 

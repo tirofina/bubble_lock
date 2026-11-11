@@ -17,8 +17,8 @@ from r18_pulse_trace import inspect_pulse_trace
 from scoped_feather_evidence import (interrupted_pi_result, read_json, read_optional, read_pi_commands,
                                     validate_interrupted_receipt)
 from scoped_feather_pi import R18_COMMAND_FIRMWARES, R18_LEGACY_COMMAND_FIRMWARE
-from scoped_r18_pulse import (GATEWAY, PATHS, R18_DEVICE, TELEMETRY_EVENT_FIELDS, pulse_journal_readiness,
-                             validate_container_pins)
+from scoped_r18_pulse import (GATEWAY, PATHS, R18_DEVICE, TELEMETRY_EVENT_FIELDS, check_pulse_wake_baseline,
+                             pulse_journal_readiness, read_pulse_wake_report, validate_container_pins)
 
 
 def check_receipt(receipt, command, boot_id, firmware):
@@ -66,7 +66,7 @@ def inspect_post_pulse(result, saved_observation, saved_event, command, baseline
     return proof
 
 
-def inspect_pulse(directory, team_state, database=None, *, trace_path=None, trace_metadata=None):
+def inspect_pulse(directory, team_state, database=None, *, trace_path=None, trace_metadata=None, wake_report=None):
     if (trace_path is None) != (trace_metadata is None):
         raise ValueError("Pulse trace and metadata must be supplied together")
     issued = team_state.get("gatewayCommands")
@@ -86,6 +86,7 @@ def inspect_pulse(directory, team_state, database=None, *, trace_path=None, trac
     pins = None
     journal_required = False
     firmware = R18_LEGACY_COMMAND_FIRMWARE
+    wake_digest = None
     if scope is not None:
         if scope["gatewayId"] != GATEWAY:
             raise ValueError("r18 scope belongs to a different Gateway")
@@ -94,11 +95,19 @@ def inspect_pulse(directory, team_state, database=None, *, trace_path=None, trac
         firmware = scope.get("firmwareRevision", firmware)
         if type(journal_required) is not bool or firmware not in R18_COMMAND_FIRMWARES:
             raise ValueError("Invalid r18 journal readiness scope")
+        if "wakeReportSha256" in scope:
+            wake_digest = scope["wakeReportSha256"]
+            if not isinstance(wake_digest, str) or re.fullmatch(r"[a-f0-9]{64}", wake_digest) is None:
+                raise ValueError("Invalid scoped r18 wake report hash")
+    wake = read_pulse_wake_report(wake_report, firmware) if wake_report is not None else None
+    if wake is not None and wake["reportSha256"] != wake_digest:
+        raise ValueError("Wake report differs from the one selected before the pulse")
     report = {"intentCaptured": intent is not None, "issuedResponseCaptured": issued_file is not None,
               "cseReceiptCaptured": native_file is not None, "grantRevocationCaptured": revoked is not None,
               "cseContainerPinsCaptured": pins is not None, "postPulseObservationCaptured": False,
               "postPulseCentralTelemetryVerified": False, "journalReadiness": None, "firmwareRevision": firmware,
-              "physicalPulseMeasured": None}
+              "physicalPulseMeasured": None, "wakeReportSha256": wake_digest,
+              "postWakeEvidence": None, "postWakeApplicationVerified": False}
     if intent is None:
         if trace_path is not None:
             raise ValueError("Pulse trace requires the saved r18 command intent")
@@ -124,6 +133,9 @@ def inspect_pulse(directory, team_state, database=None, *, trace_path=None, trac
         raise ValueError("r18 intent did not capture an OFF baseline")
     verify_observation_resource(baseline, R18_DEVICE, pins["observation"] if pins is not None else None)
     parse_time(baseline["receivedAt"])
+    if wake is not None:
+        check_pulse_wake_baseline(wake, baseline)
+        report["postWakeEvidence"] = {**wake, "baselineSequence": baseline["sequence"]}
     journal = baseline.get("journal")
     if journal is not None or journal_required:
         if not isinstance(journal, dict) or pulse_journal_readiness(journal) != journal:
@@ -217,6 +229,8 @@ def inspect_pulse(directory, team_state, database=None, *, trace_path=None, trac
     if pi_receipt is not None:
         check_receipt(pi_receipt, command, baseline["bootId"], firmware)
     report.update(inspect_post_pulse(result, observation_file, event_file, command, baseline, native_receipt, team_state))
+    report["postWakeApplicationVerified"] = (wake is not None and report["centralApplicationVerified"]
+                                             and native_receipt is not None and native_receipt["ackCode"] == "APPLIED")
     if trace_path is not None:
         if native_receipt is None or native_receipt["status"] != "APPLIED" or native_receipt["ackCode"] != "APPLIED":
             raise ValueError("Pulse trace requires the original APPLIED CSE receipt")
@@ -233,13 +247,14 @@ if __name__ == "__main__":
     parser.add_argument("--database", type=Path, help="Read-only Pi SQLite copy from the scoped r18 session")
     parser.add_argument("--pulse-trace", type=Path, help="Operator-captured J6 motor load CSV")
     parser.add_argument("--pulse-trace-metadata", type=Path, help="Metadata binding the CSV to the original CSE receipt")
+    parser.add_argument("--wake-report", type=Path, help="Original Pi wake report selected before the pulse")
     args = parser.parse_args()
     if (args.pulse_trace is None) != (args.pulse_trace_metadata is None):
         parser.error("--pulse-trace and --pulse-trace-metadata must be supplied together")
     try:
         trace_metadata = read_json(args.pulse_trace_metadata) if args.pulse_trace_metadata is not None else None
         report = inspect_pulse(args.output_directory, read_json(args.team_state), args.database,
-                               trace_path=args.pulse_trace, trace_metadata=trace_metadata)
+                               trace_path=args.pulse_trace, trace_metadata=trace_metadata, wake_report=args.wake_report)
     except (AttributeError, KeyError, TypeError, OSError, ValueError, RuntimeError, sqlite3.Error, csv.Error) as error:
         parser.exit(1, f"r18 evidence could not be bound ({type(error).__name__}).\n")
     print(json.dumps(report, indent=2))

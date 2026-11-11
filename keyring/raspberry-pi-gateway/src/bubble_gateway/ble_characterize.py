@@ -93,7 +93,12 @@ def read_firmware_image(path: Path, usb_boot: dict) -> dict:
     return {"fileSha256": hashlib.sha256(image).hexdigest(), "sizeBytes": len(image)}
 
 
-def wake_result(sessions: list[dict], rows: list[dict], expected: str, release_ms: int | None) -> dict:
+def boot_id_sha256(boot_id: str) -> str:
+    return hashlib.sha256(boot_id.encode("ascii")).hexdigest()
+
+
+def wake_result(sessions: list[dict], rows: list[dict], expected: str, release_ms: int | None,
+                boot_ids: dict[int, str]) -> dict:
     baseline = next((s for s in sessions if s["phase"] == "baseline" and s["notificationCount"]), None)
     after = next((s for s in sessions if s["phase"] == "after-wake" and s["notificationCount"]), None)
     new_boot = None if baseline is None or after is None else baseline["boot"] != after["boot"]
@@ -114,6 +119,8 @@ def wake_result(sessions: list[dict], rows: list[dict], expected: str, release_m
     if health is not None:
         report.update(cause=health["wakeCause"], pins=health["wakePins"], deviceUptimeMs=health["deviceUptimeMs"],
                       matched=new_boot is True and (health["wakeCause"], health["wakePins"]) == WAKE_CASES[expected])
+        if report["matched"]:
+            report.update(bootIdSha256=boot_id_sha256(boot_ids[after["boot"]]), sequence=health["sequence"])
     return report
 
 
@@ -449,7 +456,8 @@ def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mo
     measured = list(sessions.values())
     reconnects = reconnect_results(measured)
     notifications = sum(session["notificationCount"] for session in measured)
-    wake = wake_result(measured, rows, expected_wake, release_ms) if expected_wake is not None else None
+    wake = (wake_result(measured, rows, expected_wake, release_ms, {ordinal: boot_id for boot_id, ordinal in boots.items()})
+            if expected_wake is not None else None)
     power = power_result(measured, rows, mode) if include_power else None
     battery = battery_result(rows, *battery_thresholds) if mode == "battery" else None
     bringup = (bringup_result(measured, rows, expected_display=DISPLAY_TEST_PROFILES.get(firmware_revision))

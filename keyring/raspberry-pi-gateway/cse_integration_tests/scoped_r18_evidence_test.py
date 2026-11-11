@@ -11,8 +11,8 @@ from helpers import BINDING
 from pi_led_cycle import content_name, receipt_name, write_new_json
 from r18_pulse_trace import inspect_pulse_trace
 from scoped_r18_evidence import inspect_pulse
-from scoped_feather_pi import R18_LEGACY_COMMAND_FIRMWARE
-from scoped_r18_pulse import GATEWAY, PATHS, R18_DEVICE
+from scoped_feather_pi import R18_LEGACY_COMMAND_FIRMWARE, R18_SLEEP_COMMAND_FIRMWARE
+from scoped_r18_pulse import GATEWAY, PATHS, R18_BOARD, R18_DEVICE
 
 
 class R18EvidenceTests(unittest.TestCase):
@@ -100,6 +100,29 @@ class R18EvidenceTests(unittest.TestCase):
             store.accept(self.command, self.command_hash)
         with self.assertRaisesRegex(ValueError, "Pi database does not belong"):
             inspect_pulse(self.output, self.team, database)
+
+    def test_wake_report_is_bound_to_the_original_pulse_scope_and_baseline(self):
+        wake_report = self.output / "wake.json"
+        wake = {"version": 1, "mode": "wake", "hardware": "r18-pcb", "status": "RECORDED", "gatewayId": GATEWAY,
+                "deviceId": R18_DEVICE, "boardRevision": R18_BOARD, "firmwareRevision": R18_SLEEP_COMMAND_FIRMWARE,
+                "gattProfile": "core-v1", "wake": {"expected": "confirm", "cause": "button", "pins": 64,
+                    "matched": True, "newBoot": True, "bootIdSha256": hashlib.sha256(self.boot_id.encode()).hexdigest(),
+                    "sequence": 0}}
+        raw = json.dumps(wake).encode()
+        wake_report.write_bytes(raw)
+        pins = {"observation": "cnt-obs", "health": "cnt-health", "receipt": "cnt-receipt"}
+        write_new_json(self.output / "pulse-scope.json", {"gatewayId": GATEWAY, "containerPins": pins,
+                       "firmwareRevision": R18_SLEEP_COMMAND_FIRMWARE, "wakeReportSha256": hashlib.sha256(raw).hexdigest()})
+        path = self.output / "pulse-intent.json"
+        intent = json.loads(path.read_text(encoding="utf-8"))
+        intent["commandReadiness"] = {"cseResource": {"ri": "cin-health", "pi": pins["health"]}}
+        path.write_text(json.dumps(intent), encoding="utf-8")
+        result = inspect_pulse(self.output, self.team, wake_report=wake_report)
+        self.assertEqual(result["postWakeEvidence"]["baselineSequence"], 1)
+        self.assertFalse(result["postWakeApplicationVerified"])
+        wake_report.write_bytes(raw + b"\n")
+        with self.assertRaisesRegex(ValueError, "differs from the one selected"):
+            inspect_pulse(self.output, self.team, wake_report=wake_report)
 
     def test_snapshot_absence_and_tampered_intent_are_distinct(self):
         report = inspect_pulse(self.output, {"gatewayCommands": {}, "receipts": []})
