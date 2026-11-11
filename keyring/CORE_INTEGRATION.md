@@ -1,12 +1,9 @@
-# CORE·Gateway 통합 계약
+# PC-MOBIUS-CORE 연동 메모
 
-DOC-REV 2.0.0 · 2026-11-10 · Gateway 계약 1.0.0.
+기준 DOC-REV 2.0.0, Gateway 계약 1.0.0. 원격 `main`의 `715ef58`에는 통합 커밋 `413fd31`이 포함돼 있다. 역할 브랜치에는 이 커밋의 Gateway BLE 탐색 취소 수정과 회귀시험을 반영했다.
 
-중앙 통합 이력 `413fd31`·`191b603`과 키링 역할 브랜치 `686f7b4`를 연결했다. BLE 탐색 취소, BlueZ READ/notification 순서 수정, Feather·실제 Pi 관측 증거를 함께 보존한다.
+## 구현한 연결
 
-<<<<<<< HEAD
-## 관측과 명령
-=======
 - 펌웨어 `keyring-0.2.0`과 Gateway 기본 GATT profile `core-v1`은 팀 service `7f8a0001-4b6e-4f4e-9b0a-505249564255`, state `...0002...`, command `...0003...`, ack `...0004...`를 사용한다. 장치 식별을 위한 identity `...0005...`를 KEYRING extension으로 추가했다.
 - 기존 펌웨어 profile은 `KEYRING_LEGACY_GATT=1`, Gateway는 `BLE_GATT_PROFILE=keyring-v01`로 명시 선택한다. 자동 downgrade하지 않는다. 이번 작업에서 실제 firmware flash는 하지 않았다.
 - BLE 내부 프레임은 bootId·uptime·nullable battery와 sensorValues를 유지한다. UTC/RSSI는 Gateway가 관측하므로 CORE의 timestamp/batteryPct/rssiDbm으로 내보내는 변환을 별도로 둔다. UUID 일치만으로 팀의 BLE payload 전체와 동일하다고 주장하지 않는다. 이 확장·변환 계약은 CORE owner의 수용이 필요하다.
@@ -15,26 +12,15 @@ DOC-REV 2.0.0 · 2026-11-10 · Gateway 계약 1.0.0.
 - CORE가 deviceId:sequence로 dedup하므로 device별 uint32 sequence를 SQLite에 따로 유지한다. 원래 bootId/firmwareSequence를 함께 남긴다. sequence 소진 시 오류로 보존하며 자동 wrap하지 않는다. DB를 삭제하면 이 연속성을 잃으므로 일반 복구로 사용하지 않는다.
 - Gateway 0.2.11은 SQLite에서 장치별로 가장 먼저 대기열에 들어간 CORE 관측만 전송 대상으로 삼는다. 그 행이 재시도 대기 중이면 같은 장치의 최신 CORE 관측도 기다린다. 다른 장치의 CORE 관측과 native 관측·영수증은 계속 처리한다. [재시도 순서와 SDT 시험](evidence/2026-11-10-core-retry-order/README.md)
 - 성공 ACK만 READBACK_VERIFIED로 변환하고 measurementScope=gpio-at-application을 함께 보낸다. 실제 모터 작동을 센서로 검증한 값이 아니다. 실패/미확정 결과는 원래 상세 receipt cin에 기록한다.
->>>>>>> origin/codex/keyring-namho
 
-기본 `core-v1` BLE UUID와 키링 identity 확장을 사용한다. Gateway는 실제 battery/RSSI가 있는 관측을 CORE telemetry로 투영하고 bootId·firmwareSequence·gatewayId·timestampSource를 보존한다. nullable 원본 관측은 native oneM2M CIN에 저장한다.
+Gateway0.2.2는 native 영수증과 CORE ACK를 최초 staging 때 한 트랜잭션에서 생성한다. ACK가 전달돼 삭제된 뒤 native 재시도 때문에 다시 생성하지 않는다. 경로별 기존 outbox는 독립 재시도하며 CORE projection 선택은 최초 staging 시 고정한다. 설정을 나중에 켜도 이미 대기 중인 native 영수증을 소급 backfill하지 않는다. [경로 수명·시험](raspberry-pi-gateway/RECEIPT_ROUTING.md)에 기록했다.
 
-CORE는 HTTP PUT 또는 MQTT UPDATE `op=3`, `rvi=4`로 binarySwitch 상태를 전송한다. MQTT To는 CSE/SP/절대 주소 범위를 변환하며 UPDATE 완료 코드 `2004`를 사용한다. flexContainer와 Group member type은 `28`이다.
+## 중앙 API와 남은 통합 시험
 
-중앙 `GatewayControl`은 현재 consent/grant와 등록 장치를 연결해 canonical command를 발급한다. 명령의 `version`, `gatewayId`, `deviceId`, `commandId`, `claimId`, `desiredState.state`, `issuedAt`, `deadline`, `grantRevision`, `ownershipEpoch`를 CORE `sendCommand(command)`와 Group `memberCommands`에 보존한다. canonical hash와 전송 입장 generation은 중앙 기록·lane·outbox에서 같은 명령에 결속한다.
+원격 `main`에서 Gateway 명령 발급·조회·승인·자격 상태 경로와 TLS 1.3/mTLS principal 등록을 확인했다. 중앙 서버가 grant에서 `claimId`·`grantRevision`·`ownershipEpoch`를 결속한다. 통합 커밋에는 CORE UPDATE 연산, flexContainer/Group 유형, 주소 변환 및 ACK 결속 수정도 포함된다.
 
-## Gateway API
+`main`의 Node API와 Python Gateway를 새 임시 인증서로 재시험했다. 명령 조회, canonical hash 승인, 잘못된 해시 거절, grant 회수, 범위 위조 및 인증서 미제출 차단 시험 1개가 통과했다. 다음 단계는 실제 Pi의 BLE 관측과 운영 등록·인증서로 전체 경로를 시험하는 것이다. raw CORE MQTT의 PUBACK은 broker 수신 확인으로 기록한다.
 
-<<<<<<< HEAD
-| 경로 | 동작 |
-|---|---|
-| `GET /api/v1/gateways/{id}/credentials/status` | 인증서 revision·ACTIVE/LOST/REVOKED 상태 |
-| `GET /api/v1/gateways/{id}/commands?limit=16` | 현재 유효한 canonical 명령 최대 16개 |
-| `POST /api/v1/gateways/{id}/authorize` | command·claim·grant·epoch·hash·기한 재확인 |
-| `POST /api/v1/gateways/{id}/dispatch-start` | 영속 intent 기록 후 BLE 전송 직전 현재 claim·전송 입장 확인 |
-| `POST /api/v1/gateways/{id}/receipts` | epoch·revision·hash·readback을 검증한 결과 정산 |
-| `POST /v1/gateways/{id}/commands` | `bubble:command` 권한 소유자의 명령 발급 |
-=======
 Gateway 0.2.5는 팀 main `715ef58`의 실제 mTLS API에서 명령을 받아 정상 worker로 처리한 뒤 격리 Mobius4의 native receipt까지 확인했다. GATT는 모의 장치를 썼다. 연결 전 grant를 회수하면 중앙의 현재 승인 응답으로 거절되고 쓰기가 발생하지 않았다. [명령 통합 증거](evidence/2026-11-10-central-dispatch/README.md)
 
 중앙에서 HTTP로 발급한 명령을 CORE MQTT ACK 정산과 연결하려면 중앙 명령 레코드를 CORE의 ACK 검증에서 조회할 수 있어야 한다. 현재 main의 `GatewayBridge.handleAck`는 `pendingCommands` 또는 `commandPayloads`에서 기대 명령을 읽고, `sendCommand`가 그 맵을 채운다. 이번 시험의 native cin 확인과 CORE의 `ACK_RECORDED`는 별도 단계로 추적한다.
@@ -66,18 +52,15 @@ KEYRING 전환 후보는 SDT UPDATE와 활성 Gateway 교체를 같은 자원 �
 Gateway 0.2.18은 epoch 전용 경로에서 배터리·RSSI가 없는 관측을 nullable 형식 1.1.0으로 보낸다. 격리 Mobius4에는 Feather의 별도 SDT와 토픽을 준비했다. 두 버튼은 native cin의 `buttonState`에 남고 SDT에는 실제 관측의 `state`를 쓴다. [Feather 설정](dev/mobius4/README.md#feather-벤치-경로)
 
 ## 소유권
->>>>>>> origin/codex/keyring-namho
 
-`/api/v1`과 `/v1` Gateway 경로는 같은 계약을 제공한다. Gateway 인증서는 principalId·fingerprint·등록 gatewayId에 결속된다. 승인 응답은 `contracts/keyring/authorization.schema.json`, 상태 응답은 `credential-status.schema.json`을 따른다. 등록과 LOST 수명주기는 [Gateway 등록](../pc-mobius/integration/GATEWAY_REGISTRATION.md)에 정리한다.
+CORE: oneM2M resource/SDT/namespace, RVI, broker topic/ACL, native bridge/DB.
+INTEGRATION: commands/authorize/credential API, grant·claim·epoch·handover.
+KEYRING: firmware/GATT, BLE framing, 실제 관측, durable Gateway adapter, 장치 journal/readback.
 
-## 영수증과 재시도
+임시 서버와 향후 서버 교체 절차는 [Mobius4 환경](dev/mobius4/README.md)에 있다.
 
-CORE는 중간 RECEIVED/FORWARDED ACK를 대기 상태로 유지하고 device·grant·epoch·readback이 일치하는 READBACK_VERIFIED에서 완료한다. MQTT publish 중 도착한 즉시 ACK/oneM2M 응답도 처리한다. Group 재시도는 중앙에서 발급한 원래 명령을 보존한다.
+## firmware0.6.0 센서 detail 확장
 
-Gateway native receipt, CORE ACK, 중앙 receipt outbox는 SQLite 원자 staging과 독립 재시도를 사용한다. broker PUBACK은 broker 수신 증거, 중앙 oneM2M 처리 영수증은 정책·장치 결과 증거로 기록한다. 웹은 CORE와 통합 서비스 receipt를 같은 JSONL에서 읽는다.
+KEYRING의 sensorValues는 sensors/energy/health detail로 순환한다. INA219의 signed 정수 단위/오류/null/readUptimeMs는 `firmware/POWER_MONITOR.md`와 `contracts/keyring/ina219-reading.schema.json`에 정의했다. Gateway는 객체가 있는 프레임에서 필드·단위·시각·전력 계산을 runtime에서 판정하고 native observation cin에 원본을 보관한다. 이번 작업에서는 그 runtime을 실행하지 않았다.
 
-## 검증과 인계
-
-`npm run verify`에서 Python Gateway와 Node 중앙 API를 실제 TLS 1.3/mTLS로 연결한다. 명령 조회, Python/JS canonical hash, 승인·전송 입장, 최종 영수증, grant 회수, 인증서·범위, Panic 사건·위치 lease와 회귀시험을 실행한다.
-
-기존 [Feather·Pi 실물 증거](evidence/2026-11-10-pi-feather/README.md)는 화면 유지, 인증된 BlueZ 연결, 버튼 관측을 기록한다. 초기 observation READ를 notification 구독 전에 완료해 READ echo와 알림 조각의 경계를 보존한다. 전체 신규 통합 경로의 실물 실행은 [외부 실증 TODO](../docs/external-validation-todo.md)로 관리한다. 임시·교체 CSE 설정은 [Mobius4 환경](dev/mobius4/README.md)을 따른다.
+기존 CORE v1 MQTT telemetry projection은 base battery/rssi/state/identity만 전달하므로 INA219·기타 센서 상세를 포함하지 않는다. CORE topic 확장은 owner의 canonical revision 합의 뒤 연결한다. 필드를 임의로 schemaVersion1.0.0 telemetry에 넣거나 중앙 정책·권한으로 변환하지 않았다. detail 누락을0으로 채우거나 서로 다른 boot/time의 측정을 합치지 않는다.
