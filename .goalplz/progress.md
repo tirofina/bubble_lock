@@ -1495,3 +1495,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R05. 직전 goal turn은 두
 - 캡처 해시, 다른 세션·다른 샘플, 측정 지점별 계산을 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·Pi 접속·BLE·실물 전원 계측은 미수행이다.
 
 소스 commit `e9f8a41f07ca6b4d8073204e30671a3e32c2a853`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `355b1aa..e9f8a41`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 첫 구동의 Pi 관측 전용 전송
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 INA219와 외부 계측값 연결을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 중앙 텔레메트리 수용의 Gateway·장치 등록과 관측 스키마 검사를 확인했다.
+
+- Gateway 0.2.70에서 `--observe-only` r18 Pi 세션을 추가했다. 첫 구동 및 두 LCD 점검 펌웨어 중 하나를 고정하고 기존 `gw-b` mTLS·컨테이너로 Mobius4 관측·health와 중앙 텔레메트리를 전송한다. 명령 조회·실행·장치 명령 영수증을 중지하고 기존 대기 행을 보존한다. [Pi 관측 전용 세션](../keyring/raspberry-pi-gateway/TESTING.md#r18-pi-관측-전용-세션)
+- 명령 목록을 읽지 않는 사전 확인, 명령 작업 중지, 기존 영수증 보존과 관측 전달의 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·Pi 접속·BLE·실제 관측 전달 및 중앙 수용 확인은 미수행이다.
+
+소스 commit `98b5ad988af171329e226ecdedf4aef29245ec9c`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `229a881..98b5ad9`다. goal은 active/progress다.
