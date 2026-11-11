@@ -1357,3 +1357,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 중
 - SQLite 재개, 다른 포트, 기한 만료와 새 Linux 부팅을 다루는 회귀시험 소스를 추가했다. 빌드·시험·기존 DB 마이그레이션 실행·Pi 및 Feather 실물 시험은 미실행이다.
 
 소스 commit `5a3248e167f86f5f3b54798831ada69a8e827380`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `320f482..5a3248e`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 USB 초기 구동 기록 재출력
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 Pi의 HTTPS 재시도 대기 복원을 구현한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 팀 관측 schema의 장치 ID·펌웨어 revision과 CORE Gateway 관측 계약을 확인했다.
+
+- `keyring-0.7.15-bringup`은 부팅 때 읽은 GPIO와 첫 센서 상태를 보존한다. USB 모니터에서 `?`를 보내면 보드를 재부팅하지 않고 같은 초기 기록을 재출력한다. Gateway `0.2.58`은 같은 줄의 반복을 허용하며 다른 부팅 ID, 바뀐 값이나 잘린 줄을 거절한다. BLE 시험의 허용 revision과 첫 구동 절차를 갱신했다. [r18 첫 구동](../keyring/pcb/BRING_UP.md)
+- 구버전의 단일 기록, 동일 재출력, 다른 부팅·출력값·잘린 줄을 다루는 회귀시험 소스를 수정했다. 빌드·회귀시험·플래시·USB/BLE 실물 확인은 미실행이다.
+
+소스 commit `cb3675afdc4728cca8d7b68bd9b2e125fc9aaa3b`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `a2ac3e5..cb3675a`다. goal은 active/progress다.
