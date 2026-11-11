@@ -3,7 +3,9 @@
 from contextlib import asynccontextmanager
 import json
 from pathlib import Path
+import re
 import ssl
+import subprocess
 import uuid
 
 import httpx
@@ -11,6 +13,26 @@ import httpx
 BENCH_ROOT = Path(__file__).resolve().parents[2] / "dev/mobius4"
 PROFILE = BENCH_ROOT / ".local/scoped"
 DEFAULT_HEADERS = {"Accept": "application/json", "Cache-Control": "no-store"}
+TEAM_OBSERVATION_HASH = """
+import { readFileSync } from 'node:fs';
+const { approvalHash } = await import(process.argv[1]);
+process.stdout.write(approvalHash(JSON.parse(readFileSync(0, 'utf8'))));
+"""
+
+
+def hash_observation(team_utils, observation):
+    # Use the API's serialization for JSON numbers and object keys.
+    try:
+        result = subprocess.run(
+            ["node", "--input-type=module", "-e", TEAM_OBSERVATION_HASH, team_utils.as_uri()],
+            input=json.dumps(observation, allow_nan=False),
+            encoding="utf-8", capture_output=True, check=True, timeout=5,
+        )
+    except (OSError, ValueError, subprocess.SubprocessError):
+        raise RuntimeError("Could not hash the observation with the pinned team source") from None
+    if re.fullmatch(r"[0-9a-f]{64}", result.stdout) is None:
+        raise RuntimeError("Invalid observation hash from the pinned team source")
+    return result.stdout
 
 
 def tls_context(cert, key):

@@ -8,13 +8,14 @@ import re
 import sqlite3
 
 from bubble_gateway.config import ID
-from bubble_gateway.integration_evidence import (inspect_integration_command, match_integration_issuance,
-                                                 require_integration_event)
+from bubble_gateway.integration_evidence import (inspect_integration_command, inspect_integration_observation,
+                                                 match_integration_issuance, require_integration_event)
 from bubble_gateway.model import canonical, iso_time, parse_time, payload_hash
 from pi_led_cycle import receipt_name, verify_observation_resource
 from scoped_feather_evidence import (interrupted_pi_result, read_json, read_optional, read_pi_commands,
                                     validate_interrupted_receipt)
-from scoped_r18_pulse import GATEWAY, PATHS, R18_COMMAND_FIRMWARE, R18_DEVICE, validate_container_pins
+from scoped_r18_pulse import (GATEWAY, PATHS, R18_COMMAND_FIRMWARE, R18_DEVICE, TELEMETRY_EVENT_FIELDS,
+                             validate_container_pins)
 
 
 def check_receipt(receipt, command, boot_id):
@@ -22,6 +23,44 @@ def check_receipt(receipt, command, boot_id):
     if receipt["status"] == "APPLIED" and (receipt.get("bootId") != boot_id
                                            or receipt.get("firmwareRevision") != R18_COMMAND_FIRMWARE):
         raise ValueError("Applied receipt differs from the r18 baseline")
+
+
+def inspect_post_pulse(result, saved_observation, saved_event, command, baseline, receipt, team_state):
+    proof = {"postPulseObservationCaptured": result is not None, "postPulseCentralTelemetryVerified": False}
+    if result is None:
+        if saved_observation is not None or saved_event is not None:
+            raise ValueError("Post-pulse telemetry has no saved pulse result")
+        return proof
+
+    command_id = command["commandId"]
+    final = result["postPulseObservation"]
+    verify_observation_resource(final, R18_DEVICE, baseline["cseResource"]["pi"])
+    if (result["commandId"] != command_id or receipt is None or receipt["ackCode"] != "APPLIED"
+            or final["state"] is not False or final["bootId"] != baseline["bootId"]
+            or final["sequence"] <= baseline["sequence"]
+            or parse_time(final["receivedAt"]) < parse_time(receipt["receivedAt"])):
+        raise ValueError("Saved OFF observation does not follow the original r18 application")
+    if saved_observation is None:
+        if saved_event is not None:
+            raise ValueError("Saved central telemetry has no matching native observation")
+        return proof
+
+    observation = saved_observation["observation"]
+    expected = dict(final, gatewayId=GATEWAY, deviceId=R18_DEVICE, payloadHash=observation["payloadHash"])
+    if (saved_observation["commandId"] != command_id or canonical(observation) != canonical(expected)
+            or parse_time(observation["observedAt"]) > parse_time(observation["receivedAt"])):
+        raise ValueError("Saved native observation differs from the r18 pulse result")
+    if saved_event is not None and (saved_event["commandId"] != command_id
+                                    or saved_event["payloadHash"] != observation["payloadHash"]):
+        raise ValueError("Saved central telemetry differs from the r18 OFF observation")
+    event = inspect_integration_observation(observation, team_state, allow_pending=True)
+    if event is None:
+        return proof
+    expected_event = {"commandId": command_id, **{key: event[key] for key in TELEMETRY_EVENT_FIELDS}}
+    if saved_event is not None and canonical(saved_event) != canonical(expected_event):
+        raise ValueError("Saved central telemetry differs from the supplied state snapshot")
+    proof.update(postPulseCentralTelemetryVerified=True, postPulseCentralTelemetry=expected_event)
+    return proof
 
 
 def inspect_pulse(directory, team_state, database=None):
@@ -34,6 +73,10 @@ def inspect_pulse(directory, team_state, database=None):
         read_optional(directory / f"pulse-{suffix}.json")
         for suffix in ("intent", "issued", "receipt", "grant", "grant-revoked")
     )
+    result, observation_file, event_file = (
+        read_optional(directory / f"pulse-{suffix}.json")
+        for suffix in ("result", "observation", "central-telemetry")
+    )
     scope = read_optional(directory / "pulse-scope.json")
     pins = None
     if scope is not None:
@@ -42,9 +85,10 @@ def inspect_pulse(directory, team_state, database=None):
         pins = validate_container_pins(scope["containerPins"])
     report = {"intentCaptured": intent is not None, "issuedResponseCaptured": issued_file is not None,
               "cseReceiptCaptured": native_file is not None, "grantRevocationCaptured": revoked is not None,
-              "cseContainerPinsCaptured": pins is not None, "physicalPulseMeasured": None}
+              "cseContainerPinsCaptured": pins is not None, "postPulseObservationCaptured": False,
+              "postPulseCentralTelemetryVerified": False, "physicalPulseMeasured": None}
     if intent is None:
-        if issued_file is not None or native_file is not None:
+        if any(artifact is not None for artifact in (issued_file, native_file, result, observation_file, event_file)):
             raise ValueError("r18 artifacts have no matching local intent")
         if revoked is not None and (grant is None or revoked["grantId"] != grant["grantId"] or revoked["status"] != "REVOKED"):
             raise ValueError("r18 grant revocation differs from the saved grant")
@@ -96,7 +140,8 @@ def inspect_pulse(directory, team_state, database=None):
     if command_id not in issued:
         has_event = any(event.get("gatewayId") == GATEWAY and event.get("commandId") == command_id
                         and event.get("type") == "GATEWAY_COMMAND_ISSUED" for event in team_state["receipts"])
-        if issued_file is not None or native_file is not None or pi_row is not None or command_id in stored_receipts or has_event:
+        if (any(artifact is not None for artifact in (issued_file, native_file, result, observation_file, event_file, pi_row))
+                or command_id in stored_receipts or has_event):
             raise ValueError("Team snapshot omits an issuance referenced by other evidence")
         return report
 
@@ -147,6 +192,7 @@ def inspect_pulse(directory, team_state, database=None):
         raise ValueError("Pi, CSE or central receipt bodies differ")
     if pi_receipt is not None:
         check_receipt(pi_receipt, command, baseline["bootId"])
+    report.update(inspect_post_pulse(result, observation_file, event_file, command, baseline, native_receipt, team_state))
     return report
 
 

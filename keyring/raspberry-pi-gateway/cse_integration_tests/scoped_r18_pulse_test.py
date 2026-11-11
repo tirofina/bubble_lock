@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from unittest.mock import AsyncMock, patch
 
-from bubble_gateway.model import iso_time, payload_hash
+from bubble_gateway.model import central_observation_id, iso_time, payload_hash
 from bubble_gateway.store import Store
 from pi_led_cycle import content_name, receipt_name
 from scoped_r18_pulse import GATEWAY, PATHS, R18_BOARD, R18_COMMAND_FIRMWARE, R18_DEVICE, run_pulse
@@ -28,6 +28,14 @@ class R18PulseTests(unittest.IsolatedAsyncioTestCase):
         self.replaced_parent = None
         self.replace_receipt_route = False
         self.proof = AsyncMock(return_value={"dispatchEventId": "dispatch-a", "settlementEventId": "settlement-a"})
+        self.telemetry_proof = AsyncMock(side_effect=self.central_observation)
+
+    async def central_observation(self, observation):
+        self.assertEqual(self.posts[-1], "/v1/grants/revoke")
+        self.assertTrue((self.output / "pulse-result.json").is_file())
+        return {"eventId": "telemetry-a", "observationId": central_observation_id(observation),
+                "payloadHash": observation["payloadHash"], "sequence": 9, "observedAt": observation["observedAt"],
+                "timestamp": iso_time(self.now)}
 
     async def cse(self, method, path):
         self.assertEqual(method, "GET")
@@ -49,7 +57,7 @@ class R18PulseTests(unittest.IsolatedAsyncioTestCase):
             native = {"ty": 4, "rn": content_name(rqi), "ri": f"cin-{sequence}", "pi": "cnt-observation",
                       "con": {"gatewayId": GATEWAY, "deviceId": R18_DEVICE, "bootId": "r18-boot",
                               "firmwareRevision": R18_COMMAND_FIRMWARE, "state": False, "sequence": sequence,
-                              "receivedAt": timestamp, "sensorValues": {"fault": False}}}
+                              "observedAt": timestamp, "receivedAt": timestamp, "sensorValues": {"fault": False}}}
         else:
             command = self.issued
             self.assertEqual(path, f"{PATHS['receipt']}/{receipt_name(command['commandId'])}")
@@ -90,7 +98,8 @@ class R18PulseTests(unittest.IsolatedAsyncioTestCase):
               patch("pi_led_cycle.utc_now", return_value=self.now),
               patch("builtins.print", side_effect=self.trigger_after_ready)):
             async with asyncio.timeout(1):
-                await run_pulse(self.post, self.cse, self.proof, self.output, pins=self.pins)
+                await run_pulse(self.post, self.cse, self.proof, self.output, pins=self.pins,
+                                observation_hasher=payload_hash, telemetry_proof=self.telemetry_proof)
 
     async def test_one_command_then_same_boot_off_and_revocation(self):
         await self.exercise()
@@ -102,6 +111,17 @@ class R18PulseTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["commandId"], self.issued["commandId"])
         self.assertEqual(result["postPulseObservation"]["sequence"], 6)
         self.assertIsNone(result["physicalPulseMeasured"])
+        central = json.loads((self.output / "pulse-central-telemetry.json").read_text(encoding="utf-8"))
+        self.assertEqual(central["eventId"], "telemetry-a")
+        self.telemetry_proof.assert_awaited_once()
+
+    async def test_central_telemetry_timeout_retains_off_observation_and_revocation(self):
+        self.telemetry_proof.side_effect = TimeoutError
+        with self.assertRaisesRegex(RuntimeError, "local pulse evidence was retained"):
+            await self.exercise()
+        self.assertEqual(self.posts[-1], "/v1/grants/revoke")
+        self.assertTrue((self.output / "pulse-observation.json").is_file())
+        self.assertFalse((self.output / "pulse-central-telemetry.json").exists())
 
     async def test_lost_issue_response_keeps_intent_and_revokes_without_retry(self):
         self.fail_issue = True

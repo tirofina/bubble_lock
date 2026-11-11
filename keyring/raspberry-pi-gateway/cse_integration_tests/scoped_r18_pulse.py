@@ -3,15 +3,16 @@
 import argparse
 import asyncio
 from datetime import timedelta
+from functools import partial
 from pathlib import Path
 import re
 import uuid
 
 from bubble_gateway.config import ID
-from bubble_gateway.integration_evidence import inspect_integration_command
+from bubble_gateway.integration_evidence import inspect_integration_command, inspect_integration_observation
 from bubble_gateway.model import iso_time, parse_time, utc_now, validate_command
 from pi_led_cycle import ready_heartbeat, receipt_name, verify_observation_resource, verify_receipt, write_new_json
-from scoped_command_io import scoped_api, scoped_clients
+from scoped_command_io import hash_observation, scoped_api, scoped_clients
 from scoped_feather_evidence import read_json
 from scoped_feather_pi import PARENT, R18_BOARD, R18_COMMAND_FIRMWARE, R18_DEVICE
 
@@ -19,6 +20,7 @@ GATEWAY = "gw-b"
 SUBJECT = "scoped-r18-bench"
 PATHS = {"observation": f"{PARENT}/command-observations-b", "receipt": f"{PARENT}/command-receipts-b",
          "health": f"{PARENT}/command-health-b"}
+TELEMETRY_EVENT_FIELDS = ("eventId", "observationId", "payloadHash", "sequence", "observedAt", "timestamp")
 
 
 def validate_container_pins(pins):
@@ -29,7 +31,7 @@ def validate_container_pins(pins):
     return dict(pins)
 
 
-async def run_pulse(operator_post, cse, central_proof, output, *, pins):
+async def run_pulse(operator_post, cse, central_proof, output, *, pins, observation_hasher, telemetry_proof):
     pins = validate_container_pins(pins)
     write_new_json(output / "pulse-scope.json", {"gatewayId": GATEWAY, "containerPins": pins})
     stop, trigger = output / "STOP", output / "PULSE"
@@ -73,17 +75,18 @@ async def run_pulse(operator_post, cse, central_proof, output, *, pins):
         received_at = parse_time(current["receivedAt"])
         if not -2 <= (utc_now() - received_at).total_seconds() <= 15 or (after is not None and received_at < after):
             return None
-        snapshot = {key: current[key] for key in ("bootId", "sequence", "receivedAt", "state")}
+        snapshot = {key: current[key] for key in ("bootId", "sequence", "observedAt", "receivedAt", "state")}
         snapshot["cseResource"] = {key: native.get(key) for key in ("ty", "rn", "ri", "pi")}
         verify_observation_resource(snapshot, R18_DEVICE)
         if after_sequence is not None and snapshot["sequence"] <= after_sequence:
             return None
-        return snapshot
+        return snapshot, current
 
     async def ready(not_before, *, boot_id=None):
-        observation = await off_observation(boot_id=boot_id, after=not_before)
-        if observation is None:
+        candidate = await off_observation(boot_id=boot_id, after=not_before)
+        if candidate is None:
             return None
+        observation, _ = candidate
         native = await read_cin("health")
         if native is None:
             return None
@@ -153,8 +156,9 @@ async def run_pulse(operator_post, cse, central_proof, output, *, pins):
             write_new_json(output / "pulse-receipt.json", {"cseReceipt": receipt, "cseResource": resource})
             verify_receipt(command, receipt, boot_id, True, firmware=R18_COMMAND_FIRMWARE)
             settled = await wait_for(lambda: central_proof(command, receipt))
-            final_off = await wait_for(lambda: off_observation(boot_id=boot_id, after=parse_time(receipt["receivedAt"]),
-                                                               after_sequence=baseline["sequence"]))
+            final_off, native_observation = await wait_for(
+                lambda: off_observation(boot_id=boot_id, after=parse_time(receipt["receivedAt"]),
+                                        after_sequence=baseline["sequence"]))
             verify_observation_resource(final_off, R18_DEVICE, baseline["cseResource"]["pi"])
     finally:
         revoked = await post("/v1/grants/revoke", {"grantId": grant_id, "reason": "keyring-r18-pulse-bench-ended"}, 200)
@@ -166,6 +170,18 @@ async def run_pulse(operator_post, cse, central_proof, output, *, pins):
                                                  "physicalPulseMeasured": None})
     print("R18_PULSE_RECORDED", flush=True)
 
+    observation = dict(final_off, gatewayId=GATEWAY, deviceId=R18_DEVICE,
+                       payloadHash=await asyncio.to_thread(observation_hasher, native_observation))
+    write_new_json(output / "pulse-observation.json", {"commandId": command_id, "observation": observation})
+    try:
+        async with asyncio.timeout(35):
+            event = await wait_for(lambda: telemetry_proof(observation))
+    except TimeoutError:
+        raise RuntimeError("Central OFF observation did not arrive; local pulse evidence was retained") from None
+    write_new_json(output / "pulse-central-telemetry.json",
+                   {"commandId": command_id, **{key: event[key] for key in TELEMETRY_EVENT_FIELDS}})
+    print("R18_PULSE_CENTRAL_TELEMETRY_VERIFIED", flush=True)
+
 
 async def run(output, seconds, pins):
     api, operator_dir = scoped_api("r18")
@@ -173,15 +189,23 @@ async def run(output, seconds, pins):
             GATEWAY, R18_DEVICE, SUBJECT, R18_BOARD, R18_COMMAND_FIRMWARE):
         raise RuntimeError("Configured scoped r18 profile differs from the pulse bench identity")
     state_path = operator_dir / "runtime.json"
+    team_utils = operator_dir / "team-source/pc-mobius/integration/src/integration-utils.mjs"
+    observation_hasher = partial(hash_observation, team_utils)
+    await asyncio.to_thread(observation_hasher, {})
 
     async def central_proof(command, receipt):
         state = await asyncio.to_thread(read_json, state_path)
         return inspect_integration_command(command, receipt, state)
 
+    async def telemetry_proof(observation):
+        state = await asyncio.to_thread(read_json, state_path)
+        return inspect_integration_observation(observation, state, allow_pending=True)
+
     async with (scoped_clients(api, operator_dir, container_paths=(PATHS["receipt"],)) as (cse, operator_post),
                 asyncio.timeout(seconds)):
         output.mkdir(mode=0o700)
-        await run_pulse(operator_post, cse, central_proof, output, pins=pins)
+        await run_pulse(operator_post, cse, central_proof, output, pins=pins,
+                        observation_hasher=observation_hasher, telemetry_proof=telemetry_proof)
 
 
 if __name__ == "__main__":

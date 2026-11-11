@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from bubble_gateway.model import payload_hash
+from bubble_gateway.model import central_observation_id, payload_hash
 from bubble_gateway.store import Store
 from helpers import BINDING
 from pi_led_cycle import content_name, receipt_name, write_new_json
@@ -109,9 +109,29 @@ class R18EvidenceTests(unittest.TestCase):
         self.assertTrue(report["centralApplicationVerified"])
         self.assertFalse(report["cseReceiptCaptured"])
         self.assertEqual(report["settlementEventId"], "evt-settlement")
-        write_new_json(self.output / "pulse-receipt.json", {
-            "cseResource": {"ri": "cin-r18", "pi": "cnt-r18", "ct": "20261111T090005"},
-            "cseReceipt": dict(receipt, receivedAt="2026-11-11T09:00:04.100Z"),
-        })
+        receipt_path = self.output / "pulse-receipt.json"
+        native_receipt = {"cseResource": {"ri": "cin-r18", "pi": "cnt-r18", "ct": "20261111T090005"},
+                          "cseReceipt": receipt}
+        write_new_json(receipt_path, native_receipt)
+        rqi = Store.request_id("observation", f"{R18_DEVICE}:{self.boot_id}:2")
+        final = {"bootId": self.boot_id, "sequence": 2, "state": False, "observedAt": settled,
+                 "receivedAt": settled, "cseResource": {"ty": 4, "rn": content_name(rqi), "ri": "cin-off", "pi": "cnt-obs"}}
+        write_new_json(self.output / "pulse-result.json", {"commandId": self.command_id, "postPulseObservation": final})
+        observation = dict(final, gatewayId=GATEWAY, deviceId=R18_DEVICE, payloadHash="a" * 64)
+        write_new_json(self.output / "pulse-observation.json", {"commandId": self.command_id, "observation": observation})
+        pending = inspect_pulse(self.output, self.team)
+        self.assertTrue(pending["postPulseObservationCaptured"])
+        self.assertFalse(pending["postPulseCentralTelemetryVerified"])
+        event = {"contractId": "privacy-bubble.integration.v1", "docRevision": "2.0.0", "type": "GATEWAY_TELEMETRY_ACCEPTED",
+                 "eventId": "evt-telemetry", "gatewayId": GATEWAY, "deviceId": R18_DEVICE, "timestamp": settled,
+                 "observedAt": settled, "observationId": central_observation_id(observation), "payloadHash": "a" * 64,
+                 "sequence": 9}
+        self.team["receipts"].append(event)
+        self.assertTrue(inspect_pulse(self.output, self.team)["postPulseCentralTelemetryVerified"])
+        event["payloadHash"] = "b" * 64
+        with self.assertRaisesRegex(ValueError, "inconsistent GATEWAY_TELEMETRY_ACCEPTED"):
+            inspect_pulse(self.output, self.team)
+        native_receipt["cseReceipt"] = dict(receipt, receivedAt="2026-11-11T09:00:04.100Z")
+        receipt_path.write_text(json.dumps(native_receipt), encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "receipt bodies differ"):
             inspect_pulse(self.output, self.team)

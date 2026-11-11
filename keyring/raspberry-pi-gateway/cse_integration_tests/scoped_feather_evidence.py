@@ -1,7 +1,7 @@
 """Bind the scoped Feather bench artifacts without changing any device or service state."""
 import argparse
 from contextlib import closing
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 import json
 from pathlib import Path
 import re
@@ -9,8 +9,8 @@ import sqlite3
 
 from bubble_gateway.config import ID
 from bubble_gateway.integration_evidence import (COMMAND_BINDING, inspect_integration_command,
-                                                 match_integration_issuance, require_integration_event)
-from bubble_gateway.model import canonical, central_observation_id, iso_time, parse_time, payload_hash, validate_command
+                                                 inspect_integration_observation, match_integration_issuance)
+from bubble_gateway.model import canonical, iso_time, parse_time, payload_hash, validate_command
 from bubble_gateway.state_identity import metadata, readonly
 from pi_led_cycle import DEVICE, FIRMWARE, STEPS, receipt_name, verify_database, verify_step
 from scoped_feather_pi import DISPLAY_FIRMWARE
@@ -165,22 +165,9 @@ def verify_scoped_evidence(cycle, database, inspections, team_state, observed_le
 
 def integration_observation_event(step, team_state, *, allow_pending=False):
     command, observation = step["command"], step["observation"]
-    telemetry_fields = {"gatewayId": command["gatewayId"], "deviceId": command["deviceId"],
-                        "observedAt": observation["observedAt"]}
-    observation_id = central_observation_id({**observation, **telemetry_fields})
-    if "payloadHash" in observation:
-        native_hash = observation["payloadHash"]
-        if not isinstance(native_hash, str) or re.fullmatch(r"[0-9a-f]{64}", native_hash) is None:
-            raise ValueError("Invalid native observation payload hash")
-        telemetry_fields["payloadHash"] = native_hash
-    telemetry = require_integration_event(team_state, "GATEWAY_TELEMETRY_ACCEPTED", {"observationId": observation_id},
-                                          telemetry_fields, allow_pending=allow_pending)
-    if telemetry is not None:
-        sequence = telemetry.get("sequence")
-        if (type(sequence) is not int or sequence < 0
-                or parse_time(telemetry["timestamp"]) < parse_time(observation["observedAt"]) - timedelta(seconds=2)):
-            raise ValueError("Invalid central telemetry sequence or timestamp")
-    return telemetry
+    return inspect_integration_observation(
+        dict(observation, gatewayId=command["gatewayId"], deviceId=command["deviceId"]),
+        team_state, allow_pending=allow_pending)
 
 
 def inspect_integration_step(step, pi_proof, team_state):

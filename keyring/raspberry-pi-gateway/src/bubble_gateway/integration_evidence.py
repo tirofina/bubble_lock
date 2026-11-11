@@ -1,9 +1,10 @@
 """Read-only comparison with the DOC-REV 2.0.0 integration command history."""
 
 from datetime import timedelta
+import re
 
 from .config import ID
-from .model import canonical, iso_time, parse_time, payload_hash, validate_command
+from .model import canonical, central_observation_id, iso_time, parse_time, payload_hash, validate_command
 
 COMMAND_BINDING = ("gatewayId", "deviceId", "commandId", "claimId", "grantRevision", "ownershipEpoch")
 
@@ -47,6 +48,24 @@ def require_integration_event(team_state, kind, identity, fields, *, allow_pendi
             or canonical({key: matches[0].get(key) for key in expected}) != canonical(expected)):
         raise ValueError(f"Missing or inconsistent {kind} evidence")
     return matches[0]
+
+
+def inspect_integration_observation(observation, team_state, *, allow_pending=False):
+    fields = {key: observation[key] for key in ("gatewayId", "deviceId", "observedAt")}
+    if "payloadHash" in observation:
+        native_hash = observation["payloadHash"]
+        if not isinstance(native_hash, str) or re.fullmatch(r"[0-9a-f]{64}", native_hash) is None:
+            raise ValueError("Invalid native observation payload hash")
+        fields["payloadHash"] = native_hash
+    telemetry = require_integration_event(
+        team_state, "GATEWAY_TELEMETRY_ACCEPTED", {"observationId": central_observation_id(observation)},
+        fields, allow_pending=allow_pending)
+    if telemetry is not None:
+        sequence = telemetry.get("sequence")
+        if (type(sequence) is not int or sequence < 0
+                or parse_time(telemetry["timestamp"]) < parse_time(observation["observedAt"]) - timedelta(seconds=2)):
+            raise ValueError("Invalid central telemetry sequence or timestamp")
+    return telemetry
 
 
 def inspect_integration_command(command, receipt, team_state):

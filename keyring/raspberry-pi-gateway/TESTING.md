@@ -1,5 +1,7 @@
 # Gateway 로컬 시험
 
+Gateway 0.2.66의 r18 벤치는 펄스 뒤의 Mobius4 OFF 관측을 중앙 API의 수용 이벤트와 대조한다. 회귀시험 소스는 중앙 수용 지연, 본문 해시 불일치, grant 회수 뒤 대조를 다룬다. 빌드·시험·Pi 실행은 미실행이다.
+
 Gateway 0.2.65의 r18 벤치는 관측·health·영수증의 컨테이너 ID를 고정한다. 교체된 health·영수증 경로에서 발급을 중단하고, 다른 부모에서 읽은 영수증과 Pi SQLite를 거절하는 회귀시험 소스를 추가했다. 빌드·시험·Pi 실행은 미실행이다.
 
 Gateway 0.2.64는 r18 명령 발급 응답이 끊겼을 때 저장된 명령 ID로 [시험 증거를 대조](#중단된-r18-펄스-시험-대조)한다. 회귀시험은 응답 유실, 중앙 상태 사본에 없는 발급, 변조된 요청, CSE와 중앙 영수증 불일치를 다룬다.
@@ -347,6 +349,8 @@ python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_r18_pulse.py --
 
 발급 전에 `pulse-intent.json`을 저장한다. `R18_PULSE_RECORDED`는 장치 ACK의 적용 당시 ON, 중앙 실행 시작·정산, 같은 부팅의 더 새 OFF 관측과 grant 회수가 확인된 경우에 출력된다. 응답이 끊기면 `pulse-intent.json`의 command ID로 원래 명령을 조회한다. 시험 도구는 그 명령을 자동으로 다시 발급하지 않는다. 펄스 길이와 종료 시점은 계측기로 기록하고 같은 command ID로 [장치 저널 대조](../JOURNAL_RETENTION.md#r18-실물-명령-한-건-대조)에 연결한다.
 
+권한 회수 뒤, 고정된 팀 소스의 Node 해시 함수로 Mobius4의 OFF 관측 본문 해시를 계산해 `pulse-observation.json`에 저장한다. 중앙 이벤트와 관측 ID·해시·시각이 일치하면 `pulse-central-telemetry.json`을 쓰고 `R18_PULSE_CENTRAL_TELEMETRY_VERIFIED`를 출력한다. 중앙 이벤트 대기는 최대 35초이며 세션 전체 기한의 적용을 받는다. 중앙 대기가 끝나도 이미 저장한 `pulse-result.json`과 `pulse-observation.json`으로 뒤늦게 받은 중앙 상태 사본을 대조할 수 있다.
+
 #### 중단된 r18 펄스 시험 대조
 
 PC 시험 폴더와 격리 r18 API의 `runtime.json` 사본을 준비한다. Pi SQLite 사본을 확보했으면 `--database`에 지정한다. 도구는 로컬 사본을 읽어 기존 명령의 발급·실행·정산을 조회한다.
@@ -357,7 +361,7 @@ python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_r18_evidence.py
   --database $piDatabaseCopy
 ```
 
-`issuanceInTeamSnapshot`이 `false`면 제공한 상태 사본에 발급 기록이 없다. `centralApplicationVerified`가 `true`면 같은 명령의 적용 영수증과 중앙 실행·정산 기록이 일치한다. `pulse-scope.json`이 있으면 저장된 관측·health·영수증의 부모와 선택한 Pi DB의 관측·영수증 ID를 대조한다. 이전 기록은 `cseContainerPinsCaptured: false`로 표시한다. `physicalPulseMeasured`는 비워 두며 펄스 길이와 종료 시점은 계측 기록에 남긴다.
+`issuanceInTeamSnapshot`이 `false`면 제공한 상태 사본에 발급 기록이 없다. `centralApplicationVerified`가 `true`면 같은 명령의 적용 영수증과 중앙 실행·정산 기록이 일치한다. `pulse-scope.json`이 있으면 저장된 관측·health·영수증의 부모와 선택한 Pi DB의 관측·영수증 ID를 대조한다. 이전 기록은 `cseContainerPinsCaptured: false`로 표시한다. `postPulseCentralTelemetryVerified`가 `true`면 해당 명령 뒤의 OFF 관측 해시가 중앙 상태 사본의 이벤트와 일치한다. `physicalPulseMeasured`는 비워 두며 펄스 길이와 종료 시점은 계측 기록에 남긴다.
 
 #### r18 Pi 시험 증거 보관
 

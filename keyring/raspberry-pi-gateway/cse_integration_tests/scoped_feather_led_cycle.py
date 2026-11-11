@@ -2,42 +2,17 @@
 import argparse
 import asyncio
 from functools import partial
-import json
 from pathlib import Path
-import re
-import subprocess
 
 from bubble_gateway.integration_evidence import integration_settlement
 from pi_led_cycle import FIRMWARE, run_led_cycle, write_new_json
-from scoped_command_io import scoped_api, scoped_clients
+from scoped_command_io import hash_observation, scoped_api, scoped_clients
 from scoped_feather_evidence import integration_observation_event, read_json
 from scoped_feather_pi import COMMAND_FIRMWARES
 
 PARENT = "/Mobius/privacy-bubble-test-ae"
 PATHS = {"observation": f"{PARENT}/command-observations-a", "receipt": f"{PARENT}/command-receipts-a",
          "health": f"{PARENT}/health"}
-TEAM_OBSERVATION_HASH = """
-import { readFileSync } from 'node:fs';
-const { approvalHash } = await import(process.argv[1]);
-process.stdout.write(approvalHash(JSON.parse(readFileSync(0, 'utf8'))));
-"""
-
-
-def hash_observation(team_utils, observation):
-    # Use the API's serialization for JSON numbers and object keys.
-    try:
-        result = subprocess.run(
-            ["node", "--input-type=module", "-e", TEAM_OBSERVATION_HASH, team_utils.as_uri()],
-            input=json.dumps(observation, allow_nan=False),
-            encoding="utf-8", capture_output=True, check=True, timeout=5,
-        )
-    except (OSError, ValueError, subprocess.SubprocessError):
-        raise RuntimeError("Could not hash the observation with the pinned team source") from None
-    if re.fullmatch(r"[0-9a-f]{64}", result.stdout) is None:
-        raise RuntimeError("Invalid observation hash from the pinned team source")
-    return result.stdout
-
-
 async def record_central_observations(steps, state_path, output):
     if any("payloadHash" not in step["observation"] for step in steps):
         raise ValueError("Native observation payload hashes are incomplete for the LED cycle")
