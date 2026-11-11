@@ -1901,3 +1901,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11. 직전 goal turn은 r18
 - 0.7.14/0.7.19와 다른 firmware를 광고하는 API 및 0.7.20-sleep 성공 조건을 다루는 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·API 재시작·플래시·실물 wake 후 명령은 미수행이다. [Pi 명령 세션](../keyring/raspberry-pi-gateway/TESTING.md#r18-pi-명령-세션)
 
 소스 commit `3c4569339d1b0b968b4b53d94942b7b84ce8e4bb`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `4d2a95a..3c45693`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 깨우기와 명령 부팅 연결
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05, R10. 직전 goal turn은 절전 빌드의 격리 명령 프로필을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀 영수증의 boot ID·readback 조건을 확인했다.
+
+- Gateway 0.2.102는 wake 원인이 확인된 부팅의 SHA-256과 해당 BLE 순번을 보고한다. r18 절전 펄스의 `--wake-report`는 같은 부팅에서 받은 더 새 기준 관측을 요구하고, 사전 선택한 보고서 해시를 보관한다. 오프라인 도구는 원본 보고서, 기준 관측, 최초 `APPLIED` Mobius4 영수증과 중앙 정산을 대조한다.
+- 일치·다른 부팅·변경된 보고서를 다루는 회귀시험 소스와 절차를 추가했다. 빌드·테스트·정적 분석·실물 wake·이후 명령 검증은 미수행이다. [r18 Pi 명령 세션](../keyring/raspberry-pi-gateway/TESTING.md#r18-pi-명령-세션)
+
+소스 commit `d2314af943b0ee6dccfffef0a9da2d795f9c2b98`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `461b222..d2314af`다. goal은 active/progress다.
