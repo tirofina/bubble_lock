@@ -1240,3 +1240,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R05. 직전 goal turn은 Fea
 - 로그 형식 오류, 다른 부팅, 두 번째 부팅의 알림, 출력 활성과 부팅 ID 비공개를 다루는 회귀시험 소스를 추가했다. 빌드·회귀시험·캡처 도구 실행·flash·전원 인가·Pi 접속은 미실행이다. 제작 PCB가 도착하면 USB와 BLE 기록, 전원 레일의 실측이 필요하다.
 
 소스 commit `9644be7a19dfb6c9aa39b774be2549cd3d7c64c0`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `0c12529..9644be7`다. goal은 active/progress다.
+
+## 2026-11-11 — 중앙 관측과 Mobius4 영수증의 독립 전송
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 r18 USB·BLE 첫 부팅 기록을 연결한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`의 중앙 `telemetry`·`receipts`와 CORE 경로, 웹 영수증 계약을 확인했다. 팀 head는 직전과 같다.
+
+- Gateway `0.2.49`는 중앙 BLE 관측을 전용 전송 작업에서 처리한다. 중앙 관측 응답을 기다리는 동안 Mobius4 관측과 명령 영수증을 기존 작업에서 보낼 수 있다. SQLite 등록, 동일 요청 ID, 장치별 미전송 순서, API origin의 `Retry-After`를 유지한다. [중앙 관측 전달](../keyring/raspberry-pi-gateway/IO_NOTES.md#중앙-관측-전달)
+- 중앙 응답을 보류한 동안 Mobius4 관측·명령 영수증 전송과 중앙 항목 보존을 확인하는 회귀시험 소스를 추가했다. 빌드·회귀시험·Pi 실행·실물 연동은 미실행이다. 현재 중앙 API와 실제 Pi의 전송 및 제작 PCB 검증은 남아 있다.
+
+소스 commit `b15b4403e1ea31463412947e7985936939d044d4`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `5870cd2..b15b440`다. goal은 active/progress다.
