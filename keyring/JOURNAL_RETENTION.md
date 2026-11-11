@@ -122,6 +122,8 @@ r18의 ON은 최대 1,000ms의 펄스다. 펄스 길이와 출력이 꺼지는 �
 - `settlement_missing`은 비교된 적용 기록에 중앙 정산 행이 없음을 뜻한다. `settlement_mismatch`는 불일치 필드를 반환한다. `journal_review_required`에는 PREPARED, readback 실패 등 기존 검토 건이 남는다.
 - `settlement_source_unbound`는 기존 중앙 행에 CSE 키와 원본 경로가 기록되지 않은 경우다. 둘 중 한 필드가 누락됐거나 격리 CSE 설정과 다르면 불일치로 분류한다.
 
+같은 부팅의 명령 한 건을 비교한 보고서를 사용하면 중앙 조회 결과에 `selectedCommand`와 `gatewayAckCode`가 남는다. `originalApplicationMatched`는 해당 명령의 정산이 일치하고 Pi 영수증 전달이 완료됐으며 ACK가 `APPLIED`일 때만 참이다. `DUPLICATE`는 기존 정산과 일치할 수 있으며 최초 적용 확인에서는 검토로 남는다.
+
 출력은 원본 비교 보고서의 SHA256을 포함한다. 이 해시는 두 보고서를 연결하며 보관본의 발급자 인증은 별도다. 결과가 모두 일치해도 장치 journal 정산 상태는 `not-settled`로 남는다. 회수에는 아래 중앙 계약이 필요하다.
 
 ## 장기 운영에 남은 중앙 계약

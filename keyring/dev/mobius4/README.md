@@ -166,6 +166,8 @@ node "$tool/inspect.mjs" --gateway gw-a --command $issuedCommandId
 node "$tool/inspect.mjs" --gateway gw-a --journal-report $privateReportPath
 ```
 
+같은 부팅의 명령 한 건을 지정한 보고서는 수집한 보드·펌웨어 revision, 명령 ID, 적용 uptime과 ACK를 함께 반환한다. 중앙 정산·Pi 전달·최초 `APPLIED` ACK가 모두 확인되면 `originalApplicationMatched`가 참이다. [r18 명령 대조](../../JOURNAL_RETENTION.md#r18-실물-명령-한-건-대조)
+
 ### Feather 벤치 명령 API
 
 PC의 `https://127.0.0.1:8787`에 팀 main `715ef58`의 mTLS API를 띄운다. 런처는 로컬 Git 객체에서 해당 팀 소스를 추출하고 scoped CA로 벤치 운영자 인증서를 발급한다. Git for Windows의 OpenSSL을 기본으로 사용한다. 첫 시작에 `gw-a`의 `keyring-feather-lab`과 벤치 주체 `scoped-feather-bench`를 등록한다. 이후 시작은 같은 등록을 읽고 저장된 자격 상태를 유지한다.
