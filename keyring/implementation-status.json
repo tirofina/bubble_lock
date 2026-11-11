@@ -1861,5 +1861,15 @@
     "regressionsExecuted": false,
     "physicalPostWakeCommandVerified": false,
     "sourceCommit": "d2314af943b0ee6dccfffef0a9da2d795f9c2b98"
+  },
+  "r18BleButtonTransitions": {
+    "reference": "firmware/README.md#센서버튼저전력",
+    "firmwareRevision": "keyring-0.7.21",
+    "gatewayVersion": "0.2.103",
+    "pendingTransitionCapacity": 8,
+    "buildExecuted": false,
+    "regressionsExecuted": false,
+    "physicalButtonIncidentVerified": false,
+    "sourceCommit": "3da95d8d58a6ccebad50eb9a4bd34fce5b6fd14e"
   }
 }

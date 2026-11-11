@@ -1910,3 +1910,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05, R10. 직전 goal turn은 절
 - 일치·다른 부팅·변경된 보고서를 다루는 회귀시험 소스와 절차를 추가했다. 빌드·테스트·정적 분석·실물 wake·이후 명령 검증은 미수행이다. [r18 Pi 명령 세션](../keyring/raspberry-pi-gateway/TESTING.md#r18-pi-명령-세션)
 
 소스 commit `d2314af943b0ee6dccfffef0a9da2d795f9c2b98`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `461b222..d2314af`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 BLE 버튼 전이 순서 보존
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R15. 직전 사용자 응답은 Feather에서 LED 변화를 보지 못했다는 기존 기록을 재확인했다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 조회했다. main의 중앙 사건 처리는 최신 순번과 `buttonState`의 새 `panic`을 사용한다.
+
+- r18 0.7.21은 활성 관측 구독 안에서 버튼 상태 전이 최대 8건을 일반 센서 상세와 별도로 대기시키고, 알림은 같은 생성 순번대로 보낸다. 만석에서는 먼저 쌓인 7건과 최신 상태를 남긴다. GATT 읽기는 최신 관측을 반환하며 이전 구독의 대기 프레임은 새 구독으로 넘어가지 않는다.
+- Gateway 0.2.103, Pi 시험 도구, 격리 API 설정에 0.7.21 계열을 연결했다. 이전 revision은 해당 시험과 기록에서 계속 선택할 수 있다. 알림 조각 전송 중 전이, 큐 만석 및 재구독을 다루는 호스트 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·API 재시작·플래시·r18 버튼 및 중앙 사건 실물 시험은 미수행이다. [실물 시험 절차](../keyring/raspberry-pi-gateway/TESTING.md#r18-초기-구동-기록)
+
+소스 commit `3da95d8d58a6ccebad50eb9a4bd34fce5b6fd14e`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8a93e58..3da95d8`이다. goal은 active/progress다.
