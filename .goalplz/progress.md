@@ -1330,3 +1330,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R05, R15. 원격 main `bc2a4
 - 기존 0.2.0 실물 시험에서 사용자가 LED 변화가 없었다고 확인한 상태를 유지한다. 0.2.1의 1.54인치 화면 `CMD ON`과 `CMD OFF`는 실물 확인이 남았다. 이번에는 회귀시험 소스만 추가했고 빌드·시험·플래시·Pi 실행은 하지 않았다.
 
 소스 commit `35f9f77a4330713b8a7c2a4e33c240ba2dcf939c`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `7eef6b5..35f9f77`이다. goal은 active/progress다.
+
+## 2026-11-11 — Feather OFF 뒤 중앙 관측 수용 기록
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R05, R15. 직전 goal turn은 본문 해시 대조를 추가한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 팀 API가 수용 이벤트를 커밋된 상태 파일에 함께 기록하는 경로를 확인했다.
+
+- PC 시험 도구는 OFF 적용과 단계 grant 회수 뒤 `led-cycle.json`을 저장하고 두 관측의 중앙 수용 이벤트를 기다린다. ON/OFF의 본문 해시와 수용 순서가 맞으면 명령·관측·이벤트 ID와 해시를 `central-telemetry.json`에 저장한다. 수용 대기가 중단되면 기존 시험 기록을 보존한다. [시험 결과 대조](../keyring/raspberry-pi-gateway/TESTING.md#최신-중앙-api의-시험-결과-대조)
+- 지연 도착과 해시 불일치를 다루는 회귀시험 소스를 추가했다. 빌드·회귀시험·도구 실행·Feather 플래시와 최신 Pi 실물 시험은 미실행이다.
+
+소스 commit `10a3721f400f5ae5ef7b8aa24032cfc876782113`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `80398a0..10a3721`이다. goal은 active/progress다.
