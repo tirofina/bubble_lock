@@ -75,6 +75,7 @@ class Gateway:
             "coreBridgeEnabled": self.config.core_bridge_enabled,
             "coreTelemetryEpochs": self.config.core_telemetry_epochs,
             "bleGattProfile": self.config.ble_gatt_profile,
+            "bleBoardRevision": self.config.ble_board_revision,
             "devices": self.config.ble_devices,
             "firmwareAllowlist": self.config.firmware_revision_allowlist,
         }

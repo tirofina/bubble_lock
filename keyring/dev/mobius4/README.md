@@ -230,6 +230,28 @@ pnpm --dir $teamPackage install --frozen-lockfile --prod --ignore-scripts
 
 2026-11-11에 잠금 파일로 Node 패키지를 설치하고 `8788`의 루프백 리스너와 시험 Gateway·가구·장치 등록을 확인했다. [준비 기록](../../evidence/2026-11-11-current-central-bench/provisioning.json)
 
+#### r18 격리 명령 API
+
+`r18` 프로필은 PC의 `127.0.0.1:8789`와 `.local/scoped/command-api-r18/`을 사용한다. `gw-b` 인증서에 `keyring-r18-lab`과 시험 주체 `scoped-r18-bench`를 등록한다. `READY`와 Pi의 인증된 기능 조회에는 `r18-hand-solder`, `keyring-0.7.14`가 함께 표시된다.
+
+```powershell
+$tool = './keyring/dev/mobius4'
+& "$tool/start-scoped-command-api.ps1" -Mode r18 -PrepareOnly
+npm --prefix "$tool/.local/scoped/command-api-r18/team-source/pc-mobius" ci --omit=dev --ignore-scripts
+& "$tool/start-scoped-command-api.ps1" -Mode r18
+```
+
+격리 Mobius4에서 발행을 멈춘 뒤 아래 명령으로 `command-receipts-b`, `command-observations-b`, `command-health-b`를 준비하고 `gw-b`의 receipt·observation ID를 확인한다.
+
+```powershell
+& "$tool/prepare-scoped-command-receipts.ps1"
+& "$tool/prepare-scoped-command-receipts.ps1" -R18TelemetryOnly
+& "$tool/prepare-scoped-command-receipts.ps1" -PinReceiptRoutes
+& "$tool/prepare-scoped-command-receipts.ps1" -PinR18ObservationRoute
+```
+
+Pi loopback에 기존 CSE 포트와 API `8789`를 전달한다. Pi에서는 Gateway B 인증서와 고정 ID를 넣어 [r18 Pi 명령 세션](../../raspberry-pi-gateway/TESTING.md#r18-pi-명령-세션)을 준비한다. 중앙 상태 사본은 `command-api-r18/runtime.json`에서 확보한다. 이 프로필의 실제 준비·실행·명령 발급은 미실행이다.
+
 ### 격리 소유권 전환
 
 새 소비자와 ACL을 배치한 뒤 아래 명령을 쓴다. `Forward`는 A의 epoch 7에서 B의 8로, `Rollback`은 B의 8에서 A의 9로 전환한다. 이전 epoch 토픽은 지연 관측 재현을 위해 격리 ACL에 남긴다. 실제 활성 소유권은 소비자가 대조한다.

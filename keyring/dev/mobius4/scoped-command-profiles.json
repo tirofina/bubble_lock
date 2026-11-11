@@ -8,5 +8,15 @@
     "directory": "command-api-integration",
     "revision": "bc2a45dfcc014b7cdb0a57a03aca2c04ca8eb989",
     "port": 8788
+  },
+  "r18": {
+    "directory": "command-api-r18",
+    "revision": "bc2a45dfcc014b7cdb0a57a03aca2c04ca8eb989",
+    "port": 8789,
+    "gatewayId": "gw-b",
+    "deviceId": "keyring-r18-lab",
+    "subjectId": "scoped-r18-bench",
+    "boardRevision": "r18-hand-solder",
+    "firmwareRevision": "keyring-0.7.14"
   }
 }

@@ -7,16 +7,17 @@ import { isDeepStrictEqual } from 'node:util';
 const mode = process.argv[2] ?? 'legacy';
 const profiles = JSON.parse(await readFile(new URL('./scoped-command-profiles.json', import.meta.url), 'utf8'));
 if (!Object.hasOwn(profiles, mode)) throw new Error('Unknown scoped command API profile.');
-const { directory, revision, port } = profiles[mode];
-const integrated = mode === 'integration';
+const { directory, revision, port, gatewayId = 'gw-a', deviceId = 'keyring-feather-lab',
+  subjectId = 'scoped-feather-bench', boardRevision, firmwareRevision } = profiles[mode];
+const integrated = mode !== 'legacy';
+const r18 = mode === 'r18';
+const gatewaySlot = gatewayId.slice(3);
 const profile = new URL('./.local/scoped/', import.meta.url);
 const local = new URL(`${directory}/`, profile);
 const team = new URL('team-source/pc-mobius/integration/src/', local);
-const gatewayId = 'gw-a';
-const deviceId = 'keyring-feather-lab';
-const subjectId = 'scoped-feather-bench';
-const operatorId = 'scoped-command-operator';
-const gatewayPrincipalId = 'scoped-command-gateway-a';
+const operatorId = r18 ? 'scoped-command-operator-r18' : 'scoped-command-operator';
+const gatewayPrincipalId = `scoped-command-gateway-${gatewaySlot}`;
+const label = r18 ? 'r18 bench' : 'Feather bench';
 
 // Keep inherited database and key settings out of the loopback-only bench process.
 delete process.env.BUBBLE_DATABASE_URL;
@@ -27,7 +28,7 @@ if ((await readFile(new URL('team-revision', local), 'utf8')).trim() !== revisio
 }
 const [{ createIntegrationRuntime }, { createIntegrationServer }, ca, cert, key, gatewayCert, operatorCert] = await Promise.all([
   import(new URL('integration-runtime.mjs', team).href), import(new URL('api-server.mjs', team).href),
-  ...['ca.pem', 'server.pem', 'server.key', 'gateway-a.pem'].map((name) => readFile(new URL(`tls/${name}`, profile))),
+  ...['ca.pem', 'server.pem', 'server.key', `gateway-${gatewaySlot}.pem`].map((name) => readFile(new URL(`tls/${name}`, profile))),
   readFile(new URL('operator.pem', local)),
 ]);
 const fingerprint = (certificate) => new X509Certificate(certificate).fingerprint256;
@@ -60,7 +61,7 @@ const server = createIntegrationServer({ tls: { ca, cert, key }, principals, api
       if (integrated && route === `GET ${gatewayPath}/bench-capabilities`) {
         return { status: 200, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
           body: { status: 'READY', scope: 'scoped-command-api', mode, teamRevision: revision,
-            gatewayId, deviceId, features: integrationFeatures } };
+            gatewayId, deviceId, features: integrationFeatures, ...(r18 ? { boardRevision, firmwareRevision } : {}) } };
       }
       if (gatewayRoutes.has(route)) return runtimeApi.handle(request);
     }
@@ -82,7 +83,7 @@ try {
     receiptPath: fileURLToPath(new URL('integration-receipts.jsonl', local)),
   });
   const enrollment = { gatewayId, principalId: gatewayPrincipalId, fingerprint: principals[0].mtlsFingerprint,
-    devices: { [deviceId]: subjectId }, credentialRevision: 'scoped-gw-a-1', ownershipEpoch: 1 };
+    devices: { [deviceId]: subjectId }, credentialRevision: `scoped-${gatewayId}-1`, ownershipEpoch: 1 };
   const prior = runtime.store.get('gateways', gatewayId);
   if (prior) {
     const { status, ...identity } = prior;
@@ -100,7 +101,7 @@ try {
           ({ principalId, role }) => principalId === operatorId && role === 'guardian',
         )) throw new Error('Existing scoped household does not match the operator.');
       } else {
-        await runtime.portalService.provisionHousehold({ householdId: subjectId, name: 'Feather bench', ownerId: operatorId });
+        await runtime.portalService.provisionHousehold({ householdId: subjectId, name: label, ownerId: operatorId });
       }
       const device = runtime.store.get('portalDevices', deviceId);
       if (device) {
@@ -110,8 +111,8 @@ try {
       } else {
         const bootstrapOperator = { principalId: operatorId, scopes: ['portal:read', 'device:write'] };
         await runtime.portalService.registerDevice(bootstrapOperator, {
-          householdId: subjectId, gatewayId, deviceId, label: 'Feather bench',
-          idempotencyKey: 'scoped-feather-device-registration',
+          householdId: subjectId, gatewayId, deviceId, label,
+          idempotencyKey: r18 ? 'scoped-r18-device-registration' : 'scoped-feather-device-registration',
         });
       }
     });
@@ -119,7 +120,7 @@ try {
   runtimeApi = runtime.api;
   console.log(JSON.stringify({ status: 'READY', scope: 'scoped-command-api', endpoint: `https://127.0.0.1:${port}`,
     mode, teamRevision: revision, gatewayId, deviceId, subjectId,
-    ...(integrated ? { features: integrationFeatures } : {}) }));
+    ...(integrated ? { features: integrationFeatures } : {}), ...(r18 ? { boardRevision, firmwareRevision } : {}) }));
 } catch (error) {
   server.close();
   await runtime?.close?.();

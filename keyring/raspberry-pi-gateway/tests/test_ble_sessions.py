@@ -482,6 +482,23 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
         frame = dict(client.frame(sequence), uptimeMs=uptime_ms)
         client.callbacks[self.fleet.observation_uuid](None, bytearray((json.dumps(frame) + "\n").encode()))
 
+    async def test_wrong_enrolled_board_never_subscribes_or_becomes_command_ready(self):
+        self.fleet.config.ble_board_revision = "r18-hand-solder"
+        self.peer.discovered = object()
+        self.peer.seen.set()
+
+        async def stop_after_first_attempt(_seconds):
+            self.fleet._closed.set()
+
+        self.fleet._pause = stop_after_first_attempt
+        with patch("bubble_gateway.ble.BleakClient", side_effect=self.factory):
+            async with asyncio.timeout(1):
+                await self.fleet._watch(self.peer)
+        self.assertEqual(len(self.clients), 1)
+        self.assertEqual(self.clients[0].callbacks, {})
+        self.assertFalse(self.peer.ready.is_set())
+        self.assertIsNone(self.fleet.command_session("kr-test"))
+
     async def test_same_boot_reconnect_ignores_stale_read_and_notify_until_new_observation(self):
         events = []
         self.fleet._trace = events.append

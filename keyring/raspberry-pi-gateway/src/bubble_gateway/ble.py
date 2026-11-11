@@ -313,6 +313,9 @@ class BleFleet:
                     allowed = self.config.firmware_revision_allowlist
                     if allowed and identity["firmwareRevision"] not in allowed:
                         raise BleProtocolError("firmware revision not allowed")
+                    board = getattr(self.config, "ble_board_revision", None)
+                    if board is not None and identity["boardRevision"] != board:
+                        raise BleProtocolError("board revision does not match enrollment")
                     peer.identity = identity
                     await client.start_notify(self.receipt_uuid,
                         lambda _, data, session=generation: self._receipt_fragment(peer, data, session))

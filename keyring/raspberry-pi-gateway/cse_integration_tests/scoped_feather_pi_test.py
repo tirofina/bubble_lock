@@ -3,7 +3,8 @@ from pathlib import Path
 import unittest
 from unittest.mock import Mock, patch
 
-from scoped_feather_pi import INTEGRATION_TEAM_REVISION, ScopedApiError, gateway_environment, verify_integration_api
+from scoped_feather_pi import (INTEGRATION_TEAM_REVISION, R18_BOARD, R18_COMMAND_FIRMWARE, R18_DEVICE,
+                               ScopedApiError, gateway_environment, verify_integration_api)
 
 
 class ScopedPiProfileTests(unittest.TestCase):
@@ -53,7 +54,37 @@ class ScopedPiProfileTests(unittest.TestCase):
                 gateway_environment(dict(profile, apiMode="legacy"), root, verify_api=True)
                 verify.assert_not_called()
                 gateway_environment(profile, root, verify_api=True)
-                verify.assert_called_once_with(8788, INTEGRATION_TEAM_REVISION, self.context)
+                verify.assert_called_once_with(8788, INTEGRATION_TEAM_REVISION, self.context, mode="integration")
+
+    def test_r18_requires_its_own_authenticated_profile_and_routes(self):
+        root = Path.cwd()
+        profile = {"version": 1, "address": "00:00:00:00:00:01", "csePort": 8760, "apiPort": 8789,
+                   "tlsDirectory": str(root), "apiMode": "r18", "cseDeploymentId": "scoped-mobius4"}
+        connection = Mock()
+        expected = dict(self.capabilities, mode="r18", gatewayId="gw-b", deviceId=R18_DEVICE,
+                        boardRevision=R18_BOARD, firmwareRevision=R18_COMMAND_FIRMWARE)
+        connection.getresponse.return_value = Mock(status=200, read=Mock(return_value=json.dumps(expected).encode()))
+        with (patch("scoped_feather_pi.load_tls", return_value=(root / "ca.pem", root / "gateway-b.pem",
+                                                               root / "gateway-b.key", self.context)) as tls,
+              patch("scoped_feather_pi.http.client.HTTPSConnection", return_value=connection)):
+            env = gateway_environment(profile, root, verify_api=True)
+            tls.assert_called_once_with(root, "b")
+            self.assertEqual(env["GATEWAY_ID"], "gw-b")
+            self.assertEqual(json.loads(env["BLE_DEVICES"]), {R18_DEVICE: profile["address"]})
+            self.assertEqual(env["BLE_BOARD_REVISION"], R18_BOARD)
+            self.assertEqual(env["FIRMWARE_REVISION_ALLOWLIST"], R18_COMMAND_FIRMWARE)
+            self.assertEqual(env["PC_API_DEPLOYMENT_ID"], "scoped-command-api-r18")
+            self.assertTrue(env["M2M_OBSERVATION_CONTAINER"].endswith("/command-observations-b"))
+            self.assertTrue(env["M2M_RECEIPT_CONTAINER"].endswith("/command-receipts-b"))
+            self.assertTrue(env["M2M_HEALTH_CONTAINER"].endswith("/command-health-b"))
+            connection.request.assert_called_once_with("GET", "/api/v1/gateways/gw-b/bench-capabilities",
+                                                       headers={"Accept": "application/json", "Cache-Control": "no-store"})
+            connection.getresponse.return_value.read.return_value = json.dumps(self.capabilities).encode()
+            with self.assertRaises(ScopedApiError):
+                gateway_environment(profile, root, verify_api=True)
+            for firmware in ("keyring-0.7.15-bringup", "feather-probe-0.2.1"):
+                with self.subTest(firmware=firmware), self.assertRaisesRegex(ValueError, "command-enabled r18"):
+                    gateway_environment(dict(profile, firmwareRevision=firmware), root)
 
     def test_profile_pins_only_the_selected_command_firmware(self):
         root = Path.cwd()

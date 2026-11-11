@@ -3,20 +3,25 @@ import https from 'node:https';
 import {link, mkdir, readFile, unlink, writeFile} from 'node:fs/promises';
 import {setTimeout as delay} from 'node:timers/promises';
 import {randomUUID} from 'node:crypto';
-import {scopedCommandReceiptContainers, scopedFeatherCommandObservationContainer} from './scoped-command-receipts.mjs';
+import {scopedCommandReceiptContainers, scopedFeatherCommandObservationContainer,
+  scopedR18CommandObservationContainer, scopedR18CommandHealthContainer} from './scoped-command-receipts.mjs';
 import {receiptIdentifier} from '../../integration-candidate/receipt-authorization.mjs';
 
 const args = process.argv.slice(2);
-if (args.length && (args.length !== 1 || !['--scoped', '--scoped-command-receipts',
-  '--scoped-feather-command-observation', '--scoped-pin-command-receipts', '--scoped-pin-command-observation'].includes(args[0]))) {
-  throw new Error('Usage: node bootstrap.mjs [--scoped | --scoped-command-receipts | --scoped-feather-command-observation | --scoped-pin-command-receipts | --scoped-pin-command-observation]');
+const scopedActions = ['--scoped', '--scoped-command-receipts', '--scoped-feather-command-observation',
+  '--scoped-r18-telemetry', '--scoped-pin-command-receipts', '--scoped-pin-command-observation', '--scoped-pin-r18-observation'];
+if (args.length && (args.length !== 1 || !scopedActions.includes(args[0]))) {
+  throw new Error(`Usage: node bootstrap.mjs [${scopedActions.join(' | ')}]`);
 }
 const scoped = args.length === 1;
 const commandReceiptsOnly = args[0] === '--scoped-command-receipts';
 const commandObservationOnly = args[0] === '--scoped-feather-command-observation';
+const r18TelemetryOnly = args[0] === '--scoped-r18-telemetry';
 const pinReceiptRoutes = args[0] === '--scoped-pin-command-receipts';
 const pinObservationRoute = args[0] === '--scoped-pin-command-observation';
-const fullProfile = !commandReceiptsOnly && !commandObservationOnly && !pinReceiptRoutes && !pinObservationRoute;
+const pinR18ObservationRoute = args[0] === '--scoped-pin-r18-observation';
+const pinning = pinReceiptRoutes || pinObservationRoute || pinR18ObservationRoute;
+const fullProfile = !commandReceiptsOnly && !commandObservationOnly && !r18TelemetryOnly && !pinning;
 const root = new URL(scoped ? './.local/scoped/' : './.local/', import.meta.url);
 const environment = Object.fromEntries((await readFile(new URL('compose.env', root), 'utf8'))
   .split(/\r?\n/).filter(line => line && !line.startsWith('#')).map(line => {
@@ -40,8 +45,8 @@ const resources = fullProfile ? [
     state: false, lbl: ['dev-bootstrap', 'unobserved'],
   }}},
 ] : [];
-if (scoped && !pinReceiptRoutes && !pinObservationRoute) {
-  const commandContainers = [
+if (scoped && !pinning) {
+  const commandContainers = r18TelemetryOnly ? [scopedR18CommandObservationContainer, scopedR18CommandHealthContainer] : [
     ...(commandObservationOnly ? [] : Object.values(scopedCommandReceiptContainers)),
     ...(commandReceiptsOnly ? [] : [scopedFeatherCommandObservationContainer]),
   ];
@@ -173,7 +178,8 @@ async function provisionEmptyResources() {
     console.log(`${status} ${resource.path}/${resourceName} ty=${resource.ty} HTTP=${httpStatus} rsc=${rsc}`);
   }
   const receiptName = commandReceiptsOnly ? 'command-receipts-provisioning.json'
-    : commandObservationOnly ? 'feather-command-observation-provisioning.json' : 'resource-provisioning.json';
+    : commandObservationOnly ? 'feather-command-observation-provisioning.json'
+    : r18TelemetryOnly ? 'r18-command-telemetry-provisioning.json' : 'resource-provisioning.json';
   await writeFile(new URL(receiptName, root), JSON.stringify(receipts, null, 2) + '\n');
   console.log('Empty resources prepared. No BLE, device command, observation or end-to-end test was run.');
 }
@@ -181,4 +187,6 @@ async function provisionEmptyResources() {
 if (pinReceiptRoutes) await preparePinnedRoutes(scopedCommandReceiptContainers, 'receipt-routes.conf', 'SCOPED_RECEIPT_PIN');
 else if (pinObservationRoute) await preparePinnedRoutes({'gw-a': scopedFeatherCommandObservationContainer},
   'observation-gw-a.conf', 'SCOPED_OBSERVATION_PIN');
+else if (pinR18ObservationRoute) await preparePinnedRoutes({'gw-b': scopedR18CommandObservationContainer},
+  'observation-gw-b.conf', 'SCOPED_OBSERVATION_PIN');
 else await provisionEmptyResources();

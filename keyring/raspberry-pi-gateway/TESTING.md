@@ -1,5 +1,7 @@
 # Gateway 로컬 시험
 
+Gateway 0.2.62의 회귀시험 소스는 r18 Pi의 `gw-b` 인증서·전용 컨테이너·중앙 API 프로필 선택과 BLE 보드 revision 불일치 차단을 다룬다. 빌드·시험·실제 Pi 연동은 미실행이다.
+
 Gateway 0.2.61은 r18 단일 명령을 최신 격리 중앙 API의 상태 사본과 대조하는 `--team-state`를 추가했다. 회귀시험 소스는 같은 영수증의 실행 시작·정산 확인과 잘못된 claim을 다룬다. [최신 중앙 API 상태 대조](../JOURNAL_RETENTION.md#최신-중앙-api-상태-대조). 빌드·시험·실물 연동은 미실행이다.
 
 Gateway 0.2.60의 회귀시험 소스는 [r18 단일 명령 대조](../JOURNAL_RETENTION.md#r18-실물-명령-한-건-대조)에서 같은 부팅의 기록 선택, 이전 부팅·장치 revision·영수증 펌웨어 불일치를 다룬다. 빌드·시험·실제 Pi 연동은 미실행이다.
@@ -306,6 +308,20 @@ Feather 명령 프로필 `0.2.0`과 두 SSH 포워딩이 준비되면 같은 Fea
 ```
 
 재시작할 때는 같은 세션명을 사용한다. 시험 종료 뒤 Gateway를 정상 종료하고 SQLite backup으로 사본을 만든다. 미전송 행이 있으면 원래 세션과 CSE 자원에서 대조한다.
+
+#### r18 Pi 명령 세션
+
+[r18 격리 명령 API](../dev/mobius4/README.md#r18-격리-명령-api)의 `gw-b` 인증서와 컨테이너 ID를 사용한다. 정식 r18 시험 펌웨어의 로컬 provisioning에서 장치 ID를 `keyring-r18-lab`으로 설정한다. 짝지은 r18 주소와 `ca.pem`, `gateway-b.pem`, `gateway-b.key`를 기존 Pi 세션과 같은 방식으로 소유자 전용 위치에 둔다.
+
+```sh
+tool=keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_pi.py
+"$pi_python" "$tool" prepare --session "$r18_session" --api-mode r18 \
+  --address-file "$r18_address_file" --tls-dir "$scoped_gateway_b_tls" \
+  --receipt-container-ri "$gw_b_receipt_ri" --observation-container-ri "$gw_b_observation_ri"
+"$pi_python" "$tool" preflight --session "$r18_session"
+```
+
+r18 모드는 중앙 API 포트 `8789`와 `gw-b` 전용 경로를 사용한다. Pi Gateway는 BLE 장치 ID, `r18-hand-solder` 보드, `keyring-0.7.14` 명령 펌웨어가 일치할 때 연결을 준비한다. `preflight` 후 승인된 시험에서만 `run`으로 해당 세션을 시작한다. Feather 명령 시험과 r18 명령 시험은 Pi 사용자당 같은 실행 잠금을 사용한다. r18의 모터 펄스는 [실물 명령 대조](../JOURNAL_RETENTION.md#r18-실물-명령-한-건-대조)의 절차에 연결한다.
 
 ## 이전 시험 기록
 

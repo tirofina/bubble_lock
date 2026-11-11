@@ -1,7 +1,7 @@
 param(
   [switch]$PrepareOnly,
   [string]$OpenSslPath = 'C:/Program Files/Git/usr/bin/openssl.exe',
-  [ValidateSet('legacy', 'integration')][string]$Mode = 'legacy'
+  [ValidateSet('legacy', 'integration', 'r18')][string]$Mode = 'legacy'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -12,7 +12,9 @@ $selection = (Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot 'scoped-com
 $apiRoot = Join-Path $profileRoot $selection.directory
 $revision = $selection.revision
 $revisionPath = Join-Path $apiRoot 'team-revision'
-foreach ($name in @('ca.pem', 'server.pem', 'server.key', 'gateway-a.pem')) {
+$gatewayCert = if ($Mode -eq 'r18') { 'gateway-b.pem' } else { 'gateway-a.pem' }
+$operatorSubject = if ($Mode -eq 'r18') { '/CN=scoped-command-operator-r18' } else { '/CN=scoped-command-operator' }
+foreach ($name in @('ca.pem', 'server.pem', 'server.key', $gatewayCert)) {
   if (-not (Test-Path -LiteralPath (Join-Path $tlsRoot $name) -PathType Leaf)) {
     throw 'Prepare the scoped Mobius4 profile first.'
   }
@@ -26,7 +28,7 @@ if (-not (Test-Path -LiteralPath $apiRoot)) {
   $archive = Join-Path $apiRoot 'team-source.zip'
   $repository = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '../../..')).Path
   $sourcePaths = @('pc-mobius')
-  if ($Mode -eq 'integration') { $sourcePaths += 'contracts/keyring' }
+  if ($Mode -ne 'legacy') { $sourcePaths += 'contracts/keyring' }
   git -C $repository archive --format=zip --output=$archive $revision @sourcePaths
   if ($LASTEXITCODE -ne 0) { throw 'Could not extract the pinned team source.' }
   Expand-Archive -LiteralPath $archive -DestinationPath (Join-Path $apiRoot 'team-source')
@@ -36,7 +38,7 @@ if (-not (Test-Path -LiteralPath $apiRoot)) {
   $extensions = Join-Path $apiRoot 'operator.ext'
   @('basicConstraints=critical,CA:FALSE', 'extendedKeyUsage=clientAuth') |
     Set-Content -LiteralPath $extensions -Encoding ascii
-  & $openssl req -new -newkey rsa:2048 -nodes -keyout $operatorKey -out $operatorRequest -subj '/CN=scoped-command-operator'
+  & $openssl req -new -newkey rsa:2048 -nodes -keyout $operatorKey -out $operatorRequest -subj $operatorSubject
   if ($LASTEXITCODE -ne 0) { throw 'Could not generate the scoped operator key and request.' }
   $serial = '0x' + [Guid]::NewGuid().ToString('N')
   & $openssl x509 -req -in $operatorRequest -CA (Join-Path $tlsRoot 'ca.pem') -CAkey $caKey `
@@ -52,11 +54,11 @@ if ($PrepareOnly) {
   Write-Output "SCOPED_COMMAND_API_PREPARED $Mode $revision"
   return
 }
-if ($Mode -eq 'integration') {
+if ($Mode -ne 'legacy') {
   $modules = Join-Path $apiRoot 'team-source/pc-mobius/node_modules'
   foreach ($name in @('ajv', 'ajv-formats', 'pg', 'mqtt')) {
     if (-not (Test-Path -LiteralPath (Join-Path $modules $name) -PathType Container)) {
-      throw 'Install the pinned team package dependencies in command-api-integration/team-source/pc-mobius before starting.'
+      throw "Install the pinned team package dependencies in $($selection.directory)/team-source/pc-mobius before starting."
     }
   }
 }

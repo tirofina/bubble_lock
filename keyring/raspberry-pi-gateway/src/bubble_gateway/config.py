@@ -72,6 +72,7 @@ class GatewayConfig:
     central_telemetry_retention_seconds: float = 86400
     pc_api_deployment_id: str | None = None
     observation_container_ri: str | None = None
+    ble_board_revision: str | None = None
 
     @classmethod
     def from_env(cls) -> "GatewayConfig":
@@ -136,6 +137,9 @@ class GatewayConfig:
         if not pair:
             raise ValueError("Secure pairing is required; BLE_PAIR=false is not supported")
         revisions = tuple(v.strip() for v in os.getenv("FIRMWARE_REVISION_ALLOWLIST", "").split(",") if v.strip())
+        board_revision = os.getenv("BLE_BOARD_REVISION", "").strip() or None
+        if board_revision is not None and not ID.fullmatch(board_revision):
+            raise ValueError("BLE_BOARD_REVISION must be a single safe identifier")
         mqtt_enabled = boolean("MQTT_ENABLED", "true")
         m2m_mqtt_enabled = boolean("M2M_MQTT_ENABLED", str(mqtt_enabled).lower())
         core_bridge = boolean("CORE_BRIDGE_ENABLED", "false")
@@ -199,6 +203,7 @@ class GatewayConfig:
             central_telemetry_retention_seconds=number("CENTRAL_TELEMETRY_RETENTION_SECONDS", "86400", 1, 86400),
             pc_api_deployment_id=pc_deployment,
             observation_container_ri=observation_ri,
+            ble_board_revision=board_revision,
         )
 
 
