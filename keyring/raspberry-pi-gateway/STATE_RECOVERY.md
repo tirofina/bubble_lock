@@ -71,10 +71,25 @@ sudo -u bubble-gateway /opt/bubble_lock/keyring/raspberry-pi-gateway/.venv/bin/b
 - `outboxByRoute`는 native 관측·health, native 명령 영수증, credential 영수증, CORE telemetry·ACK, 중앙 telemetry·영수증의 저장 행 수다. 표시되지 않는 경로는 0건이다. `journal`에는 수신·dispatch 중 명령, outbox 등록 전 native 영수증, 중앙 등록 표시가 없는 명령 영수증과 미전달 credential 영수증이 포함된다. 각 단계에 같은 영수증이 포함될 수 있다. `sourceCentralReceiptStagingEnabled`로 중앙 등록 경로가 켜져 있었는지 확인한다.
 - Gateway 0.2.76의 `targetHolds`는 기존 DB를 재사용할 때 후보 설정에 의해 보류될 건수를 보여준다. CORE 브리지·명령·중앙 전송 경로의 비활성화와 CORE telemetry의 epoch 불일치를 반영한다. 기존 중앙 영수증 경로가 활성화돼 있었다면 중앙 등록 전 명령 영수증도 센다. 새 DB를 사용할 때 값은 `null`이며 기존 큐는 원본 DB에 남는다.
 - Gateway 0.2.94의 `journal.dispatchingByFinalBleWrite`는 `DISPATCHING`을 마지막 BLE 조각 미시도 `notStarted`, 전송 가능 `possiblyStarted`, 기록 없음 `unknown`으로 집계한다. 열이 없는 이전 DB는 `unknown`으로 집계한다.
+- Gateway 0.2.104의 `coreSequenceContinuity`는 새 DB로 이어받을 CORE 순번이 있는 장치 수, 새 설정의 토픽·epoch와 겹치는 원본 대기 건수, uint32 순번을 소진한 장치 수를 보여준다. 기존 DB를 재사용하는 경우에는 `null`이다.
 
 CORE 브리지를 끈 데몬은 기존 CORE telemetry와 ACK를 SQLite에 남기고 native 전송을 이어간다. 같은 배포에서 브리지를 다시 켜면 설정된 epoch에 해당하는 telemetry와 활성화된 명령 경로의 ACK가 재전송 대상에 들어간다. 보류 행은 계속 outbox 용량에 포함된다.
 
 보고서는 집계와 변경된 설정 이름을 stdout에 출력한다. 새 DB를 초기화하거나 기존 큐를 복사·삭제·전송하는 동작은 없다. 배포 전 기존 큐와 dispatch 중 명령을 원래 배포에서 대조하고 필요한 상태를 [격리 snapshot](#수동-snapshot)으로 보관한다. 집계가 비어 있어도 중앙 정산과 새 배포의 실제 신원·권한 확인은 남는다. 팀 저장소와 실제 Pi에서의 전환 시험은 대기 중이다.
+
+#### 새 배포 DB에 CORE 순번 이어받기
+
+`plan-cutover`가 `use-new-database`를 보고하고 같은 Gateway ID에서 CORE 순번을 이어갈 장치가 있으면, 원본 Gateway를 중지한 유지보수 창에서 새 DB를 준비한다. 기존 배포에서 새 CORE 범위와 겹치는 전송을 먼저 확인한다. 새 DB의 상위 디렉터리는 Gateway 계정이 쓸 수 있어야 한다.
+
+```sh
+sudo -u bubble-gateway /opt/bubble_lock/keyring/raspberry-pi-gateway/.venv/bin/bubble-gateway-state prepare-cutover \
+  --env-file /etc/privacy-bubble/gateway.env \
+  --target-env-file /etc/privacy-bubble/gateway-next.env
+```
+
+이 명령은 양쪽 데몬 잠금을 확인하고 새 binding의 DB에 유지할 장치별 마지막 할당 순번만 기록한다. 다음 관측은 그 순번에 1을 더해 전송된다. 후보 설정에서 CORE가 꺼져 있어도 나중에 켤 때를 위해 순번을 보존한다. 새 설정과 같은 범위에 원본 CORE 관측이 대기 중이거나 활성 후보 장치의 순번을 소진했으면 중단한다. 대기열·명령·영수증·권한 기록은 원래 배포 DB에 남는다.
+
+새 DB를 준비한 뒤에는 대상 환경으로 `--check-config`와 `--check-command-route`를 수행한다. 새 Gateway가 관측을 전송하기 시작하면 같은 CORE 범위로 이전 Gateway를 다시 시작하기 전에 팀과 현재 순번 및 소유권을 대조한다. 새 DB 준비는 전환 전 로컬 작업이며 서비스나 서버에 연결하지 않는다.
 
 ### 기존 배포의 명령과 키링 저널 대조
 

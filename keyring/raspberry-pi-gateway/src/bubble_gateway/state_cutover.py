@@ -7,8 +7,7 @@ from .state_identity import BASE_TABLES, StateIdentityError, configured_binding,
 from .store import CORE_TELEMETRY_EPOCH_MATCH, CORE_TELEMETRY_ROWS
 
 
-def cutover_plan(current: GatewayConfig, target: GatewayConfig) -> dict:
-    """Caller holds the source daemon lock. Return aggregate local state only."""
+def cutover_database_action(current: GatewayConfig, target: GatewayConfig) -> tuple[str, list[str]]:
     current_binding = configured_binding(current)
     target_binding = configured_binding(target)
     changed_binding = sorted(
@@ -29,6 +28,59 @@ def cutover_plan(current: GatewayConfig, target: GatewayConfig) -> dict:
             if path.exists() or path.is_symlink():
                 raise StateIdentityError("STATE_CUTOVER_TARGET_PATH_IN_USE")
         action = "use-new-database"
+    return action, changed_binding
+
+
+def _source_schema(db, current: GatewayConfig) -> set[str]:
+    names = tables(db)
+    record = metadata(db, names)
+    if record is None:
+        raise StateIdentityError("STATE_LEGACY_ADOPTION_REQUIRED")
+    match(record, configured_binding(current))
+    if not set(BASE_TABLES) <= names:
+        raise StateIdentityError("STATE_INCOMPLETE_SCHEMA")
+    return names
+
+
+def _core_sequence_state(db, current: GatewayConfig, target: GatewayConfig) -> tuple[dict[str, int], int]:
+    if current.gateway_id != target.gateway_id:
+        return {}, 0
+    seeds = {device: sequence for device, sequence in db.execute("SELECT device_id,wire_sequence FROM core_sequences")
+             if device in target.ble_devices}
+    if any(type(sequence) is not int or not 0 <= sequence <= 4294967295 for sequence in seeds.values()):
+        raise StateIdentityError("STATE_CUTOVER_INVALID_CORE_SEQUENCE")
+    if not seeds or not target.core_bridge_enabled:
+        return seeds, 0
+    epochs = target.core_telemetry_epochs
+    pending = db.execute(f"""
+        WITH core_rows AS ({CORE_TELEMETRY_ROWS})
+        SELECT json_extract(message, '$.deviceId'), COUNT(*) FROM core_rows
+        WHERE COALESCE(({CORE_TELEMETRY_EPOCH_MATCH}), 0)
+        GROUP BY json_extract(message, '$.deviceId')
+    """, (None if epochs is None else canonical(epochs),))
+    return seeds, sum(count for device, count in pending if device in seeds)
+
+
+def core_sequence_seeds(current: GatewayConfig, target: GatewayConfig) -> dict[str, int]:
+    """Read the old allocation counters while both daemon locks are held."""
+    action, _ = cutover_database_action(current, target)
+    if action != "use-new-database":
+        raise StateIdentityError("STATE_CUTOVER_PREPARE_REQUIRES_NEW_BINDING")
+    with closing(readonly(current.database)) as db:
+        db.execute("BEGIN")
+        _source_schema(db, current)
+        seeds, pending = _core_sequence_state(db, current, target)
+        if pending:
+            raise StateIdentityError("STATE_CUTOVER_CORE_SCOPE_PENDING")
+        if target.core_bridge_enabled and any(sequence == 4294967295 for sequence in seeds.values()):
+            raise StateIdentityError("STATE_CUTOVER_CORE_SEQUENCE_EXHAUSTED")
+        return seeds
+
+
+def cutover_plan(current: GatewayConfig, target: GatewayConfig) -> dict:
+    """Caller holds the source daemon lock. Return aggregate local state only."""
+    action, changed_binding = cutover_database_action(current, target)
+    target_binding = configured_binding(target)
 
     changed_endpoints = []
     if current.cse_url != target.cse_url:
@@ -47,13 +99,12 @@ def cutover_plan(current: GatewayConfig, target: GatewayConfig) -> dict:
 
     with closing(readonly(current.database)) as db:
         db.execute("BEGIN")
-        names = tables(db)
-        record = metadata(db, names)
-        if record is None:
-            raise StateIdentityError("STATE_LEGACY_ADOPTION_REQUIRED")
-        match(record, current_binding)
-        if not set(BASE_TABLES) <= names:
-            raise StateIdentityError("STATE_INCOMPLETE_SCHEMA")
+        names = _source_schema(db, current)
+        sequence_continuity = None
+        if action == "use-new-database":
+            seeds, pending = _core_sequence_state(db, current, target)
+            sequence_continuity = {"deviceCount": len(seeds), "pendingForTargetScope": pending,
+                                   "exhaustedDeviceCount": sum(value == 4294967295 for value in seeds.values())}
 
         credential_table = "credential_receipts" in names
         credential_route = ("WHEN EXISTS (SELECT 1 FROM credential_receipts c WHERE c.rqi=o.rqi) "
@@ -136,4 +187,5 @@ def cutover_plan(current: GatewayConfig, target: GatewayConfig) -> dict:
         "outboxByRoute": outbox,
         "journal": journal,
         "targetHolds": target_holds,
+        "coreSequenceContinuity": sequence_continuity,
     }

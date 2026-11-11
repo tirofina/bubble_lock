@@ -10,15 +10,16 @@ import json
 import logging
 import os
 import sqlite3
+import tempfile
 import time
 import uuid
-from contextlib import closing
+from contextlib import closing, nullcontext
 from pathlib import Path
 
 from .config import GatewayConfig, ID, env_file_values, read_env_file
 from .core_bridge import SCOPED_NULLABLE_TELEMETRY
 from .model import canonical, iso_time
-from .state_cutover import cutover_plan
+from .state_cutover import core_sequence_seeds, cutover_database_action, cutover_plan
 from .state_identity import (StateIdentityError, configured_binding, counts, install,
                              legacy_ownership, match, metadata, quarantine_copy, readonly, tables)
 from .store import Store
@@ -228,11 +229,49 @@ def retire_core(config: GatewayConfig, output: Path, *, device: str, epoch: int 
         return receipt_path
 
 
+def prepare_cutover(current: GatewayConfig, target: GatewayConfig) -> dict:
+    """Caller holds the source daemon lock. Publish a fully initialized target DB."""
+    import fcntl
+
+    action, _ = cutover_database_action(current, target)
+    if action != "use-new-database":
+        raise StateIdentityError("STATE_CUTOVER_PREPARE_REQUIRES_NEW_BINDING")
+    target_path = target.database
+    if not target_path.parent.is_dir():
+        raise StateIdentityError("STATE_CUTOVER_TARGET_DIRECTORY_MISSING")
+    source_lock = current.database.with_suffix(".lock").resolve()
+    target_lock = target_path.with_suffix(".lock")
+    if (target_path.resolve() in {source_lock, target_lock.resolve()} or target_lock.is_symlink()
+            or (target_lock.exists() and (not target_lock.is_file() or target_lock.samefile(current.database)))):
+        raise StateIdentityError("STATE_CUTOVER_TARGET_LOCK_INVALID")
+    lock_context = nullcontext() if target_lock.resolve() == source_lock else target_lock.open("a")
+    with lock_context as lock:
+        if lock is not None:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        seeds = core_sequence_seeds(current, target)
+        with tempfile.TemporaryDirectory(prefix=".gateway-cutover-", dir=target_path.parent) as staging:
+            draft = Path(staging) / "gateway.sqlite3"
+            descriptor = os.open(draft, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            os.close(descriptor)
+            with closing(Store(draft, target.max_outbox_rows, target.max_outbox_bytes, target.max_commands,
+                               configured_binding(target))) as store:
+                with store.db:
+                    store.db.executemany("INSERT INTO core_sequences(device_id,wire_sequence) VALUES(?,?)", seeds.items())
+                if store.db.execute("PRAGMA journal_mode=DELETE").fetchone()[0] != "delete":
+                    raise StateIdentityError("STATE_CUTOVER_TARGET_CHECKPOINT_FAILED")
+            with draft.open("rb") as handle:
+                os.fsync(handle.fileno())
+            cutover_database_action(current, target)
+            os.link(draft, target_path)
+            _sync_directory(target_path.parent)
+    return {"reportVersion": 1, "preparedAt": iso_time(), "databaseAction": action, "coreSequencesSeeded": len(seeds)}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Cold Gateway state archive, retirement or deployment inventory")
-    parser.add_argument("operation", choices=("snapshot", "adopt", "retire-core", "plan-cutover"))
+    parser.add_argument("operation", choices=("snapshot", "adopt", "retire-core", "plan-cutover", "prepare-cutover"))
     parser.add_argument("--env-file", type=Path, required=True)
-    parser.add_argument("--target-env-file", type=Path, help="complete candidate configuration for plan-cutover")
+    parser.add_argument("--target-env-file", type=Path, help="complete candidate configuration for cutover operations")
     parser.add_argument("--output", type=Path, help="new private archive directory; parent must exist")
     parser.add_argument("--timeout", type=float, default=120, help="SQLite copy deadline in seconds, 5..3600")
     parser.add_argument("--device-id", help="device whose retired CORE scope is selected")
@@ -242,12 +281,13 @@ def main() -> None:
         parser.error("this operator command requires POSIX owner-only files and advisory locking")
     if not 5 <= args.timeout <= 3600:
         parser.error("timeout must be between 5 and 3600 seconds")
-    if args.operation == "plan-cutover":
+    cutover = args.operation in {"plan-cutover", "prepare-cutover"}
+    if cutover:
         if args.target_env_file is None or args.output is not None:
-            parser.error("plan-cutover requires --target-env-file and reports to stdout")
+            parser.error("cutover operations require --target-env-file and report to stdout")
     else:
         if args.target_env_file is not None:
-            parser.error("--target-env-file requires plan-cutover")
+            parser.error("--target-env-file requires a cutover operation")
         if (args.output is None or args.output.exists() or args.output.is_symlink()
                 or not args.output.parent.is_dir()):
             parser.error("output must be a new directory under an existing parent")
@@ -266,7 +306,7 @@ def main() -> None:
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s %(message)s")
     try:
         import fcntl
-        if args.operation == "plan-cutover":
+        if cutover:
             config = GatewayConfig.from_env(env_file_values(args.env_file))
             target = GatewayConfig.from_env(env_file_values(args.target_env_file))
         else:
@@ -278,6 +318,9 @@ def main() -> None:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
             if args.operation == "plan-cutover":
                 print(canonical(cutover_plan(config, target)))
+                return
+            if args.operation == "prepare-cutover":
+                print(canonical(prepare_cutover(config, target)))
                 return
             if args.operation == "retire-core":
                 path = retire_core(config, args.output, device=args.device_id, epoch=epoch, timeout=args.timeout)
