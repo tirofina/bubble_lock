@@ -1167,3 +1167,12 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 기존 DB 열기, 용량 부족, 재시작 후 재전송, CSE 보류 중 중앙 송신, 응답 불일치 회귀시험 소스를 추가했다. 빌드·시험·DB 업그레이드 실행·실제 중앙 API와 Pi 검증은 미실행이다. 새 중앙 `/telemetry` 전달 경로가 남아 있다.
 
 소스 commit `af8fae600965eeff31ba120407c6cd1d48d63cc0`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1e8d322..af8fae6`다. goal은 active/progress다.
+
+## 2026-11-11 — 중앙 BLE 관측 전달
+
+직전 goal turn은 중앙 명령 영수증 정산 경로를 올린 progress다. DOC-REV 2.0.0과 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 중앙 `/telemetry`의 관측 식별자, 상태 응답과 보관 기한을 읽었다.
+
+- Gateway `0.2.47`은 `CENTRAL_TELEMETRY_ENABLED=true`에서 중앙용 BLE 관측을 Mobius4용 항목과 관측 커서와 함께 저장한다. 장치별 미전송 관측을 저장 순서로 처리하고 재전송에 같은 본문과 `Idempotency-Key`를 쓴다. 장치 ID와 `observationId`가 일치하는 `ACCEPTED`, `DUPLICATE`, `STALE` 응답을 처리한다. 시계가 정상이고 관측이 24시간 2초를 넘으면 중앙용 항목을 만료로 집계한다. [중앙 관측 전달](../keyring/raspberry-pi-gateway/IO_NOTES.md#중앙-관측-전달)
+- SQLite 용량과 재시작, 장치별 순서, 중앙 응답 ID, `STALE`과 만료를 다루는 회귀시험 소스를 추가했다. 빌드·시험·중앙 API 연결·Pi 검증은 미실행이다. 최신 중앙 배포의 Gateway·장치·가구 등록을 적용한 실제 연동 증거가 남아 있다.
+
+소스 commit `fe03e8ddb64a319d61a50328f526f45bce15084c`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `c7f7cab..fe03e8d`다. goal은 active/progress다.
