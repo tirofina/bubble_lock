@@ -62,7 +62,7 @@ class PreflightTests(unittest.TestCase):
         self.invoke()
 
     def check_route(self, *, credential_status="ACTIVE", commands=None, observed_parent="cnt-pinned",
-                    expected_error=None):
+                    observed_observation_parent="cnt-observation", expected_error=None):
         self.env.update(M2M_CSE_DEPLOYMENT_ID="scoped-mobius4", M2M_RECEIPT_CONTAINER_RI="cnt-pinned",
                         MQTT_ENABLED="true", MQTT_HOST="broker.invalid")
         endpoints = []
@@ -74,6 +74,10 @@ class PreflightTests(unittest.TestCase):
             if url.endswith("/test/receipts"):
                 return 200, httpx.Headers({"X-M2M-RI": headers["X-M2M-RI"], "X-M2M-RSC": "2000"}), {
                     "m2m:cnt": {"ty": 3, "ri": observed_parent},
+                }
+            if url.endswith("/test/obs"):
+                return 200, httpx.Headers({"X-M2M-RI": headers["X-M2M-RI"], "X-M2M-RSC": "2000"}), {
+                    "m2m:cnt": {"ty": 3, "ri": observed_observation_parent},
                 }
             if url.endswith("/credentials/status"):
                 return 200, httpx.Headers(), {
@@ -100,6 +104,8 @@ class PreflightTests(unittest.TestCase):
                 report = json.loads(output.call_args.args[0])
                 self.assertEqual((report["receiptContainerRi"], report["credentialStatus"], report["activeCommands"]),
                                  ("cnt-pinned", "ACTIVE", 0))
+                if "M2M_OBSERVATION_CONTAINER_RI" in self.env:
+                    self.assertEqual(report["observationContainerRi"], self.env["M2M_OBSERVATION_CONTAINER_RI"])
             daemon.assert_not_awaited()
             mqtt_client.assert_not_called()
         self.assertEqual(list(self.state.iterdir()), [])
@@ -115,6 +121,12 @@ class PreflightTests(unittest.TestCase):
     def test_command_route_stops_before_poll_on_wrong_parent_or_inactive_credential(self):
         self.assertEqual(len(self.check_route(observed_parent="cnt-other", expected_error="ReceiptParentMismatch")), 1)
         self.assertEqual(len(self.check_route(credential_status="REVOKED", expected_error="credential is not ACTIVE")), 2)
+
+    def test_command_route_checks_pinned_observation_before_central_api(self):
+        self.env["M2M_OBSERVATION_CONTAINER_RI"] = "cnt-observation"
+        self.assertEqual(self.check_route()[:2], ["https://example.invalid/test/receipts", "https://example.invalid/test/obs"])
+        self.assertEqual(len(self.check_route(observed_observation_parent="cnt-replaced",
+                                              expected_error="CSE observation parent lookup failed")), 2)
 
     def test_command_route_reports_existing_active_commands(self):
         self.assertEqual(len(self.check_route(commands=[{"commandId": "existing"}],

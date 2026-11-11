@@ -64,8 +64,13 @@ class HttpRetryAfterTests(unittest.IsolatedAsyncioTestCase):
                 cfg.receipt_container_ri = "cnt-pinned"
                 self.assertEqual(hub.native_delivery_hold(), NativeDeliveryHold(
                     receipt_container=cfg.receipt_container, credential_receipts=True))
+                cfg.observation_container_ri = "cnt-observation"
+                self.assertEqual(hub.native_delivery_hold(), NativeDeliveryHold(
+                    receipt_container=cfg.receipt_container, credential_receipts=True,
+                    observation_container=cfg.observation_container))
                 hub._mqtt = None
                 cfg.receipt_container_ri = None
+                cfg.observation_container_ri = None
 
                 clock.return_value = 145.0
                 self.assertEqual(hub.native_delivery_hold(), NativeDeliveryHold())
@@ -129,8 +134,12 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(kwargs["body"], mqtt_cin)
         self.assertEqual(self.hub._pending, {})
 
-    def pin_receipt_container(self, observed_ri, *, readback_changes=None, readback_error=None):
-        self.hub.config.receipt_container_ri = "cnt-original"
+    def pin_container(self, observed_ri, *, readback_changes=None, readback_error=None, observation=False):
+        if observation:
+            self.container = self.hub.config.observation_container
+            self.hub.config.observation_container_ri = "cnt-original"
+        else:
+            self.hub.config.receipt_container_ri = "cnt-original"
 
         async def exchange(method, url, *, headers, body=None):
             response = httpx.Headers({"X-M2M-RI": headers["X-M2M-RI"]})
@@ -146,6 +155,26 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
             return 201, response, {"m2m:cin": self.pinned_cin()}
 
         self.hub._http_json.side_effect = exchange
+
+    def pin_receipt_container(self, observed_ri, **options):
+        self.pin_container(observed_ri, **options)
+
+    async def test_observation_pin_blocks_create_on_recreated_container(self):
+        self.pin_container("cnt-recreated", observation=True)
+        self.mqtt(2001)
+        with self.assertRaises(ReceiptParentMismatch):
+            await self.hub.publish(self.rqi, self.container, self.payload)
+        self.hub._mqtt.publish.assert_not_called()
+        self.assertEqual([entry.args for entry in self.hub._http_json.await_args_list],
+                         [("GET", "https://cse.invalid/test/observations")])
+
+    async def test_observation_pin_uses_pinned_target_and_confirms_readback(self):
+        self.pin_container("cnt-original", observation=True)
+        self.mqtt(target="cnt-original")
+        await self.hub.publish(self.rqi, self.container, self.payload)
+        self.assertEqual([entry.args for entry in self.hub._http_json.await_args_list],
+                         [("GET", "https://cse.invalid/test/observations"), ("POST", "https://cse.invalid/cnt-original"),
+                          ("GET", "https://cse.invalid/test/observations/" + self.rn)])
 
     async def test_pin_blocks_create_when_named_container_is_recreated(self):
         self.pin_receipt_container("cnt-recreated")

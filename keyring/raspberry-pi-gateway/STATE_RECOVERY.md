@@ -32,6 +32,12 @@ Gateway 0.2.23의 선택 설정 `M2M_RECEIPT_CONTAINER_RI`에는 CSE 관리자�
 
 설정 전 Gateway 자격에 이름 경로 GET, 자원 ID로 contentInstance CREATE, 원래 이름 경로의 자식 GET을 허용한다. 격리 벤치에서는 [컨테이너 권한 준비](../dev/mobius4/README.md#명령-영수증-정산-준비)를 완료한 뒤 새 세션에 해당 Gateway의 ID를 지정한다.
 
+### 관측 컨테이너 ID 고정
+
+Gateway 0.2.55의 선택 설정 `M2M_OBSERVATION_CONTAINER_RI`는 CSE에서 관측 컨테이너의 `ri`를 확인한 뒤 새 DB에 지정한다. ID를 바꾸거나 빼면 `STATE_OBSERVATION_CONTAINER_MISMATCH`로 시작을 중단한다. 관측과 영수증이 한 컨테이너를 공유하면 지정된 ID가 같은 경로에 적용된다. 두 설정을 함께 지정할 때는 ID가 같아야 한다.
+
+Gateway는 전송 전에 HTTPS GET으로 컨테이너 이름과 `ri`의 일치를 확인한다. MQTT와 HTTPS는 확인된 ID로 관측을 생성하고, 응답 및 저장본의 부모·자원 ID·본문을 대조한 뒤 완료를 기록한다. 같은 이름에 다른 자원이 생겼거나 확인에 실패하면 관측은 원래 요청 ID로 SQLite에 남는다. `--check-command-route`도 관측 ID가 설정돼 있으면 중앙 요청 전에 이를 검사한다. 이름 경로 GET, 자원 ID CREATE와 자식 GET에 Gateway 권한을 부여한다.
+
 ## 중앙 API 배포 전환
 
 Gateway 0.2.54는 새 DB에서 `PC_API_DEPLOYMENT_ID`를 지정하면 중앙 API 저장소의 운영자 배정 ID를 binding v3에 기록한다. 동일한 Mobius4를 쓰는 경우에도 중앙 저장소 ID가 달라지거나 설정에서 빠지면 `STATE_PC_API_DEPLOYMENT_MISMATCH`로 중단한다. `--check-config`와 `--check-command-route`는 기존 DB의 binding을 읽기 전용으로 먼저 검사한다. 명령·관측 재전송은 데몬 시작 때 같은 검사를 통과해야 한다.

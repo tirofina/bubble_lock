@@ -36,6 +36,10 @@ async def check_command_route(config: GatewayConfig) -> dict:
         await hub.start()
         stage = "CSE receipt parent lookup"
         pin = await hub.verify_receipt_route()
+        observation_pin = None
+        if config.observation_container_ri is not None:
+            stage = "CSE observation parent lookup"
+            observation_pin = await hub.verify_observation_route()
         stage = "central credential status"
         credential = validate_credential_status(await hub.credential_status(), config.gateway_id)
         if credential["status"] != "ACTIVE":
@@ -43,8 +47,11 @@ async def check_command_route(config: GatewayConfig) -> dict:
         stage = "central command list"
         if await hub.poll_commands():
             raise DeploymentConfigError("Central Gateway command list is not empty")
-        return {"gatewayId": config.gateway_id, "checkedAt": iso_time(), "receiptContainerRi": pin,
-                "credentialStatus": "ACTIVE", "activeCommands": 0}
+        report = {"gatewayId": config.gateway_id, "checkedAt": iso_time(), "receiptContainerRi": pin,
+                  "credentialStatus": "ACTIVE", "activeCommands": 0}
+        if observation_pin is not None:
+            report["observationContainerRi"] = observation_pin
+        return report
     except DeploymentConfigError:
         raise
     except (RemoteResponseError, httpx.HTTPError, OSError, ValueError) as exc:

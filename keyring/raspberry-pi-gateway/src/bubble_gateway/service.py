@@ -62,6 +62,7 @@ class Gateway:
             "cseId": self.config.cse_id, "cseUrl": self.config.cse_url,
             "cseDeploymentId": self.config.cse_deployment_id,
             "receiptContainerRi": self.config.receipt_container_ri,
+            "observationContainerRi": self.config.observation_container_ri,
             "apiUrl": self.config.api_url, "pcDispatchStartRequired": self.config.pc_dispatch_start_required,
             "pcApiDeploymentId": self.config.pc_api_deployment_id,
             "centralReceiptsEnabled": self.config.central_receipts_enabled,
@@ -431,7 +432,8 @@ class Gateway:
                 hold = NativeDeliveryHold() if scoped else self.transport.native_delivery_hold()
                 item = self.store.due(core_epochs=epochs, scoped_only=scoped, prefer_receipts=prefer_receipts,
                                       skip_native=hold.all_native, held_receipt_container=hold.receipt_container,
-                                      hold_credential_receipts=hold.credential_receipts)
+                                      hold_credential_receipts=hold.credential_receipts,
+                                      held_observation_container=hold.observation_container)
             if item is None:
                 await self._pause(0.5)
                 continue
@@ -439,7 +441,9 @@ class Gateway:
                 receipt_attempts = min(receipt_attempts + 1, RECEIPT_BURST) if item["is_receipt"] else 0
             delivery_options = {}
             if (item["command_id"] is not None and item["container"] == self.config.receipt_container
-                    and self.config.receipt_container_ri is not None):
+                    and (self.config.receipt_container_ri is not None
+                         or (self.config.observation_container_ri is not None
+                             and self.config.observation_container == self.config.receipt_container))):
                 if item["attempts"]:
                     delivery_options["confirm_existing"] = True
                 else:

@@ -18,7 +18,7 @@ DATA_TABLES = (*BASE_TABLES, "credential_receipts")
 META = "gateway_state"
 BINDING_KEYS = {"bindingVersion", "gatewayId", "originator", "cseId", "rvi",
                 "observationContainer", "receiptContainer", "healthContainer"}
-DEPLOYMENT_KEYS = {"cseDeploymentId", "receiptContainerRi", "pcApiDeploymentId"}
+DEPLOYMENT_KEYS = {"cseDeploymentId", "receiptContainerRi", "observationContainerRi", "pcApiDeploymentId"}
 
 
 class StateIdentityError(RuntimeError):
@@ -37,6 +37,8 @@ def configured_binding(config: Any) -> dict[str, Any]:
         binding.update(bindingVersion=2, cseDeploymentId=config.cse_deployment_id)
     if config.receipt_container_ri is not None:
         binding["receiptContainerRi"] = config.receipt_container_ri
+    if config.observation_container_ri is not None:
+        binding["observationContainerRi"] = config.observation_container_ri
     if config.pc_api_deployment_id is not None:
         binding.update(bindingVersion=3, pcApiDeploymentId=config.pc_api_deployment_id)
     return binding
@@ -52,7 +54,11 @@ def _valid_binding(binding: Any) -> bool:
     present = binding.keys() & DEPLOYMENT_KEYS
     if any(not isinstance(binding[key], str) or ID.fullmatch(binding[key]) is None for key in present):
         return False
-    if "receiptContainerRi" in present and "cseDeploymentId" not in present:
+    if present & {"receiptContainerRi", "observationContainerRi"} and "cseDeploymentId" not in present:
+        return False
+    if ({"receiptContainerRi", "observationContainerRi"} <= present
+            and binding["observationContainer"] == binding["receiptContainer"]
+            and binding["observationContainerRi"] != binding["receiptContainerRi"]):
         return False
     if "pcApiDeploymentId" in present:
         return binding["bindingVersion"] == 3
@@ -106,6 +112,8 @@ def match(record: dict, expected: dict, *, require_live: bool = True) -> None:
         raise StateIdentityError("STATE_CSE_DEPLOYMENT_MISMATCH")
     if record["binding"].get("receiptContainerRi") != expected.get("receiptContainerRi"):
         raise StateIdentityError("STATE_RECEIPT_CONTAINER_MISMATCH")
+    if record["binding"].get("observationContainerRi") != expected.get("observationContainerRi"):
+        raise StateIdentityError("STATE_OBSERVATION_CONTAINER_MISMATCH")
     if record["binding"].get("pcApiDeploymentId") != expected.get("pcApiDeploymentId"):
         raise StateIdentityError("STATE_PC_API_DEPLOYMENT_MISMATCH")
     if canonical(record["binding"]) != canonical(expected):

@@ -71,6 +71,7 @@ class GatewayConfig:
     central_telemetry_enabled: bool = False
     central_telemetry_retention_seconds: float = 86400
     pc_api_deployment_id: str | None = None
+    observation_container_ri: str | None = None
 
     @classmethod
     def from_env(cls) -> "GatewayConfig":
@@ -156,8 +157,16 @@ class GatewayConfig:
         deployment = identifier("M2M_CSE_DEPLOYMENT_ID") if "M2M_CSE_DEPLOYMENT_ID" in os.environ else None
         pc_deployment = identifier("PC_API_DEPLOYMENT_ID") if "PC_API_DEPLOYMENT_ID" in os.environ else None
         receipt_ri = identifier("M2M_RECEIPT_CONTAINER_RI") if "M2M_RECEIPT_CONTAINER_RI" in os.environ else None
+        observation_ri = identifier("M2M_OBSERVATION_CONTAINER_RI") if "M2M_OBSERVATION_CONTAINER_RI" in os.environ else None
         if receipt_ri is not None and deployment is None:
             raise ValueError("M2M_RECEIPT_CONTAINER_RI requires M2M_CSE_DEPLOYMENT_ID")
+        if observation_ri is not None and deployment is None:
+            raise ValueError("M2M_OBSERVATION_CONTAINER_RI requires M2M_CSE_DEPLOYMENT_ID")
+        observation_container = container("M2M_OBSERVATION_CONTAINER")
+        receipt_container = container("M2M_RECEIPT_CONTAINER")
+        if (observation_container == receipt_container and observation_ri is not None
+                and receipt_ri is not None and observation_ri != receipt_ri):
+            raise ValueError("Shared observation and receipt container requires matching resource IDs")
         return cls(
             gateway_id=identifier("GATEWAY_ID"), originator=identifier("M2M_ORIGINATOR"),
             cse_id=identifier("M2M_CSE_ID"), cse_url=endpoint("M2M_CSE_URL", True),
@@ -169,8 +178,7 @@ class GatewayConfig:
             mqtt_wrapped_primitive=boolean("MQTT_WRAPPED_PRIMITIVE", "false"),
             mqtt_keepalive=int(number("MQTT_KEEPALIVE", "60", 10, 600)),
             request_timeout=number("REQUEST_TIMEOUT", "10", 1, 60), rvi=required("M2M_RVI"),
-            observation_container=container("M2M_OBSERVATION_CONTAINER"),
-            receipt_container=container("M2M_RECEIPT_CONTAINER"),
+            observation_container=observation_container, receipt_container=receipt_container,
             health_container=container("M2M_HEALTH_CONTAINER"),
             ble_devices=devices, ble_pair=pair,
             ble_scan_seconds=number("BLE_SCAN_SECONDS", "5", 1, 30),
@@ -190,6 +198,7 @@ class GatewayConfig:
             central_telemetry_enabled=boolean("CENTRAL_TELEMETRY_ENABLED", "false"),
             central_telemetry_retention_seconds=number("CENTRAL_TELEMETRY_RETENTION_SECONDS", "86400", 1, 86400),
             pc_api_deployment_id=pc_deployment,
+            observation_container_ri=observation_ri,
         )
 
 
