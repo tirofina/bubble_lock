@@ -78,7 +78,7 @@ class Store:
                 rqi TEXT PRIMARY KEY, container TEXT NOT NULL, payload TEXT NOT NULL,
                 payload_bytes INTEGER NOT NULL, created_at TEXT NOT NULL,
                 attempts INTEGER NOT NULL DEFAULT 0, next_attempt REAL NOT NULL DEFAULT 0,
-                command_id TEXT
+                command_id TEXT, native_observation_device_id TEXT
             );
             CREATE INDEX IF NOT EXISTS outbox_due ON outbox(next_attempt, created_at);
             CREATE INDEX IF NOT EXISTS outbox_core_pending ON outbox(container) WHERE container='@core/telemetry';
@@ -112,6 +112,25 @@ class Store:
                 if "ble_final_write_started" not in columns:
                     self.db.execute("ALTER TABLE commands ADD COLUMN ble_final_write_started INTEGER "
                                     "CHECK(ble_final_write_started IN (0,1))")
+                outbox_columns = {row["name"] for row in self.db.execute("PRAGMA table_info(outbox)")}
+                if "native_observation_device_id" not in outbox_columns:
+                    self.db.execute("ALTER TABLE outbox ADD COLUMN native_observation_device_id TEXT")
+                self.db.execute("""
+                    UPDATE outbox SET native_observation_device_id=json_extract(payload, '$.deviceId')
+                    WHERE container=? AND command_id IS NULL AND native_observation_device_id IS NULL
+                      AND CASE WHEN json_valid(payload) THEN
+                          json_type(payload, '$.deviceId')='text'
+                          AND json_type(payload, '$.bootId')='text'
+                          AND json_type(payload, '$.sequence')='integer'
+                          AND json_type(payload, '$.sensorValues')='object'
+                          AND json_extract(payload, '$.timestampSource')='gateway-received'
+                      ELSE 0 END
+                """, (binding["observationContainer"],))
+                self.db.execute("""
+                    CREATE INDEX IF NOT EXISTS outbox_native_observation_device
+                    ON outbox(container,native_observation_device_id)
+                    WHERE native_observation_device_id IS NOT NULL
+                """)
                 self.db.execute("""
                     CREATE INDEX IF NOT EXISTS commands_pending_device ON commands(device_id) WHERE status='RECEIVED'
                 """)
@@ -232,7 +251,8 @@ class Store:
                                      (receipt["status"], canonical(receipt), command_id))
         return result.rowcount == 1
 
-    def _enqueue(self, rqi: str, container: str, payload: dict, critical: bool = False, command_id: str | None = None) -> bool:
+    def _enqueue(self, rqi: str, container: str, payload: dict, critical: bool = False, command_id: str | None = None,
+                 *, native_observation_device_id: str | None = None) -> bool:
         if self.db.execute("SELECT 1 FROM outbox WHERE rqi=?", (rqi,)).fetchone():
             return False
         encoded = canonical(payload)
@@ -241,8 +261,10 @@ class Store:
         fraction = 1 if critical else 0.9
         if count >= int(self.max_rows * fraction) or total + size > int(self.max_bytes * fraction):
             raise CapacityError("Outbox capacity exceeded")
-        self.db.execute("INSERT INTO outbox(rqi,container,payload,payload_bytes,created_at,command_id) VALUES(?,?,?,?,?,?)",
-                        (rqi, container, encoded, size, iso_time(), command_id))
+        self.db.execute("""
+            INSERT INTO outbox(rqi,container,payload,payload_bytes,created_at,command_id,native_observation_device_id)
+            VALUES(?,?,?,?,?,?,?)
+        """, (rqi, container, encoded, size, iso_time(), command_id, native_observation_device_id))
         return True
 
     def enqueue(self, kind: str, identity: str, container: str, payload: dict, critical: bool = False) -> None:
@@ -312,7 +334,8 @@ class Store:
                 if presses is None:
                     presses = previous_presses
             identity = f"{payload['deviceId']}:{payload['bootId']}:{payload['sequence']}"
-            self._enqueue(self.request_id("observation", identity), container, payload)
+            self._enqueue(self.request_id("observation", identity), container, payload,
+                          native_observation_device_id=payload["deviceId"])
             if core_enabled and (core_epochs is not None or measurable(payload)):
                 previous_core = self.db.execute("SELECT wire_sequence FROM core_sequences WHERE device_id=?", (payload["deviceId"],)).fetchone()
                 wire_sequence = previous_core["wire_sequence"] + 1 if previous_core else 0
@@ -414,6 +437,11 @@ class Store:
             SELECT *, (command_id IS NOT NULL OR container='@core/ack') AS is_receipt
             FROM outbox WHERE next_attempt<=?2
               AND (container<>'@core/telemetry' OR rowid IN (SELECT head FROM core_heads))
+              AND (native_observation_device_id IS NULL OR NOT EXISTS (
+                  SELECT 1 FROM outbox AS older
+                  WHERE older.container=outbox.container AND older.rowid<outbox.rowid
+                    AND older.native_observation_device_id=outbox.native_observation_device_id
+              ))
               AND container NOT IN ('@central/telemetry', '@central/receipt')
               AND (?3=0 OR container='@core/telemetry')
               AND (?5=0 OR container IN ('@core/ack', '@core/telemetry'))

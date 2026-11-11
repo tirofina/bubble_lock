@@ -144,7 +144,10 @@ def _retired_core_fingerprint(db: sqlite3.Connection, gateway: str, device: str,
     count = 0
     digest = hashlib.sha256()
     supported_versions = ("1.0.0", SCOPED_NULLABLE_TELEMETRY) if epoch is not None else ("1.0.0",)
-    for row in db.execute(f"SELECT * FROM outbox WHERE {_RETIRED_CORE_SCOPE} ORDER BY rqi", (device, epoch)):
+    for row in db.execute(f"""
+        SELECT rqi,container,payload,payload_bytes,created_at,attempts,next_attempt,command_id
+        FROM outbox WHERE {_RETIRED_CORE_SCOPE} ORDER BY rqi
+    """, (device, epoch)):
         payload = json.loads(row["payload"])
         if not isinstance(payload, dict) or payload.get("deviceId") != device:
             raise StateIdentityError("STATE_RETIRED_CORE_BINDING_INVALID")

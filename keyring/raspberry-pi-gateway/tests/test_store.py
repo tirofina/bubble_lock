@@ -361,6 +361,42 @@ class StoreTests(unittest.TestCase):
                 self.assertEqual(item["payload"], payload)
                 self.store.delivered(item["rqi"])
 
+    def test_native_retry_preserves_order_across_boots_and_unmarked_rows_after_restart(self):
+        container = BINDING["observationContainer"]
+        first = observation(sequence=9, state=True)
+        after_boot = observation(bootId="next-boot", sequence=0, state=False)
+        other = observation(deviceId="kr-other")
+        for payload in (first, after_boot, other):
+            self.assertTrue(self.store.observation(container, payload))
+        self.store.enqueue("health", "shared-container", container, {"gatewayId": "gw-test", "uptimeSeconds": 10})
+        cmd = command()
+        self.store.accept(cmd, payload_hash(cmd))
+        self.store.finish(cmd["commandId"], {"commandId": cmd["commandId"], "status": "APPLIED"})
+        self.store.stage_receipts(BINDING["receiptContainer"])
+        first_rqi = Store.request_id("observation", "kr-test:boot-test:9")
+        other_rqi = Store.request_id("observation", "kr-other:boot-test:1")
+        health_rqi = Store.request_id("health", "shared-container")
+        receipt_rqi = Store.request_id("receipt", cmd["commandId"])
+
+        with patch("bubble_gateway.store.time.time", return_value=1000):
+            self.store.retry(first_rqi, 0, minimum_delay=60)
+            with self.store.db:
+                self.store.db.execute("UPDATE outbox SET native_observation_device_id=NULL")
+            self.store.close()
+            self.store = self.open_store()
+            sent = set()
+            while item := self.store.due():
+                sent.add(item["rqi"])
+                self.store.delivered(item["rqi"])
+            self.assertEqual(sent, {other_rqi, health_rqi, receipt_rqi})
+
+        with patch("bubble_gateway.store.time.time", return_value=1100):
+            for expected in (first, after_boot):
+                item = self.store.due()
+                self.assertEqual(item["payload"], expected)
+                self.store.delivered(item["rqi"])
+            self.assertIsNone(self.store.due())
+
     def test_expired_central_rows_free_capacity_without_deleting_native_or_fresh_rows(self):
         container = BINDING["observationContainer"]
         old = observation(observedAt="2026-11-09T09:00:00+09:00")

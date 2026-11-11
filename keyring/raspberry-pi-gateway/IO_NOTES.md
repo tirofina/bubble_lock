@@ -25,6 +25,8 @@
 
 API 작성 참고: [Bleak GATT client](https://bleak.readthedocs.io/en/latest/api/client.html), [Paho MQTT client](https://eclipse.dev/paho/files/paho.mqtt.python/html/client.html). BLE bond 신뢰 정책과 oneM2M 배포 계약은 이 라이브러리 문서만으로 확정되지 않는다.
 
+Gateway 0.2.97은 같은 Mobius4 컨테이너에서 장치별 관측을 SQLite 등록 순서대로 보낸다. 첫 관측이 재시도 대기 중이면 재부팅 뒤 생성된 같은 장치의 관측도 그 뒤에서 대기한다. 다른 장치의 관측, 명령 영수증, health는 기존 규칙에 따라 전송한다. 기존 native 관측 행의 장치 ID는 저장한 본문에서 채우며 요청 ID·본문·재시도 시각은 기존 값을 사용한다.
+
 ## 중앙 관측 전달
 
 Gateway 0.2.47에서 `CENTRAL_TELEMETRY_ENABLED=true`를 사용하면 검증한 BLE 관측을 Mobius4용 항목 및 관측 커서와 같은 SQLite 트랜잭션에 중앙용으로 등록한다. 배포 예시 파일은 중앙 경로를 켜고, 기존 격리 프로필은 기본값 `false`를 사용한다. 중앙 API에서 Gateway·장치·가구 등록을 마친 뒤 같은 배포의 상태 DB를 사용한다.
