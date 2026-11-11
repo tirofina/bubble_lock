@@ -8,11 +8,13 @@ namespace {
 portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
 esp_timer_handle_t timer = nullptr;
 bool timerReady = false, alertOwner = false, alertWasInterrupted = false;
+bool displayDriveFault = false;
 uint64_t displayUntil = 0;
 uint64_t nowMs() { return static_cast<uint64_t>(esp_timer_get_time()) / 1000; }
 bool healthy() { return gpio_get_level(static_cast<gpio_num_t>(board::MainFaultN)); }
 bool railEnabled() { return gpio_get_level(static_cast<gpio_num_t>(board::AuxEnable)) != 0; }
-void interruptAlert() { // Caller holds mux; an alert already disconnected the backlight.
+bool backlightOn() { return gpio_get_level(static_cast<gpio_num_t>(board::LcdBacklight)) == 0; }
+void interruptAlert() { // Caller holds mux.
   alertOwner = false;
   alertWasInterrupted = true;
   displayUntil = 0;
@@ -26,11 +28,25 @@ void apply(uint64_t now) { // Caller holds mux.
   }
   if (now >= displayUntil) displayUntil = 0;
   const bool light = displayUntil && !alertOwner && !alertWasInterrupted;
-  // Remove load before disabling the rail; enable rail before connecting a load.
-  if (!light) gpio_set_level(static_cast<gpio_num_t>(board::LcdBacklight), 1);
-  const auto railWrite = gpio_set_level(static_cast<gpio_num_t>(board::AuxEnable), !alertWasInterrupted && (alertOwner || light));
+  const auto rail = static_cast<gpio_num_t>(board::AuxEnable);
+  const auto backlight = static_cast<gpio_num_t>(board::LcdBacklight);
+  if (light) {
+    if (gpio_set_level(rail, 1) == ESP_OK && railEnabled() &&
+        gpio_set_level(backlight, 0) == ESP_OK && backlightOn()) return;
+    displayDriveFault = true;
+    displayUntil = 0;
+  }
+
+  // Disconnect the backlight before turning off AUX or handing it to the alert.
+  if (gpio_set_level(backlight, 1) != ESP_OK || backlightOn()) {
+    displayDriveFault = true;
+    if (alertOwner) {
+      interruptAlert();
+      return;
+    }
+  }
+  const auto railWrite = gpio_set_level(rail, alertOwner && !alertWasInterrupted);
   if (alertOwner && (railWrite != ESP_OK || !railEnabled())) interruptAlert();
-  if (light) gpio_set_level(static_cast<gpio_num_t>(board::LcdBacklight), 0);
 }
 void expired(void *) { auxRail::service(); }
 }
@@ -59,16 +75,22 @@ bool auxRail::alert(bool enabled) {
 }
 bool auxRail::alertInterrupted() {
   portENTER_CRITICAL(&mux);
-  if (alertOwner && (!healthy() || !railEnabled())) interruptAlert();
+  if (alertOwner) {
+    const bool backlightActive = backlightOn();
+    if (backlightActive) displayDriveFault = true;
+    if (!healthy() || !railEnabled() || backlightActive) interruptAlert();
+  }
   const bool result = alertWasInterrupted;
   portEXIT_CRITICAL(&mux);
   return result;
 }
 bool auxRail::displayFor(uint32_t durationMs) {
-  if (!timerReady || !durationMs || durationMs > 30000) return false;
+  if (!durationMs || durationMs > 30000) return false;
   portENTER_CRITICAL(&mux);
-  displayUntil = healthy() ? nowMs() + durationMs : 0;
-  apply(nowMs());
+  const uint64_t now = nowMs();
+  displayDriveFault = !timerReady;
+  displayUntil = timerReady && healthy() ? now + durationMs : 0;
+  apply(now);
   const bool result = displayUntil != 0;
   portEXIT_CRITICAL(&mux);
   return result;
@@ -78,7 +100,14 @@ void auxRail::service() {
 }
 bool auxRail::displayVisible() {
   portENTER_CRITICAL(&mux);
-  const bool result = displayUntil > nowMs() && !alertOwner && !alertWasInterrupted && healthy();
+  const bool result = displayUntil > nowMs() && !alertOwner && !alertWasInterrupted &&
+      healthy() && railEnabled() && backlightOn();
+  portEXIT_CRITICAL(&mux);
+  return result;
+}
+bool auxRail::displayOutputFault() {
+  portENTER_CRITICAL(&mux);
+  const bool result = displayDriveFault;
   portEXIT_CRITICAL(&mux);
   return result;
 }

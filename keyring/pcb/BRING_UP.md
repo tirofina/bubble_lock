@@ -48,13 +48,13 @@ pio device monitor --port <COM_PORT> --baud 115200
 
 USB 모니터를 열고 `?`를 보내면 현재 부팅의 `KEYRING bringup` 줄을 다시 출력한다. 이 줄을 포함한 UTF-8 로그를 로컬에 저장한다. 보드·펌웨어 revision, 부팅 ID, `motor`, `aux`, `fault`가 기록되며 기대값은 `motor=0 aux=0 fault=0`이다. motor·aux는 첫 구동 시의 GPIO readback이며 전압과 부하 상태는 계측한다. `fuel`, `accel`, `motion`은 첫 샘플과 인터럽트 설정 결과다. Pi에서 초기 구동을 기록할 때까지 보드 전원을 유지한다.
 
-업로드에 사용한 `.pio/build/<환경>/firmware.bin`을 보관한다. 0.7.18·0.7.21~0.7.24의 USB 줄에 있는 `appSha256`은 실행 중인 앱 이미지의 해시다. Pi 초기 구동 기록에 그 USB 로그와 업로드 파일을 함께 지정한다. `appSha256=unavailable`이면 이미지 일치 증거를 확보하지 못한 상태다. provisioning이 들어간 바이너리는 비공개로 보관한다.
+업로드에 사용한 `.pio/build/<환경>/firmware.bin`을 보관한다. 0.7.18·0.7.21~0.7.25의 USB 줄에 있는 `appSha256`은 실행 중인 앱 이미지의 해시다. Pi 초기 구동 기록에 그 USB 로그와 업로드 파일을 함께 지정한다. `appSha256=unavailable`이면 이미지 일치 증거를 확보하지 못한 상태다. provisioning이 들어간 바이너리는 비공개로 보관한다.
 
 이 프로필은 로컬 설정이 켜져 있어도 LCD·오디오 재생·SD·deep sleep을 비활성화하고 USB100을 유지한다. 명령용 NVS와 BLE 명령·저널 특성을 열지 않는다. BLE bonding과 센서 초기화는 일반 경로를 사용하며, 장착된 MAX9850의 mute/shutdown 설정은 기존 설정을 따른다.
 
 ## Pi와 확인할 항목
 
-[BlueZ 등록 절차](../raspberry-pi-gateway/README.md#bluez-등록)를 따라 장치별로 페어링한다. 격리 Gateway에서 `BLE_GATT_PROFILE=core-v1`, `FIRMWARE_REVISION_ALLOWLIST=keyring-0.7.23-bringup`과 시험 전용 DB를 사용한다. Gateway health에서 보드 `r18-hand-solder`, 새 부팅 ID, `connected:true`, `commandReady:false`를 확인한다. Gateway는 `-bringup` revision을 관측 전용으로 처리한다.
+[BlueZ 등록 절차](../raspberry-pi-gateway/README.md#bluez-등록)를 따라 장치별로 페어링한다. 격리 Gateway에서 `BLE_GATT_PROFILE=core-v1`, `FIRMWARE_REVISION_ALLOWLIST=keyring-0.7.25-bringup`과 시험 전용 DB를 사용한다. Gateway health에서 보드 `r18-hand-solder`, 새 부팅 ID, `connected:true`, `commandReady:false`를 확인한다. Gateway는 `-bringup` revision을 관측 전용으로 처리한다.
 
 버튼·센서·전원과 Gateway의 명령 차단 상태는 Gateway 0.2.59의 [Pi 초기 구동 기록 모드](../raspberry-pi-gateway/TESTING.md#r18-초기-구동-기록)에서 기록한다. `--usb-boot-log`에 위 로그를 제공하면 BLE와 같은 부팅인지 대조하고 USB의 초기 센서 상태와 마지막 BLE 센서·INA219 상태를 기록한다. 로그에 첫 출력과 재출력이 모두 있으면 줄 전체가 일치해야 한다. 기록 시에는 같은 DB 경로를 사용하는 Gateway를 중지한다. 전원 레일의 실측은 별도로 남긴다.
 
@@ -76,14 +76,14 @@ USB 모니터를 열고 `?`를 보내면 현재 부팅의 `KEYRING bringup` 줄�
 
 | 장착한 LCD | PlatformIO 환경 | Pi 펌웨어 revision |
 |---|---|---|
-| 1.54인치 ST7789 | `keyring_r18_bringup_st7789` | `keyring-0.7.24-st7789-bringup` |
-| 2.01인치 JD9853 | `keyring_r18_bringup_jd9853` | `keyring-0.7.24-jd9853-bringup` |
+| 1.54인치 ST7789 | `keyring_r18_bringup_st7789` | `keyring-0.7.25-st7789-bringup` |
+| 2.01인치 JD9853 | `keyring_r18_bringup_jd9853` | `keyring-0.7.25-jd9853-bringup` |
 
 USB 초기 구동 줄의 `panel`과 `motor=0 aux=0 fault=0`을 확인한다. 확인 버튼을 눌러 백라이트를 켜고 흰색 테두리의 네 변, 왼쪽부터 빨강·초록·파랑 막대, 패널 이름·가로×세로·`CONFIRM`을 기록한다. 비상 버튼을 누르면 `PANIC`을 표시한다. 버튼 상태와 표시 요청을 함께 저장하고, 화면 초기화가 끝나면 정기 갱신 주기를 기다리지 않고 그린다. 버튼을 떼어도 마지막 표시는 백라이트가 켜져 있는 동안 유지된다. 새 누름이 없으면 설정된 창이 만료될 때 백라이트가 꺼진다. Pi 초기 구동 기록에는 표의 revision, 같은 부팅의 USB 로그와 해당 환경의 업로드 파일을 지정한다. 사진이나 영상은 같은 시험의 비공개 기록에 둔다.
 
 Pi JSON의 `bringup.usbBoot.displayProfile`은 USB 로그와 일치한 빌드 선택값이다. Gateway 0.2.81의 `bringup.displayTest`에는 확인·비상 패턴을 그렸을 때의 버튼 누계와 같은 시험에서 수신한 버튼 누계를 대조한 결과가 들어간다. `buttonFramesMatched`는 펌웨어 그리기 함수와 BLE 관측의 대조 결과다. 테두리·색상·문구는 패널에서 직접 확인한다. JD9853은 기존 초기화 경로를 쓰며 구매한 패널의 전원·감마 설정과 실제 표시가 남아 있다. [패널 설정](../firmware/PERIPHERALS.md#jd9853-미확인-범위)
 
-정식 0.7.23 프로필에서도 확인과 비상 버튼을 각각 눌렀다 뗀다. 1.54인치 ST7789 또는 2.01인치 JD9853에서 `Last: CONFIRM`과 `Last: PANIC`이 다음 입력 전까지 유지되고, Pi의 BLE 관측에는 각 버튼 해제가 도착하는지 기록한다.
+정식 0.7.25 프로필에서도 확인과 비상 버튼을 각각 눌렀다 뗀다. 1.54인치 ST7789 또는 2.01인치 JD9853에서 `Last: CONFIRM`과 `Last: PANIC`이 다음 입력 전까지 유지되고, Pi의 BLE 관측에는 각 버튼 해제가 도착하는지 기록한다.
 
 Gateway 0.2.82의 [화면 관찰 기록 연결](../raspberry-pi-gateway/TESTING.md#r18-화면-관찰-기록-연결)은 버튼을 뗀 뒤 찍은 사진 또는 영상의 해시와 Pi의 버튼 해제 순번을 한 보고서에 남긴다.
 

@@ -106,12 +106,18 @@ void Peripherals::resume() {
   portENTER_CRITICAL(&mux); sleeping = false; portEXIT_CRITICAL(&mux);
 }
 const char *Peripherals::displayStatus() {
-  portENTER_CRITICAL(&mux); const char *result = displayState; portEXIT_CRITICAL(&mux); return result;
+  portENTER_CRITICAL(&mux);
+  const char *result = displayState;
+  const bool ready = displayReady;
+  portEXIT_CRITICAL(&mux);
+  return ready && auxRail::displayOutputFault() ? "power_output_error" : result;
 }
 KeyringDisplayTest Peripherals::displayTest() {
   portENTER_CRITICAL(&mux);
-  const KeyringDisplayTest result{displayState, drawnConfirmPress, drawnPanicPress};
+  KeyringDisplayTest result{displayState, drawnConfirmPress, drawnPanicPress};
+  const bool ready = displayReady;
   portEXIT_CRITICAL(&mux);
+  if (ready && auxRail::displayOutputFault()) result.status = "power_output_error";
   return result;
 }
 const char *Peripherals::sdStatus() {

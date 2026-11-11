@@ -35,7 +35,7 @@ USB_BOOT_LINE = re.compile(
 )
 BRINGUP_SENSOR_STATUS = ("batteryStatus", "accelStatus", "motion")
 DISPLAY_TEST_PROFILES = {f"keyring-{revision}-{panel}-bringup": panel
-                         for revision in ("0.7.16", "0.7.17", "0.7.18", "0.7.21", "0.7.22", "0.7.23", "0.7.24")
+                         for revision in ("0.7.16", "0.7.17", "0.7.18", "0.7.21", "0.7.22", "0.7.23", "0.7.24", "0.7.25")
                          for panel in ("st7789", "jd9853")}
 BRINGUP_DISPLAY_PROFILES = {
     "keyring-0.7.15-st7789-bringup": "st7789", "keyring-0.7.15-jd9853-bringup": "jd9853",
@@ -47,6 +47,7 @@ APP_DIGEST_PROFILES = {
     "keyring-0.7.22-bringup", "keyring-0.7.22-st7789-bringup", "keyring-0.7.22-jd9853-bringup",
     "keyring-0.7.23-bringup", "keyring-0.7.23-st7789-bringup", "keyring-0.7.23-jd9853-bringup",
     "keyring-0.7.24-st7789-bringup", "keyring-0.7.24-jd9853-bringup",
+    "keyring-0.7.25-bringup", "keyring-0.7.25-st7789-bringup", "keyring-0.7.25-jd9853-bringup",
 }
 
 
@@ -245,7 +246,8 @@ def bringup_fields(frame: dict) -> dict:
     }
     if detail == "health":
         status = sensors.get("display")
-        if status in ("starting", "disabled", "bus_error", "worker_error", "st7789_unverified", "jd9853_unverified"):
+        if status in ("starting", "disabled", "bus_error", "worker_error", "geometry_error",
+                      "power_output_error", "st7789_unverified", "jd9853_unverified"):
             result["displayStatus"] = status
         drawn = sensors.get("displayDrawnPresses")
         if valid_button_presses(drawn):

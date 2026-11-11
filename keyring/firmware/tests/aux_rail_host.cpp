@@ -20,6 +20,7 @@ uint64_t timeUs = 100000;
 bool faultHealthy = true;
 bool motorHigh;
 bool auxHigh, forceAuxLow, failAuxWrite;
+bool backlightHigh, forceBacklightHigh, forceBacklightLow, failBacklightOn, failBacklightOff;
 std::vector<std::pair<int, int>> writes;
 void (*timerCallback)(void *);
 
@@ -37,6 +38,7 @@ int esp_timer_start_periodic(esp_timer_handle_t, uint64_t period) {
 int gpio_get_level(gpio_num_t pin) {
     if (pin == board::MainFaultN) return faultHealthy;
     if (pin == board::Motor) return motorHigh;
+    if (pin == board::LcdBacklight) return (backlightHigh || forceBacklightHigh) && !forceBacklightLow;
     assert(pin == board::AuxEnable);
     return auxHigh && !forceAuxLow;
 }
@@ -45,6 +47,10 @@ int gpio_set_level(gpio_num_t pin, int level) {
     if (pin == board::AuxEnable) {
         if (level && failAuxWrite) return -1;
         auxHigh = level;
+    } else {
+        assert(pin == board::LcdBacklight);
+        if (level ? failBacklightOff : failBacklightOn) return -1;
+        backlightHigh = level;
     }
     return ESP_OK;
 }
@@ -110,4 +116,26 @@ int main() {
     motorHigh = false;
     assert(auxRail::alert(false) && !auxRail::alertInterrupted());
     std::puts("PASS auxiliary enable write and readback failures prevent or interrupt motor alert");
+
+    for (bool *failure : {&failAuxWrite, &forceAuxLow, &failBacklightOn, &forceBacklightHigh}) {
+        *failure = true;
+        assert(!auxRail::displayFor(100) && !auxRail::displayVisible());
+        assert(auxRail::displayOutputFault() && !auxHigh && backlightHigh);
+        *failure = false;
+        assert(auxRail::displayFor(100) && auxRail::displayVisible() && !auxRail::displayOutputFault());
+    }
+    for (bool *failure : {&failBacklightOff, &forceBacklightLow}) {
+        assert(auxRail::displayFor(100) && auxRail::displayVisible());
+        *failure = true;
+        assert(!auxRail::alert(true) && auxRail::alertInterrupted() && !auxHigh);
+        assert(auxRail::displayOutputFault());
+        *failure = false;
+        assert(auxRail::alert(false) && backlightHigh);
+    }
+    assert(auxRail::alert(true) && auxHigh);
+    forceBacklightLow = true;
+    assert(auxRail::alertInterrupted() && !auxHigh && auxRail::displayOutputFault());
+    forceBacklightLow = false;
+    assert(auxRail::alert(false) && !auxRail::alertInterrupted());
+    std::puts("PASS LCD output failures cancel drawing or block alert handover");
 }

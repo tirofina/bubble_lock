@@ -46,13 +46,13 @@ extern "C" esp_err_t __wrap_nvs_flash_init() {
 namespace {
 #if KEYRING_R18_BRINGUP
 #if KEYRING_R18_BRINGUP_DISPLAY == 1
-constexpr char FirmwareRevision[] = "keyring-0.7.24-st7789-bringup";
+constexpr char FirmwareRevision[] = "keyring-0.7.25-st7789-bringup";
 constexpr char BringupPanelField[] = " panel=st7789";
 #elif KEYRING_R18_BRINGUP_DISPLAY == 2
-constexpr char FirmwareRevision[] = "keyring-0.7.24-jd9853-bringup";
+constexpr char FirmwareRevision[] = "keyring-0.7.25-jd9853-bringup";
 constexpr char BringupPanelField[] = " panel=jd9853";
 #else
-constexpr char FirmwareRevision[] = "keyring-0.7.23-bringup";
+constexpr char FirmwareRevision[] = "keyring-0.7.25-bringup";
 constexpr char BringupPanelField[] = "";
 #endif
 char bringupBootRecord[320] = {};
@@ -69,9 +69,9 @@ void readRunningImageDigest(char (&hex)[65]) {
   hex[64] = '\0';
 }
 #elif KEYRING_ENABLE_SLEEP
-constexpr char FirmwareRevision[] = "keyring-0.7.23-sleep";
+constexpr char FirmwareRevision[] = "keyring-0.7.25-sleep";
 #else
-constexpr char FirmwareRevision[] = "keyring-0.7.23";
+constexpr char FirmwareRevision[] = "keyring-0.7.25";
 #endif
 constexpr bool ObservationOnly = KEYRING_R18_BRINGUP != 0;
 #if defined(KEYRING_LEGACY_GATT) && KEYRING_LEGACY_GATT
@@ -336,6 +336,7 @@ void safePins() {
   gpio_set_direction(static_cast<gpio_num_t>(board::AuxEnable), GPIO_MODE_INPUT_OUTPUT);
   output(board::AmpMute, HIGH);
   output(board::LcdBacklight, HIGH);
+  gpio_set_direction(static_cast<gpio_num_t>(board::LcdBacklight), GPIO_MODE_INPUT_OUTPUT);
   output(board::UsbEn1, LOW); // USB100. This firmware never opts into USB500.
   output(board::UsbEn2, LOW);
   output(board::LcdCs, HIGH);
