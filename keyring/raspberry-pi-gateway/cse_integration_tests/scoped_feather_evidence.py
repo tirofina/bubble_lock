@@ -8,6 +8,7 @@ import re
 import sqlite3
 
 from bubble_gateway.config import ID
+from bubble_gateway.integration_evidence import COMMAND_BINDING, inspect_integration_command, require_integration_event
 from bubble_gateway.model import canonical, central_observation_id, iso_time, parse_time, payload_hash, validate_command
 from bubble_gateway.state_identity import metadata, readonly
 from pi_led_cycle import DEVICE, FIRMWARE, STEPS, receipt_name, verify_database, verify_step
@@ -15,7 +16,6 @@ from scoped_feather_pi import DISPLAY_FIRMWARE
 
 GATEWAY = "gw-a"
 ROUTE = "/Mobius/privacy-bubble-test-ae/command-receipts-a"
-BINDING = ("gatewayId", "deviceId", "commandId", "claimId", "grantRevision", "ownershipEpoch")
 SOURCES = {"CSE_CALLBACK", "RECOVERY_SWEEP"}
 
 
@@ -25,7 +25,7 @@ def read_json(path):
 
 
 def matches_approval(event, command, payload_hash, native_stored_at):
-    expected = {key: command[key] for key in BINDING}
+    expected = {key: command[key] for key in COMMAND_BINDING}
     expected.update(contractId="privacy-bubble.integration.v1", docRevision="2.0.0", owner="PC-MOBIUS-INTEGRATION",
                     type="GATEWAY_COMMAND_AUTHORIZED", allowed=True, payloadHash=payload_hash)
     actual = {key: event.get(key) for key in expected}
@@ -162,35 +162,6 @@ def verify_scoped_evidence(cycle, database, inspections, team_state, observed_le
             "commands": commands}
 
 
-def integration_settlement(command, receipt, team_state):
-    command_id = command["commandId"]
-    record = team_state.get("gatewayCommands", {}).get(command_id)
-    digest = payload_hash(command)
-    if (not record or canonical(record["command"]) != canonical(command) or record["payloadHash"] != digest):
-        raise ValueError("Central command does not match the issued bench command")
-    stored = team_state.get("gatewayDeviceReceipts", {}).get(command_id)
-    if stored is None:
-        return None
-    receipt_digest = payload_hash(receipt)
-    if (record.get("executionState") != "APPLIED_VERIFIED" or record.get("lastReceiptHash") != receipt_digest
-            or stored.get("receiptHash") != receipt_digest or canonical(stored.get("receipt")) != canonical(receipt)
-            or canonical(record.get("readback")) != canonical(command["desiredState"])):
-        raise ValueError("Central settlement does not match the native command receipt")
-    return record, stored
-
-
-def require_integration_event(team_state, kind, identity, fields, *, allow_pending=False):
-    matches = [event for event in team_state["receipts"] if event.get("type") == kind
-               and all(event.get(key) == value for key, value in identity.items())]
-    if not matches and allow_pending:
-        return None
-    expected = dict(fields, contractId="privacy-bubble.integration.v1", docRevision="2.0.0")
-    if (len(matches) != 1 or not isinstance(matches[0].get("eventId"), str) or not ID.fullmatch(matches[0]["eventId"])
-            or canonical({key: matches[0].get(key) for key in expected}) != canonical(expected)):
-        raise ValueError(f"Missing or inconsistent {kind} evidence")
-    return matches[0]
-
-
 def integration_observation_event(step, team_state, *, allow_pending=False):
     command, observation = step["command"], step["observation"]
     telemetry_fields = {"gatewayId": command["gatewayId"], "deviceId": command["deviceId"],
@@ -216,36 +187,13 @@ def inspect_integration_step(step, pi_proof, team_state):
     resource = step["cseResource"]
     if not ID.fullmatch(resource["ri"]) or re.fullmatch(r"[0-9]{8}T[0-9]{6}", resource["ct"]) is None:
         raise ValueError("Invalid native receipt resource identity")
-    settlement = integration_settlement(command, receipt, team_state)
+    if pi_proof["payloadHash"] != payload_hash(command) or pi_proof["receiptHash"] != payload_hash(receipt):
+        raise ValueError("Pi evidence differs from the command or native receipt")
+    settlement = inspect_integration_command(command, receipt, team_state)
     if settlement is None:
         raise ValueError("Central command receipt is not settled")
-    record, stored = settlement
-    identity = {key: command[key] for key in ("gatewayId", "commandId")}
-    generation = record["desiredGeneration"]
-    if type(generation) is not int or generation < 1:
-        raise ValueError("Invalid central device generation")
-    start_fields = {key: command[key] for key in BINDING if key not in identity}
-    start_fields.update(payloadHash=pi_proof["payloadHash"], desiredGeneration=generation, executionState="IN_FLIGHT",
-                        dispatchStartedAt=record["dispatchStartedAt"], claimCommittedAt=record["claimCommittedAt"])
-    started_event = require_integration_event(team_state, "GATEWAY_DISPATCH_STARTED", identity, start_fields)
-    settled_fields = {"ueId": command["deviceId"], "epoch": command["ownershipEpoch"], "claimId": command["claimId"],
-                      "payloadHash": pi_proof["payloadHash"], "desiredGeneration": generation,
-                      "executionState": "APPLIED_VERIFIED", "receiptHash": pi_proof["receiptHash"]}
-    settled_event = require_integration_event(team_state, "GATEWAY_RECEIPT_SETTLED", identity, settled_fields)
-
-    issued_at, deadline = map(parse_time, (command["issuedAt"], command["deadline"]))
-    claimed_at, started_at, expires_at, settled_at = map(parse_time, (
-        record["claimCommittedAt"], record["dispatchStartedAt"], record["claimExpiresAt"], record["settledAt"]))
-    receipt_at = parse_time(receipt["receivedAt"])
-    central_received_at = parse_time(stored["receivedAt"])
-    if (not issued_at <= claimed_at <= started_at < expires_at <= deadline
-            or not started_at <= parse_time(started_event["timestamp"]) <= settled_at
-            or not settled_at <= central_received_at <= parse_time(settled_event["timestamp"])
-            or not started_at - timedelta(seconds=2) <= receipt_at <= central_received_at + timedelta(seconds=2)):
-        raise ValueError("Central dispatch and settlement timestamps are inconsistent")
-
     telemetry = integration_observation_event(step, team_state)
-    return {**pi_proof, "dispatchEventId": started_event["eventId"], "settlementEventId": settled_event["eventId"],
+    return {**pi_proof, **settlement,
             "telemetryEventId": telemetry["eventId"], "observationId": telemetry["observationId"],
             "centralTelemetrySequence": telemetry["sequence"], "nativeResourceId": resource["ri"],
             "centralTelemetryPayloadVerified": True if "payloadHash" in observation else None}

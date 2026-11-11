@@ -114,6 +114,12 @@ bubble-keyring-reconcile --env-file "$GATEWAY_ENV" \
 
 r18의 ON은 최대 1,000ms의 펄스다. 펄스 길이와 출력이 꺼지는 시점은 계측기로 기록하고 같은 command ID를 붙인다. 이후 중앙 정산은 아래 절차로 대조한다.
 
+#### 최신 중앙 API 상태 대조
+
+최신 격리 중앙 API로 실행한 경우, 해당 시험의 `.local/scoped/command-api-integration/runtime.json`을 비공개 위치에 복사한다. Gateway 0.2.61의 위 단일 명령 대조에 `--team-state "$TEAM_STATE_COPY"`를 추가한다. 장치·Pi·Mobius4 기록이 먼저 일치해야 중앙 명령 해시, 영수증 본문, 실행 시작·정산 이벤트와 시각을 대조한다. 보고서에는 두 이벤트 ID와 상태 사본의 SHA-256을 남긴다.
+
+`integrationSettlement.status`는 정산 일치, 누락 또는 불일치를 표시한다. 정산이 일치하고 Pi의 Mobius4 영수증 전달이 완료됐으며 ACK가 `APPLIED`이면 `integrationSettlement.originalApplicationMatched`가 참이다. 출력 펄스의 물리 계측은 같은 명령 ID로 보관한다.
+
 ### 격리 PostgreSQL 정산 기록 대조
 
 위 비교 도구의 최신 소스는 장치 기록 파일의 SHA256과 CSE 원본의 `ri`·`ct`도 기록한다. 그 JSON을 비공개 파일에 저장하면 [격리 DB 조회](dev/mobius4/README.md#명령별-영수증-증거-조회)에서 같은 장치·Gateway·명령의 정산 기록을 한 번에 비교할 수 있다. 발급 명령 전체를 결속하는 payload hash, 영수증 hash, readback, CSE 원본 ID와 생성 시각을 확인한다.

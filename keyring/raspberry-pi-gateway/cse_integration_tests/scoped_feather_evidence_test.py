@@ -6,11 +6,12 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+from bubble_gateway.integration_evidence import integration_settlement
 from bubble_gateway.model import central_observation_id, payload_hash
 from bubble_gateway.store import Store
 from pi_led_cycle import receipt_name
 from scoped_feather_evidence import (ROUTE, inspect_command, inspect_integration_step, inspect_interrupted_bench,
-                                    integration_observation_event, integration_settlement, operator_evidence,
+                                    integration_observation_event, operator_evidence,
                                     physical_observations)
 from scoped_feather_led_cycle import record_central_observations
 from scoped_feather_pi import DISPLAY_FIRMWARE

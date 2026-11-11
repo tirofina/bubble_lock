@@ -6,18 +6,22 @@ import asyncio
 from contextlib import closing
 from dataclasses import replace
 from datetime import datetime, timezone
+import hashlib
 from pathlib import Path
 import re
 import sys
 
 from .ble import BleProtocolError, _object
 from .config import ID, GatewayConfig, read_env_file
+from .integration_evidence import inspect_integration_command
 from .journal_export import read_archive
 from .model import canonical, iso_time, parse_time, payload_hash, validate_command
 from .state_archive import _file_digest
 from .state_identity import StateIdentityError, configured_binding, match, metadata, readonly
 from .store import Store
 from .transport import RemoteResponseError, TransportHub
+
+TEAM_STATE_MAX_BYTES = 32 * 1024 * 1024
 
 
 def _read_gateway_archive(directory: Path, expected: dict, command_ids: list[str]) -> tuple[str, dict]:
@@ -70,7 +74,7 @@ def _bound_receipt(config, device_id, record, row):
             or command["desiredState"]["state"] is not record["desiredState"]):
         raise ValueError("device record differs from archived command")
     if row["receipt"] is None:
-        return None
+        return command, None
     receipt = _object(row["receipt"].encode("utf-8"), 8192)
     expected = {key: command[key] for key in (*fields, "gatewayId", "deviceId")}
     expected.update(version=1, payloadHash=record["payloadHash"], status=row["status"])
@@ -79,7 +83,7 @@ def _bound_receipt(config, device_id, record, row):
             or not isinstance(receipt.get("ackCode"), str)):
         raise ValueError("archived receipt differs from command identity")
     parse_time(receipt["receivedAt"])
-    return receipt
+    return command, receipt
 
 
 def _compared_result(record, receipt, *, expected_firmware=None):
@@ -99,7 +103,9 @@ def _compared_result(record, receipt, *, expected_firmware=None):
 
 async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive: Path, *,
                     same_boot_command: str | None = None, board_revision: str | None = None,
-                    firmware_revision: str | None = None) -> dict:
+                    firmware_revision: str | None = None, team_state: dict | None = None) -> dict:
+    if team_state is not None and same_boot_command is None:
+        raise ValueError("Team state comparison requires a same-boot command")
     journal, records = read_archive(device_archive)
     identity = journal["identity"]
     device_id = identity["deviceId"]
@@ -122,6 +128,7 @@ async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive
                                              [record["commandId"] for record in records])
     transport = TransportHub(replace(config, mqtt_enabled=False, core_bridge_enabled=False))
     results = []
+    central = {"status": "journal_review_required", "originalApplicationMatched": False} if team_state is not None else None
     await transport.start()
     try:
         for record in records:
@@ -135,7 +142,7 @@ async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive
                 result["result"] = "missing_gateway_command"
                 continue
             try:
-                receipt = _bound_receipt(config, device_id, record, row)
+                command, receipt = _bound_receipt(config, device_id, record, row)
             except (ValueError, KeyError, TypeError, AttributeError, BleProtocolError):
                 result["result"] = "gateway_binding_mismatch"
                 continue
@@ -171,6 +178,17 @@ async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive
             else:
                 result["result"] = _compared_result(
                     record, receipt, expected_firmware=firmware_revision if selected is not None else None)
+            if central is not None and result["result"] == "matched_applied":
+                try:
+                    proof = inspect_integration_command(command, receipt, team_state)
+                except (ValueError, KeyError, TypeError, AttributeError, OverflowError):
+                    central["status"] = "settlement_mismatch"
+                else:
+                    if proof is None:
+                        central["status"] = "settlement_missing"
+                    else:
+                        central.update(proof, status="settlement_matched",
+                                       originalApplicationMatched=result["gatewayDelivered"] and receipt["ackCode"] == "APPLIED")
     finally:
         await transport.close()
     return {"reportVersion": 1, "checkedAt": iso_time(), "gatewayId": config.gateway_id, "deviceId": device_id,
@@ -178,8 +196,10 @@ async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive
             "gatewayArchiveId": archive_id, "deviceSnapshotId": journal["deviceSnapshot"]["snapshotId"],
             "deviceRecordsSha256": journal["files"][0]["sha256"], "recordCount": len(records),
             **({"selectedCommand": selected} if selected is not None else {}),
+            **({"integrationSettlement": central} if central is not None else {}),
             "settlementStatus": "not-settled", "deviceJournalModified": False,
-            "reviewCount": sum(row["result"] != "matched_applied" or not row["gatewayDelivered"] for row in results),
+            "reviewCount": sum(row["result"] != "matched_applied" or not row["gatewayDelivered"]
+                               or (central is not None and not central["originalApplicationMatched"]) for row in results),
             "results": results}
 
 
@@ -192,17 +212,25 @@ def main():
                         help="Compare one command from the same device boot as the journal capture")
     parser.add_argument("--board-revision", help="Expected board revision for --same-boot-command")
     parser.add_argument("--firmware-revision", help="Expected firmware revision for --same-boot-command")
+    parser.add_argument("--team-state", type=Path, help="Private scoped integration runtime.json snapshot")
     args = parser.parse_args()
     if args.same_boot_command is not None:
         if not ID.fullmatch(args.same_boot_command) or not args.board_revision or not args.firmware_revision:
             parser.error("--same-boot-command requires a valid command ID, --board-revision and --firmware-revision")
-    elif args.board_revision is not None or args.firmware_revision is not None:
-        parser.error("Revision options require --same-boot-command")
+    elif args.board_revision is not None or args.firmware_revision is not None or args.team_state is not None:
+        parser.error("Revision options and --team-state require --same-boot-command")
     try:
         read_env_file(args.env_file)
+        state = None
+        if args.team_state is not None:
+            with args.team_state.open("rb") as stream:
+                raw = stream.read(TEAM_STATE_MAX_BYTES + 1)
+            state = _object(raw, TEAM_STATE_MAX_BYTES)
         report = asyncio.run(reconcile(GatewayConfig.from_env(), args.device_archive, args.gateway_archive,
                                        same_boot_command=args.same_boot_command, board_revision=args.board_revision,
-                                       firmware_revision=args.firmware_revision))
+                                       firmware_revision=args.firmware_revision, team_state=state))
+        if state is not None:
+            report["integrationStateSha256"] = hashlib.sha256(raw).hexdigest()
         print(canonical(report))
     except KeyboardInterrupt:
         raise SystemExit(130) from None

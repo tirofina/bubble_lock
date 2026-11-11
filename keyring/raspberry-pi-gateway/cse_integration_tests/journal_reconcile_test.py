@@ -1,5 +1,6 @@
 """Opt-in real Mobius4 readback against synthetic journal and private Gateway archives."""
 import asyncio
+from datetime import timedelta
 import hashlib
 import json
 import os
@@ -14,7 +15,7 @@ import uuid
 
 import httpx
 from bubble_gateway.config import GatewayConfig
-from bubble_gateway.model import canonical, payload_hash
+from bubble_gateway.model import canonical, iso_time, parse_time, payload_hash
 from bubble_gateway.service import Gateway
 from bubble_gateway.state_archive import archive
 from bubble_gateway.store import Store
@@ -133,10 +134,36 @@ class JournalReconcileTests(unittest.IsolatedAsyncioTestCase):
                 if name == "applied":
                     gateway.store.stage_receipts(self.parent, False)
                     gateway.store.delivered(rqi)
+                if current_boot:
+                    self.integration_state = self.directory / "runtime.json"
+                    self.integration_state.write_text(canonical(self.applied_integration_state(cmd, receipt)),
+                                                      encoding="utf-8")
         self.write_device_archive(records)
         # Windows does not implement POSIX directory fsync; the SQLite backup is real.
         with patch("bubble_gateway.state_archive._sync_directory"):
             archive(self.config, self.gateway_archive, adopt=False, timeout=5)
+
+    def applied_integration_state(self, command, receipt):
+        command_id = command["commandId"]
+        digest, receipt_digest = payload_hash(command), payload_hash(receipt)
+        claimed = iso_time(parse_time(command["issuedAt"]) + timedelta(milliseconds=100))
+        started = iso_time(parse_time(claimed) + timedelta(milliseconds=100))
+        settled = iso_time(parse_time(receipt["receivedAt"]) + timedelta(milliseconds=100))
+        record = {"command": command, "payloadHash": digest, "lastReceiptHash": receipt_digest,
+                  "executionState": "APPLIED_VERIFIED", "readback": receipt["readback"], "desiredGeneration": 1,
+                  "claimCommittedAt": claimed, "dispatchStartedAt": started,
+                  "claimExpiresAt": command["deadline"], "settledAt": settled}
+        envelope = {"contractId": "privacy-bubble.integration.v1", "docRevision": "2.0.0",
+                    "gatewayId": command["gatewayId"], "commandId": command_id, "claimId": command["claimId"],
+                    "payloadHash": digest, "desiredGeneration": 1}
+        dispatch_event = dict(envelope, type="GATEWAY_DISPATCH_STARTED", eventId="evt-dispatch", timestamp=started,
+                              executionState="IN_FLIGHT", deviceId=command["deviceId"], ownershipEpoch=command["ownershipEpoch"],
+                              grantRevision=command["grantRevision"], dispatchStartedAt=started, claimCommittedAt=claimed)
+        settlement_event = dict(envelope, type="GATEWAY_RECEIPT_SETTLED", eventId="evt-settlement", timestamp=settled,
+                                executionState="APPLIED_VERIFIED", ueId=command["deviceId"], epoch=command["ownershipEpoch"],
+                                receiptHash=receipt_digest)
+        return {"gatewayCommands": {command_id: record}, "receipts": [dispatch_event, settlement_event],
+                "gatewayDeviceReceipts": {command_id: {"receiptHash": receipt_digest, "receipt": receipt, "receivedAt": settled}}}
 
     async def audit(self, *options):
         process = await asyncio.create_subprocess_exec(
@@ -215,6 +242,28 @@ class JournalReconcileTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(report["results"][0]["gatewayAckCode"], "APPLIED")
         self.assertEqual(report["results"][0]["result"], "matched_applied")
         self.assertNotIn(b"boot-now", stdout)
+
+        raw = self.integration_state.read_bytes()
+        options = ("--same-boot-command", "applied", *revisions, "--team-state", str(self.integration_state))
+        status, stdout, stderr = await self.audit(*options)
+        self.assertEqual(status, 0, stderr.decode())
+        report = json.loads(stdout)
+        self.assertEqual(report["integrationStateSha256"], hashlib.sha256(raw).hexdigest())
+        self.assertEqual(report["integrationSettlement"], {
+            "status": "settlement_matched", "originalApplicationMatched": True,
+            "dispatchEventId": "evt-dispatch", "settlementEventId": "evt-settlement",
+        })
+        self.assertEqual(report["reviewCount"], 0)
+        state = json.loads(raw)
+        state["receipts"][0]["claimId"] = "different-claim"
+        self.integration_state.write_text(canonical(state), encoding="utf-8")
+        status, stdout, stderr = await self.audit(*options)
+        self.assertEqual(status, 0, stderr.decode())
+        report = json.loads(stdout)
+        self.assertEqual(report["integrationSettlement"], {
+            "status": "settlement_mismatch", "originalApplicationMatched": False,
+        })
+        self.assertEqual(report["reviewCount"], 1)
 
         for command_id, error in (("missing-cse", b"RECONCILE_DEVICE_BOOT_MISMATCH"),
                                   ("unknown", b"RECONCILE_DEVICE_COMMAND_MISSING")):
