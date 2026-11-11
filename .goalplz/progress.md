@@ -1276,3 +1276,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01~R03, R10. 직전 goal turn은 중�
 - 빈 자리 한 개·두 개, 공간 회복과 재시작 후 중복 등록 방지를 다루는 회귀시험 소스를 추가했다. 공통 SQLite 용량 상한이 적용된다. 빌드·회귀시험·실제 Pi 연동은 미실행이다. 두 서버와 Pi의 실제 영수증 대조 및 제작 PCB 검증이 남아 있다.
 
 소스 commit `2e0d5607ee7b679012ecea45aa8274a17057b19d`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8312341..2e0d560`다. goal은 active/progress다.
+
+## 2026-11-11 — Mobius4 장애 중 정기 상태 보고 적재 제한
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 SQLite 영수증 등록을 분리한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 중앙 관측 보관, CORE ACK와 웹 수용 경계를 확인했다.
+
+- Gateway `0.2.53`은 일반 상태 보고가 응답을 기다리면 새 정기 보고를 SQLite에 추가하지 않는다. 기존 본문·요청 ID·재시도 시각을 유지하고, 기다리는 동안의 새 보고는 `health_deferred_pending`으로 집계한다. 업그레이드 전 저장한 보고도 보존한다. 자격 상태 전환은 전용 저널과 순서에 따라 전달한다. [Gateway 통신 메모](../keyring/raspberry-pi-gateway/IO_NOTES.md)
+- 재시작과 지연 중 본문 보존, 자격 전환·공용 컨테이너 관측과 동시 적재를 다루는 회귀시험 소스를 추가했다. 빌드·회귀시험·실제 Pi 연동은 미실행이다. Pi와 Mobius4의 실제 장애·복구 및 제작 PCB 검증이 남아 있다.
+
+소스 commit `3f6864a71d03dd5568357ee1c9f23960c20aa177`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `34391f7..3f6864a`다. goal은 active/progress다.
