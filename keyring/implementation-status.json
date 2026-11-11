@@ -173,18 +173,18 @@
   "firmwareRevision": "keyring-0.7.14",
   "benchFirmwareRevision": "feather-probe-0.2.1",
   "publication": {
-    "sourceCommit": "0990c21e31b7e984cd11f9b25b344c5be5f9250c",
+    "sourceCommit": "e9f8a41f07ca6b4d8073204e30671a3e32c2a853",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "0990c21e31b7e984cd11f9b25b344c5be5f9250c",
-    "lastPushedCommit": "0990c21e31b7e984cd11f9b25b344c5be5f9250c",
-    "latestCheckpoint": "Add observation-only r18 LCD diagnostics for ST7789 and JD9853.",
-    "lastPushedCommitBeforeThisCheckpoint": "1fa30414b25e0950a3d9d2c47d465773b82e140e"
+    "latestLocalSourceCommit": "e9f8a41f07ca6b4d8073204e30671a3e32c2a853",
+    "lastPushedCommit": "e9f8a41f07ca6b4d8073204e30671a3e32c2a853",
+    "latestCheckpoint": "Pair r18 external meter values with exact INA219 samples from the initial BLE session.",
+    "lastPushedCommitBeforeThisCheckpoint": "355b1aafa713776239d7100688ba3a60c8dbcf46"
   },
-  "gatewayRevision": "0.2.68",
-  "pendingValidationScope": "r18 ST7789/JD9853 observation-only builds, physical LCD checks and Gateway 0.2.68 USB/BLE profile evidence, Gateway 0.2.67 offline native receipt comparison with actual Pi and device archives, Gateway 0.2.66 post-pulse OFF telemetry acceptance on the actual r18 bench, Gateway 0.2.65 scoped r18 container pins, Gateway 0.2.64 interrupted r18 evidence with actual artifacts, Gateway 0.2.63 r18 Pi evidence export and journal capture, operator-triggered scoped r18 pulse bench and physical pulse measurement, Gateway 0.2.62 r18 Pi preflight, actual BLE board pin and Mobius4 publication, Gateway 0.2.61 r18 command reconciliation with the latest central API snapshot, Gateway 0.2.59 initial and final r18 sensor capture and r18 0.7.15-bringup USB replay, Gateway 0.2.57 HTTPS Retry-After restart and SQLite schema upgrade, central Retry-After outbox hold, pinned Mobius4 observation delivery, central API datastore binding and deployment transition, health snapshot admission during CSE outages, independent central receipt staging and delivery, central telemetry retention and independent delivery, central receipt replay and database upgrade, central dispatch-start and pinned-receipt restart and replay, Feather 0.2.1 flash and visible ST7789 command state, r18 physical commands and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE MQTT ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
+  "gatewayRevision": "0.2.69",
+  "pendingValidationScope": "Gateway 0.2.69 r18 INA219 and external meter pairing, r18 ST7789/JD9853 observation-only builds, physical LCD checks and Gateway 0.2.68 USB/BLE profile evidence, Gateway 0.2.67 offline native receipt comparison with actual Pi and device archives, Gateway 0.2.66 post-pulse OFF telemetry acceptance on the actual r18 bench, Gateway 0.2.65 scoped r18 container pins, Gateway 0.2.64 interrupted r18 evidence with actual artifacts, Gateway 0.2.63 r18 Pi evidence export and journal capture, operator-triggered scoped r18 pulse bench and physical pulse measurement, Gateway 0.2.62 r18 Pi preflight, actual BLE board pin and Mobius4 publication, Gateway 0.2.61 r18 command reconciliation with the latest central API snapshot, Gateway 0.2.59 initial and final r18 sensor capture and r18 0.7.15-bringup USB replay, Gateway 0.2.57 HTTPS Retry-After restart and SQLite schema upgrade, central Retry-After outbox hold, pinned Mobius4 observation delivery, central API datastore binding and deployment transition, health snapshot admission during CSE outages, independent central receipt staging and delivery, central telemetry retention and independent delivery, central receipt replay and database upgrade, central dispatch-start and pinned-receipt restart and replay, Feather 0.2.1 flash and visible ST7789 command state, r18 physical commands and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE MQTT ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
     "supersededBy": "2026-11-10 benchCheckpoint for current execution and verification state",
@@ -205,7 +205,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Add panel-specific observation-only r18 LCD bring-up profiles under DOC-REV 2.0.0",
+    "executionRequest": "Pair physical meter values with the r18 INA219 capture under DOC-REV 2.0.0",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -214,8 +214,8 @@
     ],
     "latestRemoteCore": "d54a43a",
     "latestRemoteMain": "bc2a45d",
-    "sourceCommit": "0990c21e31b7e984cd11f9b25b344c5be5f9250c",
-    "sourceValidation": "Regression source covers both LCD profile identifiers, absent or mismatched USB panel and same-boot evidence. Firmware builds, static analysis, tests, flash, Pi access and physical LCD validation were not executed.",
+    "sourceCommit": "e9f8a41f07ca6b4d8073204e30671a3e32c2a853",
+    "sourceValidation": "Regression source covers load-side-only arithmetic, capture digest, first session and exact sample matching. Build, static analysis, tests, Pi access and physical measurements were not executed.",
     "goalComplete": false,
     "pendingInput": null,
     "currentDependencyState": "The Feather 0.2.0 and Pi Gateway 0.2.43 command path matched isolated Mobius4 and PostgreSQL on the pinned 715ef58 API. The operator saw no LED change during either command. Feather 0.2.1 mirrors the command GPIO readback on the ST7789. The latest Pi integration workflow and LCD response still need hardware evidence, as do r18 first power-on, physical reconnect, battery, LCD, charger, sensor, NVS fault, power, range and wake. Production CSE, CORE and release acceptance remain.",
@@ -1506,5 +1506,13 @@
     "regressionsExecuted": false,
     "physicalDisplayVerified": false,
     "sourceCommit": "0990c21e31b7e984cd11f9b25b344c5be5f9250c"
+  },
+  "r18ExternalPowerEvidence": {
+    "reference": "raspberry-pi-gateway/TESTING.md#r18-첫-구동의-외부-계측값-연결",
+    "gatewayVersion": "0.2.69",
+    "regressionsExecuted": false,
+    "piVerified": false,
+    "externalMeterCompared": false,
+    "sourceCommit": "e9f8a41f07ca6b4d8073204e30671a3e32c2a853"
   }
 }

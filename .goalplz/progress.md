@@ -1486,3 +1486,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R05. 직전 goal turn은 장
 - Gateway 0.2.68은 USB 패널 값과 펌웨어 revision을 대조하고 같은 부팅의 Pi 보고서에 기록한다. 화면 자체는 육안 확인이 필요하며 구매 JD9853의 초기화·색·크기는 미확인이다. 회귀시험 소스는 추가했으며 빌드·시험·정적 분석·flash·Pi·실물 구동은 미수행이다.
 
 소스 commit `0990c21e31b7e984cd11f9b25b344c5be5f9250c`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1fa3041..0990c21`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 INA219와 외부 계측값 연결
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R05. 직전 goal turn은 두 LCD 점검 프로필을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 중앙 `sensorValues` 계약과 로컬 INA219 부하 측 계측 정의를 대조했다.
+
+- Gateway 0.2.69의 Pi 기록은 USB와 같은 부팅의 첫 BLE 세션에서 INA219 순번·계측 uptime을 표시한다. 오프라인 도구는 운영자 계측 파일을 정확한 Pi 캡처와 샘플에 연결한다. 3.3V 부하 측의 차이만 계산하며 USB 입력·배터리 단자 값은 측정 지점과 함께 기록한다. [외부 계측값 연결](../keyring/raspberry-pi-gateway/TESTING.md#r18-첫-구동의-외부-계측값-연결)
+- 캡처 해시, 다른 세션·다른 샘플, 측정 지점별 계산을 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·Pi 접속·BLE·실물 전원 계측은 미수행이다.
+
+소스 commit `e9f8a41f07ca6b4d8073204e30671a3e32c2a853`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `355b1aa..e9f8a41`다. goal은 active/progress다.
