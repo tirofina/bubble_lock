@@ -15,7 +15,8 @@ PARENT = "/Mobius/privacy-bubble-test-ae"
 CSE_DEPLOYMENT = "scoped-mobius4"
 API_PORTS = {"legacy": 8787, "integration": 8788}
 INTEGRATION_TEAM_REVISION = "bc2a45dfcc014b7cdb0a57a03aca2c04ca8eb989"
-COMMAND_FIRMWARES = ("feather-probe-0.2.0", "feather-probe-0.2.1")
+DISPLAY_FIRMWARE = "feather-probe-0.2.1"
+COMMAND_FIRMWARES = ("feather-probe-0.2.0", DISPLAY_FIRMWARE)
 
 
 class ScopedApiError(ValueError):

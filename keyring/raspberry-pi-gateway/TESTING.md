@@ -195,7 +195,7 @@ $env:PYTHONPATH = Join-Path $PWD 'keyring/raspberry-pi-gateway/src'
 python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_led_cycle.py --output $bench
 ```
 
-Feather 화면에 명령 상태를 표시하는 `feather-probe-0.2.1`을 쓰려면 Pi의 `scoped_feather_pi.py prepare`와 PC의 `scoped_feather_led_cycle.py`에 모두 `--firmware-revision feather-probe-0.2.1`을 지정한다. 시작 시 `CMD OFF`, ON 영수증 확인 뒤 `CMD ON`, OFF 영수증 확인 뒤 `CMD OFF`를 눈으로 확인한다. 화면 문구는 `ledOn` 증거와 별도로 기록한다. 기본 옵션은 기존 `feather-probe-0.2.0` 절차에 맞춰져 있다.
+Feather 화면에 명령 상태를 표시하는 `feather-probe-0.2.1`을 쓰려면 Pi의 `scoped_feather_pi.py prepare`와 PC의 `scoped_feather_led_cycle.py`에 모두 `--firmware-revision feather-probe-0.2.1`을 지정한다. 시작 시 `CMD OFF`를 확인한다. `LED_ON_RECORDED`와 `LED_OFF_RECORDED`가 각각 나온 뒤, 다음 명령을 보내거나 Pi 시험을 끝내기 전에 눈으로 본 화면을 기록한다. 기본 옵션은 기존 `feather-probe-0.2.0` 절차에 맞춰져 있다.
 
 `LED_ON_READY`, `LED_OFF_READY`가 각각 출력된 뒤에만 `$bench`에 해당 이름의 `LED_ON`, `LED_OFF` 파일을 만든다. 각 단계는 같은 부팅 세션의 명령 전 관측을 읽고, 팀 API에서 60초 grant를 받은 뒤 25초 기한의 명령을 발급한다. 실제 LED를 눈으로 확인한 결과는 따로 기록한다. 도구는 Mobius4 원본 영수증과 명령 후 관측을 확인하고 단계별 grant 회수 응답을 로컬에 저장한다.
 
@@ -213,6 +213,8 @@ Pi 사본이 없으면 `--database`를 생략한다. 발급 요청의 응답 파
 #### 실물 명령 증거 대조
 
 두 명령이 끝나면 Pi SQLite 사본을 준비하고 `led-cycle.json`의 각 command ID로 [읽기 전용 정산 조회](../dev/mobius4/README.md#명령별-영수증-증거-조회)를 저장한다. `$teamState`는 같은 시험에서 팀 명령 API가 저장한 `runtime.json`의 사본이다. 운영자가 실제 LED를 확인한 경우에만 `--operator-observations`로 ON/OFF 순서의 JSON 배열을 공급한다. 각 항목은 `commandId`, `ledOn` 불리언, 시간대가 있는 `observedAt`을 포함한다.
+
+화면을 확인한 경우 `--display-observations`에 ON/OFF 순서의 JSON 배열을 공급한다. 각 행의 `commandId`는 `led-on-readback.json` 또는 `led-off-readback.json`의 `command.commandId`에서 가져온다. `observedAt`에는 실제로 본 시각과 시간대를, `screenText`에는 눈으로 읽은 `CMD ON`, `CMD OFF`, `CMD GPIO ERROR` 중 하나를 넣는다. 문구가 보이지 않았으면 `null`을 기록한다. 도구는 0.2.1로 실행한 두 명령의 후속 관측 시각 및 다음 명령 발급 시각과 대조한다. `commandDisplayMatched`는 두 문구의 일치 여부이며 화면 기록 파일을 생략하면 `null`이다.
 
 ```powershell
 python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_evidence.py `
@@ -236,7 +238,7 @@ python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_evidenc
   --database $piDatabaseCopy --team-state $teamState
 ```
 
-보고서는 명령별 중앙 실행 시작·정산·관측 수용 이벤트 ID를 반환한다. Pi의 컨테이너 ID와 중앙 영수증 대기열, 중앙 영수증 해시와 읽어 온 장치 상태, 중앙 관측의 부팅 ID·순번·시각을 대조한다. 직접 본 LED 상태는 `--operator-observations`로 전달한다. 현재 도구의 실행과 실제 Pi 연동 시험은 남아 있다.
+보고서는 명령별 중앙 실행 시작·정산·관측 수용 이벤트 ID를 반환한다. Pi의 컨테이너 ID와 중앙 영수증 대기열, 중앙 영수증 해시와 읽어 온 장치 상태, 중앙 관측의 부팅 ID·순번·시각을 대조한다. 직접 본 LED 상태에는 `--operator-observations`를, 0.2.1 화면 문구에는 `--display-observations`를 사용한다. 현재 도구의 실행과 실제 Pi 연동 시험은 남아 있다.
 
 #### Pi 명령 세션
 

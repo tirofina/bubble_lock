@@ -8,7 +8,8 @@ from bubble_gateway.model import central_observation_id, payload_hash
 from bubble_gateway.store import Store
 from pi_led_cycle import receipt_name
 from scoped_feather_evidence import (ROUTE, inspect_command, inspect_integration_step, inspect_interrupted_bench,
-                                    integration_settlement, physical_observations)
+                                    integration_settlement, operator_evidence, physical_observations)
+from scoped_feather_pi import DISPLAY_FIRMWARE
 from helpers import BINDING
 
 
@@ -55,6 +56,42 @@ class ScopedFeatherEvidenceTests(unittest.TestCase):
         self.assertIsNone(physical_observations([self.step], None))
         observed = {"commandId": "led-on", "ledOn": False, "observedAt": "2026-11-10T09:00:03.000Z"}
         self.assertFalse(physical_observations([self.step], [observed])[0]["matched"])
+
+    def display_fixture(self):
+        on = dict(self.step, observation={"receivedAt": "2026-11-10T09:00:04.000Z"})
+        off = {"command": dict(on["command"], commandId="led-off", desiredState={"state": False},
+                               issuedAt="2026-11-10T09:00:09.000Z"),
+               "observation": {"receivedAt": "2026-11-10T09:00:12.000Z"}}
+        cycle = {"firmwareRevision": DISPLAY_FIRMWARE, "steps": [on, off]}
+        observations = [{"commandId": "led-on", "screenText": "CMD ON", "observedAt": "2026-11-10T09:00:05.000Z"},
+                        {"commandId": "led-off", "screenText": "CMD OFF", "observedAt": "2026-11-10T09:00:13.000Z"}]
+        return cycle, observations
+
+    def test_screen_reports_seen_mismatches_and_keeps_led_result_independent(self):
+        cycle, observations = self.display_fixture()
+        report = operator_evidence(cycle, None, observations)
+        self.assertTrue(report["commandDisplayMatched"])
+        self.assertIsNone(report["physicalLedMatched"])
+        for text in ("CMD OFF", "CMD GPIO ERROR", None):
+            with self.subTest(text=text):
+                observations[0]["screenText"] = text
+                report = operator_evidence(cycle, None, observations)
+                self.assertFalse(report["commandDisplayMatched"])
+                self.assertEqual(report["commandDisplayObserved"][0]["screenText"], text)
+        self.assertIsNone(operator_evidence(cycle, None, None)["commandDisplayMatched"])
+
+    def test_screen_requires_correct_firmware_command_and_observation_interval(self):
+        cycle, observations = self.display_fixture()
+        with self.assertRaisesRegex(ValueError, "requires the Feather display firmware"):
+            operator_evidence(dict(cycle, firmwareRevision="feather-probe-0.2.0"), None, observations)
+        for invalid in (dict(observations[0], commandId="led-off"),
+                        dict(observations[0], observedAt="2026-11-10T09:00:03.000Z"),
+                        dict(observations[0], observedAt="2026-11-10T09:00:09.000Z")):
+            with self.subTest(observation=invalid):
+                with self.assertRaisesRegex(ValueError, "recorded command interval"):
+                    operator_evidence(cycle, None, [invalid, observations[1]])
+        with self.assertRaisesRegex(ValueError, "Invalid command display text"):
+            operator_evidence(cycle, None, [dict(observations[0], screenText="ON"), observations[1]])
 
     def integration_fixture(self):
         command = self.step["command"]

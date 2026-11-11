@@ -11,6 +11,7 @@ from bubble_gateway.config import ID
 from bubble_gateway.model import canonical, central_observation_id, iso_time, parse_time, payload_hash, validate_command
 from bubble_gateway.state_identity import metadata, readonly
 from pi_led_cycle import DEVICE, FIRMWARE, STEPS, receipt_name, verify_database, verify_step
+from scoped_feather_pi import DISPLAY_FIRMWARE
 
 GATEWAY = "gw-a"
 ROUTE = "/Mobius/privacy-bubble-test-ae/command-receipts-a"
@@ -108,7 +109,42 @@ def physical_observations(steps, observations):
     return report
 
 
-def verify_scoped_evidence(cycle, database, inspections, team_state, observed_led=None, *, prior_expired_commands=()):
+def display_observations(cycle, observations):
+    if observations is None:
+        return None
+    if cycle.get("firmwareRevision") != DISPLAY_FIRMWARE:
+        raise ValueError("Command display evidence requires the Feather display firmware")
+    steps = cycle["steps"]
+    if not isinstance(observations, list) or len(observations) != len(steps):
+        raise ValueError("Record one screen observation for each command")
+    report = []
+    for index, (step, observation) in enumerate(zip(steps, observations)):
+        if not isinstance(observation, dict) or observation.keys() != {"commandId", "screenText", "observedAt"}:
+            raise ValueError("Invalid command display observation fields")
+        command = step["command"]
+        text = observation["screenText"]
+        if text not in ("CMD ON", "CMD OFF", "CMD GPIO ERROR", None):
+            raise ValueError("Invalid command display text")
+        when = parse_time(observation["observedAt"])
+        if (observation["commandId"] != command["commandId"]
+                or when < parse_time(step["observation"]["receivedAt"])
+                or (index + 1 < len(steps) and when >= parse_time(steps[index + 1]["command"]["issuedAt"]))):
+            raise ValueError("Command display observation is outside the recorded command interval")
+        expected = "CMD ON" if command["desiredState"]["state"] else "CMD OFF"
+        report.append({**observation, "matched": text == expected})
+    return report
+
+
+def operator_evidence(cycle, observed_led, observed_display):
+    led = physical_observations(cycle["steps"], observed_led)
+    display = display_observations(cycle, observed_display)
+    return {"physicalLedObserved": led, "physicalLedMatched": None if led is None else all(row["matched"] for row in led),
+            "commandDisplayObserved": display,
+            "commandDisplayMatched": None if display is None else all(row["matched"] for row in display)}
+
+
+def verify_scoped_evidence(cycle, database, inspections, team_state, observed_led=None, *, observed_display=None,
+                           prior_expired_commands=()):
     steps = cycle["steps"]
     if len(set(prior_expired_commands)) != len(prior_expired_commands):
         raise ValueError("Specify each prior expired command once")
@@ -117,13 +153,11 @@ def verify_scoped_evidence(cycle, database, inspections, team_state, observed_le
         raise ValueError("Provide one PostgreSQL inspection for each command")
     commands = [inspect_command(step, pi_proof, inspection, team_state)
                 for step, pi_proof, inspection in zip(steps, proof["commands"], inspections)]
-    observations = physical_observations(steps, observed_led)
     return {"piCseBindingVerified": True,
             "priorExpiredCommandCount": len(prior_expired_commands),
             "centralSettlementVerified": all(row["settlementVerified"] for row in commands),
             "cseCallbackRecorded": all("CSE_CALLBACK" in row["deliverySources"] for row in commands),
-            "physicalLedObserved": observations,
-            "physicalLedMatched": None if observations is None else all(row["matched"] for row in observations),
+            **operator_evidence(cycle, observed_led, observed_display),
             "commands": commands}
 
 
@@ -200,7 +234,8 @@ def inspect_integration_step(step, pi_proof, team_state):
             "centralTelemetrySequence": sequence, "nativeResourceId": resource["ri"]}
 
 
-def verify_integration_evidence(cycle, database, team_state, observed_led=None, *, prior_expired_commands=()):
+def verify_integration_evidence(cycle, database, team_state, observed_led=None, *, observed_display=None,
+                                prior_expired_commands=()):
     if len(set(prior_expired_commands)) != len(prior_expired_commands):
         raise ValueError("Specify each prior expired command once")
     proof = verify_database(cycle, database, gateway_id=GATEWAY, prior_expired_commands=prior_expired_commands,
@@ -209,11 +244,9 @@ def verify_integration_evidence(cycle, database, team_state, observed_led=None, 
     commands = [inspect_integration_step(step, pi_proof, team_state) for step, pi_proof in zip(steps, proof["commands"])]
     if commands[0]["centralTelemetrySequence"] >= commands[1]["centralTelemetrySequence"]:
         raise ValueError("Central telemetry order does not match the LED cycle")
-    observations = physical_observations(steps, observed_led)
     return {"piCseBindingVerified": True, "centralDispatchVerified": True, "centralSettlementVerified": True,
             "centralTelemetryVerified": True, "priorExpiredCommandCount": len(prior_expired_commands),
-            "physicalLedObserved": observations,
-            "physicalLedMatched": None if observations is None else all(row["matched"] for row in observations),
+            **operator_evidence(cycle, observed_led, observed_display),
             "commands": commands}
 
 
@@ -365,6 +398,7 @@ if __name__ == "__main__":
     parser.add_argument("--team-state", required=True, type=Path)
     parser.add_argument("--api-mode", choices=("legacy", "integration"), default="legacy")
     parser.add_argument("--operator-observations", type=Path)
+    parser.add_argument("--display-observations", type=Path, help="Operator observations of the Feather command display")
     parser.add_argument("--prior-expired-command", action="append", default=[],
                         help="Exact command ID of an earlier, delivered pre-device expiration in the same Pi database")
     args = parser.parse_args()
@@ -372,7 +406,7 @@ if __name__ == "__main__":
         parser.error("Integration mode requires --cycle and --database and reads settlement from --team-state")
     if args.api_mode == "legacy" and args.cycle and not (args.database and args.on_inspection and args.off_inspection):
         parser.error("--cycle requires --database, --on-inspection and --off-inspection")
-    if args.interrupted_output and (args.on_inspection or args.off_inspection or args.operator_observations
+    if args.interrupted_output and (args.on_inspection or args.off_inspection or args.operator_observations or args.display_observations
                                     or args.prior_expired_command):
         parser.error("Settlement and operator inputs require a completed --cycle")
     try:
@@ -383,6 +417,7 @@ if __name__ == "__main__":
             result = verify_integration_evidence(
                 read_json(args.cycle), args.database, team_state,
                 read_json(args.operator_observations) if args.operator_observations else None,
+                observed_display=read_json(args.display_observations) if args.display_observations else None,
                 prior_expired_commands=args.prior_expired_command,
             )
         else:
@@ -390,6 +425,7 @@ if __name__ == "__main__":
                                             [read_json(args.on_inspection), read_json(args.off_inspection)],
                                             team_state,
                                             read_json(args.operator_observations) if args.operator_observations else None,
+                                            observed_display=read_json(args.display_observations) if args.display_observations else None,
                                             prior_expired_commands=args.prior_expired_command)
     except (AttributeError, KeyError, TypeError, OSError, ValueError, RuntimeError, sqlite3.Error) as error:
         parser.exit(1, f"Evidence could not be bound ({type(error).__name__}).\n")
