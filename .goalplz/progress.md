@@ -1712,3 +1712,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02. 직전 goal turn은 관측 알림
 - 멈춘 읽기와 구독, 응답 없는 해제, 뒤늦은 이전 알림을 모의 회귀시험 소스에 추가했다. 빌드·테스트·정적 분석·실제 Pi BlueZ와 Feather/r18 재연결은 미수행이다. [BLE 재연결](../keyring/raspberry-pi-gateway/BLE_SESSIONS.md#재연결과-관측-시각-기준)
 
 소스 commit `6e82b5aa28e276db9acbdbaf05c416ae20b08428`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `9866b8e..6e82b5a`다. goal은 active/progress다.
+
+## 2026-11-11 — BLE 명령의 종결 조각 전 실패 정산
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11. 직전 goal turn은 BLE 초기 GATT 설정과 연결 해제 기한을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 중앙 `DISPATCH_NOT_SENT` 정산을 확인했다.
+
+- Gateway 0.2.92는 LF 종결 조각을 시도하기 전 BLE 오류를 `REJECTED / DISPATCH_NOT_SENT`로 남긴다. Feather와 r18 소스는 LF를 받아야 프레임을 처리한다. 종결 조각을 시도한 뒤 영수증을 받지 못하면 기존 미확정·타임아웃 경로를 유지한다.
+- 부분 전송 타임아웃과 최종 조각 응답 타임아웃을 구분하는 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·실제 Pi/Feather/r18 전송과 중앙 정산은 미수행이다. [BLE 전송 및 재연결](../keyring/raspberry-pi-gateway/BLE_SESSIONS.md)
+
+소스 commit `ea72bd3656e85e432b17063da7b52eb59dd7923c`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1a43288..ea72bd3`이다. goal은 active/progress다.
