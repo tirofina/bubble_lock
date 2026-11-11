@@ -139,12 +139,28 @@ class ScopedFeatherEvidenceTests(unittest.TestCase):
         result = inspect_integration_step(self.step, self.pi, self.team)
         self.assertEqual((result["dispatchEventId"], result["settlementEventId"], result["centralTelemetrySequence"]),
                          ("evt-dispatch", "evt-settlement", 7))
+        self.assertIsNone(result["centralTelemetryPayloadVerified"])
         self.team["receipts"][0]["claimId"] = "different-claim"
         with self.assertRaisesRegex(ValueError, "GATEWAY_DISPATCH_STARTED"):
             inspect_integration_step(self.step, self.pi, self.team)
         self.team["receipts"][0]["claimId"] = self.step["command"]["claimId"]
         self.team["receipts"][2]["observedAt"] = "2026-11-10T09:00:06.000Z"
         with self.assertRaisesRegex(ValueError, "GATEWAY_TELEMETRY_ACCEPTED"):
+            inspect_integration_step(self.step, self.pi, self.team)
+
+    def test_integration_binds_the_native_observation_payload_to_the_acceptance_event(self):
+        self.integration_fixture()
+        observation = self.step["observation"]
+        telemetry = self.team["receipts"][2]
+        observation["payloadHash"] = telemetry["payloadHash"] = "c" * 64
+        self.assertTrue(inspect_integration_step(self.step, self.pi, self.team)["centralTelemetryPayloadVerified"])
+        for value in ("d" * 64, None):
+            with self.subTest(central_hash=value):
+                telemetry["payloadHash"] = value
+                with self.assertRaisesRegex(ValueError, "GATEWAY_TELEMETRY_ACCEPTED"):
+                    inspect_integration_step(self.step, self.pi, self.team)
+        observation["payloadHash"] = "invalid"
+        with self.assertRaisesRegex(ValueError, "Invalid native observation payload hash"):
             inspect_integration_step(self.step, self.pi, self.team)
 
     def interrupted_fixture(self):

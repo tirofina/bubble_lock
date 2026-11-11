@@ -1,9 +1,12 @@
 """Run the explicit Feather LED cycle against the existing scoped loopback services."""
 import argparse
 import asyncio
+from functools import partial
 import json
 from pathlib import Path
+import re
 import ssl
+import subprocess
 import uuid
 
 import httpx
@@ -17,6 +20,11 @@ PROFILE = BENCH_ROOT / ".local/scoped"
 PARENT = "/Mobius/privacy-bubble-test-ae"
 PATHS = {"observation": f"{PARENT}/command-observations-a", "receipt": f"{PARENT}/command-receipts-a",
          "health": f"{PARENT}/health"}
+TEAM_OBSERVATION_HASH = """
+import { readFileSync } from 'node:fs';
+const { approvalHash } = await import(process.argv[1]);
+process.stdout.write(approvalHash(JSON.parse(readFileSync(0, 'utf8'))));
+"""
 
 
 def tls_context(cert, key):
@@ -24,6 +32,21 @@ def tls_context(cert, key):
     context.minimum_version = ssl.TLSVersion.TLSv1_3
     context.load_cert_chain(cert, key)
     return context
+
+
+def hash_observation(team_utils, observation):
+    # Use the API's serialization for JSON numbers and object keys.
+    try:
+        result = subprocess.run(
+            ["node", "--input-type=module", "-e", TEAM_OBSERVATION_HASH, team_utils.as_uri()],
+            input=json.dumps(observation, allow_nan=False),
+            encoding="utf-8", capture_output=True, check=True, timeout=5,
+        )
+    except (OSError, ValueError, subprocess.SubprocessError):
+        raise RuntimeError("Could not hash the observation with the pinned team source") from None
+    if re.fullmatch(r"[0-9a-f]{64}", result.stdout) is None:
+        raise RuntimeError("Invalid observation hash from the pinned team source")
+    return result.stdout
 
 
 async def exchange(client, method, path, headers, body=None):
@@ -46,6 +69,14 @@ async def run(output, seconds, *, api_mode="legacy", firmware=FIRMWARE):
     profiles = json.loads((BENCH_ROOT / "scoped-command-profiles.json").read_text(encoding="utf-8"))
     api = profiles[api_mode]
     operator_dir = PROFILE / api["directory"]
+    integration = api_mode == "integration"
+    observation_hasher = None
+    if integration:
+        if (operator_dir / "team-revision").read_text(encoding="ascii").strip() != api["revision"]:
+            raise RuntimeError("Scoped command API source differs from the pinned revision")
+        team_utils = operator_dir / "team-source/pc-mobius/integration/src/integration-utils.mjs"
+        observation_hasher = partial(hash_observation, team_utils)
+        await asyncio.to_thread(observation_hasher, {})
     operator_tls = tls_context(operator_dir / "operator.pem", operator_dir / "operator.key")
     output.mkdir(mode=0o700)
     defaults = {"Accept": "application/json", "Cache-Control": "no-store"}
@@ -80,7 +111,8 @@ async def run(output, seconds, *, api_mode="legacy", firmware=FIRMWARE):
             return integration_settlement(command, receipt, team_state)
 
         await run_led_cycle(operator_post, cse, PATHS, output, gateway_id="gw-a", subject_id="scoped-feather-bench",
-                            central_settlement=central_settlement if api_mode == "integration" else None, firmware=firmware)
+                            central_settlement=central_settlement if integration else None,
+                            observation_hasher=observation_hasher, firmware=firmware)
 
 
 if __name__ == "__main__":

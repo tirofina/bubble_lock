@@ -257,6 +257,8 @@ python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_evidenc
 
 새 실행에서는 명령 전·후 관측의 Mobius4 인스턴스 유형, 이름, 자원 ID와 부모 ID를 `led-cycle.json`에 기록한다. Pi DB에 `observationContainerRi`가 있으면 관측마다 부모 ID와 장치·부팅·순번에서 만든 자원 이름을 대조하고 해당 요청이 Pi outbox에 남아 있는지 확인한다. 모두 일치하면 `observationContainerVerified`가 `true`다. 관측 ID를 고정하지 않은 이전 세션에서는 이 필드가 `null`이다.
 
+PC 시험 도구는 Node.js로 준비된 팀 소스의 `approvalHash`를 불러와 각 명령 후의 Mobius4 관측 본문을 해시한다. 기록에는 본문 대신 해시를 저장한다. ON과 OFF의 해시가 모두 중앙 `GATEWAY_TELEMETRY_ACCEPTED` 이벤트와 일치하면 `centralTelemetryPayloadVerified`가 `true`다. 해시를 저장하지 않은 이전 기록은 `null`이고, 한쪽 해시가 빠지거나 값이 불일치하면 대조가 실패한다.
+
 #### Pi 명령 세션
 
 Pi의 일반 계정에서 저장소 루트로 이동한다. 짝지은 Feather 주소 한 줄을 소유자 전용 파일에 기록한다. `--address-file`에는 그 파일을, `--tls-dir`에는 `ca.pem`, `gateway-a.pem`, `gateway-a.key`가 있는 소유자 전용 폴더를 지정한다. Gateway 의존성이 설치된 기존 시험 가상환경의 Python을 사용한다.

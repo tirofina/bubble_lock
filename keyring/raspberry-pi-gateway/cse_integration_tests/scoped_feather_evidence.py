@@ -223,16 +223,24 @@ def inspect_integration_step(step, pi_proof, team_state):
         raise ValueError("Central dispatch and settlement timestamps are inconsistent")
 
     observation_id = central_observation_id({**observation, "gatewayId": command["gatewayId"], "deviceId": command["deviceId"]})
+    telemetry_fields = {"gatewayId": command["gatewayId"], "deviceId": command["deviceId"],
+                        "observedAt": observation["observedAt"]}
+    has_payload_hash = "payloadHash" in observation
+    if has_payload_hash:
+        native_hash = observation["payloadHash"]
+        if not isinstance(native_hash, str) or re.fullmatch(r"[0-9a-f]{64}", native_hash) is None:
+            raise ValueError("Invalid native observation payload hash")
+        telemetry_fields["payloadHash"] = native_hash
     telemetry = require_integration_event(team_state, "GATEWAY_TELEMETRY_ACCEPTED", {"observationId": observation_id},
-                                          {"gatewayId": command["gatewayId"], "deviceId": command["deviceId"],
-                                           "observedAt": observation["observedAt"]})
+                                          telemetry_fields)
     sequence = telemetry.get("sequence")
     if (type(sequence) is not int or sequence < 0
             or parse_time(telemetry["timestamp"]) < parse_time(observation["observedAt"]) - timedelta(seconds=2)):
         raise ValueError("Invalid central telemetry sequence or timestamp")
     return {**pi_proof, "dispatchEventId": started_event["eventId"], "settlementEventId": settled_event["eventId"],
             "telemetryEventId": telemetry["eventId"], "observationId": observation_id,
-            "centralTelemetrySequence": sequence, "nativeResourceId": resource["ri"]}
+            "centralTelemetrySequence": sequence, "nativeResourceId": resource["ri"],
+            "centralTelemetryPayloadVerified": True if has_payload_hash else None}
 
 
 def verify_integration_evidence(cycle, database, team_state, observed_led=None, *, observed_display=None,
@@ -245,9 +253,13 @@ def verify_integration_evidence(cycle, database, team_state, observed_led=None, 
     commands = [inspect_integration_step(step, pi_proof, team_state) for step, pi_proof in zip(steps, proof["commands"])]
     if commands[0]["centralTelemetrySequence"] >= commands[1]["centralTelemetrySequence"]:
         raise ValueError("Central telemetry order does not match the LED cycle")
+    payload_verified = commands[0]["centralTelemetryPayloadVerified"]
+    if payload_verified is not commands[1]["centralTelemetryPayloadVerified"]:
+        raise ValueError("Native observation payload hashes are incomplete for the LED cycle")
     return {"piCseBindingVerified": True, "centralDispatchVerified": True, "centralSettlementVerified": True,
             "observationContainerVerified": proof["observationContainerVerified"],
-            "centralTelemetryVerified": True, "priorExpiredCommandCount": len(prior_expired_commands),
+            "centralTelemetryVerified": True, "centralTelemetryPayloadVerified": payload_verified,
+            "priorExpiredCommandCount": len(prior_expired_commands),
             **operator_evidence(cycle, observed_led, observed_display),
             "commands": commands}
 

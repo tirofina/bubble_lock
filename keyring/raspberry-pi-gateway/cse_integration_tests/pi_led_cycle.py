@@ -85,7 +85,7 @@ def ready_heartbeat(health, gateway_id, device_boot, not_before, *, firmware=FIR
 
 
 async def run_led_cycle(operator_post, cse, paths, output, *, gateway_id=GATEWAY, subject_id=SUBJECT,
-                        central_settlement=None, firmware=FIRMWARE):
+                        central_settlement=None, observation_hasher=None, firmware=FIRMWARE):
     async def wait_for(check):
         while not (output / "STOP").exists():
             result = await check()
@@ -118,6 +118,8 @@ async def run_led_cycle(operator_post, cse, paths, output, *, gateway_id=GATEWAY
             verify_observation_resource(snapshot, current["deviceId"])
             if central_settlement is not None:
                 snapshot["observedAt"] = current["observedAt"]
+            if observation_hasher is not None and after is not None:
+                snapshot["payloadHash"] = await asyncio.to_thread(observation_hasher, current)
             return snapshot
         return None
 
