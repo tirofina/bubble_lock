@@ -43,7 +43,7 @@ namespace {
 #if KEYRING_R18_BRINGUP
 constexpr char FirmwareRevision[] = "keyring-0.7.13-bringup";
 #else
-constexpr char FirmwareRevision[] = "keyring-0.7.13";
+constexpr char FirmwareRevision[] = "keyring-0.7.14";
 #endif
 constexpr bool ObservationOnly = KEYRING_R18_BRINGUP != 0;
 #if defined(KEYRING_LEGACY_GATT) && KEYRING_LEGACY_GATT
@@ -86,6 +86,7 @@ volatile uint32_t connectionGeneration = 0;
 uint8_t peerAddress[6] = {};
 uint16_t peerConnection = 0;
 uint16_t peerMtu = 23; // Protected by linkMux.
+esp_gatt_if_t gattInterface = ESP_GATT_IF_NONE; // Protected by linkMux.
 portMUX_TYPE linkMux = portMUX_INITIALIZER_UNLOCKED;
 uint32_t maxEpoch = 0, maxGrant = 0, sequence = 0;
 uint64_t motorStopAt = 0, lastObservation = 0;
@@ -277,6 +278,7 @@ bool motorGateOpen(uint32_t generation, uint32_t subscription, uint64_t stopAtUs
   // Caller holds linkMux, shared with disconnect and timer expiry.
   return commandChannelOpen(generation, subscription) && !motorTimerFired &&
       gpio_get_level(static_cast<gpio_num_t>(board::MainFaultN)) != 0 &&
+      !auxRail::alertInterrupted() &&
       static_cast<uint64_t>(esp_timer_get_time()) < stopAtUs;
 }
 bool startMotor(uint64_t commandDeadlineUs, uint32_t generation, uint32_t subscription) {
@@ -449,6 +451,7 @@ struct Tx {
     portENTER_CRITICAL(&linkMux);
     const bool ready = connected && authenticated && subscribed;
     const uint16_t connection = peerConnection;
+    const auto interfaceId = gattInterface;
     const uint32_t generation = connectionGeneration;
     const uint32_t currentSubscription = subscription;
     portEXIT_CRITICAL(&linkMux);
@@ -470,7 +473,6 @@ struct Tx {
     }
     if (active.empty()) return;
     const auto count = static_cast<uint16_t>(min(static_cast<size_t>(20), active.size() - offset));
-    const auto interfaceId = static_cast<esp_gatt_if_t>(server->getGattsIf());
     if (scopedReceipt) {
       portENTER_CRITICAL(&linkMux);
       const bool current = commandChannelOpen(queuedGeneration, queuedSubscription);
@@ -663,7 +665,11 @@ void processCommand(const Frame &frame) {
   if (desired && !startMotor((frame.firstAt + remaining) * 1000, frame.generation, frame.subscription)) {
     stopMotor(); publishReceipt(frame, id, hash, "INDETERMINATE", &r); return;
   }
-  r.appliedAt = uptime(); r.readback = readState(); r.phase = Completed;
+  r.appliedAt = uptime(); r.readback = readState();
+  if (desired && auxRail::alertInterrupted()) {
+    stopMotor(); publishReceipt(frame, id, hash, "INDETERMINATE", &journal[freeSlot]); return;
+  }
+  r.phase = Completed;
   r.result = static_cast<uint8_t>(r.readback == r.desired ? Result::Applied : Result::ReadbackMismatch);
   if (r.readback != r.desired) stopMotor();
   if (!storeRecord(freeSlot, r)) {
@@ -671,7 +677,7 @@ void processCommand(const Frame &frame) {
     // Keep the last verified PREPARED copy in RAM. The flash result is uncertain.
     publishReceipt(frame, id, hash, "INDETERMINATE", &journal[freeSlot]); return;
   }
-  if (desired && commandChannelReady(frame) &&
+  if (desired && commandChannelReady(frame) && !auxRail::alertInterrupted() &&
       r.result == static_cast<uint8_t>(Result::Applied) && readState())
     audio.startUntil(motorStopAt);
   publishReceipt(frame, id, hash, r.result == static_cast<uint8_t>(Result::Applied) ? "APPLIED" : "READBACK_MISMATCH", &r);
@@ -842,6 +848,12 @@ bool handleProtectedGattRead(esp_gatt_if_t interfaceId, const esp_ble_gatts_cb_p
 
 esp_gatts_cb_t arduinoGattEvents = nullptr;
 void dispatchGattEvents(esp_gatts_cb_event_t event, esp_gatt_if_t interfaceId, esp_ble_gatts_cb_param_t *param) {
+  if (event == ESP_GATTS_REG_EVT && param->reg.status == ESP_GATT_OK) {
+    // The firmware creates one GATT server. Its public registration event carries the interface.
+    portENTER_CRITICAL(&linkMux);
+    if (gattInterface == ESP_GATT_IF_NONE) gattInterface = interfaceId;
+    portEXIT_CRITICAL(&linkMux);
+  }
   if (event == ESP_GATTS_READ_EVT && handleProtectedGattRead(interfaceId, *param)) return;
   arduinoGattEvents(event, interfaceId, param);
 }
@@ -1050,6 +1062,7 @@ void loop() {
   motorTimerFired = false;
   portEXIT_CRITICAL(&linkMux);
   if (motorExpiredNow || (motorStopAt && now >= motorStopAt) ||
+      (!ObservationOnly && auxRail::alertInterrupted()) ||
       (!authenticated && readState()) || (digitalRead(board::MainFaultN) == LOW && readState())) {
     stopMotor();
   }

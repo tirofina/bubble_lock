@@ -7,17 +7,21 @@
 namespace {
 portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
 esp_timer_handle_t timer = nullptr;
-bool timerReady = false, alertOwner = false;
+bool timerReady = false, alertOwner = false, alertWasInterrupted = false;
 uint64_t displayUntil = 0;
 uint64_t nowMs() { return static_cast<uint64_t>(esp_timer_get_time()) / 1000; }
 bool healthy() { return gpio_get_level(static_cast<gpio_num_t>(board::MainFaultN)); }
 void apply(uint64_t now) { // Caller holds mux.
-  if (!healthy()) { alertOwner = false; displayUntil = 0; }
+  if (!healthy()) {
+    alertWasInterrupted = alertWasInterrupted || alertOwner;
+    alertOwner = false;
+    displayUntil = 0;
+  }
   if (now >= displayUntil) displayUntil = 0;
-  const bool light = displayUntil && !alertOwner;
+  const bool light = displayUntil && !alertOwner && !alertWasInterrupted;
   // Remove load before disabling the rail; enable rail before connecting a load.
-  gpio_set_level(static_cast<gpio_num_t>(board::LcdBacklight), 1);
-  gpio_set_level(static_cast<gpio_num_t>(board::AuxEnable), alertOwner || light);
+  if (!light) gpio_set_level(static_cast<gpio_num_t>(board::LcdBacklight), 1);
+  gpio_set_level(static_cast<gpio_num_t>(board::AuxEnable), !alertWasInterrupted && (alertOwner || light));
   if (light) gpio_set_level(static_cast<gpio_num_t>(board::LcdBacklight), 0);
 }
 void expired(void *) { auxRail::service(); }
@@ -33,10 +37,20 @@ bool auxRail::begin() {
 }
 bool auxRail::alert(bool enabled) {
   portENTER_CRITICAL(&mux);
-  alertOwner = enabled && healthy();
+  if (enabled) {
+    if (!alertWasInterrupted && healthy()) alertOwner = true;
+  } else {
+    alertOwner = false;
+    // Motor shutdown precedes releasing the shared rail to another owner.
+    alertWasInterrupted = gpio_get_level(static_cast<gpio_num_t>(board::Motor)) != 0;
+  }
   apply(nowMs());
   const bool result = enabled ? alertOwner : true;
   portEXIT_CRITICAL(&mux);
+  return result;
+}
+bool auxRail::alertInterrupted() {
+  portENTER_CRITICAL(&mux); const bool result = alertWasInterrupted; portEXIT_CRITICAL(&mux);
   return result;
 }
 bool auxRail::displayFor(uint32_t durationMs) {
@@ -53,13 +67,13 @@ void auxRail::service() {
 }
 bool auxRail::displayVisible() {
   portENTER_CRITICAL(&mux);
-  const bool result = displayUntil > nowMs() && !alertOwner && healthy();
+  const bool result = displayUntil > nowMs() && !alertOwner && !alertWasInterrupted && healthy();
   portEXIT_CRITICAL(&mux);
   return result;
 }
 bool auxRail::busy() {
   portENTER_CRITICAL(&mux);
-  const bool result = alertOwner || displayUntil > nowMs();
+  const bool result = alertOwner || alertWasInterrupted || displayUntil > nowMs();
   portEXIT_CRITICAL(&mux);
   return result;
 }

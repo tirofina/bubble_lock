@@ -5,6 +5,7 @@
 namespace auxRail {
 bool begin();
 bool alert(bool enabled); // Alert preempts backlight. Caller separately controls motor/mute.
+bool alertInterrupted(); // Holds the rail off until motor shutdown is confirmed.
 bool displayFor(uint32_t durationMs);
 bool displayVisible();
 bool busy();

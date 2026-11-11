@@ -14,7 +14,7 @@ using std::min;
 using gpio_num_t = int;
 constexpr int ESP_OK = 0;
 bool connected, authenticated, disconnected, motorTimerFired, motorTimerCleaning;
-bool padHigh, railOn, faultHealthy, observationDirty;
+bool padHigh, railOn, faultHealthy, railInterrupted, observationDirty;
 uint32_t connectionGeneration;
 uint64_t nowUs, motorStopAt, timerDelay;
 int timerHandle, *motorTimer, timerResult;
@@ -48,11 +48,13 @@ struct FakeAudio {
     void stop() { if (duringAudioStop) duringAudioStop(); }
 } audio;
 namespace auxRail {
+bool alertInterrupted() { return railInterrupted; }
 bool alert(bool enabled) {
     if (enabled) {
         assert(linkMux);
         if (duringRailEnable) duringRailEnable();
     }
+    if (!enabled) railInterrupted = false;
     railOn = enabled;
     events.push_back(enabled ? "rail-on" : "rail-off");
     return true;
@@ -64,7 +66,7 @@ bool alert(bool enabled) {
 constexpr unsigned JournalSlots = 32, MaxFrame = 4096;
 using esp_gatt_if_t = uint8_t;
 constexpr esp_gatt_if_t ESP_GATT_IF_NONE = 255;
-enum esp_gatts_cb_event_t { ESP_GATTS_WRITE_EVT, ESP_GATTS_READ_EVT, ESP_GATTS_MTU_EVT };
+enum esp_gatts_cb_event_t { ESP_GATTS_REG_EVT, ESP_GATTS_WRITE_EVT, ESP_GATTS_READ_EVT, ESP_GATTS_MTU_EVT };
 enum esp_gatt_status_t { ESP_GATT_OK, ESP_GATT_INVALID_OFFSET, ESP_GATT_INSUF_AUTHORIZATION };
 constexpr int ESP_GATT_AUTH_REQ_NONE = 0;
 using esp_err_t = int;
@@ -72,6 +74,7 @@ struct esp_gatt_rsp_t {
     struct { uint16_t handle, offset, len; int auth_req; uint8_t value[600]; } attr_value;
 };
 struct esp_ble_gatts_cb_param_t {
+    struct { esp_gatt_status_t status; } reg;
     struct { uint16_t conn_id; } disconnect;
     struct { uint16_t conn_id, handle, offset; uint32_t trans_id; bool need_rsp; } read;
     struct { uint16_t conn_id, mtu; } mtu;
@@ -82,7 +85,7 @@ struct esp_ble_gatts_cb_param_t {
     } write;
 };
 using esp_gatts_cb_t = void (*)(esp_gatts_cb_event_t, esp_gatt_if_t, esp_ble_gatts_cb_param_t *);
-struct BLEServer { uint16_t getGattsIf() const { return 4; } };
+struct BLEServer {};
 struct BLECharacteristic {
     uint16_t handle = 0;
     uint16_t getHandle() const { return handle; }
@@ -93,12 +96,12 @@ struct BLE2902 {
 };
 struct Frame { char bytes[MaxFrame + 1]; uint64_t firstAt, completedAt; uint32_t generation, subscription; };
 struct JournalRequest { uint32_t id, generation; uint8_t operation, index, part; };
-BLEServer fixtureServer, *server = &fixtureServer;
 BLECharacteristic fixtureCommand, fixtureJournal, fixtureReceipt, fixtureObservation, fixtureIdentity;
 BLECharacteristic *commandChar = &fixtureCommand, *journalChar = &fixtureJournal;
 BLECharacteristic *receiptChar = &fixtureReceipt, *observationChar = &fixtureObservation, *identityChar = &fixtureIdentity;
 BLE2902 fixtureCccd;
 uint16_t peerConnection = 7, peerMtu = 23;
+esp_gatt_if_t gattInterface = ESP_GATT_IF_NONE;
 bool provisioned = true;
 Frame queuedCommand;
 unsigned commandCount = 0, journalCount = 0;
@@ -176,6 +179,7 @@ bool startCurrentMotor(uint64_t deadline) {
 void reset() {
     connected = authenticated = faultHealthy = true;
     disconnected = motorTimerFired = motorTimerCleaning = padHigh = railOn = observationDirty = linkMux = false;
+    railInterrupted = false;
     connectionGeneration = 7;
     peerConnection = 7;
     peerMtu = 23;
@@ -241,6 +245,13 @@ int main() {
     std::puts("PASS fault is rechecked after rail preparation");
 
     reset();
+    duringRailEnable = [] { railInterrupted = true; };
+    assert(!startCurrentMotor(120000) && !padHigh && faultHealthy);
+    stopMotor();
+    assert(!railOn);
+    std::puts("PASS a latched interruption blocks GPIO after the fault pin recovers");
+
+    reset();
     duringTimerArm = [] { motorExpired(nullptr); };
     duringAudioStop = [] {
         assert(motorTimerCleaning && !startCurrentMotor(120000));
@@ -257,6 +268,15 @@ int main() {
     subscribeReceipt(false);
     assert(__wrap_esp_ble_gatts_register_callback(
         [](esp_gatts_cb_event_t, esp_gatt_if_t, esp_ble_gatts_cb_param_t *) { ++forwardedEvents; }) == ESP_OK);
+    esp_ble_gatts_cb_param_t registration{};
+    registration.reg.status = ESP_GATT_INSUF_AUTHORIZATION;
+    registeredGatts(ESP_GATTS_REG_EVT, 3, &registration);
+    assert(gattInterface == ESP_GATT_IF_NONE);
+    registration.reg.status = ESP_GATT_OK;
+    registeredGatts(ESP_GATTS_REG_EVT, 4, &registration);
+    registeredGatts(ESP_GATTS_REG_EVT, 5, &registration);
+    assert(gattInterface == 4 && forwardedEvents == 3);
+    forwardedEvents = 0;
     const std::string enable("\1\0", 2);
     write(8, fixtureCccd.handle, enable);
     write(peerConnection, fixtureCommand.handle, "before subscribe\n");

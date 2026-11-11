@@ -18,7 +18,7 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.7.0.
 
 세 compile profile은 KEYRING_IGNORE_PROVISIONING으로 로컬 provisioning.h와 jd9853_panel.h를 포함하지 않는다. 장치별 passkey는 기본 invalid0이며 이 결과물을 provisioned device firmware로 취급하지 않는다. local 실제 장치 환경 keyring_r18은 기존 provisioning 경로를 사용한다. bare pio run의 default는 keyring_r18으로 유지했다.
 
-`keyring_r18_bringup`은 기존 로컬 provisioning의 장치 ID·passkey를 쓰는 첫 구동용 프로필이다. BLE revision은 `keyring-0.7.13-bringup`이며 LCD·오디오 재생·SD·deep sleep 및 BLE 명령·저널을 비활성화한다. 정식 `keyring_r18`의 0.7.13과 구분한다. 이 프로필은 빌드와 실물 구동이 미실행이다. [구동 절차](../pcb/BRING_UP.md)
+`keyring_r18_bringup`은 기존 로컬 provisioning의 장치 ID·passkey를 쓰는 첫 구동용 프로필이다. BLE revision은 `keyring-0.7.13-bringup`이며 LCD·오디오 재생·SD·deep sleep 및 BLE 명령·저널을 비활성화한다. 정식 `keyring_r18`의 revision은 `keyring-0.7.14`다. 이 첫 구동용 프로필의 빌드와 실물 구동은 미실행이다. [구동 절차](../pcb/BRING_UP.md)
 
 ```sh
 pio run -e keyring_compile_minimal -e keyring_compile_st7789 -e keyring_compile_jd9853

@@ -47,6 +47,8 @@ I2S LRCLK40/BCLK41/DOUT42, 16kHz/16bit, 좌우 동일 PCM을 사용하는 별도
 
 TPS2553 보조 전원에는 모터·스피커·백라이트가 연결된다. `aux_rail`은 alert와 display 소유자를 관리하며 alert 중 백라이트를 끈다. 모터가 끝나도 유효한 화면 창은 복구한다. 별도10ms ESP timer가 창 만료·fault를 처리하므로 SD/화면 I/O를 기다리지 않는다. 이는 설정 주기이며 실측 차단 지연이 아니다. 실제 돌입/구속/음향/백라이트 전류와 결합 부하는 미확인이다.
 
+`keyring-0.7.14`는 alert 중 타이머가 `MAIN_FAULT_N`의 LOW를 감지하면 보조 전원을 차단하고 인터럽트 상태를 유지한다. 신호가 먼저 정상으로 돌아와도 모터 GPIO를 LOW로 내리고 확인한 뒤에만 화면 요청이 보조 전원을 켤 수 있다. 적용 확인 시점에 이 상태를 발견한 ON 명령은 `INDETERMINATE`를 반환한다. 활성 화면의 주기 갱신은 백라이트를 끄는 GPIO 전이를 만들지 않는다.
+
 `peripherals` worker 하나가 LCD와 microSD I/O를 모두 소유한다. CS18/10은 초기 HIGH이며 SPI transaction이 mode/속도를 전환한다. SD MISO11도 공통 SPI에 연결한다. 다른 task에서 이 SPI나 SD API를 직접 호출하면 안 된다. 모터 타이머·BLE callback에는 SPI/filesystem 작업이 없다. 절전은 audio/보조 전원/I/O/로그 queue가 유휴일 때만 진행하고 예약 시 worker 신규 I/O를 막는다. 긴 카드 지연은 절전을 막을 수 있다.
 
 ## 선택형 SD receipt 복사
