@@ -1,5 +1,7 @@
 # Gateway 로컬 시험
 
+Gateway 0.2.59의 r18 회귀시험 소스는 초기 USB 센서 상태 보존, 이후 BLE 복구, 정상 관측 뒤 센서·INA219 상태 악화, 마지막 필드 누락을 다룬다. 빌드·시험·실제 Pi 연동은 미실행이다.
+
 Gateway 0.2.58의 r18 회귀시험 소스는 USB 로그에서 동일한 부팅 기록의 반복 출력, 다른 부팅 ID, 변경된 GPIO 상태와 잘린 기록을 다룬다. 빌드·시험·실제 Pi 연동은 미실행이다.
 
 Gateway 0.2.57의 회귀시험 소스는 SQLite를 닫고 다시 열었을 때 서버별 `Retry-After`의 남은 시간, 다른 포트의 전송, 기한 만료와 새 Linux 부팅을 다룬다. 빌드·시험·실제 Pi 연동은 미실행이다.
@@ -40,7 +42,7 @@ Gateway 0.2.37의 회귀시험 소스는 BlueZ가 쓰기 특성을 캐시한 상
 
 ## r18 초기 구동 기록
 
-Gateway의 `--mode bringup`은 페어링된 r18과 `-bringup` 펌웨어에서 인증된 BLE 알림을 수집한다. 기존 Gateway를 중지하고 그 서비스와 같은 `--database` 경로를 지정한다. 기록 도구는 그 경로에서 잠금 이름만 얻는다. Mobius나 중앙 API에 연결하지 않고 새 로컬 JSON을 기록한다. 0.7.15-bringup의 USB 모니터에서 `?`를 보내 초기 구동 기록을 요청하고 UTF-8 로그로 저장한다. Gateway 0.2.58은 `--usb-boot-log`로 이 로그와 BLE 부팅을 대조한다. 한 로그에 같은 줄이 반복되면 허용하고 다른 부팅 ID나 다른 값이 섞이면 거절한다. 아래 명령을 실행할 때까지 같은 보드 전원을 유지한다.
+Gateway의 `--mode bringup`은 페어링된 r18과 `-bringup` 펌웨어에서 인증된 BLE 알림을 수집한다. 기존 Gateway를 중지하고 그 서비스와 같은 `--database` 경로를 지정한다. 기록 도구는 그 경로에서 잠금 이름만 얻는다. Mobius나 중앙 API에 연결하지 않고 새 로컬 JSON을 기록한다. 0.7.15-bringup의 USB 모니터에서 `?`를 보내 초기 구동 기록을 요청하고 UTF-8 로그로 저장한다. `--usb-boot-log`는 이 로그와 BLE 부팅을 대조한다. 한 로그에 같은 줄이 반복되면 허용하고 다른 부팅 ID나 다른 값이 섞이면 거절한다. 아래 명령을 실행할 때까지 같은 보드 전원을 유지한다.
 
 ```sh
 bubble-keyring-ble-characterize --mode bringup --hardware r18-pcb \
@@ -52,7 +54,7 @@ bubble-keyring-ble-characterize --mode bringup --hardware r18-pcb \
 
 첫 알림 안내까지 두 버튼을 뗀 채 기다린다. 이후 확인 버튼을 약 2초 누르고 떼고, 약 2초 뒤 비상 버튼을 같은 방식으로 한 번 누르고 뗀다. 최초 알림부터 같은 BLE 세션에서 각 눌림과 떼기, 해당 누계 증가, 배터리·3축·움직임 설정, INA219 정상 샘플, 장치 저널·절전 비활성, `commandReady:false`와 출력·fault 상태를 대조한다. 재연결 뒤 받은 관측으로 빠진 단계를 채우지 않는다. 수집된 출력 또는 fault가 활성화됐거나 명령이 준비됐으면 `MISMATCH`를 기록한다. 필요한 관측이 빠지면 `INSUFFICIENT`다.
 
-`RECORDED`는 위 항목을 한 세션에서 수신했다는 뜻이다. USB 로그를 공급하면 `bringup.usbBoot`에 파일 SHA-256, GPIO 읽기값과 부팅 일치 여부가 추가된다. USB와 BLE의 부팅이 다르거나 수집 중 새 부팅의 알림이 들어오거나 USB 출력·fault가 활성 상태이면 `MISMATCH`다. INA219는 3.3V 부하 측 계측이며 입력·충전 전류는 별도 실측으로 남긴다. JSON은 BLE 주소와 원래 부팅 ID를 내보내지 않는다. 빌드·회귀시험·실물 캡처는 미실행이다.
+`RECORDED`는 위 항목을 한 세션에서 수신했고 마지막 BLE 센서·INA219 상태가 정상이라는 뜻이다. Gateway 0.2.59는 첫 정상 순번과 마지막 센서·INA219 상태를 기록한다. 정상 관측 후 마지막에 센서가 `unavailable`이거나 INA219 오류가 오면 `MISMATCH`다. 마지막 프레임에 필요한 값이 없으면 `INSUFFICIENT`다. USB 로그를 공급하면 `bringup.usbBoot`에 파일 SHA-256, GPIO, 초기 센서 상태와 부팅 일치 여부가 추가된다. USB와 BLE의 부팅이 다르거나 수집 중 새 부팅의 알림이 들어오거나 USB 출력·fault가 활성 상태이면 `MISMATCH`다. INA219는 3.3V 부하 측 계측이며 입력·충전 전류는 별도 실측으로 남긴다. JSON은 BLE 주소와 원래 부팅 ID를 내보내지 않는다. 빌드·회귀시험·실물 캡처는 미실행이다.
 
 Gateway 0.2.36의 자격 전환 영수증 회귀시험 소스는 MQTT·HTTPS 생성 후 조회, 중복, 인스턴스·부모·본문 불일치, 조회 시간 초과, HTTPS 보류 중 일반 heartbeat의 독립 전송을 다룬다. 격리 Mobius4 시험 소스는 두 전송 경로에서 실제 저장 조회가 발생하는지 확인한다. 이번 빌드·시험·Pi 배포·CSE 연결은 미실행이다.
 

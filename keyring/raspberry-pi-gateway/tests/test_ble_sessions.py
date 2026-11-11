@@ -151,6 +151,7 @@ class BringupCaptureTests(unittest.TestCase):
     board = "r18-hand-solder"
     firmware = "keyring-0.7.14-bringup"
     boot = "0123456789abcdef" * 2
+    ready_sensor_status = {"batteryStatus": "ok", "accelStatus": "ok", "motion": "ready"}
 
     def events(self, *, split_at=None, command_ready=False):
         events = []
@@ -200,14 +201,18 @@ class BringupCaptureTests(unittest.TestCase):
             path.write_bytes(raw)
             self.assertEqual(read_usb_boot(path, self.board, self.firmware),
                              {"bootId": self.boot, "logSha256": hashlib.sha256(raw).hexdigest(),
-                              "motorActive": False, "auxEnabled": False, "mainFault": False})
+                              "motorActive": False, "auxEnabled": False, "mainFault": False,
+                              "sensorStatus": self.ready_sensor_status})
             current = raw.replace(b"0.7.14", b"0.7.15")
             current_firmware = "keyring-0.7.15-bringup"
             repeated = current + current
             path.write_bytes(repeated)
             self.assertEqual(read_usb_boot(path, self.board, current_firmware),
                              {"bootId": self.boot, "logSha256": hashlib.sha256(repeated).hexdigest(),
-                              "motorActive": False, "auxEnabled": False, "mainFault": False})
+                              "motorActive": False, "auxEnabled": False, "mainFault": False,
+                              "sensorStatus": self.ready_sensor_status})
+            path.write_bytes(current.replace(b"accel=ok", b"accel=unavailable"))
+            self.assertEqual(read_usb_boot(path, self.board, current_firmware)["sensorStatus"]["accelStatus"], "unavailable")
             for bad in (raw + raw.replace(self.boot.encode(), b"b" * 32), raw + raw.replace(b"fault=0", b"fault=1"),
                         raw + raw.replace(b"motor=0", b"motor=?"), raw.replace(b"0.7.14", b"0.7.13"),
                         raw.replace(b"r18-hand-solder", b"other-board"), raw + raw[:-9]):
@@ -217,12 +222,16 @@ class BringupCaptureTests(unittest.TestCase):
                         read_usb_boot(path, self.board, self.firmware)
 
     def test_usb_boot_match_is_required_when_supplied_and_raw_identity_is_private(self):
-        usb = {"bootId": self.boot, "logSha256": hashlib.sha256(self.usb_log()).hexdigest(),
-               "motorActive": False, "auxEnabled": False, "mainFault": False}
+        initial_status = dict(self.ready_sensor_status, accelStatus="unavailable")
+        raw = self.usb_log().replace(b"accel=ok", b"accel=unavailable")
+        usb = {"bootId": self.boot, "logSha256": hashlib.sha256(raw).hexdigest(),
+               "motorActive": False, "auxEnabled": False, "mainFault": False, "sensorStatus": initial_status}
         events = [dict(row, bootId=self.boot) for row in self.events()]
         report = self.report(events, usb_boot=usb)
         self.assertEqual(report["status"], "RECORDED")
         self.assertTrue(report["bringup"]["usbBoot"]["sameBoot"])
+        self.assertEqual(report["bringup"]["usbBoot"]["sensorStatus"], initial_status)
+        self.assertEqual(report["bringup"]["latestSensor"]["accelStatus"], "ok")
         self.assertNotIn(self.boot, json.dumps(report))
         report = self.report(self.events(), usb_boot=dict(usb, auxEnabled=True))
         self.assertEqual(report["status"], "MISMATCH")
@@ -242,10 +251,37 @@ class BringupCaptureTests(unittest.TestCase):
         self.assertEqual(report["status"], "RECORDED")
         self.assertEqual(report["bringup"], dict(session=1, buttonSequences=[0, 1, 2, 3, 4],
                                                  sensorSequence=0, powerSequence=2, healthSequence=4,
+                                                 latestSensor=dict(self.ready_sensor_status, sequence=0, ready=True),
+                                                 latestPower={"sequence": 2, "status": "ok"},
                                                  missing=[], mismatches=[]))
         contents = json.dumps(report)
         for private in ("private-boot", "private-device", "private-payload"):
             self.assertNotIn(private, contents)
+
+    def test_latest_sensor_and_power_failures_do_not_inherit_earlier_success(self):
+        events = self.events()
+        last = events[-1]
+        observation = last["observation"]
+        sensor_values = observation["sensorValues"]
+        failed_sensor = dict(sensor_values, detail="sensors", batteryStatus="ok",
+                             accelStatus="unavailable", motion="unavailable")
+        events.append(dict(last, sequence=5, atNs=last["atNs"] + 1_000_000,
+                           observation=dict(observation, sensorValues=failed_sensor)))
+        events.append(dict(last, sequence=6, atNs=last["atNs"] + 2_000_000,
+                           observation=dict(observation, sensorValues=dict(sensor_values, detail="energy")),
+                           ina219={"status": "i2c_error"}, deviceUptimeMs=observation["uptimeMs"]))
+        report = self.report(events)
+        self.assertEqual(report["status"], "MISMATCH")
+        self.assertEqual(report["bringup"]["mismatches"], ["sensorUnavailableAfterReady", "powerUnavailableAfterReady"])
+        self.assertEqual(report["bringup"]["sensorSequence"], 0)
+        self.assertEqual(report["bringup"]["latestSensor"]["sequence"], 5)
+        self.assertEqual(report["bringup"]["latestPower"], {"sequence": 6, "status": "i2c_error"})
+
+        events[-2]["observation"]["sensorValues"] = dict(sensor_values, detail="sensors")
+        events[-1]["ina219"] = None
+        report = self.report(events)
+        self.assertEqual(report["status"], "INSUFFICIENT")
+        self.assertEqual(report["bringup"]["missing"], ["sensors", "power"])
 
     def test_capture_does_not_splice_sessions_even_on_the_same_boot(self):
         report = self.report(self.events(split_at=3))

@@ -28,8 +28,10 @@ USB_LOG_LIMIT = 1 << 20
 USB_BOOT_LINE = re.compile(
     r"KEYRING bringup: board=(?P<board>\S+) firmware=(?P<firmware>\S+) boot=(?P<boot>[0-9a-f]{32}) "
     r"motor=(?P<motor>[01]) aux=(?P<aux>[01]) fault=(?P<fault>[01]) "
-    r"fuel=(?:ok|unavailable) accel=(?:ok|unavailable) motion=(?:ready|unavailable)"
+    r"fuel=(?P<batteryStatus>ok|unavailable) accel=(?P<accelStatus>ok|unavailable) "
+    r"motion=(?P<motion>ready|unavailable)"
 )
+BRINGUP_SENSOR_STATUS = ("batteryStatus", "accelStatus", "motion")
 
 
 def read_usb_boot(path: Path, board: str, firmware: str) -> dict:
@@ -44,7 +46,7 @@ def read_usb_boot(path: Path, board: str, firmware: str) -> dict:
         raise ValueError("USB log must contain one matching r18 bring-up record")
     return {"bootId": record["boot"], "logSha256": hashlib.sha256(raw).hexdigest(),
             "motorActive": record["motor"] == "1", "auxEnabled": record["aux"] == "1",
-            "mainFault": record["fault"] == "1"}
+            "mainFault": record["fault"] == "1", "sensorStatus": {key: record[key] for key in BRINGUP_SENSOR_STATUS}}
 
 
 def wake_result(sessions: list[dict], rows: list[dict], expected: str, release_ms: int | None) -> dict:
@@ -162,24 +164,26 @@ def button_fields(frame: dict) -> dict:
 
 def bringup_fields(frame: dict) -> dict:
     sensors = frame["sensorValues"]
+    detail = sensors.get("detail")
     axes = sensors.get("accelerationG")
     axes_valid = (isinstance(axes, list) and len(axes) == 3
                   and all(type(value) in (int, float) and -float("inf") < value < float("inf") for value in axes))
     fault = sensors.get("fault")
-    battery_status, accel_status, motion = (sensors.get(key) for key in ("batteryStatus", "accelStatus", "motion"))
+    battery_status, accel_status, motion = (sensors.get(key) for key in BRINGUP_SENSOR_STATUS)
     journal = sensors.get("journal")
     return {
         **button_fields(frame),
+        "detail": detail if detail in ("sensors", "energy", "health") else None,
         "state": frame["state"], "mainFault": fault if type(fault) is bool else None,
         "batteryPercent": frame["battery"], "accelerationG": axes if axes_valid else None,
         "batteryStatus": battery_status if battery_status in ("ok", "unavailable") else None,
         "accelStatus": accel_status if accel_status in ("ok", "unavailable") else None,
         "motion": motion if motion in ("ready", "unavailable") else None,
-        "sensorsReady": (sensors.get("detail") == "sensors" and battery_status == "ok"
+        "sensorsReady": (detail == "sensors" and battery_status == "ok"
                          and accel_status == "ok" and motion == "ready"
                          and frame["battery"] is not None and axes_valid),
         "journal": journal if journal in ("disabled", "ready", "error") else None,
-        "sleepDisabled": sensors.get("detail") == "health" and sensors.get("power") == "disabled",
+        "sleepDisabled": detail == "health" and sensors.get("power") == "disabled",
     }
 
 
@@ -215,11 +219,25 @@ def bringup_result(sessions: list[dict], rows: list[dict]) -> dict:
     sensors = next((row["sequence"] for row in selected if row.get("sensorsReady")), None)
     power = next((row["sequence"] for row in selected if (row.get("ina219") or {}).get("status") == "ok"), None)
     health = next((row["sequence"] for row in selected if row.get("journal") == "disabled" and row.get("sleepDisabled")), None)
+    last_sensor_row = next((row for row in reversed(selected) if row.get("detail") == "sensors"), None)
+    last_power_row = next((row for row in reversed(selected) if "ina219" in row or row.get("detail") == "energy"), None)
+    latest_sensor = None
+    if last_sensor_row is not None:
+        latest_sensor = {"sequence": last_sensor_row["sequence"], "ready": last_sensor_row["sensorsReady"],
+                         **{key: last_sensor_row[key] for key in BRINGUP_SENSOR_STATUS}}
+    latest_power = None
+    if last_power_row is not None:
+        latest_power = {"sequence": last_power_row["sequence"], "status": (last_power_row.get("ina219") or {}).get("status")}
+    sensor_regressed = (sensors is not None and latest_sensor is not None
+                        and any(latest_sensor[key] == "unavailable" for key in BRINGUP_SENSOR_STATUS))
+    power_regressed = power is not None and latest_power is not None and latest_power["status"] not in (None, "ok")
     missing = [name for name, present in (
         ("commandDisabled", first is not None and first["commandReady"] is False),
         ("safeOutputs", selected and all(row.get("state") is False and row.get("mainFault") is False for row in selected)),
         ("buttons", len(buttons) == len(BRINGUP_BUTTON_STATES)),
-        ("sensors", sensors is not None), ("power", power is not None), ("health", health is not None),
+        ("sensors", latest_sensor is not None and latest_sensor["ready"]),
+        ("power", latest_power is not None and latest_power["status"] == "ok"),
+        ("health", health is not None),
     ) if not present]
     mismatches = [name for name, observed in (
         ("commandReady", any(session["commandReady"] is True for session in sessions)),
@@ -227,9 +245,12 @@ def bringup_result(sessions: list[dict], rows: list[dict]) -> dict:
         ("mainFault", any(row.get("mainFault") is True for row in notifications)),
         ("journalEnabled", any(row.get("journal") in ("ready", "error") for row in notifications)),
         ("buttonCounterRegressed", regressed),
+        ("sensorUnavailableAfterReady", sensor_regressed),
+        ("powerUnavailableAfterReady", power_regressed),
     ) if observed]
     return {"session": session_id, "buttonSequences": buttons, "sensorSequence": sensors,
-            "powerSequence": power, "healthSequence": health, "missing": missing, "mismatches": mismatches}
+            "powerSequence": power, "healthSequence": health, "latestSensor": latest_sensor, "latestPower": latest_power,
+            "missing": missing, "mismatches": mismatches}
 
 
 def reconnect_results(sessions: list[dict]) -> list[dict]:
@@ -363,7 +384,7 @@ def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mo
         observed_boots = {session["boot"] for session in measured if session["notificationCount"]}
         same_boot = observed_boots == {boots.get(usb_boot["bootId"])} if observed_boots else None
         pins_safe = not (usb_boot["motorActive"] or usb_boot["auxEnabled"] or usb_boot["mainFault"])
-        bringup["usbBoot"] = {key: usb_boot[key] for key in ("logSha256", "motorActive", "auxEnabled", "mainFault")}
+        bringup["usbBoot"] = {key: usb_boot[key] for key in ("logSha256", "motorActive", "auxEnabled", "mainFault", "sensorStatus")}
         bringup["usbBoot"].update(sameBoot=same_boot, pinsSafe=pins_safe)
         if same_boot is None:
             bringup["missing"].append("usbBootMatch")
