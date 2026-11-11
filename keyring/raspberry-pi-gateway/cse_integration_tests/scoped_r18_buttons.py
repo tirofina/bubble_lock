@@ -20,7 +20,8 @@ from scoped_r18_pulse import GATEWAY, PATHS, SUBJECT
 
 LOG_LIMIT = 1 << 20
 OBSERVATION_LIMIT = 64
-BUTTON_FIRMWARES = tuple(revision for revision in R18_BRINGUP_FIRMWARES if revision.startswith("keyring-0.7.21-"))
+BUTTON_FIRMWARES = tuple(revision for revision in R18_BRINGUP_FIRMWARES
+                         if revision.startswith(("keyring-0.7.21-", "keyring-0.7.22-")))
 
 
 def button_sample(native, baseline):

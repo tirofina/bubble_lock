@@ -35,7 +35,7 @@ USB_BOOT_LINE = re.compile(
 )
 BRINGUP_SENSOR_STATUS = ("batteryStatus", "accelStatus", "motion")
 DISPLAY_TEST_PROFILES = {f"keyring-{revision}-{panel}-bringup": panel
-                         for revision in ("0.7.16", "0.7.17", "0.7.18", "0.7.21")
+                         for revision in ("0.7.16", "0.7.17", "0.7.18", "0.7.21", "0.7.22")
                          for panel in ("st7789", "jd9853")}
 BRINGUP_DISPLAY_PROFILES = {
     "keyring-0.7.15-st7789-bringup": "st7789", "keyring-0.7.15-jd9853-bringup": "jd9853",
@@ -44,6 +44,7 @@ BRINGUP_DISPLAY_PROFILES = {
 APP_DIGEST_PROFILES = {
     "keyring-0.7.18-bringup", "keyring-0.7.18-st7789-bringup", "keyring-0.7.18-jd9853-bringup",
     "keyring-0.7.21-bringup", "keyring-0.7.21-st7789-bringup", "keyring-0.7.21-jd9853-bringup",
+    "keyring-0.7.22-bringup", "keyring-0.7.22-st7789-bringup", "keyring-0.7.22-jd9853-bringup",
 }
 
 

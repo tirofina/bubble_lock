@@ -397,4 +397,44 @@ int main() {
     observationTx.tick(530);
     assert((notifications == std::vector<std::string>{firstFrame.substr(0, 20), "current\n"}));
     std::puts("PASS ordered button transitions, bounded queue and notification subscription isolation");
+
+    notifications.clear();
+    write(peerConnection, observationCccd.handle, std::string(2, '\0'));
+    observationTx.queueSection(0, firstFrame, false);
+    read(peerConnection, fixtureObservation.handle);
+    assert(lastReadValue == firstFrame);
+    observationTx.queueSection(1, "panic between read and subscribe\n", true);
+    observationTx.queueSection(2, "released\n", true);
+    observationTx.tick(600);
+    assert(notifications.empty());
+    write(peerConnection, observationCccd.handle, enable);
+    for (uint64_t time = 615; time <= 645; time += 15) observationTx.tick(time);
+    const std::string panicFrame = "panic between read and subscribe\n";
+    assert((notifications == std::vector<std::string>{panicFrame.substr(0, 20), panicFrame.substr(20), "released\n"}));
+
+    notifications.clear();
+    write(peerConnection, observationCccd.handle, std::string(2, '\0'));
+    read(peerConnection, fixtureObservation.handle);
+    observationTx.queueSection(0, "superseded\n", true);
+    read(peerConnection, fixtureObservation.handle);
+    assert(lastReadValue == "superseded\n");
+    observationTx.queueSection(1, "after reread\n", true);
+    write(peerConnection, observationCccd.handle, enable);
+    observationTx.tick(660);
+    assert((notifications == std::vector<std::string>{"after reread\n"}));
+
+    notifications.clear();
+    write(peerConnection, observationCccd.handle, std::string(2, '\0'));
+    read(peerConnection, fixtureObservation.handle);
+    observationTx.queueSection(0, "lost with peer\n", true);
+    disconnect(peerConnection);
+    connected = authenticated = true;
+    disconnected = false;
+    ++connectionGeneration;
+    ++peerConnection;
+    write(peerConnection, observationCccd.handle, enable);
+    observationTx.queueSection(0, "new peer\n", false);
+    observationTx.tick(675);
+    assert((notifications == std::vector<std::string>{"new peer\n"}));
+    std::puts("PASS button transitions after the GATT baseline survive subscription and a reread supersedes them");
 }

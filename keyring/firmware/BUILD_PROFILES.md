@@ -18,11 +18,11 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.7.0.
 
 세 compile profile은 KEYRING_IGNORE_PROVISIONING으로 로컬 provisioning.h와 jd9853_panel.h를 포함하지 않는다. 장치별 passkey는 기본 invalid0이며 이 결과물을 provisioned device firmware로 취급하지 않는다. local 실제 장치 환경 keyring_r18은 기존 provisioning 경로를 사용한다. bare pio run의 default는 keyring_r18으로 유지했다.
 
-`keyring_r18_bringup`은 기존 로컬 provisioning의 장치 ID·passkey를 쓰는 첫 구동용 프로필이다. BLE revision은 `keyring-0.7.21-bringup`이며 LCD·오디오 재생·SD·deep sleep 및 BLE 명령·저널을 비활성화한다. USB 모니터에서 `?`를 보내면 부팅 ID, 초기 GPIO 읽기값, 실행 중인 앱의 `appSha256`을 다시 받을 수 있다. 정식 `keyring_r18`의 revision은 `keyring-0.7.21`다. 두 revision의 빌드와 실물 구동은 미실행이다. [구동 절차](../pcb/BRING_UP.md)
+`keyring_r18_bringup`은 기존 로컬 provisioning의 장치 ID·passkey를 쓰는 첫 구동용 프로필이다. BLE revision은 `keyring-0.7.22-bringup`이며 LCD·오디오 재생·SD·deep sleep 및 BLE 명령·저널을 비활성화한다. USB 모니터에서 `?`를 보내면 부팅 ID, 초기 GPIO 읽기값, 실행 중인 앱의 `appSha256`을 다시 받을 수 있다. 정식 `keyring_r18`의 revision은 `keyring-0.7.22`다. 두 revision의 빌드와 실물 구동은 미실행이다. [구동 절차](../pcb/BRING_UP.md)
 
 `keyring_r18_bringup_st7789`와 `keyring_r18_bringup_jd9853`는 첫 구동 뒤 장착한 패널 한 개를 점검한다. 로컬 provisioning은 장치 등록과 패널 geometry 설정에 사용하고, 컨트롤러는 환경 이름으로 선택한다. 명령·저널·오디오 재생·SD·deep sleep은 비활성 상태다. 두 프로필의 빌드·실물 화면 시험은 미실행이다. [화면만 연결한 두 번째 구동](../pcb/BRING_UP.md#화면만-연결한-두-번째-구동)
 
-정식 `keyring_r18`에서 `KEYRING_ENABLE_SLEEP=1`을 지정하면 펌웨어는 `keyring-0.7.21-sleep`으로 식별된다. 이 빌드의 절전 진입과 복구는 별도 실물 시험으로 기록한다. [저전력·깨우기](POWER_WAKE.md)
+정식 `keyring_r18`에서 `KEYRING_ENABLE_SLEEP=1`을 지정하면 펌웨어는 `keyring-0.7.22-sleep`으로 식별된다. 이 빌드의 절전 진입과 복구는 별도 실물 시험으로 기록한다. [저전력·깨우기](POWER_WAKE.md)
 
 ```sh
 pio run -e keyring_compile_minimal -e keyring_compile_st7789 -e keyring_compile_jd9853

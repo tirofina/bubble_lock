@@ -46,13 +46,13 @@ extern "C" esp_err_t __wrap_nvs_flash_init() {
 namespace {
 #if KEYRING_R18_BRINGUP
 #if KEYRING_R18_BRINGUP_DISPLAY == 1
-constexpr char FirmwareRevision[] = "keyring-0.7.21-st7789-bringup";
+constexpr char FirmwareRevision[] = "keyring-0.7.22-st7789-bringup";
 constexpr char BringupPanelField[] = " panel=st7789";
 #elif KEYRING_R18_BRINGUP_DISPLAY == 2
-constexpr char FirmwareRevision[] = "keyring-0.7.21-jd9853-bringup";
+constexpr char FirmwareRevision[] = "keyring-0.7.22-jd9853-bringup";
 constexpr char BringupPanelField[] = " panel=jd9853";
 #else
-constexpr char FirmwareRevision[] = "keyring-0.7.21-bringup";
+constexpr char FirmwareRevision[] = "keyring-0.7.22-bringup";
 constexpr char BringupPanelField[] = "";
 #endif
 char bringupBootRecord[320] = {};
@@ -69,9 +69,9 @@ void readRunningImageDigest(char (&hex)[65]) {
   hex[64] = '\0';
 }
 #elif KEYRING_ENABLE_SLEEP
-constexpr char FirmwareRevision[] = "keyring-0.7.21-sleep";
+constexpr char FirmwareRevision[] = "keyring-0.7.22-sleep";
 #else
-constexpr char FirmwareRevision[] = "keyring-0.7.21";
+constexpr char FirmwareRevision[] = "keyring-0.7.22";
 #endif
 constexpr bool ObservationOnly = KEYRING_R18_BRINGUP != 0;
 #if defined(KEYRING_LEGACY_GATT) && KEYRING_LEGACY_GATT
@@ -460,12 +460,25 @@ struct Tx {
   ObservationFrame sections[3], buttonQueue[ButtonQueueCapacity];
   unsigned buttonHead = 0, buttonCount = 0;
   uint64_t enqueueOrder = 0;
+  bool observationReadStarted = false; // Protected by linkMux.
+  uint32_t observationWindow = 0, activeObservationWindow = 0; // The callback owns observationWindow.
   size_t offset = 0;
   uint64_t nextAt = 0;
   void setSubscribed(bool enabled) { // Caller holds linkMux.
+    if (!scopedReceipt && !enabled && (subscribed || observationReadStarted)) {
+      observationReadStarted = false;
+      ++observationWindow;
+    }
     if (subscribed != enabled) {
       subscribed = enabled; ++subscription;
       if (scopedReceipt) readValue.reset();
+    }
+  }
+  void startObservationRead() { // Caller holds linkMux.
+    if (!subscribed) {
+      // Offset zero freezes a new baseline. Later transitions belong to this read.
+      observationReadStarted = true;
+      ++observationWindow;
     }
   }
   void queueReceipt(const std::string &frame, uint32_t generation, uint32_t subscriptionId) {
@@ -476,8 +489,8 @@ struct Tx {
     if (!current) return;
     pending = frame; queuedGeneration = generation; queuedSubscription = subscriptionId;
   }
-  void resetObservationQueue(uint32_t subscriptionId) {
-    activeSubscription = subscriptionId;
+  void resetObservationQueue(uint32_t window) {
+    activeObservationWindow = window;
     active.clear(); offset = 0; nextAt = 0;
     for (auto &section : sections) section.data.clear();
     for (auto &button : buttonQueue) button.data.clear();
@@ -486,11 +499,12 @@ struct Tx {
   void queueSection(uint8_t section, const std::string &frame, bool buttonTransition) {
     portENTER_CRITICAL(&linkMux);
     readValue.replace(frame.data(), frame.size());
-    const bool ready = connected && authenticated && subscribed;
-    const uint32_t currentSubscription = subscription;
+    const bool eligible = connected && authenticated &&
+        (subscribed || (observationReadStarted && buttonTransition));
+    const uint32_t window = observationWindow;
     portEXIT_CRITICAL(&linkMux);
-    if (activeSubscription != currentSubscription) resetObservationQueue(currentSubscription);
-    if (!ready) return;
+    if (activeObservationWindow != window) resetObservationQueue(window);
+    if (!eligible) return;
     ObservationFrame *target = &sections[section];
     if (buttonTransition) {
       // Preserve the oldest waiting edges and the latest state when the bounded queue fills.
@@ -503,7 +517,7 @@ struct Tx {
   }
   void clear() {
     pending.clear();
-    resetObservationQueue(activeSubscription);
+    resetObservationQueue(activeObservationWindow);
     setGattReadValue(readValue, {});
   }
   void tick(uint64_t now) {
@@ -513,14 +527,15 @@ struct Tx {
     const auto interfaceId = gattInterface;
     const uint32_t generation = connectionGeneration;
     const uint32_t currentSubscription = subscription;
+    const uint32_t window = observationWindow;
     portEXIT_CRITICAL(&linkMux);
     if (scopedReceipt && (queuedGeneration != generation || queuedSubscription != currentSubscription)) {
       pending.clear(); active.clear(); offset = 0;
     }
-    if (activeSubscription != currentSubscription) {
-      if (scopedReceipt) { offset = 0; activeSubscription = currentSubscription; }
-      else resetObservationQueue(currentSubscription);
+    if (scopedReceipt && activeSubscription != currentSubscription) {
+      offset = 0; activeSubscription = currentSubscription;
     }
+    if (!scopedReceipt && activeObservationWindow != window) resetObservationQueue(window);
     if (!ready || now < nextAt) return;
     if (active.empty()) {
       active.swap(pending); offset = 0;
@@ -544,7 +559,7 @@ struct Tx {
     portENTER_CRITICAL(&linkMux);
     const bool current = scopedReceipt ? commandChannelOpen(queuedGeneration, queuedSubscription) :
         connected && authenticated && subscribed && connectionGeneration == generation &&
-        subscription == currentSubscription;
+        subscription == currentSubscription && observationWindow == window;
     portEXIT_CRITICAL(&linkMux);
     if (!current) return;
     nextAt = now + 15;
@@ -929,6 +944,8 @@ bool handleProtectedGattRead(esp_gatt_if_t interfaceId, const esp_ble_gatts_cb_p
     const bool ok = value->chunk(connectionGeneration, request.offset, peerMtu - 1,
                                  response.attr_value.value, response.attr_value.len);
     status = ok ? ESP_GATT_OK : ESP_GATT_INVALID_OFFSET;
+    if (ok && request.offset == 0 && response.attr_value.len && value == &observationTx.readValue)
+      observationTx.startObservationRead();
   }
   portEXIT_CRITICAL(&linkMux);
   esp_ble_gatts_send_response(interfaceId, request.conn_id, request.trans_id, status, &response);
@@ -1117,7 +1134,8 @@ void setup() {
   initializeAudioWhenQuiet(); // I2S installation also waits for the other receiver's quiet state.
   if (!ObservationOnly || KEYRING_R18_BRINGUP_DISPLAY) auxRail::begin();
   peripherals.begin();
-  initBle(); sampleSensors(); publishObservation();
+  sampleSensors(); publishObservation(); // Freeze a readable observation before advertising.
+  initBle();
   Serial.printf("KEYRING ready: %s, storage=%s, radioSleep=%s\n", deviceId,
       ObservationOnly ? "disabled" : storageHealthy ? "ready" : "error",
       radioSleepEnabled ? "enabled" : "unavailable");
