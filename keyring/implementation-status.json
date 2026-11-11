@@ -7,7 +7,7 @@
   "date": "2026-11-11",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Pi Gateway 0.2.43 and Feather 0.2.0 produced two APPLIED GPIO command receipts with matching Pi SQLite, pinned Mobius4, authenticated callback and isolated PostgreSQL settlement. The operator saw no visible red LED change. Gateway 0.2.44 through 0.2.47 receipt replay, dispatch start, central receipt and central telemetry changes are source-only. r18 hardware and physical power characterization remain unverified.",
+  "verificationStatus": "Pi Gateway 0.2.43 and Feather 0.2.0 produced two APPLIED GPIO command receipts with matching Pi SQLite, pinned Mobius4, authenticated callback and isolated PostgreSQL settlement. The operator saw no LED change. The Feather 0.2.1 screen and r18 0.7.14 fault behavior still need on-device evidence. Gateway 0.2.47 passed local tests and still needs physical Pi integration verification.",
   "rubricIds": [
     "R01",
     "R02",
@@ -170,21 +170,21 @@
   "logSha256": "0c25234a13f2542bb13ff4ed2fd39c8aa015375a435bc6b6156f90cf0b7d6efa",
   "logSha256Scope": "private actual Pi observations.jsonl captured in the HTTPS outage/replay run; digest recorded by actualReceipt",
   "releaseSha": null,
-  "firmwareRevision": "keyring-0.7.13",
-  "benchFirmwareRevision": "feather-probe-0.2.0",
+  "firmwareRevision": "keyring-0.7.14",
+  "benchFirmwareRevision": "feather-probe-0.2.1",
   "publication": {
-    "sourceCommit": "00ee7747efcef1bcdbfe4163b238d138363f65dd",
+    "sourceCommit": "5e6598fc1931e4fc642b82d6d6e0cbf1ef941806",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "00ee7747efcef1bcdbfe4163b238d138363f65dd",
-    "lastPushedCommit": "00ee7747efcef1bcdbfe4163b238d138363f65dd",
-    "latestCheckpoint": "Require the expected integration bench revision and capabilities on Pi before starting BLE.",
-    "lastPushedCommitBeforeThisCheckpoint": "d6cae41470065875b2dc8dbc41ba40a641994de1"
+    "latestLocalSourceCommit": "5e6598fc1931e4fc642b82d6d6e0cbf1ef941806",
+    "lastPushedCommit": "5e6598fc1931e4fc642b82d6d6e0cbf1ef941806",
+    "latestCheckpoint": "Show Feather command GPIO state on the ST7789 and keep the r18 shared rail off after a detected motor fault.",
+    "lastPushedCommitBeforeThisCheckpoint": "d4fbb0690ff38b453e1204c2f9876fad78390ce0"
   },
   "gatewayRevision": "0.2.47",
-  "pendingValidationScope": "Gateway 0.2.47 central telemetry, central receipt replay and database upgrade, central dispatch-start and pinned-receipt restart and replay, visible Feather LED actuation, r18 physical commands and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE MQTT ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
+  "pendingValidationScope": "Gateway 0.2.47 central telemetry, central receipt replay and database upgrade, central dispatch-start and pinned-receipt restart and replay, Feather 0.2.1 flash and visible ST7789 command state, r18 physical commands and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE MQTT ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
     "supersededBy": "2026-11-10 benchCheckpoint for current execution and verification state",
@@ -205,7 +205,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Bind the Pi integration bench to the intended isolated API before starting under DOC-REV 2.0.0",
+    "executionRequest": "Use the existing Feather ST7789 to show command readback after the operator saw no LED response, and continue r18 fault handling under DOC-REV 2.0.0",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -214,11 +214,11 @@
     ],
     "latestRemoteCore": "d54a43a",
     "latestRemoteMain": "bc2a45d",
-    "sourceCommit": "00ee7747efcef1bcdbfe4163b238d138363f65dd",
-    "sourceValidation": "Read the current rubric, team heads and bc2a45d mTLS request handling. Uploaded the authenticated bench capabilities route and Pi startup guard. Restarted the isolated loopback listener and observed READY with all three features. No capability request from Pi, regression execution, build or physical workflow was run.",
+    "sourceCommit": "5e6598fc1931e4fc642b82d6d6e0cbf1ef941806",
+    "sourceValidation": "All three r18 compile profiles and both Feather profiles passed. Seventeen native checks, 12 Feather bench Python tests and 172 Gateway tests passed locally. A synthetic ON/OFF evidence check accepted 0.2.1 and rejected mixed revisions. The hardware was not reflashed or exercised in this checkpoint.",
     "goalComplete": false,
     "pendingInput": null,
-    "currentDependencyState": "The Feather 0.2.0 and Pi Gateway 0.2.43 command path matched isolated Mobius4 and PostgreSQL on the pinned 715ef58 API, with no visible LED response. The isolated bc2a45d listener on 8788 restarted with the bench capability manifest. The Pi preflight, integration-mode bench and evidence tool are available in source. Pi and API workflow integration evidence, central receipt replay, r18 identification and first power-on, physical reconnect, battery, LCD, charger and sensor checks, NVS fault and archive history verification, production CSE and CORE, journal reclaim, and physical power/range/wake evidence remain.",
+    "currentDependencyState": "The Feather 0.2.0 and Pi Gateway 0.2.43 command path matched isolated Mobius4 and PostgreSQL on the pinned 715ef58 API. The operator saw no LED change during either command. Feather 0.2.1 mirrors the command GPIO readback on the ST7789. The latest Pi integration workflow and LCD response still need hardware evidence, as do r18 first power-on, physical reconnect, battery, LCD, charger, sensor, NVS fault, power, range and wake. Production CSE, CORE and release acceptance remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -1290,5 +1290,30 @@
     "regressionsExecuted": false,
     "piVerified": false,
     "sourceCommit": "00ee7747efcef1bcdbfe4163b238d138363f65dd"
+  },
+  "featherCommandScreen": {
+    "reference": "firmware/feather_probe/README.md#내장-led를-쓰는-명령-프로필",
+    "previousVisualEvidence": "evidence/2026-11-11-feather-visual/receipt.json",
+    "revision": "feather-probe-0.2.1",
+    "observationBuildSha256": "86780192ba345f8a036ca5f33e6593ad2c97d37dea6329045b980a66aeef33d6",
+    "commandBuildSha256": "d7bc85a62639de036281c640e657aba673d52cf2257dd757d64d32252896d105",
+    "commandBuildLogSha256": "5b525a0a67b13403ae73d00bf62f7880c687868cb0c05bae4f40c96604e30642",
+    "localBenchTestsPassed": 12,
+    "localGatewayTestsPassed": 172,
+    "observedOnHardware": false,
+    "sourceCommit": "5e6598fc1931e4fc642b82d6d6e0cbf1ef941806"
+  },
+  "r18AuxiliaryRailFault": {
+    "reference": "firmware/PERIPHERALS.md#공용-전원spi절전",
+    "revision": "keyring-0.7.14",
+    "compileProfileSha256": {
+      "keyring_compile_minimal": "7fd5c34bcb9541069a5f98d8ce07c6495f34de43014ff7529dda7c0aef44d423",
+      "keyring_compile_st7789": "27a8e3efd007ddc8419db618e4765efc61389fa838f54a365e92180667c88699",
+      "keyring_compile_jd9853": "330a7ac31fd93c9cb2c8c4c25f4de291b61d686a65e7361b86771cf9b18849a1"
+    },
+    "compileLogSha256": "5ad25dbf26dc7d2c663ab0876ad54c0d56519a55babd1a1e3ca255eef0844ff2",
+    "nativeRegressionPassed": true,
+    "observedOnHardware": false,
+    "sourceCommit": "916ff1ef1f82daacf1481e057fbf9babb77be3e8"
   }
 }

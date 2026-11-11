@@ -1212,3 +1212,13 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 기존 루프백 리스너의 소유 프로세스와 빈 명령·관측 상태를 확인하고 격리 API를 재시작했다. `127.0.0.1:8788`에서 `READY`와 `dispatch-start`, `receipts`, `telemetry` 목록을 수신했다. Pi의 인증 조회, 회귀시험과 빌드는 미실행이다.
 
 소스 commit `00ee7747efcef1bcdbfe4163b238d138363f65dd`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `d6cae41..00ee774`다. goal은 active/progress다.
+
+## 2026-11-11 — Feather 화면에 명령 상태 표시 및 r18 보조 전원 차단
+
+DOC-REV 2.0.0과 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 사용자는 Feather의 ON/OFF 시험에서 모두 LED 변화가 없었다고 확인했다. 기존 기록에는 GPIO readback, Mobius4 영수증과 중앙 정산이 있다. [기존 실물 기록](../keyring/evidence/2026-11-11-feather-visual/receipt.json)
+
+- Feather `0.2.1`은 1.54인치 ST7789에서 `CMD ON`, `CMD OFF`, GPIO 초기화 오류를 표시한다. BLE 관측과 화면은 같은 GPIO 표본을 쓰며 마지막 A0/A1 입력 표시는 별도 줄에 유지한다. Pi와 PC 격리 도구는 선택한 펌웨어 하나를 대조한다. 과거 `0.2.0` 설정과 증거를 계속 읽는다. [격리 시험 절차](../keyring/raspberry-pi-gateway/TESTING.md#기존-scoped-mobius4에서-feather-led-시험)
+- r18 `0.7.14`는 타이머가 alert 고장을 감지하면 모터 GPIO가 LOW로 내려갈 때까지 화면 요청에 의한 보조 전원 재인가를 막는다. 활성 화면의 주기 갱신에서 백라이트를 껐다 켜는 GPIO 전이를 없앴다. 첫 빌드에서 발견한 비공개 `getGattsIf()` 호출을 공개 GATT 등록 이벤트로 교체했다. [보조 전원 설명](../keyring/firmware/PERIPHERALS.md#공용-전원spi절전)
+- r18 기본·ST7789·JD9853 빌드와 Feather 기본 관측·명령 빌드가 모두 통과했다. Feather는 Git 밖의 임시 소스 사본에 합성 PIN을 넣어 컴파일했다. r18 및 Feather 호스트 회귀 17개, 벤치 Python 회귀 12개, Gateway 로컬 시험 172개가 통과했다. 모의 ON/OFF 영수증 대조는 0.2.1을 받아들이고 버전이 섞인 기록을 거절했다. Gateway 첫 전체 실행에서 OpenSSL 경로가 빠져 TLS fixture 두 개가 시작되지 않았다. 설치된 Git OpenSSL을 지정한 최종 실행에서 전체가 통과했다. 새 펌웨어의 flash와 화면 육안 확인, 실제 Pi 연동 및 r18 실물 시험은 미실행이다. [빌드 SHA-256](../keyring/implementation-status.json)
+
+소스 commit `916ff1ef1f82daacf1481e057fbf9babb77be3e8` 및 `5e6598fc1931e4fc642b82d6d6e0cbf1ef941806`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `d4fbb06..5e6598f`다. goal은 active/progress다.
