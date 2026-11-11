@@ -1321,3 +1321,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R05. 직전 goal turn은 PC�
 - 다른 부모, 다른 이름·타입, 기록 누락과 대기열 잔류를 다루는 회귀시험 소스를 추가했다. 빌드·회귀시험·증거 도구 실행·실제 Pi–Mobius4 연동은 미실행이다.
 
 소스 commit `e12a8ecf516f4fb764fffad51a283868f09d4319`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `b7ced7e..e12a8ec`다. goal은 active/progress다.
+
+## 2026-11-11 — Mobius4 원본 관측과 중앙 수용 본문 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R05, R15. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 중앙 수용 이벤트가 전체 관측의 `approvalHash`를 기록하고 Pi가 같은 관측 본문을 Mobius4와 중앙 API에 각각 제출하는 것을 소스에서 확인했다.
+
+- PC 격리 시험은 준비된 팀 소스의 해시 함수를 사용해 ON/OFF 직후의 Mobius4 관측을 해시한다. 중앙 수용 이벤트 두 건의 본문 해시와 일치할 때만 본문 대조를 성공으로 보고한다. 시험 기록에는 원본 본문을 추가하지 않는다. [시험 결과 대조](../keyring/raspberry-pi-gateway/TESTING.md#최신-중앙-api의-시험-결과-대조)
+- 기존 0.2.0 실물 시험에서 사용자가 LED 변화가 없었다고 확인한 상태를 유지한다. 0.2.1의 1.54인치 화면 `CMD ON`과 `CMD OFF`는 실물 확인이 남았다. 이번에는 회귀시험 소스만 추가했고 빌드·시험·플래시·Pi 실행은 하지 않았다.
+
+소스 commit `35f9f77a4330713b8a7c2a4e33c240ba2dcf939c`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `7eef6b5..35f9f77`이다. goal은 active/progress다.
