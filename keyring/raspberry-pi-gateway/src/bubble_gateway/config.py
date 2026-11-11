@@ -69,6 +69,7 @@ class GatewayConfig:
     pc_dispatch_start_required: bool = False
     central_receipts_enabled: bool = False
     central_telemetry_enabled: bool = False
+    central_telemetry_retention_seconds: float = 86400
 
     @classmethod
     def from_env(cls) -> "GatewayConfig":
@@ -185,6 +186,7 @@ class GatewayConfig:
             pc_dispatch_start_required=boolean("PC_DISPATCH_START_REQUIRED", "false"),
             central_receipts_enabled=boolean("CENTRAL_RECEIPTS_ENABLED", "false"),
             central_telemetry_enabled=boolean("CENTRAL_TELEMETRY_ENABLED", "false"),
+            central_telemetry_retention_seconds=number("CENTRAL_TELEMETRY_RETENTION_SECONDS", "86400", 1, 86400),
         )
 
 

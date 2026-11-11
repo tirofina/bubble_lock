@@ -228,16 +228,18 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         gateway = Gateway.__new__(Gateway)
         gateway.config, gateway.store = config(), self.store
         gateway.config.central_telemetry_enabled = True
+        gateway.config.central_telemetry_retention_seconds = 60
         gateway.config.core_bridge_enabled = False
         gateway.stop, gateway.counters = asyncio.Event(), Counter()
         gateway._clock_ok = Mock(return_value=True)
         gateway.transport = SimpleNamespace(publish=AsyncMock(return_value={"status": "STALE"}),
                                              native_delivery_hold=Mock(return_value=NativeDeliveryHold(all_native=True)))
-        expired_at = iso_time(utc_now() - timedelta(hours=25))
+        expired_at = iso_time(utc_now() - timedelta(minutes=5))
         old = observation(observedAt=expired_at, receivedAt=expired_at)
         fresh = observation(sequence=2)
         await gateway.observation(old)
         await gateway.observation(fresh)
+        self.store.retry(self.store.due_central_telemetry()["rqi"], 0, minimum_delay=3600)
 
         async def idle(_seconds):
             gateway.stop.set()
@@ -251,6 +253,29 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(gateway.counters["central_telemetry_stale"], 1)
         self.assertEqual(self.queued("@central/telemetry"), 0)
         self.assertEqual(self.queued(BINDING["observationContainer"]), 2)
+
+    async def test_untrusted_clock_keeps_central_rows_waiting_for_retry(self):
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.config.central_telemetry_enabled = True
+        gateway.config.core_bridge_enabled = False
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+        gateway._clock_ok = Mock(return_value=False)
+        gateway.transport = SimpleNamespace(publish=AsyncMock())
+        expired_at = iso_time(utc_now() - timedelta(hours=25))
+        await gateway.observation(observation(observedAt=expired_at, receivedAt=expired_at))
+        first = self.store.due_central_telemetry()
+        self.store.retry(first["rqi"], 0, minimum_delay=3600)
+
+        async def idle(_seconds):
+            gateway.stop.set()
+
+        gateway._pause = idle
+        async with asyncio.timeout(1):
+            await gateway._outbox_loop(central_telemetry=True)
+        gateway.transport.publish.assert_not_awaited()
+        self.assertEqual(gateway.counters["central_telemetry_expired"], 0)
+        self.assertEqual(self.queued("@central/telemetry"), 1)
 
     async def test_native_delivery_continues_while_central_observation_awaits_confirmation(self):
         gateway = Gateway.__new__(Gateway)

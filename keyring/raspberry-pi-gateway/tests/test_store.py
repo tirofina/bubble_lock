@@ -8,7 +8,7 @@ from contextlib import closing
 from pathlib import Path
 from unittest.mock import patch
 
-from bubble_gateway.model import canonical, payload_hash
+from bubble_gateway.model import canonical, parse_time, payload_hash
 from bubble_gateway.state_archive import archive
 from bubble_gateway.state_identity import DATA_TABLES, StateIdentityError, configured_binding, metadata, readonly
 from bubble_gateway.store import CapacityError, Store
@@ -223,6 +223,24 @@ class StoreTests(unittest.TestCase):
                 item = self.store.due_central_telemetry()
                 self.assertEqual(item["payload"], payload)
                 self.store.delivered(item["rqi"])
+
+    def test_expired_central_rows_free_capacity_without_deleting_native_or_fresh_rows(self):
+        container = BINDING["observationContainer"]
+        old = observation(observedAt="2026-11-09T09:00:00+09:00")
+        equally_old = observation(sequence=2, observedAt="2026-11-09T00:00:00.000Z")
+        at_cutoff = observation(sequence=3, observedAt="2026-11-09T00:00:01.000Z")
+        self.store.max_rows = 7  # Six ordinary rows fit, leaving a reserved slot for receipts.
+        for payload in (old, equally_old, at_cutoff):
+            self.assertTrue(self.store.observation(container, payload, central_enabled=True))
+        first = self.store.due_central_telemetry()
+        self.store.retry(first["rqi"], 0, minimum_delay=3600)
+        cutoff = parse_time(at_cutoff["observedAt"])
+        self.assertIsNone(self.store.due_central_telemetry())
+        self.assertEqual(self.store.expire_central_telemetry(cutoff, limit=1), 1)
+        self.assertEqual(self.store.expire_central_telemetry(cutoff, limit=128), 1)
+        self.assertEqual(self.store.due_central_telemetry()["payload"], at_cutoff)
+        self.assertEqual(self.store.counts()[0], 4)
+        self.assertTrue(self.store.observation(container, observation(sequence=4), central_enabled=True))
 
     def test_nullable_projection_uses_only_the_scoped_route(self):
         container = BINDING["observationContainer"]

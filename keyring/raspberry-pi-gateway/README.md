@@ -70,6 +70,7 @@ sudoedit /etc/privacy-bubble/gateway.env
 | `PC_DISPATCH_START_REQUIRED` | `true`일 때 BLE 쓰기 전 중앙 `POST /dispatch-start` 승인을 요구함. 기존 고정 벤치 프로필의 기본값은 `false`. [명령 기한](BLE_SESSIONS.md#승인-기한과-gatt-전송) |
 | `CENTRAL_RECEIPTS_ENABLED` | `true`일 때 중앙 `POST /receipts`에 명령 영수증을 보냄. 기본값은 `false`. 같은 중앙 배포에서 기존 DB로 활성화하면 이전 영수증도 전송 대기열에 추가함. [중앙 영수증 정산](RECEIPT_ROUTING.md#중앙-명령-영수증-정산) |
 | `CENTRAL_TELEMETRY_ENABLED` | `true`일 때 새 BLE 관측을 중앙 `POST /telemetry`에도 보냄. 기본값은 `false`. 중앙 배포의 Gateway·장치·가구 등록이 필요함. [중앙 관측 전달](IO_NOTES.md#중앙-관측-전달) |
+| `CENTRAL_TELEMETRY_RETENTION_SECONDS` | 중앙 관측 서버의 보관 기간과 같은 초 단위 값. 기본 `86400`, 범위 `1`~`86400`. Pi는 시계 오차 여유 2초를 더한 뒤 중앙 복제본을 만료 처리함. |
 | `M2M_ORIGINATOR`, `M2M_CSE_ID` | MQTT topic의 단일 segment이면서 중앙과 합의한 식별자 |
 | `M2M_RVI` | 예시 `3`을 그대로 확정값으로 사용하지 않고 Mobius capability probe 결과로 결정 |
 | `MQTT_WRAPPED_PRIMITIVE` | 기본 `false`는 flat oneM2M primitive. PC capability probe에서 `m2m:rqp` wrapper가 필요한 경우에만 `true`로 설정하며 다른 형식의 자동 재시도는 하지 않음 |

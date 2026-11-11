@@ -20,7 +20,9 @@ from .transport import HttpRetryDeferred, NativeDeliveryHold, TransportHub
 
 LOG = logging.getLogger(__name__)
 RECEIPT_BURST = 4
-CENTRAL_TELEMETRY_MAX_AGE = timedelta(hours=24, seconds=2)
+CENTRAL_TELEMETRY_CLOCK_MARGIN = 2
+CENTRAL_TELEMETRY_EXPIRY_INTERVAL = 5.0
+CENTRAL_TELEMETRY_EXPIRY_BATCH = 128
 DEVICE_ACKS = {"APPLIED", "DUPLICATE", "REJECTED_EPOCH", "REJECTED_GRANT", "EXPIRED",
                "CONFLICT", "INVALID", "JOURNAL_FULL", "STORAGE_ERROR", "INDETERMINATE", "READBACK_MISMATCH"}
 
@@ -62,6 +64,7 @@ class Gateway:
             "apiUrl": self.config.api_url, "pcDispatchStartRequired": self.config.pc_dispatch_start_required,
             "centralReceiptsEnabled": self.config.central_receipts_enabled,
             "centralTelemetryEnabled": self.config.central_telemetry_enabled,
+            "centralTelemetryRetentionSeconds": self.config.central_telemetry_retention_seconds,
             "rvi": self.config.rvi,
             "mqttEnabled": self.config.mqtt_enabled, "mqttHost": self.config.mqtt_host,
             "m2mMqttEnabled": self.config.m2m_mqtt_enabled,
@@ -399,6 +402,9 @@ class Gateway:
         epochs = self.config.core_telemetry_epochs
         central_receipts = self.config.central_receipts_enabled
         receipt_attempts = 0
+        next_expiry_check = 0.0
+        if central_telemetry:
+            max_age = timedelta(seconds=self.config.central_telemetry_retention_seconds + CENTRAL_TELEMETRY_CLOCK_MARGIN)
         if not scoped and epochs is not None:
             # The scoped worker owns this lane, so awaiting its receipt never
             # holds the native observation or command-receipt worker.
@@ -409,6 +415,12 @@ class Gateway:
                                           central_enabled=central_receipts)
                 self.store.stage_credential_receipt()
             if central_telemetry:
+                now = time.monotonic()
+                if now >= next_expiry_check:
+                    expired = (self.store.expire_central_telemetry(utc_now() - max_age, CENTRAL_TELEMETRY_EXPIRY_BATCH)
+                               if self._clock_ok() else 0)
+                    self.counters["central_telemetry_expired"] += expired
+                    next_expiry_check = now if expired == CENTRAL_TELEMETRY_EXPIRY_BATCH else now + CENTRAL_TELEMETRY_EXPIRY_INTERVAL
                 item = self.store.due_central_telemetry()
             else:
                 prefer_receipts = None if scoped else receipt_attempts < RECEIPT_BURST
@@ -430,8 +442,8 @@ class Gateway:
                 else:
                     self.store.mark_receipt_attempt(item["rqi"])
             try:
-                if (item["container"] == "@central/telemetry" and self._clock_ok()
-                        and utc_now() - parse_time(item["payload"]["observedAt"]) > CENTRAL_TELEMETRY_MAX_AGE):
+                if (central_telemetry and self._clock_ok()
+                        and utc_now() - parse_time(item["payload"]["observedAt"]) > max_age):
                     self.store.delivered(item["rqi"])
                     self.counters["central_telemetry_expired"] += 1
                     continue

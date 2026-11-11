@@ -27,4 +27,4 @@ Gateway 0.2.47에서 `CENTRAL_TELEMETRY_ENABLED=true`를 사용하면 검증한 
 
 Gateway 0.2.49부터 중앙 관측 전송은 전용 작업에서 중앙 응답을 기다린다. Mobius4 관측과 명령 영수증은 응답 대기 중에도 기존 전송 작업에서 진행할 수 있다. 두 작업은 같은 SQLite 대기열을 사용하며 각 항목은 담당 작업만 선택한다. 중앙 API가 `Retry-After`를 보내면 해당 HTTPS origin의 대기 규칙을 적용한다.
 
-Pi의 시계가 정상이고 관측 시각에서 24시간 2초가 지났으면 중앙 전송 대기열의 해당 항목을 만료로 집계한다. 중앙 보관 기간 상한은 24시간이다. Mobius4 전송은 해당 경로에서 처리한다. 이 경로는 원격 main `bc2a45d`의 INTEGRATION API 계약을 따른다.
+Gateway 0.2.50의 `CENTRAL_TELEMETRY_RETENTION_SECONDS`는 팀 서버의 관측 보관 기간과 맞춘다. 기본값은 24시간이다. Pi의 시계를 신뢰할 수 있을 때만 관측 시각에 설정 기간과 시계 오차 여유 2초를 더해 만료를 판정한다. 중앙 관측 전송 작업은 재시도 시각을 기다리는 항목도 묶어서 만료 처리하고 `central_telemetry_expired`로 집계한다. 대상은 중앙 전송용 복제본이며 Mobius4 관측과 명령 영수증은 각자의 전송 규칙을 따른다. 만료되지 않은 관측이 SQLite 한도를 채우면 기존 대기열 용량 제한이 적용된다. 이 경로는 원격 main `bc2a45d`의 INTEGRATION API 계약을 따른다.

@@ -6,6 +6,7 @@ import json
 import random
 import sqlite3
 import time
+from datetime import datetime
 from pathlib import Path
 from typing import Callable
 
@@ -305,6 +306,18 @@ class Store:
             ) ORDER BY created_at,rqi LIMIT 1
         """, (time.time(),)).fetchone()
         return self._outbox_row(row)
+
+    def expire_central_telemetry(self, before: datetime, limit: int) -> int:
+        """Release expired central copies independently of their retry eligibility."""
+        with self.db:
+            return self.db.execute("""
+                DELETE FROM outbox WHERE rowid IN (
+                    SELECT rowid FROM outbox WHERE container='@central/telemetry'
+                      AND julianday(CASE WHEN json_valid(payload) THEN json_extract(payload, '$.observedAt') END)
+                          < julianday(?)
+                    ORDER BY rowid LIMIT ?
+                )
+            """, (iso_time(before), limit)).rowcount
 
     @staticmethod
     def _outbox_row(row: sqlite3.Row | None) -> dict | None:
