@@ -1585,3 +1585,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11, R12. 직전 goal turn�
 - 임시 Mobius4의 `-PinR18HealthRoute`와 새 Pi 세션의 `--health-container-ri`를 연결했다. DB binding 변경·공유 경로 충돌, preflight와 mock MQTT/CSE 재조회 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·ACL 적용·Pi 접속·서버 전환은 미수행이다. [상태 컨테이너 고정](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#gateway-상태-컨테이너-id-고정)
 
 소스 commit `53d1e7658cdef779bade6a6d3cac58e40bdaf9b3`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1e26510..53d1e76`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 ST7789·JD9853 화면 패턴과 BLE 버튼 입력 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R11. 직전 goal turn은 Gateway 상태 컨테이너 고정을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀 GATT 관측 계약을 확인했다.
+
+- r18 화면 초기 구동 프로필 두 개를 0.7.16으로 올렸다. 화면 작업자가 CONFIRM/PANIC 패턴을 그렸을 때의 각 버튼 누계를 `health` 프레임에 보낸다. 무화면 초기 구동과 일반 명령 펌웨어의 revision 및 wire 필드는 유지한다.
+- Gateway 0.2.80은 같은 BLE 세션의 버튼 누계와 마지막 화면 그리기 기록을 대조한다. 이전 USB 로그와 Pi 세션은 계속 읽을 수 있다. 프로필 불일치, 작업자·버스 오류, 누락과 잘못된 버튼 누계를 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·업로드·Pi 접속·실제 화면 확인은 미수행이다. [화면 초기 구동](../keyring/pcb/BRING_UP.md#화면만-연결한-두-번째-구동)
+
+소스 commit `7a3875eb711fb000ae73b920814d75006c77c809`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `9e85efd..7a3875e`다. goal은 active/progress다.
