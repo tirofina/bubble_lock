@@ -46,13 +46,13 @@ extern "C" esp_err_t __wrap_nvs_flash_init() {
 namespace {
 #if KEYRING_R18_BRINGUP
 #if KEYRING_R18_BRINGUP_DISPLAY == 1
-constexpr char FirmwareRevision[] = "keyring-0.7.18-st7789-bringup";
+constexpr char FirmwareRevision[] = "keyring-0.7.21-st7789-bringup";
 constexpr char BringupPanelField[] = " panel=st7789";
 #elif KEYRING_R18_BRINGUP_DISPLAY == 2
-constexpr char FirmwareRevision[] = "keyring-0.7.18-jd9853-bringup";
+constexpr char FirmwareRevision[] = "keyring-0.7.21-jd9853-bringup";
 constexpr char BringupPanelField[] = " panel=jd9853";
 #else
-constexpr char FirmwareRevision[] = "keyring-0.7.18-bringup";
+constexpr char FirmwareRevision[] = "keyring-0.7.21-bringup";
 constexpr char BringupPanelField[] = "";
 #endif
 char bringupBootRecord[320] = {};
@@ -69,9 +69,9 @@ void readRunningImageDigest(char (&hex)[65]) {
   hex[64] = '\0';
 }
 #elif KEYRING_ENABLE_SLEEP
-constexpr char FirmwareRevision[] = "keyring-0.7.20-sleep";
+constexpr char FirmwareRevision[] = "keyring-0.7.21-sleep";
 #else
-constexpr char FirmwareRevision[] = "keyring-0.7.19";
+constexpr char FirmwareRevision[] = "keyring-0.7.21";
 #endif
 constexpr bool ObservationOnly = KEYRING_R18_BRINGUP != 0;
 #if defined(KEYRING_LEGACY_GATT) && KEYRING_LEGACY_GATT
@@ -452,8 +452,14 @@ struct Tx {
   uint32_t queuedGeneration = 0, queuedSubscription = 0;
   std::string pending, active;
   GattReadValue readValue;
-  std::string sections[3];
-  uint64_t sectionOrder[3] = {}, enqueueOrder = 0;
+  struct ObservationFrame {
+    std::string data;
+    uint64_t order = 0;
+  };
+  static constexpr unsigned ButtonQueueCapacity = 8;
+  ObservationFrame sections[3], buttonQueue[ButtonQueueCapacity];
+  unsigned buttonHead = 0, buttonCount = 0;
+  uint64_t enqueueOrder = 0;
   size_t offset = 0;
   uint64_t nextAt = 0;
   void setSubscribed(bool enabled) { // Caller holds linkMux.
@@ -470,13 +476,34 @@ struct Tx {
     if (!current) return;
     pending = frame; queuedGeneration = generation; queuedSubscription = subscriptionId;
   }
-  void queueSection(uint8_t section, const std::string &frame) {
-    sections[section] = frame; sectionOrder[section] = ++enqueueOrder;
-    setGattReadValue(readValue, frame);
+  void resetObservationQueue(uint32_t subscriptionId) {
+    activeSubscription = subscriptionId;
+    active.clear(); offset = 0; nextAt = 0;
+    for (auto &section : sections) section.data.clear();
+    for (auto &button : buttonQueue) button.data.clear();
+    buttonHead = 0; buttonCount = 0; enqueueOrder = 0;
+  }
+  void queueSection(uint8_t section, const std::string &frame, bool buttonTransition) {
+    portENTER_CRITICAL(&linkMux);
+    readValue.replace(frame.data(), frame.size());
+    const bool ready = connected && authenticated && subscribed;
+    const uint32_t currentSubscription = subscription;
+    portEXIT_CRITICAL(&linkMux);
+    if (activeSubscription != currentSubscription) resetObservationQueue(currentSubscription);
+    if (!ready) return;
+    ObservationFrame *target = &sections[section];
+    if (buttonTransition) {
+      // Preserve the oldest waiting edges and the latest state when the bounded queue fills.
+      if (buttonCount < ButtonQueueCapacity) ++buttonCount;
+      const unsigned tail = (buttonHead + buttonCount - 1) % ButtonQueueCapacity;
+      target = &buttonQueue[tail];
+    }
+    target->data = frame;
+    target->order = ++enqueueOrder;
   }
   void clear() {
-    pending.clear(); active.clear(); offset = 0; nextAt = 0;
-    for (unsigned i = 0; i < 3; ++i) { sections[i].clear(); sectionOrder[i] = 0; }
+    pending.clear();
+    resetObservationQueue(activeSubscription);
     setGattReadValue(readValue, {});
   }
   void tick(uint64_t now) {
@@ -490,27 +517,36 @@ struct Tx {
     if (scopedReceipt && (queuedGeneration != generation || queuedSubscription != currentSubscription)) {
       pending.clear(); active.clear(); offset = 0;
     }
-    if (activeSubscription != currentSubscription) { offset = 0; activeSubscription = currentSubscription; }
+    if (activeSubscription != currentSubscription) {
+      if (scopedReceipt) { offset = 0; activeSubscription = currentSubscription; }
+      else resetObservationQueue(currentSubscription);
+    }
     if (!ready || now < nextAt) return;
     if (active.empty()) {
       active.swap(pending); offset = 0;
       if (active.empty()) {
-        // Select by publication order, never round-robin older sequence frames
-        // after newer ones. Replacements retain the newest value for each detail.
-        int selected = -1;
-        for (unsigned i = 0; i < 3; ++i)
-          if (!sections[i].empty() && (selected < 0 || sectionOrder[i] < sectionOrder[selected])) selected = i;
-        if (selected >= 0) { active.swap(sections[selected]); sectionOrder[selected] = 0; }
+        // The Gateway drops observations older than its current sequence.
+        auto *button = buttonCount ? &buttonQueue[buttonHead] : nullptr;
+        auto *selected = button;
+        for (auto &section : sections)
+          if (!section.data.empty() && (!selected || section.order < selected->order)) selected = &section;
+        if (selected) {
+          active.swap(selected->data);
+          if (selected == button) {
+            buttonHead = (buttonHead + 1) % ButtonQueueCapacity;
+            --buttonCount;
+          }
+        }
       }
     }
     if (active.empty()) return;
     const auto count = static_cast<uint16_t>(min(static_cast<size_t>(20), active.size() - offset));
-    if (scopedReceipt) {
-      portENTER_CRITICAL(&linkMux);
-      const bool current = commandChannelOpen(queuedGeneration, queuedSubscription);
-      portEXIT_CRITICAL(&linkMux);
-      if (!current) return;
-    }
+    portENTER_CRITICAL(&linkMux);
+    const bool current = scopedReceipt ? commandChannelOpen(queuedGeneration, queuedSubscription) :
+        connected && authenticated && subscribed && connectionGeneration == generation &&
+        subscription == currentSubscription;
+    portEXIT_CRITICAL(&linkMux);
+    if (!current) return;
     nextAt = now + 15;
     if (interfaceId == ESP_GATT_IF_NONE ||
         esp_ble_gatts_send_indicate(interfaceId, connection, characteristic->getHandle(), count,
@@ -532,7 +568,7 @@ bool commandChannelReady(const Frame &frame) {
   return ready;
 }
 
-void publishObservation() {
+void publishObservation(bool buttonTransition = false) {
   StaticJsonDocument<1536> doc;
   const uint32_t observationSequence = sequence++;
   const uint64_t now = uptime();
@@ -635,7 +671,7 @@ void publishObservation() {
   }
   // Enforce the wire bound at runtime even if a future identity/field expansion
   // also makes the minimal observation too large.
-  if (frame.size() <= 512 && !doc.overflowed()) observationTx.queueSection(section, frame);
+  if (frame.size() <= 512 && !doc.overflowed()) observationTx.queueSection(section, frame, buttonTransition);
   observationDirty = false; lastObservation = uptime();
 }
 
@@ -1135,7 +1171,11 @@ void loop() {
       (!authenticated && readState()) || (digitalRead(board::MainFaultN) == LOW && readState())) {
     stopMotor();
   }
+  const bool previousPanic = panic.pressed;
+  const bool previousConfirm = confirm.pressed && !previousPanic;
   bool changedConfirm = confirm.update(now), changedPanic = panic.update(now);
+  const bool buttonTransition = previousPanic != panic.pressed ||
+      previousConfirm != (confirm.pressed && !panic.pressed);
   buttonPresses.record(changedConfirm && confirm.pressed, changedPanic && panic.pressed, panic.pressed);
 #if KEYRING_R18_BRINGUP_DISPLAY
   if (changedPanic && panic.pressed) displayTestButton = DisplayTestButton::Panic;
@@ -1163,7 +1203,7 @@ void loop() {
   recoverAccelerometer(uptime());
   if (uptime() - lastSensorRead >= board::ObserveMs) { sampleSensors(); observationDirty = true; }
   if (uptime() - lastObservation >= board::ObserveMs) observationDirty = true;
-  if (observationDirty) publishObservation();
+  if (observationDirty) publishObservation(buttonTransition);
   if (!ObservationOnly || KEYRING_R18_BRINGUP_DISPLAY) auxRail::service();
   if (requestDisplay || now >= nextScreenAt) {
     KeyringScreen screen;

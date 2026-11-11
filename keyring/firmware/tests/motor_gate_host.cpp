@@ -123,7 +123,8 @@ void xQueueSend(int queue, const void *value, int) {
 }
 int esp_ble_gatts_send_indicate(esp_gatt_if_t interfaceId, uint16_t connection, uint16_t attribute,
                                uint16_t length, uint8_t *bytes, bool confirm) {
-    assert(interfaceId == 4 && connection == peerConnection && attribute == fixtureReceipt.handle && !confirm);
+    assert(interfaceId == 4 && connection == peerConnection && !confirm);
+    assert(attribute == fixtureReceipt.handle || attribute == fixtureObservation.handle);
     notifications.emplace_back(reinterpret_cast<const char *>(bytes), length);
     return notifyResult;
 }
@@ -350,4 +351,50 @@ int main() {
     read(peerConnection, fixtureCccd.handle);
     assert(forwardedEvents == 1);
     std::puts("PASS protected long reads are frozen and fenced by the authenticated connection");
+
+    BLE2902 observationCccd;
+    observationCccd.handle = 99;
+    observationTx.cccd = &observationCccd;
+    observationTx.characteristic = observationChar;
+    notifications.clear();
+    observationTx.queueSection(0, "unsubscribed\n", true);
+    read(peerConnection, fixtureObservation.handle);
+    assert(lastReadValue == "unsubscribed\n");
+    write(peerConnection, observationCccd.handle, enable);
+    const std::string firstFrame = std::string(20, 'x') + "\n";
+    observationTx.queueSection(0, firstFrame, false);
+    observationTx.tick(200);
+    observationTx.queueSection(0, "confirm\n", true);
+    observationTx.queueSection(1, "released\n", true);
+    observationTx.queueSection(2, "old energy\n", false);
+    observationTx.queueSection(0, "panic\n", true);
+    observationTx.queueSection(1, "released\n", true);
+    observationTx.queueSection(2, "new energy\n", false);
+    read(peerConnection, fixtureObservation.handle);
+    assert(lastReadValue == "new energy\n");
+    for (uint64_t time = 215; time <= 290; time += 15) observationTx.tick(time);
+    assert((notifications == std::vector<std::string>{
+        firstFrame.substr(0, 20), "\n", "confirm\n", "released\n", "panic\n", "released\n", "new energy\n"
+    }));
+
+    notifications.clear();
+    for (unsigned index = 0; index < Tx::ButtonQueueCapacity + 2; ++index)
+        observationTx.queueSection(0, std::to_string(index) + "\n", true);
+    for (unsigned index = 0; index < Tx::ButtonQueueCapacity; ++index) observationTx.tick(305 + index * 15);
+    assert(notifications.size() == Tx::ButtonQueueCapacity);
+    for (unsigned index = 0; index + 1 < Tx::ButtonQueueCapacity; ++index)
+        assert(notifications[index] == std::to_string(index) + "\n");
+    assert(notifications.back() == std::to_string(Tx::ButtonQueueCapacity + 1) + "\n");
+
+    notifications.clear();
+    observationTx.queueSection(0, firstFrame, true);
+    observationTx.tick(500);
+    observationTx.queueSection(1, "old release\n", true);
+    write(peerConnection, observationCccd.handle, std::string(2, '\0'));
+    write(peerConnection, observationCccd.handle, enable);
+    observationTx.queueSection(2, "current\n", false);
+    observationTx.tick(515);
+    observationTx.tick(530);
+    assert((notifications == std::vector<std::string>{firstFrame.substr(0, 20), "current\n"}));
+    std::puts("PASS ordered button transitions, bounded queue and notification subscription isolation");
 }

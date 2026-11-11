@@ -18,7 +18,7 @@ from pi_led_cycle import ready_heartbeat, receipt_name, verify_observation_resou
 from scoped_command_io import PROFILE, hash_observation, scoped_api, scoped_clients, tls_context
 from scoped_feather_evidence import read_json
 from scoped_feather_pi import (PARENT, R18_BOARD, R18_COMMAND_FIRMWARE, R18_COMMAND_FIRMWARES, R18_DEVICE,
-                               R18_SLEEP_COMMAND_FIRMWARE, verify_integration_api)
+                               R18_SLEEP_COMMAND_FIRMWARES, verify_integration_api)
 
 GATEWAY = "gw-b"
 SUBJECT = "scoped-r18-bench"
@@ -56,7 +56,7 @@ def read_pulse_wake_report(path, firmware):
     capture = json.loads(raw)
     expected = {"mode": "wake", "hardware": "r18-pcb", "status": "RECORDED", "gatewayId": GATEWAY,
                 "deviceId": R18_DEVICE, "boardRevision": R18_BOARD, "firmwareRevision": firmware, "gattProfile": "core-v1"}
-    if (firmware != R18_SLEEP_COMMAND_FIRMWARE or not isinstance(capture, dict)
+    if (firmware not in R18_SLEEP_COMMAND_FIRMWARES or not isinstance(capture, dict)
             or type(capture.get("version")) is not int or capture["version"] != 1
             or any(capture.get(key) != value for key, value in expected.items())):
         raise ValueError("Wake report does not match the scoped r18 sleep firmware and device")
@@ -85,7 +85,7 @@ async def run_pulse(operator_post, cse, central_proof, output, *, pins, observat
     pins = validate_container_pins(pins)
     if firmware not in R18_COMMAND_FIRMWARES:
         raise ValueError("Unknown r18 command firmware")
-    if wake is not None and firmware != R18_SLEEP_COMMAND_FIRMWARE:
+    if wake is not None and firmware not in R18_SLEEP_COMMAND_FIRMWARES:
         raise ValueError("Wake evidence requires the r18 sleep firmware")
     scope_record = {"gatewayId": GATEWAY, "containerPins": pins, "firmwareRevision": firmware, "journalReadinessRequired": True}
     if wake is not None:

@@ -83,7 +83,7 @@ Gateway의 `--mode bringup`은 페어링된 r18과 `-bringup` 펌웨어에서 �
 ```sh
 bubble-keyring-ble-characterize --mode bringup --hardware r18-pcb \
   --gateway-id "$GATEWAY_ID" --device-id "$KEYRING_ID" --address "$KEYRING_ADDRESS" \
-  --firmware-revision keyring-0.7.18-bringup --distance-cm "$MEASURED_DISTANCE_CM" --seconds 90 \
+  --firmware-revision keyring-0.7.21-bringup --distance-cm "$MEASURED_DISTANCE_CM" --seconds 90 \
   --usb-boot-log "$PRIVATE_EVIDENCE/r18-usb.log" \
   --firmware-image "$PRIVATE_EVIDENCE/firmware.bin" \
   --database "$GATEWAY_DATABASE" --output "$PRIVATE_EVIDENCE/r18-bringup.json"
@@ -93,9 +93,11 @@ bubble-keyring-ble-characterize --mode bringup --hardware r18-pcb \
 
 `RECORDED`는 위 항목을 한 세션에서 수신했고 마지막 BLE 센서·INA219 상태가 정상이라는 뜻이다. Gateway 0.2.59는 첫 정상 순번과 마지막 센서·INA219 상태를 기록한다. 정상 관측 후 마지막에 센서가 `unavailable`이거나 INA219 오류가 오면 `MISMATCH`다. 마지막 프레임에 필요한 값이 없으면 `INSUFFICIENT`다. USB 로그를 공급하면 `bringup.usbBoot`에 파일 SHA-256, GPIO, 초기 센서 상태와 부팅 일치 여부가 추가된다. USB와 BLE의 부팅이 다르거나 수집 중 새 부팅의 알림이 들어오거나 USB 출력·fault가 활성 상태이면 `MISMATCH`다. INA219는 3.3V 부하 측 계측이며 입력·충전 전류는 별도 실측으로 남긴다. JSON은 BLE 주소와 원래 부팅 ID를 내보내지 않는다. 빌드·회귀시험·실물 캡처는 미실행이다.
 
-Gateway 0.2.99의 `--firmware-image`에 업로드에 사용한 서명 없는 ESP32-S3 앱 `firmware.bin`을 지정한다. 파일 끝의 SHA-256을 다시 계산하고 0.7.18 USB 로그의 `appSha256`과 대조한다. 해시 불일치나 실행 이미지 해시를 읽지 못한 경우 BLE 수집 시작 전에 종료한다. 파일 전체의 SHA-256과 크기는 `bringup.usbBoot.firmwareImage`에 남고 `sameBoot`는 USB와 BLE 부팅의 일치 여부를 나타낸다. 이전 펌웨어 기록은 `--firmware-image`를 생략해 수집한다. 바이너리는 비공개로 보관한다. [Espressif 앱 이미지 형식](https://docs.espressif.com/projects/esptool/en/latest/esp32s3/advanced-topics/firmware-image-format.html)
+Gateway 0.2.99의 `--firmware-image`에 업로드에 사용한 서명 없는 ESP32-S3 앱 `firmware.bin`을 지정한다. 파일 끝의 SHA-256을 다시 계산하고 0.7.18·0.7.21 USB 로그의 `appSha256`과 대조한다. 해시 불일치나 실행 이미지 해시를 읽지 못한 경우 BLE 수집 시작 전에 종료한다. 파일 전체의 SHA-256과 크기는 `bringup.usbBoot.firmwareImage`에 남고 `sameBoot`는 USB와 BLE 부팅의 일치 여부를 나타낸다. 이전 펌웨어 기록은 `--firmware-image`를 생략해 수집한다. 바이너리는 비공개로 보관한다. [Espressif 앱 이미지 형식](https://docs.espressif.com/projects/esptool/en/latest/esp32s3/advanced-topics/firmware-image-format.html)
 
-0.7.16~0.7.18 ST7789·JD9853 프로필은 마지막 `health` 프레임의 화면 상태와 `displayDrawnPresses`도 확인한다. 각 패턴을 확인할 시간을 두고 버튼을 순서대로 누르고 떼며, 비상 버튼을 뗀 뒤에도 `health`가 한 번 더 전송될 때까지 기록한다. 화면 작업자·버스 오류나 다른 프로필이 보고되면 `MISMATCH`다. 현재 시험의 버튼 누계와 대조할 그리기 기록이 없으면 `INSUFFICIENT`다. 실제 화면의 테두리·색·글자는 별도 사진이나 영상에 남긴다.
+0.7.16~0.7.18 및 0.7.21 ST7789·JD9853 프로필은 마지막 `health` 프레임의 화면 상태와 `displayDrawnPresses`도 확인한다. 각 패턴을 확인할 시간을 두고 버튼을 순서대로 누르고 떼며, 비상 버튼을 뗀 뒤에도 `health`가 한 번 더 전송될 때까지 기록한다. 화면 작업자·버스 오류나 다른 프로필이 보고되면 `MISMATCH`다. 현재 시험의 버튼 누계와 대조할 그리기 기록이 없으면 `INSUFFICIENT`다. 실제 화면의 테두리·색·글자는 별도 사진이나 영상에 남긴다.
+
+0.7.21의 짧은 버튼 입력은 Pi가 같은 r18 부팅에 구독한 상태에서 확인한다. 주기 관측이 들어오는 동안 확인 버튼을 짧게 눌렀다 떼고 비상 버튼도 같은 방식으로 누른다. Pi에서 `confirm → released → panic → released`와 증가하는 순번을 확인한다. 등록된 격리 중앙에서 같은 순번의 관측 수용과 비상 관측에 연결된 사건을 대조한다. 각 누름과 해제는 35ms 디바운스 구간을 넘긴다.
 
 ### r18 화면 관찰 기록 연결
 
@@ -189,7 +191,7 @@ Gateway 0.2.39의 `--verify-button-continuity`는 첫 알림이 있던 연결의
 ```sh
 bubble-keyring-ble-characterize --mode reconnect --hardware r18-pcb --verify-button-continuity \
   --gateway-id "$GATEWAY_ID" --device-id "$KEYRING_ID" --address "$KEYRING_ADDRESS" \
-  --firmware-revision keyring-0.7.18-bringup --distance-cm "$MEASURED_DISTANCE_CM" --seconds 90 \
+  --firmware-revision keyring-0.7.21-bringup --distance-cm "$MEASURED_DISTANCE_CM" --seconds 90 \
   --database "$GATEWAY_DATABASE" --output "$PRIVATE_EVIDENCE/r18-reconnect.json"
 ```
 
@@ -199,12 +201,12 @@ bubble-keyring-ble-characterize --mode reconnect --hardware r18-pcb --verify-but
 
 ### r18 wake 기록
 
-Gateway의 `--mode wake`는 r18 전용이다. 최신 소스는 로컬 provisioning에서 sleep을 켠 빌드를 `keyring-0.7.20-sleep`으로 보고한다. 먼저 연결해서 알림을 받은 뒤 BLE를 닫고 `--idle-seconds` 동안 기다린다. 다른 BLE 클라이언트가 붙어 있거나 움직임이 감지되면 실제 절전 진입이 늦어질 수 있다. 도구의 wake 안내가 나오면 해당 자극을 가한다. 버튼·움직임 시험은 장치가 실제로 절전한 뒤 타이머로 먼저 깨기 전에 진행한다. 타이머 시험은 안내 후 장치를 움직이지 않는다.
+Gateway의 `--mode wake`는 r18 전용이다. 최신 소스는 로컬 provisioning에서 sleep을 켠 빌드를 `keyring-0.7.21-sleep`으로 보고한다. 먼저 연결해서 알림을 받은 뒤 BLE를 닫고 `--idle-seconds` 동안 기다린다. 다른 BLE 클라이언트가 붙어 있거나 움직임이 감지되면 실제 절전 진입이 늦어질 수 있다. 도구의 wake 안내가 나오면 해당 자극을 가한다. 버튼·움직임 시험은 장치가 실제로 절전한 뒤 타이머로 먼저 깨기 전에 진행한다. 타이머 시험은 안내 후 장치를 움직이지 않는다.
 
 ```sh
 bubble-keyring-ble-characterize --mode wake --hardware r18-pcb \
   --gateway-id "$GATEWAY_ID" --device-id "$KEYRING_ID" --address "$KEYRING_ADDRESS" \
-  --firmware-revision keyring-0.7.20-sleep --distance-cm "$MEASURED_DISTANCE_CM" \
+  --firmware-revision keyring-0.7.21-sleep --distance-cm "$MEASURED_DISTANCE_CM" \
   --idle-seconds "$IDLE_SECONDS" --expect-wake confirm --seconds 90 \
   --database "$GATEWAY_DATABASE" --output "$PRIVATE_EVIDENCE/r18-wake-confirm.json"
 ```
@@ -408,11 +410,11 @@ Feather 명령 프로필 `0.2.0`과 두 SSH 포워딩이 준비되면 같은 Fea
 
 #### r18 Pi 관측 전용 세션
 
-첫 구동 보드의 BLE 관측을 Pi에서 격리 Mobius4와 중앙 API에 전달한다. `gw-b` 인증서, 중앙 등록 장치 ID `keyring-r18-lab`, 같은 배치에서 고정한 관측·영수증 ID를 사용한다. 새 세션에는 장착한 펌웨어 revision을 명시한다. 화면 없이 구동할 때는 `keyring-0.7.18-bringup`, 화면 점검 중에는 `keyring-0.7.18-st7789-bringup` 또는 `keyring-0.7.18-jd9853-bringup`을 선택한다. revision을 생략해 생성된 기존 세션은 `keyring-0.7.15-bringup`을 사용한다.
+첫 구동 보드의 BLE 관측을 Pi에서 격리 Mobius4와 중앙 API에 전달한다. `gw-b` 인증서, 중앙 등록 장치 ID `keyring-r18-lab`, 같은 배치에서 고정한 관측·영수증 ID를 사용한다. 새 세션에는 장착한 펌웨어 revision을 명시한다. 화면 없이 구동할 때는 `keyring-0.7.21-bringup`, 화면 점검 중에는 `keyring-0.7.21-st7789-bringup` 또는 `keyring-0.7.21-jd9853-bringup`을 선택한다. revision을 생략해 생성된 기존 세션은 `keyring-0.7.15-bringup`을 사용한다.
 
 ```sh
 tool=keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_pi.py
-r18_bringup_firmware=keyring-0.7.18-bringup
+r18_bringup_firmware=keyring-0.7.21-bringup
 "$pi_python" "$tool" prepare --session "$r18_observation_session" --api-mode r18 --observe-only \
   --firmware-revision "$r18_bringup_firmware" \
   --address-file "$r18_address_file" --tls-dir "$scoped_gateway_b_tls" \
@@ -497,9 +499,9 @@ tool=keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_pi.py
 "$pi_python" "$tool" preflight --session "$r18_session"
 ```
 
-r18 모드는 중앙 API 포트 `8789`와 `gw-b` 전용 경로를 사용한다. 새 명령 세션은 `keyring-0.7.19`를 고정한다. Pi는 BLE 장치 ID, `r18-hand-solder` 보드와 지정한 펌웨어 revision을 대조하고 중앙 API의 기능 응답도 같은 revision으로 확인한다. 이전 0.7.14 명령 세션은 그 revision을 이어서 사용한다. 관측 또는 영수증 ID가 없는 이전 r18 세션은 검증된 두 ID로 새 세션을 만든다. `preflight` 후 승인된 시험에서만 `run`으로 해당 세션을 시작한다. Feather 명령 시험과 r18 명령 시험은 Pi 사용자당 같은 실행 잠금을 사용한다. r18의 모터 펄스는 [실물 명령 대조](../JOURNAL_RETENTION.md#r18-실물-명령-한-건-대조)의 절차에 연결한다.
+r18 모드는 중앙 API 포트 `8789`와 `gw-b` 전용 경로를 사용한다. 새 명령 세션은 `keyring-0.7.21`를 고정한다. Pi는 BLE 장치 ID, `r18-hand-solder` 보드와 지정한 펌웨어 revision을 대조하고 중앙 API의 기능 응답도 같은 revision으로 확인한다. 이전 0.7.14·0.7.19·0.7.20-sleep 명령 세션은 그 revision을 이어서 사용한다. 관측 또는 영수증 ID가 없는 이전 r18 세션은 검증된 두 ID로 새 세션을 만든다. `preflight` 후 승인된 시험에서만 `run`으로 해당 세션을 시작한다. Feather 명령 시험과 r18 명령 시험은 Pi 사용자당 같은 실행 잠금을 사용한다. r18의 모터 펄스는 [실물 명령 대조](../JOURNAL_RETENTION.md#r18-실물-명령-한-건-대조)의 절차에 연결한다.
 
-`keyring-0.7.20-sleep`으로 절전 후 명령 경로까지 확인할 때는 [격리 API](../dev/mobius4/README.md#r18-격리-명령-api)를 같은 revision으로 시작하고, Pi `prepare`에 `--firmware-revision keyring-0.7.20-sleep`을 추가해 새 세션을 만든다. 아래 펄스 도구에도 같은 옵션을 넘긴다. 장치 저널 수집은 저장된 Pi 세션의 revision을 사용한다.
+`keyring-0.7.21-sleep`으로 절전 후 명령 경로까지 확인할 때는 [격리 API](../dev/mobius4/README.md#r18-격리-명령-api)를 같은 revision으로 시작하고, Pi `prepare`에 `--firmware-revision keyring-0.7.21-sleep`을 추가해 새 세션을 만든다. 아래 펄스 도구에도 같은 옵션을 넘긴다. 장치 저널 수집은 저장된 Pi 세션의 revision을 사용한다.
 
 깨운 부팅에서 실행했음을 확인하려면 먼저 `gw-b`·`keyring-r18-lab`으로 [wake 보고서](#r18-wake-기록)를 만든다. 도구가 BLE를 닫으면 보드 전원을 유지하고 다시 잠들기 전에 Pi 명령 세션을 시작한다. 펄스 도구에 `--wake-report $r18WakeReport`를 추가한다. 보고서의 부팅 해시와 같은 부팅에서 받은 더 새 OFF 기준 관측이 있어야 `R18_PULSE_READY`가 나온다.
 
@@ -577,7 +579,7 @@ env -i PATH=/usr/bin:/bin PYTHONPATH="$source_path" "$pi_python" -m bubble_gatew
 env -i PATH=/usr/bin:/bin PYTHONPATH="$source_path" "$pi_python" -m bubble_gateway.journal_reconcile \
   --env-file "$gateway_env" --device-archive "$private_r18_evidence/device" \
   --gateway-archive "$private_r18_evidence/gateway" --same-boot-command "$pulse_command_id" \
-  --board-revision r18-hand-solder --firmware-revision keyring-0.7.19 \
+  --board-revision r18-hand-solder --firmware-revision keyring-0.7.21 \
   --team-state "$team_state_copy" --native-receipt "$pulse_receipt_copy"
 ```
 

@@ -35,12 +35,16 @@ USB_BOOT_LINE = re.compile(
 )
 BRINGUP_SENSOR_STATUS = ("batteryStatus", "accelStatus", "motion")
 DISPLAY_TEST_PROFILES = {f"keyring-{revision}-{panel}-bringup": panel
-                         for revision in ("0.7.16", "0.7.17", "0.7.18") for panel in ("st7789", "jd9853")}
+                         for revision in ("0.7.16", "0.7.17", "0.7.18", "0.7.21")
+                         for panel in ("st7789", "jd9853")}
 BRINGUP_DISPLAY_PROFILES = {
     "keyring-0.7.15-st7789-bringup": "st7789", "keyring-0.7.15-jd9853-bringup": "jd9853",
     **DISPLAY_TEST_PROFILES,
 }
-APP_DIGEST_PROFILES = {"keyring-0.7.18-bringup", "keyring-0.7.18-st7789-bringup", "keyring-0.7.18-jd9853-bringup"}
+APP_DIGEST_PROFILES = {
+    "keyring-0.7.18-bringup", "keyring-0.7.18-st7789-bringup", "keyring-0.7.18-jd9853-bringup",
+    "keyring-0.7.21-bringup", "keyring-0.7.21-st7789-bringup", "keyring-0.7.21-jd9853-bringup",
+}
 
 
 def read_usb_boot(path: Path, board: str, firmware: str) -> dict:
