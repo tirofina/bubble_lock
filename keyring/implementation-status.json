@@ -1837,5 +1837,13 @@
     "regressionsExecuted": false,
     "physicalPulseMeasured": false,
     "sourceCommit": "b22ecc25b78fa413941c31a598094b67c12aed2a"
+  },
+  "r18SleepOutputHold": {
+    "reference": "firmware/POWER_WAKE.md",
+    "firmwareRevision": "keyring-0.7.20-sleep",
+    "buildExecuted": false,
+    "regressionsExecuted": false,
+    "physicalWakeVerified": false,
+    "sourceCommit": "00a65e28dbc3aeab153f6a9d44c495233f76177a"
   }
 }

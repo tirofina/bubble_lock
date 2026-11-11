@@ -1883,3 +1883,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05, R10. 직전 goal turn은 임
 - 계측값과 명령의 연결은 작업자 기록을 사용한다. 상한 이내·초과·판정 불가 및 잘못 연결된 영수증의 회귀시험 소스와 절차를 추가했다. 빌드·테스트·정적 분석·실제 J6 전압 및 진동 계측은 미수행이다. [r18 펄스 계측값 연결](../keyring/raspberry-pi-gateway/TESTING.md#r18-펄스-계측값-연결)
 
 소스 commit `b22ecc25b78fa413941c31a598094b67c12aed2a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `aad0f28..b22ecc2`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 저전력 진입 전에 GPIO hold 확인
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 부하 펄스 계측 연결을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀 BLE 관측 계약을 확인했다.
+
+- `KEYRING_ENABLE_SLEEP=1` 빌드 `keyring-0.7.20-sleep`은 BLE 종료 전에 안전 출력 쓰기와 핀별 hold를 완료하고 모터·AUX LOW 및 wake 입력을 다시 확인한다. 준비 실패 시 wake source와 hold를 정리하고 버튼·가속도 입력과 BLE 광고를 복구한다.
+- 출력 쓰기·읽기, 부분 hold, pull-up 실패와 마지막 버튼 입력을 다루는 회귀시험 소스와 wake 기록 절차를 추가했다. 빌드·테스트·정적 분석·플래시·실물 sleep/wake·전류 계측은 미수행이다. [저전력·깨우기](../keyring/firmware/POWER_WAKE.md)
+
+소스 commit `00a65e28dbc3aeab153f6a9d44c495233f76177a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8d489de..00a65e2`다. goal은 active/progress다.
