@@ -1285,3 +1285,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 SQL
 - 재시작과 지연 중 본문 보존, 자격 전환·공용 컨테이너 관측과 동시 적재를 다루는 회귀시험 소스를 추가했다. 빌드·회귀시험·실제 Pi 연동은 미실행이다. Pi와 Mobius4의 실제 장애·복구 및 제작 PCB 검증이 남아 있다.
 
 소스 commit `3f6864a71d03dd5568357ee1c9f23960c20aa177`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `34391f7..3f6864a`다. goal은 active/progress다.
+
+## 2026-11-11 — 중앙 API 저장소를 SQLite에 연결
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 Mobius4 장애 중 정기 상태 보고 적재를 제한한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 중앙 Gateway 인증서 수명주기, CORE 경로와 웹 영수증 매핑을 확인했다.
+
+- Gateway `0.2.54`는 새 SQLite에 선택 설정 `PC_API_DEPLOYMENT_ID`를 binding v3로 기록한다. 다른 중앙 저장소 ID로 기존 DB를 지정하거나 ID를 빼면 쓰기·전송 전에 중단한다. 같은 중앙 저장소의 API 주소 변경은 기존 DB를 사용한다. 두 사전 검사는 네트워크 요청 전에 로컬 binding을 읽고, 보관본은 같은 ID를 담는다. [중앙 API 배포 전환](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#중앙-api-배포-전환)
+- 주소 변경, 다른 배포 ID, 기존 DB의 ID 덧씌우기 거절과 보관본 격리를 다루는 회귀시험 소스를 추가했다. ID는 운영자 배정값이며 서버의 실제 인증은 mTLS와 중앙 정책을 따른다. 빌드·회귀시험·배포 전환·실제 Pi 연동은 미실행이다.
+
+소스 commit `ed770bf0bb50fd08e2091ab185c810b9d1fd3a9a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `6fa4e31..ed770bf`다. goal은 active/progress다.
