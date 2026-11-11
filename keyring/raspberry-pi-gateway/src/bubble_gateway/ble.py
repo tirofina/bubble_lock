@@ -317,9 +317,11 @@ class BleFleet:
                     if board is not None and identity["boardRevision"] != board:
                         raise BleProtocolError("board revision does not match enrollment")
                     peer.identity = identity
-                    await client.start_notify(self.receipt_uuid,
-                        lambda _, data, session=generation: self._receipt_fragment(peer, data, session))
-                    self._require_session(peer, client, generation, ready=False)
+                    commands_enabled = getattr(self.config, "commands_enabled", True)
+                    if commands_enabled:
+                        await client.start_notify(self.receipt_uuid,
+                            lambda _, data, session=generation: self._receipt_fragment(peer, data, session))
+                        self._require_session(peer, client, generation, ready=False)
                     # BlueZ also publishes READ values through PropertiesChanged.
                     # Read before subscribing so full JSON cannot enter the LF-
                     # framed notification buffer through the notify callback.
@@ -332,7 +334,7 @@ class BleFleet:
                     self._require_session(peer, client, generation, ready=False)
                     command = service.get_characteristic(self.command_uuid)
                     # BlueZ may still list writable handles from the full image.
-                    peer.command_writable = (not _r18_bringup(identity)
+                    peer.command_writable = (commands_enabled and not _r18_bringup(identity)
                                              and command is not None and "write" in command.properties)
                     peer.ready.set()
                     peer.last_error = None

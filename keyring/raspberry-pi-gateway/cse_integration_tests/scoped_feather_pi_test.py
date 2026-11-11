@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
-from scoped_feather_pi import (INTEGRATION_TEAM_REVISION, R18_BOARD, R18_COMMAND_FIRMWARE, R18_DEVICE,
+from scoped_feather_pi import (INTEGRATION_TEAM_REVISION, R18_BOARD, R18_BRINGUP_FIRMWARES, R18_COMMAND_FIRMWARE, R18_DEVICE,
                                ScopedApiError, capture_r18, export_environment, gateway_environment, verify_integration_api)
 
 
@@ -105,6 +105,26 @@ class ScopedPiProfileTests(unittest.TestCase):
             self.assertEqual(gateway_environment(lcd, root)["FIRMWARE_REVISION_ALLOWLIST"], "feather-probe-0.2.1")
             with self.assertRaisesRegex(ValueError, "Unknown Feather command firmware"):
                 gateway_environment(dict(profile, firmwareRevision="feather-probe-0.1.1"), root)
+
+    def test_r18_observation_only_keeps_both_telemetry_routes_and_fences_commands(self):
+        root = Path.cwd()
+        profile = {"version": 1, "address": "00:00:00:00:00:01", "csePort": 8760, "apiPort": 8789,
+                   "tlsDirectory": str(root), "apiMode": "r18", "cseDeploymentId": "scoped-mobius4",
+                   "receiptContainerRi": "cnt-receipt", "observationContainerRi": "cnt-observation", "observeOnly": True}
+        with patch("scoped_feather_pi.load_tls", return_value=(root / "ca.pem", root / "cert.pem",
+                                                              root / "key.pem", self.context)):
+            for firmware in R18_BRINGUP_FIRMWARES:
+                with self.subTest(firmware=firmware):
+                    env = gateway_environment(dict(profile, firmwareRevision=firmware), root)
+                    self.assertEqual(env["FIRMWARE_REVISION_ALLOWLIST"], firmware)
+                    self.assertEqual(env["COMMANDS_ENABLED"], "false")
+                    self.assertEqual(env["CENTRAL_RECEIPTS_ENABLED"], "false")
+                    self.assertEqual(env["CENTRAL_TELEMETRY_ENABLED"], "true")
+                    self.assertEqual(env["M2M_OBSERVATION_CONTAINER_RI"], "cnt-observation")
+            with self.assertRaisesRegex(ValueError, "observation-only r18 bring-up"):
+                gateway_environment(dict(profile, firmwareRevision=R18_COMMAND_FIRMWARE), root)
+            with self.assertRaisesRegex(ValueError, "require r18"):
+                gateway_environment(dict(profile, apiMode="integration"), root)
 
     def test_new_session_can_forward_both_container_pins_and_the_central_deployment(self):
         root = Path.cwd()

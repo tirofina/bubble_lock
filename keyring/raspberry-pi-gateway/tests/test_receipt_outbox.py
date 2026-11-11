@@ -64,6 +64,59 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.queued(BINDING["receiptContainer"]), 1)
         self.assertEqual(self.native_delivered(), 0)
 
+    async def test_observation_only_keeps_old_command_receipts_and_delivers_native_observations(self):
+        self.stage()
+        self.store.enqueue("conflict", "prior-conflict", BINDING["receiptContainer"], {"existing": True})
+        self.store.enqueue("observation", "sample", BINDING["observationContainer"], {"state": False})
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.config.commands_enabled = False
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+        gateway.transport = SimpleNamespace(publish=AsyncMock(), native_delivery_hold=NativeDeliveryHold)
+
+        async def idle(_seconds):
+            gateway.stop.set()
+
+        gateway._pause = idle
+        async with asyncio.timeout(1):
+            await gateway._outbox_loop()
+        gateway.transport.publish.assert_awaited_once_with(
+            self.store.request_id("observation", "sample"), BINDING["observationContainer"], {"state": False})
+        self.assertEqual(self.queued(BINDING["receiptContainer"]), 2)
+        self.assertEqual(self.queued("@core/ack"), 1)
+        self.assertEqual(self.native_delivered(), 0)
+
+    async def test_observation_only_daemon_skips_command_recovery_and_workers(self):
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.stop = config(), asyncio.Event()
+        gateway.config.commands_enabled = False
+        gateway.config.central_receipts_enabled = True
+        gateway.config.central_telemetry_enabled = True
+        gateway.store = Mock(observation_heads=Mock(return_value={}))
+        gateway.transport = SimpleNamespace(start=AsyncMock(), close=AsyncMock())
+        gateway.ble = SimpleNamespace(start=AsyncMock(), close=AsyncMock())
+        gateway._poll_loop, gateway._dispatch_loop = Mock(), Mock()
+        routes = []
+
+        async def park():
+            await gateway.stop.wait()
+
+        async def record_route(*, central_route=None):
+            routes.append(central_route)
+            if central_route == "telemetry":
+                gateway.stop.set()
+            await park()
+
+        gateway._credentials_loop = gateway._health_loop = park
+        gateway._outbox_loop = record_route
+        async with asyncio.timeout(1):
+            await gateway.run()
+        gateway.store.interrupted.assert_not_called()
+        gateway._poll_loop.assert_not_called()
+        gateway._dispatch_loop.assert_not_called()
+        self.assertCountEqual(routes, [None, "telemetry"])
+        gateway.ble.start.assert_awaited_once()
+
     async def test_pinned_receipt_send_attempt_survives_restart_before_local_confirmation(self):
         gateway = Gateway.__new__(Gateway)
         gateway.config, gateway.store = config(), self.store

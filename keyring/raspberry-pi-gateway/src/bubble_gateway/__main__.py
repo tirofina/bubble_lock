@@ -30,6 +30,8 @@ async def check_command_route(config: GatewayConfig) -> dict:
 
     if config.receipt_container_ri is None:
         raise DeploymentConfigError("M2M_RECEIPT_CONTAINER_RI is required for this check")
+    if not config.commands_enabled and config.observation_container_ri is None:
+        raise DeploymentConfigError("M2M_OBSERVATION_CONTAINER_RI is required for observation-only preflight")
     hub = TransportHub(replace(config, mqtt_enabled=False, m2m_mqtt_enabled=False, core_bridge_enabled=False))
     stage = "mTLS initialization"
     try:
@@ -44,11 +46,15 @@ async def check_command_route(config: GatewayConfig) -> dict:
         credential = validate_credential_status(await hub.credential_status(), config.gateway_id)
         if credential["status"] != "ACTIVE":
             raise DeploymentConfigError("Central Gateway credential is not ACTIVE")
-        stage = "central command list"
-        if await hub.poll_commands():
-            raise DeploymentConfigError("Central Gateway command list is not empty")
         report = {"gatewayId": config.gateway_id, "checkedAt": iso_time(), "receiptContainerRi": pin,
-                  "credentialStatus": "ACTIVE", "activeCommands": 0}
+                  "credentialStatus": "ACTIVE"}
+        if config.commands_enabled:
+            stage = "central command list"
+            if await hub.poll_commands():
+                raise DeploymentConfigError("Central Gateway command list is not empty")
+            report["activeCommands"] = 0
+        else:
+            report["commandsEnabled"] = False
         if observation_pin is not None:
             report["observationContainerRi"] = observation_pin
         return report

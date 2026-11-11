@@ -102,8 +102,12 @@ class PreflightTests(unittest.TestCase):
             else:
                 main()
                 report = json.loads(output.call_args.args[0])
-                self.assertEqual((report["receiptContainerRi"], report["credentialStatus"], report["activeCommands"]),
-                                 ("cnt-pinned", "ACTIVE", 0))
+                self.assertEqual((report["receiptContainerRi"], report["credentialStatus"]), ("cnt-pinned", "ACTIVE"))
+                if self.env.get("COMMANDS_ENABLED") == "false":
+                    self.assertIs(report["commandsEnabled"], False)
+                    self.assertNotIn("activeCommands", report)
+                else:
+                    self.assertEqual(report["activeCommands"], 0)
                 if "M2M_OBSERVATION_CONTAINER_RI" in self.env:
                     self.assertEqual(report["observationContainerRi"], self.env["M2M_OBSERVATION_CONTAINER_RI"])
             daemon.assert_not_awaited()
@@ -131,6 +135,14 @@ class PreflightTests(unittest.TestCase):
     def test_command_route_reports_existing_active_commands(self):
         self.assertEqual(len(self.check_route(commands=[{"commandId": "existing"}],
                                               expected_error="command list is not empty")), 3)
+
+    def test_observation_only_preflight_never_reads_commands(self):
+        self.env.update(COMMANDS_ENABLED="false", M2M_OBSERVATION_CONTAINER_RI="cnt-observation")
+        self.assertEqual(self.check_route(commands=[{"commandId": "existing"}]), [
+            "https://example.invalid/test/receipts",
+            "https://example.invalid/test/obs",
+            "https://example.invalid/api/v1/gateways/gw-test/credentials/status",
+        ])
 
     def test_preflight_rejects_a_changed_pc_deployment_before_remote_requests(self):
         self.env["PC_API_DEPLOYMENT_ID"] = "original-central"

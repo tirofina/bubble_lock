@@ -64,6 +64,7 @@ class Gateway:
             "receiptContainerRi": self.config.receipt_container_ri,
             "observationContainerRi": self.config.observation_container_ri,
             "apiUrl": self.config.api_url, "pcDispatchStartRequired": self.config.pc_dispatch_start_required,
+            "commandsEnabled": self.config.commands_enabled,
             "pcApiDeploymentId": self.config.pc_api_deployment_id,
             "centralReceiptsEnabled": self.config.central_receipts_enabled,
             "centralTelemetryEnabled": self.config.central_telemetry_enabled,
@@ -405,6 +406,7 @@ class Gateway:
     async def _outbox_loop(self, *, scoped: bool = False,
                            central_route: Literal["telemetry", "receipt"] | None = None) -> None:
         epochs = self.config.core_telemetry_epochs
+        commands_enabled = getattr(self.config, "commands_enabled", True)
         receipt_attempts = 0
         next_expiry_check = 0.0
         if central_route == "telemetry":
@@ -429,14 +431,16 @@ class Gateway:
                 item = None if self.transport.central_delivery_held() else self.store.due_central_telemetry()
             else:
                 if not scoped:
-                    self.store.stage_receipts(self.config.receipt_container, self.config.core_bridge_enabled)
+                    if commands_enabled:
+                        self.store.stage_receipts(self.config.receipt_container, self.config.core_bridge_enabled)
                     self.store.stage_credential_receipt()
                 prefer_receipts = None if scoped else receipt_attempts < RECEIPT_BURST
                 hold = NativeDeliveryHold() if scoped else self.transport.native_delivery_hold()
                 item = self.store.due(core_epochs=epochs, scoped_only=scoped, prefer_receipts=prefer_receipts,
                                       skip_native=hold.all_native, held_receipt_container=hold.receipt_container,
                                       hold_credential_receipts=hold.credential_receipts,
-                                      held_observation_container=hold.observation_container)
+                                      held_observation_container=hold.observation_container,
+                                      disabled_command_receipt_container=None if commands_enabled else self.config.receipt_container)
             if item is None:
                 await self._pause(0.5)
                 continue
@@ -505,18 +509,22 @@ class Gateway:
     async def run(self) -> None:
         tasks: list[asyncio.Task] = []
         try:
-            for item in self.store.interrupted():
-                self._finish(item["command"], item["digest"], "INDETERMINATE", "RESTART_INTERRUPTED",
-                             "Previous process ended during dispatch; journal preserved and command not replayed")
+            commands_enabled = self.config.commands_enabled
+            workers = [self._credentials_loop]
+            if commands_enabled:
+                for item in self.store.interrupted():
+                    self._finish(item["command"], item["digest"], "INDETERMINATE", "RESTART_INTERRUPTED",
+                                 "Previous process ended during dispatch; journal preserved and command not replayed")
+                workers.extend((self._poll_loop, self._dispatch_loop))
+            workers.extend((self._outbox_loop, self._health_loop))
             await self.transport.start()
             await self.ble.start(self.observation, observation_heads=self.store.observation_heads())
-            tasks = [asyncio.create_task(worker(), name=worker.__name__) for worker in (
-                self._credentials_loop, self._poll_loop, self._dispatch_loop, self._outbox_loop, self._health_loop)]
+            tasks = [asyncio.create_task(worker(), name=worker.__name__) for worker in workers]
             if self.config.core_telemetry_epochs is not None:
                 tasks.append(asyncio.create_task(self._outbox_loop(scoped=True), name="scoped_outbox"))
             if self.config.central_telemetry_enabled:
                 tasks.append(asyncio.create_task(self._outbox_loop(central_route="telemetry"), name="central_telemetry_outbox"))
-            if self.config.central_receipts_enabled:
+            if commands_enabled and self.config.central_receipts_enabled:
                 tasks.append(asyncio.create_task(self._outbox_loop(central_route="receipt"), name="central_receipt_outbox"))
             stop_task = asyncio.create_task(self.stop.wait(), name="stop")
             tasks.append(stop_task)

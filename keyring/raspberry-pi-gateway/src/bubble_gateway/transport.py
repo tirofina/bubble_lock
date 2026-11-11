@@ -238,9 +238,13 @@ class TransportHub:
             return
         subscriptions = [(self._response_topic, 1)] if self.config.m2m_mqtt_enabled else []
         if self.config.core_bridge_enabled:
-            subscriptions.append((self._core_root + "/command", 1))
+            if getattr(self.config, "commands_enabled", True):
+                subscriptions.append((self._core_root + "/command", 1))
             subscriptions.extend((self._core_receipt_topic(device, epoch), 1)
                                  for device, epoch in (self.config.core_telemetry_epochs or {}).items())
+        if not subscriptions:
+            self._schedule(self._ready.set)
+            return
         result, mid = client.subscribe(subscriptions)
         if result == mqtt.MQTT_ERR_SUCCESS:
             self._subscribe_mid = mid
@@ -274,6 +278,8 @@ class TransportHub:
             self._handle_core_receipt(message.topic, message.payload)
             return
         if self.config.core_bridge_enabled and message.topic == self._core_root + "/command":
+            if not getattr(self.config, "commands_enabled", True):
+                return
             try:
                 command = core_command(_object(message.payload), self.config.gateway_id, self.config.ble_devices)
                 self._schedule(self._queue_command, command)

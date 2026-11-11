@@ -69,6 +69,7 @@ sudoedit /etc/privacy-bubble/gateway.env
 | `PC_API_URL` | HTTPS base URL. 코드가 `/api/v1/gateways/{GATEWAY_ID}`를 덧붙임. `/api/v1`을 중복 입력하지 않음 |
 | `PC_API_DEPLOYMENT_ID` | 새 DB를 중앙 API 저장소에 연결하는 선택 설정. 같은 저장소의 주소를 바꾸면 ID를 유지하고, 새 저장소에는 새 ID와 DB 경로를 지정함. [중앙 API 배포 전환](STATE_RECOVERY.md#중앙-api-배포-전환) |
 | `PC_DISPATCH_START_REQUIRED` | `true`일 때 BLE 쓰기 전 중앙 `POST /dispatch-start` 승인을 요구함. 기존 고정 벤치 프로필의 기본값은 `false`. [명령 기한](BLE_SESSIONS.md#승인-기한과-gatt-전송) |
+| `COMMANDS_ENABLED` | 기본 `true`. `false`이면 관측·health 전송을 유지하고 명령 조회·실행·장치 명령 영수증 처리를 중지함. 관측·health와 분리된 영수증 컨테이너가 필요함. [r18 관측 전용 세션](TESTING.md#r18-pi-관측-전용-세션) |
 | `CENTRAL_RECEIPTS_ENABLED` | `true`일 때 중앙 `POST /receipts`에 명령 영수증을 보냄. 기본값은 `false`. 같은 중앙 배포에서 기존 DB로 활성화하면 이전 영수증도 전송 대기열에 추가함. [중앙 영수증 정산](RECEIPT_ROUTING.md#중앙-명령-영수증-정산) |
 | `CENTRAL_TELEMETRY_ENABLED` | `true`일 때 새 BLE 관측을 중앙 `POST /telemetry`에도 보냄. 기본값은 `false`. 중앙 배포의 Gateway·장치·가구 등록이 필요함. [중앙 관측 전달](IO_NOTES.md#중앙-관측-전달) |
 | `CENTRAL_TELEMETRY_RETENTION_SECONDS` | 중앙 관측 서버의 보관 기간과 같은 초 단위 값. 기본 `86400`, 범위 `1`~`86400`. Pi는 시계 오차 여유 2초를 더한 뒤 중앙 복제본을 만료 처리함. |

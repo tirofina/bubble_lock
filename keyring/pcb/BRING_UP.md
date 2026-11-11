@@ -34,6 +34,8 @@ USB 모니터를 열고 `?`를 보내면 현재 부팅의 `KEYRING bringup` 줄�
 
 전원을 유지한 상태에서 같은 안정 구간의 계측기 값을 Pi의 INA219 기록에 붙일 때는 [외부 계측값 연결](../raspberry-pi-gateway/TESTING.md#r18-첫-구동의-외부-계측값-연결)을 사용한다. 입력 전원과 부하 측의 측정 지점을 각각 기록한다.
 
+첫 구동 펌웨어의 관측을 Pi에서 격리 Mobius4와 중앙 API까지 전송하는 단계는 [r18 Pi 관측 전용 세션](../raspberry-pi-gateway/TESTING.md#r18-pi-관측-전용-세션)을 사용한다.
+
 | 확인 항목 | 증거 |
 |---|---|
 | 부팅·전원 | board revision, 빌드 산출물 해시, USB 로그 해시와 BLE 부팅 일치 결과, +3V3 실측, 입력 전원 조건 |

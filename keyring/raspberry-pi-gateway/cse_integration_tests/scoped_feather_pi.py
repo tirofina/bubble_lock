@@ -1,4 +1,4 @@
-"""Prepare and explicitly start a scoped Feather or r18 command session on the Pi."""
+"""Prepare and explicitly start a scoped Feather or r18 Gateway session on the Pi."""
 import argparse
 from contextlib import closing, contextmanager
 import http.client
@@ -19,6 +19,7 @@ INTEGRATION_TEAM_REVISION = "bc2a45dfcc014b7cdb0a57a03aca2c04ca8eb989"
 DISPLAY_FIRMWARE = "feather-probe-0.2.1"
 COMMAND_FIRMWARES = ("feather-probe-0.2.0", DISPLAY_FIRMWARE)
 R18_COMMAND_FIRMWARE = "keyring-0.7.14"
+R18_BRINGUP_FIRMWARES = ("keyring-0.7.15-bringup", "keyring-0.7.15-st7789-bringup", "keyring-0.7.15-jd9853-bringup")
 R18_BOARD = "r18-hand-solder"
 R18_DEVICE = "keyring-r18-lab"
 IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,63}")
@@ -80,6 +81,9 @@ def gateway_environment(profile, session, *, verify_api=False):
     if mode not in API_PORTS:
         raise ValueError("Unknown scoped API mode")
     r18 = mode == "r18"
+    observe_only = profile.get("observeOnly", False)
+    if type(observe_only) is not bool or (observe_only and not r18):
+        raise ValueError("Observation-only sessions require r18 mode")
     slot = "b" if r18 else "a"
     device_id = R18_DEVICE if r18 else "keyring-feather-lab"
     revision = profile.get("apiTeamRevision", INTEGRATION_TEAM_REVISION)
@@ -90,8 +94,13 @@ def gateway_environment(profile, session, *, verify_api=False):
     if not tls.is_absolute():
         raise ValueError("Expected an absolute client TLS directory")
     ca, cert, key, context = load_tls(tls, slot)
-    firmware = profile.get("firmwareRevision", R18_COMMAND_FIRMWARE if r18 else COMMAND_FIRMWARES[0])
-    if r18 and firmware != R18_COMMAND_FIRMWARE:
+    default_firmware = R18_COMMAND_FIRMWARE if r18 else COMMAND_FIRMWARES[0]
+    if observe_only:
+        default_firmware = R18_BRINGUP_FIRMWARES[0]
+    firmware = profile.get("firmwareRevision", default_firmware)
+    if observe_only and firmware not in R18_BRINGUP_FIRMWARES:
+        raise ValueError("Expected an observation-only r18 bring-up firmware")
+    if r18 and not observe_only and firmware != R18_COMMAND_FIRMWARE:
         raise ValueError("Expected the command-enabled r18 firmware")
     if not r18 and firmware not in COMMAND_FIRMWARES:
         raise ValueError("Unknown Feather command firmware")
@@ -117,6 +126,8 @@ def gateway_environment(profile, session, *, verify_api=False):
                            CENTRAL_TELEMETRY_ENABLED="true")
     if r18:
         environment.update(BLE_BOARD_REVISION=R18_BOARD, PC_API_DEPLOYMENT_ID="scoped-command-api-r18")
+    if observe_only:
+        environment.update(COMMANDS_ENABLED="false", PC_DISPATCH_START_REQUIRED="false", CENTRAL_RECEIPTS_ENABLED="false")
     if "cseDeploymentId" in profile:
         if profile["cseDeploymentId"] != CSE_DEPLOYMENT:
             raise ValueError("Expected the scoped Mobius4 deployment")
@@ -148,10 +159,12 @@ def prepare(args, session):
         if stream.read(1):
             raise ValueError("The address file must contain only one paired device address")
     api_port = API_PORTS[args.api_mode] if args.api_port is None else args.api_port
-    default_firmware = R18_COMMAND_FIRMWARE if args.api_mode == "r18" else COMMAND_FIRMWARES[0]
     profile = {"version": 1, "address": address, "tlsDirectory": str(args.tls_dir.absolute()),
-               "csePort": args.cse_port, "apiPort": api_port, "cseDeploymentId": CSE_DEPLOYMENT,
-               "firmwareRevision": args.firmware_revision or default_firmware}
+               "csePort": args.cse_port, "apiPort": api_port, "cseDeploymentId": CSE_DEPLOYMENT}
+    if args.observe_only:
+        profile["observeOnly"] = True
+    if args.firmware_revision is not None:
+        profile["firmwareRevision"] = args.firmware_revision
     if args.api_mode != "legacy":
         profile["apiMode"] = args.api_mode
         profile["apiTeamRevision"] = INTEGRATION_TEAM_REVISION if args.api_team_revision is None else args.api_team_revision
@@ -181,7 +194,7 @@ def load_environment(session, *, verify_api=True):
         profile = json.loads(stream.read(8193))
     fields = {"version", "address", "tlsDirectory", "csePort", "apiPort"}
     optional = {"cseDeploymentId", "receiptContainerRi", "observationContainerRi", "pcApiDeploymentId",
-                "apiMode", "apiTeamRevision", "firmwareRevision"}
+                "apiMode", "apiTeamRevision", "firmwareRevision", "observeOnly"}
     if (not isinstance(profile, dict) or not fields <= profile.keys()
             or profile.keys() - fields - optional):
         raise ValueError("Expected a prepared command session")
@@ -252,7 +265,8 @@ def main():
     setup.add_argument("--api-mode", choices=API_PORTS, default="legacy")
     setup.add_argument("--api-port", type=int, help="Override the selected API mode's Pi loopback port")
     setup.add_argument("--api-team-revision", help="Override the pinned full team commit for integration or r18")
-    setup.add_argument("--firmware-revision", choices=(*COMMAND_FIRMWARES, R18_COMMAND_FIRMWARE))
+    setup.add_argument("--firmware-revision", choices=(*COMMAND_FIRMWARES, R18_COMMAND_FIRMWARE, *R18_BRINGUP_FIRMWARES))
+    setup.add_argument("--observe-only", action="store_true", help="Use an r18 bring-up image and disable command processing")
     setup.add_argument("--receipt-container-ri", help="Use the selected Gateway's receipt pin in a fresh session")
     setup.add_argument("--observation-container-ri", help="Use the selected Gateway's observation pin in a fresh session")
     setup.add_argument("--pc-api-deployment-id", help="Bind a fresh session to the chosen central datastore ID")

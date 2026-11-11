@@ -1,5 +1,7 @@
 # Gateway 로컬 시험
 
+Gateway 0.2.70은 r18 첫 구동의 Pi 관측 전용 세션을 제공한다. 기존 명령 영수증 보존, 관측 전송, 명령 목록을 조회하지 않는 사전 확인의 회귀시험 소스를 추가했다. 빌드·시험·Pi 실행은 미실행이다.
+
 Gateway 0.2.69는 r18 첫 구동 중 같은 USB 부팅의 INA219 샘플 번호를 표시하고 외부 계측값을 오프라인에서 연결한다. 다른 캡처·다른 BLE 세션의 샘플과 측정 지점 혼용을 다루는 회귀시험 소스를 추가했다. 빌드·시험·Pi 실행은 미실행이다.
 
 Gateway 0.2.68은 r18 화면 점검 펌웨어 두 종류의 USB 로그에서 패널 선택값과 revision을 대조한다. 같은 부팅의 Pi 기록에 `displayProfile`을 남긴다. 빌드·회귀시험·실물 화면 확인은 미실행이다. [r18 화면 점검](../pcb/BRING_UP.md#화면만-연결한-두-번째-구동)
@@ -349,6 +351,21 @@ Feather 명령 프로필 `0.2.0`과 두 SSH 포워딩이 준비되면 같은 Fea
 ```
 
 재시작할 때는 같은 세션명을 사용한다. 시험 종료 뒤 Gateway를 정상 종료하고 SQLite backup으로 사본을 만든다. 미전송 행이 있으면 원래 세션과 CSE 자원에서 대조한다.
+
+#### r18 Pi 관측 전용 세션
+
+첫 구동 보드의 BLE 관측을 Pi에서 격리 Mobius4와 중앙 API에 전달한다. `gw-b` 인증서, 중앙 등록 장치 ID `keyring-r18-lab`, 같은 배치에서 고정한 관측·영수증 ID를 사용한다. 새 세션 이름을 지정하고 장착한 관측 펌웨어 revision 하나를 선택한다. 기본값은 `keyring-0.7.15-bringup`이며, 화면 점검 중에는 `keyring-0.7.15-st7789-bringup` 또는 `keyring-0.7.15-jd9853-bringup`을 명시한다.
+
+```sh
+tool=keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_pi.py
+"$pi_python" "$tool" prepare --session "$r18_observation_session" --api-mode r18 --observe-only \
+  --address-file "$r18_address_file" --tls-dir "$scoped_gateway_b_tls" \
+  --receipt-container-ri "$gw_b_receipt_ri" --observation-container-ri "$gw_b_observation_ri"
+"$pi_python" "$tool" preflight --session "$r18_observation_session"
+"$pi_python" "$tool" run --session "$r18_observation_session"
+```
+
+사전 확인은 컨테이너 ID 두 개와 중앙 자격을 대조해 `commandsEnabled:false`를 보고한다. 실행 중에는 BLE 관측·health와 중앙 텔레메트리를 전송하며, 명령 조회·실행·장치 명령 영수증 전송은 중지 상태다. 같은 BLE 장치를 쓰는 초기 구동 기록 도구와 Gateway는 순차적으로 실행한다. 실제 연결은 `command-health-b`에서 `commandReady:false`를, 전송은 `command-observations-b`와 중앙 `GATEWAY_TELEMETRY_ACCEPTED`에서 같은 관측을 확인한다. 명령 시험에는 별도의 [r18 Pi 명령 세션](#r18-pi-명령-세션)을 준비한다.
 
 #### r18 Pi 명령 세션
 

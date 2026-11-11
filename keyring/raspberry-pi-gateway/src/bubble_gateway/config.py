@@ -73,6 +73,7 @@ class GatewayConfig:
     pc_api_deployment_id: str | None = None
     observation_container_ri: str | None = None
     ble_board_revision: str | None = None
+    commands_enabled: bool = True
 
     @classmethod
     def from_env(cls) -> "GatewayConfig":
@@ -168,6 +169,10 @@ class GatewayConfig:
             raise ValueError("M2M_OBSERVATION_CONTAINER_RI requires M2M_CSE_DEPLOYMENT_ID")
         observation_container = container("M2M_OBSERVATION_CONTAINER")
         receipt_container = container("M2M_RECEIPT_CONTAINER")
+        health_container = container("M2M_HEALTH_CONTAINER")
+        commands_enabled = boolean("COMMANDS_ENABLED", "true")
+        if not commands_enabled and receipt_container in (observation_container, health_container):
+            raise ValueError("Observation-only mode requires a separate receipt container")
         if (observation_container == receipt_container and observation_ri is not None
                 and receipt_ri is not None and observation_ri != receipt_ri):
             raise ValueError("Shared observation and receipt container requires matching resource IDs")
@@ -183,7 +188,7 @@ class GatewayConfig:
             mqtt_keepalive=int(number("MQTT_KEEPALIVE", "60", 10, 600)),
             request_timeout=number("REQUEST_TIMEOUT", "10", 1, 60), rvi=required("M2M_RVI"),
             observation_container=observation_container, receipt_container=receipt_container,
-            health_container=container("M2M_HEALTH_CONTAINER"),
+            health_container=health_container,
             ble_devices=devices, ble_pair=pair,
             ble_scan_seconds=number("BLE_SCAN_SECONDS", "5", 1, 30),
             ble_command_timeout=number("BLE_COMMAND_TIMEOUT", "15", 1, 30),
@@ -204,6 +209,7 @@ class GatewayConfig:
             pc_api_deployment_id=pc_deployment,
             observation_container_ri=observation_ri,
             ble_board_revision=board_revision,
+            commands_enabled=commands_enabled,
         )
 
 
