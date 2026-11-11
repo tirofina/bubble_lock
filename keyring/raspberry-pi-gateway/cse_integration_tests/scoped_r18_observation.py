@@ -186,6 +186,13 @@ def compare_observation(capture, usb, database, team_state, hasher, *, portal_re
     return report
 
 
+def comparison_passed(report, *, require_physical):
+    return (report["centralTelemetryAccepted"]
+            and (not require_physical or report["physicalRelayEvidenceMatched"])
+            and all(report[key]["status"] == "matched"
+                    for key in ("portalLocationResponse", "webLocationResponse") if key in report))
+
+
 async def capture_live(args, api, operator_dir, usb):
     async with scoped_clients(api, operator_dir) as (cse, _):
         return await capture_observation(cse, usb=usb, firmware=args.firmware_revision,
@@ -209,6 +216,8 @@ def main():
     compare.add_argument("--capture", required=True, type=Path)
     compare.add_argument("--database", required=True, type=Path)
     compare.add_argument("--team-state", required=True, type=Path)
+    compare.add_argument("--require-physical", action="store_true",
+                         help="require the pinned Pi health container and a non-simulated central event")
     compare.add_argument("--portal-response", type=Path, help="saved central portal location response")
     compare.add_argument("--web-response", type=Path, help="saved live dashboard location response")
     args = parser.parse_args()
@@ -236,8 +245,7 @@ def main():
                                      lambda observation: hash_observation(team_utils, observation),
                                      portal_response=portal_response, web_response=web_response)
         print(json.dumps(report, indent=2))
-        requested = (report[key]["status"] for key in ("portalLocationResponse", "webLocationResponse") if key in report)
-        raise SystemExit(0 if report["centralTelemetryAccepted"] and all(status == "matched" for status in requested) else 1)
+        raise SystemExit(0 if comparison_passed(report, require_physical=args.require_physical) else 1)
 
 
 if __name__ == "__main__":

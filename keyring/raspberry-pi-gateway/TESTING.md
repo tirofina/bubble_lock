@@ -409,7 +409,9 @@ Feather 명령 프로필 `0.2.0`과 두 SSH 포워딩이 준비되면 같은 Fea
 
 ```sh
 tool=keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_pi.py
+r18_bringup_firmware=keyring-0.7.15-bringup
 "$pi_python" "$tool" prepare --session "$r18_observation_session" --api-mode r18 --observe-only \
+  --firmware-revision "$r18_bringup_firmware" \
   --address-file "$r18_address_file" --tls-dir "$scoped_gateway_b_tls" \
   --receipt-container-ri "$gw_b_receipt_ri" --observation-container-ri "$gw_b_observation_ri" \
   --health-container-ri "$gw_b_health_ri"
@@ -434,12 +436,12 @@ Gateway를 정상 종료한 뒤 같은 세션의 SQLite 사본과 격리 r18 API
 
 ```powershell
 python $tool compare --firmware-revision $r18BringupFirmware --usb-boot-log $r18UsbLog `
-  --capture $r18ObservationCapture --database $piDatabaseCopy --team-state $teamStateCopy
+  --capture $r18ObservationCapture --database $piDatabaseCopy --team-state $teamStateCopy --require-physical
 ```
 
 `compare`는 Pi의 같은 부팅에서 관측 순번이 저장됐는지 확인하고, 관측·health 컨테이너를 SQLite에 고정한 자원 ID와 대조한다. 해당 관측이나 health가 Pi 전송 큐에 남아 있으면 본문도 비교한다. 기존 health ID 미고정 세션은 `healthContainerVerified:null`로 보고한다.
 
-중앙 수용은 고정 팀 소스의 해시 함수로 Mobius4 관측 본문과 대조한다. `physicalRelayEvidenceMatched`는 Pi의 health 고정 ID가 맞고 같은 중앙 수용 이벤트에 `simulation:false`가 기록됐을 때 `true`다. `centralTelemetryAccepted`는 중앙 수용 결과를 별도로 표시하며, 상태 사본에 이벤트가 아직 없으면 종료 코드 1을 반환한다. 최신 중앙 사본으로 같은 기록을 다시 대조할 수 있다.
+중앙 수용은 고정 팀 소스의 해시 함수로 Mobius4 관측 본문과 대조한다. `physicalRelayEvidenceMatched`는 Pi의 health 고정 ID가 맞고 같은 중앙 수용 이벤트에 `simulation:false`가 기록됐을 때 `true`다. `--require-physical`은 이 값이 `true`여야 성공 코드 0을 반환한다. 모의 이벤트, health ID 미고정 세션, 중앙 이벤트 미도착은 보고서를 출력하고 종료 코드 1을 반환한다. 중앙 수용만 진단할 때는 옵션을 생략하고 `centralTelemetryAccepted`를 확인한다. 최신 중앙 사본으로 같은 기록을 다시 대조할 수 있다.
 
 ##### 중앙 위치 API와 웹 응답 대조
 

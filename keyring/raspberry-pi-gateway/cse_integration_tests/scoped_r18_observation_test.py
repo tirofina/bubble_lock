@@ -7,7 +7,7 @@ from bubble_gateway.model import central_observation_id, payload_hash
 from bubble_gateway.store import Store
 from helpers import BINDING, observation
 from pi_led_cycle import content_name
-from scoped_r18_observation import compare_observation, inspect_location_response
+from scoped_r18_observation import compare_observation, comparison_passed, inspect_location_response
 from scoped_r18_pulse import GATEWAY, PATHS, R18_BOARD, R18_DEVICE
 
 
@@ -53,13 +53,16 @@ class ScopedR18ObservationTests(unittest.TestCase):
         return compare_observation(self.capture, self.usb, self.database, {"receipts": events}, payload_hash)
 
     def test_central_acceptance_binds_content_and_keeps_pending_pi_state(self):
-        self.assertFalse(self.compare([])["centralTelemetryAccepted"])
+        pending = self.compare([])
+        self.assertFalse(pending["centralTelemetryAccepted"])
+        self.assertFalse(comparison_passed(pending, require_physical=True))
         report = self.compare([self.event])
         self.assertTrue(report["centralTelemetryAccepted"])
         self.assertFalse(report["nativePendingOnPi"])
         self.assertTrue(report["centralPendingOnPi"])
         self.assertTrue(report["healthContainerVerified"])
         self.assertTrue(report["physicalRelayEvidenceMatched"])
+        self.assertTrue(comparison_passed(report, require_physical=True))
         self.assertEqual(report["piWatermarkSequence"], 8)
         self.assertEqual(report["centralEvent"]["eventId"], "telemetry-a")
         with self.assertRaisesRegex(ValueError, "inconsistent GATEWAY_TELEMETRY_ACCEPTED"):
@@ -89,6 +92,8 @@ class ScopedR18ObservationTests(unittest.TestCase):
         self.assertTrue(report["centralTelemetryAccepted"])
         self.assertTrue(report["centralEvent"]["simulation"])
         self.assertFalse(report["physicalRelayEvidenceMatched"])
+        self.assertFalse(comparison_passed(report, require_physical=True))
+        self.assertTrue(comparison_passed(report, require_physical=False))
 
         old_db = self.database.with_name("unpinned.sqlite3")
         old_binding = dict(self.binding)
@@ -98,6 +103,8 @@ class ScopedR18ObservationTests(unittest.TestCase):
         self.assertTrue(report["centralTelemetryAccepted"])
         self.assertIsNone(report["healthContainerVerified"])
         self.assertFalse(report["physicalRelayEvidenceMatched"])
+        self.assertFalse(comparison_passed(report, require_physical=True))
+        self.assertTrue(comparison_passed(report, require_physical=False))
 
     def test_location_projection_matches_both_routes_and_checks_scope_and_expiry(self):
         stamp = self.observation["observedAt"]
@@ -112,6 +119,9 @@ class ScopedR18ObservationTests(unittest.TestCase):
                                      portal_response=portal, web_response=web)
         self.assertEqual(report["portalLocationResponse"]["status"], "matched")
         self.assertEqual(report["webLocationResponse"]["status"], "matched")
+        self.assertTrue(comparison_passed(report, require_physical=True))
+        report["webLocationResponse"]["status"] = "observation-missing"
+        self.assertFalse(comparison_passed(report, require_physical=True))
 
         cases = [(dict(portal, status=403), False, "access-denied"),
                  (dict(portal, body=dict(portal["body"], deviceIds=[])), False, "device-outside-response-scope"),
