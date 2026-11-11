@@ -1420,3 +1420,13 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R03, R05, R10. 직전 goal t
 - 성공·발급 응답 유실·작업자 중단 회귀시험 소스를 추가했다. Gateway 패키지 revision은 `0.2.62`다. 빌드·회귀시험·서버 실행·실물 명령 및 펄스 계측은 미실행이다.
 
 소스 commit `5011fb98c404bb98a3c28af2145abef2d63065d7`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `ffeaad7..5011fb9`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 임시 서버의 실제 PC 루프백 준비
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 작업자가 시작하는 단일 펄스 도구를 추가한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 고정 팀 소스와 잠금 파일을 재사용했다.
+
+- r18 API의 별도 디렉터리에 운영자 인증서를 준비하고 고정 의존성 63개를 pnpm 캐시에서 설치했다. `127.0.0.1:8789`에서 `gw-b` mTLS 기능 조회, `ACTIVE` 자격과 활성 명령 0건을 확인했다. 해당 루프백 프로세스는 실행 중으로 남겼다.
+- 기존 격리 Mobius4에 `command-observations-b`와 `command-health-b`를 만들고 관측 pin을 등록했다. 기존 TLS 컨테이너에서 두 B 경로와 관측 pin include만 반영해 설정 검사와 reload를 수행했다. B 관측·영수증 조회 성공, A→B 및 B→A 교차 조회 403, 기존 Feather API 응답을 확인했다. [PC 배치 증거](../keyring/evidence/2026-11-11-scoped-r18-enrollment/provisioning.json)
+- 일반 빌드·회귀시험·Pi 접속·BLE·실물 명령·펄스 계측은 미실행이다. 실제 Pi에서 Gateway B TLS 파일, loopback 전달과 r18 장치 연결이 남아 있다.
+
+배치 증거 commit `5369fe34031467ed570bf0f3eaf007d086238c07`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `eb1b4f6..5369fe3`다. goal은 active/progress다.
