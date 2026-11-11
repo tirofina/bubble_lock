@@ -1558,3 +1558,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R11, R12. 직전 goal turn은 배
 - `plan-cutover`는 기존 DB 재사용 시 브리지·명령·중앙 전송 설정과 CORE epoch에 의해 보류될 건수를 보여준다. daemon과 같은 epoch 선택 조건을 사용한다. 두 모드 전환, native 전송 유지, 이전 epoch 및 비활성 중앙 경로의 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·도구 실행·Pi 접속·배포 전환은 미수행이다. [전환 절차](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#전환-전-대기열-확인)
 
 소스 commit `426d9c5f57ce2a2a32f06d061c80dd680d4d1d96`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `601ef7a..426d9c5`다. goal은 active/progress다.
+
+## 2026-11-11 — 배포 전환 뒤 기존 Gateway·키링 명령 보관본 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R11, R12. 직전 goal turn은 비활성 경로의 큐 보존을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀의 dispatch-start·명령 정산 계약을 확인했다.
+
+- Gateway 0.2.77의 전체 기기 저널 비교는 키링 보관본에 없는 같은 기기의 RECEIVED·DISPATCHING 명령과 미전달 native·중앙 영수증을 추린다. 상세 목록은 최대 128건, 별도 건수에는 전체 일치 건을 기록한다. 키링에 기록이 없다는 사실만으로 실행 여부나 중앙 정산을 확정하지 않는다.
+- `--archive-only`는 원래 배포 환경 파일로 격리 SQLite binding을 확인하고 키링 저널과 로컬 영수증을 비교한다. TLS 파일과 서버 연결 없이 처리하며 native 영수증은 미확인으로 남긴다. Pi에만 남은 명령, 독립 중앙 영수증, 기기 범위와 미접속을 다루는 회귀시험 소스를 추가했다. 빌드·시험·도구 실행·Pi 접속·서버 전환은 미수행이다. [보관본 대조 절차](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#기존-배포의-명령과-키링-저널-대조)
+
+소스 commit `50e26c6596d4549d2decec438cdc4ccbf728469e`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `5a1cf6a..50e26c6`다. goal은 active/progress다.
