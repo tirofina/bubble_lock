@@ -1908,5 +1908,12 @@
     "regressionsExecuted": false,
     "physicalFirstConnectionVerified": false,
     "sourceCommit": "78fcc9cd41380cf6311d517d42c21b21104c5ef8"
+  },
+  "gatewayBleUptimeContinuity": {
+    "reference": "raspberry-pi-gateway/IO_NOTES.md",
+    "gatewayVersion": "0.2.107",
+    "regressionsExecuted": false,
+    "physicalPiRestartVerified": false,
+    "sourceCommit": "9a7e991ceed8b6943de80639378fc5a3930c2328"
   }
 }

@@ -1964,3 +1964,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R15. 직전 goal turn은 깨우�
 - Gateway 0.2.106, Pi 시험 도구와 격리 Mobius4 명령 설정에 새 버전을 반영했다. 읽기 중 전이·재읽기·다른 피어 연결을 다루는 호스트 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·API 재시작·플래시·실제 BlueZ 첫 연결 시험은 미수행이다. [펌웨어 설명](../keyring/firmware/README.md#센서버튼저전력)
 
 소스 commit `78fcc9cd41380cf6311d517d42c21b21104c5ef8`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `246b415..78fcc9c`이다. goal은 active/progress다.
+
+## 2026-11-11 — Pi 재시작 뒤 BLE 업타임 연속성
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 첫 GATT 읽기 전후의 버튼 전이 보존을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f` 및 관측 payload 계약을 확인했다.
+
+- Gateway 0.2.107은 BLE 업타임을 해당 부팅과 SQLite 대기열에 함께 저장한다. Pi 재시작 뒤 같은 부팅의 업타임이 감소한 관측을 거절하고, 새 부팅의 업타임은 별도로 시작한다. 이전 DB의 기록이 없는 업타임은 비워 둔다. 영수증 시각 환산에는 새 BLE 세션의 관측이 필요하다.
+- SQLite 이전 스키마, 재열기 후 역행, BLE 시작 시 기준 적용 및 Mobius4 본문의 기존 형식을 다루는 회귀시험 소스를 반영했다. 빌드·테스트·정적 분석·실물 Pi 재시작·Mobius4 확인은 미수행이다. [통신 메모](../keyring/raspberry-pi-gateway/IO_NOTES.md)
+
+소스 commit `9a7e991ceed8b6943de80639378fc5a3930c2328`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `f42b31d..9a7e991`이다. goal은 active/progress다.
