@@ -1185,3 +1185,12 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - `start-scoped-command-api.ps1 -Mode integration -PrepareOnly`가 exit 0을 반환했다. 팀 소스·계약 아카이브 SHA-256은 `d71f006b9a64576376115303227d8e9b4aa9e8ce5010429e98316cb3f3475b3a`다. 로컬 시험용 운영자 인증서를 발급했다. 팀 Node 의존성 설치와 새 API 시작·등록, 테스트·빌드·Pi 실행은 미실행이다.
 
 소스 commit `fbac3d11035c3de3275e858140a7364fb861f362`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `647696d..fbac3d1`다. goal은 active/progress다.
+
+## 2026-11-11 — 최신 중앙 API 루프백 시작 및 시험 장치 등록
+
+직전 goal turn은 최신 중앙 API 프로필을 준비한 progress다. DOC-REV 2.0.0과 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 head는 직전과 같다.
+
+- 팀 `package-lock.json`을 pnpm 잠금 파일로 변환했다. 일부 패키지가 로컬 캐시에 없어 고정 잠금 파일을 유지하고 공식 npm 레지스트리에서 필요한 패키지를 받았다. 프로덕션 의존성 설치는 exit 0이었고 패키지 스크립트 실행은 껐다.
+- 격리 런처가 `127.0.0.1:8788`에서 `READY`를 반환했다. 로컬 상태에서 `gw-a`의 활성 자격, 운영자 보호자 등록과 시험 장치의 Gateway·가구 연결을 확인했다. 발급 명령과 관측은 각각 0건이다. 빌드·시험·Pi 실행은 미실행이다. [시작 기록과 잠금 파일 해시](../keyring/evidence/2026-11-11-current-central-bench/provisioning.json)
+
+사용한 런처 소스는 원격 역할 브랜치에 반영된 `fbac3d11035c3de3275e858140a7364fb861f362`다. goal은 active/progress다.

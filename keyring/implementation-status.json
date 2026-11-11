@@ -180,7 +180,7 @@
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
     "latestLocalSourceCommit": "fbac3d11035c3de3275e858140a7364fb861f362",
     "lastPushedCommit": "fbac3d11035c3de3275e858140a7364fb861f362",
-    "latestCheckpoint": "Prepare a separate scoped profile for the current central API and its Pi and operator settings.",
+    "latestCheckpoint": "Start the current central API on isolated loopback and provision the bench Gateway, household and device.",
     "lastPushedCommitBeforeThisCheckpoint": "647696d6282ec7d80f4a1d5c72bb25043d554a60"
   },
   "gatewayRevision": "0.2.47",
@@ -205,7 +205,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Prepare a separate isolated profile for current team API integration under DOC-REV 2.0.0",
+    "executionRequest": "Start and provision the isolated profile for current team API integration under DOC-REV 2.0.0",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -215,10 +215,10 @@
     "latestRemoteCore": "d54a43a",
     "latestRemoteMain": "bc2a45d",
     "sourceCommit": "fbac3d11035c3de3275e858140a7364fb861f362",
-    "sourceValidation": "Read the current rubric, team branch heads and main bc2a45d scoped runtime and registration interfaces. Ran the isolated launcher in PrepareOnly mode and recorded the archive hash. Dependency installation, listener startup, API and Pi execution and tests remain pending.",
+    "sourceValidation": "Imported the team lockfile, installed frozen production dependencies without scripts, and started the isolated bc2a45d profile. Confirmed the loopback listener and scoped enrollment in local state. API workflow tests and Pi verification remain pending.",
     "goalComplete": false,
     "pendingInput": null,
-    "currentDependencyState": "The Feather 0.2.0 and Pi Gateway 0.2.43 command path matched isolated Mobius4 and PostgreSQL on the pinned 715ef58 API, with no visible LED response. The new isolated bc2a45d profile has pinned sources, contracts and an operator certificate. The pinned Node dependencies, new listener startup and Pi integration evidence, central receipt replay, r18 identification and first power-on, physical reconnect, battery, LCD, charger and sensor checks, NVS fault and archive history verification, production CSE and CORE, journal reclaim, and physical power/range/wake evidence remain.",
+    "currentDependencyState": "The Feather 0.2.0 and Pi Gateway 0.2.43 command path matched isolated Mobius4 and PostgreSQL on the pinned 715ef58 API, with no visible LED response. The isolated bc2a45d profile started on loopback 8788 with the bench Gateway, household and device registered. Pi and API workflow integration evidence, central receipt replay, r18 identification and first power-on, physical reconnect, battery, LCD, charger and sensor checks, NVS fault and archive history verification, production CSE and CORE, journal reclaim, and physical power/range/wake evidence remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -1262,12 +1262,13 @@
   },
   "centralIntegrationBench": {
     "reference": "dev/mobius4/README.md#최신-integration-api-벤치",
+    "startupEvidence": "evidence/2026-11-11-current-central-bench/provisioning.json",
     "gatewayVersion": "0.2.47",
     "teamMain": "bc2a45dfcc014b7cdb0a57a03aca2c04ca8eb989",
-    "status": "local-profile-prepared",
+    "status": "local-listener-ready",
     "loopbackPort": 8788,
     "teamArchiveSha256": "d71f006b9a64576376115303227d8e9b4aa9e8ce5010429e98316cb3f3475b3a",
-    "listenerStarted": false,
+    "listenerStarted": true,
     "piVerified": false,
     "sourceCommit": "fbac3d11035c3de3275e858140a7364fb861f362"
   }

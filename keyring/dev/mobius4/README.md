@@ -202,9 +202,19 @@ npm --prefix "$tool/.local/scoped/command-api-integration/team-source/pc-mobius"
 & "$tool/start-scoped-command-api.ps1" -Mode integration
 ```
 
+PC에 pnpm이 설치돼 있으면 패키지 설치 단계에서 팀의 `package-lock.json`을 읽어 같은 프로필에 pnpm 잠금 파일을 만들 수 있다.
+
+```powershell
+$teamPackage = "$tool/.local/scoped/command-api-integration/team-source/pc-mobius"
+pnpm --dir $teamPackage import
+pnpm --dir $teamPackage install --frozen-lockfile --prod --ignore-scripts
+```
+
 `READY`의 `mode`가 `integration`이면, Pi의 시험 세션을 새로 준비하면서 `--api-mode integration`을 지정한다. SSH 포워딩의 PC·Pi API 포트는 둘 다 `8788`을 사용한다. 이 모드는 Gateway 0.2.47 이상의 `dispatch-start`, 중앙 영수증과 중앙 관측을 켠다. PC의 LED 도구에도 `--api-mode integration`을 사용한다. [Pi 세션 설정](../../raspberry-pi-gateway/TESTING.md#pi-명령-세션)
 
 중앙 정산의 정본은 최신 프로필의 `runtime.json`에 있는 `gatewayCommands`와 `gatewayDeviceReceipts`다. `gatewayTelemetry`에는 수용한 관측의 식별자와 암호화된 위치 참조가 남는다. 기존 벤치의 콜백·PostgreSQL 정산 도구는 기존 프로필을 읽는다.
+
+2026-11-11에 잠금 파일로 Node 패키지를 설치하고 `8788`의 루프백 리스너와 시험 Gateway·가구·장치 등록을 확인했다. [준비 기록](../../evidence/2026-11-11-current-central-bench/provisioning.json)
 
 ### 격리 소유권 전환
 
