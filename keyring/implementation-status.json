@@ -173,18 +173,18 @@
   "firmwareRevision": "keyring-0.7.14",
   "benchFirmwareRevision": "feather-probe-0.2.1",
   "publication": {
-    "sourceCommit": "847492ba68d74ccf9b7a8bc10913828e5fe5fcd3",
+    "sourceCommit": "8cf9a32d0d842833c65bc678d5fd45f92ddc2ba5",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "847492ba68d74ccf9b7a8bc10913828e5fe5fcd3",
-    "lastPushedCommit": "847492ba68d74ccf9b7a8bc10913828e5fe5fcd3",
-    "latestCheckpoint": "Reuse a prepared Pi session for the r18 journal, SQLite archive and settlement evidence.",
-    "lastPushedCommitBeforeThisCheckpoint": "551278f4ed314a84b4edaeb2bb83c8deb51378ab"
+    "latestLocalSourceCommit": "8cf9a32d0d842833c65bc678d5fd45f92ddc2ba5",
+    "lastPushedCommit": "8cf9a32d0d842833c65bc678d5fd45f92ddc2ba5",
+    "latestCheckpoint": "Reconcile an interrupted r18 pulse from its saved intent and clarify the Feather LCD trial.",
+    "lastPushedCommitBeforeThisCheckpoint": "4abb1670886b3c1a5d0c5942259d7a4c72eceb62"
   },
-  "gatewayRevision": "0.2.63",
-  "pendingValidationScope": "Gateway 0.2.63 r18 Pi evidence export and journal capture, operator-triggered scoped r18 pulse bench and physical pulse measurement, Gateway 0.2.62 r18 Pi preflight, actual BLE board pin and Mobius4 publication, Gateway 0.2.61 r18 command reconciliation with the latest central API snapshot, Gateway 0.2.59 initial and final r18 sensor capture and r18 0.7.15-bringup USB replay, Gateway 0.2.57 HTTPS Retry-After restart and SQLite schema upgrade, central Retry-After outbox hold, pinned Mobius4 observation delivery, central API datastore binding and deployment transition, health snapshot admission during CSE outages, independent central receipt staging and delivery, central telemetry retention and independent delivery, central receipt replay and database upgrade, central dispatch-start and pinned-receipt restart and replay, Feather 0.2.1 flash and visible ST7789 command state, r18 physical commands and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE MQTT ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
+  "gatewayRevision": "0.2.64",
+  "pendingValidationScope": "Gateway 0.2.64 interrupted r18 evidence with actual artifacts, Gateway 0.2.63 r18 Pi evidence export and journal capture, operator-triggered scoped r18 pulse bench and physical pulse measurement, Gateway 0.2.62 r18 Pi preflight, actual BLE board pin and Mobius4 publication, Gateway 0.2.61 r18 command reconciliation with the latest central API snapshot, Gateway 0.2.59 initial and final r18 sensor capture and r18 0.7.15-bringup USB replay, Gateway 0.2.57 HTTPS Retry-After restart and SQLite schema upgrade, central Retry-After outbox hold, pinned Mobius4 observation delivery, central API datastore binding and deployment transition, health snapshot admission during CSE outages, independent central receipt staging and delivery, central telemetry retention and independent delivery, central receipt replay and database upgrade, central dispatch-start and pinned-receipt restart and replay, Feather 0.2.1 flash and visible ST7789 command state, r18 physical commands and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE MQTT ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
     "supersededBy": "2026-11-10 benchCheckpoint for current execution and verification state",
@@ -205,7 +205,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Archive r18 trial evidence from its prepared Pi session under DOC-REV 2.0.0",
+    "executionRequest": "Record the Feather LED result and reconcile interrupted r18 pulse evidence under DOC-REV 2.0.0",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -214,8 +214,8 @@
     ],
     "latestRemoteCore": "d54a43a",
     "latestRemoteMain": "bc2a45d",
-    "sourceCommit": "847492ba68d74ccf9b7a8bc10913828e5fe5fcd3",
-    "sourceValidation": "The current rubric and team heads were read. The Pi session exports its settings privately and locks the r18 journal capture to its exact board and firmware. Regression source was added. Builds, tests, Pi access and device execution were not run in this checkpoint.",
+    "sourceCommit": "8cf9a32d0d842833c65bc678d5fd45f92ddc2ba5",
+    "sourceValidation": "Gateway wheel built. The final local gateway suite passed 190 tests and the scoped bench mock suite passed 25 tests. A synthetic CLI run recovered an issuance with no saved HTTP response and rejected a mismatched intent. Pi and device runs were not performed in this checkpoint.",
     "goalComplete": false,
     "pendingInput": null,
     "currentDependencyState": "The Feather 0.2.0 and Pi Gateway 0.2.43 command path matched isolated Mobius4 and PostgreSQL on the pinned 715ef58 API. The operator saw no LED change during either command. Feather 0.2.1 mirrors the command GPIO readback on the ST7789. The latest Pi integration workflow and LCD response still need hardware evidence, as do r18 first power-on, physical reconnect, battery, LCD, charger, sensor, NVS fault, power, range and wake. Production CSE, CORE and release acceptance remain.",
@@ -1463,5 +1463,16 @@
     "regressionsExecuted": false,
     "piVerified": false,
     "sourceCommit": "847492ba68d74ccf9b7a8bc10913828e5fe5fcd3"
+  },
+  "r18InterruptedPulseEvidence": {
+    "reference": "raspberry-pi-gateway/TESTING.md#중단된-r18-펄스-시험-대조",
+    "gatewayVersion": "0.2.64",
+    "gatewayLocalTestsPassed": 190,
+    "scopedBenchMockTestsPassed": 25,
+    "syntheticCliSmokePassed": true,
+    "wheelSha256": "f0193f6e3d8227b0857023aae26cebb7bf1313782f094952b7d917840cf471a3",
+    "piVerified": false,
+    "physicalPulseMeasured": false,
+    "sourceCommit": "8cf9a32d0d842833c65bc678d5fd45f92ddc2ba5"
   }
 }

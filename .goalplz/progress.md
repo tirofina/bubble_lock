@@ -1439,3 +1439,13 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R03, R05. 직전 goal turn�
 - Gateway `0.2.63`의 내보내기·잠금·실행 인자 회귀시험 소스를 추가했다. 빌드·회귀시험·Pi 접속·저널 캡처·실물 시험은 미실행이다.
 
 소스 commit `847492ba68d74ccf9b7a8bc10913828e5fe5fcd3`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `551278f..847492b`다. goal은 active/progress다.
+
+## 2026-11-11 — Feather 화면 확인 절차와 중단된 r18 명령 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R03, R05. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- Feather 0.2.0 ON/OFF의 기존 실물 시험에서 GPIO 읽기값과 Mobius4 영수증·중앙 정산이 일치했고 사용자는 LED 변화를 보지 못했다. 1.54인치 ST7789에서 Feather 0.2.1의 `CMD ON`과 `CMD OFF`를 읽는 절차를 보강했다. 새 펌웨어 설치와 화면 실물 확인은 대기 중이다. [Feather 화면 확인](../keyring/raspberry-pi-gateway/TESTING.md#기존-scoped-mobius4에서-feather-led-시험)
+- Gateway 0.2.64는 r18 발급 응답이 끊겨도 저장한 명령 ID와 요청 해시로 중앙 상태·선택한 Pi DB 사본·확보한 CSE 영수증을 대조한다. 발급, 실행, 정산이 각 사본에 어디까지 남았는지 기록한다. [중단 증거 대조](../keyring/raspberry-pi-gateway/TESTING.md#중단된-r18-펄스-시험-대조)
+- Gateway 로컬 190개, 격리 벤치 모의 25개, wheel 빌드와 합성 입력 CLI 확인을 통과했다. 첫 로컬 실행에서 기존 Retry-After 모의 설정에 요청 제한 시간이 빠져 실패했고, 모의 설정을 보완한 뒤 전체를 다시 실행했다. Pi·BLE·실물 실행은 미수행이다.
+
+소스 commit `8cf9a32d0d842833c65bc678d5fd45f92ddc2ba5`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `4abb167..8cf9a32`다. goal은 active/progress다.
