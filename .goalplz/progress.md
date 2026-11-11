@@ -1222,3 +1222,12 @@ DOC-REV 2.0.0과 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - r18 기본·ST7789·JD9853 빌드와 Feather 기본 관측·명령 빌드가 모두 통과했다. Feather는 Git 밖의 임시 소스 사본에 합성 PIN을 넣어 컴파일했다. r18 및 Feather 호스트 회귀 17개, 벤치 Python 회귀 12개, Gateway 로컬 시험 172개가 통과했다. 모의 ON/OFF 영수증 대조는 0.2.1을 받아들이고 버전이 섞인 기록을 거절했다. Gateway 첫 전체 실행에서 OpenSSL 경로가 빠져 TLS fixture 두 개가 시작되지 않았다. 설치된 Git OpenSSL을 지정한 최종 실행에서 전체가 통과했다. 새 펌웨어의 flash와 화면 육안 확인, 실제 Pi 연동 및 r18 실물 시험은 미실행이다. [빌드 SHA-256](../keyring/implementation-status.json)
 
 소스 commit `916ff1ef1f82daacf1481e057fbf9babb77be3e8` 및 `5e6598fc1931e4fc642b82d6d6e0cbf1ef941806`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `d4fbb06..5e6598f`다. goal은 active/progress다.
+
+## 2026-11-11 — Feather 명령 화면 관측 증거
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01~R03, R05. 직전 goal turn은 Feather 화면·r18 보조 전원 구현, 로컬 빌드와 시험 증거를 올린 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 조회했다. 팀 커밋과 중앙 실행·정산 경계는 직전과 같다.
+
+- 격리 증거 도구는 `--display-observations`로 0.2.1의 실제 화면 문구를 받는다. ON/OFF의 command ID와 후속 관측 시각을 확인하고, ON 기록은 다음 명령 발급 전에 들어와야 한다. 잘못된 문구·GPIO 오류·화면 미표시는 관측대로 남기고 불일치로 판정한다. LED 육안 결과는 별도 필드를 유지한다. [화면 기록 절차](../keyring/raspberry-pi-gateway/TESTING.md#실물-명령-증거-대조)
+- 기존 0.2.0의 GPIO·Mobius4·중앙 정산 증거를 완료 상태 표에 반영했다. 0.2.1 화면 관측과 잘못된 명령·시각을 다루는 회귀시험 소스를 추가했다. 이번 도구 실행·빌드·회귀시험·flash·실물 검증은 미실행이다. 제작 PCB와 최신 중앙 API의 실물 통합은 대기 중이다.
+
+소스 commit `426ec9d25344f53f75686490e67f46db37699c7e`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `fec9536..426ec9d`다. goal은 active/progress다.
