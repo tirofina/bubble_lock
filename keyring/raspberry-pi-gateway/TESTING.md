@@ -260,6 +260,8 @@ tool=keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_pi.py
 
 Pi 인증서로 HTTPS GET만 보내 컨테이너 ID 일치, 중앙 자격 `ACTIVE`, 중앙 API의 활성 명령 0건을 확인한다. 성공하면 세 항목과 확인 시각을 JSON 한 줄로 출력한다. SQLite를 열거나 Gateway·BLE를 시작하는 단계는 다음 `run`이다. 실제 장치 준비 여부는 PC 명령 도구에서 같은 Feather 부팅의 최신 관측을 다시 확인한다.
 
+통합 모드는 `preflight`와 `run`에서 Pi 인증서로 `bench-capabilities`를 먼저 읽는다. 모드, 고정 팀 커밋, Gateway·장치 ID 및 `dispatch-start`·`receipts`·`telemetry`가 프로필과 모두 일치해야 진행한다. 기존 통합 세션의 기본 커밋은 `bc2a45d`다. 팀 커밋을 바꾸는 배포에서는 새 세션을 준비할 때 `--api-team-revision`에 전체 SHA를 넣는다.
+
 Feather 명령 프로필 `0.2.0`과 두 SSH 포워딩이 준비되면 같은 Feather를 쓰는 관측 프로세스를 종료한 뒤 아래 명령을 실행한다. 실행한 Gateway는 해당 세션의 `gateway.sqlite3`를 사용한다. Pi 사용자당 명령 벤치 한 개가 실행되며, 기본 Gateway의 SQLite 잠금도 유지한다.
 
 ```sh

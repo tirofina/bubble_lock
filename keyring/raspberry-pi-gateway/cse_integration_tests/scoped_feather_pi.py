@@ -1,5 +1,7 @@
 """Prepare and explicitly start a dedicated Pi session for the scoped Feather command bench."""
 import argparse
+from contextlib import closing
+import http.client
 import json
 import os
 from pathlib import Path
@@ -12,6 +14,11 @@ GATEWAY_SOURCE = Path(__file__).resolve().parents[1] / "src"
 PARENT = "/Mobius/privacy-bubble-test-ae"
 CSE_DEPLOYMENT = "scoped-mobius4"
 API_PORTS = {"legacy": 8787, "integration": 8788}
+INTEGRATION_TEAM_REVISION = "bc2a45dfcc014b7cdb0a57a03aca2c04ca8eb989"
+
+
+class ScopedApiError(ValueError):
+    """The forwarded API could not be bound to the selected bench profile."""
 
 
 def require_private(path, kind):
@@ -29,10 +36,30 @@ def load_tls(directory):
     context = ssl.create_default_context(cafile=str(ca))
     context.minimum_version = ssl.TLSVersion.TLSv1_3
     context.load_cert_chain(cert, key)
-    return ca, cert, key
+    return ca, cert, key, context
 
 
-def gateway_environment(profile, session):
+def verify_integration_api(port, revision, context):
+    expected = {"status": "READY", "scope": "scoped-command-api", "mode": "integration",
+                "teamRevision": revision, "gatewayId": "gw-a", "deviceId": "keyring-feather-lab",
+                "features": ["dispatch-start", "receipts", "telemetry"]}
+    try:
+        with closing(http.client.HTTPSConnection("127.0.0.1", port, timeout=5, context=context)) as connection:
+            connection.request("GET", "/api/v1/gateways/gw-a/bench-capabilities",
+                               headers={"Accept": "application/json", "Cache-Control": "no-store"})
+            response = connection.getresponse()
+            if response.status != 200:
+                raise ScopedApiError("the forwarded port did not return the integration profile")
+            body = response.read(4097)
+            if len(body) > 4096 or json.loads(body) != expected:
+                raise ScopedApiError("the forwarded API revision or capabilities differ from the prepared profile")
+    except ScopedApiError:
+        raise
+    except (OSError, http.client.HTTPException, ValueError) as error:
+        raise ScopedApiError(f"the integration profile could not be read ({type(error).__name__})") from None
+
+
+def gateway_environment(profile, session, *, verify_api=False):
     if profile.get("version") != 1 or not re.fullmatch(r"(?:[0-9A-F]{2}:){5}[0-9A-F]{2}", profile["address"]):
         raise ValueError("Expected one paired Feather address")
     cse, api = profile["csePort"], profile["apiPort"]
@@ -41,10 +68,14 @@ def gateway_environment(profile, session):
     mode = profile.get("apiMode", "legacy")
     if mode not in API_PORTS:
         raise ValueError("Unknown scoped API mode")
+    revision = profile.get("apiTeamRevision", INTEGRATION_TEAM_REVISION)
+    if (not isinstance(revision, str) or re.fullmatch(r"[0-9a-f]{40}", revision) is None
+            or ("apiTeamRevision" in profile and mode != "integration")):
+        raise ValueError("Expected a full lowercase team revision for integration mode")
     tls = Path(profile["tlsDirectory"])
     if not tls.is_absolute():
         raise ValueError("Expected an absolute client TLS directory")
-    ca, cert, key = load_tls(tls)
+    ca, cert, key, context = load_tls(tls)
     environment = {
         "PATH": os.defpath, "PYTHONPATH": str(GATEWAY_SOURCE), "STATE_DIRECTORY": str(session),
         "GATEWAY_ID": "gw-a", "M2M_CSE_ID": "Mobius4", "M2M_RVI": "4",
@@ -73,6 +104,8 @@ def gateway_environment(profile, session):
                 or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,63}", ri)):
             raise ValueError("Expected a verified scoped receipt container ID")
         environment["M2M_RECEIPT_CONTAINER_RI"] = ri
+    if verify_api and mode == "integration":
+        verify_integration_api(api, revision, context)
     return environment
 
 
@@ -87,6 +120,9 @@ def prepare(args, session):
                "csePort": args.cse_port, "apiPort": api_port, "cseDeploymentId": CSE_DEPLOYMENT}
     if args.api_mode == "integration":
         profile["apiMode"] = args.api_mode
+        profile["apiTeamRevision"] = INTEGRATION_TEAM_REVISION if args.api_team_revision is None else args.api_team_revision
+    elif args.api_team_revision is not None:
+        raise ValueError("A team revision requires integration mode")
     if args.receipt_container_ri is not None:
         profile["receiptContainerRi"] = args.receipt_container_ri
     gateway_environment(profile, session)
@@ -106,17 +142,17 @@ def load_environment(session):
         profile = json.loads(stream.read(8193))
     fields = {"version", "address", "tlsDirectory", "csePort", "apiPort"}
     if (not isinstance(profile, dict) or not fields <= profile.keys()
-            or profile.keys() - fields - {"cseDeploymentId", "receiptContainerRi", "apiMode"}):
+            or profile.keys() - fields - {"cseDeploymentId", "receiptContainerRi", "apiMode", "apiTeamRevision"}):
         raise ValueError("Expected a prepared Feather command session")
-    return gateway_environment(profile, session)
+    return gateway_environment(profile, session, verify_api=True)
 
 
 def run(root, session):
     import fcntl
 
-    environment = load_environment(session)
     with os.fdopen(os.open(root / "gateway.lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600), "rb") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        environment = load_environment(session)
         # Keep the bench-wide lock across exec in addition to the normal SQLite lock.
         os.set_inheritable(lock.fileno(), True)
         os.execve(sys.executable, [sys.executable, "-m", "bubble_gateway"], environment)
@@ -131,6 +167,7 @@ def main():
     setup.add_argument("--cse-port", type=int, default=8760)
     setup.add_argument("--api-mode", choices=API_PORTS, default="legacy")
     setup.add_argument("--api-port", type=int, help="Override the selected API mode's Pi loopback port")
+    setup.add_argument("--api-team-revision", help="Override the pinned full team commit for integration mode")
     setup.add_argument("--receipt-container-ri", help="Use the scoped gw-a receipt pin in a fresh session")
     start = modes.add_parser("run", help="Start the Gateway for an explicitly prepared session")
     check = modes.add_parser("preflight", help="Check the pinned receipt and central command routes over mTLS")
@@ -157,6 +194,8 @@ def main():
         parser.exit(1, "A Feather command Gateway is already running for this Pi user.\n")
     except FileExistsError:
         parser.exit(1, "The session already exists. Use run to resume it or choose a new session name.\n")
+    except ScopedApiError as error:
+        parser.exit(1, f"Scoped Feather central API check failed: {error}.\n")
     except (OSError, ValueError, TypeError, KeyError) as error:
         parser.exit(1, f"Scoped Feather session blocked ({type(error).__name__}). Check the private profile and TLS files.\n")
 

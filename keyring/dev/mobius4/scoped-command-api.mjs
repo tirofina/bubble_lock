@@ -41,8 +41,9 @@ const gatewayPath = `/api/v1/gateways/${gatewayId}`;
 const gatewayRoutes = new Set([
   `GET ${gatewayPath}/commands`, `GET ${gatewayPath}/credentials/status`, `POST ${gatewayPath}/authorize`,
 ]);
+const integrationFeatures = ['dispatch-start', 'receipts', 'telemetry'];
 if (integrated) {
-  for (const path of ['dispatch-start', 'receipts', 'telemetry']) gatewayRoutes.add(`POST ${gatewayPath}/${path}`);
+  for (const path of integrationFeatures) gatewayRoutes.add(`POST ${gatewayPath}/${path}`);
 }
 const operatorRoutes = new Set([
   'POST /v1/consents', 'POST /v1/grants', 'POST /v1/grants/revoke', `POST ${gatewayPath}/commands`,
@@ -55,8 +56,13 @@ const server = createIntegrationServer({ tls: { ca, cert, key }, principals, api
     if (!runtimeApi) return denied(503, 'Scoped command API is starting');
     const path = request.path.split('?')[0];
     const route = `${request.method} ${path}`;
-    if (request.principal.principalId === gatewayPrincipalId && gatewayRoutes.has(route)) {
-      return runtimeApi.handle(request);
+    if (request.principal.principalId === gatewayPrincipalId) {
+      if (integrated && route === `GET ${gatewayPath}/bench-capabilities`) {
+        return { status: 200, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
+          body: { status: 'READY', scope: 'scoped-command-api', mode, teamRevision: revision,
+            gatewayId, deviceId, features: integrationFeatures } };
+      }
+      if (gatewayRoutes.has(route)) return runtimeApi.handle(request);
     }
     if (request.principal.principalId === operatorId && operatorRoutes.has(route)
         && (path !== '/v1/consents' || request.body?.subjectId === subjectId)) {
@@ -112,7 +118,8 @@ try {
   }
   runtimeApi = runtime.api;
   console.log(JSON.stringify({ status: 'READY', scope: 'scoped-command-api', endpoint: `https://127.0.0.1:${port}`,
-    mode, teamRevision: revision, gatewayId, deviceId, subjectId }));
+    mode, teamRevision: revision, gatewayId, deviceId, subjectId,
+    ...(integrated ? { features: integrationFeatures } : {}) }));
 } catch (error) {
   server.close();
   await runtime?.close?.();

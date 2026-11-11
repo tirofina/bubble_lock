@@ -212,6 +212,8 @@ pnpm --dir $teamPackage install --frozen-lockfile --prod --ignore-scripts
 
 `READY`의 `mode`가 `integration`이면, Pi의 시험 세션을 새로 준비하면서 `--api-mode integration`을 지정한다. SSH 포워딩의 PC·Pi API 포트는 둘 다 `8788`을 사용한다. 이 모드는 Gateway 0.2.47 이상의 `dispatch-start`, 중앙 영수증과 중앙 관측을 켠다. PC의 LED 도구에도 `--api-mode integration`을 사용한다. [Pi 세션 설정](../../raspberry-pi-gateway/TESTING.md#pi-명령-세션)
 
+통합 런처의 `GET /api/v1/gateways/gw-a/bench-capabilities`는 시험 Gateway 인증서에 모드와 팀 커밋, 지원 경로를 반환한다. Pi는 이 응답을 확인한 뒤 시작한다.
+
 중앙 정산의 정본은 최신 프로필의 `runtime.json`에 있는 `gatewayCommands`와 `gatewayDeviceReceipts`다. `gatewayTelemetry`에는 수용한 관측의 식별자와 암호화된 위치 참조가 남는다. 기존 벤치의 콜백·PostgreSQL 정산 도구는 기존 프로필을 읽는다.
 
 통합 모드의 LED 도구는 같은 명령이 중앙에서 `APPLIED_VERIFIED`로 정산된 뒤 다음 단계로 넘어간다. 완료 증거는 Pi SQLite 사본과 이 프로필의 중앙 상태 사본을 읽어 대조한다. [최신 중앙 API 시험 결과 대조](../../raspberry-pi-gateway/TESTING.md#최신-중앙-api의-시험-결과-대조)
