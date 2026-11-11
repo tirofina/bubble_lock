@@ -1468,3 +1468,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01~R03, R05. 직전 goal turn은 r18 
 - 중앙 수용 지연, 본문 해시 불일치, 권한 회수 뒤 대조를 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·Pi 접속·BLE·실물 펄스 및 실제 중앙 수용 확인은 미수행이다.
 
 소스 commit `1899c00a420825642118a67ba4663f894819c1a2`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `c1baf6e..1899c00`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 장치 저널과 저장한 Mobius4 영수증의 오프라인 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01~R03, R05. 직전 goal turn은 펄스 뒤 OFF 관측의 중앙 수용 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. CORE의 실제 ACK/readback 증거와 통합 API의 중앙 정산 이벤트 필드를 확인했다.
+
+- Gateway 0.2.67의 r18 벤치는 CSE 영수증 사본에 CIN 이름·유형을 추가한다. `journal_reconcile --native-receipt`는 같은 부팅의 명령 ID에서 계산한 자원 이름과 Pi 설정의 부모 ID를 대조한 뒤, 장치 저널·Pi SQLite 보관본·CSE 영수증을 네트워크 없이 비교한다. 지정한 중앙 상태 사본과도 대조하며 결과에 사용한 영수증 사본의 SHA-256을 기록한다. [오프라인 대조](../keyring/JOURNAL_RETENTION.md#저장한-mobius4-영수증으로-오프라인-대조)
+- 새 영수증의 오프라인 비교, CSE 부모·이름 교체와 본문 불일치를 다루는 회귀시험 소스를 추가했다. 장치 저널 시험 데이터가 다른 명령으로 중앙 사본을 덮어쓰는 부분도 수정했다. 빌드·시험·정적 분석·Pi 접속·BLE·실물 검증은 미수행이다.
+
+소스 commit `fa6d5abed463794a23c98f6fe0d6fd7fddba9de1`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `09c7904..fa6d5ab`다. goal은 active/progress다.
