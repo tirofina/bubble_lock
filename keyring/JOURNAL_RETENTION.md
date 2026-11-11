@@ -101,6 +101,8 @@ env -i PATH=/usr/bin:/bin /opt/bubble_lock/keyring/raspberry-pi-gateway/.venv/bi
 
 ### r18 실물 명령 한 건 대조
 
+Pi 벤치에서는 [r18 Pi 시험 증거 보관](raspberry-pi-gateway/TESTING.md#r18-pi-시험-증거-보관)의 `export-env`와 `capture-r18`을 사용해 기존 세션 설정을 장치 저널·SQLite 보관본에 연결한다.
+
 Gateway 0.2.60은 장치 저널을 수집한 부팅에서 실행한 명령 한 건을 골라 비교한다. 정식 r18 펌웨어로 실행한 시험의 정확한 command ID와 저널을 수집할 때의 보드·펌웨어 revision을 지정한다. 현재 정식 r18 펌웨어 revision은 `keyring-0.7.14`다.
 
 ```sh

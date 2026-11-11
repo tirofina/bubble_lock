@@ -1,5 +1,7 @@
 # Gateway 로컬 시험
 
+Gateway 0.2.63의 회귀시험 소스는 Pi 세션의 환경 파일 내보내기, 기존 파일 보존, r18 저널 캡처의 시험 잠금과 장치 설정 전달을 다룬다. 빌드·시험·Pi 실행은 미실행이다.
+
 r18 단일 펄스 벤치의 회귀시험 소스는 준비 신호 이후 한 건 발급, 같은 부팅의 후속 OFF 관측, 응답 유실 뒤 grant 회수와 중단 신호를 다룬다. 빌드·시험·실제 명령 발급은 미실행이다.
 
 Gateway 0.2.62의 회귀시험 소스는 r18 Pi의 `gw-b` 인증서·전용 컨테이너·중앙 API 프로필 선택과 BLE 보드 revision 불일치 차단을 다룬다. 빌드·시험·실제 Pi 연동은 미실행이다.
@@ -336,6 +338,27 @@ python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_r18_pulse.py --
 `R18_PULSE_READY`가 나오면 실제 시험을 시작할 때 다른 터미널에서 같은 폴더에 빈 `PULSE` 파일을 만든다. 도구는 같은 부팅에서 출력 OFF·fault 없음·Pi 명령 준비를 다시 읽고 기한이 있는 명령 한 건을 발급한다. `STOP` 파일이 감지되면 발급 전에는 멈추고, grant가 생성됐으면 회수를 시도한다.
 
 발급 전에 `pulse-intent.json`을 저장한다. `R18_PULSE_RECORDED`는 장치 ACK의 적용 당시 ON, 중앙 실행 시작·정산, 같은 부팅의 더 새 OFF 관측과 grant 회수가 확인된 경우에 출력된다. 응답이 끊기면 `pulse-intent.json`의 command ID로 원래 명령을 조회한다. 시험 도구는 그 명령을 자동으로 다시 발급하지 않는다. 펄스 길이와 종료 시점은 계측기로 기록하고 같은 command ID로 [장치 저널 대조](../JOURNAL_RETENTION.md#r18-실물-명령-한-건-대조)에 연결한다.
+
+#### r18 Pi 시험 증거 보관
+
+시험 Gateway를 정상 종료한 뒤 r18 전원을 유지한다. `$private_r18_evidence`는 Pi에서 이미 만든 소유자 전용 폴더다. `$team_state_copy`에는 PC 격리 r18 API의 `runtime.json` 사본을, `$pulse_command_id`에는 PC의 `pulse-intent.json`에 저장된 명령 ID를 지정한다.
+
+```sh
+tool=keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_pi.py
+"$pi_python" "$tool" export-env --session "$r18_session"
+"$pi_python" "$tool" capture-r18 --session "$r18_session" --output "$private_r18_evidence/device"
+
+gateway_env="$HOME/.local/state/privacy-bubble-feather-command/$r18_session/gateway.env"
+source_path="$PWD/keyring/raspberry-pi-gateway/src"
+env -i PATH=/usr/bin:/bin PYTHONPATH="$source_path" "$pi_python" -m bubble_gateway.state_archive snapshot \
+  --env-file "$gateway_env" --output "$private_r18_evidence/gateway"
+env -i PATH=/usr/bin:/bin PYTHONPATH="$source_path" "$pi_python" -m bubble_gateway.journal_reconcile \
+  --env-file "$gateway_env" --device-archive "$private_r18_evidence/device" \
+  --gateway-archive "$private_r18_evidence/gateway" --same-boot-command "$pulse_command_id" \
+  --board-revision r18-hand-solder --firmware-revision keyring-0.7.14 --team-state "$team_state_copy"
+```
+
+`export-env`는 세션의 DB·인증서 파일 경로와 컨테이너 ID를 `gateway.env`에 저장한다. 장치 주소도 포함하므로 시험 폴더 안에 둔다. 기존 환경 파일은 다시 사용한다. `capture-r18`은 같은 시험 잠금과 DB 잠금을 사용하며, 지정한 장치·보드·펌웨어가 맞을 때 저널을 보관한다. 마지막 대조에는 Pi에서 격리 Mobius4로 연결하는 기존 loopback 전달이 필요하다.
 
 ## 이전 시험 기록
 

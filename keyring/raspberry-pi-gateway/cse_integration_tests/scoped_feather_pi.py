@@ -1,6 +1,6 @@
 """Prepare and explicitly start a scoped Feather or r18 command session on the Pi."""
 import argparse
-from contextlib import closing
+from contextlib import closing, contextmanager
 import http.client
 import json
 import os
@@ -9,6 +9,7 @@ import re
 import ssl
 import stat
 import sys
+import tempfile
 
 GATEWAY_SOURCE = Path(__file__).resolve().parents[1] / "src"
 PARENT = "/Mobius/privacy-bubble-test-ae"
@@ -170,7 +171,7 @@ def prepare(args, session):
     print(f"{label} {session.name}")
 
 
-def load_environment(session):
+def load_environment(session, *, verify_api=True):
     require_private(session, stat.S_ISDIR)
     profile_path = require_private(session / "profile.json", stat.S_ISREG)
     with profile_path.open(encoding="utf-8") as stream:
@@ -181,18 +182,61 @@ def load_environment(session):
     if (not isinstance(profile, dict) or not fields <= profile.keys()
             or profile.keys() - fields - optional):
         raise ValueError("Expected a prepared command session")
-    return gateway_environment(profile, session, verify_api=True)
+    return gateway_environment(profile, session, verify_api=verify_api)
 
 
-def run(root, session):
+@contextmanager
+def bench_lock(root):
     import fcntl
 
     with os.fdopen(os.open(root / "gateway.lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600), "rb") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        yield lock
+
+
+def run(root, session):
+    with bench_lock(root) as lock:
         environment = load_environment(session)
         # Keep the bench-wide lock across exec in addition to the normal SQLite lock.
         os.set_inheritable(lock.fileno(), True)
         os.execve(sys.executable, [sys.executable, "-m", "bubble_gateway"], environment)
+
+
+def export_environment(session):
+    environment = load_environment(session, verify_api=False)
+    settings = {key: value for key, value in environment.items() if key not in {"PATH", "PYTHONPATH"}}
+    for value in settings.values():
+        if (value != value.strip() or any(char in value for char in "\r\n\x00")
+                or (len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'")):
+            raise ValueError("A prepared setting cannot be represented in a gateway env file")
+    path = session / "gateway.env"
+    descriptor, staged_name = tempfile.mkstemp(prefix=".gateway-env-", dir=session)
+    staged = Path(staged_name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as stream:
+            for key, value in settings.items():
+                stream.write(f"{key}={value}\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.link(staged, path)
+    finally:
+        staged.unlink()
+    return path
+
+
+def capture_r18(root, session, output):
+    with bench_lock(root) as lock:
+        environment = load_environment(session, verify_api=False)
+        devices = json.loads(environment["BLE_DEVICES"])
+        if (environment["GATEWAY_ID"] != "gw-b" or environment.get("BLE_BOARD_REVISION") != R18_BOARD
+                or environment["FIRMWARE_REVISION_ALLOWLIST"] != R18_COMMAND_FIRMWARE or set(devices) != {R18_DEVICE}):
+            raise ValueError("The journal capture requires a prepared r18 session")
+        os.set_inheritable(lock.fileno(), True)
+        arguments = [sys.executable, "-m", "bubble_gateway.journal_cli", "--device-id", R18_DEVICE,
+                     "--address", devices[R18_DEVICE], "--database", environment["GATEWAY_DATABASE"],
+                     "--gatt-profile", environment["BLE_GATT_PROFILE"], "--board-revision", R18_BOARD,
+                     "--firmware-revision", R18_COMMAND_FIRMWARE, "--output", str(output)]
+        os.execve(sys.executable, arguments, environment)
 
 
 def main():
@@ -211,7 +255,10 @@ def main():
     setup.add_argument("--pc-api-deployment-id", help="Bind a fresh session to the chosen central datastore ID")
     start = modes.add_parser("run", help="Start the Gateway for an explicitly prepared session")
     check = modes.add_parser("preflight", help="Check pinned CSE containers and the central command route over mTLS")
-    for mode in (setup, start, check):
+    export = modes.add_parser("export-env", help="Create a private gateway.env from the saved session")
+    capture = modes.add_parser("capture-r18", help="Capture the r18 device journal while the bench daemon is stopped")
+    capture.add_argument("--output", type=Path, required=True, help="New private device archive directory")
+    for mode in (setup, start, check, export, capture):
         mode.add_argument("--session", required=True)
     args = parser.parse_args()
     if sys.platform != "linux" or os.getuid() == 0:
@@ -224,16 +271,21 @@ def main():
         if args.mode == "prepare":
             root.mkdir(mode=0o700, parents=True, exist_ok=True)
             prepare(args, require_private(root, stat.S_ISDIR) / args.session)
-        elif args.mode == "preflight":
-            require_private(root, stat.S_ISDIR)
-            environment = load_environment(root / args.session)
-            os.execve(sys.executable, [sys.executable, "-m", "bubble_gateway", "--check-command-route"], environment)
         else:
-            run(require_private(root, stat.S_ISDIR), root / args.session)
+            session = require_private(root, stat.S_ISDIR) / args.session
+            if args.mode == "preflight":
+                environment = load_environment(session)
+                os.execve(sys.executable, [sys.executable, "-m", "bubble_gateway", "--check-command-route"], environment)
+            elif args.mode == "export-env":
+                print(f"SCOPED_GATEWAY_ENV_EXPORTED {export_environment(session)}")
+            elif args.mode == "capture-r18":
+                capture_r18(root, session, args.output)
+            else:
+                run(root, session)
     except BlockingIOError:
         parser.exit(1, "A scoped command Gateway is already running for this Pi user.\n")
     except FileExistsError:
-        parser.exit(1, "The session already exists. Use run to resume it or choose a new session name.\n")
+        parser.exit(1, "The requested session or output already exists. Use the existing file or choose a new output.\n")
     except ScopedApiError as error:
         parser.exit(1, f"Scoped central API check failed: {error}.\n")
     except (OSError, ValueError, TypeError, KeyError) as error:

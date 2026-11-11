@@ -1,10 +1,13 @@
+from contextlib import nullcontext
 import json
 from pathlib import Path
+import sys
+import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
 from scoped_feather_pi import (INTEGRATION_TEAM_REVISION, R18_BOARD, R18_COMMAND_FIRMWARE, R18_DEVICE,
-                               ScopedApiError, gateway_environment, verify_integration_api)
+                               ScopedApiError, capture_r18, export_environment, gateway_environment, verify_integration_api)
 
 
 class ScopedPiProfileTests(unittest.TestCase):
@@ -114,3 +117,52 @@ class ScopedPiProfileTests(unittest.TestCase):
                             dict(profile, cseDeploymentId="other-cse"), dict(profile, pcApiDeploymentId="a/b")):
                 with self.subTest(invalid=invalid), self.assertRaises(ValueError):
                     gateway_environment(invalid, root)
+
+    def test_export_keeps_prepared_values_private_without_a_network_probe_or_overwrite(self):
+        with tempfile.TemporaryDirectory() as folder:
+            session = Path(folder)
+            settings = {"PATH": "/usr/bin", "PYTHONPATH": "/checkout/src", "GATEWAY_ID": "gw-b",
+                        "GATEWAY_DATABASE": str(session / "gateway.sqlite3"),
+                        "BLE_DEVICES": json.dumps({R18_DEVICE: "00:00:00:00:00:01"}),
+                        "M2M_OBSERVATION_CONTAINER_RI": "cnt-obs", "TLS_KEY_FILE": "/private keys/gateway-b.key"}
+            with patch("scoped_feather_pi.load_environment", return_value=settings) as load:
+                path = export_environment(session)
+                load.assert_called_once_with(session, verify_api=False)
+                exported = path.read_text(encoding="utf-8")
+                self.assertIn("TLS_KEY_FILE=/private keys/gateway-b.key\n", exported)
+                self.assertIn("M2M_OBSERVATION_CONTAINER_RI=cnt-obs\n", exported)
+                self.assertNotIn("PATH=", exported)
+                with self.assertRaises(FileExistsError):
+                    export_environment(session)
+                self.assertEqual(path.read_text(encoding="utf-8"), exported)
+                self.assertEqual(list(session.iterdir()), [path])
+                settings["TLS_KEY_FILE"] = "/private\nGATEWAY_ID=other"
+                with self.assertRaisesRegex(ValueError, "cannot be represented"):
+                    export_environment(session)
+
+    def test_r18_capture_uses_same_session_lock_and_enrollment(self):
+        root = Path.cwd()
+        session, output = root / "prepared-r18", root / "device-archive"
+        address = "00:00:00:00:00:01"
+        lock = Mock()
+        lock.fileno.return_value = 71
+        environment = {"GATEWAY_ID": "gw-b", "BLE_BOARD_REVISION": R18_BOARD,
+                       "FIRMWARE_REVISION_ALLOWLIST": R18_COMMAND_FIRMWARE, "BLE_DEVICES": json.dumps({R18_DEVICE: address}),
+                       "GATEWAY_DATABASE": str(session / "gateway.sqlite3"), "BLE_GATT_PROFILE": "core-v1"}
+        with (patch("scoped_feather_pi.bench_lock", return_value=nullcontext(lock)) as acquire,
+              patch("scoped_feather_pi.load_environment", return_value=environment) as load,
+              patch("scoped_feather_pi.os.set_inheritable") as inherit,
+              patch("scoped_feather_pi.os.execve") as launch):
+            capture_r18(root, session, output)
+            acquire.assert_called_once_with(root)
+            load.assert_called_once_with(session, verify_api=False)
+            inherit.assert_called_once_with(71, True)
+            launch.assert_called_once_with(sys.executable, [sys.executable, "-m", "bubble_gateway.journal_cli",
+                "--device-id", R18_DEVICE, "--address", address, "--database", environment["GATEWAY_DATABASE"],
+                "--gatt-profile", "core-v1", "--board-revision", R18_BOARD, "--firmware-revision", R18_COMMAND_FIRMWARE,
+                "--output", str(output)], environment)
+            launch.reset_mock()
+            environment["GATEWAY_ID"] = "gw-a"
+            with self.assertRaisesRegex(ValueError, "prepared r18"):
+                capture_r18(root, session, output)
+            launch.assert_not_called()
