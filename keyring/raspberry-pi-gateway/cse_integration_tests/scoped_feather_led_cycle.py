@@ -9,6 +9,7 @@ import uuid
 import httpx
 
 from pi_led_cycle import run_led_cycle
+from scoped_feather_evidence import integration_settlement, read_json
 
 BENCH_ROOT = Path(__file__).resolve().parents[2] / "dev/mobius4"
 PROFILE = BENCH_ROOT / ".local/scoped"
@@ -73,7 +74,12 @@ async def run(output, seconds, *, api_mode="legacy"):
             status, _, document = await exchange(operator, "POST", path, defaults, body)
             return status, document
 
-        await run_led_cycle(operator_post, cse, PATHS, output, gateway_id="gw-a", subject_id="scoped-feather-bench")
+        async def central_settlement(command, receipt):
+            team_state = await asyncio.to_thread(read_json, operator_dir / "runtime.json")
+            return integration_settlement(command, receipt, team_state)
+
+        await run_led_cycle(operator_post, cse, PATHS, output, gateway_id="gw-a", subject_id="scoped-feather-bench",
+                            central_settlement=central_settlement if api_mode == "integration" else None)
 
 
 if __name__ == "__main__":

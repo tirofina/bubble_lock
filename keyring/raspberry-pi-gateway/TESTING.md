@@ -222,6 +222,20 @@ python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_evidenc
 
 같은 Pi DB에서 재시도한 경우 이전 기한 만료 명령의 정확한 ID를 `--prior-expired-command`로 명시한다. 비교 도구는 성공한 ON/OFF 두 건과 명시한 이전 거절만 허용한다. 이전 거절의 명령 해시와 영수증, 기한 만료 순서, 전달 완료, 장치 ACK 및 readback 필드가 비어 있는지를 확인한다.
 
+#### 최신 중앙 API의 시험 결과 대조
+
+PC의 `scoped_feather_led_cycle.py`를 `--api-mode integration`으로 실행하면 각 단계에서 Mobius4의 영수증·관측과 중앙의 `APPLIED_VERIFIED` 기록을 확인한 뒤 완료를 표시한다. ON의 중앙 정산을 확인한 뒤 OFF 준비를 시작한다.
+
+중앙 관측까지 전달된 뒤 같은 시험의 Pi SQLite와 `.local/scoped/command-api-integration/runtime.json` 사본을 준비한다. Pi 세션은 `--receipt-container-ri`로 고정한 컨테이너를 사용해야 한다.
+
+```powershell
+python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_evidence.py `
+  --api-mode integration --cycle (Join-Path $bench 'led-cycle.json') `
+  --database $piDatabaseCopy --team-state $teamState
+```
+
+보고서는 명령별 중앙 실행 시작·정산·관측 수용 이벤트 ID를 반환한다. Pi의 컨테이너 ID와 중앙 영수증 대기열, 중앙 영수증 해시와 읽어 온 장치 상태, 중앙 관측의 부팅 ID·순번·시각을 대조한다. 직접 본 LED 상태는 `--operator-observations`로 전달한다. 현재 도구의 실행과 실제 Pi 연동 시험은 남아 있다.
+
 #### Pi 명령 세션
 
 Pi의 일반 계정에서 저장소 루트로 이동한다. 짝지은 Feather 주소 한 줄을 소유자 전용 파일에 기록한다. `--address-file`에는 그 파일을, `--tls-dir`에는 `ca.pem`, `gateway-a.pem`, `gateway-a.key`가 있는 소유자 전용 폴더를 지정한다. Gateway 의존성이 설치된 기존 시험 가상환경의 Python을 사용한다.

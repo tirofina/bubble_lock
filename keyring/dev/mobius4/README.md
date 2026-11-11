@@ -214,6 +214,8 @@ pnpm --dir $teamPackage install --frozen-lockfile --prod --ignore-scripts
 
 중앙 정산의 정본은 최신 프로필의 `runtime.json`에 있는 `gatewayCommands`와 `gatewayDeviceReceipts`다. `gatewayTelemetry`에는 수용한 관측의 식별자와 암호화된 위치 참조가 남는다. 기존 벤치의 콜백·PostgreSQL 정산 도구는 기존 프로필을 읽는다.
 
+통합 모드의 LED 도구는 같은 명령이 중앙에서 `APPLIED_VERIFIED`로 정산된 뒤 다음 단계로 넘어간다. 완료 증거는 Pi SQLite 사본과 이 프로필의 중앙 상태 사본을 읽어 대조한다. [최신 중앙 API 시험 결과 대조](../../raspberry-pi-gateway/TESTING.md#최신-중앙-api의-시험-결과-대조)
+
 2026-11-11에 잠금 파일로 Node 패키지를 설치하고 `8788`의 루프백 리스너와 시험 Gateway·가구·장치 등록을 확인했다. [준비 기록](../../evidence/2026-11-11-current-central-bench/provisioning.json)
 
 ### 격리 소유권 전환

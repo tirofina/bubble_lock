@@ -1,14 +1,14 @@
 """Bind the scoped Feather bench artifacts without changing any device or service state."""
 import argparse
 from contextlib import closing
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
 import re
 import sqlite3
 
 from bubble_gateway.config import ID
-from bubble_gateway.model import canonical, iso_time, parse_time, payload_hash, validate_command
+from bubble_gateway.model import canonical, central_observation_id, iso_time, parse_time, payload_hash, validate_command
 from bubble_gateway.state_identity import metadata, readonly
 from pi_led_cycle import DEVICE, STEPS, receipt_name, verify_database, verify_step
 
@@ -122,6 +122,96 @@ def verify_scoped_evidence(cycle, database, inspections, team_state, observed_le
             "priorExpiredCommandCount": len(prior_expired_commands),
             "centralSettlementVerified": all(row["settlementVerified"] for row in commands),
             "cseCallbackRecorded": all("CSE_CALLBACK" in row["deliverySources"] for row in commands),
+            "physicalLedObserved": observations,
+            "physicalLedMatched": None if observations is None else all(row["matched"] for row in observations),
+            "commands": commands}
+
+
+def integration_settlement(command, receipt, team_state):
+    command_id = command["commandId"]
+    record = team_state.get("gatewayCommands", {}).get(command_id)
+    digest = payload_hash(command)
+    if (not record or canonical(record["command"]) != canonical(command) or record["payloadHash"] != digest):
+        raise ValueError("Central command does not match the issued bench command")
+    stored = team_state.get("gatewayDeviceReceipts", {}).get(command_id)
+    if stored is None:
+        return None
+    receipt_digest = payload_hash(receipt)
+    if (record.get("executionState") != "APPLIED_VERIFIED" or record.get("lastReceiptHash") != receipt_digest
+            or stored.get("receiptHash") != receipt_digest or canonical(stored.get("receipt")) != canonical(receipt)
+            or canonical(record.get("readback")) != canonical(command["desiredState"])):
+        raise ValueError("Central settlement does not match the native command receipt")
+    return record, stored
+
+
+def require_integration_event(team_state, kind, identity, fields):
+    matches = [event for event in team_state["receipts"] if event.get("type") == kind
+               and all(event.get(key) == value for key, value in identity.items())]
+    expected = dict(fields, contractId="privacy-bubble.integration.v1", docRevision="2.0.0")
+    if (len(matches) != 1 or not ID.fullmatch(matches[0].get("eventId", ""))
+            or canonical({key: matches[0].get(key) for key in expected}) != canonical(expected)):
+        raise ValueError(f"Missing or inconsistent {kind} evidence")
+    return matches[0]
+
+
+def inspect_integration_step(step, pi_proof, team_state):
+    command, receipt, observation = step["command"], step["cseReceipt"], step["observation"]
+    resource = step["cseResource"]
+    if not ID.fullmatch(resource["ri"]) or re.fullmatch(r"[0-9]{8}T[0-9]{6}", resource["ct"]) is None:
+        raise ValueError("Invalid native receipt resource identity")
+    settlement = integration_settlement(command, receipt, team_state)
+    if settlement is None:
+        raise ValueError("Central command receipt is not settled")
+    record, stored = settlement
+    identity = {key: command[key] for key in ("gatewayId", "commandId")}
+    generation = record["desiredGeneration"]
+    if type(generation) is not int or generation < 1:
+        raise ValueError("Invalid central device generation")
+    start_fields = {key: command[key] for key in BINDING if key not in identity}
+    start_fields.update(payloadHash=pi_proof["payloadHash"], desiredGeneration=generation, executionState="IN_FLIGHT",
+                        dispatchStartedAt=record["dispatchStartedAt"], claimCommittedAt=record["claimCommittedAt"])
+    started_event = require_integration_event(team_state, "GATEWAY_DISPATCH_STARTED", identity, start_fields)
+    settled_fields = {"ueId": command["deviceId"], "epoch": command["ownershipEpoch"], "claimId": command["claimId"],
+                      "payloadHash": pi_proof["payloadHash"], "desiredGeneration": generation,
+                      "executionState": "APPLIED_VERIFIED", "receiptHash": pi_proof["receiptHash"]}
+    settled_event = require_integration_event(team_state, "GATEWAY_RECEIPT_SETTLED", identity, settled_fields)
+
+    issued_at, deadline = map(parse_time, (command["issuedAt"], command["deadline"]))
+    claimed_at, started_at, expires_at, settled_at = map(parse_time, (
+        record["claimCommittedAt"], record["dispatchStartedAt"], record["claimExpiresAt"], record["settledAt"]))
+    receipt_at = parse_time(receipt["receivedAt"])
+    central_received_at = parse_time(stored["receivedAt"])
+    if (not issued_at <= claimed_at <= started_at < expires_at <= deadline
+            or not started_at <= parse_time(started_event["timestamp"]) <= settled_at
+            or not settled_at <= central_received_at <= parse_time(settled_event["timestamp"])
+            or not started_at - timedelta(seconds=2) <= receipt_at <= central_received_at + timedelta(seconds=2)):
+        raise ValueError("Central dispatch and settlement timestamps are inconsistent")
+
+    observation_id = central_observation_id({**observation, "gatewayId": command["gatewayId"], "deviceId": command["deviceId"]})
+    telemetry = require_integration_event(team_state, "GATEWAY_TELEMETRY_ACCEPTED", {"observationId": observation_id},
+                                          {"gatewayId": command["gatewayId"], "deviceId": command["deviceId"],
+                                           "observedAt": observation["observedAt"]})
+    sequence = telemetry.get("sequence")
+    if (type(sequence) is not int or sequence < 0
+            or parse_time(telemetry["timestamp"]) < parse_time(observation["observedAt"]) - timedelta(seconds=2)):
+        raise ValueError("Invalid central telemetry sequence or timestamp")
+    return {**pi_proof, "dispatchEventId": started_event["eventId"], "settlementEventId": settled_event["eventId"],
+            "telemetryEventId": telemetry["eventId"], "observationId": observation_id,
+            "centralTelemetrySequence": sequence, "nativeResourceId": resource["ri"]}
+
+
+def verify_integration_evidence(cycle, database, team_state, observed_led=None, *, prior_expired_commands=()):
+    if len(set(prior_expired_commands)) != len(prior_expired_commands):
+        raise ValueError("Specify each prior expired command once")
+    proof = verify_database(cycle, database, gateway_id=GATEWAY, prior_expired_commands=prior_expired_commands,
+                            require_central_receipts=True)
+    steps = cycle["steps"]
+    commands = [inspect_integration_step(step, pi_proof, team_state) for step, pi_proof in zip(steps, proof["commands"])]
+    if commands[0]["centralTelemetrySequence"] >= commands[1]["centralTelemetrySequence"]:
+        raise ValueError("Central telemetry order does not match the LED cycle")
+    observations = physical_observations(steps, observed_led)
+    return {"piCseBindingVerified": True, "centralDispatchVerified": True, "centralSettlementVerified": True,
+            "centralTelemetryVerified": True, "priorExpiredCommandCount": len(prior_expired_commands),
             "physicalLedObserved": observations,
             "physicalLedMatched": None if observations is None else all(row["matched"] for row in observations),
             "commands": commands}
@@ -267,11 +357,14 @@ if __name__ == "__main__":
     parser.add_argument("--on-inspection", type=Path)
     parser.add_argument("--off-inspection", type=Path)
     parser.add_argument("--team-state", required=True, type=Path)
+    parser.add_argument("--api-mode", choices=("legacy", "integration"), default="legacy")
     parser.add_argument("--operator-observations", type=Path)
     parser.add_argument("--prior-expired-command", action="append", default=[],
                         help="Exact command ID of an earlier, delivered pre-device expiration in the same Pi database")
     args = parser.parse_args()
-    if args.cycle and not (args.database and args.on_inspection and args.off_inspection):
+    if args.api_mode == "integration" and (not args.cycle or not args.database or args.on_inspection or args.off_inspection):
+        parser.error("Integration mode requires --cycle and --database and reads settlement from --team-state")
+    if args.api_mode == "legacy" and args.cycle and not (args.database and args.on_inspection and args.off_inspection):
         parser.error("--cycle requires --database, --on-inspection and --off-inspection")
     if args.interrupted_output and (args.on_inspection or args.off_inspection or args.operator_observations
                                     or args.prior_expired_command):
@@ -280,6 +373,12 @@ if __name__ == "__main__":
         team_state = read_json(args.team_state)
         if args.interrupted_output:
             result = inspect_interrupted_bench(args.interrupted_output, team_state, args.database)
+        elif args.api_mode == "integration":
+            result = verify_integration_evidence(
+                read_json(args.cycle), args.database, team_state,
+                read_json(args.operator_observations) if args.operator_observations else None,
+                prior_expired_commands=args.prior_expired_command,
+            )
         else:
             result = verify_scoped_evidence(read_json(args.cycle), args.database,
                                             [read_json(args.on_inspection), read_json(args.off_inspection)],

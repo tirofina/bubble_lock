@@ -12,6 +12,7 @@ import uuid
 
 from bubble_gateway.config import ID
 from bubble_gateway.model import canonical, iso_time, parse_time, payload_hash, utc_now, validate_command
+from bubble_gateway.state_identity import metadata
 from bubble_gateway.store import Store
 
 GATEWAY = "gw-feather-bench"
@@ -63,7 +64,8 @@ def ready_heartbeat(health, gateway_id, device_boot, not_before):
     return {"gatewayBootId": gateway_boot, "observedAt": health["observedAt"]}
 
 
-async def run_led_cycle(operator_post, cse, paths, output, *, gateway_id=GATEWAY, subject_id=SUBJECT):
+async def run_led_cycle(operator_post, cse, paths, output, *, gateway_id=GATEWAY, subject_id=SUBJECT,
+                        central_settlement=None):
     async def wait_for(check):
         while not (output / "STOP").exists():
             result = await check()
@@ -91,7 +93,10 @@ async def run_led_cycle(operator_post, cse, paths, output, *, gateway_id=GATEWAY
                 and abs((utc_now() - observed).total_seconds()) <= 15
                 and (boot_id is None or current["bootId"] == boot_id)
                 and (after is None or observed >= after)):
-            return {key: current[key] for key in ("bootId", "sequence", "receivedAt", "state")}
+            snapshot = {key: current[key] for key in ("bootId", "sequence", "receivedAt", "state")}
+            if central_settlement is not None:
+                snapshot["observedAt"] = current["observedAt"]
+            return snapshot
         return None
 
     async def ready_baseline(state, boot_id, not_before):
@@ -167,7 +172,12 @@ async def run_led_cycle(operator_post, cse, paths, output, *, gateway_id=GATEWAY
             step = {"command": command, "cseReceiptName": rn, "cseReceipt": receipt,
                     "cseResource": {key: native_receipt[key] for key in ("ri", "ct")},
                     "baseline": baseline, "commandReadiness": readiness, "observation": observed}
+            if central_settlement is not None:
+                step["cseResource"]["pi"] = native_receipt["pi"]
             write_new_json(output / f"led-{label.lower()}-readback.json", step)
+            if central_settlement is not None:
+                async with asyncio.timeout(35):
+                    await wait_for(lambda: central_settlement(command, receipt))
         finally:
             revoked = await post("/v1/grants/revoke", {"grantId": grant_id, "reason": "keyring-led-bench-step-ended"}, 200)
             if revoked.get("grantId") != grant_id or revoked.get("status") != "REVOKED":
@@ -193,7 +203,7 @@ def verify_step(step, state, boot_id, *, gateway_id=GATEWAY):
     return command
 
 
-def verify_database(evidence, database, *, gateway_id=GATEWAY, prior_expired_commands=()):
+def verify_database(evidence, database, *, gateway_id=GATEWAY, prior_expired_commands=(), require_central_receipts=False):
     steps = evidence["steps"]
     if len(steps) != len(STEPS):
         raise RuntimeError("LED evidence must contain one ON and one OFF command")
@@ -201,6 +211,15 @@ def verify_database(evidence, database, *, gateway_id=GATEWAY, prior_expired_com
     confirmed = []
     with closing(sqlite3.connect(database.resolve().as_uri() + "?mode=ro", uri=True)) as db:
         db.execute("BEGIN")
+        if require_central_receipts:
+            db.row_factory = sqlite3.Row
+            identity = metadata(db)
+            db.row_factory = None
+            binding = identity["binding"] if identity else {}
+            pin = binding.get("receiptContainerRi")
+            if (binding.get("gatewayId") != gateway_id or binding.get("cseDeploymentId") != "scoped-mobius4"
+                    or not pin or any(step["cseResource"]["pi"] != pin for step in steps)):
+                raise RuntimeError("Pi database and CSE receipt do not share the scoped container binding")
         if db.execute("SELECT COUNT(*) FROM commands").fetchone()[0] != len(STEPS) + len(prior_expired_commands):
             raise RuntimeError("Pi database has commands outside the declared bench evidence")
         first_issued_at = parse_time(steps[0]["command"]["issuedAt"])
@@ -231,6 +250,13 @@ def verify_database(evidence, database, *, gateway_id=GATEWAY, prior_expired_com
             if row != expected or db.execute("SELECT 1 FROM outbox WHERE rqi=?",
                                              (Store.request_id("receipt", command_id),)).fetchone():
                 raise RuntimeError("Pi SQLite journal does not match the delivered CSE receipt")
+            if require_central_receipts:
+                staged = db.execute("SELECT central_receipt_staged FROM commands WHERE command_id=?",
+                                    (command_id,)).fetchone()
+                pending = db.execute("SELECT 1 FROM outbox WHERE rqi=?",
+                                     (Store.request_id("central-receipt", command_id),)).fetchone()
+                if staged != (1,) or pending:
+                    raise RuntimeError("Central receipt delivery is not complete in the Pi journal")
             confirmed.append({"commandId": command_id, "payloadHash": row[0], "receiptHash": payload_hash(receipt),
                               "state": state})
     return {"dataBindingsVerified": True, "commands": confirmed, "physicalLedObserved": None}
