@@ -12,9 +12,9 @@ from bubble_gateway.config import ID
 from bubble_gateway.integration_evidence import inspect_integration_command, inspect_integration_observation
 from bubble_gateway.model import iso_time, parse_time, utc_now, validate_command
 from pi_led_cycle import ready_heartbeat, receipt_name, verify_observation_resource, verify_receipt, write_new_json
-from scoped_command_io import hash_observation, scoped_api, scoped_clients
+from scoped_command_io import PROFILE, hash_observation, scoped_api, scoped_clients, tls_context
 from scoped_feather_evidence import read_json
-from scoped_feather_pi import PARENT, R18_BOARD, R18_COMMAND_FIRMWARE, R18_COMMAND_FIRMWARES, R18_DEVICE
+from scoped_feather_pi import PARENT, R18_BOARD, R18_COMMAND_FIRMWARE, R18_COMMAND_FIRMWARES, R18_DEVICE, verify_integration_api
 
 GATEWAY = "gw-b"
 SUBJECT = "scoped-r18-bench"
@@ -209,12 +209,15 @@ async def run_pulse(operator_post, cse, central_proof, output, *, pins, observat
     print("R18_PULSE_CENTRAL_TELEMETRY_VERIFIED", flush=True)
 
 
-async def run(output, seconds, pins):
+async def run(output, seconds, pins, *, firmware_revision=None):
     api, operator_dir = scoped_api("r18")
-    firmware = api["firmwareRevision"]
+    firmware = api["firmwareRevision"] if firmware_revision is None else firmware_revision
     if ((api["gatewayId"], api["deviceId"], api["subjectId"], api["boardRevision"]) != (GATEWAY, R18_DEVICE, SUBJECT, R18_BOARD)
-            or firmware not in R18_COMMAND_FIRMWARES):
+            or firmware not in R18_COMMAND_FIRMWARES
+            or firmware not in (api["firmwareRevision"], *api.get("alternateFirmwareRevisions", ()))):
         raise RuntimeError("Configured scoped r18 profile differs from the pulse bench identity")
+    gateway_tls = tls_context(PROFILE / "tls/gateway-b.pem", PROFILE / "tls/gateway-b.key")
+    await asyncio.to_thread(verify_integration_api, api["port"], api["revision"], gateway_tls, mode="r18", firmware=firmware)
     state_path = operator_dir / "runtime.json"
     team_utils = operator_dir / "team-source/pc-mobius/integration/src/integration-utils.mjs"
     observation_hasher = partial(hash_observation, team_utils)
@@ -239,6 +242,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True, type=Path, help="New private directory for the trigger and evidence")
     parser.add_argument("--seconds", type=int, default=600, choices=range(30, 1801), metavar="30..1800")
+    parser.add_argument("--firmware-revision", choices=R18_COMMAND_FIRMWARES, help="Command firmware selected on the scoped API and Pi")
     for role in PATHS:
         parser.add_argument(f"--{role}-container-ri", required=True, help=f"Provisioned gw-b {role} container ID")
     args = parser.parse_args()
@@ -246,4 +250,4 @@ if __name__ == "__main__":
         pins = validate_container_pins({role: getattr(args, f"{role}_container_ri") for role in PATHS})
     except ValueError as error:
         parser.error(str(error))
-    asyncio.run(run(args.output.resolve(), args.seconds, pins))
+    asyncio.run(run(args.output.resolve(), args.seconds, pins, firmware_revision=args.firmware_revision))

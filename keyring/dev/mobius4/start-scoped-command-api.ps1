@@ -2,7 +2,8 @@ param(
   [switch]$PrepareOnly,
   [switch]$EnableLocationTrial,
   [string]$OpenSslPath = 'C:/Program Files/Git/usr/bin/openssl.exe',
-  [ValidateSet('legacy', 'integration', 'r18')][string]$Mode = 'legacy'
+  [ValidateSet('legacy', 'integration', 'r18')][string]$Mode = 'legacy',
+  [string]$FirmwareRevision
 )
 
 $ErrorActionPreference = 'Stop'
@@ -13,6 +14,11 @@ if ($EnableLocationTrial -and $Mode -ne 'r18') {
   throw 'EnableLocationTrial requires the r18 loopback profile.'
 }
 $selection = (Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot 'scoped-command-profiles.json') | ConvertFrom-Json).$Mode
+$selectFirmware = $PSBoundParameters.ContainsKey('FirmwareRevision')
+if ($selectFirmware -and ($Mode -ne 'r18' -or
+    $FirmwareRevision -cnotin (@($selection.firmwareRevision) + @($selection.alternateFirmwareRevisions)))) {
+  throw 'FirmwareRevision must be a supported r18 command firmware.'
+}
 $apiRoot = Join-Path $profileRoot $selection.directory
 $revision = $selection.revision
 $revisionPath = Join-Path $apiRoot 'team-revision'
@@ -68,5 +74,6 @@ if ($Mode -ne 'legacy') {
 }
 $nodeArgs = @((Join-Path $PSScriptRoot 'scoped-command-api.mjs'), $Mode)
 if ($EnableLocationTrial) { $nodeArgs += '--enable-location-trial' }
+if ($selectFirmware) { $nodeArgs += "--firmware-revision=$FirmwareRevision" }
 node @nodeArgs
 if ($LASTEXITCODE -ne 0) { throw 'Scoped command API exited with an error.' }

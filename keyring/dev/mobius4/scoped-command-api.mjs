@@ -9,14 +9,22 @@ const mode = process.argv[2] ?? 'legacy';
 const profiles = JSON.parse(await readFile(new URL('./scoped-command-profiles.json', import.meta.url), 'utf8'));
 if (!Object.hasOwn(profiles, mode)) throw new Error('Unknown scoped command API profile.');
 const { directory, revision, port, gatewayId = 'gw-a', deviceId = 'keyring-feather-lab',
-  subjectId = 'scoped-feather-bench', boardRevision, firmwareRevision } = profiles[mode];
+  subjectId = 'scoped-feather-bench', boardRevision, firmwareRevision: defaultFirmware,
+  alternateFirmwareRevisions = [] } = profiles[mode];
 const integrated = mode !== 'legacy';
 const r18 = mode === 'r18';
-const locationFlag = process.argv[3];
-if (locationFlag !== undefined && (!r18 || locationFlag !== '--enable-location-trial' || process.argv.length !== 4)) {
-  throw new Error('The location trial is only available for the r18 loopback profile.');
+const options = process.argv.slice(3);
+const firmwarePrefix = '--firmware-revision=';
+const firmwareOptions = options.filter((option) => option.startsWith(firmwarePrefix));
+const locationTrial = options.includes('--enable-location-trial');
+if ((options.length && !r18) || firmwareOptions.length > 1
+    || options.length !== firmwareOptions.length + Number(locationTrial)) {
+  throw new Error('Expected only the supported r18 loopback options.');
 }
-const locationTrial = locationFlag === '--enable-location-trial';
+const firmwareRevision = firmwareOptions.length === 1 ? firmwareOptions[0].slice(firmwarePrefix.length) : defaultFirmware;
+if (r18 && ![defaultFirmware, ...alternateFirmwareRevisions].includes(firmwareRevision)) {
+  throw new Error('Unsupported r18 command firmware.');
+}
 const gatewaySlot = gatewayId.slice(3);
 const profile = new URL('./.local/scoped/', import.meta.url);
 const local = new URL(`${directory}/`, profile);

@@ -9,7 +9,8 @@ from unittest.mock import AsyncMock, patch
 from bubble_gateway.model import central_observation_id, iso_time, payload_hash
 from bubble_gateway.store import Store
 from pi_led_cycle import content_name, receipt_name
-from scoped_r18_pulse import GATEWAY, PATHS, R18_BOARD, R18_COMMAND_FIRMWARE, R18_DEVICE, run_pulse
+from scoped_feather_pi import R18_SLEEP_COMMAND_FIRMWARE, ScopedApiError
+from scoped_r18_pulse import GATEWAY, PATHS, R18_BOARD, R18_COMMAND_FIRMWARE, R18_DEVICE, SUBJECT, run, run_pulse
 
 
 class R18PulseTests(unittest.IsolatedAsyncioTestCase):
@@ -150,6 +151,22 @@ class R18PulseTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaisesRegex(RuntimeError, "Stopped"):
             await self.exercise()
         self.assertEqual(self.posts, [])
+
+    async def test_sleep_pulse_requires_the_running_api_to_advertise_the_same_firmware(self):
+        api = {"gatewayId": GATEWAY, "deviceId": R18_DEVICE, "subjectId": SUBJECT, "boardRevision": R18_BOARD,
+               "firmwareRevision": R18_COMMAND_FIRMWARE, "alternateFirmwareRevisions": [R18_SLEEP_COMMAND_FIRMWARE],
+               "port": 8789, "revision": "a" * 40}
+        context = object()
+        output = self.output / "pulse"
+        with (patch("scoped_r18_pulse.scoped_api", return_value=(api, self.output)),
+              patch("scoped_r18_pulse.tls_context", return_value=context),
+              patch("scoped_r18_pulse.verify_integration_api", side_effect=ScopedApiError("profile differs")) as verify,
+              patch("scoped_r18_pulse.scoped_clients") as clients):
+            with self.assertRaisesRegex(ScopedApiError, "profile differs"):
+                await run(output, 30, self.pins, firmware_revision=R18_SLEEP_COMMAND_FIRMWARE)
+        verify.assert_called_once_with(8789, api["revision"], context, mode="r18", firmware=R18_SLEEP_COMMAND_FIRMWARE)
+        clients.assert_not_called()
+        self.assertFalse(output.exists())
 
     async def test_full_journal_blocks_before_grant(self):
         self.journal["journalUsed"] = 32

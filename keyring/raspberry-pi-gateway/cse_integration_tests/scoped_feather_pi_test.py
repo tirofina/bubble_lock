@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 from scoped_feather_pi import (INTEGRATION_TEAM_REVISION, R18_BOARD, R18_BRINGUP_FIRMWARES, R18_COMMAND_FIRMWARE, R18_DEVICE,
-                               R18_LEGACY_COMMAND_FIRMWARE, ScopedApiError, capture_r18, export_environment,
+                               R18_LEGACY_COMMAND_FIRMWARE, R18_SLEEP_COMMAND_FIRMWARE, ScopedApiError, capture_r18, export_environment,
                                gateway_environment, verify_integration_api)
 
 
@@ -96,6 +96,13 @@ class ScopedPiProfileTests(unittest.TestCase):
             connection.getresponse.return_value.read.return_value = json.dumps(
                 dict(expected, firmwareRevision=R18_LEGACY_COMMAND_FIRMWARE)).encode()
             gateway_environment(legacy, root, verify_api=True)
+            sleep_profile = dict(profile, firmwareRevision=R18_SLEEP_COMMAND_FIRMWARE)
+            with self.assertRaises(ScopedApiError):
+                gateway_environment(sleep_profile, root, verify_api=True)
+            connection.getresponse.return_value.read.return_value = json.dumps(
+                dict(expected, firmwareRevision=R18_SLEEP_COMMAND_FIRMWARE)).encode()
+            sleep_env = gateway_environment(sleep_profile, root, verify_api=True)
+            self.assertEqual(sleep_env["FIRMWARE_REVISION_ALLOWLIST"], R18_SLEEP_COMMAND_FIRMWARE)
             connection.getresponse.return_value.read.return_value = json.dumps(self.capabilities).encode()
             with self.assertRaises(ScopedApiError):
                 gateway_environment(profile, root, verify_api=True)

@@ -241,6 +241,8 @@ npm --prefix "$tool/.local/scoped/command-api-r18/team-source/pc-mobius" ci --om
 & "$tool/start-scoped-command-api.ps1" -Mode r18
 ```
 
+절전 빌드로 명령 시험을 할 때는 기존 r18 루프백 API를 종료한 뒤 `-Mode r18 -FirmwareRevision keyring-0.7.20-sleep`으로 시작한다. 이 값은 같은 배치의 `READY`와 Gateway B 인증서로 읽는 기능 응답에 표시된다. 옵션을 생략하면 기본 `keyring-0.7.19`로 시작한다. [Pi와 펄스 도구 설정](../../raspberry-pi-gateway/TESTING.md#r18-pi-명령-세션)
+
 격리 Mobius4에서 발행을 멈춘 뒤 아래 명령으로 `command-receipts-b`, `command-observations-b`, `command-health-b`를 준비한다. `SCOPED_RECEIPT_PIN gw-b`, `SCOPED_OBSERVATION_PIN gw-b`, `SCOPED_HEALTH_PIN gw-b`에서 세 ID를 기록한다. Gateway 0.2.79의 health 고정 경로는 `-PinR18HealthRoute`가 만드는 Gateway B 전용 이름 조회와 자원 ID 쓰기 권한을 사용한다. 기존 배치의 이전 실행 결과는 [배치 증거](../../evidence/2026-11-11-scoped-r18-enrollment/provisioning.json)에 있다.
 
 ```powershell

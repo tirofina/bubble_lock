@@ -6,6 +6,8 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.7.20-sleep · 상�
 
 장치의 로컬 `provisioning.h`에서 `KEYRING_ENABLE_SLEEP=1`을 선택한 빌드는 `keyring-0.7.20-sleep`으로 보고한다. 기본값 0은 BLE 가용성을 유지한다. 절전을 켜기 전에 배포 정책과 통신 지연 허용 범위를 정한다. Gateway 또는 Pi wake 기록 도구에 실제 설치한 revision을 지정한다.
 
+깨운 뒤 명령·영수증 경로를 확인할 때는 임시 r18 API와 Pi 명령 세션에도 `keyring-0.7.20-sleep`을 지정한다. [r18 Pi 명령 세션](../raspberry-pi-gateway/TESTING.md#r18-pi-명령-세션)
+
 - `KEYRING_IDLE_SLEEP_MS`: 기본60000, 허용10000~3600000. 연결·버튼·움직임이 마지막으로 관측된 후의 유휴 시간이다.
 - `KEYRING_SLEEP_POLL_MS`: 기본30000, 허용1000~300000. 새 연결 기회를 제공하는 RTC timer다. 타이머로 깨면 다시 유휴 대기 시간 동안 광고한다.
 - `KEYRING_WAKE_THRESHOLD`: 기본8, 허용1~63. 센서 임계값 설정 코드이며 검증된 낙상·위험 기준이 아니다.

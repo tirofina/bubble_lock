@@ -499,6 +499,8 @@ tool=keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_pi.py
 
 r18 모드는 중앙 API 포트 `8789`와 `gw-b` 전용 경로를 사용한다. 새 명령 세션은 `keyring-0.7.19`를 고정한다. Pi는 BLE 장치 ID, `r18-hand-solder` 보드와 지정한 펌웨어 revision을 대조하고 중앙 API의 기능 응답도 같은 revision으로 확인한다. 이전 0.7.14 명령 세션은 그 revision을 이어서 사용한다. 관측 또는 영수증 ID가 없는 이전 r18 세션은 검증된 두 ID로 새 세션을 만든다. `preflight` 후 승인된 시험에서만 `run`으로 해당 세션을 시작한다. Feather 명령 시험과 r18 명령 시험은 Pi 사용자당 같은 실행 잠금을 사용한다. r18의 모터 펄스는 [실물 명령 대조](../JOURNAL_RETENTION.md#r18-실물-명령-한-건-대조)의 절차에 연결한다.
 
+`keyring-0.7.20-sleep`으로 절전 후 명령 경로까지 확인할 때는 [격리 API](../dev/mobius4/README.md#r18-격리-명령-api)를 같은 revision으로 시작하고, Pi `prepare`에 `--firmware-revision keyring-0.7.20-sleep`을 추가해 새 세션을 만든다. 아래 펄스 도구에도 같은 옵션을 넘긴다. 장치 저널 수집은 저장된 Pi 세션의 revision을 사용한다.
+
 #### r18 단일 펄스 시험
 
 격리 r18 API와 Pi 세션을 시작하고, 출력 계측기를 준비한 뒤 PC에서 새 비공개 폴더를 출력 경로로 지정한다. 관측·영수증은 Pi `preflight`에서 일치한 ID를, health는 같은 [Mobius4 배치](../dev/mobius4/README.md#r18-격리-명령-api)의 확인값을 쓴다.
@@ -510,6 +512,8 @@ python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_r18_pulse.py --
 ```
 
 `R18_PULSE_READY`가 나오면 실제 시험을 시작할 때 다른 터미널에서 같은 폴더에 빈 `PULSE` 파일을 만든다. 도구는 같은 부팅에서 출력 OFF·fault 없음·Pi 명령 준비와 장치 저널의 정상 상태 및 빈 슬롯을 다시 읽는다. 저널 상태는 순환 관측의 `health` 프레임에서 확인한다. grant 발급 뒤 최신 프레임을 최대 15초 기다리고 영수증 경로의 고정 ID를 재확인한 뒤 명령 한 건을 발급한다. `STOP`, 저널 오류·가득 참 또는 기한 내 상태 미수신으로 중단되면 발급된 grant의 회수를 시도한다.
+
+도구는 시험 폴더를 만들기 전에 Gateway B 인증서로 실행 중인 API의 기능 응답을 읽어 지정한 명령 firmware revision과 대조한다.
 
 발급 전에 `pulse-intent.json`을 저장하고, OFF 기준 관측의 `baseline.journal`에 사용·PREPARED·전체 슬롯 수를 남긴다. `R18_PULSE_RECORDED`는 장치 ACK의 적용 당시 ON, 중앙 실행 시작·정산, 같은 부팅의 더 새 OFF 관측과 grant 회수가 확인된 경우에 출력된다. 응답이 끊기면 `pulse-intent.json`의 command ID로 원래 명령을 조회한다. 시험 도구는 그 명령을 자동으로 다시 발급하지 않는다. 펄스 길이와 종료 시점은 계측기로 기록하고 같은 command ID로 [장치 저널 대조](../JOURNAL_RETENTION.md#r18-실물-명령-한-건-대조)에 연결한다.
 

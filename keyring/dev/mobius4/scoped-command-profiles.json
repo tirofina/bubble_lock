@@ -17,6 +17,7 @@
     "deviceId": "keyring-r18-lab",
     "subjectId": "scoped-r18-bench",
     "boardRevision": "r18-hand-solder",
-    "firmwareRevision": "keyring-0.7.19"
+    "firmwareRevision": "keyring-0.7.19",
+    "alternateFirmwareRevisions": ["keyring-0.7.14", "keyring-0.7.20-sleep"]
   }
 }
