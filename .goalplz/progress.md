@@ -1694,3 +1694,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 r18
 - 중앙 영수증 완료 기록을 재시도하는 동안 Mobius4가 진행하는 경우, 중앙 원격 요청이 같은 프로세스에서 한 번만 발생하는 경우와 종료 시에도 저장할 수 없는 경우를 회귀시험 소스에 추가했다. 빌드·테스트·정적 분석·실제 Pi·Mobius4·중앙 API 실행은 미수행이다. [영수증 대기열](../keyring/raspberry-pi-gateway/RECEIPT_ROUTING.md#중앙-명령-영수증-정산)
 
 소스 commit `e04bbf8c88f8eed42cb84ed7348fae7b71ae3039`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `298ae2c..e04bbf8`이다. goal은 active/progress다.
+
+## 2026-11-11 — 관측 알림이 멈춘 BLE 연결 복구
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02. 직전 goal turn은 Pi의 원격 수신 완료 기록 재시도를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀 BLE 관측 계약을 확인했다.
+
+- Gateway 0.2.90은 구독 이후 새로운 관측 알림이 `BLE_OBSERVATION_TIMEOUT` 동안 들어오지 않으면 해당 연결의 명령 준비 상태를 해제하고 다시 연결한다. 기본값은 30초다. 초기 READ, 중복 순번, 이전 연결 알림은 시간을 갱신하지 않는다. 대기 중인 명령은 기존 연결 종료 경로를 거친다.
+- BlueZ 연결이 유지되는 상태에서 알림만 멈춘 경우, 진행 중인 명령 대기 해제, 이전 세션·중복 알림의 시간 갱신 차단을 다루는 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·Pi BlueZ 및 실물 Feather/r18 재연결 시험은 미수행이다. [BLE 재연결](../keyring/raspberry-pi-gateway/BLE_SESSIONS.md#재연결과-관측-시각-기준)
+
+소스 commit `1be3c200ea61994b3777fd94a4dedb300d2a3327`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `7323a88..1be3c20`이다. goal은 active/progress다.
