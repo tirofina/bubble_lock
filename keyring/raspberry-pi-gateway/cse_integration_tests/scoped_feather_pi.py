@@ -89,6 +89,10 @@ def gateway_environment(profile, session, *, verify_api=False):
     observe_only = profile.get("observeOnly", False)
     if type(observe_only) is not bool or (observe_only and not r18):
         raise ValueError("Observation-only sessions require r18 mode")
+    mqtt_port = profile.get("mqttPort")
+    if "mqttPort" in profile and (not observe_only or type(mqtt_port) is not int or not 1024 <= mqtt_port <= 65535
+                                 or mqtt_port in (cse, api) or "healthContainerRi" not in profile):
+        raise ValueError("Scoped MQTT requires r18 observation mode, a health pin and a separate unprivileged loopback port")
     slot = "b" if r18 else "a"
     device_id = R18_DEVICE if r18 else "keyring-feather-lab"
     revision = profile.get("apiTeamRevision", INTEGRATION_TEAM_REVISION)
@@ -134,6 +138,8 @@ def gateway_environment(profile, session, *, verify_api=False):
     if observe_only:
         environment.update(COMMANDS_ENABLED="false", PC_DISPATCH_START_REQUIRED="false", CENTRAL_RECEIPTS_ENABLED="false",
                            NATIVE_OBSERVATION_TRACE="true")
+    if mqtt_port is not None:
+        environment.update(MQTT_ENABLED="true", M2M_MQTT_ENABLED="true", MQTT_HOST="127.0.0.1", MQTT_PORT=str(mqtt_port))
     if "cseDeploymentId" in profile:
         if profile["cseDeploymentId"] != CSE_DEPLOYMENT:
             raise ValueError("Expected the scoped Mobius4 deployment")
@@ -173,6 +179,8 @@ def prepare(args, session):
                "csePort": args.cse_port, "apiPort": api_port, "cseDeploymentId": CSE_DEPLOYMENT}
     if args.observe_only:
         profile["observeOnly"] = True
+    if args.mqtt_port is not None:
+        profile["mqttPort"] = args.mqtt_port
     if args.firmware_revision is not None:
         profile["firmwareRevision"] = args.firmware_revision
     if args.api_mode != "legacy":
@@ -206,7 +214,7 @@ def load_environment(session, *, verify_api=True):
         profile = json.loads(stream.read(8193))
     fields = {"version", "address", "tlsDirectory", "csePort", "apiPort"}
     optional = {"cseDeploymentId", "receiptContainerRi", "observationContainerRi", "healthContainerRi", "pcApiDeploymentId",
-                "apiMode", "apiTeamRevision", "firmwareRevision", "observeOnly"}
+                "apiMode", "apiTeamRevision", "firmwareRevision", "observeOnly", "mqttPort"}
     if (not isinstance(profile, dict) or not fields <= profile.keys()
             or profile.keys() - fields - optional):
         raise ValueError("Expected a prepared command session")
@@ -279,6 +287,7 @@ def main():
     setup.add_argument("--api-team-revision", help="Override the pinned full team commit for integration or r18")
     setup.add_argument("--firmware-revision", choices=(*COMMAND_FIRMWARES, R18_COMMAND_FIRMWARE, *R18_BRINGUP_FIRMWARES))
     setup.add_argument("--observe-only", action="store_true", help="Use an r18 bring-up image and disable command processing")
+    setup.add_argument("--mqtt-port", type=int, help="Forwarded r18 MQTT ingress on a separate Pi loopback port")
     setup.add_argument("--receipt-container-ri", help="Use the selected Gateway's receipt pin in a fresh session")
     setup.add_argument("--observation-container-ri", help="Use the selected Gateway's observation pin in a fresh session")
     setup.add_argument("--health-container-ri", help="Use the selected Gateway's health pin in a fresh session")

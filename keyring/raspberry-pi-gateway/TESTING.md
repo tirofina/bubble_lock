@@ -422,7 +422,13 @@ r18_bringup_firmware=keyring-0.7.18-bringup
 (umask 077; "$pi_python" "$tool" run --session "$r18_observation_session" > "$r18_gateway_log" 2>&1)
 ```
 
-사전 확인은 지정된 컨테이너 ID와 중앙 자격을 대조해 `commandsEnabled:false`를 보고한다. 실행 중에는 BLE 관측·health와 중앙 텔레메트리를 전송하며, 명령 조회·실행·장치 명령 영수증 전송은 중지 상태다. 같은 BLE 장치를 쓰는 초기 구동 기록 도구와 Gateway는 순차적으로 실행한다. 실제 연결은 `command-health-b`에서 `commandReady:false`를, 전송은 `command-observations-b`와 중앙 `GATEWAY_TELEMETRY_ACCEPTED`에서 같은 관측을 확인한다. `$r18_gateway_log`는 해당 세션의 새 비공개 파일로 지정한다. 이 격리 세션은 native MQTT를 비활성화하므로 정상 관측은 HTTPS 확인 경로를 남긴다. 명령 시험에는 별도의 [r18 Pi 명령 세션](#r18-pi-명령-세션)을 준비한다.
+사전 확인은 지정된 컨테이너 ID와 중앙 자격을 대조해 `commandsEnabled:false`를 보고한다. 실행 중에는 BLE 관측·health와 중앙 텔레메트리를 전송하며, 명령 조회·실행·장치 명령 영수증 전송은 중지 상태다. 같은 BLE 장치를 쓰는 초기 구동 기록 도구와 Gateway는 순차적으로 실행한다. 실제 연결은 `command-health-b`에서 `commandReady:false`를, 전송은 `command-observations-b`와 중앙 `GATEWAY_TELEMETRY_ACCEPTED`에서 같은 관측을 확인한다. `$r18_gateway_log`는 해당 세션의 새 비공개 파일로 지정한다. 위 기본 설정의 관측은 HTTPS 확인 경로를 남긴다. 명령 시험에는 별도의 [r18 Pi 명령 세션](#r18-pi-명령-세션)을 준비한다.
+
+##### r18 MQTT와 HTTPS fallback 시험
+
+[격리 r18 MQTT 중계](../dev/mobius4/README.md#r18-관측-mqtt-중계)의 구독 준비를 확인한다. PC의 MQTT `127.0.0.1:8884`를 Pi의 `127.0.0.1:8884`에 전달하는 SSH 역방향 터널을 CSE·API 터널과 별도로 연다. 위 `prepare` 명령에서 새 세션 이름과 `--mqtt-port 8884`를 지정한다. Pi는 같은 Gateway B 인증서와 고정 ID를 사용한다.
+
+보드와 Pi를 켠 채 첫 관측을 수집하고, 같은 관측의 Pi 완료 로그에 `route=mqtt`가 기록됐는지 확인한다. MQTT 터널만 종료한 뒤 새 관측을 별도 파일로 수집한다. CSE·API 터널은 유지하고 새 관측의 완료 로그에서 `route=https-fallback`을 확인한다. 각 관측을 아래 `compare --pi-log`로 해당 Mobius4 내용에 연결한다. `created:false`는 경로가 기존 자원을 확인했다는 기록이다. 이 절차의 MQTT와 fallback 실물 시험은 미실행이다.
 
 ##### 관측 전달 증거 대조
 

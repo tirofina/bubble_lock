@@ -255,6 +255,21 @@ Pi loopback에 기존 CSE 포트와 API `8789`를 전달한다. Pi에서는 Gate
 
 2026-11-11에 PC의 `8789`를 시작하고 Gateway B 인증서로 기능 응답, `ACTIVE` 자격과 대기 명령 0건을 확인했다. 동일한 팀 잠금 파일의 의존성 63개를 pnpm 오프라인 캐시에서 설치했다. 격리 Mobius4에서 B의 관측·영수증 ID를 읽었고 Feather·r18의 교차 조회는 각각 403이었다. Pi 접속과 실물 명령은 미실행이다. [실행 기록](../../evidence/2026-11-11-scoped-r18-enrollment/provisioning.json)
 
+##### r18 관측 MQTT 중계
+
+격리 프로필에서 Pi의 oneM2M MQTT CREATE를 받는 선택 기능이다. 브로커는 Gateway B 인증서에 해당 요청 토픽의 쓰기와 응답 토픽의 읽기를 부여한다. 소비자는 시작할 때 r18 관측·health 이름과 고정 ID를 CSE에서 확인하고, 요청의 Originator·작업·자원 타입·고정 ID를 대조한 뒤 같은 요청 ID와 본문을 Mobius4에 HTTPS로 전달한다. Pi에는 실제 CSE 응답을 MQTT로 돌려준다. 이 배치의 전송 경로는 Pi→브로커 MQTT와 소비자→Mobius4 HTTPS다. Mobius4의 내장 MQTT 리스너는 별도 개발 프로필에서 사용한다.
+
+위에서 기록한 관측과 health ID를 `$gwBObservationRi`, `$gwBHealthRi`에 넣고, 시험용 발행자를 멈춘 뒤 기존 격리 프로필에 다음 파일을 만든다. 설정 파일에는 두 자원 ID만 저장한다.
+
+```powershell
+@{ observationContainerRi = $gwBObservationRi; healthContainerRi = $gwBHealthRi } |
+  ConvertTo-Json -Compress |
+  Set-Content -LiteralPath "$tool/.local/scoped/config/r18-mqtt.json" -Encoding utf8NoBOM
+& "$tool/start-scoped.ps1" -RefreshIngress
+```
+
+소비자 로그의 `SCOPED_R18_MQTT_SUBSCRIBED`가 두 고정 ID 조회와 MQTT 구독을 마친 상태다. 파일이 없는 배치는 기존 epoch 토픽만 구독한다. Pi의 브로커 포트는 CSE·중앙 API와 별도 터널로 전달한다. [Pi 시험 절차](../../raspberry-pi-gateway/TESTING.md#r18-mqtt와-https-fallback-시험)
+
 ##### r18 격리 위치 시험
 
 기존 r18 API를 정상 종료한 뒤 같은 PC 루프백 프로필에 위치 시험 옵션을 붙여 시작한다. 기존 `gw-b` 등록·텔레메트리와 Pi 포트는 그대로 사용한다.

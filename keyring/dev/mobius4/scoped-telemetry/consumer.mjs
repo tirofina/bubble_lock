@@ -3,6 +3,7 @@ import { request } from 'node:https';
 import { createRequire } from 'node:module';
 import { createScopedTelemetryIngress } from './integration-candidate/core-telemetry-ingress.mjs';
 import { IntegrationStore } from './integration-store.mjs';
+import { createR18MqttIngress, r18RequestTopic, r18ResponseTopic, scopedR18MqttExchange } from './r18-mqtt-ingress.mjs';
 
 const { connect } = createRequire('/app/package.json')('mqtt');
 const deviceId = 'kr-handover';
@@ -51,6 +52,12 @@ const tls = {
   key: await readFile('/scoped/tls/client.key'),
   minVersion: 'TLSv1.3', rejectUnauthorized: true,
 };
+const r18MqttConfig = await readFile('/scoped/config/r18-mqtt.json', 'utf8').catch((error) => {
+  if (error.code === 'ENOENT') return null;
+  throw error;
+});
+const r18Ingress = r18MqttConfig === null ? null
+  : await createR18MqttIngress(JSON.parse(r18MqttConfig), scopedR18MqttExchange(tls, cseAdmin));
 
 function apply({ resource, requestId, payload }) {
   const body = Buffer.from(JSON.stringify({ 'pb:binarySwitch': { state: payload.state } }));
@@ -92,6 +99,7 @@ const mqtt = connect('mqtts://broker:8883', {
   resubscribe: false, reconnectPeriod: 2000, connectTimeout: 8000,
 });
 const subscription = 'privacy-bubble/gateway/+/telemetry-epoch/+/+';
+const subscriptions = r18Ingress === null ? [subscription] : [subscription, r18RequestTopic];
 const pending = new Set();
 let stopping = false;
 function track(job) {
@@ -99,19 +107,32 @@ function track(job) {
   job.finally(() => pending.delete(job));
 }
 mqtt.on('connect', () => {
-  mqtt.subscribe(subscription, { qos: 1 }, (error, granted) => {
-    if (error || granted?.[0]?.qos !== 1) {
+  mqtt.subscribe(subscriptions, { qos: 1 }, (error, granted) => {
+    if (error || !subscriptions.every((topic) => granted?.some((item) => item.topic === topic && item.qos === 1))) {
       console.error('SCOPED_SUBSCRIPTION_DENIED');
       process.exitCode = 1;
       mqtt.end(true);
       return;
     }
     console.log('SCOPED_SUBSCRIBED receipts=1 handover=1 feather=1');
+    if (r18Ingress !== null) console.log('SCOPED_R18_MQTT_SUBSCRIBED');
   });
 });
 mqtt.on('error', () => console.error('SCOPED_BROKER_ERROR'));
 mqtt.on('message', (topic, bytes, packet) => {
   if (stopping) return;
+  if (topic === r18RequestTopic) {
+    if (r18Ingress !== null) {
+      track(r18Ingress(bytes, packet).then((response) => {
+        if (response && !stopping && mqtt.connected) {
+          mqtt.publish(r18ResponseTopic, JSON.stringify(response), { qos: 1, retain: false }, (error) => {
+            if (error) console.error('SCOPED_R18_MQTT_RESPONSE_ERROR');
+          });
+        }
+      }).catch(() => console.error('SCOPED_R18_MQTT_INGRESS_ERROR')));
+    }
+    return;
+  }
   const job = ingest(topic, bytes, packet).then(({ status, receipt }) => {
     console.log(status);
     if (receipt && !stopping && mqtt.connected) {

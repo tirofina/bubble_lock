@@ -25,6 +25,7 @@ services:
       CSE_ADMIN: ${CSE_ADMIN:?Run prepare-scoped.ps1 first}
     volumes:
       - ./scoped-telemetry/consumer.mjs:/scoped/consumer.mjs:ro
+      - ./scoped-telemetry/r18-mqtt-ingress.mjs:/scoped/r18-mqtt-ingress.mjs:ro
       - ../../integration-candidate:/scoped/integration-candidate:ro
       - ${SCOPED_TEAM_STORE:?Set the pinned team IntegrationStore path}:/scoped/integration-store.mjs:ro
       - ./.local/scoped/config:/scoped/config:ro

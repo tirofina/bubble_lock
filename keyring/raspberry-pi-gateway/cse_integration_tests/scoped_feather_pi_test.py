@@ -121,6 +121,16 @@ class ScopedPiProfileTests(unittest.TestCase):
                     self.assertEqual(env["CENTRAL_RECEIPTS_ENABLED"], "false")
                     self.assertEqual(env["CENTRAL_TELEMETRY_ENABLED"], "true")
                     self.assertEqual(env["M2M_OBSERVATION_CONTAINER_RI"], "cnt-observation")
+                    self.assertEqual(env["MQTT_ENABLED"], "false")
+            mqtt_profile = dict(profile, healthContainerRi="cnt-health", mqttPort=8884)
+            env = gateway_environment(mqtt_profile, root)
+            self.assertEqual((env["MQTT_ENABLED"], env["M2M_MQTT_ENABLED"], env["CORE_BRIDGE_ENABLED"]),
+                             ("true", "true", "false"))
+            self.assertEqual((env["MQTT_HOST"], env["MQTT_PORT"], env["COMMANDS_ENABLED"]), ("127.0.0.1", "8884", "false"))
+            for invalid in (dict(mqtt_profile, observeOnly=False), dict(mqtt_profile, mqttPort=8760),
+                            dict(profile, mqttPort=8884)):
+                with self.assertRaisesRegex(ValueError, "Scoped MQTT requires r18 observation mode"):
+                    gateway_environment(invalid, root)
             with self.assertRaisesRegex(ValueError, "observation-only r18 bring-up"):
                 gateway_environment(dict(profile, firmwareRevision=R18_COMMAND_FIRMWARE), root)
             with self.assertRaisesRegex(ValueError, "require r18"):
