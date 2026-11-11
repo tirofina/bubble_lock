@@ -241,7 +241,7 @@ npm --prefix "$tool/.local/scoped/command-api-r18/team-source/pc-mobius" ci --om
 & "$tool/start-scoped-command-api.ps1" -Mode r18
 ```
 
-격리 Mobius4에서 발행을 멈춘 뒤 아래 명령으로 `command-receipts-b`, `command-observations-b`, `command-health-b`를 준비하고 `gw-b`의 receipt·observation ID를 확인한다.
+격리 Mobius4에서 발행을 멈춘 뒤 아래 명령으로 `command-receipts-b`, `command-observations-b`, `command-health-b`를 준비한다. `-R18TelemetryOnly`의 `SCOPED_R18_HEALTH_RI gw-b`와 뒤의 `SCOPED_RECEIPT_PIN gw-b`, `SCOPED_OBSERVATION_PIN gw-b`에서 세 ID를 기록한다. 기존 배치에서는 [배치 증거](../../evidence/2026-11-11-scoped-r18-enrollment/provisioning.json)의 `mobius4` 항목을 참조한다.
 
 ```powershell
 & "$tool/prepare-scoped-command-receipts.ps1"

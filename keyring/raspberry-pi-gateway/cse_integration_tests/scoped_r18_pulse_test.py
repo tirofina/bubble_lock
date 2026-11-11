@@ -15,6 +15,7 @@ from scoped_r18_pulse import GATEWAY, PATHS, R18_BOARD, R18_COMMAND_FIRMWARE, R1
 class R18PulseTests(unittest.IsolatedAsyncioTestCase):
     now = datetime(2026, 11, 11, tzinfo=timezone.utc)
     command_path = f"/api/v1/gateways/{GATEWAY}/commands"
+    pins = {"observation": "cnt-observation", "health": "cnt-health", "receipt": "cnt-receipt"}
 
     def setUp(self):
         temporary = tempfile.TemporaryDirectory()
@@ -24,13 +25,21 @@ class R18PulseTests(unittest.IsolatedAsyncioTestCase):
         self.issued = None
         self.fail_issue = False
         self.trigger = "PULSE"
+        self.replaced_parent = None
+        self.replace_receipt_route = False
         self.proof = AsyncMock(return_value={"dispatchEventId": "dispatch-a", "settlementEventId": "settlement-a"})
 
     async def cse(self, method, path):
         self.assertEqual(method, "GET")
         timestamp = iso_time(self.now)
+        if path == PATHS["receipt"]:
+            parent = self.pins["receipt"]
+            if self.replace_receipt_route and (self.output / "PULSE").is_file():
+                parent = "cnt-replacement"
+            return 200, 2000, {"m2m:cnt": {"ri": parent}}
         if path == PATHS["health"] + "/la":
-            native = {"con": {"gatewayId": GATEWAY, "bootId": "gateway-boot", "observedAt": timestamp,
+            native = {"ri": "cin-health", "pi": "cnt-health",
+                      "con": {"gatewayId": GATEWAY, "bootId": "gateway-boot", "observedAt": timestamp,
                               "credentialStatus": "ACTIVE", "devices": [
                                   {"deviceId": R18_DEVICE, "bootId": "r18-boot", "boardRevision": R18_BOARD,
                                    "firmwareRevision": R18_COMMAND_FIRMWARE, "connected": True, "commandReady": True}]}}
@@ -49,6 +58,8 @@ class R18PulseTests(unittest.IsolatedAsyncioTestCase):
                            firmwareRevision=R18_COMMAND_FIRMWARE, bootId="r18-boot", receivedAt=timestamp,
                            readback={"state": True})
             native = {"ri": "cin-receipt", "pi": "cnt-receipt", "ct": "20261111T000000", "con": receipt}
+        if self.replaced_parent == native["pi"] and (self.output / "PULSE").is_file():
+            native["pi"] = "cnt-replacement"
         return 200, 2000, {"m2m:cin": native}
 
     async def post(self, path, body):
@@ -79,13 +90,15 @@ class R18PulseTests(unittest.IsolatedAsyncioTestCase):
               patch("pi_led_cycle.utc_now", return_value=self.now),
               patch("builtins.print", side_effect=self.trigger_after_ready)):
             async with asyncio.timeout(1):
-                await run_pulse(self.post, self.cse, self.proof, self.output)
+                await run_pulse(self.post, self.cse, self.proof, self.output, pins=self.pins)
 
     async def test_one_command_then_same_boot_off_and_revocation(self):
         await self.exercise()
         self.assertEqual(self.posts, ["/v1/consents", "/v1/grants", self.command_path, "/v1/grants/revoke"])
         self.proof.assert_awaited_once()
         result = json.loads((self.output / "pulse-result.json").read_text(encoding="utf-8"))
+        scope = json.loads((self.output / "pulse-scope.json").read_text(encoding="utf-8"))
+        self.assertEqual(scope["containerPins"], self.pins)
         self.assertEqual(result["commandId"], self.issued["commandId"])
         self.assertEqual(result["postPulseObservation"]["sequence"], 6)
         self.assertIsNone(result["physicalPulseMeasured"])
@@ -103,5 +116,25 @@ class R18PulseTests(unittest.IsolatedAsyncioTestCase):
     async def test_stop_after_readiness_does_not_create_a_grant(self):
         self.trigger = "STOP"
         with self.assertRaisesRegex(RuntimeError, "Stopped"):
+            await self.exercise()
+        self.assertEqual(self.posts, [])
+
+    async def test_replaced_health_container_after_readiness_stops_before_grant(self):
+        self.replaced_parent = self.pins["health"]
+        with self.assertRaisesRegex(RuntimeError, "health parent differs"):
+            await self.exercise()
+        self.assertEqual(self.posts, [])
+
+    async def test_replaced_receipt_container_cannot_complete_the_pulse(self):
+        self.replaced_parent = self.pins["receipt"]
+        with self.assertRaisesRegex(RuntimeError, "receipt parent differs"):
+            await self.exercise()
+        self.assertEqual(self.posts[-1], "/v1/grants/revoke")
+        self.proof.assert_not_awaited()
+        self.assertFalse((self.output / "pulse-result.json").exists())
+
+    async def test_replaced_receipt_route_after_readiness_stops_before_grant(self):
+        self.replace_receipt_route = True
+        with self.assertRaisesRegex(RuntimeError, "receipt route differs"):
             await self.exercise()
         self.assertEqual(self.posts, [])

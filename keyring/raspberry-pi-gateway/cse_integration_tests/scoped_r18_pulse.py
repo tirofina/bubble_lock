@@ -21,7 +21,17 @@ PATHS = {"observation": f"{PARENT}/command-observations-b", "receipt": f"{PARENT
          "health": f"{PARENT}/command-health-b"}
 
 
-async def run_pulse(operator_post, cse, central_proof, output):
+def validate_container_pins(pins):
+    if (not isinstance(pins, dict) or pins.keys() != PATHS.keys()
+            or any(not isinstance(value, str) or not ID.fullmatch(value) for value in pins.values())
+            or len(set(pins.values())) != len(PATHS)):
+        raise ValueError("Expected three distinct scoped r18 container IDs")
+    return dict(pins)
+
+
+async def run_pulse(operator_post, cse, central_proof, output, *, pins):
+    pins = validate_container_pins(pins)
+    write_new_json(output / "pulse-scope.json", {"gatewayId": GATEWAY, "containerPins": pins})
     stop, trigger = output / "STOP", output / "PULSE"
 
     async def wait_for(check):
@@ -38,7 +48,17 @@ async def run_pulse(operator_post, cse, central_proof, output):
             return None
         if (status, rsc) != (200, 2000):
             raise RuntimeError("Scoped CSE readback failed")
-        return body["m2m:cin"]
+        native = body["m2m:cin"]
+        if native.get("pi") != pins[role]:
+            raise RuntimeError(f"Scoped r18 {role} parent differs from the pinned container")
+        if not isinstance(native.get("ri"), str) or not ID.fullmatch(native["ri"]):
+            raise RuntimeError(f"Invalid scoped r18 {role} resource ID")
+        return native
+
+    async def verify_receipt_route():
+        status, rsc, body = await cse("GET", PATHS["receipt"])
+        if (status, rsc) != (200, 2000) or body["m2m:cnt"].get("ri") != pins["receipt"]:
+            raise RuntimeError("Scoped r18 receipt route differs from the pinned container")
 
     async def off_observation(*, boot_id=None, after=None, after_sequence=None):
         native = await read_cin("observation")
@@ -69,7 +89,10 @@ async def run_pulse(operator_post, cse, central_proof, output):
             return None
         heartbeat = ready_heartbeat(native["con"], GATEWAY, observation["bootId"], not_before,
                                     firmware=R18_COMMAND_FIRMWARE, device_id=R18_DEVICE, board_revision=R18_BOARD)
-        return (observation, heartbeat) if heartbeat is not None else None
+        if heartbeat is None:
+            return None
+        heartbeat["cseResource"] = {key: native[key] for key in ("ri", "pi")}
+        return observation, heartbeat
 
     async def post(path, body, expected=201):
         status, result = await operator_post(path, body)
@@ -83,11 +106,13 @@ async def run_pulse(operator_post, cse, central_proof, output):
     waiting_since = utc_now()
     baseline, armed = await wait_for(lambda: ready(waiting_since))
     boot_id = baseline["bootId"]
+    await verify_receipt_route()
     if trigger.exists():
         raise RuntimeError("Create PULSE only after R18_PULSE_READY")
     print("R18_PULSE_READY", flush=True)
     triggered_at = await wait_for(pulse_trigger)
     _, fresh = await wait_for(lambda: ready(triggered_at, boot_id=boot_id))
+    await verify_receipt_route()
     if fresh["gatewayBootId"] != armed["gatewayBootId"] or stop.exists():
         raise RuntimeError("The Pi session changed or stopped before r18 command issuance")
 
@@ -101,6 +126,7 @@ async def run_pulse(operator_post, cse, central_proof, output):
     try:
         write_new_json(output / "pulse-grant.json", grant)
         checked = await ready(triggered_at, boot_id=boot_id)
+        await verify_receipt_route()
         if (checked is None or checked[1]["gatewayBootId"] != armed["gatewayBootId"]
                 or checked[0]["cseResource"]["pi"] != baseline["cseResource"]["pi"] or stop.exists()):
             raise RuntimeError("The r18 or Pi session changed or stopped before command issuance")
@@ -122,8 +148,7 @@ async def run_pulse(operator_post, cse, central_proof, output):
             native = await wait_for(lambda: read_cin("receipt", rn))
             receipt = native["con"]
             resource = {key: native.get(key) for key in ("ri", "pi", "ct")}
-            if (any(not isinstance(resource[key], str) or ID.fullmatch(resource[key]) is None for key in ("ri", "pi"))
-                    or not isinstance(resource["ct"], str) or re.fullmatch(r"[0-9]{8}T[0-9]{6}", resource["ct"]) is None):
+            if not isinstance(resource["ct"], str) or not re.fullmatch(r"[0-9]{8}T[0-9]{6}", resource["ct"]):
                 raise RuntimeError("Invalid native r18 receipt identity")
             write_new_json(output / "pulse-receipt.json", {"cseReceipt": receipt, "cseResource": resource})
             verify_receipt(command, receipt, boot_id, True, firmware=R18_COMMAND_FIRMWARE)
@@ -142,7 +167,7 @@ async def run_pulse(operator_post, cse, central_proof, output):
     print("R18_PULSE_RECORDED", flush=True)
 
 
-async def run(output, seconds):
+async def run(output, seconds, pins):
     api, operator_dir = scoped_api("r18")
     if (api["gatewayId"], api["deviceId"], api["subjectId"], api["boardRevision"], api["firmwareRevision"]) != (
             GATEWAY, R18_DEVICE, SUBJECT, R18_BOARD, R18_COMMAND_FIRMWARE):
@@ -153,14 +178,21 @@ async def run(output, seconds):
         state = await asyncio.to_thread(read_json, state_path)
         return inspect_integration_command(command, receipt, state)
 
-    async with scoped_clients(api, operator_dir) as (cse, operator_post), asyncio.timeout(seconds):
+    async with (scoped_clients(api, operator_dir, container_paths=(PATHS["receipt"],)) as (cse, operator_post),
+                asyncio.timeout(seconds)):
         output.mkdir(mode=0o700)
-        await run_pulse(operator_post, cse, central_proof, output)
+        await run_pulse(operator_post, cse, central_proof, output, pins=pins)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True, type=Path, help="New private directory for the trigger and evidence")
     parser.add_argument("--seconds", type=int, default=600, choices=range(30, 1801), metavar="30..1800")
+    for role in PATHS:
+        parser.add_argument(f"--{role}-container-ri", required=True, help=f"Provisioned gw-b {role} container ID")
     args = parser.parse_args()
-    asyncio.run(run(args.output.resolve(), args.seconds))
+    try:
+        pins = validate_container_pins({role: getattr(args, f"{role}_container_ri") for role in PATHS})
+    except ValueError as error:
+        parser.error(str(error))
+    asyncio.run(run(args.output.resolve(), args.seconds, pins))

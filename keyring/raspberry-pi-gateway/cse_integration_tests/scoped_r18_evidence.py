@@ -14,7 +14,7 @@ from bubble_gateway.model import canonical, iso_time, parse_time, payload_hash
 from pi_led_cycle import receipt_name, verify_observation_resource
 from scoped_feather_evidence import (interrupted_pi_result, read_json, read_optional, read_pi_commands,
                                     validate_interrupted_receipt)
-from scoped_r18_pulse import GATEWAY, PATHS, R18_COMMAND_FIRMWARE, R18_DEVICE
+from scoped_r18_pulse import GATEWAY, PATHS, R18_COMMAND_FIRMWARE, R18_DEVICE, validate_container_pins
 
 
 def check_receipt(receipt, command, boot_id):
@@ -34,9 +34,15 @@ def inspect_pulse(directory, team_state, database=None):
         read_optional(directory / f"pulse-{suffix}.json")
         for suffix in ("intent", "issued", "receipt", "grant", "grant-revoked")
     )
+    scope = read_optional(directory / "pulse-scope.json")
+    pins = None
+    if scope is not None:
+        if scope["gatewayId"] != GATEWAY:
+            raise ValueError("r18 scope belongs to a different Gateway")
+        pins = validate_container_pins(scope["containerPins"])
     report = {"intentCaptured": intent is not None, "issuedResponseCaptured": issued_file is not None,
               "cseReceiptCaptured": native_file is not None, "grantRevocationCaptured": revoked is not None,
-              "physicalPulseMeasured": None}
+              "cseContainerPinsCaptured": pins is not None, "physicalPulseMeasured": None}
     if intent is None:
         if issued_file is not None or native_file is not None:
             raise ValueError("r18 artifacts have no matching local intent")
@@ -58,8 +64,13 @@ def inspect_pulse(directory, team_state, database=None):
     baseline = intent["baseline"]
     if baseline["state"] is not False:
         raise ValueError("r18 intent did not capture an OFF baseline")
-    verify_observation_resource(baseline, R18_DEVICE)
+    verify_observation_resource(baseline, R18_DEVICE, pins["observation"] if pins is not None else None)
     parse_time(baseline["receivedAt"])
+    if pins is not None:
+        health_resource = intent["commandReadiness"]["cseResource"]
+        if (health_resource["pi"] != pins["health"] or not isinstance(health_resource["ri"], str)
+                or not ID.fullmatch(health_resource["ri"])):
+            raise ValueError("Saved r18 readiness has a different health container parent or invalid resource ID")
 
     parent = None
     if native_file is not None:
@@ -68,13 +79,16 @@ def inspect_pulse(directory, team_state, database=None):
         if (any(not isinstance(resource[key], str) or not ID.fullmatch(resource[key]) for key in ("ri", "pi"))
                 or not re.fullmatch(r"[0-9]{8}T[0-9]{6}", resource["ct"])):
             raise ValueError("Invalid saved r18 CSE resource")
+        if pins is not None and parent != pins["receipt"]:
+            raise ValueError("Saved r18 CSE receipt has a different container parent")
         datetime.strptime(resource["ct"], "%Y%m%dT%H%M%S")
         report.update(cseResourceId=resource["ri"], cseResourceCreated=resource["ct"])
     pi_row = None
     if database is not None:
+        pi_pins = (pins["receipt"], pins["observation"]) if pins is not None else None
         pi_row = read_pi_commands(database, gateway_id=GATEWAY, originator="Sscoped-r18-gateway-b",
                                   receipt_container=PATHS["receipt"], deployment_ids=("scoped-mobius4",),
-                                  command_id=command_id, receipt_parent=parent).get(command_id)
+                                  command_id=command_id, receipt_parent=parent, container_pins=pi_pins).get(command_id)
     report.update(commandId=command_id, nativeRef=f"{PATHS['receipt']}/{intent['cseReceiptName']}",
                   deadline=iso_time(parse_time(request["deadline"])), issuanceInTeamSnapshot=command_id in issued,
                   piCommandState="MISSING" if database is not None else None,

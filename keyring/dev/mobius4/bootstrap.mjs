@@ -121,20 +121,25 @@ async function provision(resource) {
   return {...response, status: response.rsc === 2001 ? 'CREATED' : 'EXISTS_UNCHANGED'};
 }
 
+async function readContainerId(path) {
+  const observed = await exchange('GET', path);
+  if (observed.httpStatus !== 200 || observed.rsc !== 2000 || observed.rqi !== observed.requestId) {
+    throw new Error('Scoped container lookup failed.');
+  }
+  const parent = JSON.parse(observed.content)['m2m:cnt'];
+  if (parent?.ty !== 3 || parent.rn !== path.split('/').at(-1) || !receiptIdentifier(parent.ri)) {
+    throw new Error('Scoped container identity mismatch.');
+  }
+  return parent.ri;
+}
+
 async function preparePinnedRoutes(containers, routeFile, pinLabel) {
   const pins = new Map();
   for (const [gateway, path] of Object.entries(containers)) {
     if (pins.size) await delay(7000);
-    const observed = await exchange('GET', path);
-    if (observed.httpStatus !== 200 || observed.rsc !== 2000 || observed.rqi !== observed.requestId) {
-      throw new Error('Scoped container lookup failed.');
-    }
-    const parent = JSON.parse(observed.content)['m2m:cnt'];
-    if (parent?.ty !== 3 || parent.rn !== path.split('/').at(-1) || !receiptIdentifier(parent.ri)
-        || [...pins.values()].includes(parent.ri)) {
-      throw new Error('Scoped container identity mismatch.');
-    }
-    pins.set(gateway, parent.ri);
+    const resourceId = await readContainerId(path);
+    if ([...pins.values()].includes(resourceId)) throw new Error('Scoped container identity mismatch.');
+    pins.set(gateway, resourceId);
   }
 
   const lines = [];
@@ -173,9 +178,16 @@ async function provisionEmptyResources() {
     if (index) await delay(7000);
     const {requestId, status, httpStatus, rsc, rqi} = await provision(resource);
     const resourceName = Object.values(resource.body)[0].rn;
-    receipts.push({requestId, parent: resource.path, resourceName, ty: resource.ty, httpStatus, rsc, rqi, status,
-      timestamp: new Date().toISOString(), evidenceScope: 'empty-resource-provisioning'});
-    console.log(`${status} ${resource.path}/${resourceName} ty=${resource.ty} HTTP=${httpStatus} rsc=${rsc}`);
+    const path = `${resource.path}/${resourceName}`;
+    const receipt = {requestId, parent: resource.path, resourceName, ty: resource.ty, httpStatus, rsc, rqi, status,
+      timestamp: new Date().toISOString(), evidenceScope: 'empty-resource-provisioning'};
+    if (r18TelemetryOnly && path === scopedR18CommandHealthContainer) {
+      await delay(7000);
+      receipt.resourceId = await readContainerId(path);
+      console.log(`SCOPED_R18_HEALTH_RI gw-b ${receipt.resourceId}`);
+    }
+    receipts.push(receipt);
+    console.log(`${status} ${path} ty=${resource.ty} HTTP=${httpStatus} rsc=${rsc}`);
   }
   const receiptName = commandReceiptsOnly ? 'command-receipts-provisioning.json'
     : commandObservationOnly ? 'feather-command-observation-provisioning.json'

@@ -1,4 +1,5 @@
 from contextlib import closing
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -55,7 +56,27 @@ class R18EvidenceTests(unittest.TestCase):
         self.assertFalse(report["issuedResponseCaptured"])
         self.assertEqual(report["issuanceEventId"], "evt-issued")
         self.assertEqual(report["piCommandState"], "RECEIVED")
+        self.assertFalse(report["cseContainerPinsCaptured"])
         self.assertIsNone(report["physicalPulseMeasured"])
+
+    def test_pinned_trial_requires_matching_pi_container_bindings(self):
+        pins = {"observation": "cnt-obs", "health": "cnt-health", "receipt": "cnt-receipt"}
+        intent_path = self.output / "pulse-intent.json"
+        intent = json.loads(intent_path.read_text(encoding="utf-8"))
+        intent["commandReadiness"] = {"cseResource": {"ri": "cin-health", "pi": pins["health"]}}
+        intent_path.write_text(json.dumps(intent), encoding="utf-8")
+        write_new_json(self.output / "pulse-scope.json", {"gatewayId": GATEWAY, "containerPins": pins})
+        self.assertTrue(inspect_pulse(self.output, self.team)["cseContainerPinsCaptured"])
+
+        database = self.output / "gateway.sqlite3"
+        binding = dict(BINDING, bindingVersion=3, gatewayId=GATEWAY, originator="Sscoped-r18-gateway-b",
+                       cseId="Mobius4", cseDeploymentId="scoped-mobius4", receiptContainer=PATHS["receipt"],
+                       receiptContainerRi=pins["receipt"], observationContainerRi="cnt-different",
+                       pcApiDeploymentId="scoped-command-api-r18")
+        with closing(Store(database, 100, 100000, 20, binding)) as store:
+            store.accept(self.command, self.command_hash)
+        with self.assertRaisesRegex(ValueError, "Pi database does not belong"):
+            inspect_pulse(self.output, self.team, database)
 
     def test_snapshot_absence_and_tampered_intent_are_distinct(self):
         report = inspect_pulse(self.output, {"gatewayCommands": {}, "receipts": []})

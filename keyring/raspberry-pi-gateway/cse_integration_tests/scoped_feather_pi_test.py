@@ -62,7 +62,8 @@ class ScopedPiProfileTests(unittest.TestCase):
     def test_r18_requires_its_own_authenticated_profile_and_routes(self):
         root = Path.cwd()
         profile = {"version": 1, "address": "00:00:00:00:00:01", "csePort": 8760, "apiPort": 8789,
-                   "tlsDirectory": str(root), "apiMode": "r18", "cseDeploymentId": "scoped-mobius4"}
+                    "tlsDirectory": str(root), "apiMode": "r18", "cseDeploymentId": "scoped-mobius4",
+                    "receiptContainerRi": "cnt-receipt", "observationContainerRi": "cnt-observation"}
         connection = Mock()
         expected = dict(self.capabilities, mode="r18", gatewayId="gw-b", deviceId=R18_DEVICE,
                         boardRevision=R18_BOARD, firmwareRevision=R18_COMMAND_FIRMWARE)
@@ -79,6 +80,10 @@ class ScopedPiProfileTests(unittest.TestCase):
             self.assertEqual(env["PC_API_DEPLOYMENT_ID"], "scoped-command-api-r18")
             self.assertTrue(env["M2M_OBSERVATION_CONTAINER"].endswith("/command-observations-b"))
             self.assertTrue(env["M2M_RECEIPT_CONTAINER"].endswith("/command-receipts-b"))
+            for missing in ("receiptContainerRi", "observationContainerRi"):
+                unpinned = {key: value for key, value in profile.items() if key != missing}
+                with self.subTest(missing=missing), self.assertRaisesRegex(ValueError, "distinct scoped r18"):
+                    gateway_environment(unpinned, root)
             self.assertTrue(env["M2M_HEALTH_CONTAINER"].endswith("/command-health-b"))
             connection.request.assert_called_once_with("GET", "/api/v1/gateways/gw-b/bench-capabilities",
                                                        headers={"Accept": "application/json", "Cache-Control": "no-store"})

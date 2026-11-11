@@ -232,7 +232,8 @@ def read_optional(path):
 
 
 def read_pi_commands(database, *, gateway_id=GATEWAY, originator="Sscoped-feather-gateway-a", receipt_container=ROUTE,
-                     deployment_ids=(None, "scoped-mobius4"), command_id=None, receipt_parent=None):
+                     deployment_ids=(None, "scoped-mobius4"), command_id=None, receipt_parent=None,
+                     container_pins=None):
     with closing(readonly(database)) as db:
         db.execute("BEGIN")
         record = metadata(db)
@@ -240,7 +241,9 @@ def read_pi_commands(database, *, gateway_id=GATEWAY, originator="Sscoped-feathe
         if (binding.get("gatewayId") != gateway_id or binding.get("cseId") != "Mobius4"
                 or binding.get("originator") != originator or binding.get("receiptContainer") != receipt_container
                 or binding.get("cseDeploymentId") not in deployment_ids
-                or (receipt_parent is not None and binding.get("receiptContainerRi") not in (None, receipt_parent))):
+                or (receipt_parent is not None and binding.get("receiptContainerRi") not in (None, receipt_parent))
+                or (container_pins is not None and
+                    (binding.get("receiptContainerRi"), binding.get("observationContainerRi")) != container_pins)):
             raise ValueError("Pi database does not belong to the scoped session")
         rows = db.execute("""
             SELECT command_id,payload_hash,payload,status,receipt,receipt_delivered,

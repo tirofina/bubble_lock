@@ -1,5 +1,7 @@
 # Gateway 로컬 시험
 
+Gateway 0.2.65의 r18 벤치는 관측·health·영수증의 컨테이너 ID를 고정한다. 교체된 health·영수증 경로에서 발급을 중단하고, 다른 부모에서 읽은 영수증과 Pi SQLite를 거절하는 회귀시험 소스를 추가했다. 빌드·시험·Pi 실행은 미실행이다.
+
 Gateway 0.2.64는 r18 명령 발급 응답이 끊겼을 때 저장된 명령 ID로 [시험 증거를 대조](#중단된-r18-펄스-시험-대조)한다. 회귀시험은 응답 유실, 중앙 상태 사본에 없는 발급, 변조된 요청, CSE와 중앙 영수증 불일치를 다룬다.
 
 Gateway 로컬 시험 190개, 격리 벤치 모의 시험 25개와 wheel 빌드가 통과했다. 합성 입력으로 r18 CLI의 발급 복구와 요청 해시 불일치 거부를 확인했다. Pi·BLE·실물 시험은 이번 변경에서 미실행이다.
@@ -329,17 +331,19 @@ tool=keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_pi.py
 "$pi_python" "$tool" preflight --session "$r18_session"
 ```
 
-r18 모드는 중앙 API 포트 `8789`와 `gw-b` 전용 경로를 사용한다. Pi Gateway는 BLE 장치 ID, `r18-hand-solder` 보드, `keyring-0.7.14` 명령 펌웨어가 일치할 때 연결을 준비한다. `preflight` 후 승인된 시험에서만 `run`으로 해당 세션을 시작한다. Feather 명령 시험과 r18 명령 시험은 Pi 사용자당 같은 실행 잠금을 사용한다. r18의 모터 펄스는 [실물 명령 대조](../JOURNAL_RETENTION.md#r18-실물-명령-한-건-대조)의 절차에 연결한다.
+r18 모드는 중앙 API 포트 `8789`와 `gw-b` 전용 경로를 사용한다. Pi Gateway는 BLE 장치 ID, `r18-hand-solder` 보드, `keyring-0.7.14` 명령 펌웨어가 일치할 때 연결을 준비한다. 관측 또는 영수증 ID가 없는 이전 r18 세션은 검증된 두 ID로 새 세션을 만든다. `preflight` 후 승인된 시험에서만 `run`으로 해당 세션을 시작한다. Feather 명령 시험과 r18 명령 시험은 Pi 사용자당 같은 실행 잠금을 사용한다. r18의 모터 펄스는 [실물 명령 대조](../JOURNAL_RETENTION.md#r18-실물-명령-한-건-대조)의 절차에 연결한다.
 
 #### r18 단일 펄스 시험
 
-격리 r18 API와 Pi 세션을 시작하고, 출력 계측기를 준비한 뒤 PC에서 새 비공개 폴더를 출력 경로로 지정한다.
+격리 r18 API와 Pi 세션을 시작하고, 출력 계측기를 준비한 뒤 PC에서 새 비공개 폴더를 출력 경로로 지정한다. 관측·영수증은 Pi `preflight`에서 일치한 ID를, health는 같은 [Mobius4 배치](../dev/mobius4/README.md#r18-격리-명령-api)의 확인값을 쓴다.
 
 ```powershell
-python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_r18_pulse.py --output $privatePulseEvidence
+python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_r18_pulse.py --output $privatePulseEvidence `
+  --observation-container-ri $gwBObservationRi --receipt-container-ri $gwBReceiptRi `
+  --health-container-ri $gwBHealthRi
 ```
 
-`R18_PULSE_READY`가 나오면 실제 시험을 시작할 때 다른 터미널에서 같은 폴더에 빈 `PULSE` 파일을 만든다. 도구는 같은 부팅에서 출력 OFF·fault 없음·Pi 명령 준비를 다시 읽고 기한이 있는 명령 한 건을 발급한다. `STOP` 파일이 감지되면 발급 전에는 멈추고, grant가 생성됐으면 회수를 시도한다.
+`R18_PULSE_READY`가 나오면 실제 시험을 시작할 때 다른 터미널에서 같은 폴더에 빈 `PULSE` 파일을 만든다. 도구는 같은 부팅에서 출력 OFF·fault 없음·Pi 명령 준비를 다시 읽고, 영수증 경로의 고정 ID를 재확인한 뒤 기한이 있는 명령 한 건을 발급한다. `STOP` 파일이 감지되면 발급 전에는 멈추고, grant가 생성됐으면 회수를 시도한다.
 
 발급 전에 `pulse-intent.json`을 저장한다. `R18_PULSE_RECORDED`는 장치 ACK의 적용 당시 ON, 중앙 실행 시작·정산, 같은 부팅의 더 새 OFF 관측과 grant 회수가 확인된 경우에 출력된다. 응답이 끊기면 `pulse-intent.json`의 command ID로 원래 명령을 조회한다. 시험 도구는 그 명령을 자동으로 다시 발급하지 않는다. 펄스 길이와 종료 시점은 계측기로 기록하고 같은 command ID로 [장치 저널 대조](../JOURNAL_RETENTION.md#r18-실물-명령-한-건-대조)에 연결한다.
 
@@ -353,7 +357,7 @@ python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_r18_evidence.py
   --database $piDatabaseCopy
 ```
 
-`issuanceInTeamSnapshot`이 `false`면 제공한 상태 사본에 발급 기록이 없다. `centralApplicationVerified`가 `true`면 같은 명령의 적용 영수증과 중앙 실행·정산 기록이 일치한다. `cseReceiptCaptured`와 `piCommandState`에서 원본 CSE 영수증의 저장 여부와 Pi 저널 상태를 각각 확인한다. `physicalPulseMeasured`는 비워 두며 펄스 길이와 종료 시점은 계측 기록에 남긴다.
+`issuanceInTeamSnapshot`이 `false`면 제공한 상태 사본에 발급 기록이 없다. `centralApplicationVerified`가 `true`면 같은 명령의 적용 영수증과 중앙 실행·정산 기록이 일치한다. `pulse-scope.json`이 있으면 저장된 관측·health·영수증의 부모와 선택한 Pi DB의 관측·영수증 ID를 대조한다. 이전 기록은 `cseContainerPinsCaptured: false`로 표시한다. `physicalPulseMeasured`는 비워 두며 펄스 길이와 종료 시점은 계측 기록에 남긴다.
 
 #### r18 Pi 시험 증거 보관
 

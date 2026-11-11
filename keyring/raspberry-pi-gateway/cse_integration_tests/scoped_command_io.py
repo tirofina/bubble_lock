@@ -40,7 +40,7 @@ def scoped_api(api_mode):
 
 
 @asynccontextmanager
-async def scoped_clients(api, operator_dir):
+async def scoped_clients(api, operator_dir, *, container_paths=()):
     environment = dict(line.split("=", 1) for line in (PROFILE / "compose.env").read_text(encoding="utf-8-sig").splitlines()
                        if line and not line.startswith("#"))
     port = int(environment["KEYRING_CSE_TLS_PORT"])
@@ -64,11 +64,16 @@ async def scoped_clients(api, operator_dir):
                 raise RuntimeError("Scoped CSE response request ID mismatch")
             rsc = int(headers["x-m2m-rsc"])
             if (status, rsc) == (200, 2000):
-                cin = document.get("m2m:cin") if isinstance(document, dict) else None
                 name = path.rsplit("/", 1)[-1]
-                if (not isinstance(cin, dict) or cin.get("ty") != 4 or not isinstance(cin.get("con"), dict)
-                        or (name != "la" and cin.get("rn") != name)):
-                    raise RuntimeError("Scoped CSE returned a different content instance")
+                if path in container_paths:
+                    container = document.get("m2m:cnt") if isinstance(document, dict) else None
+                    if not isinstance(container, dict) or container.get("ty") != 3 or container.get("rn") != name:
+                        raise RuntimeError("Scoped CSE returned a different container")
+                else:
+                    cin = document.get("m2m:cin") if isinstance(document, dict) else None
+                    if (not isinstance(cin, dict) or cin.get("ty") != 4 or not isinstance(cin.get("con"), dict)
+                            or (name != "la" and cin.get("rn") != name)):
+                        raise RuntimeError("Scoped CSE returned a different content instance")
             return status, rsc, document
 
         async def operator_post(path, body):

@@ -128,6 +128,9 @@ def gateway_environment(profile, session, *, verify_api=False):
             if profile.get("cseDeploymentId") != CSE_DEPLOYMENT or not isinstance(ri, str) or not IDENTIFIER.fullmatch(ri):
                 raise ValueError(f"Expected a verified scoped resource ID for {field}")
             environment[variable] = ri
+    if r18 and ("M2M_RECEIPT_CONTAINER_RI" not in environment or "M2M_OBSERVATION_CONTAINER_RI" not in environment
+                or environment["M2M_RECEIPT_CONTAINER_RI"] == environment["M2M_OBSERVATION_CONTAINER_RI"]):
+        raise ValueError("Expected distinct scoped r18 receipt and observation container IDs")
     if "pcApiDeploymentId" in profile:
         deployment = profile["pcApiDeploymentId"]
         if not isinstance(deployment, str) or not IDENTIFIER.fullmatch(deployment):
