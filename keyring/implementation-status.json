@@ -1943,5 +1943,14 @@
     "regressionsExecuted": false,
     "physicalOutboxPressureVerified": false,
     "sourceCommit": "8dc07605c6b28112ed07b7561ead8eb09ff8ac0a"
+  },
+  "r18DisplayLastButton": {
+    "reference": "firmware/PERIPHERALS.md",
+    "firmwareRevision": "keyring-0.7.23",
+    "gatewayVersion": "0.2.112",
+    "buildExecuted": false,
+    "regressionsExecuted": false,
+    "physicalDisplayLatchVerified": false,
+    "sourceCommit": "5f7960db58b31c9c1427314bca2f6d63189ce57d"
   }
 }

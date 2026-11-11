@@ -2009,3 +2009,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 중앙 �
 - 중앙 만료 전 도착·만료 복제본으로 인한 저장 압박·기존 영수증 보존을 다루는 회귀시험 소스를 반영했다. 빌드·테스트·정적 분석·실제 Pi 대기열 및 중앙 장애 시험은 미수행이다. [통신 메모](../keyring/raspberry-pi-gateway/IO_NOTES.md#중앙-관측-전달)
 
 소스 commit `8dc07605c6b28112ed07b7561ead8eb09ff8ac0a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `c92e6ce..8dc0760`이다. goal은 active/progress다.
+
+## 2026-11-11 — r18 두 LCD에서 마지막 버튼 표시 유지
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 중앙 관측 만료본의 공간 회수를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 장치 관측 계약을 확인했다.
+
+- r18 0.7.23의 ST7789·JD9853 정식 프로필은 유효한 확인·비상 누름으로 즉시 화면 갱신을 요청하고 버튼을 떼도 마지막 입력을 유지한다. BLE는 실제 버튼 상태와 누계를 보낸다. 첫 구동 프로필도 같은 마지막 버튼 상태를 사용한다.
+- Gateway 0.2.112와 격리 Mobius4 시험 설정에 새 버전을 연결하고 화면·관측 호스트 시험 소스를 현재 GATT 구조에 맞췄다. 빌드·테스트·정적 분석·API 재시작·플래시·두 패널 실물 확인은 미수행이다. [주변장치 설명](../keyring/firmware/PERIPHERALS.md)
+
+소스 commit `5f7960db58b31c9c1427314bca2f6d63189ce57d`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `e890490..5f7960d`이다. goal은 active/progress다.
