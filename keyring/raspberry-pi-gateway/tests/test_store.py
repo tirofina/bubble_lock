@@ -51,6 +51,34 @@ class StoreTests(unittest.TestCase):
         with patch("bubble_gateway.store.time.time", return_value=1045.0):
             self.assertEqual(self.store.due()["rqi"], rqi)
 
+    def test_heartbeat_waits_for_pending_report_across_restart_without_blocking_credential_receipts(self):
+        health = BINDING["healthContainer"]
+        first = {"bootId": "first-boot", "observedAt": "2026-11-10T00:00:00.000Z",
+                 "uptimeSeconds": 30, "outboxDepth": 0}
+        newer = dict(first, bootId="next-boot", observedAt="2026-11-10T00:01:00.000Z")
+        state = {"status": "LOST", "credentialRevision": "rev-1"}
+        # A deployment may share the health container with another payload type.
+        self.store.observation(health, observation())
+        self.store.record_credential_status(state, lambda: first)
+        self.store.stage_credential_receipt()
+        self.assertTrue(self.store.enqueue_heartbeat(first))
+        self.assertEqual(self.store.counts()[0], 3)
+
+        rqi = self.store.request_id("health", f"{first['bootId']}:{first['observedAt']}")
+        with patch("bubble_gateway.store.time.time", return_value=1000):
+            self.store.retry(rqi, 0, minimum_delay=300)
+        self.store.close()
+        self.store = self.open_store()
+        self.assertFalse(self.store.enqueue_heartbeat(newer))
+        self.assertEqual(self.store.counts()[0], 3)
+        retained = self.store.db.execute("SELECT payload,next_attempt FROM outbox WHERE rqi=?", (rqi,)).fetchone()
+        self.assertEqual(tuple(retained), (canonical(first), 1300.0))
+
+        self.store.delivered(rqi)
+        self.assertTrue(self.store.enqueue_heartbeat(newer))
+        self.assertEqual(self.store.counts()[0], 3)
+        self.assertEqual(self.store.db.execute("SELECT COUNT(*) FROM credential_receipts WHERE delivered_at IS NULL").fetchone()[0], 1)
+
     def test_credential_receipts_survive_full_outbox_restart_and_replay_in_order(self):
         initial = {"status": "ACTIVE", "credentialRevision": "rev-1"}
         rotated = {"status": "ACTIVE", "credentialRevision": "rev-2"}

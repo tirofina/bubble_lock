@@ -484,7 +484,8 @@ class Gateway:
     def _enqueue_health(self) -> None:
         payload = self._health_payload()
         try:
-            self.store.enqueue("health", f"{self.boot_id}:{payload['observedAt']}", self.config.health_container, payload)
+            if not self.store.enqueue_heartbeat(payload):
+                self.counters["health_deferred_pending"] += 1
         except CapacityError:
             self.counters["health_dropped_capacity"] += 1
 

@@ -155,6 +155,24 @@ class Store:
         with self.db:
             self._enqueue(self.request_id(kind, identity), container, payload, critical)
 
+    def enqueue_heartbeat(self, payload: dict) -> bool:
+        """Keep one unresolved periodic health snapshot without changing its request body."""
+        with self.db:
+            self.db.execute("BEGIN IMMEDIATE")
+            pending = self.db.execute("""
+                SELECT 1 FROM outbox WHERE container=? AND command_id IS NULL
+                  AND CASE WHEN json_valid(payload) THEN
+                      json_type(payload, '$.uptimeSeconds')='integer'
+                      AND json_type(payload, '$.outboxDepth')='integer'
+                      AND json_type(payload, '$.credentialTransition') IS NULL
+                  ELSE 0 END
+                LIMIT 1
+            """, (self._health_container,)).fetchone()
+            if pending is not None:
+                return False
+            identity = f"{payload['bootId']}:{payload['observedAt']}"
+            return self._enqueue(self.request_id("health", identity), self._health_container, payload)
+
     def record_credential_status(self, current: dict, health_snapshot: Callable[[], dict]) -> bool:
         """Record an authenticated central status before relying on it locally."""
         with self.db:
