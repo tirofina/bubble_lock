@@ -82,7 +82,7 @@ def _bound_receipt(config, device_id, record, row):
     return receipt
 
 
-def _compared_result(record, receipt):
+def _compared_result(record, receipt, *, expected_firmware=None):
     status, code = receipt["status"], receipt["ackCode"]
     if record["phase"] == "prepared":
         return "device_prepared" if status != "APPLIED" else "device_result_mismatch"
@@ -91,16 +91,33 @@ def _compared_result(record, receipt):
     firmware = receipt.get("firmwareRevision")
     if (status != expected[0] or code not in expected[1] or receipt.get("bootId") != record["bootId"]
             or not isinstance(firmware, str) or not 1 <= len(firmware) <= 64
+            or (expected_firmware is not None and firmware != expected_firmware)
             or canonical(receipt.get("readback")) != canonical({"state": record["readback"]})):
         return "device_result_mismatch"
     return "matched_applied" if status == "APPLIED" else "matched_readback_failure"
 
 
-async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive: Path) -> dict:
+async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive: Path, *,
+                    same_boot_command: str | None = None, board_revision: str | None = None,
+                    firmware_revision: str | None = None) -> dict:
     journal, records = read_archive(device_archive)
-    device_id = journal["identity"]["deviceId"]
+    identity = journal["identity"]
+    device_id = identity["deviceId"]
     if device_id not in config.ble_devices:
         raise StateIdentityError("RECONCILE_DEVICE_NOT_ENROLLED")
+    selected = None
+    if same_boot_command is not None:
+        if identity["boardRevision"] != board_revision or identity["firmwareRevision"] != firmware_revision:
+            raise StateIdentityError("RECONCILE_DEVICE_REVISION_MISMATCH")
+        record = next((row for row in records if row["commandId"] == same_boot_command), None)
+        if record is None:
+            raise StateIdentityError("RECONCILE_DEVICE_COMMAND_MISSING")
+        if record["bootId"] != identity["bootId"]:
+            raise StateIdentityError("RECONCILE_DEVICE_BOOT_MISMATCH")
+        selected = {"commandId": same_boot_command, "boardRevision": board_revision, "firmwareRevision": firmware_revision,
+                    "sameBoot": True, "sourceRecordCount": len(records), "desiredState": record["desiredState"],
+                    "acceptedUptimeMs": record["acceptedUptimeMs"], "appliedUptimeMs": record["appliedUptimeMs"]}
+        records = [record]
     archive_id, rows = _read_gateway_archive(gateway_archive, configured_binding(config),
                                              [record["commandId"] for record in records])
     transport = TransportHub(replace(config, mqtt_enabled=False, core_bridge_enabled=False))
@@ -125,6 +142,8 @@ async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive
             if receipt is None:
                 result["result"] = "missing_gateway_receipt"
                 continue
+            if selected is not None:
+                result["gatewayAckCode"] = receipt["ackCode"]
             result["gatewayReceiptSha256"] = payload_hash(receipt)
             try:
                 cin = await transport.read_content_instance(
@@ -147,14 +166,18 @@ async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive
                 result["result"] = "cse_receipt_identity_invalid"
                 continue
             result.update(nativeResourceId=resource_id, nativeStoredAt=stored_at)
-            result["result"] = (_compared_result(record, receipt) if canonical(content) == canonical(receipt)
-                                else "cse_receipt_mismatch")
+            if canonical(content) != canonical(receipt):
+                result["result"] = "cse_receipt_mismatch"
+            else:
+                result["result"] = _compared_result(
+                    record, receipt, expected_firmware=firmware_revision if selected is not None else None)
     finally:
         await transport.close()
     return {"reportVersion": 1, "checkedAt": iso_time(), "gatewayId": config.gateway_id, "deviceId": device_id,
             "cseId": config.cse_id, "cseDeploymentId": config.cse_deployment_id, "receiptContainer": config.receipt_container,
             "gatewayArchiveId": archive_id, "deviceSnapshotId": journal["deviceSnapshot"]["snapshotId"],
             "deviceRecordsSha256": journal["files"][0]["sha256"], "recordCount": len(records),
+            **({"selectedCommand": selected} if selected is not None else {}),
             "settlementStatus": "not-settled", "deviceJournalModified": False,
             "reviewCount": sum(row["result"] != "matched_applied" or not row["gatewayDelivered"] for row in results),
             "results": results}
@@ -165,10 +188,21 @@ def main():
     parser.add_argument("--env-file", type=Path, required=True)
     parser.add_argument("--device-archive", type=Path, required=True)
     parser.add_argument("--gateway-archive", type=Path, required=True)
+    parser.add_argument("--same-boot-command", metavar="COMMAND_ID",
+                        help="Compare one command from the same device boot as the journal capture")
+    parser.add_argument("--board-revision", help="Expected board revision for --same-boot-command")
+    parser.add_argument("--firmware-revision", help="Expected firmware revision for --same-boot-command")
     args = parser.parse_args()
+    if args.same_boot_command is not None:
+        if not ID.fullmatch(args.same_boot_command) or not args.board_revision or not args.firmware_revision:
+            parser.error("--same-boot-command requires a valid command ID, --board-revision and --firmware-revision")
+    elif args.board_revision is not None or args.firmware_revision is not None:
+        parser.error("Revision options require --same-boot-command")
     try:
         read_env_file(args.env_file)
-        report = asyncio.run(reconcile(GatewayConfig.from_env(), args.device_archive, args.gateway_archive))
+        report = asyncio.run(reconcile(GatewayConfig.from_env(), args.device_archive, args.gateway_archive,
+                                       same_boot_command=args.same_boot_command, board_revision=args.board_revision,
+                                       firmware_revision=args.firmware_revision))
         print(canonical(report))
     except KeyboardInterrupt:
         raise SystemExit(130) from None

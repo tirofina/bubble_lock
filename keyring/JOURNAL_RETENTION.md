@@ -99,6 +99,21 @@ env -i PATH=/usr/bin:/bin /opt/bubble_lock/keyring/raspberry-pi-gateway/.venv/bi
 
 보고서의 정산 상태는 `not-settled`다. 중앙 승인과 장치 journal 회수는 아래 계약을 따른다. [격리 Mobius4 시험](evidence/2026-11-10-journal-reconcile/README.md)
 
+### r18 실물 명령 한 건 대조
+
+Gateway 0.2.60은 장치 저널을 수집한 부팅에서 실행한 명령 한 건을 골라 비교한다. 정식 r18 펌웨어로 실행한 시험의 정확한 command ID와 저널을 수집할 때의 보드·펌웨어 revision을 지정한다. 현재 정식 r18 펌웨어 revision은 `keyring-0.7.14`다.
+
+```sh
+bubble-keyring-reconcile --env-file "$GATEWAY_ENV" \
+  --device-archive "$DEVICE_ARCHIVE" --gateway-archive "$GATEWAY_ARCHIVE" \
+  --same-boot-command "$COMMAND_ID" --board-revision r18-hand-solder \
+  --firmware-revision keyring-0.7.14
+```
+
+대상 명령이 없거나 다른 부팅에서 실행됐거나 수집한 identity의 revision이 다르면 CSE 조회 전에 중단한다. `selectedCommand`에는 장치 저널의 수신·적용 uptime이, 명령 결과에는 Gateway ACK 코드와 Mobius4 원본 영수증 대조가 남는다. 완료 기록의 영수증 펌웨어도 수집 identity와 일치해야 `matched_applied`가 된다. 최초 적용을 확인할 때는 `gatewayAckCode: APPLIED`와 `gatewayDelivered: true`를 함께 확인한다.
+
+r18의 ON은 최대 1,000ms의 펄스다. 펄스 길이와 출력이 꺼지는 시점은 계측기로 기록하고 같은 command ID를 붙인다. 이후 중앙 정산은 아래 절차로 대조한다.
+
 ### 격리 PostgreSQL 정산 기록 대조
 
 위 비교 도구의 최신 소스는 장치 기록 파일의 SHA256과 CSE 원본의 `ri`·`ct`도 기록한다. 그 JSON을 비공개 파일에 저장하면 [격리 DB 조회](dev/mobius4/README.md#명령별-영수증-증거-조회)에서 같은 장치·Gateway·명령의 정산 기록을 한 번에 비교할 수 있다. 발급 명령 전체를 결속하는 payload hash, 영수증 hash, readback, CSE 원본 ID와 생성 시각을 확인한다.

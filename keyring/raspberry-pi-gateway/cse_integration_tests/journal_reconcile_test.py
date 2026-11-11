@@ -94,7 +94,7 @@ class JournalReconcileTests(unittest.IsolatedAsyncioTestCase):
                     files=[dict(path="records.jsonl", bytes=len(data), sha256=hashlib.sha256(data).hexdigest())])
         (self.device_archive / "manifest.json").write_text(canonical(info), encoding="utf-8")
 
-    async def create_archives(self):
+    async def create_archives(self, *, current_boot=False):
         gateway = Gateway(self.config)
         self.addCleanup(gateway.store.close)
         records = []
@@ -104,7 +104,8 @@ class JournalReconcileTests(unittest.IsolatedAsyncioTestCase):
             digest = payload_hash(cmd)
             prepared = name in {"prepared", "contradiction"}
             readback = name != "readback-failure"
-            record = dict(commandId=name, payloadHash=digest, bootId="boot-old", ownershipEpoch=2, grantRevision=3,
+            boot = "boot-now" if current_boot and name in {"applied", "unconfirmed"} else "boot-old"
+            record = dict(commandId=name, payloadHash=digest, bootId=boot, ownershipEpoch=2, grantRevision=3,
                           phase="prepared" if prepared else "completed",
                           ackCode="INDETERMINATE" if prepared else "APPLIED" if readback else "READBACK_MISMATCH",
                           desiredState=True, readback=None if prepared else readback, acceptedUptimeMs=100,
@@ -118,7 +119,8 @@ class JournalReconcileTests(unittest.IsolatedAsyncioTestCase):
             code = {"unconfirmed": "DUPLICATE", "prepared": "INDETERMINATE",
                     "readback-failure": "READBACK_MISMATCH"}.get(name, "APPLIED")
             status = "APPLIED" if code in {"APPLIED", "DUPLICATE"} else "INDETERMINATE"
-            reply = device_receipt(cmd, digest, bootId="boot-old", readback={"state": readback})
+            firmware = "keyring-0.7.2" if current_boot and name == "applied" else "keyring-0.7.0"
+            reply = device_receipt(cmd, digest, bootId=boot, readback={"state": readback}, firmwareRevision=firmware)
             receipt = gateway._receipt(cmd, digest, status, code, device=reply if name != "prepared" else None)
             gateway.store.finish(name, receipt)
             if name == "foreign":
@@ -136,10 +138,10 @@ class JournalReconcileTests(unittest.IsolatedAsyncioTestCase):
         with patch("bubble_gateway.state_archive._sync_directory"):
             archive(self.config, self.gateway_archive, adopt=False, timeout=5)
 
-    async def audit(self):
+    async def audit(self, *options):
         process = await asyncio.create_subprocess_exec(
             sys.executable, "-m", "bubble_gateway.journal_reconcile", "--env-file", str(self.env_path),
-            "--device-archive", str(self.device_archive), "--gateway-archive", str(self.gateway_archive),
+            "--device-archive", str(self.device_archive), "--gateway-archive", str(self.gateway_archive), *options,
             env={key: value for key, value in os.environ.items() if key not in self.env},
             stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
         stdout, stderr = await asyncio.wait_for(process.communicate(), 25)
@@ -197,6 +199,37 @@ class JournalReconcileTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn(b"RECONCILE_ARCHIVE_BINDING", stderr)
         print(json.dumps({"records": len(expected), "review": report["reviewCount"], "cseCinsUnchanged": before,
                           "deviceAndGatewayTamperingRejected": True, "foreignResourceBindingRejected": True}), flush=True)
+
+    async def test_single_command_binds_capture_boot_and_receipt_firmware(self):
+        await self.create_archives(current_boot=True)
+        revisions = ("--board-revision", "r18", "--firmware-revision", "keyring-0.7.2")
+        status, stdout, stderr = await self.audit("--same-boot-command", "applied", *revisions)
+        self.assertEqual(status, 0, stderr.decode())
+        report = json.loads(stdout)
+        self.assertEqual(report["recordCount"], 1)
+        self.assertEqual(report["reviewCount"], 0)
+        self.assertEqual(report["selectedCommand"], {
+            "commandId": "applied", "boardRevision": "r18", "firmwareRevision": "keyring-0.7.2", "sameBoot": True,
+            "sourceRecordCount": 10, "desiredState": True, "acceptedUptimeMs": 100, "appliedUptimeMs": 101,
+        })
+        self.assertEqual(report["results"][0]["gatewayAckCode"], "APPLIED")
+        self.assertEqual(report["results"][0]["result"], "matched_applied")
+        self.assertNotIn(b"boot-now", stdout)
+
+        for command_id, error in (("missing-cse", b"RECONCILE_DEVICE_BOOT_MISMATCH"),
+                                  ("unknown", b"RECONCILE_DEVICE_COMMAND_MISSING")):
+            with self.subTest(command_id=command_id):
+                status, stdout, stderr = await self.audit("--same-boot-command", command_id, *revisions)
+                self.assertEqual((status, stdout), (1, b""))
+                self.assertIn(error, stderr)
+        status, stdout, stderr = await self.audit("--same-boot-command", "applied", "--board-revision", "other",
+                                                  "--firmware-revision", "keyring-0.7.2")
+        self.assertEqual((status, stdout), (1, b""))
+        self.assertIn(b"RECONCILE_DEVICE_REVISION_MISMATCH", stderr)
+
+        status, stdout, stderr = await self.audit("--same-boot-command", "unconfirmed", *revisions)
+        self.assertEqual(status, 0, stderr.decode())
+        self.assertEqual(json.loads(stdout)["results"][0]["result"], "device_result_mismatch")
 
 
 if __name__ == "__main__":
