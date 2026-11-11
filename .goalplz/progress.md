@@ -1366,3 +1366,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 Pi의 HT
 - 구버전의 단일 기록, 동일 재출력, 다른 부팅·출력값·잘린 줄을 다루는 회귀시험 소스를 수정했다. 빌드·회귀시험·플래시·USB/BLE 실물 확인은 미실행이다.
 
 소스 commit `cb3675afdc4728cca8d7b68bd9b2e125fc9aaa3b`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `a2ac3e5..cb3675a`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 초기 USB와 마지막 BLE 센서 상태 기록
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05, R15. 직전 goal turn은 r18의 USB 기록 재출력을 추가한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 팀 관측 schema와 CORE 전송 경계를 확인했다.
+
+- Gateway `0.2.59`의 초기 구동 보고서는 USB 첫 센서 상태, 첫 정상 BLE 관측 순번, 같은 세션의 마지막 센서·INA219 상태를 보존한다. 정상 관측 뒤 마지막에 확인된 센서 또는 INA219 오류는 `MISMATCH`다. 마지막 관측값이 빠지면 `INSUFFICIENT`다. USB 초기 센서 오류 뒤 BLE가 복구된 경우는 두 시점의 값을 모두 남긴다. [r18 초기 구동 기록](../keyring/raspberry-pi-gateway/TESTING.md#r18-초기-구동-기록)
+- 회귀시험 소스를 추가했다. 빌드·회귀시험·USB/BLE 실물 캡처와 별도 전원 레일 실측은 미실행이다.
+
+소스 commit `3815c184f4bcb5abbddb462fde2fc4a51bda4d4b`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `f0dc0ba..3815c18`이다. goal은 active/progress다.
