@@ -17,7 +17,7 @@ from .config import GatewayConfig, ID, configured_container_pins
 from .model import (authorization_deadline, canonical, iso_time, parse_time, payload_hash, utc_now,
                     validate_command, validate_credential_status, validate_observation)
 from .store import CapacityError, Store
-from .transport import HttpRetryDeferred, NativeDeliveryHold, TransportHub
+from .transport import COMMAND_BATCH, HttpRetryDeferred, NativeDeliveryHold, TransportHub
 
 LOG = logging.getLogger(__name__)
 RECEIPT_BURST = 4
@@ -192,24 +192,25 @@ class Gateway:
     async def _poll_loop(self) -> None:
         while not self.stop.is_set():
             try:
-                commands = await self.transport.poll_commands()
-                if not isinstance(commands, list) or len(commands) > 16:
-                    raise ValueError("Command poll contract mismatch")
-                for raw in commands:
-                    try:
-                        command = validate_command(raw, self.config.gateway_id, self.config.ble_devices)
-                        digest = payload_hash(command)
-                        result = self.store.accept(command, digest)
-                        self.counters[f"ingress_{result.lower()}"] += 1
-                        if result == "CONFLICT":
-                            conflict = self._receipt(command, digest, "REJECTED", "CONFLICT", "Existing commandId has another payload; original journal preserved")
-                            self.store.enqueue("conflict", f"{command['commandId']}:{digest}", self.config.receipt_container, conflict, True)
-                    except (ValueError, TypeError, OverflowError):
-                        self.counters["commands_invalid"] += 1
-                        LOG.warning("Rejected command with invalid schema or local binding")
-                    except CapacityError:
-                        self.counters["ingress_capacity_errors"] += 1
-                        LOG.error("Command journal/outbox capacity reached; command not executed")
+                async for commands in self.transport.command_batches():
+                    if not isinstance(commands, list) or len(commands) > COMMAND_BATCH:
+                        raise ValueError("Command poll contract mismatch")
+                    for raw in commands:
+                        try:
+                            command = validate_command(raw, self.config.gateway_id, self.config.ble_devices)
+                            digest = payload_hash(command)
+                            result = self.store.accept(command, digest)
+                            self.counters[f"ingress_{result.lower()}"] += 1
+                            if result == "CONFLICT":
+                                conflict = self._receipt(command, digest, "REJECTED", "CONFLICT",
+                                                         "Existing commandId has another payload; original journal preserved")
+                                self.store.enqueue("conflict", f"{command['commandId']}:{digest}", self.config.receipt_container, conflict, True)
+                        except (ValueError, TypeError, OverflowError):
+                            self.counters["commands_invalid"] += 1
+                            LOG.warning("Rejected command with invalid schema or local binding")
+                        except CapacityError:
+                            self.counters["ingress_capacity_errors"] += 1
+                            LOG.error("Command journal/outbox capacity reached; command not executed")
             except asyncio.CancelledError:
                 raise
             except Exception as exc:

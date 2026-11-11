@@ -15,7 +15,7 @@ from datetime import timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 from time import monotonic
-from typing import TYPE_CHECKING, Any, NamedTuple
+from typing import TYPE_CHECKING, Any, AsyncIterator, NamedTuple
 from urllib.parse import quote, urlsplit
 
 import httpx
@@ -683,9 +683,18 @@ class TransportHub:
         return document
 
     async def poll_commands(self) -> list[dict[str, Any]]:
+        """Collect a complete poll for callers that need a single result."""
+        commands = []
+        async for batch in self.command_batches():
+            commands.extend(batch)
+        return commands
+
+    async def command_batches(self) -> AsyncIterator[list[dict[str, Any]]]:
+        """Yield the authoritative HTTPS list before checking CORE copies."""
         poll_error = None
         try:
-            document = await self._api("GET", f"/commands?limit={COMMAND_BATCH}")
+            async with asyncio.timeout(self.config.request_timeout):
+                document = await self._api("GET", f"/commands?limit={COMMAND_BATCH}")
             commands = document.get("commands")
             if (not isinstance(commands, list) or len(commands) > COMMAND_BATCH
                     or any(not isinstance(item, dict) for item in commands)):
@@ -696,6 +705,8 @@ class TransportHub:
 
         issued_ids = {item["commandId"] for item in commands if isinstance(item.get("commandId"), str)}
         available = COMMAND_BATCH - len(commands)
+        if commands:
+            yield commands
         candidates = {}
         for _ in range(min(self._commands.qsize(), COMMAND_BATCH)):
             command = self._commands.get_nowait()
@@ -712,16 +723,19 @@ class TransportHub:
             if len(approved) != len(candidates):
                 LOG.warning("Ignored %d CORE commands without a current central binding",
                             len(candidates) - len(approved))
-            commands = commands + approved[:available]
-        if poll_error is not None and not commands:
+            if approved:
+                yield approved[:available]
+                return
+        if poll_error is not None:
             raise poll_error
-        return commands
 
     async def _approve_core_command(self, command: dict[str, Any], digest: str) -> bool:
         try:
-            if parse_time(command["deadline"]) <= utc_now():
+            remaining = (parse_time(command["deadline"]) - utc_now()).total_seconds()
+            if remaining <= 0:
                 return False
-            response = await self.authorize(command, digest)
+            async with asyncio.timeout(min(remaining, self.config.request_timeout)):
+                response = await self.authorize(command, digest)
             return authorization_deadline(command, digest, response) > utc_now()
         except (RemoteResponseError, httpx.HTTPError, OSError, ValueError, OverflowError):
             return False

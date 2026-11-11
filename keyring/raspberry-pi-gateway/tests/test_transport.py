@@ -1,4 +1,5 @@
 import asyncio
+from collections import Counter
 from contextlib import closing
 import hashlib
 import json
@@ -14,6 +15,7 @@ import httpx
 
 from bubble_gateway.core_bridge import telemetry
 from bubble_gateway.model import iso_time, payload_hash, utc_now
+from bubble_gateway.service import Gateway
 from bubble_gateway.store import Store
 from bubble_gateway.transport import (MAX_RETRY_AFTER_SECONDS, HttpRetryDeferred, NativeDeliveryHold, ReceiptParentMismatch,
                                       RemoteResponseError, TransportHub, _mqtt_to, _retry_after)
@@ -538,6 +540,62 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(await self.hub.poll_commands(), [issued])
         self.hub._api.assert_awaited_once_with("GET", "/commands?limit=16")
+
+    async def test_gateway_journals_https_batch_while_core_approval_is_pending(self):
+        issued = command(commandId="https-issued")
+        core = command(commandId="mqtt-copy")
+        self.hub._queue_command(core)
+        self.hub.config.request_timeout = 1
+        self.hub.config.poll_interval = 1
+        approval_started, release_approval = asyncio.Event(), asyncio.Event()
+
+        async def api(method, suffix, body=None, correlation_id=None):
+            if method == "GET":
+                return {"commands": [issued]}
+            self.assertEqual((suffix, body["commandId"]), ("/authorize", core["commandId"]))
+            approval_started.set()
+            await release_approval.wait()
+            return dict(body, allowed=True, expiresAt=core["deadline"])
+
+        self.hub._api = AsyncMock(side_effect=api)
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.transport = self.hub.config, self.hub
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+
+        async def stop_after_poll(_seconds):
+            gateway.stop.set()
+
+        gateway._pause = stop_after_poll
+        with tempfile.TemporaryDirectory() as folder:
+            with closing(Store(Path(folder) / "synthetic.sqlite3", 100, 100000, 20, BINDING)) as store:
+                gateway.store = store
+                async with asyncio.timeout(1), asyncio.TaskGroup() as tasks:
+                    tasks.create_task(gateway._poll_loop())
+                    await approval_started.wait()
+                    self.assertEqual([row["command"] for row in store.pending()], [issued])
+                    release_approval.set()
+                self.assertEqual([row["command"] for row in store.pending()], [issued, core])
+        self.assertEqual(gateway.counters["ingress_new"], 2)
+
+    async def test_poll_and_each_fallback_authorization_have_total_timeouts(self):
+        slow = command(commandId="slow-copy")
+        approved = command(commandId="approved-copy")
+        self.hub._queue_command(slow)
+        self.hub._queue_command(approved)
+        cancelled = set()
+
+        async def api(method, suffix, body=None, correlation_id=None):
+            if method == "GET" or body["commandId"] == slow["commandId"]:
+                try:
+                    await asyncio.Future()
+                finally:
+                    cancelled.add(method)
+            return dict(body, allowed=True, expiresAt=approved["deadline"])
+
+        self.hub._api = AsyncMock(side_effect=api)
+        async with asyncio.timeout(1):
+            self.assertEqual(await self.hub.poll_commands(), [approved])
+        self.assertEqual(cancelled, {"GET", "POST"})
 
     async def test_core_fallback_requires_exact_unexpired_central_approval(self):
         issued = command()

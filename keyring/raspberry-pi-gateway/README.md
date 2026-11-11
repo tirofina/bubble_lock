@@ -153,6 +153,7 @@ Gateway0.2.0은 DB를 configured Gateway/Originator/CSE 자원 identity에 연�
 - queue가 가득 차면 기존 항목을 삭제하지 않는다. BLE 전달 대기 항목은 메모리에서 재시도하지만 버퍼가 넘치거나 프로세스가 종료되면 아직 저장되지 않은 관측을 복구할 수 없다. [IO 메모](IO_NOTES.md)에 drop counter와 reconnect 경계를 정리했다.
 - 완료한 commandId도 journal에 남긴다. `MAX_COMMANDS` 도달 시 새 명령을 거절하고 자동 삭제하지 않는다. 장치 NVS journal과 Gateway DB의 보존·이관은 중앙의 명령 보존 기간과 함께 정해야 한다. 저장소를 지워 단순히 한도를 초기화하면 중복 실행 방어 근거를 잃는다.
 - 명령 수신 시 매번 중앙 HTTPS 목록을 조회한다. MQTT 대기열은 한 번에 최대 16건을 확인하고, 중앙 목록에 같은 commandId가 있으면 그 목록의 발급본을 사용한다. MQTT로만 들어온 명령은 중앙이 정확한 payloadHash와 현재 권한을 확인한 경우에만 남은 배치 자리에 넣는다. 두 채널의 기존 journal 행은 그대로 보존한다.
+- Gateway 0.2.96은 HTTPS 목록을 받는 즉시 해당 명령을 SQLite에 기록한다. MQTT 후보 승인이 지연되는 동안에도 저장된 명령은 실행 직전 승인 단계로 진행할 수 있다. 목록 조회는 `REQUEST_TIMEOUT`, MQTT 후보 승인 조회는 `REQUEST_TIMEOUT`과 남은 명령 기한 중 짧은 값으로 제한한다.
 - credential 상태 조회 실패 또는 freshness 만료에서는 새 실행을 보류한다. 저장된 명령은 credential이 복구되거나 deadline이 만료될 때까지 pending 상태로 남는다. LOST/REVOKED는 신규 실행을 거절한다.
 - Gateway 0.2.34는 상태 조회 시작부터 credential TTL을 계산한다. 상태·revision 변경, 조회 실패 또는 TTL 단절이 있으면 같은 revision으로 복구돼도 이전 로컬 승인 세대는 무효다. 중앙 응답을 기다리던 명령은 새 승인을 요청한다. BLE 전송 중이면 다음 조각 전에 중단하고 미확정 영수증을 남긴다.
 - Gateway 0.2.35는 mTLS로 확인한 첫 자격 상태와 이후 상태·revision 전환을 SQLite에 저장한다. 일반 큐가 가득 차도 저장하고, 자리가 생기면 기존 health 컨테이너에 순서대로 보낸다. `credentialTransition`이 붙은 프레임은 관측 당시의 이력이다. 실시간 준비 상태는 일반 heartbeat에서 판정한다. [영수증 전달과 보관](RECEIPT_ROUTING.md#자격-상태-전환-영수증)
