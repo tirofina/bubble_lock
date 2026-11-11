@@ -23,6 +23,8 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.4.0 · implemented 
 
 r18 0.7.23에서 확인·비상을 누르면 두 LCD의 정식 프로필에 `Last: CONFIRM` 또는 `Last: PANIC`이 표시된다. 버튼을 떼어도 다음 유효 입력이나 재부팅까지 마지막 값을 기억한다. BLE `buttonState`는 누름과 해제를 그대로 알린다. 버튼 요청은 즉시 그리기 대상으로 등록되며 LCD 초기화가 끝나면 처리된다. 백라이트는 설정 시간이 지나면 꺼진다.
 
+두 LCD의 0.7.24 첫 구동 프로필은 회전을 적용한 논리 화면 크기가 144×120보다 작으면 `geometry_error`를 보고한다. 시험 패턴과 버튼 문구의 그리기를 마친 시점에도 백라이트가 켜질 조건을 만족할 때 그리기 누계를 기록한다. 화면에 실제로 나온 색·문구는 현장에서 확인한다.
+
 SPI GPIO는 MOSI38/SCK39, LCD CS18/DC8/RESET43이다. UART0 TX는 RESET43과 충돌하므로 USB CDC만 사용한다. LCD logic VDD는 main +3V3, 백라이트 공급은 별도 LCD_BL_SUPPLY다.
 
 ### JD9853 미확인 범위

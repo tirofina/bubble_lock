@@ -46,10 +46,10 @@ extern "C" esp_err_t __wrap_nvs_flash_init() {
 namespace {
 #if KEYRING_R18_BRINGUP
 #if KEYRING_R18_BRINGUP_DISPLAY == 1
-constexpr char FirmwareRevision[] = "keyring-0.7.23-st7789-bringup";
+constexpr char FirmwareRevision[] = "keyring-0.7.24-st7789-bringup";
 constexpr char BringupPanelField[] = " panel=st7789";
 #elif KEYRING_R18_BRINGUP_DISPLAY == 2
-constexpr char FirmwareRevision[] = "keyring-0.7.23-jd9853-bringup";
+constexpr char FirmwareRevision[] = "keyring-0.7.24-jd9853-bringup";
 constexpr char BringupPanelField[] = " panel=jd9853";
 #else
 constexpr char FirmwareRevision[] = "keyring-0.7.23-bringup";

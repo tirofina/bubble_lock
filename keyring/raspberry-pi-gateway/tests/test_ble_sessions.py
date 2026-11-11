@@ -234,10 +234,11 @@ class BringupCaptureTests(unittest.TestCase):
             for revision, panel in (("0.7.15", "st7789"), ("0.7.15", "jd9853"),
                                     ("0.7.16", "st7789"), ("0.7.16", "jd9853"),
                                     ("0.7.17", "st7789"), ("0.7.17", "jd9853"),
-                                    ("0.7.18", "st7789"), ("0.7.18", "jd9853")):
+                                    ("0.7.18", "st7789"), ("0.7.18", "jd9853"),
+                                    ("0.7.24", "st7789"), ("0.7.24", "jd9853")):
                 firmware = f"keyring-{revision}-{panel}-bringup"
                 raw = self.usb_log().replace(self.firmware.encode(), firmware.encode())
-                digest_field = f" appSha256={'a' * 64}" if revision == "0.7.18" else ""
+                digest_field = f" appSha256={'a' * 64}" if revision in ("0.7.18", "0.7.24") else ""
                 full = raw.replace(b"motion=ready\r\n", f"motion=ready panel={panel}{digest_field}\r\n".encode())
                 with self.subTest(firmware=firmware):
                     path.write_bytes(full)
@@ -294,13 +295,14 @@ class BringupCaptureTests(unittest.TestCase):
 
     def test_display_draws_must_match_button_counts_in_the_selected_session(self):
         for panel in ("st7789", "jd9853"):
-            firmware = f"keyring-0.7.17-{panel}-bringup"
+            firmware = f"keyring-0.7.24-{panel}-bringup"
             for status, drawn, expected in (
                 (f"{panel}_unverified", [3, 2], "RECORDED"),
                 (f"{panel}_unverified", [2, 1], "INSUFFICIENT"),
                 (f"{panel}_unverified", [3, True], "INSUFFICIENT"),
                 ("starting", [3, 2], "INSUFFICIENT"),
                 ("bus_error", [3, 2], "MISMATCH"),
+                ("geometry_error", [3, 2], "MISMATCH"),
                 ("worker_error", [3, 2], "MISMATCH"),
                 (("st7789_unverified" if panel == "jd9853" else "jd9853_unverified"), [3, 2], "MISMATCH"),
             ):

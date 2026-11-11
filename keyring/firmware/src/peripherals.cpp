@@ -142,12 +142,21 @@ void Peripherals::run() {
 #endif
 #if KEYRING_DISPLAY_PROFILE
   const bool screenStarted = display.begin(KEYRING_LCD_SPI_HZ);
+#if KEYRING_R18_BRINGUP_DISPLAY
+  // The fixed test pattern needs room for the panel label and all button text.
+  const bool screenUsable = screenStarted && display.width() >= 144 && display.height() >= 120;
+#else
+  const bool screenUsable = screenStarted;
+#endif
+  const char *status = KEYRING_DISPLAY_PROFILE == 1 ? "st7789_unverified" : "jd9853_unverified";
+  if (!screenStarted) status = "bus_error";
+  else if (!screenUsable) status = "geometry_error";
   portENTER_CRITICAL(&mux);
-  displayReady = screenStarted;
+  displayReady = screenUsable;
   // A write-only panel has no identification/readback path on this connector.
-  displayState = screenStarted ? (KEYRING_DISPLAY_PROFILE == 1 ? "st7789_unverified" : "jd9853_unverified") : "bus_error";
+  displayState = status;
   portEXIT_CRITICAL(&mux);
-  if (screenStarted) {
+  if (screenUsable) {
     display.setTextWrap(false); display.setTextSize(2);
 #if !KEYRING_R18_BRINGUP_DISPLAY
     auxRail::displayFor(KEYRING_LCD_SHOW_MS);
@@ -173,12 +182,6 @@ void Peripherals::run() {
       if (requestDisplay) auxRail::displayFor(KEYRING_LCD_SHOW_MS);
       if (auxRail::displayVisible() && setIo(true)) {
         draw(screen);
-#if KEYRING_R18_BRINGUP_DISPLAY
-        portENTER_CRITICAL(&mux);
-        if (screen.panic) drawnPanicPress = screen.panicPress;
-        else if (screen.confirm) drawnConfirmPress = screen.confirmPress;
-        portEXIT_CRITICAL(&mux);
-#endif
         setIo(false);
         nextDraw = nowMs() + 1000;
       }
@@ -197,7 +200,6 @@ void Peripherals::draw(const KeyringScreen &screen) {
 #if KEYRING_R18_BRINGUP_DISPLAY
   const int16_t width = display.width(), height = display.height();
   display.drawRect(0, 0, width, height, White);
-  if (width < 128 || height < 120) return;
   const int16_t barWidth = (width - 24) / 3;
   display.fillRect(12, 61, barWidth, 25, Red);
   display.fillRect(12 + barWidth, 61, barWidth, 25, Green);
@@ -208,6 +210,12 @@ void Peripherals::draw(const KeyringScreen &screen) {
   display.print(width); display.print('x'); display.print(height);
   display.setCursor(12, 97);
   display.print(screen.panic ? "PANIC" : screen.confirm ? "CONFIRM" : "READY");
+  if (auxRail::displayVisible()) {
+    portENTER_CRITICAL(&mux);
+    if (screen.panic) drawnPanicPress = screen.panicPress;
+    else if (screen.confirm) drawnConfirmPress = screen.confirmPress;
+    portEXIT_CRITICAL(&mux);
+  }
 #else
   display.setTextColor(Cyan); display.setCursor(8, 8); display.print("PRIVACY BUBBLE");
   display.setTextColor(White); display.setCursor(8, 38);
