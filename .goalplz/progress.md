@@ -1847,3 +1847,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 한
 - 기존 임시 Compose에 준비를 실행해 관측 `a8o9yh7miw`, health `d6tq49gt37`의 고정 ID를 읽었다. 격리 TLS 프록시·브로커·소비자를 갱신했다. 두 준비 명령은 exit 0이었으며 소비자가 기존 구독과 r18 MQTT 구독 준비를 모두 보고했다. 로컬 설정과 자격 정보는 Git에 포함하지 않았다. 빌드·회귀시험·정적 분석·Pi 연결·실물 관측 발행·HTTPS 전환은 미수행이다.
 
 소스 commit `2017c3fa4193215cf649b588a4453358706173b4`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `3e382d8..2017c3f`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 단일 펄스의 장치 저널 확인
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11. 직전 goal turn은 임시 Mobius4의 r18 MQTT 설정과 구독 준비를 확인하고 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀 명령 발급·승인 경로를 확인했다.
+
+- 격리 r18 단일 펄스 도구는 같은 부팅의 OFF·fault 없음과 정상 장치 저널·빈 슬롯을 확인한다. grant 발급 후 새 health 관측으로 재확인하고 기준 관측에 슬롯 수를 기록한다. 오류·가득 참·기한 내 관측 부재이면 명령 발급 전에 멈추고, 발급된 grant의 회수를 시도한다.
+- 중단 증거 대조에서 새 시험의 기준 저널 기록을 요구한다. 초기 가득 참, grant 이후 오류, 이전 증거 호환을 다루는 회귀시험 소스와 절차를 추가했다. 빌드·테스트·정적 분석·실제 Pi와 r18 명령 및 grant 회수 검증은 미수행이다. [r18 단일 펄스 시험](../keyring/raspberry-pi-gateway/TESTING.md#r18-단일-펄스-시험)
+
+소스 commit `cde0dce987e8c07bb247cd9a2345fd4b9b2325ef`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `83febd1..cde0dce`다. goal은 active/progress다.

@@ -1804,5 +1804,11 @@
     "physicalObservationDelivered": false,
     "physicalFallbackVerified": false,
     "sourceCommit": "2017c3fa4193215cf649b588a4453358706173b4"
+  },
+  "r18PulseJournalReadiness": {
+    "reference": "raspberry-pi-gateway/TESTING.md#r18-단일-펄스-시험",
+    "regressionsExecuted": false,
+    "physicalCommandVerified": false,
+    "sourceCommit": "cde0dce987e8c07bb247cd9a2345fd4b9b2325ef"
   }
 }
