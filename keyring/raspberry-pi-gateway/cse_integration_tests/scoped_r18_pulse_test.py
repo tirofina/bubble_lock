@@ -27,6 +27,8 @@ class R18PulseTests(unittest.IsolatedAsyncioTestCase):
         self.trigger = "PULSE"
         self.replaced_parent = None
         self.replace_receipt_route = False
+        self.journal = {"detail": "health", "journal": "ready", "journalUsed": 31, "journalPrepared": 1, "journalCapacity": 32}
+        self.fail_journal_after_grant = False
         self.proof = AsyncMock(return_value={"dispatchEventId": "dispatch-a", "settlementEventId": "settlement-a"})
         self.telemetry_proof = AsyncMock(side_effect=self.central_observation)
 
@@ -57,7 +59,8 @@ class R18PulseTests(unittest.IsolatedAsyncioTestCase):
             native = {"ty": 4, "rn": content_name(rqi), "ri": f"cin-{sequence}", "pi": "cnt-observation",
                       "con": {"gatewayId": GATEWAY, "deviceId": R18_DEVICE, "bootId": "r18-boot",
                               "firmwareRevision": R18_COMMAND_FIRMWARE, "state": False, "sequence": sequence,
-                              "observedAt": timestamp, "receivedAt": timestamp, "sensorValues": {"fault": False}}}
+                              "observedAt": timestamp, "receivedAt": timestamp,
+                              "sensorValues": {"fault": False, **self.journal}}}
         else:
             command = self.issued
             self.assertEqual(path, f"{PATHS['receipt']}/{receipt_name(command['commandId'])}")
@@ -76,6 +79,8 @@ class R18PulseTests(unittest.IsolatedAsyncioTestCase):
         if path == "/v1/consents":
             return 201, {"consentId": "consent-a"}
         if path == "/v1/grants":
+            if self.fail_journal_after_grant:
+                self.journal["journal"] = "error"
             return 201, {"grantId": "grant-a"}
         if path == "/v1/grants/revoke":
             return 200, {"grantId": "grant-a", "status": "REVOKED"}
@@ -108,8 +113,11 @@ class R18PulseTests(unittest.IsolatedAsyncioTestCase):
         self.proof.assert_awaited_once()
         result = json.loads((self.output / "pulse-result.json").read_text(encoding="utf-8"))
         scope = json.loads((self.output / "pulse-scope.json").read_text(encoding="utf-8"))
+        intent = json.loads((self.output / "pulse-intent.json").read_text(encoding="utf-8"))
         receipt = json.loads((self.output / "pulse-receipt.json").read_text(encoding="utf-8"))
         self.assertEqual(scope["containerPins"], self.pins)
+        self.assertTrue(scope["journalReadinessRequired"])
+        self.assertEqual(intent["baseline"]["journal"], self.journal)
         self.assertEqual(result["commandId"], self.issued["commandId"])
         self.assertEqual(receipt["cseResource"]["rn"], receipt_name(self.issued["commandId"]))
         self.assertEqual(receipt["cseResource"]["ty"], 4)
@@ -142,6 +150,20 @@ class R18PulseTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaisesRegex(RuntimeError, "Stopped"):
             await self.exercise()
         self.assertEqual(self.posts, [])
+
+    async def test_full_journal_blocks_before_grant(self):
+        self.journal["journalUsed"] = 32
+        with self.assertRaisesRegex(ValueError, "journal is full"):
+            await self.exercise()
+        self.assertEqual(self.posts, [])
+        self.assertFalse((self.output / "pulse-intent.json").exists())
+
+    async def test_journal_error_after_grant_revokes_without_issuing(self):
+        self.fail_journal_after_grant = True
+        with self.assertRaisesRegex(ValueError, "journal is unavailable"):
+            await self.exercise()
+        self.assertEqual(self.posts, ["/v1/consents", "/v1/grants", "/v1/grants/revoke"])
+        self.assertFalse((self.output / "pulse-intent.json").exists())
 
     async def test_replaced_health_container_after_readiness_stops_before_grant(self):
         self.replaced_parent = self.pins["health"]

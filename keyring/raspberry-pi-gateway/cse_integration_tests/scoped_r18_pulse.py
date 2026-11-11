@@ -31,9 +31,25 @@ def validate_container_pins(pins):
     return dict(pins)
 
 
+def pulse_journal_readiness(values):
+    status = values.get("journal")
+    if status in ("error", "disabled"):
+        raise ValueError("The r18 command journal is unavailable")
+    fields = ("journalUsed", "journalPrepared", "journalCapacity")
+    if values.get("detail") != "health" or status != "ready" or any(key not in values for key in fields):
+        return None
+    used, prepared, capacity = (values[key] for key in fields)
+    if (any(type(count) is not int for count in (used, prepared, capacity))
+            or not 0 <= prepared <= used <= capacity or capacity < 1):
+        raise ValueError("Invalid r18 command journal counts")
+    if used == capacity:
+        raise ValueError("The r18 command journal is full")
+    return {key: values[key] for key in ("detail", "journal", *fields)}
+
+
 async def run_pulse(operator_post, cse, central_proof, output, *, pins, observation_hasher, telemetry_proof):
     pins = validate_container_pins(pins)
-    write_new_json(output / "pulse-scope.json", {"gatewayId": GATEWAY, "containerPins": pins})
+    write_new_json(output / "pulse-scope.json", {"gatewayId": GATEWAY, "containerPins": pins, "journalReadinessRequired": True})
     stop, trigger = output / "STOP", output / "PULSE"
 
     async def wait_for(check):
@@ -86,7 +102,11 @@ async def run_pulse(operator_post, cse, central_proof, output, *, pins, observat
         candidate = await off_observation(boot_id=boot_id, after=not_before)
         if candidate is None:
             return None
-        observation, _ = candidate
+        observation, current = candidate
+        journal = pulse_journal_readiness(current.get("sensorValues", {}))
+        if journal is None:
+            return None
+        observation["journal"] = journal
         native = await read_cin("health")
         if native is None:
             return None
@@ -128,9 +148,11 @@ async def run_pulse(operator_post, cse, central_proof, output, *, pins, observat
         raise RuntimeError("Invalid scoped grant ID")
     try:
         write_new_json(output / "pulse-grant.json", grant)
-        checked = await ready(triggered_at, boot_id=boot_id)
+        granted_at = utc_now()
+        async with asyncio.timeout(15):
+            checked = await wait_for(lambda: ready(granted_at, boot_id=boot_id))
         await verify_receipt_route()
-        if (checked is None or checked[1]["gatewayBootId"] != armed["gatewayBootId"]
+        if (checked[1]["gatewayBootId"] != armed["gatewayBootId"]
                 or checked[0]["cseResource"]["pi"] != baseline["cseResource"]["pi"] or stop.exists()):
             raise RuntimeError("The r18 or Pi session changed or stopped before command issuance")
         baseline, readiness = checked

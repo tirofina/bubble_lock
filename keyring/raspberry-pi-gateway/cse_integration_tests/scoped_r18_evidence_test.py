@@ -57,7 +57,27 @@ class R18EvidenceTests(unittest.TestCase):
         self.assertEqual(report["issuanceEventId"], "evt-issued")
         self.assertEqual(report["piCommandState"], "RECEIVED")
         self.assertFalse(report["cseContainerPinsCaptured"])
+        self.assertIsNone(report["journalReadiness"])
         self.assertIsNone(report["physicalPulseMeasured"])
+
+    def test_pulse_scope_can_require_the_issued_baseline_journal_counts(self):
+        pins = {"observation": "cnt-obs", "health": "cnt-health", "receipt": "cnt-receipt"}
+        write_new_json(self.output / "pulse-scope.json", {"gatewayId": GATEWAY, "containerPins": pins,
+                       "journalReadinessRequired": True})
+        with self.assertRaisesRegex(ValueError, "lacks valid journal readiness evidence"):
+            inspect_pulse(self.output, self.team)
+
+        path = self.output / "pulse-intent.json"
+        intent = json.loads(path.read_text(encoding="utf-8"))
+        intent["commandReadiness"] = {"cseResource": {"ri": "cin-health", "pi": pins["health"]}}
+        journal = {"detail": "health", "journal": "ready", "journalUsed": 1, "journalPrepared": 0, "journalCapacity": 32}
+        intent["baseline"]["journal"] = journal
+        path.write_text(json.dumps(intent), encoding="utf-8")
+        self.assertEqual(inspect_pulse(self.output, self.team)["journalReadiness"], journal)
+        journal["journalUsed"] = 32
+        path.write_text(json.dumps(intent), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "journal is full"):
+            inspect_pulse(self.output, self.team)
 
     def test_pinned_trial_requires_matching_pi_container_bindings(self):
         pins = {"observation": "cnt-obs", "health": "cnt-health", "receipt": "cnt-receipt"}

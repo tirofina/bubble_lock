@@ -14,7 +14,7 @@ from bubble_gateway.model import canonical, iso_time, parse_time, payload_hash
 from pi_led_cycle import receipt_name, verify_observation_resource
 from scoped_feather_evidence import (interrupted_pi_result, read_json, read_optional, read_pi_commands,
                                     validate_interrupted_receipt)
-from scoped_r18_pulse import (GATEWAY, PATHS, R18_COMMAND_FIRMWARE, R18_DEVICE, TELEMETRY_EVENT_FIELDS,
+from scoped_r18_pulse import (GATEWAY, PATHS, R18_COMMAND_FIRMWARE, R18_DEVICE, TELEMETRY_EVENT_FIELDS, pulse_journal_readiness,
                              validate_container_pins)
 
 
@@ -79,14 +79,18 @@ def inspect_pulse(directory, team_state, database=None):
     )
     scope = read_optional(directory / "pulse-scope.json")
     pins = None
+    journal_required = False
     if scope is not None:
         if scope["gatewayId"] != GATEWAY:
             raise ValueError("r18 scope belongs to a different Gateway")
         pins = validate_container_pins(scope["containerPins"])
+        journal_required = scope.get("journalReadinessRequired", False)
+        if type(journal_required) is not bool:
+            raise ValueError("Invalid r18 journal readiness scope")
     report = {"intentCaptured": intent is not None, "issuedResponseCaptured": issued_file is not None,
               "cseReceiptCaptured": native_file is not None, "grantRevocationCaptured": revoked is not None,
               "cseContainerPinsCaptured": pins is not None, "postPulseObservationCaptured": False,
-              "postPulseCentralTelemetryVerified": False, "physicalPulseMeasured": None}
+              "postPulseCentralTelemetryVerified": False, "journalReadiness": None, "physicalPulseMeasured": None}
     if intent is None:
         if any(artifact is not None for artifact in (issued_file, native_file, result, observation_file, event_file)):
             raise ValueError("r18 artifacts have no matching local intent")
@@ -110,6 +114,11 @@ def inspect_pulse(directory, team_state, database=None):
         raise ValueError("r18 intent did not capture an OFF baseline")
     verify_observation_resource(baseline, R18_DEVICE, pins["observation"] if pins is not None else None)
     parse_time(baseline["receivedAt"])
+    journal = baseline.get("journal")
+    if journal is not None or journal_required:
+        if not isinstance(journal, dict) or pulse_journal_readiness(journal) != journal:
+            raise ValueError("r18 intent lacks valid journal readiness evidence")
+        report["journalReadiness"] = journal
     if pins is not None:
         health_resource = intent["commandReadiness"]["cseResource"]
         if (health_resource["pi"] != pins["health"] or not isinstance(health_resource["ri"], str)

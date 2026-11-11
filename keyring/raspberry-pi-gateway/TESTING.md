@@ -509,9 +509,9 @@ python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_r18_pulse.py --
   --health-container-ri $gwBHealthRi
 ```
 
-`R18_PULSE_READY`가 나오면 실제 시험을 시작할 때 다른 터미널에서 같은 폴더에 빈 `PULSE` 파일을 만든다. 도구는 같은 부팅에서 출력 OFF·fault 없음·Pi 명령 준비를 다시 읽고, 영수증 경로의 고정 ID를 재확인한 뒤 기한이 있는 명령 한 건을 발급한다. `STOP` 파일이 감지되면 발급 전에는 멈추고, grant가 생성됐으면 회수를 시도한다.
+`R18_PULSE_READY`가 나오면 실제 시험을 시작할 때 다른 터미널에서 같은 폴더에 빈 `PULSE` 파일을 만든다. 도구는 같은 부팅에서 출력 OFF·fault 없음·Pi 명령 준비와 장치 저널의 정상 상태 및 빈 슬롯을 다시 읽는다. 저널 상태는 순환 관측의 `health` 프레임에서 확인한다. grant 발급 뒤 최신 프레임을 최대 15초 기다리고 영수증 경로의 고정 ID를 재확인한 뒤 명령 한 건을 발급한다. `STOP`, 저널 오류·가득 참 또는 기한 내 상태 미수신으로 중단되면 발급된 grant의 회수를 시도한다.
 
-발급 전에 `pulse-intent.json`을 저장한다. `R18_PULSE_RECORDED`는 장치 ACK의 적용 당시 ON, 중앙 실행 시작·정산, 같은 부팅의 더 새 OFF 관측과 grant 회수가 확인된 경우에 출력된다. 응답이 끊기면 `pulse-intent.json`의 command ID로 원래 명령을 조회한다. 시험 도구는 그 명령을 자동으로 다시 발급하지 않는다. 펄스 길이와 종료 시점은 계측기로 기록하고 같은 command ID로 [장치 저널 대조](../JOURNAL_RETENTION.md#r18-실물-명령-한-건-대조)에 연결한다.
+발급 전에 `pulse-intent.json`을 저장하고, OFF 기준 관측의 `baseline.journal`에 사용·PREPARED·전체 슬롯 수를 남긴다. `R18_PULSE_RECORDED`는 장치 ACK의 적용 당시 ON, 중앙 실행 시작·정산, 같은 부팅의 더 새 OFF 관측과 grant 회수가 확인된 경우에 출력된다. 응답이 끊기면 `pulse-intent.json`의 command ID로 원래 명령을 조회한다. 시험 도구는 그 명령을 자동으로 다시 발급하지 않는다. 펄스 길이와 종료 시점은 계측기로 기록하고 같은 command ID로 [장치 저널 대조](../JOURNAL_RETENTION.md#r18-실물-명령-한-건-대조)에 연결한다.
 
 권한 회수 뒤, 고정된 팀 소스의 Node 해시 함수로 Mobius4의 OFF 관측 본문 해시를 계산해 `pulse-observation.json`에 저장한다. 중앙 이벤트와 관측 ID·해시·시각이 일치하면 `pulse-central-telemetry.json`을 쓰고 `R18_PULSE_CENTRAL_TELEMETRY_VERIFIED`를 출력한다. 중앙 이벤트 대기는 최대 35초이며 세션 전체 기한의 적용을 받는다. 중앙 대기가 끝나도 이미 저장한 `pulse-result.json`과 `pulse-observation.json`으로 뒤늦게 받은 중앙 상태 사본을 대조할 수 있다.
 
