@@ -7,7 +7,7 @@
   "date": "2026-11-11",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Pi Gateway 0.2.43 and Feather 0.2.0 produced two APPLIED GPIO command receipts with matching Pi SQLite, pinned Mobius4, authenticated callback and isolated PostgreSQL settlement. The operator saw no visible red LED change. Gateway 0.2.44 receipt replay and 0.2.45 central dispatch start are source-only. r18 hardware and physical power characterization remain unverified.",
+  "verificationStatus": "Pi Gateway 0.2.43 and Feather 0.2.0 produced two APPLIED GPIO command receipts with matching Pi SQLite, pinned Mobius4, authenticated callback and isolated PostgreSQL settlement. The operator saw no visible red LED change. Gateway 0.2.44 receipt replay, 0.2.45 dispatch start and 0.2.46 central receipt delivery are source-only. r18 hardware and physical power characterization remain unverified.",
   "rubricIds": [
     "R01",
     "R02",
@@ -173,18 +173,18 @@
   "firmwareRevision": "keyring-0.7.13",
   "benchFirmwareRevision": "feather-probe-0.2.0",
   "publication": {
-    "sourceCommit": "1d9dd4fc9bb94bf2a9f953090d0f274827953cac",
+    "sourceCommit": "af8fae600965eeff31ba120407c6cd1d48d63cc0",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "1d9dd4fc9bb94bf2a9f953090d0f274827953cac",
-    "lastPushedCommit": "1d9dd4fc9bb94bf2a9f953090d0f274827953cac",
-    "latestCheckpoint": "Require a bound central dispatch-start response before BLE writes when configured.",
-    "lastPushedCommitBeforeThisCheckpoint": "bac1c3fd148e2859c8311890733c85b8eb083388"
+    "latestLocalSourceCommit": "af8fae600965eeff31ba120407c6cd1d48d63cc0",
+    "lastPushedCommit": "af8fae600965eeff31ba120407c6cd1d48d63cc0",
+    "latestCheckpoint": "Stage durable receipts and confirm central delivery against the command, claim and receipt hash.",
+    "lastPushedCommitBeforeThisCheckpoint": "1e8d322219e974e3b7c5ac204170749fb67a7051"
   },
-  "gatewayRevision": "0.2.45",
-  "pendingValidationScope": "Gateway 0.2.45 central dispatch-start and pinned-receipt restart and replay, visible Feather LED actuation, r18 physical commands and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE MQTT ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
+  "gatewayRevision": "0.2.46",
+  "pendingValidationScope": "Gateway 0.2.46 central receipt replay and database upgrade, central dispatch-start and pinned-receipt restart and replay, visible Feather LED actuation, r18 physical commands and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE MQTT ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
     "supersededBy": "2026-11-10 benchCheckpoint for current execution and verification state",
@@ -205,7 +205,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Connect Gateway BLE dispatch to the current central dispatch-start contract under DOC-REV 2.0.0",
+    "executionRequest": "Connect durable Gateway device receipts to the central settlement API under DOC-REV 2.0.0",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -214,11 +214,11 @@
     ],
     "latestRemoteCore": "d54a43a",
     "latestRemoteMain": "bc2a45d",
-    "sourceCommit": "1d9dd4fc9bb94bf2a9f953090d0f274827953cac",
-    "sourceValidation": "Read the current rubric, team branch heads, and main bc2a45d dispatch-start implementation and response contract. Uploaded Gateway 0.2.45 source and regression cases. Build, regression execution, central API connection and Pi verification remain pending.",
+    "sourceCommit": "af8fae600965eeff31ba120407c6cd1d48d63cc0",
+    "sourceValidation": "Read the current rubric, team branch heads, and main bc2a45d central receipt implementation and response binding. Uploaded Gateway 0.2.46 source and regression cases. Build, test execution, database upgrade execution, central API connection and Pi verification remain pending.",
     "goalComplete": false,
     "pendingInput": null,
-    "currentDependencyState": "The Feather 0.2.0 and Pi Gateway 0.2.43 command path matched isolated Mobius4 and PostgreSQL on the pinned 715ef58 API, with no visible LED response. Gateway 0.2.45 implements the main bc2a45d dispatch-start call. Central canonical receipt and telemetry adapters, live dispatch-start and receipt replay verification, r18 identification and first power-on, physical reconnect, battery, LCD, charger and sensor checks, NVS fault and archive history verification, production CSE and CORE, journal reclaim, and physical power/range/wake evidence remain.",
+    "currentDependencyState": "The Feather 0.2.0 and Pi Gateway 0.2.43 command path matched isolated Mobius4 and PostgreSQL on the pinned 715ef58 API, with no visible LED response. Gateway 0.2.46 implements dispatch start and durable central receipt delivery against main bc2a45d. The central telemetry adapter, live central API and receipt replay verification, r18 identification and first power-on, physical reconnect, battery, LCD, charger and sensor checks, NVS fault and archive history verification, production CSE and CORE, journal reclaim, and physical power/range/wake evidence remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -1241,5 +1241,14 @@
     "regressionsExecuted": false,
     "centralApiVerificationExecuted": false,
     "sourceCommit": "1d9dd4fc9bb94bf2a9f953090d0f274827953cac"
+  },
+  "centralReceiptDelivery": {
+    "reference": "raspberry-pi-gateway/RECEIPT_ROUTING.md#중앙-명령-영수증-정산",
+    "gatewayVersion": "0.2.46",
+    "teamMain": "bc2a45dfcc014b7cdb0a57a03aca2c04ca8eb989",
+    "status": "source-only",
+    "regressionsExecuted": false,
+    "centralApiVerificationExecuted": false,
+    "sourceCommit": "af8fae600965eeff31ba120407c6cd1d48d63cc0"
   }
 }

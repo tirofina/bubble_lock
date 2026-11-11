@@ -1158,3 +1158,12 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 요청 바인딩, 로컬 실행 의도 기록 순서, 기한 단축·만료, 세션 교체, 취소와 경로 부재를 다루는 회귀시험 소스를 추가했다. 빌드·시험·중앙 API 연결·Pi 시험은 미실행이다. 새 중앙 `/receipts`와 `/telemetry` 전송 경로 및 실제 연동 시험이 남아 있다.
 
 소스 commit `1d9dd4fc9bb94bf2a9f953090d0f274827953cac`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `bac1c3f..1d9dd4f`다. goal은 active/progress다.
+
+## 2026-11-11 — 중앙 명령 영수증 정산 경로
+
+직전 goal turn은 중앙 `dispatch-start` 연동을 올린 progress다. DOC-REV 2.0.0과 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 중앙 `/receipts`의 반환 상태, command ID·claim ID 및 영수증 해시 계약을 읽었다.
+
+- Gateway `0.2.46`은 `CENTRAL_RECEIPTS_ENABLED=true` 설정에서 중앙용 영수증과 등록 표시를 같은 SQLite 트랜잭션에 저장한다. 기존 Mobius4 전달 완료 영수증도 같은 중앙 배포에서 등록할 수 있다. 재전송에는 동일 본문과 `Idempotency-Key`를 사용하고, 중앙 응답의 command ID·claim ID·영수증 SHA-256을 확인한다. Mobius4 전송 완료 상태는 해당 경로의 응답으로 관리한다. [중앙 영수증 정산](../keyring/raspberry-pi-gateway/RECEIPT_ROUTING.md#중앙-명령-영수증-정산)
+- 기존 DB 열기, 용량 부족, 재시작 후 재전송, CSE 보류 중 중앙 송신, 응답 불일치 회귀시험 소스를 추가했다. 빌드·시험·DB 업그레이드 실행·실제 중앙 API와 Pi 검증은 미실행이다. 새 중앙 `/telemetry` 전달 경로가 남아 있다.
+
+소스 commit `af8fae600965eeff31ba120407c6cd1d48d63cc0`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1e8d322..af8fae6`다. goal은 active/progress다.
