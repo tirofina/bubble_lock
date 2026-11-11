@@ -114,7 +114,7 @@ bubble-keyring-reconcile --env-file "$GATEWAY_ENV" \
 
 대상 명령이 없거나 다른 부팅에서 실행됐거나 수집한 identity의 revision이 다르면 CSE 조회 전에 중단한다. `selectedCommand`에는 장치 저널의 수신·적용 uptime이, 명령 결과에는 Gateway ACK 코드와 Mobius4 원본 영수증 대조가 남는다. 완료 기록의 영수증 펌웨어도 수집 identity와 일치해야 `matched_applied`가 된다. 최초 적용을 확인할 때는 `gatewayAckCode: APPLIED`와 `gatewayDelivered: true`를 함께 확인한다.
 
-r18의 ON은 최대 1,000ms의 펄스다. 펄스 길이와 출력이 꺼지는 시점은 계측기로 기록하고 같은 command ID를 붙인다. 이후 중앙 정산은 아래 절차로 대조한다.
+r18의 ON은 최대 1,000ms의 펄스다. 펄스 길이와 출력이 꺼지는 시점은 계측기로 기록하고 같은 command ID를 붙인다. 계측 CSV를 최초 Mobius4 영수증에 연결할 수 있다. [r18 펄스 계측값 연결](raspberry-pi-gateway/TESTING.md#r18-펄스-계측값-연결) 이후 중앙 정산은 아래 절차로 대조한다.
 
 #### 저장한 Mobius4 영수증으로 오프라인 대조
 

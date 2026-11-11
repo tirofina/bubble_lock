@@ -525,7 +525,33 @@ python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_r18_evidence.py
   --database $piDatabaseCopy
 ```
 
-`issuanceInTeamSnapshot`이 `false`면 제공한 상태 사본에 발급 기록이 없다. `centralApplicationVerified`가 `true`면 같은 명령의 적용 영수증과 중앙 실행·정산 기록이 일치한다. `pulse-scope.json`이 있으면 저장된 관측·health·영수증의 부모와 선택한 Pi DB의 관측·영수증 ID를 대조한다. 이전 기록은 `cseContainerPinsCaptured: false`로 표시한다. `postPulseCentralTelemetryVerified`가 `true`면 해당 명령 뒤의 OFF 관측 해시가 중앙 상태 사본의 이벤트와 일치한다. `physicalPulseMeasured`는 비워 두며 펄스 길이와 종료 시점은 계측 기록에 남긴다.
+`issuanceInTeamSnapshot`이 `false`면 제공한 상태 사본에 발급 기록이 없다. `centralApplicationVerified`가 `true`면 같은 명령의 적용 영수증과 중앙 실행·정산 기록이 일치한다. `pulse-scope.json`이 있으면 저장된 관측·health·영수증의 부모와 선택한 Pi DB의 관측·영수증 ID를 대조한다. 이전 기록은 `cseContainerPinsCaptured: false`로 표시한다. `postPulseCentralTelemetryVerified`가 `true`면 해당 명령 뒤의 OFF 관측 해시가 중앙 상태 사본의 이벤트와 일치한다. 계측 파일을 지정하지 않으면 `physicalPulseMeasured`는 비워 둔다.
+
+##### r18 펄스 계측값 연결
+
+같은 시험의 J6 모터 부하 양단 전압을 시간 오프셋(ms)과 전압(V) 두 열의 UTF-8 CSV로 보관한다. 헤더는 `offsetMs,voltageV`를 사용하고 상승 전과 하강 후의 샘플도 포함한다. 계측기 원본은 함께 비공개로 보관한다. 진동을 확인한 영상은 별도 실물 증거에 연결한다.
+
+먼저 계측 옵션 없이 대조한 결과의 `commandId`, `cseResourceId`, `cseReceiptSha256`을 아래 JSON에 넣는다. `traceSha256`은 `Get-FileHash -Algorithm SHA256`으로 구한 CSV 해시의 소문자 값이다. `highThresholdV`에는 같은 계측에서 사용한 HIGH 판정 기준을 적는다.
+
+```json
+{
+  "version": 1,
+  "commandId": "<commandId>",
+  "cseResourceId": "<cseResourceId>",
+  "receiptSha256": "<cseReceiptSha256>",
+  "measurementPoint": "J6-motor-load",
+  "traceSha256": "<traceSha256>",
+  "highThresholdV": 1.5
+}
+```
+
+```powershell
+python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_r18_evidence.py `
+  --output-directory $privatePulseEvidence --team-state $teamStateCopy --database $piDatabaseCopy `
+  --pulse-trace $r18MotorCsv --pulse-trace-metadata $r18MotorMetadata
+```
+
+도구는 최초 `APPLIED` Mobius4 영수증에 계측을 연결한다. 상승·하강을 각각 인접 샘플의 시간 범위로 표현하고 이로부터 `durationBoundsMs`를 계산한다. 길이 상한이 1,000ms 이하면 `within-limit`, 하한이 1,000ms보다 크면 `over-limit`, 두 경계 사이에 한도가 있으면 `inconclusive`다. 두 에지가 모두 들어온 단일 펄스에서만 길이를 판정한다. `within-limit`일 때 계측 옵션의 종료 코드는 0이다. 샘플 사이의 관측 한계는 `maxSampleGapMs`로 남기고 명령과 계측 파일의 연결은 작업자 기록을 근거로 표시한다.
 
 #### r18 Pi 시험 증거 보관
 

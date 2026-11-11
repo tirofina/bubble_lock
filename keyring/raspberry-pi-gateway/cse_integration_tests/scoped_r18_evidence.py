@@ -1,6 +1,7 @@
 """Inspect interrupted r18 pulse artifacts without contacting the bench services."""
 
 import argparse
+import csv
 from datetime import datetime
 import json
 from pathlib import Path
@@ -12,6 +13,7 @@ from bubble_gateway.integration_evidence import (inspect_integration_command, in
                                                  match_integration_issuance, require_integration_event)
 from bubble_gateway.model import canonical, iso_time, parse_time, payload_hash
 from pi_led_cycle import receipt_name, verify_observation_resource
+from r18_pulse_trace import inspect_pulse_trace
 from scoped_feather_evidence import (interrupted_pi_result, read_json, read_optional, read_pi_commands,
                                     validate_interrupted_receipt)
 from scoped_feather_pi import R18_COMMAND_FIRMWARES, R18_LEGACY_COMMAND_FIRMWARE
@@ -64,7 +66,9 @@ def inspect_post_pulse(result, saved_observation, saved_event, command, baseline
     return proof
 
 
-def inspect_pulse(directory, team_state, database=None):
+def inspect_pulse(directory, team_state, database=None, *, trace_path=None, trace_metadata=None):
+    if (trace_path is None) != (trace_metadata is None):
+        raise ValueError("Pulse trace and metadata must be supplied together")
     issued = team_state.get("gatewayCommands")
     stored_receipts = team_state.get("gatewayDeviceReceipts", {})
     if (not directory.is_dir() or not isinstance(issued, dict) or not isinstance(stored_receipts, dict)
@@ -96,6 +100,8 @@ def inspect_pulse(directory, team_state, database=None):
               "postPulseCentralTelemetryVerified": False, "journalReadiness": None, "firmwareRevision": firmware,
               "physicalPulseMeasured": None}
     if intent is None:
+        if trace_path is not None:
+            raise ValueError("Pulse trace requires the saved r18 command intent")
         if any(artifact is not None for artifact in (issued_file, native_file, result, observation_file, event_file)):
             raise ValueError("r18 artifacts have no matching local intent")
         if revoked is not None and (grant is None or revoked["grantId"] != grant["grantId"] or revoked["status"] != "REVOKED"):
@@ -154,6 +160,8 @@ def inspect_pulse(directory, team_state, database=None):
                   piCommandState="MISSING" if database is not None else None,
                   centralReceiptCaptured=command_id in stored_receipts, centralApplicationVerified=False)
     if command_id not in issued:
+        if trace_path is not None:
+            raise ValueError("Pulse trace requires the original command in the team snapshot")
         has_event = any(event.get("gatewayId") == GATEWAY and event.get("commandId") == command_id
                         and event.get("type") == "GATEWAY_COMMAND_ISSUED" for event in team_state["receipts"])
         if (any(artifact is not None for artifact in (issued_file, native_file, result, observation_file, event_file, pi_row))
@@ -209,6 +217,12 @@ def inspect_pulse(directory, team_state, database=None):
     if pi_receipt is not None:
         check_receipt(pi_receipt, command, baseline["bootId"], firmware)
     report.update(inspect_post_pulse(result, observation_file, event_file, command, baseline, native_receipt, team_state))
+    if trace_path is not None:
+        if native_receipt is None or native_receipt["status"] != "APPLIED" or native_receipt["ackCode"] != "APPLIED":
+            raise ValueError("Pulse trace requires the original APPLIED CSE receipt")
+        measurement = inspect_pulse_trace(trace_path, trace_metadata, command_id,
+                                          report["cseResourceId"], report["cseReceiptSha256"])
+        report.update(physicalPulseMeasured=measurement["measurementStatus"] == "measured", pulseTrace=measurement)
     return report
 
 
@@ -217,9 +231,17 @@ if __name__ == "__main__":
     parser.add_argument("--output-directory", type=Path, required=True)
     parser.add_argument("--team-state", type=Path, required=True)
     parser.add_argument("--database", type=Path, help="Read-only Pi SQLite copy from the scoped r18 session")
+    parser.add_argument("--pulse-trace", type=Path, help="Operator-captured J6 motor load CSV")
+    parser.add_argument("--pulse-trace-metadata", type=Path, help="Metadata binding the CSV to the original CSE receipt")
     args = parser.parse_args()
+    if (args.pulse_trace is None) != (args.pulse_trace_metadata is None):
+        parser.error("--pulse-trace and --pulse-trace-metadata must be supplied together")
     try:
-        report = inspect_pulse(args.output_directory, read_json(args.team_state), args.database)
-    except (AttributeError, KeyError, TypeError, OSError, ValueError, RuntimeError, sqlite3.Error) as error:
+        trace_metadata = read_json(args.pulse_trace_metadata) if args.pulse_trace_metadata is not None else None
+        report = inspect_pulse(args.output_directory, read_json(args.team_state), args.database,
+                               trace_path=args.pulse_trace, trace_metadata=trace_metadata)
+    except (AttributeError, KeyError, TypeError, OSError, ValueError, RuntimeError, sqlite3.Error, csv.Error) as error:
         parser.exit(1, f"r18 evidence could not be bound ({type(error).__name__}).\n")
     print(json.dumps(report, indent=2))
+    if args.pulse_trace is not None and report["pulseTrace"].get("durationStatus") != "within-limit":
+        raise SystemExit(1)

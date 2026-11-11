@@ -1,4 +1,5 @@
 from contextlib import closing
+import hashlib
 import json
 from pathlib import Path
 import tempfile
@@ -8,6 +9,7 @@ from bubble_gateway.model import central_observation_id, payload_hash
 from bubble_gateway.store import Store
 from helpers import BINDING
 from pi_led_cycle import content_name, receipt_name, write_new_json
+from r18_pulse_trace import inspect_pulse_trace
 from scoped_r18_evidence import inspect_pulse
 from scoped_feather_pi import R18_LEGACY_COMMAND_FIRMWARE
 from scoped_r18_pulse import GATEWAY, PATHS, R18_DEVICE
@@ -149,6 +151,18 @@ class R18EvidenceTests(unittest.TestCase):
                  "sequence": 9}
         self.team["receipts"].append(event)
         self.assertTrue(inspect_pulse(self.output, self.team)["postPulseCentralTelemetryVerified"])
+        trace = self.output / "load.csv"
+        raw = b"offsetMs,voltageV\n0,0\n1,3\n998,3\n999,0\n"
+        trace.write_bytes(raw)
+        metadata = {"version": 1, "commandId": self.command_id, "cseResourceId": "cin-r18", "receiptSha256": digest,
+                    "measurementPoint": "J6-motor-load", "highThresholdV": 1.5,
+                    "traceSha256": hashlib.sha256(raw).hexdigest()}
+        report = inspect_pulse(self.output, self.team, trace_path=trace, trace_metadata=metadata)
+        self.assertTrue(report["physicalPulseMeasured"])
+        self.assertEqual(report["pulseTrace"]["durationStatus"], "within-limit")
+        self.assertEqual(report["pulseTrace"]["durationBoundsMs"], [997, 999])
+        with self.assertRaisesRegex(ValueError, "metadata differs from the applied r18 receipt"):
+            inspect_pulse(self.output, self.team, trace_path=trace, trace_metadata=dict(metadata, cseResourceId="other"))
         event["payloadHash"] = "b" * 64
         with self.assertRaisesRegex(ValueError, "inconsistent GATEWAY_TELEMETRY_ACCEPTED"):
             inspect_pulse(self.output, self.team)
@@ -156,3 +170,20 @@ class R18EvidenceTests(unittest.TestCase):
         receipt_path.write_text(json.dumps(native_receipt), encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "receipt bodies differ"):
             inspect_pulse(self.output, self.team)
+
+    def test_trace_does_not_pass_uncertain_edges_or_multiple_pulses(self):
+        trace = self.output / "load.csv"
+        receipt_sha = "b" * 64
+        for rows, measurement, duration in (
+                (b"0,0\n1,3\n1002,3\n1003,0\n", "measured", "over-limit"),
+                (b"0,0\n1,3\n999,3\n1001,0\n", "measured", "inconclusive"),
+                (b"0,3\n1,3\n2,0\n", "missing-edge", None),
+                (b"0,0\n1,3\n2,0\n3,3\n4,0\n", "multiple-pulses", None)):
+            with self.subTest(measurement=measurement, duration=duration):
+                raw = b"offsetMs,voltageV\n" + rows
+                trace.write_bytes(raw)
+                metadata = {"version": 1, "commandId": self.command_id, "cseResourceId": "cin-r18",
+                            "receiptSha256": receipt_sha, "measurementPoint": "J6-motor-load", "highThresholdV": 1.5,
+                            "traceSha256": hashlib.sha256(raw).hexdigest()}
+                report = inspect_pulse_trace(trace, metadata, self.command_id, "cin-r18", receipt_sha)
+                self.assertEqual((report["measurementStatus"], report.get("durationStatus")), (measurement, duration))
