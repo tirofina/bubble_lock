@@ -193,7 +193,7 @@ class BringupCaptureTests(unittest.TestCase):
                 "motor=0 aux=0 fault=0 fuel=ok accel=ok motion=ready\r\n")
         return ("BOOT\r\n" + line).encode("utf-8")
 
-    def test_usb_log_requires_one_record_with_the_configured_board_and_firmware(self):
+    def test_usb_log_accepts_identical_replays_and_rejects_other_records(self):
         raw = self.usb_log()
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / "usb.log"
@@ -201,8 +201,16 @@ class BringupCaptureTests(unittest.TestCase):
             self.assertEqual(read_usb_boot(path, self.board, self.firmware),
                              {"bootId": self.boot, "logSha256": hashlib.sha256(raw).hexdigest(),
                               "motorActive": False, "auxEnabled": False, "mainFault": False})
-            for bad in (raw + raw, raw.replace(b"motor=0", b"motor=?"), raw.replace(b"0.7.14", b"0.7.13"),
-                        raw.replace(b"r18-hand-solder", b"other-board")):
+            current = raw.replace(b"0.7.14", b"0.7.15")
+            current_firmware = "keyring-0.7.15-bringup"
+            repeated = current + current
+            path.write_bytes(repeated)
+            self.assertEqual(read_usb_boot(path, self.board, current_firmware),
+                             {"bootId": self.boot, "logSha256": hashlib.sha256(repeated).hexdigest(),
+                              "motorActive": False, "auxEnabled": False, "mainFault": False})
+            for bad in (raw + raw.replace(self.boot.encode(), b"b" * 32), raw + raw.replace(b"fault=0", b"fault=1"),
+                        raw + raw.replace(b"motor=0", b"motor=?"), raw.replace(b"0.7.14", b"0.7.13"),
+                        raw.replace(b"r18-hand-solder", b"other-board"), raw + raw[:-9]):
                 with self.subTest(log=bad):
                     path.write_bytes(bad)
                     with self.assertRaisesRegex(ValueError, "one matching r18 bring-up record"):

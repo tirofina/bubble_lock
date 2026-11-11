@@ -37,9 +37,9 @@ def read_usb_boot(path: Path, board: str, firmware: str) -> dict:
         raw = stream.read(USB_LOG_LIMIT + 1)
     if len(raw) > USB_LOG_LIMIT:
         raise ValueError("USB log exceeds the bring-up log limit")
-    lines = [line for line in raw.decode("utf-8-sig", errors="replace").splitlines()
-             if line.startswith("KEYRING bringup:")]
-    record = USB_BOOT_LINE.fullmatch(lines[0]) if len(lines) == 1 else None
+    lines = {line for line in raw.decode("utf-8-sig", errors="replace").splitlines()
+             if line.startswith("KEYRING bringup:")}
+    record = USB_BOOT_LINE.fullmatch(lines.pop()) if len(lines) == 1 else None
     if record is None or record["board"] != board or record["firmware"] != firmware:
         raise ValueError("USB log must contain one matching r18 bring-up record")
     return {"bootId": record["boot"], "logSha256": hashlib.sha256(raw).hexdigest(),

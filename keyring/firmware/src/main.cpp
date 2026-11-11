@@ -41,7 +41,8 @@ extern "C" esp_err_t __wrap_nvs_flash_init() {
 
 namespace {
 #if KEYRING_R18_BRINGUP
-constexpr char FirmwareRevision[] = "keyring-0.7.14-bringup";
+constexpr char FirmwareRevision[] = "keyring-0.7.15-bringup";
+char bringupBootRecord[256] = {};
 #else
 constexpr char FirmwareRevision[] = "keyring-0.7.14";
 #endif
@@ -1032,16 +1033,28 @@ void setup() {
   Serial.printf("KEYRING ready: %s, storage=%s, radioSleep=%s\n", deviceId,
       ObservationOnly ? "disabled" : storageHealthy ? "ready" : "error",
       radioSleepEnabled ? "enabled" : "unavailable");
-  if (ObservationOnly) {
-    Serial.printf("KEYRING bringup: board=%s firmware=%s boot=%s motor=%d aux=%d fault=%d fuel=%s accel=%s motion=%s\n",
-        board::Revision, FirmwareRevision, bootId,
-        static_cast<int>(readState()), gpio_get_level(static_cast<gpio_num_t>(board::AuxEnable)),
-        digitalRead(board::MainFaultN) == LOW, sensors.fuel ? "ok" : "unavailable",
-        sensors.accel ? "ok" : "unavailable", motion.ready() ? "ready" : "unavailable");
+#if KEYRING_R18_BRINGUP
+  // Retain the initial readbacks even if the USB console attaches after setup.
+  const int length = snprintf(bringupBootRecord, sizeof(bringupBootRecord),
+      "KEYRING bringup: board=%s firmware=%s boot=%s motor=%d aux=%d fault=%d fuel=%s accel=%s motion=%s",
+      board::Revision, FirmwareRevision, bootId,
+      static_cast<int>(readState()), gpio_get_level(static_cast<gpio_num_t>(board::AuxEnable)),
+      digitalRead(board::MainFaultN) == LOW, sensors.fuel ? "ok" : "unavailable",
+      sensors.accel ? "ok" : "unavailable", motion.ready() ? "ready" : "unavailable");
+  if (length > 0 && static_cast<size_t>(length) < sizeof(bringupBootRecord)) {
+    Serial.println(bringupBootRecord);
+  } else {
+    bringupBootRecord[0] = '\0';
   }
+#endif
 }
 void loop() {
   if (!provisioned) { delay(100); return; }
+#if KEYRING_R18_BRINGUP
+  if (Serial.available() > 0 && Serial.read() == '?' && bringupBootRecord[0] != '\0') {
+    Serial.println(bringupBootRecord);
+  }
+#endif
   uint64_t now = uptime();
   if (headphone.poll(now)) observationDirty = true;
   if (!headphone.speakerAllowed()) audio.stop();

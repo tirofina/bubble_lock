@@ -1,5 +1,7 @@
 # Gateway 로컬 시험
 
+Gateway 0.2.58의 r18 회귀시험 소스는 USB 로그에서 동일한 부팅 기록의 반복 출력, 다른 부팅 ID, 변경된 GPIO 상태와 잘린 기록을 다룬다. 빌드·시험·실제 Pi 연동은 미실행이다.
+
 Gateway 0.2.57의 회귀시험 소스는 SQLite를 닫고 다시 열었을 때 서버별 `Retry-After`의 남은 시간, 다른 포트의 전송, 기한 만료와 새 Linux 부팅을 다룬다. 빌드·시험·실제 Pi 연동은 미실행이다.
 
 Gateway 0.2.56의 회귀시험 소스는 중앙 API `Retry-After` 동안 전송 시도 횟수 보존, 중앙 관측 만료, Mobius4 전송 지속과 중앙 보류 해제 후 재개를 다룬다. 빌드·시험·실제 Pi 연동은 미실행이다.
@@ -38,12 +40,12 @@ Gateway 0.2.37의 회귀시험 소스는 BlueZ가 쓰기 특성을 캐시한 상
 
 ## r18 초기 구동 기록
 
-Gateway의 `--mode bringup`은 페어링된 r18과 `-bringup` 펌웨어에서 인증된 BLE 알림을 수집한다. 기존 Gateway를 중지하고 그 서비스와 같은 `--database` 경로를 지정한다. 기록 도구는 그 경로에서 잠금 이름만 얻는다. Mobius나 중앙 API에 연결하지 않고 새 로컬 JSON을 기록한다. Gateway 0.2.48은 `--usb-boot-log`가 주어지면 0.7.14-bringup의 USB 기록과 BLE 부팅을 대조한다. 한 번 부팅한 로그를 UTF-8로 저장하고 같은 보드 전원을 유지한 채 실행한다.
+Gateway의 `--mode bringup`은 페어링된 r18과 `-bringup` 펌웨어에서 인증된 BLE 알림을 수집한다. 기존 Gateway를 중지하고 그 서비스와 같은 `--database` 경로를 지정한다. 기록 도구는 그 경로에서 잠금 이름만 얻는다. Mobius나 중앙 API에 연결하지 않고 새 로컬 JSON을 기록한다. 0.7.15-bringup의 USB 모니터에서 `?`를 보내 초기 구동 기록을 요청하고 UTF-8 로그로 저장한다. Gateway 0.2.58은 `--usb-boot-log`로 이 로그와 BLE 부팅을 대조한다. 한 로그에 같은 줄이 반복되면 허용하고 다른 부팅 ID나 다른 값이 섞이면 거절한다. 아래 명령을 실행할 때까지 같은 보드 전원을 유지한다.
 
 ```sh
 bubble-keyring-ble-characterize --mode bringup --hardware r18-pcb \
   --gateway-id "$GATEWAY_ID" --device-id "$KEYRING_ID" --address "$KEYRING_ADDRESS" \
-  --firmware-revision keyring-0.7.14-bringup --distance-cm "$MEASURED_DISTANCE_CM" --seconds 90 \
+  --firmware-revision keyring-0.7.15-bringup --distance-cm "$MEASURED_DISTANCE_CM" --seconds 90 \
   --usb-boot-log "$PRIVATE_EVIDENCE/r18-usb.log" \
   --database "$GATEWAY_DATABASE" --output "$PRIVATE_EVIDENCE/r18-bringup.json"
 ```
@@ -120,7 +122,7 @@ Gateway 0.2.39의 `--verify-button-continuity`는 첫 알림이 있던 연결의
 ```sh
 bubble-keyring-ble-characterize --mode reconnect --hardware r18-pcb --verify-button-continuity \
   --gateway-id "$GATEWAY_ID" --device-id "$KEYRING_ID" --address "$KEYRING_ADDRESS" \
-  --firmware-revision keyring-0.7.14-bringup --distance-cm "$MEASURED_DISTANCE_CM" --seconds 90 \
+  --firmware-revision keyring-0.7.15-bringup --distance-cm "$MEASURED_DISTANCE_CM" --seconds 90 \
   --database "$GATEWAY_DATABASE" --output "$PRIVATE_EVIDENCE/r18-reconnect.json"
 ```
 
