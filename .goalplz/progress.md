@@ -1430,3 +1430,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 작
 - 일반 빌드·회귀시험·Pi 접속·BLE·실물 명령·펄스 계측은 미실행이다. 실제 Pi에서 Gateway B TLS 파일, loopback 전달과 r18 장치 연결이 남아 있다.
 
 배치 증거 commit `5369fe34031467ed570bf0f3eaf007d086238c07`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `eb1b4f6..5369fe3`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 Pi 세션 설정으로 시험 증거 보관
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R03, R05. 직전 goal turn은 r18 PC API와 Mobius4 격리 경로를 실제 배치한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 장치 저널 identity와 CORE ACK/readback 경계를 확인했다.
+
+- Pi 세션 런처에 `export-env`와 `capture-r18`을 추가했다. 기존 세션 설정에서 보관·대조에 필요한 `gateway.env`를 소유자 전용으로 만들며 기존 파일을 보존한다. 장치 저널 캡처는 같은 시험 잠금을 이어받고 정확한 r18 보드·펌웨어를 확인한다. SQLite snapshot과 최신 중앙 정산 대조를 같은 세션으로 연결했다. [Pi 시험 증거 보관](../keyring/raspberry-pi-gateway/TESTING.md#r18-pi-시험-증거-보관)
+- Gateway `0.2.63`의 내보내기·잠금·실행 인자 회귀시험 소스를 추가했다. 빌드·회귀시험·Pi 접속·저널 캡처·실물 시험은 미실행이다.
+
+소스 commit `847492ba68d74ccf9b7a8bc10913828e5fe5fcd3`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `551278f..847492b`다. goal은 active/progress다.
