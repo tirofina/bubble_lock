@@ -1522,3 +1522,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 USB·Pi�
 - 권한 거절·만료·다른 RSSI·혼합 출처를 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·Pi 접속·실제 포털 조회·웹 렌더링·별도 앱은 미확인이다.
 
 소스 commit `c21acb88e623cc5d71b382136095281a62b36103`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `36c9bd9..c21acb8`다. goal은 active/progress다.
+
+## 2026-11-11 — 격리 r18 위치 승인·조회·회수
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 BLE 관측과 위치 응답 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀의 위치 consent·grant·진행 중 사건·수신자별 lease 계약을 적용했다.
+
+- 격리 PC r18 프로필에 선택형 위치 시험 경로를 추가했다. 기존 시험 보호자 인증서, r18 장치 한 개와 최대 60초 lease로 범위를 제한한다. PC 도구는 같은 RSSI 관측의 중앙 위치 응답을 저장하고 lease·grant·consent 회수와 사건 종료 뒤 해당 장치가 조회에서 빠졌는지 다시 읽는다. [격리 위치 시험](../keyring/dev/mobius4/README.md#r18-격리-위치-시험)
+- 수신자·기기 범위, 혼합 grant와 회수 전후 조회의 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·서버 시작·Pi 접속·실제 위치 조회는 미수행이다. 웹 OIDC와 앱 연동은 팀 배치가 필요하다.
+
+소스 commit `318ef45b914c784587fd3c032cf051b36c883513`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `4ac2c4a..318ef45`다. goal은 active/progress다.
