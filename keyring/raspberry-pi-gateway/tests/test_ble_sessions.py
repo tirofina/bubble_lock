@@ -9,6 +9,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
+from bleak.exc import BleakError
 from bubble_gateway.ble import BleFleet, BleProtocolError, BleUnavailable
 from bubble_gateway.ble_characterize import read_firmware_image, read_usb_boot, summarize
 from bubble_gateway.model import payload_hash
@@ -1072,6 +1073,60 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
         original.write_gatt_char.assert_awaited_once()
         replacement.write_gatt_char.assert_not_awaited()
         self.assertTrue(self.peer.ready.is_set())  # Old operation cleanup cannot kill the replacement.
+        self.assertIsNone(self.peer.pending)
+
+    async def test_ack_after_final_write_error_is_kept_on_the_same_connection(self):
+        _, current = await self.reconnect()
+        generation = self.peer.generation
+        final_attempted = asyncio.Event()
+        writes = []
+
+        async def write(_characteristic, fragment, *, response):
+            self.assertTrue(response)
+            writes.append(fragment)
+            if fragment.endswith(b"\n"):
+                final_attempted.set()
+                raise BleakError("final response lost")
+
+        current.write_gatt_char = write
+        cmd = command()
+        digest = payload_hash(cmd)
+        persist = Mock()
+        async with asyncio.TaskGroup() as tasks:
+            execution = tasks.create_task(self.fleet.execute(cmd, 1000, digest, on_receipt=persist))
+            await asyncio.wait_for(final_attempted.wait(), timeout=1)
+            self.assertTrue(self.peer.ready.is_set())
+            notify = current.callbacks[self.fleet.receipt_uuid]
+            receipt = device_receipt(cmd, digest, bootId=current.identity["bootId"])
+            notify(None, bytearray(json.dumps(dict(receipt, payloadHash="a" * 64)).encode() + b"\n"))
+            persist.assert_not_called()
+            notify(None, bytearray(json.dumps(receipt).encode() + b"\n"))
+        result = execution.result()
+        self.assertEqual(result["ackCode"], "APPLIED")
+        persist.assert_called_once_with(result)
+        self.assertEqual(b"".join(writes).count(b"\n"), 1)
+        self.assertNotEqual(self.fleet.command_session(cmd["deviceId"]), generation)
+        self.assertIsNone(self.peer.pending)
+
+    async def test_final_write_error_without_ack_expires_without_resending(self):
+        _, current = await self.reconnect()
+        generation = self.peer.generation
+        final_attempts = 0
+
+        async def write(_characteristic, fragment, *, response):
+            nonlocal final_attempts
+            if fragment.endswith(b"\n"):
+                final_attempts += 1
+                raise OSError("final response lost")
+
+        current.write_gatt_char = write
+        persist = Mock()
+        cmd = command()
+        with self.assertRaises(TimeoutError):
+            await self.fleet.execute(cmd, 100, payload_hash(cmd), on_receipt=persist)
+        persist.assert_not_called()
+        self.assertEqual(final_attempts, 1)
+        self.assertNotEqual(self.fleet.command_session(cmd["deviceId"]), generation)
         self.assertIsNone(self.peer.pending)
 
     async def test_failed_handshake_never_marks_session_ready(self):

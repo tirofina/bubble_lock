@@ -19,6 +19,7 @@ from datetime import datetime, timedelta
 from typing import Any, AsyncIterator, Awaitable, Callable
 
 from bleak import BleakClient, BleakScanner
+from bleak.exc import BleakError
 from .core_bridge import CORE_SERVICE, CORE_IDENTITY, CORE_OBSERVATION, CORE_COMMAND, CORE_RECEIPT
 from .model import (MAX_UPTIME_MS, ObservationHead, button_presses_regressed, iso_time, observation_button_presses,
                     utc_now, valid_battery_alert)
@@ -663,7 +664,19 @@ class BleFleet:
                         if final:
                             peer.pending_final_write_at = write_at
                             final_write_started = True
-                        await client.write_gatt_char(self.command_uuid, raw[offset:offset + 20], response=True)
+                        try:
+                            await client.write_gatt_char(self.command_uuid, raw[offset:offset + 20], response=True)
+                        except (BleakError, OSError) as exc:
+                            if not final or pending.done():
+                                raise
+                            self._require_session(peer, client, generation)
+                            # The last fragment may have reached the device. Keep only
+                            # this session's matching notification eligible until its deadline.
+                            LOG.info("Waiting for device receipt after final GATT write error (%s)", type(exc).__name__)
+                            try:
+                                return await pending
+                            finally:
+                                self._lost(peer, generation)
                         if not final or not pending.done():
                             self._require_session(peer, client, generation)
                     return await pending
