@@ -273,7 +273,8 @@ class Gateway:
             self._finish(command, digest, "REJECTED", "CLOCK_UNTRUSTED", "Wall clock jumped; synchronize clock and restart gateway")
             return
         now = utc_now()
-        if parse_time(command["deadline"]) <= now:
+        command_deadline = parse_time(command["deadline"])
+        if command_deadline <= now:
             self._finish(command, digest, "REJECTED", "EXPIRED")
             return
         if (parse_time(command["issuedAt"]) - now).total_seconds() > 2:
@@ -290,15 +291,32 @@ class Gateway:
         if generation is None:
             self.counters["dispatch_deferred_ble"] += 1
             return
+        remaining = (command_deadline - utc_now()).total_seconds()
+        if remaining <= 0:
+            if self._clock_ok():
+                self._finish(command, digest, "REJECTED", "EXPIRED")
+            return
+        request_timeout = self.config.request_timeout
+        authorization_timeout = asyncio.timeout(min(remaining, request_timeout))
         try:
-            response = await self.transport.authorize(command, digest)
+            async with authorization_timeout:
+                response = await self.transport.authorize(command, digest)
         except asyncio.CancelledError:
             raise
         except Exception as exc:
+            deadline_elapsed = authorization_timeout.expired() and remaining <= request_timeout
+            if self._clock_ok() and (deadline_elapsed or command_deadline <= utc_now()):
+                self._finish(command, digest, "REJECTED", "EXPIRED", "Command expired while awaiting authorization")
+                return
             self.counters["authorization_unavailable"] += 1
             LOG.warning("Authorization unavailable (%s); execution deferred", type(exc).__name__)
             return
-        if not self._credentials_active(credential_generation) or not self._clock_ok():
+        if not self._clock_ok():
+            return
+        if command_deadline <= utc_now():
+            self._finish(command, digest, "REJECTED", "EXPIRED", "Command expired while awaiting authorization")
+            return
+        if not self._credentials_active(credential_generation):
             return
         try:
             deadline = authorization_deadline(command, digest, response)

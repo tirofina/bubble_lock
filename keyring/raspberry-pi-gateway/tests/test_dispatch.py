@@ -12,7 +12,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
 from bubble_gateway.ble import BleFleet
-from bubble_gateway.model import iso_time, payload_hash, utc_now
+from bubble_gateway.model import iso_time, parse_time, payload_hash, utc_now
 from bubble_gateway.service import Gateway
 from bubble_gateway.store import Store
 from bubble_gateway.transport import NativeDeliveryHold, RemoteResponseError
@@ -74,6 +74,52 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
         self.authorization["expiresAt"] = iso_time(utc_now() - timedelta(seconds=1))
         status, receipt = await self.dispatch()
         self.assertEqual((status, receipt["ackCode"]), ("REJECTED", "EXPIRED"))
+        self.gateway.ble.execute.assert_not_awaited()
+
+    async def test_authorization_wait_is_cancelled_at_command_deadline(self):
+        request = asyncio.get_running_loop().create_future()
+
+        async def authorize(_command, _digest):
+            return await request
+
+        self.gateway.transport.authorize.side_effect = authorize
+        near_deadline = parse_time(self.cmd["deadline"]) - timedelta(milliseconds=20)
+        with patch("bubble_gateway.service.utc_now", return_value=near_deadline):
+            async with asyncio.timeout(1):
+                status, receipt = await self.dispatch()
+        self.assertTrue(request.cancelled())
+        self.assertEqual((status, receipt["ackCode"]), ("REJECTED", "EXPIRED"))
+        self.assertEqual(self.store.interrupted(), [])
+        self.gateway.ble.execute.assert_not_awaited()
+
+    async def test_short_authorization_request_timeout_leaves_command_pending(self):
+        request = asyncio.get_running_loop().create_future()
+
+        async def authorize(_command, _digest):
+            return await request
+
+        self.gateway.config.request_timeout = 0.02
+        self.gateway.transport.authorize.side_effect = authorize
+        async with asyncio.timeout(1):
+            self.assertEqual(await self.dispatch(), ("RECEIVED", None))
+        self.assertTrue(request.cancelled())
+        self.assertEqual(self.gateway.counters["authorization_unavailable"], 1)
+        self.gateway.ble.execute.assert_not_awaited()
+
+    async def test_late_authorization_response_does_not_record_dispatch_intent(self):
+        deadline = parse_time(self.cmd["deadline"])
+        current = deadline - timedelta(seconds=1)
+
+        async def authorize(_command, _digest):
+            nonlocal current
+            current = deadline + timedelta(milliseconds=1)
+            return self.authorization
+
+        self.gateway.transport.authorize.side_effect = authorize
+        with patch("bubble_gateway.service.utc_now", side_effect=lambda: current):
+            status, receipt = await self.dispatch()
+        self.assertEqual((status, receipt["ackCode"]), ("REJECTED", "EXPIRED"))
+        self.assertEqual(self.store.interrupted(), [])
         self.gateway.ble.execute.assert_not_awaited()
 
     async def test_dispatch_start_requires_durable_intent_and_shortens_ble_budget(self):

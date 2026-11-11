@@ -21,7 +21,7 @@ def config(database=None):
         observation_container=BINDING["observationContainer"],
         receipt_container=BINDING["receiptContainer"], health_container=BINDING["healthContainer"],
         ble_gatt_profile="core-v1", ble_devices=DEVICES, ble_command_timeout=1,
-        core_bridge_enabled=True, core_telemetry_epochs=None, m2m_mqtt_enabled=True, credential_ttl=60,
+        core_bridge_enabled=True, core_telemetry_epochs=None, m2m_mqtt_enabled=True, credential_ttl=60, request_timeout=10,
     )
 
 
