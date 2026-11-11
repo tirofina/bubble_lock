@@ -1267,3 +1267,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01~R03, R10. 직전 goal turn은 중�
 - 중앙 응답 대기 중 Mobius4 영수증 완료와 중앙 행 보존을 확인하는 회귀시험 소스를 추가했다. 빌드·회귀시험·실제 Pi 연동은 미실행이다. 두 서버와 Pi의 실제 영수증 대조 및 제작 PCB 검증이 남아 있다.
 
 소스 commit `8a7377ed8a2c2dfa43d591e50584e3775a919a06`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `b2b0370..8a7377e`다. goal은 active/progress다.
+
+## 2026-11-11 — SQLite 용량 부족 시 영수증 등록 분리
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01~R03, R10. 직전 goal turn은 중앙 영수증의 전송을 분리한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 중앙 중복 판정의 영수증 해시와 CORE ACK·웹 확인 계약을 읽었다.
+
+- Gateway `0.2.52`는 중앙 영수증과 등록 표시를 별도 SQLite 트랜잭션에 저장한다. Mobius4 영수증과 선택형 CORE ACK는 같은 트랜잭션에서 등록한다. 한 경로가 용량 부족으로 롤백돼도 다른 경로는 공간이 허용하는 즉시 등록할 수 있다. 등록을 미룬 원본은 명령 저널에 남으며 각 작업은 같은 요청 ID로 재시도한다. [중앙 영수증 정산](../keyring/raspberry-pi-gateway/RECEIPT_ROUTING.md#중앙-명령-영수증-정산)
+- 빈 자리 한 개·두 개, 공간 회복과 재시작 후 중복 등록 방지를 다루는 회귀시험 소스를 추가했다. 공통 SQLite 용량 상한이 적용된다. 빌드·회귀시험·실제 Pi 연동은 미실행이다. 두 서버와 Pi의 실제 영수증 대조 및 제작 PCB 검증이 남아 있다.
+
+소스 commit `2e0d5607ee7b679012ecea45aa8274a17057b19d`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8312341..2e0d560`다. goal은 active/progress다.
