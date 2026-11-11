@@ -326,6 +326,18 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(RemoteResponseError):
             await self.hub.publish(self.rqi, self.container, self.payload)
 
+    async def test_dispatch_start_posts_same_command_binding_as_authorize(self):
+        cmd = command()
+        digest = payload_hash(cmd)
+        self.hub._api = AsyncMock(return_value={"allowed": True})
+        await self.hub.authorize(cmd, digest)
+        await self.hub.dispatch_start(cmd, digest)
+        body = {key: cmd[key] for key in ("commandId", "deviceId", "claimId", "grantRevision", "ownershipEpoch")}
+        body["payloadHash"] = digest
+        self.assertEqual(self.hub._api.await_args_list,
+                         [call("POST", "/authorize", body, cmd["commandId"]),
+                          call("POST", "/dispatch-start", body, cmd["commandId"])])
+
     async def test_conflict_requires_exact_existing_content(self):
         rn = "gw-" + hashlib.sha256(self.rqi.encode()).hexdigest()
         read_rqi = "read-" + hashlib.sha256(self.rqi.encode()).hexdigest()

@@ -15,7 +15,7 @@ from bubble_gateway.ble import BleFleet
 from bubble_gateway.model import iso_time, payload_hash, utc_now
 from bubble_gateway.service import Gateway
 from bubble_gateway.store import Store
-from bubble_gateway.transport import NativeDeliveryHold
+from bubble_gateway.transport import NativeDeliveryHold, RemoteResponseError
 from helpers import BINDING, command, config, device_receipt
 
 
@@ -75,6 +75,65 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
         status, receipt = await self.dispatch()
         self.assertEqual((status, receipt["ackCode"]), ("REJECTED", "EXPIRED"))
         self.gateway.ble.execute.assert_not_awaited()
+
+    async def test_dispatch_start_requires_durable_intent_and_shortens_ble_budget(self):
+        self.gateway.config.pc_dispatch_start_required = True
+
+        async def start(_command, _digest):
+            self.gateway.transport.authorize.assert_awaited_once_with(self.cmd, self.digest)
+            self.gateway.ble.execute.assert_not_awaited()
+            self.assertEqual(len(self.store.interrupted()), 1)
+            return dict(self.authorization, expiresAt=iso_time(utc_now() + timedelta(seconds=3)))
+
+        self.gateway.transport.dispatch_start = AsyncMock(side_effect=start)
+        status, _ = await self.dispatch()
+        self.assertEqual(status, "APPLIED")
+        self.gateway.transport.dispatch_start.assert_awaited_once_with(self.cmd, self.digest)
+        self.assertLessEqual(self.gateway.ble.execute.await_args.args[1], 2750)
+
+    async def test_dispatch_start_with_wrong_claim_blocks_ble(self):
+        self.gateway.config.pc_dispatch_start_required = True
+        self.gateway.transport.dispatch_start = AsyncMock(return_value=dict(self.authorization, claimId="wrong"))
+        status, receipt = await self.dispatch()
+        self.assertEqual((status, receipt["ackCode"]), ("REJECTED", "NOT_AUTHORIZED"))
+        self.gateway.ble.execute.assert_not_awaited()
+
+    async def test_dispatch_start_with_expired_deadline_blocks_ble(self):
+        self.gateway.config.pc_dispatch_start_required = True
+        expired = iso_time(utc_now() - timedelta(seconds=1))
+        self.gateway.transport.dispatch_start = AsyncMock(return_value=dict(self.authorization, expiresAt=expired))
+        status, receipt = await self.dispatch()
+        self.assertEqual((status, receipt["ackCode"]), ("REJECTED", "EXPIRED"))
+        self.gateway.ble.execute.assert_not_awaited()
+
+    async def test_missing_dispatch_start_route_has_no_legacy_fallback(self):
+        self.gateway.config.pc_dispatch_start_required = True
+        self.gateway.transport.dispatch_start = AsyncMock(side_effect=RemoteResponseError("missing", status_code=404))
+        status, receipt = await self.dispatch()
+        self.assertEqual((status, receipt["ackCode"]), ("REJECTED", "DISPATCH_NOT_SENT"))
+        self.gateway.ble.execute.assert_not_awaited()
+        self.assertEqual(self.store.pending(), [])
+
+    async def test_session_change_during_dispatch_start_blocks_ble(self):
+        self.gateway.config.pc_dispatch_start_required = True
+
+        async def start(_command, _digest):
+            self.gateway.ble.command_session.return_value = 2
+            return self.authorization
+
+        self.gateway.transport.dispatch_start = AsyncMock(side_effect=start)
+        status, receipt = await self.dispatch()
+        self.assertEqual((status, receipt["ackCode"]), ("REJECTED", "DISPATCH_NOT_SENT"))
+        self.gateway.ble.execute.assert_not_awaited()
+
+    async def test_cancellation_during_dispatch_start_records_unsent_command(self):
+        self.gateway.config.pc_dispatch_start_required = True
+        self.gateway.transport.dispatch_start = AsyncMock(side_effect=asyncio.CancelledError)
+        with self.assertRaises(asyncio.CancelledError):
+            await self.dispatch()
+        self.gateway.ble.execute.assert_not_awaited()
+        status, encoded = self.store.db.execute("SELECT status,receipt FROM commands").fetchone()
+        self.assertEqual((status, json.loads(encoded)["ackCode"]), ("REJECTED", "DISPATCH_NOT_SENT"))
 
     async def test_waits_for_command_session_before_authorizing_or_recording_intent(self):
         self.gateway.ble.command_session.return_value = None

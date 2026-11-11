@@ -8,7 +8,7 @@ import sqlite3
 import time
 import uuid
 from collections import Counter
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from .ble import BleFleet
@@ -58,7 +58,8 @@ class Gateway:
             "cseId": self.config.cse_id, "cseUrl": self.config.cse_url,
             "cseDeploymentId": self.config.cse_deployment_id,
             "receiptContainerRi": self.config.receipt_container_ri,
-            "apiUrl": self.config.api_url, "rvi": self.config.rvi,
+            "apiUrl": self.config.api_url, "pcDispatchStartRequired": self.config.pc_dispatch_start_required,
+            "rvi": self.config.rvi,
             "mqttEnabled": self.config.mqtt_enabled, "mqttHost": self.config.mqtt_host,
             "m2mMqttEnabled": self.config.m2m_mqtt_enabled,
             "mqttWrappedPrimitive": self.config.mqtt_wrapped_primitive,
@@ -238,6 +239,22 @@ class Gateway:
         except (ValueError, TypeError, KeyError, OverflowError):
             self._finish(command, digest, "INDETERMINATE", "INVALID_RECEIPT", "Device receipt could not establish a valid result")
 
+    async def _dispatch_start_deadline(self, command: dict, digest: str, expires: float) -> datetime:
+        remaining = expires - time.monotonic()
+        if remaining <= 0:
+            raise DispatchBlocked("EXPIRED")
+        try:
+            async with asyncio.timeout(remaining):
+                response = await self.transport.dispatch_start(command, digest)
+        except Exception as exc:
+            self.counters["dispatch_start_unconfirmed"] += 1
+            LOG.warning("Central dispatch start unconfirmed (%s)", type(exc).__name__)
+            raise DispatchBlocked("DISPATCH_NOT_SENT") from exc
+        try:
+            return authorization_deadline(command, digest, response)
+        except (ValueError, PermissionError, TypeError, OverflowError) as exc:
+            raise DispatchBlocked("NOT_AUTHORIZED") from exc
+
     async def _dispatch_one(self, command: dict, digest: str) -> None:
         if not self._clock_ok():
             self._finish(command, digest, "REJECTED", "CLOCK_UNTRUSTED", "Wall clock jumped; synchronize clock and restart gateway")
@@ -301,8 +318,23 @@ class Gateway:
             return
         try:
             require_write_authority()
+            if self.config.pc_dispatch_start_required:
+                if self.ble.command_session(device_id) != generation:
+                    raise DispatchBlocked("DISPATCH_NOT_SENT")
+                dispatch_deadline = await self._dispatch_start_deadline(command, digest, expires)
+                deadline = min(deadline, dispatch_deadline)
+                require_write_authority()
+                if self.ble.command_session(device_id) != generation:
+                    raise DispatchBlocked("DISPATCH_NOT_SENT")
+                expires = min(expires, time.monotonic() + (deadline - utc_now() - margin).total_seconds())
+        except asyncio.CancelledError:
+            self._finish(command, digest, "REJECTED", "DISPATCH_NOT_SENT", "Shutdown before BLE transmission")
+            raise
         except DispatchBlocked as exc:
-            self._finish(command, digest, "REJECTED", str(exc), "Authorization changed before BLE transmission")
+            code = str(exc)
+            if self.config.pc_dispatch_start_required and code == "CREDENTIAL_CHANGED":
+                code = "DISPATCH_NOT_SENT"
+            self._finish(command, digest, "REJECTED", code, "Dispatch blocked before BLE transmission")
             return
         budget_ms = int((expires - time.monotonic()) * 1000)
         if budget_ms <= 0:

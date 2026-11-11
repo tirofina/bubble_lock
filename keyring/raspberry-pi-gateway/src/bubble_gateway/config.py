@@ -66,6 +66,7 @@ class GatewayConfig:
     m2m_mqtt_enabled: bool = True
     cse_deployment_id: str | None = None
     receipt_container_ri: str | None = None
+    pc_dispatch_start_required: bool = False
 
     @classmethod
     def from_env(cls) -> "GatewayConfig":
@@ -179,6 +180,7 @@ class GatewayConfig:
             max_commands=int(number("MAX_COMMANDS", "100000", 100, 10000000)),
             core_bridge_enabled=core_bridge, ble_gatt_profile=profile, core_telemetry_epochs=epochs,
             cse_deployment_id=deployment, receipt_container_ri=receipt_ri,
+            pc_dispatch_start_required=boolean("PC_DISPATCH_START_REQUIRED", "false"),
         )
 
 

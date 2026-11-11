@@ -645,10 +645,16 @@ class TransportHub:
             return False
 
     async def authorize(self, command_dict: dict[str, Any], payload_hash: str) -> dict[str, Any]:
+        return await self._command_authority("/authorize", command_dict, payload_hash)
+
+    async def dispatch_start(self, command_dict: dict[str, Any], payload_hash: str) -> dict[str, Any]:
+        return await self._command_authority("/dispatch-start", command_dict, payload_hash)
+
+    async def _command_authority(self, route: str, command_dict: dict[str, Any], payload_hash: str) -> dict[str, Any]:
         body = {key: command_dict[key] for key in
                 ("commandId", "deviceId", "claimId", "grantRevision", "ownershipEpoch")}
         body["payloadHash"] = payload_hash
-        return await self._api("POST", "/authorize", body, command_dict["commandId"])
+        return await self._api("POST", route, body, command_dict["commandId"])
 
     async def credential_status(self) -> dict[str, Any]:
         return await self._api("GET", "/credentials/status")

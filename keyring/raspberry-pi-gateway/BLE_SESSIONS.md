@@ -10,6 +10,8 @@ Gateway 0.2.42는 마지막 GATT 쓰기 시작 뒤 한 번 정한 BLE 기한 안
 
 Gateway 0.2.43은 일치 영수증 알림을 처리하는 동안 장치 결과를 판정해 SQLite에 커밋한다. 마지막 쓰기 응답이 보류된 채 종료되더라도 커밋된 영수증은 재시작 후 기존 전송 대기열로 넘어간다. 최초 저장이 실패하면 수신 결과로 한 번 더 저장을 시도한다. 재시도까지 실패하면 기존 실행 의도를 남겨 재시작에서 미확정으로 처리한다.
 
+Gateway 0.2.45에서 `PC_DISPATCH_START_REQUIRED=true`를 사용하면 최초 승인과 SQLite 실행 의도 기록 뒤 같은 명령·claim·payload hash로 중앙의 `POST /dispatch-start`를 호출한다. 중앙은 현재 정책을 확인해 `IN_FLIGHT`를 기록한다. Pi는 두 승인 기한 중 이른 값을 적용하고, 응답을 받은 뒤 BLE 세션·자격 상태·시계를 다시 확인한다. 응답이 없거나 권한이 바뀌면 BLE 쓰기 전에 거절 영수증을 남긴다. 기존 격리 시험 프로필은 환경 설정 기본값 `false`를 사용한다. 이 변경은 원격 main `bc2a45d`의 INTEGRATION 계약을 따른다.
+
 ## 현재 부팅과 새 적용 영수증
 
 Gateway 0.2.8은 대기 중인 commandId와 payloadHash가 일치하는 `APPLIED`에 현재 GATT identity의 bootId를 요구한다. 부팅 ID가 다르면 세션을 끊고 명령 결과를 미확정으로 기록한다. 이미 전송한 명령은 자동 재실행하지 않는다. 과거 journal의 `DUPLICATE`는 원래 bootId와 적용 당시 readback을 유지하며, 현재 부팅의 관측 시각으로 환산하지 않는다.
