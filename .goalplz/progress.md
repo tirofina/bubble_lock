@@ -1667,3 +1667,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05, R11. 직전 goal turn은 수
 - 기존 증거 대조 도구가 단계별 파일과 이전 JSON 배열을 읽는다. 화면 미표시와 문구 불일치는 관찰값으로 보존한다. 기록 경로의 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·기록 도구 실행·Feather flash·Pi 접속·실제 화면 확인은 미수행이다. [실물 화면 기록 절차](../keyring/raspberry-pi-gateway/TESTING.md#기존-scoped-mobius4에서-feather-led-시험)
 
 소스 commit `657bf8ae6a639062f17ca3c395c01871ef9c37c5`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1798a71..657bf8a`다. goal은 active/progress다.
+
+## 2026-11-11 — Pi 배포 계정의 SQLite 상태 권한 점검
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R11. 직전 goal turn은 Feather 화면 기록 도구를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 명령·영수증 계약을 확인했다.
+
+- Gateway 0.2.88은 systemd의 `STATE_DIRECTORY`를 사용해 DB, 잠금, WAL, 공유 메모리, 롤백 저널의 파일 유형과 위치를 검사한다. 서비스 계정이 SQLite 디렉터리에 쓰고 진입할 수 있는지, 기존 파일에 필요한 접근 권한이 있는지도 확인한다. 오류는 파일 역할을 표시한다.
+- 새 하위 디렉터리를 만들기 전의 사전 점검과 상태 디렉터리 및 WAL 접근 거부, 잘못된 보조 파일 유형의 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·Pi 배포·systemd 실행·실제 SQLite 권한 검증은 미수행이다. [Pi 배포 절차](../keyring/raspberry-pi-gateway/README.md#수동-실행-또는-systemd-배포)
+
+소스 commit `efaeb5698a87af465bf9fcfbf5d958bc0a60af10`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `76d4542..efaeb56`이다. goal은 active/progress다.
