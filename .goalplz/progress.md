@@ -1630,3 +1630,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R11. 직전 goal turn은 BLE 재�
 - 캐시된 명령 특성, 영수증 특성 누락, 구독 실패, 정상 명령 구독을 다루는 회귀시험 소스와 기존 중앙 통합 fixture를 갱신했다. 빌드·시험·정적 분석·실제 Pi 접속·BlueZ 연결·실물 명령은 미수행이다. [BLE 통신 메모](../keyring/raspberry-pi-gateway/IO_NOTES.md)
 
 소스 commit `fbd62e8f0193e2d59afe4b6ac719fa1a5be00260`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1140a9f..fbd62e8`다. goal은 active/progress다.
+
+## 2026-11-11 — 명령 기한에 맞춰 중앙 승인 대기 종료
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R10, R11. 직전 goal turn은 BLE 관측과 명령 영수증 구독 조건을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀의 `EXPIRED` 취소 정산을 확인했다.
+
+- Gateway 0.2.85는 최초 중앙 승인 대기를 명령 기한과 `REQUEST_TIMEOUT` 중 짧은 값으로 제한한다. 명령이 만료되면 실행 의도를 기록하기 전에 `REJECTED / EXPIRED` 영수증을 저장한다. 먼저 요청 제한에 걸리면 명령을 `RECEIVED`로 두고 다음 순회에서 재승인한다.
+- 기한 만료에 의한 요청 취소, 더 짧은 요청 제한, 늦게 도착한 승인 응답의 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·실제 Pi 접속·중앙 API 정산·실물 명령은 미수행이다. [BLE 통신 메모](../keyring/raspberry-pi-gateway/IO_NOTES.md)
+
+소스 commit `fddc45578a3444a4fac94bb7ae742e1b44db68ae`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `afd7aa7..fddc455`다. goal은 active/progress다.
