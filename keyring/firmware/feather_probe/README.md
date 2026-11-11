@@ -20,7 +20,7 @@ BLE 등록에는 이 스케치 폴더의 Git 제외 파일 `provisioning.h`에 �
 
 ## 내장 LED를 쓰는 명령 프로필
 
-`KEYRING_FEATHER_ENABLE_COMMANDS=1`로 컴파일하면 BLE identity가 `feather-probe-0.2.0`으로 바뀐다. 이 프로필의 `desiredState.state`는 보드의 빨간 내장 LED GPIO13을 제어한다. `true`는 다음 OFF 명령·연결 해제·재부팅까지 켜지고 `false`는 즉시 끈다. 영수증의 readback은 적용 시점의 GPIO 입력값, 관측의 state는 현재 입력값이다. A0/A1의 화면 표시는 별도로 유지한다. [Adafruit 보드 핀 설명](https://learn.adafruit.com/adafruit-esp32-feather-v2/pinouts)
+`KEYRING_FEATHER_ENABLE_COMMANDS=1`로 컴파일하면 BLE identity가 `feather-probe-0.2.1`로 바뀐다. 화면 하단에 GPIO13의 읽기값을 `CMD ON` 또는 `CMD OFF`로 표시한다. GPIO 초기화에 실패하면 `CMD GPIO ERROR`를 표시한다. A0/A1의 마지막 입력은 별도 줄에 유지한다. ON 상태는 OFF 명령·연결 해제·재부팅 때 해제된다. 영수증에는 적용 시점의 GPIO 입력값이, BLE 관측에는 화면에 표시하는 현재 입력값이 담긴다. [Adafruit 보드 핀 설명](https://learn.adafruit.com/adafruit-esp32-feather-v2/pinouts)
 
 명령과 영수증은 CORE v1 GATT의 `...0003...` WRITE와 `...0004...` NOTIFY를 쓴다. 기존 Secure Connections·MITM·bonding을 적용한다. 세션·영수증 구독·기한을 대조하고, 명령 ID·hash·epoch·grant를 별도 NVS journal에 먼저 저장한 후 GPIO를 변경한다. 같은 ID와 같은 내용은 저장한 결과를 반환한다. 저장 의도만 남은 명령은 `INDETERMINATE`로 응답한다. 16개를 보관하며 손상된 journal과 만석에는 각각 `STORAGE_ERROR`, `JOURNAL_FULL`을 반환한다. 자동 삭제는 하지 않는다.
 
@@ -33,7 +33,7 @@ arduino-cli compile --fqbn esp32:esp32:adafruit_feather_esp32_v2 `
   --output-dir '<새 로컬 빌드 폴더>' keyring/firmware/feather_probe
 ```
 
-실물 시험은 Gateway 0.2.7과 [Feather LED ON/OFF 절차](../../raspberry-pi-gateway/TESTING.md#feather-led-onoff-시험)를 사용한다. ON과 OFF를 별도 명령으로 발급하고 보드 LED를 직접 본다. Gateway SQLite와 Mobius4의 명령 해시·readback 대조는 별도 읽기 전용 도구가 수행한다. 재연결·재부팅 중복 방지와 제작 PCB의 모터 펄스·센서·전력은 각각 별도 실물 시험이다.
+실물 시험은 [Feather ON/OFF 절차](../../raspberry-pi-gateway/TESTING.md#feather-led-onoff-시험)를 사용한다. ON과 OFF를 별도 명령으로 발급하고 화면의 `CMD ON`과 `CMD OFF`를 직접 확인한다. Gateway SQLite와 Mobius4의 명령 해시·readback 대조는 별도 읽기 전용 도구가 수행한다. LED 점등 여부, 재연결·재부팅 중복 방지와 제작 PCB의 모터 펄스·센서·전력은 각각 별도 실물 시험이다.
 
 아래 단독 관측과 relay 도구는 기존 0.1.1 프로필용이다. 명령 프로필은 전체 Gateway로 실행한다. [명령 프로필 빌드·로컬 시험 기록](../../evidence/2026-11-10-feather-command/README.md)
 

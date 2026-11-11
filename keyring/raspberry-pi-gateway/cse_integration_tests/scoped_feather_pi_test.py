@@ -54,3 +54,15 @@ class ScopedPiProfileTests(unittest.TestCase):
                 verify.assert_not_called()
                 gateway_environment(profile, root, verify_api=True)
                 verify.assert_called_once_with(8788, INTEGRATION_TEAM_REVISION, self.context)
+
+    def test_profile_pins_only_the_selected_command_firmware(self):
+        root = Path.cwd()
+        profile = {"version": 1, "address": "00:00:00:00:00:01", "csePort": 8760, "apiPort": 8787,
+                   "tlsDirectory": str(root)}
+        with patch("scoped_feather_pi.load_tls", return_value=(root / "ca.pem", root / "cert.pem",
+                                                              root / "key.pem", self.context)):
+            self.assertEqual(gateway_environment(profile, root)["FIRMWARE_REVISION_ALLOWLIST"], "feather-probe-0.2.0")
+            lcd = dict(profile, firmwareRevision="feather-probe-0.2.1")
+            self.assertEqual(gateway_environment(lcd, root)["FIRMWARE_REVISION_ALLOWLIST"], "feather-probe-0.2.1")
+            with self.assertRaisesRegex(ValueError, "Unknown Feather command firmware"):
+                gateway_environment(dict(profile, firmwareRevision="feather-probe-0.1.1"), root)

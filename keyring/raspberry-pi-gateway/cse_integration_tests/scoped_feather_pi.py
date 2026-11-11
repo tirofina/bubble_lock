@@ -15,6 +15,7 @@ PARENT = "/Mobius/privacy-bubble-test-ae"
 CSE_DEPLOYMENT = "scoped-mobius4"
 API_PORTS = {"legacy": 8787, "integration": 8788}
 INTEGRATION_TEAM_REVISION = "bc2a45dfcc014b7cdb0a57a03aca2c04ca8eb989"
+COMMAND_FIRMWARES = ("feather-probe-0.2.0", "feather-probe-0.2.1")
 
 
 class ScopedApiError(ValueError):
@@ -76,6 +77,9 @@ def gateway_environment(profile, session, *, verify_api=False):
     if not tls.is_absolute():
         raise ValueError("Expected an absolute client TLS directory")
     ca, cert, key, context = load_tls(tls)
+    firmware = profile.get("firmwareRevision", COMMAND_FIRMWARES[0])
+    if firmware not in COMMAND_FIRMWARES:
+        raise ValueError("Unknown Feather command firmware")
     environment = {
         "PATH": os.defpath, "PYTHONPATH": str(GATEWAY_SOURCE), "STATE_DIRECTORY": str(session),
         "GATEWAY_ID": "gw-a", "M2M_CSE_ID": "Mobius4", "M2M_RVI": "4",
@@ -86,7 +90,7 @@ def gateway_environment(profile, session, *, verify_api=False):
         "M2M_RECEIPT_CONTAINER": f"{PARENT}/command-receipts-a", "M2M_HEALTH_CONTAINER": f"{PARENT}/health",
         "TLS_CA_FILE": str(ca), "TLS_CERT_FILE": str(cert), "TLS_KEY_FILE": str(key),
         "BLE_DEVICES": json.dumps({"keyring-feather-lab": profile["address"]}),
-        "BLE_PAIR": "true", "BLE_GATT_PROFILE": "core-v1", "FIRMWARE_REVISION_ALLOWLIST": "feather-probe-0.2.0",
+        "BLE_PAIR": "true", "BLE_GATT_PROFILE": "core-v1", "FIRMWARE_REVISION_ALLOWLIST": firmware,
         "MQTT_ENABLED": "false", "M2M_MQTT_ENABLED": "false", "CORE_BRIDGE_ENABLED": "false",
         "GATEWAY_DATABASE": str(session / "gateway.sqlite3"), "POLL_INTERVAL": "1", "REQUEST_TIMEOUT": "5",
         "HEARTBEAT_INTERVAL": "5",
@@ -117,7 +121,8 @@ def prepare(args, session):
             raise ValueError("The address file must contain only one paired Feather address")
     api_port = API_PORTS[args.api_mode] if args.api_port is None else args.api_port
     profile = {"version": 1, "address": address, "tlsDirectory": str(args.tls_dir.absolute()),
-               "csePort": args.cse_port, "apiPort": api_port, "cseDeploymentId": CSE_DEPLOYMENT}
+               "csePort": args.cse_port, "apiPort": api_port, "cseDeploymentId": CSE_DEPLOYMENT,
+               "firmwareRevision": args.firmware_revision}
     if args.api_mode == "integration":
         profile["apiMode"] = args.api_mode
         profile["apiTeamRevision"] = INTEGRATION_TEAM_REVISION if args.api_team_revision is None else args.api_team_revision
@@ -142,7 +147,7 @@ def load_environment(session):
         profile = json.loads(stream.read(8193))
     fields = {"version", "address", "tlsDirectory", "csePort", "apiPort"}
     if (not isinstance(profile, dict) or not fields <= profile.keys()
-            or profile.keys() - fields - {"cseDeploymentId", "receiptContainerRi", "apiMode", "apiTeamRevision"}):
+            or profile.keys() - fields - {"cseDeploymentId", "receiptContainerRi", "apiMode", "apiTeamRevision", "firmwareRevision"}):
         raise ValueError("Expected a prepared Feather command session")
     return gateway_environment(profile, session, verify_api=True)
 
@@ -168,6 +173,7 @@ def main():
     setup.add_argument("--api-mode", choices=API_PORTS, default="legacy")
     setup.add_argument("--api-port", type=int, help="Override the selected API mode's Pi loopback port")
     setup.add_argument("--api-team-revision", help="Override the pinned full team commit for integration mode")
+    setup.add_argument("--firmware-revision", choices=COMMAND_FIRMWARES, default=COMMAND_FIRMWARES[0])
     setup.add_argument("--receipt-container-ri", help="Use the scoped gw-a receipt pin in a fresh session")
     start = modes.add_parser("run", help="Start the Gateway for an explicitly prepared session")
     check = modes.add_parser("preflight", help="Check the pinned receipt and central command routes over mTLS")

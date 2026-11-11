@@ -29,6 +29,10 @@ class PiCommandReadinessTests(unittest.TestCase):
         with patch("pi_led_cycle.utc_now", return_value=now):
             self.assertEqual(ready_heartbeat(health, GATEWAY, "device-boot", since),
                              {"gatewayBootId": "gateway-boot", "observedAt": now.isoformat()})
+            lcd = "feather-probe-0.2.1"
+            lcd_health = health | {"devices": [device | {"firmwareRevision": lcd}]}
+            self.assertIsNone(ready_heartbeat(lcd_health, GATEWAY, "device-boot", since))
+            self.assertIsNotNone(ready_heartbeat(lcd_health, GATEWAY, "device-boot", since, firmware=lcd))
             self.assertIsNone(ready_heartbeat(health, GATEWAY, "different-boot", since))
             self.assertIsNone(ready_heartbeat(health, GATEWAY, "device-boot", now + timedelta(milliseconds=1)))
             self.assertIsNone(ready_heartbeat(health | {"credentialStatus": "UNKNOWN"}, GATEWAY, "device-boot", since))

@@ -14,10 +14,11 @@ from bubble_gateway.config import ID
 from bubble_gateway.model import canonical, iso_time, parse_time, payload_hash, utc_now, validate_command
 from bubble_gateway.state_identity import metadata
 from bubble_gateway.store import Store
+from scoped_feather_pi import COMMAND_FIRMWARES
 
 GATEWAY = "gw-feather-bench"
 DEVICE = "keyring-feather-lab"
-FIRMWARE = "feather-probe-0.2.0"
+FIRMWARE = COMMAND_FIRMWARES[0]
 SUBJECT = "keyring-test-household"
 GUARDIAN = "guardian-feather-bench"
 STEPS = (("ON", True), ("OFF", False))
@@ -36,17 +37,17 @@ def write_new_json(path, data):
         os.fsync(stream.fileno())
 
 
-def verify_receipt(command, receipt, boot_id, state):
+def verify_receipt(command, receipt, boot_id, state, *, firmware=FIRMWARE):
     expected = {key: command[key] for key in ("gatewayId", "deviceId", "commandId", "grantRevision", "ownershipEpoch")}
     expected.update(payloadHash=payload_hash(command), status="APPLIED", ackCode="APPLIED",
-                    firmwareRevision=FIRMWARE, bootId=boot_id)
+                    firmwareRevision=firmware, bootId=boot_id)
     if (canonical({key: receipt.get(key) for key in expected}) != canonical(expected)
             or canonical(receipt.get("readback")) != canonical({"state": state})):
         raise RuntimeError("CSE receipt does not match the applied bench command")
     parse_time(receipt["receivedAt"])
 
 
-def ready_heartbeat(health, gateway_id, device_boot, not_before):
+def ready_heartbeat(health, gateway_id, device_boot, not_before, *, firmware=FIRMWARE):
     gateway_boot = health.get("bootId")
     if ("credentialTransition" in health or health.get("gatewayId") != gateway_id or health.get("credentialStatus") != "ACTIVE"
             or not isinstance(gateway_boot, str) or ID.fullmatch(gateway_boot) is None):
@@ -59,13 +60,13 @@ def ready_heartbeat(health, gateway_id, device_boot, not_before):
         return None
     device = devices[0]
     if (device.get("connected") is not True or device.get("commandReady") is not True
-            or device.get("bootId") != device_boot or device.get("firmwareRevision") != FIRMWARE):
+            or device.get("bootId") != device_boot or device.get("firmwareRevision") != firmware):
         return None
     return {"gatewayBootId": gateway_boot, "observedAt": health["observedAt"]}
 
 
 async def run_led_cycle(operator_post, cse, paths, output, *, gateway_id=GATEWAY, subject_id=SUBJECT,
-                        central_settlement=None):
+                        central_settlement=None, firmware=FIRMWARE):
     async def wait_for(check):
         while not (output / "STOP").exists():
             result = await check()
@@ -89,7 +90,7 @@ async def run_led_cycle(operator_post, cse, paths, output, *, gateway_id=GATEWAY
         current = native["con"]
         observed = parse_time(current["receivedAt"])
         if (current["gatewayId"] == gateway_id and current["deviceId"] == DEVICE
-                and current["firmwareRevision"] == FIRMWARE and current["state"] is state
+                and current["firmwareRevision"] == firmware and current["state"] is state
                 and abs((utc_now() - observed).total_seconds()) <= 15
                 and (boot_id is None or current["bootId"] == boot_id)
                 and (after is None or observed >= after)):
@@ -105,7 +106,7 @@ async def run_led_cycle(operator_post, cse, paths, output, *, gateway_id=GATEWAY
             return None
         health = await read_cin("health", "la")
         if health is not None:
-            readiness = ready_heartbeat(health["con"], gateway_id, baseline["bootId"], not_before)
+            readiness = ready_heartbeat(health["con"], gateway_id, baseline["bootId"], not_before, firmware=firmware)
             if readiness is not None:
                 return baseline, readiness
         return None
@@ -164,12 +165,12 @@ async def run_led_cycle(operator_post, cse, paths, output, *, gateway_id=GATEWAY
             async with asyncio.timeout(35):
                 native_receipt = await wait_for(lambda: read_cin("receipt", rn))
                 receipt = native_receipt["con"]
-                verify_receipt(command, receipt, boot_id, state)
+                verify_receipt(command, receipt, boot_id, state, firmware=firmware)
                 observed = await wait_for(lambda: observation(state, boot_id=boot_id,
                                                                after=parse_time(receipt["receivedAt"])))
             if observed["sequence"] == baseline["sequence"]:
                 raise RuntimeError("Post-command observation must use a new device sequence")
-            step = {"command": command, "cseReceiptName": rn, "cseReceipt": receipt,
+            step = {"command": command, "cseReceiptName": rn, "cseReceipt": receipt, "firmwareRevision": firmware,
                     "cseResource": {key: native_receipt[key] for key in ("ri", "ct")},
                     "baseline": baseline, "commandReadiness": readiness, "observation": observed}
             if central_settlement is not None:
@@ -185,13 +186,14 @@ async def run_led_cycle(operator_post, cse, paths, output, *, gateway_id=GATEWAY
             write_new_json(output / f"led-{label.lower()}-grant-revoked.json", revoked)
         results.append(step)
         print(f"LED_{label}_RECORDED", flush=True)
-    write_new_json(output / "led-cycle.json", {"steps": results, "physicalLedObserved": None})
+    write_new_json(output / "led-cycle.json", {"steps": results, "firmwareRevision": firmware, "physicalLedObserved": None})
 
 
-def verify_step(step, state, boot_id, *, gateway_id=GATEWAY):
+def verify_step(step, state, boot_id, *, gateway_id=GATEWAY, firmware=FIRMWARE):
     command = validate_command(step["command"], gateway_id, {DEVICE: ""})
     baseline, observation = step["baseline"], step["observation"]
-    if (command["desiredState"]["state"] is not state or observation["state"] is not state
+    if (firmware not in COMMAND_FIRMWARES or step.get("firmwareRevision", FIRMWARE) != firmware
+            or command["desiredState"]["state"] is not state or observation["state"] is not state
             or baseline["state"] is not (not state)
             or baseline["bootId"] != boot_id or observation["bootId"] != boot_id
             or baseline["sequence"] == observation["sequence"]
@@ -199,12 +201,15 @@ def verify_step(step, state, boot_id, *, gateway_id=GATEWAY):
             or parse_time(observation["receivedAt"]) < parse_time(baseline["receivedAt"])
             or parse_time(observation["receivedAt"]) < parse_time(step["cseReceipt"]["receivedAt"])):
         raise RuntimeError("Bench command, observation, or CSE identity mismatch")
-    verify_receipt(command, step["cseReceipt"], boot_id, state)
+    verify_receipt(command, step["cseReceipt"], boot_id, state, firmware=firmware)
     return command
 
 
 def verify_database(evidence, database, *, gateway_id=GATEWAY, prior_expired_commands=(), require_central_receipts=False):
     steps = evidence["steps"]
+    firmware = evidence.get("firmwareRevision", FIRMWARE)
+    if firmware not in COMMAND_FIRMWARES:
+        raise RuntimeError("Unknown Feather command firmware in bench evidence")
     if len(steps) != len(STEPS):
         raise RuntimeError("LED evidence must contain one ON and one OFF command")
     boot_id = steps[0]["observation"]["bootId"]
@@ -241,7 +246,7 @@ def verify_database(evidence, database, *, gateway_id=GATEWAY, prior_expired_com
                     or db.execute("SELECT 1 FROM outbox WHERE rqi=?", (Store.request_id("receipt", command_id),)).fetchone()):
                 raise RuntimeError("Declared prior attempt does not establish expiration before the LED cycle")
         for step, (_, state) in zip(steps, STEPS):
-            command = verify_step(step, state, boot_id, gateway_id=gateway_id)
+            command = verify_step(step, state, boot_id, gateway_id=gateway_id, firmware=firmware)
             receipt = step["cseReceipt"]
             command_id = command["commandId"]
             row = db.execute("SELECT payload_hash,payload,status,receipt,receipt_delivered FROM commands "

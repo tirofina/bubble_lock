@@ -10,7 +10,7 @@ import sqlite3
 from bubble_gateway.config import ID
 from bubble_gateway.model import canonical, central_observation_id, iso_time, parse_time, payload_hash, validate_command
 from bubble_gateway.state_identity import metadata, readonly
-from pi_led_cycle import DEVICE, STEPS, receipt_name, verify_database, verify_step
+from pi_led_cycle import DEVICE, FIRMWARE, STEPS, receipt_name, verify_database, verify_step
 
 GATEWAY = "gw-a"
 ROUTE = "/Mobius/privacy-bubble-test-ae/command-receipts-a"
@@ -280,6 +280,7 @@ def inspect_interrupted_bench(directory, team_state, database=None):
     rows = read_pi_commands(database) if database is not None else {}
     seen = set()
     steps = []
+    bench_identity = None
     for label, state in STEPS:
         prefix = f"led-{label.lower()}"
         intent, issued_file, readback, revocation = (
@@ -332,7 +333,12 @@ def inspect_interrupted_bench(directory, team_state, database=None):
             result.update(pi_result)
         if readback is not None:
             observed_boot = readback["observation"]["bootId"]
-            matched = verify_step(readback, state, observed_boot, gateway_id=GATEWAY)
+            firmware = readback.get("firmwareRevision", FIRMWARE)
+            identity = (observed_boot, firmware)
+            if bench_identity is not None and identity != bench_identity:
+                raise ValueError("Captured command steps do not share a Feather boot and firmware")
+            bench_identity = identity
+            matched = verify_step(readback, state, observed_boot, gateway_id=GATEWAY, firmware=firmware)
             if (canonical(matched) != canonical(command)
                     or (database is not None and canonical(receipt) != canonical(readback["cseReceipt"]))):
                 raise ValueError("Captured CSE readback differs from the issued command or Pi receipt")

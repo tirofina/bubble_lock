@@ -195,6 +195,8 @@ $env:PYTHONPATH = Join-Path $PWD 'keyring/raspberry-pi-gateway/src'
 python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_led_cycle.py --output $bench
 ```
 
+Feather 화면에 명령 상태를 표시하는 `feather-probe-0.2.1`을 쓰려면 Pi의 `scoped_feather_pi.py prepare`와 PC의 `scoped_feather_led_cycle.py`에 모두 `--firmware-revision feather-probe-0.2.1`을 지정한다. 시작 시 `CMD OFF`, ON 영수증 확인 뒤 `CMD ON`, OFF 영수증 확인 뒤 `CMD OFF`를 눈으로 확인한다. 화면 문구는 `ledOn` 증거와 별도로 기록한다. 기본 옵션은 기존 `feather-probe-0.2.0` 절차에 맞춰져 있다.
+
 `LED_ON_READY`, `LED_OFF_READY`가 각각 출력된 뒤에만 `$bench`에 해당 이름의 `LED_ON`, `LED_OFF` 파일을 만든다. 각 단계는 같은 부팅 세션의 명령 전 관측을 읽고, 팀 API에서 60초 grant를 받은 뒤 25초 기한의 명령을 발급한다. 실제 LED를 눈으로 확인한 결과는 따로 기록한다. 도구는 Mobius4 원본 영수증과 명령 후 관측을 확인하고 단계별 grant 회수 응답을 로컬에 저장한다.
 
 명령 발급 요청 전의 `led-*-intent.json`에 command ID와 CSE 자원명이 있다. 응답을 받기 전에 중단되면 새 명령을 보내기 전에 이 ID로 팀 상태와 원본 영수증을 대조한다. [격리 PostgreSQL 정산 작업자](../dev/mobius4/README.md#격리-postgresql-정산-실행)가 원본을 처리한 뒤 아래 절차로 증거를 묶는다. 중간에 중단하려면 `STOP` 파일을 만들고 실제 LED 상태를 확인한다.

@@ -8,8 +8,9 @@ import uuid
 
 import httpx
 
-from pi_led_cycle import run_led_cycle
+from pi_led_cycle import FIRMWARE, run_led_cycle
 from scoped_feather_evidence import integration_settlement, read_json
+from scoped_feather_pi import COMMAND_FIRMWARES
 
 BENCH_ROOT = Path(__file__).resolve().parents[2] / "dev/mobius4"
 PROFILE = BENCH_ROOT / ".local/scoped"
@@ -35,7 +36,7 @@ async def exchange(client, method, path, headers, body=None):
         return response.status_code, response.headers, json.loads(data) if data else None
 
 
-async def run(output, seconds, *, api_mode="legacy"):
+async def run(output, seconds, *, api_mode="legacy", firmware=FIRMWARE):
     environment = dict(line.split("=", 1) for line in (PROFILE / "compose.env").read_text(encoding="utf-8-sig").splitlines()
                        if line and not line.startswith("#"))
     port = int(environment["KEYRING_CSE_TLS_PORT"])
@@ -79,7 +80,7 @@ async def run(output, seconds, *, api_mode="legacy"):
             return integration_settlement(command, receipt, team_state)
 
         await run_led_cycle(operator_post, cse, PATHS, output, gateway_id="gw-a", subject_id="scoped-feather-bench",
-                            central_settlement=central_settlement if api_mode == "integration" else None)
+                            central_settlement=central_settlement if api_mode == "integration" else None, firmware=firmware)
 
 
 if __name__ == "__main__":
@@ -87,5 +88,6 @@ if __name__ == "__main__":
     parser.add_argument("--output", required=True, type=Path, help="New private local directory for triggers and evidence")
     parser.add_argument("--seconds", type=int, default=600, choices=range(30, 1801), metavar="30..1800")
     parser.add_argument("--api-mode", choices=("legacy", "integration"), default="legacy")
+    parser.add_argument("--firmware-revision", choices=COMMAND_FIRMWARES, default=FIRMWARE)
     args = parser.parse_args()
-    asyncio.run(run(args.output.resolve(), args.seconds, api_mode=args.api_mode))
+    asyncio.run(run(args.output.resolve(), args.seconds, api_mode=args.api_mode, firmware=args.firmware_revision))
