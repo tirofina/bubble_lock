@@ -53,28 +53,34 @@ def bound_observation(native, health, *, usb, firmware, observation_pin, health_
     return observation, request
 
 
+async def read_observation_candidate(cse, *, usb, firmware, observation_pin, health_pin, started_at, require_rssi=False):
+    resources = []
+    for role in ("observation", "health"):
+        status, rsc, body = await cse("GET", f"{PATHS[role]}/la")
+        if (status, rsc) == (404, 4004):
+            return None
+        if (status, rsc) != (200, 2000):
+            raise RuntimeError(f"Scoped r18 {role} lookup failed")
+        resources.append(body["m2m:cin"])
+    captured_at = utc_now()
+    bound = bound_observation(*resources, usb=usb, firmware=firmware, observation_pin=observation_pin,
+                              health_pin=health_pin, started_at=started_at, captured_at=captured_at)
+    if bound is None or (require_rssi and bound[0]["rssi"] is None):
+        return None
+    return {"startedAt": iso_time(started_at), "capturedAt": iso_time(captured_at),
+            "firmwareRevision": firmware, "usbLogSha256": usb["logSha256"],
+            "observationContainerRi": observation_pin, "healthContainerRi": health_pin,
+            "native": resources[0], "health": resources[1]}
+
+
 async def capture_observation(cse, *, usb, firmware, observation_pin, health_pin, seconds, require_rssi=False):
     started_at = utc_now()
     async with asyncio.timeout(seconds):
         while True:
-            resources = []
-            for role in ("observation", "health"):
-                status, rsc, body = await cse("GET", f"{PATHS[role]}/la")
-                if (status, rsc) == (404, 4004):
-                    break
-                if (status, rsc) != (200, 2000):
-                    raise RuntimeError(f"Scoped r18 {role} lookup failed")
-                resources.append(body["m2m:cin"])
-            captured_at = utc_now()
-            if len(resources) == 2:
-                bound = bound_observation(*resources, usb=usb, firmware=firmware,
-                                          observation_pin=observation_pin, health_pin=health_pin,
-                                          started_at=started_at, captured_at=captured_at)
-                if bound is not None and (not require_rssi or bound[0]["rssi"] is not None):
-                    return {"startedAt": iso_time(started_at), "capturedAt": iso_time(captured_at),
-                            "firmwareRevision": firmware, "usbLogSha256": usb["logSha256"],
-                            "observationContainerRi": observation_pin, "healthContainerRi": health_pin,
-                            "native": resources[0], "health": resources[1]}
+            candidate = await read_observation_candidate(cse, usb=usb, firmware=firmware, observation_pin=observation_pin,
+                                                         health_pin=health_pin, started_at=started_at, require_rssi=require_rssi)
+            if candidate is not None:
+                return candidate
             await asyncio.sleep(0.5)
 
 
@@ -89,6 +95,8 @@ def inspect_location_response(response, observation, event, *, web=False):
         return {"status": "http-error", "httpStatus": status}
     if event is None:
         return {"status": "central-acceptance-unconfirmed"}
+    if "observationId" in response and response["observationId"] != event["observationId"]:
+        return {"status": "observation-missing"}
     if observation["rssi"] is None:
         return {"status": "observation-has-no-rssi"}
 

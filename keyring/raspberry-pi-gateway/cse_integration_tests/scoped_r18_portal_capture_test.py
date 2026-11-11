@@ -1,13 +1,42 @@
+import asyncio
 import json
 from pathlib import Path
 import tempfile
 import unittest
 
+from bubble_gateway.model import central_observation_id
 from helpers import observation
-from scoped_r18_portal_capture import GATEWAY, PORTAL, R18_DEVICE, capture_portal
+from scoped_r18_portal_capture import GATEWAY, PORTAL, R18_DEVICE, capture_portal, pair_live_observation
 
 
 class ScopedR18PortalCaptureTests(unittest.IsolatedAsyncioTestCase):
+    async def test_live_pair_uses_central_id_across_delayed_and_overlapping_reads(self):
+        native = observation(gatewayId=GATEWAY, deviceId=R18_DEVICE, sequence=1)
+        next_native = dict(native, sequence=2)
+        first_id, next_id = map(central_observation_id, (native, next_native))
+        version = iter((first_id, next_id, next_id, next_id, "later", "later"))
+        candidates = iter((native, native, next_native))
+        response_body = {"deviceIds": [R18_DEVICE], "observations": [
+            {"deviceId": R18_DEVICE, "gatewayId": GATEWAY, "observedAt": native["observedAt"], "rssiDbm": native["rssi"]}
+        ]}
+        responses = iter(({"body": response_body, "capture": 1}, {"body": response_body, "capture": 2},
+                          {"body": {"deviceIds": [], "observations": []}, "capture": 3}))
+
+        async def get_location():
+            return next(responses)
+
+        async def read_candidate():
+            return {"native": {"con": next(candidates)}}
+
+        async def read_observation_id():
+            return next(version)
+
+        async with asyncio.timeout(3):
+            captured, response = await pair_live_observation(get_location, read_candidate, read_observation_id)
+        self.assertEqual(captured["native"]["con"]["sequence"], 2)
+        self.assertEqual(response["observationId"], next_id)
+        self.assertEqual(response["capture"], 2)
+
     async def test_captures_only_inside_lease_and_removes_access_after_cleanup(self):
         with tempfile.TemporaryDirectory() as folder:
             capture = Path(folder) / "observation.json"

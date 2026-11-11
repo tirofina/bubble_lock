@@ -1,5 +1,7 @@
 # Gateway 로컬 시험
 
+Gateway 0.2.74의 격리 r18 위치 시험은 Mobius4 관측과 포털 응답을 병행 수집한다. 포털 조회 전후 중앙 관측 ID가 같은 경우에만 후보로 보관하고, 같은 시각·RSSI를 가진 다른 순번과 엇갈린 응답을 다루는 회귀시험 소스를 추가했다. 빌드·시험·서버 실행은 미실행이다.
+
 Gateway 0.2.73의 격리 r18 위치 시험은 기존 팀 API의 단기 위치 승인으로 실제 조회 응답을 저장하고 종료 때 회수 여부를 대조한다. 회귀시험 소스는 수신자·기기 범위, 시험 경로, 회수 전후 조회를 다룬다. 빌드·시험·서버 실행은 미실행이다.
 
 Gateway 0.2.72의 r18 관측 도구는 RSSI가 있는 샘플과 중앙 위치 API·LIVE 웹 응답을 대조한다. 권한 거절, 만료, 다른 RSSI와 출처 혼합을 다루는 회귀시험 소스를 추가했다. 빌드·시험·실제 위치 조회는 미실행이다.
@@ -397,14 +399,16 @@ python $tool compare --firmware-revision $r18BringupFirmware --usb-boot-log $r18
 
 위치 화면까지 확인할 때는 새 BLE 연결 직전에 `capture --require-rssi`를 시작한다. Pi의 광고 RSSI 보존 시간 안에 같은 부팅의 관측을 확보하면 `R18_LOCATION_SAMPLE`에 관측 시각이 출력된다. 위치 API와 웹은 최신 관측을 제공하므로 두 응답에서 그 시각의 자료를 확보한다.
 
-격리 PC에서 중앙 응답을 수집하려면 r18 API를 [위치 시험 옵션](../dev/mobius4/README.md#r18-격리-위치-시험)으로 시작한다. 아래 도구를 먼저 실행하고 `R18_LOCATION_LEASE_READY`가 표시되면 위의 `capture --require-rssi`가 새 파일에 기록되도록 같은 부팅의 Pi 관측 전용 세션을 시작한다. `$r18ObservationCapture`는 두 명령에서 같은 경로를 사용한다.
+격리 PC에서 중앙 응답을 수집하려면 r18 API를 [위치 시험 옵션](../dev/mobius4/README.md#r18-격리-위치-시험)으로 시작한다. 아래 도구를 먼저 실행하고 `R18_LOCATION_LEASE_READY`가 표시되면 같은 부팅의 Pi 관측 전용 세션을 시작한다.
 
 ```powershell
 python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_r18_portal_capture.py `
-  --observation-capture $r18ObservationCapture --output $privateLocationTrial
+  --live-observation --firmware-revision $r18BringupFirmware --usb-boot-log $r18UsbLog `
+  --observation-container-ri $gwBObservationRi --health-container-ri $gwBHealthRi `
+  --output $privateLocationTrial
 ```
 
-도구는 일치한 `portal-response.json`과 회수 뒤의 `portal-after-revocation.json`을 보관한다. `location-trial.json`에서 일치 여부와 lease·grant·consent 회수 및 사건 종료를 확인한다. 중앙 관측이 바뀌어 일치하는 응답을 받지 못하면 종료 코드 1을 반환한다.
+도구는 포털 조회 전후 중앙 상태의 관측 ID를 확인하며, 두 경로의 최근 후보에서 동일한 관측을 찾는다. 일치한 `observation.json`과 `portal-response.json`을 위 `compare`의 `--capture`와 `--portal-response`에 지정한다. 회수 뒤의 응답은 `portal-after-revocation.json`에, lease·grant·consent 회수 및 사건 종료는 `location-trial.json`에 보관한다. 기한 내에 일치한 관측이 없으면 종료 코드 1을 반환한다. 이미 확보한 관측 파일은 기존 `--observation-capture` 옵션으로 사용할 수 있다.
 
 팀 포털을 사용하는 시험은 승인된 사용자 세션과 유효한 위치 grant·lease에서 `GET /v1/portal/locations`와 LIVE 웹의 `GET /api/portal/locations`를 확보한다. 수동 사본에는 인증 헤더·쿠키 없이 `path`, 숫자 `status`, UTC 조회 시각 `capturedAt`, JSON `body`를 기록한다.
 

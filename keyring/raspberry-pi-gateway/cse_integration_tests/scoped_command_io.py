@@ -62,19 +62,14 @@ def scoped_api(api_mode):
 
 
 @asynccontextmanager
-async def scoped_clients(api, operator_dir, *, container_paths=()):
+async def scoped_cse(*, container_paths=()):
     environment = dict(line.split("=", 1) for line in (PROFILE / "compose.env").read_text(encoding="utf-8-sig").splitlines()
                        if line and not line.startswith("#"))
     port = int(environment["KEYRING_CSE_TLS_PORT"])
     if not 1 <= port <= 65535 or not environment.get("CSE_ADMIN"):
         raise ValueError("Scoped CSE configuration required")
     core_tls = tls_context(PROFILE / "tls/client.pem", PROFILE / "tls/client.key")
-    operator_tls = tls_context(operator_dir / "operator.pem", operator_dir / "operator.key")
-    async with (
-        httpx.AsyncClient(base_url=f"https://127.0.0.1:{port}", verify=core_tls, trust_env=False, timeout=5) as core,
-        httpx.AsyncClient(base_url=f"https://127.0.0.1:{api['port']}", verify=operator_tls,
-                          trust_env=False, timeout=5) as operator,
-    ):
+    async with httpx.AsyncClient(base_url=f"https://127.0.0.1:{port}", verify=core_tls, trust_env=False, timeout=5) as core:
         async def cse(method, path):
             if method != "GET":
                 raise ValueError("Bench evidence client only reads from the CSE")
@@ -98,6 +93,15 @@ async def scoped_clients(api, operator_dir, *, container_paths=()):
                         raise RuntimeError("Scoped CSE returned a different content instance")
             return status, rsc, document
 
+        yield cse
+
+
+@asynccontextmanager
+async def scoped_clients(api, operator_dir, *, container_paths=()):
+    operator_tls = tls_context(operator_dir / "operator.pem", operator_dir / "operator.key")
+    async with (scoped_cse(container_paths=container_paths) as cse,
+                httpx.AsyncClient(base_url=f"https://127.0.0.1:{api['port']}", verify=operator_tls,
+                                  trust_env=False, timeout=5) as operator):
         async def operator_post(path, body):
             status, _, document = await exchange(operator, "POST", path, DEFAULT_HEADERS, body)
             return status, document
