@@ -22,6 +22,7 @@ from .transport import HttpRetryDeferred, NativeDeliveryHold, TransportHub
 LOG = logging.getLogger(__name__)
 RECEIPT_BURST = 4
 DEVICE_RECEIPT_RETRY_INTERVAL = 1.0
+OUTBOX_CONFIRMATION_RETRY_INTERVAL = 1.0
 CENTRAL_TELEMETRY_CLOCK_MARGIN = 2
 CENTRAL_TELEMETRY_EXPIRY_INTERVAL = 5.0
 CENTRAL_TELEMETRY_EXPIRY_BATCH = 128
@@ -452,6 +453,25 @@ class Gateway:
             cursor = batch[-1]["rowid"] if len(batch) == batch_size and batch[-1]["rowid"] < through else 0
             await self._pause(1)
 
+    async def _commit_outbox_confirmation(self, rqi: str) -> None:
+        # The remote result is already confirmed. Keep it in this worker until
+        # the local completion is durable, without selecting the row for another send.
+        while True:
+            try:
+                self.store.delivered(rqi)
+                return
+            except sqlite3.Error as exc:
+                self.counters["outbox_confirmation_write_retries"] += 1
+                LOG.warning("SQLite outbox confirmation write failed (%s); retrying locally", type(exc).__name__)
+            try:
+                await asyncio.sleep(OUTBOX_CONFIRMATION_RETRY_INTERVAL)
+            except asyncio.CancelledError:
+                try:
+                    self.store.delivered(rqi)
+                except sqlite3.Error as exc:
+                    LOG.warning("SQLite outbox confirmation remains pending at shutdown (%s)", type(exc).__name__)
+                raise
+
     async def _outbox_loop(self, *, scoped: bool = False,
                            central_route: Literal["telemetry", "receipt"] | None = None) -> None:
         epochs = self.config.core_telemetry_epochs
@@ -521,7 +541,7 @@ class Gateway:
                 self.store.retry(item["rqi"], item["attempts"], minimum_delay=minimum_delay)
                 LOG.warning("Gateway delivery deferred (%s)", type(exc).__name__)
             else:
-                self.store.delivered(item["rqi"])
+                await self._commit_outbox_confirmation(item["rqi"])
                 self.counters["published"] += 1
                 if item["container"] == "@central/receipt":
                     self.counters["central_receipts_confirmed"] += 1

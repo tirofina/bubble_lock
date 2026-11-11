@@ -1,6 +1,7 @@
 """Synthetic dual-route receipts: retries must not regenerate delivered CORE ACKs."""
 import asyncio
 import json
+import sqlite3
 import tempfile
 import unittest
 from collections import Counter
@@ -360,6 +361,74 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.queued("@central/receipt"), 0)
         self.assertEqual(gateway.counters["central_receipts_confirmed"], 1)
         self.assertEqual(gateway.transport.publish.await_count, 2)
+
+    async def test_confirmed_central_receipt_retries_only_local_write_while_native_delivers(self):
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.config.central_receipts_enabled = True
+        gateway.config.core_bridge_enabled = False
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+        gateway.transport = SimpleNamespace(publish=AsyncMock(),
+                                             central_delivery_held=Mock(return_value=False),
+                                             native_delivery_hold=NativeDeliveryHold)
+        central_rqi = self.store.request_id("central-receipt", self.cmd["commandId"])
+        write_failed, native_committed = asyncio.Event(), asyncio.Event()
+        delivered = self.store.delivered
+
+        def commit(rqi):
+            if rqi == central_rqi and not native_committed.is_set():
+                write_failed.set()
+                raise sqlite3.OperationalError("synthetic completion write error")
+            delivered(rqi)
+            if rqi == self.native_rqi:
+                native_committed.set()
+            elif rqi == central_rqi:
+                gateway.stop.set()
+
+        with (patch.object(self.store, "delivered", side_effect=commit),
+              patch("bubble_gateway.service.OUTBOX_CONFIRMATION_RETRY_INTERVAL", 0),
+              self.assertLogs("bubble_gateway.service", level="WARNING")):
+            async with asyncio.timeout(1), asyncio.TaskGroup() as workers:
+                workers.create_task(gateway._outbox_loop(central_route="receipt"))
+                await write_failed.wait()
+                self.assertEqual(self.queued("@central/receipt"), 1)
+                self.assertEqual(gateway.counters["central_receipts_confirmed"], 0)
+                workers.create_task(gateway._outbox_loop())
+
+        self.assertEqual([call.args[0] for call in gateway.transport.publish.await_args_list],
+                         [central_rqi, self.native_rqi])
+        self.assertEqual(self.queued("@central/receipt"), 0)
+        self.assertEqual(self.native_delivered(), 1)
+        self.assertGreaterEqual(gateway.counters["outbox_confirmation_write_retries"], 1)
+        self.assertEqual(gateway.counters["central_receipts_confirmed"], 1)
+        self.assertEqual(gateway.counters["publish_retries"], 0)
+
+    async def test_shutdown_retries_confirmation_and_preserves_row_when_storage_is_unavailable(self):
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.config.central_receipts_enabled = True
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+        gateway.transport = SimpleNamespace(publish=AsyncMock(), central_delivery_held=Mock(return_value=False))
+        write_failed = asyncio.Event()
+
+        def unavailable(_rqi):
+            write_failed.set()
+            raise sqlite3.OperationalError("synthetic completion write error")
+
+        with (patch.object(self.store, "delivered", side_effect=unavailable) as writes,
+              self.assertLogs("bubble_gateway.service", level="WARNING")):
+            task = asyncio.create_task(gateway._outbox_loop(central_route="receipt"))
+            try:
+                await asyncio.wait_for(write_failed.wait(), timeout=1)
+            finally:
+                task.cancel()
+                with self.assertRaises(asyncio.CancelledError):
+                    await task
+
+        gateway.transport.publish.assert_awaited_once()
+        self.assertEqual(writes.call_count, 2)
+        self.assertEqual(self.queued("@central/receipt"), 1)
+        self.assertEqual(gateway.counters["central_receipts_confirmed"], 0)
 
     async def test_central_worker_expires_old_projection_and_finishes_bound_stale_observation(self):
         gateway = Gateway.__new__(Gateway)
