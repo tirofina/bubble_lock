@@ -1384,3 +1384,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R03, R05. 직전 goal turn�
 - 같은 부팅, 명령 누락, 다른 부팅·revision, 영수증 펌웨어 불일치를 다루는 회귀시험 소스를 추가했다. 빌드·회귀시험·Mobius4 조회·Pi 및 r18 실물 시험은 미실행이다.
 
 소스 commit `5a72c9408c1af2bfc288fceae20e76032606382e`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `4efbc5a..5a72c94`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 최초 적용과 격리 중앙 정산 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R03, R05. 직전 goal turn은 r18 단일 명령의 동일 부팅 대조를 추가한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 팀 receipt 계약과 격리 CSE 원본 결속을 확인했다.
+
+- 격리 PostgreSQL 조회는 r18 단일 명령의 ID·보드·펌웨어·부팅 일치·적용 uptime과 ACK를 검증하고 결과에 보존한다. 중앙 정산과 Pi 전달이 일치하고 ACK가 `APPLIED`일 때만 `originalApplicationMatched`가 참이다. `DUPLICATE`가 중앙 정산과 일치하면 최초 적용 확인은 검토로 남는다. [정산 조회](../keyring/JOURNAL_RETENTION.md#격리-postgresql-정산-기록-대조)
+- 명령 ID·시각·readback 변형, 중복 ACK·미전달·정산 누락을 다루는 회귀시험 소스를 추가했다. Gateway 패키지 revision은 `0.2.60`이다. 빌드·회귀시험·PostgreSQL 조회·Pi 및 r18 실물 시험은 미실행이다.
+
+소스 commit `38917ff6970f27372be0f1d00715bdd7b110197c`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `9bda0e7..38917ff`다. goal은 active/progress다.
