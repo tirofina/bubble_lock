@@ -90,6 +90,8 @@ bubble-keyring-ble-characterize --mode bringup --hardware r18-pcb \
 
 `RECORDED`는 위 항목을 한 세션에서 수신했고 마지막 BLE 센서·INA219 상태가 정상이라는 뜻이다. Gateway 0.2.59는 첫 정상 순번과 마지막 센서·INA219 상태를 기록한다. 정상 관측 후 마지막에 센서가 `unavailable`이거나 INA219 오류가 오면 `MISMATCH`다. 마지막 프레임에 필요한 값이 없으면 `INSUFFICIENT`다. USB 로그를 공급하면 `bringup.usbBoot`에 파일 SHA-256, GPIO, 초기 센서 상태와 부팅 일치 여부가 추가된다. USB와 BLE의 부팅이 다르거나 수집 중 새 부팅의 알림이 들어오거나 USB 출력·fault가 활성 상태이면 `MISMATCH`다. INA219는 3.3V 부하 측 계측이며 입력·충전 전류는 별도 실측으로 남긴다. JSON은 BLE 주소와 원래 부팅 ID를 내보내지 않는다. 빌드·회귀시험·실물 캡처는 미실행이다.
 
+0.7.16 ST7789·JD9853 프로필은 마지막 `health` 프레임의 화면 상태와 `displayDrawnPresses`도 확인한다. 각 패턴을 확인할 시간을 두고 버튼을 순서대로 누르고 떼며, 비상 버튼을 뗀 뒤에도 `health`가 한 번 더 전송될 때까지 기록한다. 화면 작업자·버스 오류나 다른 프로필이 보고되면 `MISMATCH`다. 현재 시험의 버튼 누계와 대조할 그리기 기록이 없으면 `INSUFFICIENT`다. 실제 화면의 테두리·색·글자는 별도 사진이나 영상에 남긴다.
+
 Gateway 0.2.36의 자격 전환 영수증 회귀시험 소스는 MQTT·HTTPS 생성 후 조회, 중복, 인스턴스·부모·본문 불일치, 조회 시간 초과, HTTPS 보류 중 일반 heartbeat의 독립 전송을 다룬다. 격리 Mobius4 시험 소스는 두 전송 경로에서 실제 저장 조회가 발생하는지 확인한다. 이번 빌드·시험·Pi 배포·CSE 연결은 미실행이다.
 
 Gateway 0.2.35의 회귀시험 소스는 자격 전환을 기록한 뒤 일반 큐 포화와 DB 재개를 거쳐도 순서·요청 ID·본문이 유지되는지 다룬다. 기존 DB에 새 테이블 추가, 보관본 포함, 완료 이력 상한, 기록 실패 시 실행 차단, LED 벤치의 이력 제외도 포함한다. 이번 빌드·시험·Pi/CSE 전송은 미실행이다.
@@ -362,7 +364,7 @@ Feather 명령 프로필 `0.2.0`과 두 SSH 포워딩이 준비되면 같은 Fea
 
 #### r18 Pi 관측 전용 세션
 
-첫 구동 보드의 BLE 관측을 Pi에서 격리 Mobius4와 중앙 API에 전달한다. `gw-b` 인증서, 중앙 등록 장치 ID `keyring-r18-lab`, 같은 배치에서 고정한 관측·영수증 ID를 사용한다. 새 세션 이름을 지정하고 장착한 관측 펌웨어 revision 하나를 선택한다. 기본값은 `keyring-0.7.15-bringup`이며, 화면 점검 중에는 `keyring-0.7.15-st7789-bringup` 또는 `keyring-0.7.15-jd9853-bringup`을 명시한다.
+첫 구동 보드의 BLE 관측을 Pi에서 격리 Mobius4와 중앙 API에 전달한다. `gw-b` 인증서, 중앙 등록 장치 ID `keyring-r18-lab`, 같은 배치에서 고정한 관측·영수증 ID를 사용한다. 새 세션 이름을 지정하고 장착한 관측 펌웨어 revision 하나를 선택한다. 기본값은 `keyring-0.7.15-bringup`이며, 화면 점검 중에는 `keyring-0.7.16-st7789-bringup` 또는 `keyring-0.7.16-jd9853-bringup`을 명시한다.
 
 ```sh
 tool=keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_pi.py

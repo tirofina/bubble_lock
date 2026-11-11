@@ -135,6 +135,8 @@ def validate_observation(raw: Any, gateway_id: str, devices: dict[str, str]) -> 
         raise ValueError("Invalid sensor name")
     if "buttonPresses" in raw["sensorValues"] and not valid_button_presses(raw["sensorValues"]["buttonPresses"]):
         raise ValueError("Invalid boot-local button press counts")
+    if "displayDrawnPresses" in raw["sensorValues"] and not valid_button_presses(raw["sensorValues"]["displayDrawnPresses"]):
+        raise ValueError("Invalid display button press counts")
     if not isinstance(raw["firmwareRevision"], str) or not 1 <= len(raw["firmwareRevision"]) <= 64:
         raise ValueError("Invalid firmware revision")
     if raw["timestampSource"] != "gateway-received" or len(canonical(raw).encode("utf-8")) > 8192:

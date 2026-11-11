@@ -50,11 +50,11 @@ USB 모니터를 열고 `?`를 보내면 현재 부팅의 `KEYRING bringup` 줄�
 
 | 장착한 LCD | PlatformIO 환경 | Pi 펌웨어 revision |
 |---|---|---|
-| 1.54인치 ST7789 | `keyring_r18_bringup_st7789` | `keyring-0.7.15-st7789-bringup` |
-| 2.01인치 JD9853 | `keyring_r18_bringup_jd9853` | `keyring-0.7.15-jd9853-bringup` |
+| 1.54인치 ST7789 | `keyring_r18_bringup_st7789` | `keyring-0.7.16-st7789-bringup` |
+| 2.01인치 JD9853 | `keyring_r18_bringup_jd9853` | `keyring-0.7.16-jd9853-bringup` |
 
 USB 초기 구동 줄의 `panel`과 `motor=0 aux=0 fault=0`을 확인한다. 확인 버튼을 눌러 백라이트를 켜고 흰색 테두리의 네 변, 왼쪽부터 빨강·초록·파랑 막대, 패널 이름·가로×세로·`CONFIRM`을 기록한다. 비상 버튼을 누르면 `PANIC`을 표시한다. 버튼을 떼어도 마지막 표시는 백라이트가 켜져 있는 동안 유지된다. 새 누름이 없으면 설정된 창이 만료될 때 백라이트가 꺼진다. Pi 초기 구동 기록에는 표의 revision과 같은 부팅의 USB 로그를 지정한다. 사진이나 영상은 같은 시험의 비공개 기록에 둔다.
 
-Pi JSON의 `bringup.usbBoot.displayProfile`은 USB 로그와 일치한 빌드 선택값이다. 테두리·색상·문구는 패널에서 관찰한 결과를 기록한다. JD9853은 기존 초기화 경로를 쓰며 구매한 패널의 전원·감마 설정과 실제 표시가 남아 있다. [패널 설정](../firmware/PERIPHERALS.md#jd9853-미확인-범위)
+Pi JSON의 `bringup.usbBoot.displayProfile`은 USB 로그와 일치한 빌드 선택값이다. Gateway 0.2.80의 `bringup.displayTest`에는 확인·비상 패턴을 그렸을 때의 버튼 누계와 같은 시험에서 수신한 버튼 누계를 대조한 결과가 들어간다. `buttonFramesMatched`는 펌웨어 그리기 함수와 BLE 관측의 대조 결과다. 테두리·색상·문구는 패널에서 직접 확인한다. JD9853은 기존 초기화 경로를 쓰며 구매한 패널의 전원·감마 설정과 실제 표시가 남아 있다. [패널 설정](../firmware/PERIPHERALS.md#jd9853-미확인-범위)
 
 passkey·BLE 주소·원시 관측은 로컬 증거에 보관한다. 빌드·플래시·전원 인가·Pi 접속은 미실행이다.

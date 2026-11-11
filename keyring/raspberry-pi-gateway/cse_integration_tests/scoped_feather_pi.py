@@ -19,7 +19,10 @@ INTEGRATION_TEAM_REVISION = "bc2a45dfcc014b7cdb0a57a03aca2c04ca8eb989"
 DISPLAY_FIRMWARE = "feather-probe-0.2.1"
 COMMAND_FIRMWARES = ("feather-probe-0.2.0", DISPLAY_FIRMWARE)
 R18_COMMAND_FIRMWARE = "keyring-0.7.14"
-R18_BRINGUP_FIRMWARES = ("keyring-0.7.15-bringup", "keyring-0.7.15-st7789-bringup", "keyring-0.7.15-jd9853-bringup")
+R18_BRINGUP_FIRMWARES = (
+    "keyring-0.7.15-bringup", "keyring-0.7.15-st7789-bringup", "keyring-0.7.15-jd9853-bringup",
+    "keyring-0.7.16-st7789-bringup", "keyring-0.7.16-jd9853-bringup",
+)
 R18_BOARD = "r18-hand-solder"
 R18_DEVICE = "keyring-r18-lab"
 IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,63}")

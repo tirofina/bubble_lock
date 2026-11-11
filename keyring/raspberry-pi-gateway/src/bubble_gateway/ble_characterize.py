@@ -32,7 +32,11 @@ USB_BOOT_LINE = re.compile(
     r"motion=(?P<motion>ready|unavailable)(?: panel=(?P<panel>st7789|jd9853))?"
 )
 BRINGUP_SENSOR_STATUS = ("batteryStatus", "accelStatus", "motion")
-BRINGUP_DISPLAY_PROFILES = {"keyring-0.7.15-st7789-bringup": "st7789", "keyring-0.7.15-jd9853-bringup": "jd9853"}
+DISPLAY_TEST_PROFILES = {f"keyring-0.7.16-{panel}-bringup": panel for panel in ("st7789", "jd9853")}
+BRINGUP_DISPLAY_PROFILES = {
+    "keyring-0.7.15-st7789-bringup": "st7789", "keyring-0.7.15-jd9853-bringup": "jd9853",
+    **DISPLAY_TEST_PROFILES,
+}
 
 
 def read_usb_boot(path: Path, board: str, firmware: str) -> dict:
@@ -176,7 +180,7 @@ def bringup_fields(frame: dict) -> dict:
     fault = sensors.get("fault")
     battery_status, accel_status, motion = (sensors.get(key) for key in BRINGUP_SENSOR_STATUS)
     journal = sensors.get("journal")
-    return {
+    result = {
         **button_fields(frame),
         "detail": detail if detail in ("sensors", "energy", "health") else None,
         "state": frame["state"], "mainFault": fault if type(fault) is bool else None,
@@ -190,6 +194,14 @@ def bringup_fields(frame: dict) -> dict:
         "journal": journal if journal in ("disabled", "ready", "error") else None,
         "sleepDisabled": detail == "health" and sensors.get("power") == "disabled",
     }
+    if detail == "health":
+        status = sensors.get("display")
+        if status in ("starting", "disabled", "bus_error", "worker_error", "st7789_unverified", "jd9853_unverified"):
+            result["displayStatus"] = status
+        drawn = sensors.get("displayDrawnPresses")
+        if valid_button_presses(drawn):
+            result["displayDrawnPresses"] = drawn
+    return result
 
 
 def bringup_buttons(rows: list[dict]) -> tuple[list[int], bool]:
@@ -215,7 +227,7 @@ def bringup_buttons(rows: list[dict]) -> tuple[list[int], bool]:
     return [row["sequence"] for row in markers], regressed
 
 
-def bringup_result(sessions: list[dict], rows: list[dict]) -> dict:
+def bringup_result(sessions: list[dict], rows: list[dict], *, expected_display: str | None = None) -> dict:
     first = next((session for session in sessions if session["notificationCount"]), None)
     session_id = first["session"] if first else None
     notifications = [row for row in rows if row["event"] == "notification"]
@@ -253,9 +265,29 @@ def bringup_result(sessions: list[dict], rows: list[dict]) -> dict:
         ("sensorUnavailableAfterReady", sensor_regressed),
         ("powerUnavailableAfterReady", power_regressed),
     ) if observed]
-    return {"session": session_id, "buttonSequences": buttons, "sensorSequence": sensors,
-            "powerSequence": power, "healthSequence": health, "latestSensor": latest_sensor, "latestPower": latest_power,
-            "missing": missing, "mismatches": mismatches}
+    report = {"session": session_id, "buttonSequences": buttons, "sensorSequence": sensors,
+              "powerSequence": power, "healthSequence": health, "latestSensor": latest_sensor, "latestPower": latest_power,
+              "missing": missing, "mismatches": mismatches}
+    if expected_display is not None:
+        health_rows = [row for row in selected if row.get("detail") == "health"]
+        latest = health_rows[-1] if health_rows else {}
+        expected_status = f"{expected_display}_unverified"
+        expected_presses = None
+        if len(buttons) == len(BRINGUP_BUTTON_STATES):
+            press_counts = {row["sequence"]: row["buttonPresses"] for row in selected if row["sequence"] in buttons}
+            expected_presses = [press_counts[buttons[1]][0], press_counts[buttons[3]][1]]
+        matched = (expected_presses is not None and latest.get("displayDrawnPresses") == expected_presses
+                   and latest["sequence"] >= buttons[3] and latest.get("displayStatus") == expected_status)
+        if latest.get("displayStatus") != expected_status:
+            missing.append("displayHealth")
+        if not matched:
+            missing.append("displayButtonFrames")
+        if any(row.get("displayStatus") not in (None, "starting", expected_status) for row in health_rows):
+            mismatches.append("displayHealth")
+        report["displayTest"] = {"profile": expected_display, "healthSequence": latest.get("sequence"),
+                                 "softwareStatus": latest.get("displayStatus"), "expectedPresses": expected_presses,
+                                 "drawnPresses": latest.get("displayDrawnPresses"), "buttonFramesMatched": matched}
+    return report
 
 
 def reconnect_results(sessions: list[dict]) -> list[dict]:
@@ -319,7 +351,8 @@ def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mo
               truncated: bool, dropped: int, expected_wake: str | None = None,
               release_ms: int | None = None, include_power: bool = False,
               battery_thresholds: tuple[int, int] = BATTERY_THRESHOLDS,
-              verify_button_continuity: bool = False, usb_boot: dict | None = None) -> dict:
+              verify_button_continuity: bool = False, usb_boot: dict | None = None,
+              firmware_revision: str | None = None) -> dict:
     sessions = {}
     boots = {}
     rows = []
@@ -384,7 +417,8 @@ def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mo
     wake = wake_result(measured, rows, expected_wake, release_ms) if expected_wake is not None else None
     power = power_result(measured, rows, mode) if include_power else None
     battery = battery_result(rows, *battery_thresholds) if mode == "battery" else None
-    bringup = bringup_result(measured, rows) if mode == "bringup" else None
+    bringup = (bringup_result(measured, rows, expected_display=DISPLAY_TEST_PROFILES.get(firmware_revision))
+               if mode == "bringup" else None)
     if bringup is not None and usb_boot is not None:
         observed_boots = {session["boot"] for session in measured if session["notificationCount"]}
         same_boot = observed_boots == {boots.get(usb_boot["bootId"])} if observed_boots else None
@@ -525,7 +559,8 @@ async def characterize(args: argparse.Namespace, *, usb_boot: dict | None = None
                           truncated=truncated, dropped=dropped, expected_wake=args.expect_wake,
                           release_ms=release_ms, include_power=args.include_power,
                           battery_thresholds=tuple(args.battery_thresholds or BATTERY_THRESHOLDS),
-                          verify_button_continuity=args.verify_button_continuity, usb_boot=usb_boot)}
+                          verify_button_continuity=args.verify_button_continuity, usb_boot=usb_boot,
+                          firmware_revision=args.firmware_revision)}
     if args.mode == "wake":
         report["wake"].update(operatorIdleSeconds=args.idle_seconds, releaseAtMs=release_ms)
     if args.mode == "battery":

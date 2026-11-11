@@ -91,6 +91,13 @@
           "minItems": 2,
           "maxItems": 2,
           "items": {"type": "integer", "minimum": 0, "maximum": 4294967295}
+        },
+        "displayDrawnPresses": {
+          "description": "화면 초기 구동 프로필에서 각 버튼 패턴을 마지막으로 그렸을 때의 [확인, 비상] 누름 누계",
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {"type": "integer", "minimum": 0, "maximum": 4294967295}
         }
       },
       "additionalProperties": {

@@ -185,9 +185,9 @@ class BringupCaptureTests(unittest.TestCase):
             add("notification", generation, sequence=sequence, observation=observation, **energy)
         return events
 
-    def report(self, events, *, usb_boot=None):
+    def report(self, events, *, usb_boot=None, firmware_revision=None):
         return summarize(events, 0, len(events) * 1_000_000, board=self.board, mode="bringup",
-                         truncated=False, dropped=0, usb_boot=usb_boot)
+                         truncated=False, dropped=0, usb_boot=usb_boot, firmware_revision=firmware_revision)
 
     def usb_log(self):
         line = (f"KEYRING bringup: board={self.board} firmware={self.firmware} boot={self.boot} "
@@ -224,11 +224,12 @@ class BringupCaptureTests(unittest.TestCase):
     def test_display_bringup_profile_matches_usb_revision_and_same_ble_boot(self):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / "usb.log"
-            for panel in ("st7789", "jd9853"):
-                firmware = f"keyring-0.7.15-{panel}-bringup"
+            for revision, panel in (("0.7.15", "st7789"), ("0.7.15", "jd9853"),
+                                    ("0.7.16", "st7789"), ("0.7.16", "jd9853")):
+                firmware = f"keyring-{revision}-{panel}-bringup"
                 raw = self.usb_log().replace(self.firmware.encode(), firmware.encode())
                 full = raw.replace(b"motion=ready\r\n", f"motion=ready panel={panel}\r\n".encode())
-                with self.subTest(panel=panel):
+                with self.subTest(firmware=firmware):
                     path.write_bytes(full)
                     evidence = read_usb_boot(path, self.board, firmware)
                     events = [dict(row, bootId=self.boot) for row in self.events()]
@@ -242,6 +243,26 @@ class BringupCaptureTests(unittest.TestCase):
                     path.write_bytes(full.replace(f"panel={panel}".encode(), f"panel={other}".encode()))
                     with self.assertRaisesRegex(ValueError, "one matching r18 bring-up record"):
                         read_usb_boot(path, self.board, firmware)
+
+    def test_display_draws_must_match_button_counts_in_the_selected_session(self):
+        for panel in ("st7789", "jd9853"):
+            firmware = f"keyring-0.7.16-{panel}-bringup"
+            for status, drawn, expected in (
+                (f"{panel}_unverified", [3, 2], "RECORDED"),
+                (f"{panel}_unverified", [2, 1], "INSUFFICIENT"),
+                (f"{panel}_unverified", [3, True], "INSUFFICIENT"),
+                ("starting", [3, 2], "INSUFFICIENT"),
+                ("bus_error", [3, 2], "MISMATCH"),
+                ("worker_error", [3, 2], "MISMATCH"),
+                (("st7789_unverified" if panel == "jd9853" else "jd9853_unverified"), [3, 2], "MISMATCH"),
+            ):
+                with self.subTest(panel=panel, status=status, drawn=drawn):
+                    events = self.events()
+                    events[-1]["observation"]["sensorValues"].update(display=status, displayDrawnPresses=drawn)
+                    report = self.report(events, firmware_revision=firmware)
+                    self.assertEqual(report["status"], expected)
+                    self.assertEqual(report["bringup"]["displayTest"]["expectedPresses"], [3, 2])
+                    self.assertEqual(report["bringup"]["displayTest"]["buttonFramesMatched"], expected == "RECORDED")
 
     def test_usb_boot_match_is_required_when_supplied_and_raw_identity_is_private(self):
         initial_status = dict(self.ready_sensor_status, accelStatus="unavailable")

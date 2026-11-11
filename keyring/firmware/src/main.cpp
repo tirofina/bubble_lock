@@ -42,10 +42,10 @@ extern "C" esp_err_t __wrap_nvs_flash_init() {
 namespace {
 #if KEYRING_R18_BRINGUP
 #if KEYRING_R18_BRINGUP_DISPLAY == 1
-constexpr char FirmwareRevision[] = "keyring-0.7.15-st7789-bringup";
+constexpr char FirmwareRevision[] = "keyring-0.7.16-st7789-bringup";
 constexpr char BringupPanelField[] = " panel=st7789";
 #elif KEYRING_R18_BRINGUP_DISPLAY == 2
-constexpr char FirmwareRevision[] = "keyring-0.7.15-jd9853-bringup";
+constexpr char FirmwareRevision[] = "keyring-0.7.16-jd9853-bringup";
 constexpr char BringupPanelField[] = " panel=jd9853";
 #else
 constexpr char FirmwareRevision[] = "keyring-0.7.15-bringup";
@@ -540,6 +540,15 @@ void publishObservation() {
     values["wakePins"] = powerState::wakePins();
     values["power"] = powerState::status();
   };
+#if KEYRING_R18_BRINGUP_DISPLAY
+  auto appendDisplayTest = [](JsonObject values) {
+    const auto display = peripherals.displayTest();
+    values["display"] = display.status;
+    JsonArray presses = values.createNestedArray("displayDrawnPresses");
+    presses.add(display.confirmPress);
+    presses.add(display.panicPress);
+  };
+#endif
   JsonObject values = base();
   if (section == 0) {
     values["batteryStatus"] = sensors.fuel ? "ok" : "unavailable";
@@ -563,6 +572,10 @@ void publishObservation() {
       for (const char *key : {"busVoltageMv", "currentUa", "loadPowerUw", "shuntVoltageUv", "readUptimeMs"}) monitor[key] = nullptr;
     }
   } else {
+#if KEYRING_R18_BRINGUP_DISPLAY
+    appendWake(values);
+    appendDisplayTest(values);
+#else
     unsigned used = 0, prepared = 0;
     for (unsigned slot = 0; slot < JournalSlots; ++slot) if (occupied[slot]) {
       ++used; if (journal[slot].phase == Prepared) ++prepared;
@@ -575,15 +588,18 @@ void publishObservation() {
     values["headphone"] = headphone.status();
     values["display"] = peripherals.displayStatus(); values["sd"] = peripherals.sdStatus();
     values["sdDropped"] = peripherals.droppedLogs();
+#endif
   }
   std::string frame = jsonText(doc);
   if (frame.size() > 512 && !doc.overflowed()) {
     // Sensor detail is optional; identity/battery/button/output stay in every frame.
     values.remove("accelerationG"); values.remove("voltage");
     values.remove("batteryStatus"); values.remove("accelStatus");
+#if !KEYRING_R18_BRINGUP_DISPLAY
     if (section == 2) {
       values.remove("audio"); values.remove("display"); values.remove("sdDropped");
     }
+#endif
     values["truncated"] = true;
     frame = jsonText(doc);
   }
@@ -591,7 +607,12 @@ void publishObservation() {
     // Keep identity, sequence, buttons, state and uptime. Do not invent readings
     // when the full sensor object exceeds the READ attribute budget.
     values = base(); values["status"] = "payload_too_large";
-    if (section == 2) appendWake(values);
+    if (section == 2) {
+      appendWake(values);
+#if KEYRING_R18_BRINGUP_DISPLAY
+      appendDisplayTest(values);
+#endif
+    }
     frame = jsonText(doc);
   }
   // Enforce the wire bound at runtime even if a future identity/field expansion
@@ -1129,6 +1150,8 @@ void loop() {
 #if KEYRING_R18_BRINGUP_DISPLAY
     screen.confirm = displayTestButton == DisplayTestButton::Confirm;
     screen.panic = displayTestButton == DisplayTestButton::Panic;
+    screen.confirmPress = buttonPresses.confirm;
+    screen.panicPress = buttonPresses.panic;
 #endif
     screen.motor = readState(); screen.fault = digitalRead(board::MainFaultN) == LOW;
     screen.journal = storageHealthy; screen.motionEvents = motion.events();

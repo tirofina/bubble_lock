@@ -97,6 +97,12 @@ void Peripherals::resume() {
 const char *Peripherals::displayStatus() {
   portENTER_CRITICAL(&mux); const char *result = displayState; portEXIT_CRITICAL(&mux); return result;
 }
+KeyringDisplayTest Peripherals::displayTest() {
+  portENTER_CRITICAL(&mux);
+  const KeyringDisplayTest result{displayState, drawnConfirmPress, drawnPanicPress};
+  portEXIT_CRITICAL(&mux);
+  return result;
+}
 const char *Peripherals::sdStatus() {
   portENTER_CRITICAL(&mux); const char *result = sdState; portEXIT_CRITICAL(&mux); return result;
 }
@@ -153,7 +159,16 @@ void Peripherals::run() {
     if (displayReady && auxRail::displayVisible() && now >= nextDraw) {
       KeyringScreen screen;
       portENTER_CRITICAL(&mux); screen = snapshot; portEXIT_CRITICAL(&mux);
-      if (setIo(true)) { draw(screen); setIo(false); }
+      if (setIo(true)) {
+        draw(screen);
+#if KEYRING_R18_BRINGUP_DISPLAY
+        portENTER_CRITICAL(&mux);
+        if (screen.panic) drawnPanicPress = screen.panicPress;
+        else if (screen.confirm) drawnConfirmPress = screen.confirmPress;
+        portEXIT_CRITICAL(&mux);
+#endif
+        setIo(false);
+      }
       nextDraw = nowMs() + 1000;
     }
     LogLine line = {};
