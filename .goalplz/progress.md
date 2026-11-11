@@ -1739,3 +1739,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11. 직전 goal turn은 재
 - 새 값 세 가지와 열이 없는 이전 DB를 다루는 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·도구 실행·실제 Pi 보관본과 팀 서버 전환은 미수행이다. [상태 복구와 배포 전환](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#중앙-api-배포-전환)
 
 소스 commit `402339eaf875a470be0f25e58b402b10ff6eae33`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `7d0ad7b..402339e`다. goal은 active/progress다.
+
+## 2026-11-11 — Pi 보관본과 중앙 명령 정산 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11. 직전 goal turn은 Mobius 전환 보고서에 마지막 BLE 조각 상태를 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀의 중앙 정산 이벤트를 확인했다.
+
+- Gateway 0.2.95의 `bubble-keyring-reconcile --archive-only --team-state`는 키링 저널에 없는 Pi 검토 대상의 영수증을 원래 중앙 배포의 `runtime.json`과 대조한다. 명령·claim·epoch·해시·중앙 이벤트와 시각이 일치하면 중앙 실행 상태와 이벤트 ID를 표시한다.
+- Pi 영수증, 중앙 명령, 중앙 영수증 누락을 구분하고 기존 검토 건수를 유지한다. 성공·취소·실행 미확정과 불일치의 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·대조 도구 실행·실제 Pi 및 팀 보관본 대조는 미수행이다. [기존 배포의 명령과 키링 저널 대조](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#기존-배포의-명령과-키링-저널-대조)
+
+소스 commit `fa98bddd2774b895d499373fb24393df5c7fe0ae`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `4f5052e..fa98bdd`다. goal은 active/progress다.
