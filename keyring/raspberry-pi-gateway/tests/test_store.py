@@ -231,7 +231,7 @@ class StoreTests(unittest.TestCase):
         self.store.close()
         self.store = self.open_store()
         self.assertEqual(self.store.pending(), [])
-        self.assertEqual(self.store.interrupted(), [{"command": cmd, "digest": digest}])
+        self.assertEqual(self.store.interrupted(), [{"command": cmd, "digest": digest, "ble_final_write_started": 0}])
         self.assertEqual(self.store.begin_dispatch(cmd), "ALREADY_DISPATCHED")
 
     def test_stale_epoch_and_grant_do_not_dispatch(self):
@@ -256,6 +256,7 @@ class StoreTests(unittest.TestCase):
     def test_migrates_pending_commands_into_device_workers_without_changing_payloads(self):
         assigned = command(commandId="assigned")
         retired = command(commandId="retired", deviceId="kr-retired")
+        legacy_dispatch = command(commandId="legacy-dispatch")
         with self.store.db:
             self.store.db.execute("DROP TABLE commands")
             self.store.db.execute("""
@@ -268,11 +269,17 @@ class StoreTests(unittest.TestCase):
                 self.store.db.execute("INSERT INTO commands(command_id,payload_hash,payload,status,received_at) "
                                       "VALUES(?,?,?,'RECEIVED',?)",
                                       (cmd["commandId"], payload_hash(cmd), canonical(cmd), cmd["issuedAt"]))
+            self.store.db.execute("INSERT INTO commands(command_id,payload_hash,payload,status,received_at) "
+                                  "VALUES(?,?,?,'DISPATCHING',?)",
+                                  (legacy_dispatch["commandId"], payload_hash(legacy_dispatch), canonical(legacy_dispatch),
+                                   legacy_dispatch["issuedAt"]))
         self.store.close()
         self.store = self.open_store()
         for rows, cmd in ((self.store.pending(device_id="kr-test"), assigned),
                           (self.store.pending(excluded_devices=("kr-test",)), retired)):
             self.assertEqual([(row["command"], row["digest"]) for row in rows], [(cmd, payload_hash(cmd))])
+        self.assertEqual(self.store.interrupted(), [{"command": legacy_dispatch, "digest": payload_hash(legacy_dispatch),
+                                                    "ble_final_write_started": None}])
 
     def test_button_press_floor_survives_missing_sample_and_database_reopen(self):
         container = BINDING["observationContainer"]

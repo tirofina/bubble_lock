@@ -161,7 +161,9 @@ sudo -u bubble-gateway /opt/bubble_lock/keyring/raspberry-pi-gateway/.venv/bin/b
 - outbox의 실제 oneM2M receipt·dedup 상태와 CORE sequence의 현재 상한. 오래된 sequence를 새 상태로 사용하지 않음.
 - checkpoint 검증/적용/활성화 사이 crash·재시도·rollback 처리 및 signed/인증된 복구 승인 계약.
 
-원래 DB를 그대로 재시작하는 기존 경로는 유지한다. DISPATCHING이 남아 있으면 기존 service가 INDETERMINATE receipt를 만들고 동작을 재실행하지 않는다. 새 백업을 활성 상태로 가장하지 않는다.
+Gateway 0.2.93은 원래 DB로 재시작할 때 `DISPATCHING`의 마지막 BLE 조각 기록을 확인한다. 실행 의도 트랜잭션은 `ble_final_write_started=0`을 저장한다. 마지막 조각을 보내기 전 별도 트랜잭션에서 값을 `1`로 바꾸고, 커밋이 끝난 뒤 권한과 전송 기한을 다시 확인한다.
+
+재시작 시 값이 `0`이면 `REJECTED / DISPATCH_NOT_SENT`를 남긴다. 값이 `1`이면 마지막 조각이 전달됐을 가능성이 있으므로 `INDETERMINATE / RESTART_INTERRUPTED`를 남긴다. 열이 없던 DB의 기존 행은 업그레이드 후에도 `null`이며 같은 미확정 경로를 사용한다. 명령은 재시작에서 자동으로 재실행하지 않는다. 보관본의 활성화 조건은 위 절차를 따른다.
 
 ## 인수 항목의 현재 증거
 

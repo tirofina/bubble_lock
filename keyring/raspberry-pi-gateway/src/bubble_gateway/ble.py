@@ -602,6 +602,7 @@ class BleFleet:
     async def execute(self, command_dict: dict[str, Any], remaining_ms: int, payload_hash: str,
                       *, expected_generation: int | None = None, deadline_monotonic: float | None = None,
                       before_write: Callable[[], None] | None = None,
+                      before_final_write: Callable[[], None] | None = None,
                       on_receipt: Callable[[dict[str, Any]], None] | None = None) -> dict[str, Any]:
         peer = self._peers.get(command_dict["deviceId"])
         if peer is None:
@@ -615,6 +616,7 @@ class BleFleet:
         if expires <= now:
             raise BleCommandNotSent("dispatch deadline elapsed before BLE")
         timeout = min(self.config.ble_command_timeout, expires - now)
+        write_deadline = now + timeout
         pending = asyncio.get_running_loop().create_future()
         final_write_started = False
         try:
@@ -639,17 +641,22 @@ class BleFleet:
                 peer.pending = pending
                 peer.pending_command, peer.pending_hash = command_dict["commandId"], payload_hash
                 peer.pending_final_write_at = None
-                peer.pending_receipt_deadline = now + timeout
+                peer.pending_receipt_deadline = write_deadline
                 peer.pending_on_receipt = on_receipt
                 try:
                     for offset in range(0, len(raw), 20):
                         self._require_session(peer, client, generation)
                         if before_write is not None:
                             before_write()
-                        write_at = time.monotonic()
-                        if write_at >= expires:
-                            raise asyncio.TimeoutError("dispatch deadline elapsed during BLE")
                         final = offset + 20 >= len(raw)
+                        if final and before_final_write is not None:
+                            before_final_write()
+                            self._require_session(peer, client, generation)
+                            if before_write is not None:
+                                before_write()
+                        write_at = time.monotonic()
+                        if write_at >= write_deadline:
+                            raise asyncio.TimeoutError("dispatch deadline elapsed during BLE")
                         if final:
                             peer.pending_final_write_at = write_at
                             final_write_started = True

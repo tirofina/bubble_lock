@@ -60,6 +60,7 @@ class Store:
                 command_id TEXT PRIMARY KEY, payload_hash TEXT NOT NULL,
                 payload TEXT NOT NULL, status TEXT NOT NULL,
                 device_id TEXT,
+                ble_final_write_started INTEGER CHECK(ble_final_write_started IN (0,1)),
                 received_at TEXT NOT NULL, receipt TEXT,
                 receipt_delivered INTEGER NOT NULL DEFAULT 0,
                 central_receipt_staged INTEGER NOT NULL DEFAULT 0
@@ -108,6 +109,9 @@ class Store:
                     self.db.execute("ALTER TABLE commands ADD COLUMN central_receipt_staged INTEGER NOT NULL DEFAULT 0")
                 if "device_id" not in columns:
                     self.db.execute("ALTER TABLE commands ADD COLUMN device_id TEXT")
+                if "ble_final_write_started" not in columns:
+                    self.db.execute("ALTER TABLE commands ADD COLUMN ble_final_write_started INTEGER "
+                                    "CHECK(ble_final_write_started IN (0,1))")
                 self.db.execute("""
                     CREATE INDEX IF NOT EXISTS commands_pending_device ON commands(device_id) WHERE status='RECEIVED'
                 """)
@@ -189,8 +193,9 @@ class Store:
         return self.db.execute("SELECT COALESCE(MAX(rowid),0) FROM commands").fetchone()[0]
 
     def interrupted(self) -> list[dict]:
-        rows = self.db.execute("SELECT payload,payload_hash FROM commands WHERE status='DISPATCHING'")
-        return [{"command": json.loads(row["payload"]), "digest": row["payload_hash"]} for row in rows]
+        rows = self.db.execute("SELECT payload,payload_hash,ble_final_write_started FROM commands WHERE status='DISPATCHING'")
+        return [{"command": json.loads(row["payload"]), "digest": row["payload_hash"],
+                 "ble_final_write_started": row["ble_final_write_started"]} for row in rows]
 
     def begin_dispatch(self, command: dict) -> str | None:
         """Persist execution intent and accepted ownership fence before BLE writes."""
@@ -201,13 +206,24 @@ class Store:
                     return "STALE_EPOCH"
                 if command["grantRevision"] < fence["revision"]:
                     return "STALE_GRANT"
-            changed = self.db.execute("UPDATE commands SET status='DISPATCHING' WHERE command_id=? AND status='RECEIVED'",
+            changed = self.db.execute("UPDATE commands SET status='DISPATCHING',ble_final_write_started=0 "
+                                      "WHERE command_id=? AND status='RECEIVED'",
                                       (command["commandId"],)).rowcount
             if changed != 1:
                 return "ALREADY_DISPATCHED"
             self.db.execute("INSERT INTO fences(device_id,epoch,revision) VALUES(?,?,?) ON CONFLICT(device_id) DO UPDATE SET epoch=excluded.epoch,revision=excluded.revision",
                             (command["deviceId"], command["ownershipEpoch"], command["grantRevision"]))
         return None
+
+    def mark_ble_final_write(self, command_id: str, digest: str) -> bool:
+        """Commit the possible-execution boundary before the LF-terminated GATT write."""
+        with self.db:
+            result = self.db.execute("""
+                UPDATE commands SET ble_final_write_started=1
+                WHERE command_id=? AND payload_hash=? AND status='DISPATCHING'
+                  AND receipt IS NULL AND ble_final_write_started=0
+            """, (command_id, digest))
+        return result.rowcount == 1
 
     def finish(self, command_id: str, receipt: dict) -> bool:
         """Receipt remains in the command journal even if the outbox is full."""

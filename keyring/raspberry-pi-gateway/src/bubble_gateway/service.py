@@ -379,6 +379,13 @@ class Gateway:
 
         observed_receipt = None
         receipt_saved = False
+        final_write_marked = False
+
+        def record_final_write() -> None:
+            nonlocal final_write_marked
+            if not self.store.mark_ble_final_write(command["commandId"], digest):
+                raise DispatchBlocked("DISPATCH_NOT_SENT")
+            final_write_marked = True
 
         def save_observed_receipt(receipt: dict) -> None:
             nonlocal receipt_saved
@@ -400,6 +407,7 @@ class Gateway:
             try:
                 raw = await self.ble.execute(command, budget_ms, digest, expected_generation=generation,
                                              deadline_monotonic=expires, before_write=require_write_authority,
+                                             before_final_write=record_final_write,
                                              on_receipt=record_receipt)
             except BleCommandNotSent:
                 failure = ("REJECTED", "DISPATCH_NOT_SENT",
@@ -427,7 +435,11 @@ class Gateway:
                     await asyncio.sleep(DEVICE_RECEIPT_RETRY_INTERVAL)
         except asyncio.CancelledError:
             if observed_receipt is None:
-                self._finish(command, digest, "INDETERMINATE", "CANCELLED", "Shutdown interrupted dispatch; no automatic replay")
+                if final_write_marked:
+                    self._finish(command, digest, "INDETERMINATE", "CANCELLED", "Shutdown interrupted dispatch; no automatic replay")
+                else:
+                    self._finish(command, digest, "REJECTED", "DISPATCH_NOT_SENT",
+                                 "Shutdown interrupted BLE before the terminating fragment")
             elif not receipt_saved:
                 save_observed_receipt(observed_receipt)
             raise
@@ -579,15 +591,22 @@ class Gateway:
             self._enqueue_health()
             await self._pause(self.config.heartbeat_interval)
 
+    def _recover_interrupted_commands(self) -> None:
+        for item in self.store.interrupted():
+            if item["ble_final_write_started"] == 0:
+                self._finish(item["command"], item["digest"], "REJECTED", "DISPATCH_NOT_SENT",
+                             "Previous process stopped before the BLE terminating fragment was committed for transmission")
+            else:
+                self._finish(item["command"], item["digest"], "INDETERMINATE", "RESTART_INTERRUPTED",
+                             "Previous process ended during dispatch; journal preserved and command not replayed")
+
     async def run(self) -> None:
         tasks: list[asyncio.Task] = []
         try:
             commands_enabled = self.config.commands_enabled
             workers = [self._credentials_loop]
             if commands_enabled:
-                for item in self.store.interrupted():
-                    self._finish(item["command"], item["digest"], "INDETERMINATE", "RESTART_INTERRUPTED",
-                                 "Previous process ended during dispatch; journal preserved and command not replayed")
+                self._recover_interrupted_commands()
                 workers.extend((self._poll_loop, self._dispatch_loop))
             workers.extend((self._outbox_loop, self._health_loop))
             await self.transport.start()

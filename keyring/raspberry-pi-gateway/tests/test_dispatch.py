@@ -410,6 +410,7 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
 
         async def write(_uuid, data, *, response):
             if data.endswith(b"\n"):
+                self.assertEqual(self.store.interrupted()[0]["ble_final_write_started"], 1)
                 fleet._receipt_fragment(peer, bytearray((json.dumps(result) + "\n").encode()), peer.generation)
                 await after_notification()
 
@@ -428,6 +429,31 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(all(not call.args[1].endswith(b"\n") for call in write.await_args_list))
         self.assertFalse(peer.ready.is_set())
         self.assertEqual(self.store.pending(), [])
+
+    async def test_failed_final_write_marker_prevents_the_terminating_fragment(self):
+        self.use_ble_notification(AsyncMock())
+        peer = self.gateway.ble._peers[self.cmd["deviceId"]]
+        with patch.object(self.store, "mark_ble_final_write", side_effect=sqlite3.OperationalError("synthetic WAL failure")):
+            status, receipt = await self.dispatch()
+
+        self.assertEqual((status, receipt["ackCode"]), ("REJECTED", "DISPATCH_NOT_SENT"))
+        self.assertGreater(peer.client.write_gatt_char.await_count, 0)
+        self.assertTrue(all(not call.args[1].endswith(b"\n") for call in peer.client.write_gatt_char.await_args_list))
+
+    async def test_clock_jump_during_final_write_marker_prevents_the_terminating_fragment(self):
+        self.use_ble_notification(AsyncMock())
+        peer = self.gateway.ble._peers[self.cmd["deviceId"]]
+        mark = self.store.mark_ble_final_write
+
+        def write_marker(command_id, digest):
+            result = mark(command_id, digest)
+            self.gateway.clock_anchor += 10
+            return result
+
+        with patch.object(self.store, "mark_ble_final_write", side_effect=write_marker):
+            status, receipt = await self.dispatch()
+        self.assertEqual((status, receipt["ackCode"]), ("REJECTED", "DISPATCH_NOT_SENT"))
+        self.assertTrue(all(not call.args[1].endswith(b"\n") for call in peer.client.write_gatt_char.await_args_list))
 
     async def test_terminator_write_timeout_remains_uncertain_without_device_receipt(self):
         self.use_ble_notification(AsyncMock())
@@ -581,6 +607,32 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.store.pending(), [])
         await self.dispatch()
         self.assertEqual(self.gateway.ble.execute.await_count, 1)
+
+    async def test_restart_distinguishes_unsent_possible_and_legacy_dispatches(self):
+        self.assertIsNone(self.store.begin_dispatch(self.cmd))
+        marked = command(commandId="marked")
+        legacy = command(commandId="legacy")
+        for item in (marked, legacy):
+            self.store.accept(item, payload_hash(item))
+            self.assertIsNone(self.store.begin_dispatch(item))
+        self.assertTrue(self.store.mark_ble_final_write(marked["commandId"], payload_hash(marked)))
+        with self.store.db:
+            self.store.db.execute("UPDATE commands SET ble_final_write_started=NULL WHERE command_id=?", (legacy["commandId"],))
+        self.store.close()
+
+        with closing(Store(Path(self.temp.name) / "synthetic.sqlite3", 100, 100000, 20, BINDING)) as restarted:
+            self.gateway.store = restarted
+            self.gateway._recover_interrupted_commands()
+            results = {row["command_id"]: (row["status"], json.loads(row["receipt"])["ackCode"])
+                       for row in restarted.db.execute("SELECT command_id,status,receipt FROM commands")}
+            self.assertEqual(results, {
+                self.cmd["commandId"]: ("REJECTED", "DISPATCH_NOT_SENT"),
+                marked["commandId"]: ("INDETERMINATE", "RESTART_INTERRUPTED"),
+                legacy["commandId"]: ("INDETERMINATE", "RESTART_INTERRUPTED"),
+            })
+            self.assertEqual(restarted.pending(), [])
+            self.assertEqual(restarted.interrupted(), [])
+        self.gateway.ble.execute.assert_not_awaited()
 
     async def test_publish_failure_keeps_receipt_undelivered(self):
         await self.dispatch()
