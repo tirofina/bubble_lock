@@ -1393,3 +1393,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R03, R05. 직전 goal turn은 r18
 - 명령 ID·시각·readback 변형, 중복 ACK·미전달·정산 누락을 다루는 회귀시험 소스를 추가했다. Gateway 패키지 revision은 `0.2.60`이다. 빌드·회귀시험·PostgreSQL 조회·Pi 및 r18 실물 시험은 미실행이다.
 
 소스 commit `38917ff6970f27372be0f1d00715bdd7b110197c`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `9bda0e7..38917ff`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 명령을 최신 중앙 API 상태와 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R03, R05. 직전 goal turn은 격리 PostgreSQL의 최초 적용 대조를 보강한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 팀 API의 명령·영수증과 실행 시작·정산 이벤트 계약을 확인했다.
+
+- Gateway `0.2.61`에서 r18 단일 명령 비교에 `--team-state`를 추가했다. 장치·Pi·Mobius4 기록이 먼저 일치하면 중앙 상태 사본에서 정확한 발급 명령·영수증 본문·claim·실행 시작·정산과 시각을 대조한다. Feather 최신 API 시험의 같은 비교 코드를 재사용하며, 보고서에는 두 이벤트 ID와 상태 사본 SHA-256을 보존한다. [최신 중앙 API 상태 대조](../keyring/JOURNAL_RETENTION.md#최신-중앙-api-상태-대조)
+- 회귀시험 소스를 추가했다. 격리 명령 발급 프로필의 r18 등록, 빌드·회귀시험·CSE 조회·r18/Pi 실물 명령과 물리 계측은 미실행이다.
+
+소스 commit `b9cbb06ba84f63bd17a5f413a12bb4ea87ef9a1d`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `2a9edb8..b9cbb06`이다. goal은 active/progress다.
