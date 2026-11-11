@@ -70,6 +70,7 @@ sudo -u bubble-gateway /opt/bubble_lock/keyring/raspberry-pi-gateway/.venv/bin/b
 - `use-new-database`이면 binding이 바뀌고 새 DB 경로가 비어 있다. 기존 DB에 다른 binding을 지정하거나 같은 binding으로 별도 빈 DB를 지정하면 오류가 난다. 새 DB 경로에 파일이나 SQLite WAL·SHM·journal이 있어도 오류가 난다.
 - `outboxByRoute`는 native 관측·health, native 명령 영수증, credential 영수증, CORE telemetry·ACK, 중앙 telemetry·영수증의 저장 행 수다. 표시되지 않는 경로는 0건이다. `journal`에는 수신·dispatch 중 명령, outbox 등록 전 native 영수증, 중앙 등록 표시가 없는 명령 영수증과 미전달 credential 영수증이 포함된다. 각 단계에 같은 영수증이 포함될 수 있다. `sourceCentralReceiptStagingEnabled`로 중앙 등록 경로가 켜져 있었는지 확인한다.
 - Gateway 0.2.76의 `targetHolds`는 기존 DB를 재사용할 때 후보 설정에 의해 보류될 건수를 보여준다. CORE 브리지·명령·중앙 전송 경로의 비활성화와 CORE telemetry의 epoch 불일치를 반영한다. 기존 중앙 영수증 경로가 활성화돼 있었다면 중앙 등록 전 명령 영수증도 센다. 새 DB를 사용할 때 값은 `null`이며 기존 큐는 원본 DB에 남는다.
+- Gateway 0.2.94의 `journal.dispatchingByFinalBleWrite`는 `DISPATCHING`을 마지막 BLE 조각 미시도 `notStarted`, 전송 가능 `possiblyStarted`, 기록 없음 `unknown`으로 집계한다. 열이 없는 이전 DB는 `unknown`으로 집계한다.
 
 CORE 브리지를 끈 데몬은 기존 CORE telemetry와 ACK를 SQLite에 남기고 native 전송을 이어간다. 같은 배포에서 브리지를 다시 켜면 설정된 epoch에 해당하는 telemetry와 활성화된 명령 경로의 ACK가 재전송 대상에 들어간다. 보류 행은 계속 outbox 용량에 포함된다.
 
@@ -85,6 +86,8 @@ bubble-keyring-reconcile --archive-only --env-file gateway-old.env \
 ```
 
 원래 환경 파일의 TLS 경로 선언은 유지할 수 있으며 보관본 비교에는 실제 인증서와 개인키가 필요 없다. `deviceComparison`은 키링 기록과 Pi 영수증의 대조 결과다. 이 모드에서 Mobius4 영수증은 `nativeReceiptSource: not-checked`로 남는다. `gatewayOnlyPending`은 키링 저널에 없는 해당 기기의 수신·dispatch 중 명령과 미전달 native·중앙 영수증을 보여준다. `count`에는 전체 건수, `commands`에는 최대 128개 명령 ID·payload hash·로컬 상태가 들어가며 전체 건수가 `reviewCount`에 포함된다. 이 결과만으로 명령이 장치에 전달됐는지나 중앙에서 정산됐는지 판정할 수 없다. 출력은 기기 명령 식별자를 포함하므로 원본 보관본과 함께 보관한다.
+
+`gatewayOnlyPending.commands`의 `DISPATCHING` 행은 `bleFinalWriteMayHaveStarted`에 미시도 `false`, 전송 가능 `true`, 기록 없음 `null`을 표시한다. `true`인 명령은 기기·CSE·중앙 기록을 대조해 실제 전달 여부를 확인한다. 각 행은 원래 검토 건수에 포함된다.
 
 기존 CSE를 읽을 수 있으면 Gateway 0.2.78의 `--check-gateway-only-native`를 사용한다. 원래 배포 환경 파일의 `M2M_RECEIPT_CONTAINER_RI`와 mTLS 설정을 사용하며 프로세스 환경 변수는 가져오지 않는다.
 

@@ -71,13 +71,15 @@ def cutover_plan(current: GatewayConfig, target: GatewayConfig) -> dict:
             END AS route, COUNT(*) FROM outbox o GROUP BY route
         """, (current.receipt_container, current.observation_container, current.health_container)))
 
-        has_stage_marker = any(row["name"] == "central_receipt_staged"
-                               for row in db.execute("PRAGMA table_info(commands)"))
-        stage_condition = "AND central_receipt_staged=0" if has_stage_marker else ""
+        command_columns = {row["name"] for row in db.execute("PRAGMA table_info(commands)")}
+        stage_condition = "AND central_receipt_staged=0" if "central_receipt_staged" in command_columns else ""
+        final_write = "ble_final_write_started" if "ble_final_write_started" in command_columns else "NULL"
         journal = dict(db.execute(f"""
             SELECT
                 COUNT(*) FILTER (WHERE status='RECEIVED') AS commandsReceived,
                 COUNT(*) FILTER (WHERE status='DISPATCHING') AS commandsDispatching,
+                COUNT(*) FILTER (WHERE status='DISPATCHING' AND {final_write}=0) AS beforeFinalWrite,
+                COUNT(*) FILTER (WHERE status='DISPATCHING' AND {final_write}=1) AS possibleFinalWrite,
                 COUNT(*) FILTER (WHERE receipt IS NOT NULL AND receipt_delivered=0
                     AND NOT EXISTS (SELECT 1 FROM outbox WHERE outbox.command_id=commands.command_id))
                     AS nativeReceiptsNotStaged,
@@ -85,6 +87,13 @@ def cutover_plan(current: GatewayConfig, target: GatewayConfig) -> dict:
                     AS centralReceiptsWithoutStageMarker
             FROM commands
         """).fetchone())
+        before_final_write = journal.pop("beforeFinalWrite")
+        possible_final_write = journal.pop("possibleFinalWrite")
+        journal["dispatchingByFinalBleWrite"] = {
+            "notStarted": before_final_write,
+            "possiblyStarted": possible_final_write,
+            "unknown": journal["commandsDispatching"] - before_final_write - possible_final_write,
+        }
         journal["credentialReceiptsNotDelivered"] = (db.execute(
             "SELECT COUNT(*) FROM credential_receipts WHERE delivered_at IS NULL"
         ).fetchone()[0] if credential_table else 0)

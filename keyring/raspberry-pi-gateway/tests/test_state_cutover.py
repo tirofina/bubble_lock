@@ -37,11 +37,16 @@ class CutoverTests(unittest.TestCase):
         with closing(Store(self.current.database, 100, 100000, 20, configured_binding(self.current))) as store:
             store.observation(self.current.observation_container, observation(), core_enabled=True, central_enabled=True)
             store.enqueue("health", "test", self.current.health_container, {"test": True})
-            for status in ("received", "dispatching", "terminal"):
+            for status in ("received", "dispatching", "dispatching-marked", "dispatching-legacy", "terminal"):
                 cmd = command(commandId=status)
                 store.accept(cmd, payload_hash(cmd))
-                if status == "dispatching":
+                if status.startswith("dispatching"):
                     store.begin_dispatch(cmd)
+                if status == "dispatching-marked":
+                    self.assertTrue(store.mark_ble_final_write(status, payload_hash(cmd)))
+                if status == "dispatching-legacy":
+                    with store.db:
+                        store.db.execute("UPDATE commands SET ble_final_write_started=NULL WHERE command_id=?", (status,))
                 if status == "terminal":
                     store.finish(status, {"commandId": status, "status": "APPLIED"})
             target = self.configuration(self.current.database, api_url="https://tunnel.invalid")
@@ -51,9 +56,29 @@ class CutoverTests(unittest.TestCase):
         self.assertEqual(report["changedEndpointFields"], ["pcApiUrl"])
         self.assertEqual(report["outboxByRoute"], {"nativeObservationOrHealth": 2, "coreTelemetry": 1,
                                                   "centralTelemetry": 1})
-        self.assertEqual(report["journal"], {"commandsReceived": 1, "commandsDispatching": 1,
+        self.assertEqual(report["journal"], {"commandsReceived": 1, "commandsDispatching": 3,
+                                             "dispatchingByFinalBleWrite": {"notStarted": 1, "possiblyStarted": 1, "unknown": 1},
                                              "nativeReceiptsNotStaged": 1, "centralReceiptsWithoutStageMarker": 1,
                                              "credentialReceiptsNotDelivered": 0})
+
+    def test_database_without_final_write_column_reports_unknown_without_migrating(self):
+        with closing(Store(self.current.database, 100, 100000, 20, configured_binding(self.current))) as store:
+            cmd = command()
+            store.accept(cmd, payload_hash(cmd))
+            store.begin_dispatch(cmd)
+            with store.db:
+                store.db.execute("""
+                    CREATE TABLE legacy_commands AS SELECT command_id, payload_hash, payload, status,
+                        received_at, receipt, receipt_delivered, central_receipt_staged FROM commands
+                """)
+                store.db.execute("DROP TABLE commands")
+                store.db.execute("ALTER TABLE legacy_commands RENAME TO commands")
+            report = cutover_plan(self.current, self.current)
+            columns = {row["name"] for row in store.db.execute("PRAGMA table_info(commands)")}
+
+        self.assertEqual(report["journal"]["dispatchingByFinalBleWrite"],
+                         {"notStarted": 0, "possiblyStarted": 0, "unknown": 1})
+        self.assertNotIn("ble_final_write_started", columns)
 
     def test_new_binding_needs_unused_path_and_does_not_create_database(self):
         target = self.configuration(self.root / "target.db", pc_api_deployment_id="new-pc")

@@ -33,9 +33,10 @@ def _gateway_only_pending(db: sqlite3.Connection, device_id: str, command_ids: l
     central_unstaged = "receipt IS NOT NULL"
     if "central_receipt_staged" in columns:
         central_unstaged += " AND central_receipt_staged=0"
+    final_write = "ble_final_write_started" if "ble_final_write_started" in columns else "NULL"
     rows = db.execute(f"""
         WITH candidates AS (
-            SELECT command_id, payload_hash, status,
+            SELECT command_id, payload_hash, status, {final_write} AS final_write,
                 (receipt IS NOT NULL AND receipt_delivered=0) AS native_pending,
                 (command_id IN (
                     SELECT json_extract(CASE WHEN json_valid(payload) THEN payload END, '$.commandId')
@@ -49,11 +50,15 @@ def _gateway_only_pending(db: sqlite3.Connection, device_id: str, command_ids: l
         WHERE status IN ('RECEIVED', 'DISPATCHING') OR native_pending OR central_pending
         ORDER BY command_id LIMIT ?4
     """, (device_id, canonical(command_ids), include_unstaged_central, GATEWAY_ONLY_COMMAND_LIMIT)).fetchall()
-    return {"count": rows[0]["total"] if rows else 0, "commands": [
-        {"commandId": row["command_id"], "payloadHash": row["payload_hash"], "gatewayStatus": row["status"],
-         "nativeReceiptPending": bool(row["native_pending"]), "centralReceiptPending": bool(row["central_pending"])}
-        for row in rows
-    ]}
+    commands = []
+    for row in rows:
+        entry = {"commandId": row["command_id"], "payloadHash": row["payload_hash"], "gatewayStatus": row["status"],
+                 "nativeReceiptPending": bool(row["native_pending"]), "centralReceiptPending": bool(row["central_pending"])}
+        if row["status"] == "DISPATCHING":
+            marker = row["final_write"]
+            entry["bleFinalWriteMayHaveStarted"] = bool(marker) if marker in (0, 1) else None
+        commands.append(entry)
+    return {"count": rows[0]["total"] if rows else 0, "commands": commands}
 
 
 def _read_gateway_archive(directory: Path, expected: dict, command_ids: list[str], *,

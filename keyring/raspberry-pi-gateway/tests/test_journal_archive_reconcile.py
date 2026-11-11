@@ -45,10 +45,18 @@ class JournalArchiveReconcileTests(unittest.IsolatedAsyncioTestCase):
                 store.delivered(Store.request_id("central-receipt", command_id))
 
             for cmd in (command(commandId="waiting"), command(commandId="dispatch"),
+                        command(commandId="dispatch-possible"), command(commandId="dispatch-legacy"),
                         command(commandId="unrelated", deviceId="other-device")):
-                store.accept(cmd, payload_hash(cmd))
-                if cmd["commandId"] == "dispatch":
+                digest = payload_hash(cmd)
+                command_id = cmd["commandId"]
+                store.accept(cmd, digest)
+                if command_id.startswith("dispatch"):
                     store.begin_dispatch(cmd)
+                if command_id == "dispatch-possible":
+                    self.assertTrue(store.mark_ble_final_write(command_id, digest))
+                if command_id == "dispatch-legacy":
+                    with store.db:
+                        store.db.execute("UPDATE commands SET ble_final_write_started=NULL WHERE command_id=?", (command_id,))
             with patch("bubble_gateway.state_archive._sync_directory"):
                 archive(current, gateway_archive, adopt=False, timeout=5)
 
@@ -61,11 +69,16 @@ class JournalArchiveReconcileTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(report["results"][0]["result"], "native_receipt_not_checked")
         self.assertEqual(report["results"][0]["deviceComparison"], "matched_applied")
         pending = report["gatewayOnlyPending"]
-        self.assertEqual(pending["count"], 3)
+        self.assertEqual(pending["count"], 5)
         self.assertEqual([(row["commandId"], row["gatewayStatus"], row["centralReceiptPending"])
                           for row in pending["commands"]],
-                         [("central", "APPLIED", True), ("dispatch", "DISPATCHING", False), ("waiting", "RECEIVED", False)])
-        self.assertEqual(report["reviewCount"], 4)
+                         [("central", "APPLIED", True), ("dispatch", "DISPATCHING", False),
+                          ("dispatch-legacy", "DISPATCHING", False), ("dispatch-possible", "DISPATCHING", False),
+                          ("waiting", "RECEIVED", False)])
+        phases = {row["commandId"]: row["bleFinalWriteMayHaveStarted"] for row in pending["commands"]
+                  if row["gatewayStatus"] == "DISPATCHING"}
+        self.assertEqual(phases, {"dispatch": False, "dispatch-legacy": None, "dispatch-possible": True})
+        self.assertEqual(report["reviewCount"], 6)
 
     async def test_gateway_only_live_receipt_lookup_uses_original_pinned_container(self):
         temp = tempfile.TemporaryDirectory()
