@@ -1730,3 +1730,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11. 직전 goal turn은 종
 - 재시작 시 마지막 조각 미시도가 확인된 행은 `DISPATCH_NOT_SENT`로 정산한다. 마지막 조각이 전달됐을 수 있는 행과 열이 없던 기존 DB의 행은 `RESTART_INTERRUPTED`를 사용한다. 마이그레이션, 저장 실패, 저장 중 시계 변경, 재시작 분기 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·실제 Pi SQLite 마이그레이션·재시작·BLE·중앙 정산은 미수행이다. [상태 복구](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md)
 
 소스 commit `5646e6c2fe5ab315ac9b5e4562fd8ccc64d8854c`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `25bfd17..5646e6c`다. goal은 active/progress다.
+
+## 2026-11-11 — Mobius 전환 보고서의 마지막 BLE 조각 상태
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11. 직전 goal turn은 재시작 후 마지막 BLE 조각 표시 복구를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f` 및 팀 명령 정산 계약을 확인했다.
+
+- Gateway 0.2.94의 `plan-cutover`가 `DISPATCHING` 상태를 마지막 조각 미시도·전송 가능·기록 없음으로 집계한다. `bubble-keyring-reconcile`은 키링 저널에 없는 전송 중 명령마다 해당 상태를 표시한다. 기존 SQLite와 보관본은 읽기 전용으로 읽고 검토 대상과 건수를 유지한다.
+- 새 값 세 가지와 열이 없는 이전 DB를 다루는 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·도구 실행·실제 Pi 보관본과 팀 서버 전환은 미수행이다. [상태 복구와 배포 전환](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#중앙-api-배포-전환)
+
+소스 commit `402339eaf875a470be0f25e58b402b10ff6eae33`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `7d0ad7b..402339e`다. goal은 active/progress다.
