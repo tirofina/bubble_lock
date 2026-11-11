@@ -1140,3 +1140,12 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 사용자가 승인한 Feather 0.2.0·Pi 0.2.28 격리 시험은 이전에 수행했다. ON/OFF 모두 GPIO readback, Mobius4 원본과 중앙 정산이 일치했다. [실물 시험 기록](../keyring/evidence/2026-11-11-scoped-feather-led/receipt.json)
 
 소스 commit `596e44ce7ff2857d015d057ce82f6236a985d34a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `6af2279..596e44c`다. goal은 active/progress다.
+
+## 2026-11-11 — 고정 영수증 재전송과 Feather 육안 시험
+
+일시 중지 직전에 Gateway 0.2.44 소스와 회귀시험을 작업 트리에 남겼다. 재개 뒤 DOC-REV 2.0.0 및 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. main의 새 INTEGRATION 계약에 `dispatch-start`와 중앙 영수증·관측 수집이 추가됐다. 현재 역할 브랜치의 Gateway 실행 경로와 새 중앙 API를 잇는 작업이 남아 있다.
+
+- Gateway `0.2.44`는 고정 컨테이너의 최초 명령 영수증 전송 시도를 SQLite에 기록한다. 재시도에서는 기존 영수증의 부모·이름·유형·본문을 먼저 확인하고, 확인된 부재에 한해 같은 이름으로 CREATE를 진행한다. 회귀시험 소스를 함께 올렸다. 이 버전의 빌드·시험·배포는 미실행이다. [영수증 대기열](../keyring/raspberry-pi-gateway/RECEIPT_ROUTING.md)
+- 실제 Pi Gateway `0.2.43`으로 Feather `0.2.0`의 ON/OFF를 다시 실행했다. 고정 컨테이너와 활성 자격을 확인했고 두 건 모두 장치 ACK·GPIO readback·후속 관측·Mobius4·인증 콜백·중앙 정산이 일치했다. 사용자는 빨간 LED를 식별하지 못했고 ON/OFF에서 점등 변화를 관찰하지 못했다. Pi의 명령 영수증 대기열은 0건이었고 시험 데몬과 SSH 터널을 종료했다. [실물 시험 결과](../keyring/evidence/2026-11-11-feather-visual/receipt.json)
+
+소스 commit `36276bd62467c409a1c8c4778b379f89da02983a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `bd1d5ec..36276bd`다. goal은 active/progress다.

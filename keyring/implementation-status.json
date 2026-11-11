@@ -7,7 +7,7 @@
   "date": "2026-11-11",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Feather 0.2.0 and Pi Gateway 0.2.28 produced two APPLIED GPIO command receipts that matched pinned Mobius4, the Pi database, authenticated CSE callback and isolated PostgreSQL settlement. Gateway 0.2.43 passed 153 local tests from its built wheel, including receipt persistence before the final GATT response. Visual LED confirmation, Gateway 0.2.43 on Pi and BlueZ, r18 hardware and physical power characterization remain unverified.",
+  "verificationStatus": "Pi Gateway 0.2.43 and Feather 0.2.0 produced two APPLIED GPIO command receipts with matching Pi SQLite, pinned Mobius4, authenticated callback and isolated PostgreSQL settlement. The operator saw no visible red LED change. Gateway 0.2.44 receipt replay is source-only. r18 hardware and physical power characterization remain unverified.",
   "rubricIds": [
     "R01",
     "R02",
@@ -173,18 +173,18 @@
   "firmwareRevision": "keyring-0.7.13",
   "benchFirmwareRevision": "feather-probe-0.2.0",
   "publication": {
-    "sourceCommit": "596e44ce7ff2857d015d057ce82f6236a985d34a",
+    "sourceCommit": "36276bd62467c409a1c8c4778b379f89da02983a",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "596e44ce7ff2857d015d057ce82f6236a985d34a",
-    "lastPushedCommit": "596e44ce7ff2857d015d057ce82f6236a985d34a",
-    "latestCheckpoint": "Commit the matching BLE receipt before waiting for the final GATT response.",
-    "lastPushedCommitBeforeThisCheckpoint": "6af22799c5d05fe94803f9f64191371d4d58e382"
+    "latestLocalSourceCommit": "36276bd62467c409a1c8c4778b379f89da02983a",
+    "lastPushedCommit": "36276bd62467c409a1c8c4778b379f89da02983a",
+    "latestCheckpoint": "Confirm an existing pinned native receipt before repeating CREATE after interruption.",
+    "lastPushedCommitBeforeThisCheckpoint": "bd1d5ec6c7c566520e3f82a91fa24ea7a25e3b98"
   },
-  "gatewayRevision": "0.2.43",
-  "pendingValidationScope": "Visual Feather LED observation, r18 physical commands and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE MQTT ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
+  "gatewayRevision": "0.2.44",
+  "pendingValidationScope": "Visible Feather LED actuation, 0.2.44 pinned-receipt restart and replay, r18 physical commands and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE MQTT ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
     "supersededBy": "2026-11-10 benchCheckpoint for current execution and verification state",
@@ -205,7 +205,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Persist matching BLE receipts at notification under DOC-REV 2.0.0",
+    "executionRequest": "Resume pinned receipt replay work and record the authorized visual Feather bench under DOC-REV 2.0.0",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -213,11 +213,12 @@
       "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "596e44ce7ff2857d015d057ce82f6236a985d34a",
-    "sourceValidation": "Read the current plan, remote team heads, team ACK contract and Gateway BLE and SQLite receipt paths. Built a wheel and ran 153 local tests on Windows Python 3.11. This Gateway version was not deployed to Pi or tested on hardware.",
+    "latestRemoteMain": "bc2a45d",
+    "sourceCommit": "36276bd62467c409a1c8c4778b379f89da02983a",
+    "sourceValidation": "Gateway 0.2.44 changes and regression sources were uploaded. Build and regression execution remain pending. Pi Gateway 0.2.43 completed an authorized Feather ON/OFF bench with matching data and no visible LED actuation.",
     "goalComplete": false,
     "pendingInput": null,
-    "currentDependencyState": "The Feather 0.2.0 and Pi Gateway 0.2.28 command path was verified through isolated Mobius4 and PostgreSQL. Gateway 0.2.43 was built and tested locally. Firmware 0.7.13 bring-up, assembled r18 identification, first power-on, Pi capture and physical reconnect, restart and receipt response-loss behavior remain. Credential continuity, durable transition and real CSE readback, central issuance or rotation evidence, real battery alert capture, LCD and charger observation, native CSE battery observation readback, visual Feather LED observation, r18 physical sensor recovery, BLE resubscription and long-read tests, NVS fault verification, archive comparison execution, authoritative production CSE routes, approved journal reclaim and automatic external rollback detection contracts, production CORE, and physical power/range/wake capture and an external supply measurement also remain.",
+    "currentDependencyState": "The Feather 0.2.0 and Pi Gateway 0.2.43 command path matched isolated Mobius4 and PostgreSQL. The operator reported no visible LED response. Main bc2a45d added dispatch-start, canonical receipt intake and central telemetry; the bench remained on its pinned 715ef58 API. Integration with the newer central contract, Gateway 0.2.44 restart and readback regression, r18 identification and first power-on, physical reconnect, battery, LCD, charger and sensor checks, NVS fault and archive history verification, production CSE and CORE, journal reclaim, and physical power/range/wake evidence remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -1217,5 +1218,19 @@
     "localTestsPassed": 153,
     "physicalResponseLossExecuted": false,
     "sourceCommit": "596e44ce7ff2857d015d057ce82f6236a985d34a"
+  },
+  "receiptReplay": {
+    "reference": "raspberry-pi-gateway/RECEIPT_ROUTING.md",
+    "gatewayVersion": "0.2.44",
+    "status": "source-only",
+    "regressionsExecuted": false,
+    "sourceCommit": "36276bd62467c409a1c8c4778b379f89da02983a"
+  },
+  "featherVisualBench": {
+    "reference": "evidence/2026-11-11-feather-visual/receipt.json",
+    "gatewayVersion": "0.2.43",
+    "piCseBindingVerified": true,
+    "centralSettlementVerified": true,
+    "physicalLedMatched": false
   }
 }

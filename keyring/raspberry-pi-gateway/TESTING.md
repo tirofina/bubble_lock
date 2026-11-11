@@ -153,6 +153,8 @@ LCD의 `LOW` 표시와 해제, 실제 충전 표시는 측정 단계의 시각�
 
 2026-11-11에 Feather 0.2.0과 실제 Pi의 ON/OFF 두 건을 같은 부팅에서 실행했다. GPIO readback·Pi SQLite·Mobius4 원본·인증 콜백·격리 PostgreSQL 정산을 대조했다. 실제 LED 육안 확인은 증거에서 별도로 관리한다. [실행 결과와 해시](../evidence/2026-11-11-scoped-feather-led/receipt.json)
 
+같은 날 Pi Gateway 0.2.43으로 다시 시험했다. ON과 OFF 모두 `APPLIED`였고 GPIO readback, 후속 관측, Mobius4 원본과 중앙 정산이 일치했다. 운영자는 보드에서 빨간 LED를 식별하지 못했고 두 명령에서 눈에 보이는 변화를 관찰하지 못했다. [재시험 결과와 해시](../evidence/2026-11-11-feather-visual/receipt.json)
+
 Feather 명령 펌웨어 0.2.0과 [Pi 벤치 연결 절차](../evidence/2026-11-10-pi-full-daemon/README.md#재현-절차)를 사용한다. PC의 시험 fixture는 새 CA·Mobius4 컨테이너·팀 중앙 API를 열고, Gateway와 Guardian에 별도 인증서를 발급한다. Guardian은 PC에만 두고 Pi에는 Gateway bundle을 전달한다. 현재 PC 시험 도구에는 Gateway 0.2.29 이상과 `HEARTBEAT_INTERVAL=5`가 필요하다. 새 SQLite, `FIRMWARE_REVISION_ALLOWLIST=feather-probe-0.2.0`, `MQTT_ENABLED=false`, `CORE_BRIDGE_ENABLED=false`로 시작한다.
 
 관측 펌웨어에서 명령 펌웨어로 바꾼 직후에는 Pi에서 명령 특성 `7f8a0003-4b6e-4f4e-9b0a-505249564255`에 `write`가 표시되는지 확인한다. 새 identity와 관측이 들어와도 BlueZ가 이전 GATT 목록을 유지할 수 있다. 특성이 빠져 있으면 Pi 시험 데몬을 멈추고 해당 Feather만 등록 해제한 뒤, 필요하면 Feather를 재부팅하고 기존 PIN으로 다시 등록한다. 새 서비스 목록에서 `write`를 확인한 뒤 새 명령 ID로 시험한다.
