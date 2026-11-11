@@ -1811,3 +1811,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R05, R15. 직전 goal turn�
 - 정상 연결과 USB 로그·바이너리·관측 순번 불일치의 회귀시험 소스 및 절차를 추가했다. 빌드·테스트·정적 분석·실제 PCB/Pi·Mobius4·중앙/웹 연결은 미수행이다. [관측 전달 증거 대조](../keyring/raspberry-pi-gateway/TESTING.md#관측-전달-증거-대조)
 
 소스 commit `b9f119ef306bd82398198d2311397037c8ce68a8`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `a9e1a52..b9f119e`다. goal은 active/progress다.
+
+## 2026-11-11 — Mobius4 관측 전송 경로 기록
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 r18 첫 구동과 중앙 관측 증거의 연결을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 CORE Gateway 계약의 MQTT·HTTPS 경로를 확인했다.
+
+- Gateway 0.2.100은 확인된 관측을 outbox에서 완료한 뒤, 선택한 경우 MQTT·HTTPS 전용·HTTPS fallback 결과와 새 자원 생성 여부를 INFO 로그에 남긴다. r18 관측 전용 세션은 기록을 활성화한다. 격리 세션의 native 전송은 HTTPS다.
+- r18 대조 도구의 `--pi-log`는 동일 요청 ID·관측 본문 해시를 Mobius4 및 Pi DB 상태와 대조한다. 서로 다른 경로가 같은 요청을 완료했다고 기록됐거나 DB에 아직 대기 중이면 실패한다. 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·실물 Pi 및 Mobius4 경로 검증은 미수행이다. [관측 전달 증거 대조](../keyring/raspberry-pi-gateway/TESTING.md#관측-전달-증거-대조)
+
+소스 commit `120c18e1b69f267075b5f195d200e0e213494c74`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `b66e581..120c18e`다. goal은 active/progress다.

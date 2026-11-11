@@ -1774,5 +1774,12 @@
     "regressionsExecuted": false,
     "physicalRelayVerified": false,
     "sourceCommit": "b9f119ef306bd82398198d2311397037c8ce68a8"
+  },
+  "r18NativeObservationConfirmation": {
+    "reference": "raspberry-pi-gateway/TESTING.md#관측-전달-증거-대조",
+    "gatewayVersion": "0.2.100",
+    "regressionsExecuted": false,
+    "physicalTransportVerified": false,
+    "sourceCommit": "120c18e1b69f267075b5f195d200e0e213494c74"
   }
 }
