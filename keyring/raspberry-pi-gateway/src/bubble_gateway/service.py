@@ -17,7 +17,7 @@ from .config import GatewayConfig, ID, configured_container_pins
 from .model import (authorization_deadline, canonical, iso_time, parse_time, payload_hash, utc_now,
                     validate_command, validate_credential_status, validate_observation)
 from .store import CapacityError, Store
-from .transport import COMMAND_BATCH, HttpRetryDeferred, NativeDeliveryHold, TransportHub
+from .transport import COMMAND_BATCH, HttpRetryDeferred, TransportHub
 
 LOG = logging.getLogger(__name__)
 RECEIPT_BURST = 4
@@ -489,7 +489,7 @@ class Gateway:
                     LOG.warning("SQLite outbox confirmation remains pending at shutdown (%s)", type(exc).__name__)
                 raise
 
-    async def _outbox_loop(self, *, scoped: bool = False,
+    async def _outbox_loop(self, *, core_route: Literal["ack", "telemetry"] | None = None,
                            central_route: Literal["telemetry", "receipt"] | None = None) -> None:
         epochs = self.config.core_telemetry_epochs
         commands_enabled = getattr(self.config, "commands_enabled", True)
@@ -497,10 +497,6 @@ class Gateway:
         next_expiry_check = 0.0
         if central_route == "telemetry":
             max_age = timedelta(seconds=self.config.central_telemetry_retention_seconds + CENTRAL_TELEMETRY_CLOCK_MARGIN)
-        if not scoped and epochs is not None:
-            # The scoped worker owns this lane, so awaiting its receipt never
-            # holds the native observation or command-receipt worker.
-            epochs = {}
         while not self.stop.is_set():
             if central_route == "receipt":
                 item = None
@@ -515,15 +511,20 @@ class Gateway:
                     self.counters["central_telemetry_expired"] += expired
                     next_expiry_check = now if expired == CENTRAL_TELEMETRY_EXPIRY_BATCH else now + CENTRAL_TELEMETRY_EXPIRY_INTERVAL
                 item = None if self.transport.central_delivery_held() else self.store.due_central_telemetry()
+            elif core_route == "ack":
+                # Either worker can stage the same atomic pair while the other
+                # is waiting for its transport response.
+                self.store.stage_receipts(self.config.receipt_container, self.config.core_bridge_enabled)
+                item = self.store.due_core_ack()
+            elif core_route == "telemetry":
+                item = self.store.due(core_epochs=epochs, scoped_only=True)
             else:
-                if not scoped:
-                    if commands_enabled:
-                        self.store.stage_receipts(self.config.receipt_container, self.config.core_bridge_enabled)
-                    self.store.stage_credential_receipt()
-                prefer_receipts = None if scoped else receipt_attempts < RECEIPT_BURST
-                hold = NativeDeliveryHold() if scoped else self.transport.native_delivery_hold()
-                item = self.store.due(core_epochs=epochs, scoped_only=scoped, prefer_receipts=prefer_receipts,
-                                      skip_native=hold.all_native, skip_core=not self.config.core_bridge_enabled,
+                if commands_enabled:
+                    self.store.stage_receipts(self.config.receipt_container, self.config.core_bridge_enabled)
+                self.store.stage_credential_receipt()
+                hold = self.transport.native_delivery_hold()
+                item = self.store.due(prefer_receipts=receipt_attempts < RECEIPT_BURST,
+                                      skip_native=hold.all_native, skip_core=True,
                                       held_receipt_container=hold.receipt_container,
                                       hold_credential_receipts=hold.credential_receipts,
                                       held_observation_container=hold.observation_container,
@@ -532,7 +533,7 @@ class Gateway:
             if item is None:
                 await self._pause(0.5)
                 continue
-            if central_route is None:
+            if central_route is None and core_route is None:
                 receipt_attempts = min(receipt_attempts + 1, RECEIPT_BURST) if item["is_receipt"] else 0
             delivery_options = {}
             if (item["command_id"] is not None and item["container"] == self.config.receipt_container
@@ -565,7 +566,7 @@ class Gateway:
                 if item["container"] == "@central/telemetry":
                     outcome = "stale" if confirmation["status"] == "STALE" else "confirmed"
                     self.counters[f"central_telemetry_{outcome}"] += 1
-                if scoped:
+                if core_route == "telemetry" and epochs is not None:
                     self.counters["core_applied_confirmed"] += 1
 
     def _health_payload(self) -> dict:
@@ -613,8 +614,10 @@ class Gateway:
             await self.transport.start()
             await self.ble.start(self.observation, observation_heads=self.store.observation_heads(include_button_presses=True))
             tasks = [asyncio.create_task(worker(), name=worker.__name__) for worker in workers]
-            if self.config.core_telemetry_epochs is not None:
-                tasks.append(asyncio.create_task(self._outbox_loop(scoped=True), name="scoped_outbox"))
+            if self.config.core_bridge_enabled:
+                tasks.append(asyncio.create_task(self._outbox_loop(core_route="telemetry"), name="core_telemetry_outbox"))
+                if commands_enabled:
+                    tasks.append(asyncio.create_task(self._outbox_loop(core_route="ack"), name="core_ack_outbox"))
             if self.config.central_telemetry_enabled:
                 tasks.append(asyncio.create_task(self._outbox_loop(central_route="telemetry"), name="central_telemetry_outbox"))
             if commands_enabled and self.config.central_receipts_enabled:

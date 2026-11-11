@@ -14,6 +14,8 @@ Gateway 0.2.44는 컨테이너 ID를 고정한 native 명령 영수증의 첫 �
 
 Gateway 0.2.30의 송신 worker는 재시도 시각이 된 native 명령 영수증과 CORE ACK를 오래된 관측보다 먼저 시도한다. 영수증을 연속 네 번 시도하면 다음 선택에서 일반 항목을 우선한다. 해당 쪽에 전송할 항목이 없으면 준비된 쪽이 계속 진행한다. 기존 SQLite 행으로 구분하며 요청 ID, 재시도 시각, 분리된 scoped CORE telemetry의 장치별 순서를 유지한다. 이 변경의 시험과 배포는 미실행이다.
 
+Gateway 0.2.98은 Mobius4 native 전송, CORE ACK, CORE 텔레메트리를 각각 독립 작업으로 보낸다. Mobius4 응답이 보류돼도 CORE ACK와 기본·scoped 텔레메트리는 자기 전송 경로로 진행한다. 새 native 영수증과 CORE ACK는 기존 한 트랜잭션으로 함께 등록한다. Mobius4 작업과 CORE ACK 작업 모두 이 등록을 시도할 수 있으며, SQLite의 기존 대기 행과 전달 표시가 중복 등록을 막는다. Mobius4 내의 영수증·관측 우선순위는 기존 규칙을 적용한다.
+
 CORE_BRIDGE_ENABLED의 projection 선택은 영수증 최초 staging 시 고정한다. 이미 대기 중인 native 영수증에 설정 변경만으로 CORE ACK를 과거로 소급 생성하지 않는다. 이미 있는 outbox 항목은 유지한다. DB 삭제·수동 outbox 재작성으로 재전송을 유도하지 않는다.
 
 ## 중앙 명령 영수증 정산

@@ -464,6 +464,13 @@ class Store:
         """, (time.time(),)).fetchone()
         return self._outbox_row(row)
 
+    def due_core_ack(self) -> dict | None:
+        row = self.db.execute("""
+            SELECT * FROM outbox WHERE container='@core/ack' AND next_attempt<=?
+            ORDER BY created_at,rqi LIMIT 1
+        """, (time.time(),)).fetchone()
+        return self._outbox_row(row)
+
     def due_central_telemetry(self) -> dict | None:
         # Include deferred heads so a retry cannot reorder a device's observations.
         row = self.db.execute("""

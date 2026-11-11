@@ -111,7 +111,9 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         gateway.stop.clear()
         gateway.transport.publish.reset_mock()
         async with asyncio.timeout(1):
-            await gateway._outbox_loop()
+            await gateway._outbox_loop(core_route="ack")
+            gateway.stop.clear()
+            await gateway._outbox_loop(core_route="telemetry")
         published = {call.args[1] for call in gateway.transport.publish.await_args_list}
         self.assertEqual(published, {"@core/ack", "@core/telemetry"})
         self.assertEqual(self.store.counts()[0], 0)
@@ -131,8 +133,8 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         async def park():
             await gateway.stop.wait()
 
-        async def record_route(*, central_route=None):
-            routes.append(central_route)
+        async def record_route(*, core_route=None, central_route=None):
+            routes.append((core_route, central_route))
             if central_route == "telemetry":
                 gateway.stop.set()
             await park()
@@ -144,7 +146,7 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         gateway.store.interrupted.assert_not_called()
         gateway._poll_loop.assert_not_called()
         gateway._dispatch_loop.assert_not_called()
-        self.assertCountEqual(routes, [None, "telemetry"])
+        self.assertCountEqual(routes, [(None, None), ("telemetry", None), (None, "telemetry")])
         gateway.ble.start.assert_awaited_once()
 
     async def test_pinned_receipt_send_attempt_survives_restart_before_local_confirmation(self):
@@ -589,15 +591,54 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         with patch("bubble_gateway.store.time.time", return_value=1000):
             async with asyncio.timeout(1):
                 await gateway._outbox_loop()
+                gateway.stop.clear()
+                await gateway._outbox_loop(core_route="ack")
         self.assertEqual(published_acks, [self.ack_rqi])
         self.assertEqual(self.native_delivered(), 0)
         self.assertEqual(self.queued(BINDING["receiptContainer"]), 1)
+
+    async def test_core_ack_and_legacy_telemetry_progress_while_native_waits_for_cse(self):
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+        native_started, release_native = asyncio.Event(), asyncio.Event()
+        ack_sent, telemetry_sent = asyncio.Event(), asyncio.Event()
+        next_command = command(commandId="completed-during-native-wait")
+        next_digest = payload_hash(next_command)
+
+        async def publish(rqi, route, payload):
+            if rqi == self.native_rqi:
+                native_started.set()
+                await release_native.wait()
+            elif route == "@core/ack" and payload["commandId"] == next_command["commandId"]:
+                ack_sent.set()
+            elif route == "@core/telemetry":
+                telemetry_sent.set()
+
+        gateway.transport = SimpleNamespace(publish=AsyncMock(side_effect=publish), native_delivery_hold=NativeDeliveryHold)
+        self.store.observation(BINDING["observationContainer"], observation(), core_enabled=True)
+        async with asyncio.timeout(1), asyncio.TaskGroup() as workers:
+            workers.create_task(gateway._outbox_loop())
+            await native_started.wait()
+            self.store.accept(next_command, next_digest)
+            self.store.finish(next_command["commandId"], dict(
+                self.receipt, commandId=next_command["commandId"], payloadHash=next_digest))
+            workers.create_task(gateway._outbox_loop(core_route="ack"))
+            workers.create_task(gateway._outbox_loop(core_route="telemetry"))
+            await ack_sent.wait()
+            await telemetry_sent.wait()
+            self.assertEqual(self.queued("@core/ack"), 0)
+            self.assertEqual(self.queued("@core/telemetry"), 0)
+            self.assertEqual(self.queued(BINDING["receiptContainer"]), 2)
+            self.assertFalse(release_native.is_set())
+            gateway.stop.set()
+            release_native.set()
 
     async def test_due_receipts_jump_older_observations_without_starving_them(self):
         with patch("bubble_gateway.store.iso_time", return_value="2020-01-01T00:00:00Z"):
             self.store.enqueue("observation", "older", BINDING["observationContainer"], {"sequence": 1})
         observation_rqi = self.store.request_id("observation", "older")
-        for index in range(3):
+        for index in range(5):
             cmd = command(commandId=f"queued-{index}")
             digest = payload_hash(cmd)
             self.store.accept(cmd, digest)
@@ -619,9 +660,9 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
                 await gateway._outbox_loop()
 
         attempts = [call.args[0] for call in gateway.transport.publish.await_args_list]
-        self.assertEqual(len(attempts), 8)  # Seven due receipts and one observation.
+        self.assertEqual(len(attempts), 6)  # Five due native receipts and one observation.
         self.assertEqual(attempts[4], observation_rqi)
-        self.assertIn(self.ack_rqi, attempts)
+        self.assertNotIn(self.ack_rqi, attempts)
         self.assertNotIn(self.native_rqi, attempts)
         self.assertEqual(self.queued(BINDING["receiptContainer"]), 1)
 
@@ -641,6 +682,8 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         gateway._pause = idle
         async with asyncio.timeout(1):
             await gateway._outbox_loop()
+            gateway.stop.clear()
+            await gateway._outbox_loop(core_route="ack")
             self.assertEqual([call.args[0] for call in gateway.transport.publish.await_args_list], [self.ack_rqi])
             queued = self.store.db.execute("SELECT rqi,attempts,next_attempt FROM outbox").fetchall()
             self.assertEqual({tuple(row) for row in queued}, {(self.native_rqi, 0, 0), (observation_rqi, 0, 0)})
@@ -678,7 +721,8 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         async with asyncio.timeout(1):
             await gateway._outbox_loop()
             attempted = [entry.args[0] for entry in gateway.transport.publish.await_args_list]
-            self.assertEqual(attempted, [self.ack_rqi, self.store.request_id("health", "ordinary")])
+            self.assertEqual(attempted, [self.store.request_id("health", "ordinary")])
+            self.assertEqual(self.queued("@core/ack"), 1)
             credential = self.store.db.execute("SELECT attempts,next_attempt FROM outbox WHERE rqi=?",
                                                (credential_rqi,)).fetchone()
             self.assertEqual(tuple(credential), (0, 0))
