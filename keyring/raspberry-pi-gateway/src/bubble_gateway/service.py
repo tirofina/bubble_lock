@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Literal
 
-from .ble import BleFleet
+from .ble import BleCommandNotSent, BleFleet
 from .config import GatewayConfig, ID, configured_container_pins
 from .model import (authorization_deadline, canonical, iso_time, parse_time, payload_hash, utc_now,
                     validate_command, validate_credential_status, validate_observation)
@@ -401,6 +401,9 @@ class Gateway:
                 raw = await self.ble.execute(command, budget_ms, digest, expected_generation=generation,
                                              deadline_monotonic=expires, before_write=require_write_authority,
                                              on_receipt=record_receipt)
+            except BleCommandNotSent:
+                failure = ("REJECTED", "DISPATCH_NOT_SENT",
+                           "BLE transmission stopped before the terminating fragment was attempted")
             except DispatchBlocked as exc:
                 failure = ("INDETERMINATE", str(exc),
                            "BLE transmission stopped after an authorization change; no automatic replay")

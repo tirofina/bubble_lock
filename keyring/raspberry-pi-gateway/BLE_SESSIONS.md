@@ -18,6 +18,8 @@ Gateway 0.2.8은 대기 중인 commandId와 payloadHash가 일치하는 `APPLIED
 
 ## 재연결과 관측 시각 기준
 
+Gateway 0.2.92는 BLE 오류가 LF 종결 조각을 시도하기 전에 발생하면 `REJECTED / DISPATCH_NOT_SENT`를 기록한다. Feather와 r18은 LF를 받은 뒤에 명령을 처리한다. 종결 조각을 시도한 뒤 일치하는 영수증이 없으면 기존 미확정 경로를 사용한다. 전송 중단 후에는 부분 프레임을 다음 명령에 이어 쓰지 않도록 연결을 해제한다.
+
 Gateway 0.2.91은 BLE 연결 뒤 GATT identity·초기 관측 읽기와 필요한 알림 구독에 총 30초를 적용한다. 시간이 지나면 `BleHandshakeTimeout`을 남기고 해당 연결의 콜백을 무효화한다. BlueZ 연결 해제에는 최대 15초를 기다린다. 그 안에 응답이 없으면 로그에 남기고 다음 연결 시도로 넘어간다.
 
 Gateway 0.2.90은 관측 구독 뒤 `BLE_OBSERVATION_TIMEOUT`초 동안 새로운 BLE 관측 알림이 큐에 들어오지 않으면 `observation_notification_timeout`을 기록한다. 기본값은 30초이며 5~300초로 설정할 수 있다. 시작할 때 읽은 GATT 값, 중복 순번과 이전 연결 알림은 이 시간을 갱신하지 않는다. 시간 초과 시 해당 세션의 명령 준비 상태를 해제하고 같은 장치에 다시 연결한다. 이미 전송 중인 명령은 기존 세션 종료 규칙에 따라 처리한다.

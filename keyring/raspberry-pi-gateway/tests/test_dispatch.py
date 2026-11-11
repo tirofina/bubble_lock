@@ -415,6 +415,34 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
 
         peer.client = SimpleNamespace(is_connected=True, write_gatt_char=AsyncMock(side_effect=write))
 
+    async def test_interrupted_ble_before_terminator_settles_dispatch_not_sent(self):
+        self.use_ble_notification(AsyncMock())
+        peer = self.gateway.ble._peers[self.cmd["deviceId"]]
+        write = peer.client.write_gatt_char
+        write.side_effect = [None, TimeoutError("synthetic partial write timeout")]
+
+        status, receipt = await self.dispatch()
+        self.assertEqual((status, receipt["ackCode"]), ("REJECTED", "DISPATCH_NOT_SENT"))
+        self.assertIsNone(receipt["readback"])
+        self.assertEqual(write.await_count, 2)
+        self.assertTrue(all(not call.args[1].endswith(b"\n") for call in write.await_args_list))
+        self.assertFalse(peer.ready.is_set())
+        self.assertEqual(self.store.pending(), [])
+
+    async def test_terminator_write_timeout_remains_uncertain_without_device_receipt(self):
+        self.use_ble_notification(AsyncMock())
+        peer = self.gateway.ble._peers[self.cmd["deviceId"]]
+
+        async def write(_uuid, data, *, response):
+            if data.endswith(b"\n"):
+                raise TimeoutError("synthetic lost final write response")
+
+        peer.client.write_gatt_char.side_effect = write
+        status, receipt = await self.dispatch()
+        self.assertEqual((status, receipt["ackCode"]), ("TIMEOUT", "TIMEOUT"))
+        self.assertTrue(peer.client.write_gatt_char.await_args.args[1].endswith(b"\n"))
+        self.assertEqual(self.store.pending(), [])
+
     async def test_dispatch_keeps_confirmed_receipt_when_final_gatt_response_is_lost(self):
         async def lose_response():
             fleet = self.gateway.ble

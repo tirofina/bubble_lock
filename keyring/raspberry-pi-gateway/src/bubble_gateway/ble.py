@@ -55,6 +55,10 @@ class BleUnavailable(ConnectionError):
 class BleHandshakeTimeout(BleUnavailable):
     """The connected keyring did not finish GATT setup in time."""
 
+
+class BleCommandNotSent(BleUnavailable):
+    """The final GATT fragment that completes a command was never attempted."""
+
 def _r18_bringup(identity: dict[str, Any]) -> bool:
     return identity["boardRevision"] == "r18-hand-solder" and identity["firmwareRevision"].endswith("-bringup")
 
@@ -601,7 +605,7 @@ class BleFleet:
                       on_receipt: Callable[[dict[str, Any]], None] | None = None) -> dict[str, Any]:
         peer = self._peers.get(command_dict["deviceId"])
         if peer is None:
-            raise BleUnavailable("device is not enrolled")
+            raise BleCommandNotSent("device is not enrolled")
         if not _integer(remaining_ms, 1, 30_000):
             raise ValueError("remaining_ms must be between 1 and 30000")
         now = time.monotonic()
@@ -609,9 +613,10 @@ class BleFleet:
         if deadline_monotonic is not None:
             expires = min(expires, deadline_monotonic)
         if expires <= now:
-            raise asyncio.TimeoutError("dispatch deadline elapsed before BLE")
+            raise BleCommandNotSent("dispatch deadline elapsed before BLE")
         timeout = min(self.config.ble_command_timeout, expires - now)
         pending = asyncio.get_running_loop().create_future()
+        final_write_started = False
         try:
             async with asyncio.timeout(timeout), peer.lock:
                 client = peer.client
@@ -647,6 +652,7 @@ class BleFleet:
                         final = offset + 20 >= len(raw)
                         if final:
                             peer.pending_final_write_at = write_at
+                            final_write_started = True
                         await client.write_gatt_char(self.command_uuid, raw[offset:offset + 20], response=True)
                         if not final or not pending.done():
                             self._require_session(peer, client, generation)
@@ -672,6 +678,10 @@ class BleFleet:
             if pending.done() and not pending.cancelled() and pending.exception() is None:
                 LOG.info("BLE transport ended after a matching receipt (%s)", type(exc).__name__)
                 return pending.result()
+            if not final_write_started:
+                if isinstance(exc, BleUnavailable):
+                    raise BleCommandNotSent(str(exc)) from exc
+                raise BleCommandNotSent("BLE command stopped before the terminating fragment") from exc
             raise
 
     async def capture_journal(self, device_id: str) -> dict[str, Any]:
