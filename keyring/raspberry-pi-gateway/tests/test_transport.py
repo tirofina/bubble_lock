@@ -189,6 +189,52 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
                           ("GET", "https://cse.invalid/test/receipts/" + self.rn)])
         self.assertEqual(self.hub._pending, {})
 
+    async def test_pinned_retry_confirms_existing_instance_without_create(self):
+        self.pin_receipt_container("cnt-original")
+        self.mqtt(target="cnt-original")
+        await self.hub.publish(self.rqi, self.container, self.payload, confirm_existing=True)
+        self.assertEqual([entry.args for entry in self.hub._http_json.await_args_list],
+                         [("GET", "https://cse.invalid/test/receipts"),
+                          ("GET", "https://cse.invalid/test/receipts/" + self.rn)])
+        self.hub._mqtt.publish.assert_not_called()
+
+    async def test_pinned_retry_creates_only_after_authenticated_not_found(self):
+        self.pin_receipt_container("cnt-original")
+        exchange = self.hub._http_json.side_effect
+        missing = True
+
+        async def missing_once(method, url, *, headers, body=None):
+            nonlocal missing
+            if missing and method == "GET" and url.endswith("/" + self.rn):
+                missing = False
+                return 404, httpx.Headers({"X-M2M-RI": headers["X-M2M-RI"], "X-M2M-RSC": "4004"}), {}
+            return await exchange(method, url, headers=headers, body=body)
+
+        self.hub._http_json.side_effect = missing_once
+        await self.hub.publish(self.rqi, self.container, self.payload, confirm_existing=True)
+        self.assertEqual([entry.args for entry in self.hub._http_json.await_args_list],
+                         [("GET", "https://cse.invalid/test/receipts"),
+                          ("GET", "https://cse.invalid/test/receipts/" + self.rn),
+                          ("POST", "https://cse.invalid/cnt-original"),
+                          ("GET", "https://cse.invalid/test/receipts/" + self.rn)])
+        create = self.hub._http_json.await_args_list[2].kwargs
+        self.assertEqual(create["headers"]["X-M2M-RI"], self.rqi)
+        self.assertEqual(create["body"]["m2m:cin"]["rn"], self.rn)
+
+    async def test_pinned_retry_keeps_receipt_queued_if_lookup_cannot_establish_absence(self):
+        for changes, lookup_error in (
+            ({"con": {"synthetic": False}}, None),
+            ({"pi": "cnt-recreated"}, None),
+            (None, RemoteResponseError("permission denied", 4103, 403)),
+            (None, RemoteResponseError("wrong oneM2M code", 4103, 404)),
+        ):
+            with self.subTest(changes=changes, lookup_error=lookup_error):
+                self.hub._http_json.reset_mock()
+                self.pin_receipt_container("cnt-original", readback_changes=changes, readback_error=lookup_error)
+                with self.assertRaises(RemoteResponseError):
+                    await self.hub.publish(self.rqi, self.container, self.payload, confirm_existing=True)
+                self.assertEqual([entry.args[0] for entry in self.hub._http_json.await_args_list], ["GET", "GET"])
+
     def credential_exchange(self, *, readback_changes=None, readback_error=None):
         self.container = self.hub.config.health_container
         self.payload = {"credentialTransition": {"sequence": 1, "previous": None,

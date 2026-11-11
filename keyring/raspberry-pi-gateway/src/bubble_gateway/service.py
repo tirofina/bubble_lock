@@ -379,8 +379,15 @@ class Gateway:
                 await self._pause(0.5)
                 continue
             receipt_attempts = min(receipt_attempts + 1, RECEIPT_BURST) if item["is_receipt"] else 0
+            delivery_options = {}
+            if (item["command_id"] is not None and item["container"] == self.config.receipt_container
+                    and self.config.receipt_container_ri is not None):
+                if item["attempts"]:
+                    delivery_options["confirm_existing"] = True
+                else:
+                    self.store.mark_receipt_attempt(item["rqi"])
             try:
-                await self.transport.publish(item["rqi"], item["container"], item["payload"])
+                await self.transport.publish(item["rqi"], item["container"], item["payload"], **delivery_options)
             except asyncio.CancelledError:
                 raise
             except Exception as exc:

@@ -281,6 +281,12 @@ class Store:
                     """, (RETAIN_DELIVERED_CREDENTIAL_RECEIPTS,))
             self.db.execute("DELETE FROM outbox WHERE rqi=?", (rqi,))
 
+    def mark_receipt_attempt(self, rqi: str) -> None:
+        """Persist the first send attempt before the CSE can create the receipt."""
+        with self.db:
+            self.db.execute("UPDATE outbox SET attempts=1 WHERE rqi=? AND command_id IS NOT NULL AND attempts=0",
+                            (rqi,))
+
     def retry(self, rqi: str, attempts: int, *, minimum_delay: float = 0.0) -> None:
         delay = min(300, 2 ** min(attempts + 1, 8)) * random.uniform(0.8, 1.2)
         with self.db:

@@ -63,6 +63,40 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.queued(BINDING["receiptContainer"]), 1)
         self.assertEqual(self.native_delivered(), 0)
 
+    async def test_pinned_receipt_send_attempt_survives_restart_before_local_confirmation(self):
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.config.receipt_container_ri = "cnt-test"
+        gateway.config.core_bridge_enabled = False
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+
+        async def interrupted_publish(*_args):
+            self.assertEqual(self.store.due()["attempts"], 1)
+            raise asyncio.CancelledError
+
+        gateway.transport = SimpleNamespace(publish=AsyncMock(side_effect=interrupted_publish),
+                                             native_delivery_hold=NativeDeliveryHold)
+        with self.assertRaises(asyncio.CancelledError):
+            async with asyncio.timeout(1):
+                await gateway._outbox_loop()
+        args = (self.native_rqi, BINDING["receiptContainer"], self.receipt)
+        gateway.transport.publish.assert_awaited_once_with(*args)
+        self.assertEqual(self.native_delivered(), 0)
+
+        self.store.close()
+        gateway.store = self.store = self.open_store()
+        gateway.transport.publish = AsyncMock()
+
+        async def idle(_seconds):
+            gateway.stop.set()
+
+        gateway._pause = idle
+        async with asyncio.timeout(1):
+            await gateway._outbox_loop()
+        gateway.transport.publish.assert_awaited_once_with(*args, confirm_existing=True)
+        self.assertEqual(self.native_delivered(), 1)
+        self.assertEqual(self.store.counts()[0], 0)
+
     async def test_backed_off_receipts_do_not_hide_later_unstaged_receipts_after_restart(self):
         self.store.max_rows = 300
         self.store.max_commands = 140

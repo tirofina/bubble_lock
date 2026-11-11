@@ -460,7 +460,8 @@ class TransportHub:
         await self._confirm_stored(rqi, container, payload, created_identity=identity,
                                    credential_receipt=credential_receipt)
 
-    async def publish(self, rqi: str, container: str, payload: dict[str, Any]) -> dict[str, Any] | None:
+    async def publish(self, rqi: str, container: str, payload: dict[str, Any], *,
+                      confirm_existing: bool = False) -> dict[str, Any] | None:
         if container.startswith("@core/"):
             return await self._publish_core(container, payload)
         if not isinstance(rqi, str) or not 1 <= len(rqi) <= 128:
@@ -479,6 +480,14 @@ class TransportHub:
         target = container
         if pin is not None:
             await self._verify_receipt_container(path, pin)
+            if confirm_existing:
+                try:
+                    await self._confirm_stored(rqi, container, payload, conflict=True)
+                except RemoteResponseError as exc:
+                    if (exc.status_code, exc.rsc) != (404, 4004):
+                        raise
+                else:
+                    return
             # Write to the verified resource itself even if its name is later rebound.
             target = f"/{pin}"
             path = _resource_path(target)
