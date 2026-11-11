@@ -1915,5 +1915,12 @@
     "regressionsExecuted": false,
     "physicalPiRestartVerified": false,
     "sourceCommit": "9a7e991ceed8b6943de80639378fc5a3930c2328"
+  },
+  "gatewayFinalWriteAckRecovery": {
+    "reference": "raspberry-pi-gateway/IO_NOTES.md",
+    "gatewayVersion": "0.2.108",
+    "regressionsExecuted": false,
+    "physicalBleWriteFailureVerified": false,
+    "sourceCommit": "6109701b7b3b9853b8e881835f5a7d023bb923d9"
   }
 }

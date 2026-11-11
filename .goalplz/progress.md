@@ -1973,3 +1973,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 첫 GATT
 - SQLite 이전 스키마, 재열기 후 역행, BLE 시작 시 기준 적용 및 Mobius4 본문의 기존 형식을 다루는 회귀시험 소스를 반영했다. 빌드·테스트·정적 분석·실물 Pi 재시작·Mobius4 확인은 미수행이다. [통신 메모](../keyring/raspberry-pi-gateway/IO_NOTES.md)
 
 소스 commit `9a7e991ceed8b6943de80639378fc5a3930c2328`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `f42b31d..9a7e991`이다. goal은 active/progress다.
+
+## 2026-11-11 — 마지막 BLE 쓰기 응답 오류 뒤 ACK 보존
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 Pi 재시작 뒤 BLE 업타임 연속성을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f` 및 장치 영수증 정산 계약을 확인했다.
+
+- Gateway 0.2.108은 마지막 GATT WRITE 응답 오류 뒤 같은 인증 세션에서 원래 기한까지 일치하는 ACK를 받을 수 있다. ACK가 오면 장치 결과를 기존 SQLite 영수증 경로로 저장한다. 기한 만료·연결 단절에서는 기존 실패 경로로 종료하며 명령을 재전송하지 않는다.
+- 응답 오류 뒤 늦은 유효 ACK, 다른 해시의 ACK, 원래 기한 내 ACK 누락을 다루는 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·실제 BlueZ 오류/ACK 시험·장비 실행은 미수행이다. [통신 메모](../keyring/raspberry-pi-gateway/IO_NOTES.md)
+
+소스 commit `6109701b7b3b9853b8e881835f5a7d023bb923d9`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `3ede1a8..6109701`이다. goal은 active/progress다.
