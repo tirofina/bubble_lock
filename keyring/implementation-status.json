@@ -1795,5 +1795,14 @@
     "regressionsExecuted": false,
     "physicalFallbackVerified": false,
     "sourceCommit": "f3985b26f7dbd6b2f26fdf70a8d03dcc5f326825"
+  },
+  "r18ScopedMqttDeployment": {
+    "reference": "dev/mobius4/README.md#r18-관측-mqtt-중계",
+    "profilePrepared": true,
+    "tlsRefreshed": true,
+    "subscriptionReady": true,
+    "physicalObservationDelivered": false,
+    "physicalFallbackVerified": false,
+    "sourceCommit": "2017c3fa4193215cf649b588a4453358706173b4"
   }
 }

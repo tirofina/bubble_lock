@@ -1838,3 +1838,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R05. 직전 goal turn은 격
 - 정상 경로와 기존 자원, 중앙 수용 대기, 다른 Gateway 부팅을 다루는 회귀시험 소스와 절차를 추가했다. 빌드·테스트·정적 분석·Pi 및 제작 PCB 실물 전송은 미수행이다. [r18 전환 시험](../keyring/raspberry-pi-gateway/TESTING.md#r18-mqtt와-https-fallback-시험)
 
 소스 commit `f3985b26f7dbd6b2f26fdf70a8d03dcc5f326825`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `97f37a5..f3985b2`다. goal은 active/progress다.
+
+## 2026-11-11 — 실행 중인 임시 Mobius4의 r18 MQTT 설정
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 한 부팅의 MQTT/HTTPS 전환 증거 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 CORE 전송 계약을 확인했다.
+
+- `-PrepareR18Mqtt`가 기존 CSE의 관측·health 이름과 고정 ID를 조회하고 로컬 MQTT 설정과 HTTPS 경로를 작성한다. 기존 설정이 실제 ID와 다르면 중단한다. `-RefreshIngress`는 MQTT 설정이 있을 때 r18 구독 준비도 기다린다. [격리 설정](../keyring/dev/mobius4/README.md#r18-관측-mqtt-중계)
+- 기존 임시 Compose에 준비를 실행해 관측 `a8o9yh7miw`, health `d6tq49gt37`의 고정 ID를 읽었다. 격리 TLS 프록시·브로커·소비자를 갱신했다. 두 준비 명령은 exit 0이었으며 소비자가 기존 구독과 r18 MQTT 구독 준비를 모두 보고했다. 로컬 설정과 자격 정보는 Git에 포함하지 않았다. 빌드·회귀시험·정적 분석·Pi 연결·실물 관측 발행·HTTPS 전환은 미수행이다.
+
+소스 commit `2017c3fa4193215cf649b588a4453358706173b4`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `3e382d8..2017c3f`다. goal은 active/progress다.
