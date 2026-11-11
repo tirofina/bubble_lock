@@ -1,5 +1,7 @@
 # Gateway 로컬 시험
 
+Gateway 0.2.71의 r18 관측 대조 도구는 같은 USB 부팅의 Mobius4 관측·health, Pi SQLite 순번과 중앙 수용 이벤트를 연결한다. 중앙 수용 지연, 본문 해시 불일치와 다른 부팅·컨테이너를 다루는 회귀시험 소스를 추가했다. 빌드·시험·실제 관측 전달은 미실행이다.
+
 Gateway 0.2.70은 r18 첫 구동의 Pi 관측 전용 세션을 제공한다. 기존 명령 영수증 보존, 관측 전송, 명령 목록을 조회하지 않는 사전 확인의 회귀시험 소스를 추가했다. 빌드·시험·Pi 실행은 미실행이다.
 
 Gateway 0.2.69는 r18 첫 구동 중 같은 USB 부팅의 INA219 샘플 번호를 표시하고 외부 계측값을 오프라인에서 연결한다. 다른 캡처·다른 BLE 세션의 샘플과 측정 지점 혼용을 다루는 회귀시험 소스를 추가했다. 빌드·시험·Pi 실행은 미실행이다.
@@ -366,6 +368,26 @@ tool=keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_pi.py
 ```
 
 사전 확인은 컨테이너 ID 두 개와 중앙 자격을 대조해 `commandsEnabled:false`를 보고한다. 실행 중에는 BLE 관측·health와 중앙 텔레메트리를 전송하며, 명령 조회·실행·장치 명령 영수증 전송은 중지 상태다. 같은 BLE 장치를 쓰는 초기 구동 기록 도구와 Gateway는 순차적으로 실행한다. 실제 연결은 `command-health-b`에서 `commandReady:false`를, 전송은 `command-observations-b`와 중앙 `GATEWAY_TELEMETRY_ACCEPTED`에서 같은 관측을 확인한다. 명령 시험에는 별도의 [r18 Pi 명령 세션](#r18-pi-명령-세션)을 준비한다.
+
+##### 관측 전달 증거 대조
+
+Pi 관측 전용 세션이 실행 중일 때 PC에서 같은 부팅의 USB 로그와 준비한 관측·health ID를 지정한다. PC와 Pi 시계를 맞춘 상태에서 실행한다. `capture`는 시험을 시작한 뒤 들어온 Mobius4 관측과 상태를 HTTPS GET으로 읽는다. 같은 부팅과 펌웨어, 출력 OFF·fault 해제, `commandReady:false`를 확인한 뒤 비공개 JSON을 쓴다.
+
+```powershell
+$tool = 'keyring/raspberry-pi-gateway/cse_integration_tests/scoped_r18_observation.py'
+python $tool capture --firmware-revision $r18BringupFirmware --usb-boot-log $r18UsbLog `
+  --observation-container-ri $gwBObservationRi --health-container-ri $gwBHealthRi `
+  --output $r18ObservationCapture
+```
+
+Gateway를 정상 종료한 뒤 같은 세션의 SQLite 사본과 격리 r18 API의 `runtime.json` 사본을 확보한다. Pi DB는 [시험 증거 보관](#r18-pi-시험-증거-보관)의 `export-env`와 `state_archive snapshot`으로 확보할 수 있다.
+
+```powershell
+python $tool compare --firmware-revision $r18BringupFirmware --usb-boot-log $r18UsbLog `
+  --capture $r18ObservationCapture --database $piDatabaseCopy --team-state $teamStateCopy
+```
+
+`compare`는 Pi의 같은 부팅에서 관측 순번이 저장됐는지 확인한다. 해당 전송이 아직 큐에 있으면 Pi 본문도 대조한다. 중앙은 고정 팀 소스의 해시 함수로 Mobius4 본문을 계산해 수용 이벤트와 비교한다. 상태 사본에 중앙 이벤트가 아직 없으면 `centralTelemetryAccepted:false`와 종료 코드 1을 출력한다. 최신 중앙 사본으로 같은 기록을 다시 대조할 수 있다.
 
 #### r18 Pi 명령 세션
 
