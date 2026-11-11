@@ -1531,3 +1531,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 BLE
 - 수신자·기기 범위, 혼합 grant와 회수 전후 조회의 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·서버 시작·Pi 접속·실제 위치 조회는 미수행이다. 웹 OIDC와 앱 연동은 팀 배치가 필요하다.
 
 소스 commit `318ef45b914c784587fd3c032cf051b36c883513`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `4ac2c4a..318ef45`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 Mobius4와 포털 위치 관측 동시 수집
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 격리 r18 위치 승인·조회·회수를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 중앙 위치 API의 기기별 최신 관측과 통합 저장소의 스냅샷 교체 동작을 읽었다.
+
+- Gateway 0.2.74는 격리 위치 시험 도구에서 Mobius4와 포털 응답을 병행 수집한다. 포털 조회 전후의 중앙 관측 ID가 유지된 응답을 선택하고, Mobius4의 동일 ID·시각·RSSI를 찾으면 두 파일을 함께 저장한다. 사전 캡처 파일을 사용하는 절차도 제공한다. [위치 응답 대조](../keyring/raspberry-pi-gateway/TESTING.md#중앙-위치-api와-웹-응답-대조)
+- 조회 중 최신 관측 교체, 늦은 Mobius4 관측과 동일 시각·RSSI의 다른 ID를 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·서버 실행·Pi 접속·실제 응답 대조는 미수행이다.
+
+소스 commit `fa149ec91d45e2ea8a5cad1043aa6375a9ac8a8a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `a5f0551..fa149ec`다. goal은 active/progress다.
