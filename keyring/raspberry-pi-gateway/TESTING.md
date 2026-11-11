@@ -243,7 +243,7 @@ python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_evidenc
 
 #### 최신 중앙 API의 시험 결과 대조
 
-PC의 `scoped_feather_led_cycle.py`를 `--api-mode integration`으로 실행하면 각 단계에서 Mobius4의 영수증·관측과 중앙의 `APPLIED_VERIFIED` 기록을 확인한 뒤 완료를 표시한다. ON의 중앙 정산을 확인한 뒤 OFF 준비를 시작한다.
+PC의 `scoped_feather_led_cycle.py`를 `--api-mode integration`으로 실행하면 각 단계에서 Mobius4의 영수증·관측과 중앙의 `APPLIED_VERIFIED` 기록을 확인한 뒤 완료를 표시한다. ON의 중앙 정산을 확인한 뒤 OFF 준비를 시작한다. OFF 기록과 단계 grant 회수를 마치면 `led-cycle.json`을 저장하고, 두 관측의 중앙 수용 이벤트를 최대 35초 기다린다. 두 해시와 수용 순번이 일치하면 `central-telemetry.json`을 저장하고 `LED_CYCLE_CENTRAL_TELEMETRY_VERIFIED`를 표시한다. 수용 이벤트 대기가 중단되거나 기한을 넘기면 `led-cycle.json`은 후속 대조에 사용할 수 있다.
 
 중앙 관측까지 전달된 뒤 같은 시험의 Pi SQLite와 `.local/scoped/command-api-integration/runtime.json` 사본을 준비한다. Pi 세션은 `--receipt-container-ri`로 고정한 컨테이너를 사용해야 한다.
 

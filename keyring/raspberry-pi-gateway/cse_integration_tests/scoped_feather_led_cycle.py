@@ -11,8 +11,8 @@ import uuid
 
 import httpx
 
-from pi_led_cycle import FIRMWARE, run_led_cycle
-from scoped_feather_evidence import integration_settlement, read_json
+from pi_led_cycle import FIRMWARE, run_led_cycle, write_new_json
+from scoped_feather_evidence import integration_observation_event, integration_settlement, read_json
 from scoped_feather_pi import COMMAND_FIRMWARES
 
 BENCH_ROOT = Path(__file__).resolve().parents[2] / "dev/mobius4"
@@ -59,6 +59,30 @@ async def exchange(client, method, path, headers, body=None):
         return response.status_code, response.headers, json.loads(data) if data else None
 
 
+async def record_central_observations(steps, state_path, output):
+    if any("payloadHash" not in step["observation"] for step in steps):
+        raise ValueError("Native observation payload hashes are incomplete for the LED cycle")
+    print("LED_CYCLE_WAITING_FOR_CENTRAL_TELEMETRY", flush=True)
+    try:
+        async with asyncio.timeout(35):
+            while not (output / "STOP").exists():
+                team_state = await asyncio.to_thread(read_json, state_path)
+                on, off = (integration_observation_event(step, team_state, allow_pending=True) for step in steps)
+                if on is not None and off is not None:
+                    if on["sequence"] >= off["sequence"]:
+                        raise ValueError("Central telemetry order does not match the LED cycle")
+                    keys = ("eventId", "observationId", "payloadHash", "sequence", "observedAt", "timestamp")
+                    evidence = [{"commandId": step["command"]["commandId"], **{key: event[key] for key in keys}}
+                                for step, event in zip(steps, (on, off))]
+                    write_new_json(output / "central-telemetry.json", {"observations": evidence})
+                    print("LED_CYCLE_CENTRAL_TELEMETRY_VERIFIED", flush=True)
+                    return
+                await asyncio.sleep(0.25)
+    except TimeoutError:
+        raise RuntimeError("Central telemetry did not arrive for both observations; led-cycle.json was retained") from None
+    raise RuntimeError("Stopped while waiting for central telemetry; led-cycle.json was retained")
+
+
 async def run(output, seconds, *, api_mode="legacy", firmware=FIRMWARE):
     environment = dict(line.split("=", 1) for line in (PROFILE / "compose.env").read_text(encoding="utf-8-sig").splitlines()
                        if line and not line.startswith("#"))
@@ -69,6 +93,7 @@ async def run(output, seconds, *, api_mode="legacy", firmware=FIRMWARE):
     profiles = json.loads((BENCH_ROOT / "scoped-command-profiles.json").read_text(encoding="utf-8"))
     api = profiles[api_mode]
     operator_dir = PROFILE / api["directory"]
+    state_path = operator_dir / "runtime.json"
     integration = api_mode == "integration"
     observation_hasher = None
     if integration:
@@ -107,12 +132,14 @@ async def run(output, seconds, *, api_mode="legacy", firmware=FIRMWARE):
             return status, document
 
         async def central_settlement(command, receipt):
-            team_state = await asyncio.to_thread(read_json, operator_dir / "runtime.json")
+            team_state = await asyncio.to_thread(read_json, state_path)
             return integration_settlement(command, receipt, team_state)
 
-        await run_led_cycle(operator_post, cse, PATHS, output, gateway_id="gw-a", subject_id="scoped-feather-bench",
-                            central_settlement=central_settlement if integration else None,
-                            observation_hasher=observation_hasher, firmware=firmware)
+        steps = await run_led_cycle(operator_post, cse, PATHS, output, gateway_id="gw-a", subject_id="scoped-feather-bench",
+                                    central_settlement=central_settlement if integration else None,
+                                    observation_hasher=observation_hasher, firmware=firmware)
+        if integration:
+            await record_central_observations(steps, state_path, output)
 
 
 if __name__ == "__main__":

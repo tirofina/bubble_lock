@@ -179,14 +179,36 @@ def integration_settlement(command, receipt, team_state):
     return record, stored
 
 
-def require_integration_event(team_state, kind, identity, fields):
+def require_integration_event(team_state, kind, identity, fields, *, allow_pending=False):
     matches = [event for event in team_state["receipts"] if event.get("type") == kind
                and all(event.get(key) == value for key, value in identity.items())]
+    if not matches and allow_pending:
+        return None
     expected = dict(fields, contractId="privacy-bubble.integration.v1", docRevision="2.0.0")
-    if (len(matches) != 1 or not ID.fullmatch(matches[0].get("eventId", ""))
+    if (len(matches) != 1 or not isinstance(matches[0].get("eventId"), str) or not ID.fullmatch(matches[0]["eventId"])
             or canonical({key: matches[0].get(key) for key in expected}) != canonical(expected)):
         raise ValueError(f"Missing or inconsistent {kind} evidence")
     return matches[0]
+
+
+def integration_observation_event(step, team_state, *, allow_pending=False):
+    command, observation = step["command"], step["observation"]
+    telemetry_fields = {"gatewayId": command["gatewayId"], "deviceId": command["deviceId"],
+                        "observedAt": observation["observedAt"]}
+    observation_id = central_observation_id({**observation, **telemetry_fields})
+    if "payloadHash" in observation:
+        native_hash = observation["payloadHash"]
+        if not isinstance(native_hash, str) or re.fullmatch(r"[0-9a-f]{64}", native_hash) is None:
+            raise ValueError("Invalid native observation payload hash")
+        telemetry_fields["payloadHash"] = native_hash
+    telemetry = require_integration_event(team_state, "GATEWAY_TELEMETRY_ACCEPTED", {"observationId": observation_id},
+                                          telemetry_fields, allow_pending=allow_pending)
+    if telemetry is not None:
+        sequence = telemetry.get("sequence")
+        if (type(sequence) is not int or sequence < 0
+                or parse_time(telemetry["timestamp"]) < parse_time(observation["observedAt"]) - timedelta(seconds=2)):
+            raise ValueError("Invalid central telemetry sequence or timestamp")
+    return telemetry
 
 
 def inspect_integration_step(step, pi_proof, team_state):
@@ -222,25 +244,11 @@ def inspect_integration_step(step, pi_proof, team_state):
             or not started_at - timedelta(seconds=2) <= receipt_at <= central_received_at + timedelta(seconds=2)):
         raise ValueError("Central dispatch and settlement timestamps are inconsistent")
 
-    observation_id = central_observation_id({**observation, "gatewayId": command["gatewayId"], "deviceId": command["deviceId"]})
-    telemetry_fields = {"gatewayId": command["gatewayId"], "deviceId": command["deviceId"],
-                        "observedAt": observation["observedAt"]}
-    has_payload_hash = "payloadHash" in observation
-    if has_payload_hash:
-        native_hash = observation["payloadHash"]
-        if not isinstance(native_hash, str) or re.fullmatch(r"[0-9a-f]{64}", native_hash) is None:
-            raise ValueError("Invalid native observation payload hash")
-        telemetry_fields["payloadHash"] = native_hash
-    telemetry = require_integration_event(team_state, "GATEWAY_TELEMETRY_ACCEPTED", {"observationId": observation_id},
-                                          telemetry_fields)
-    sequence = telemetry.get("sequence")
-    if (type(sequence) is not int or sequence < 0
-            or parse_time(telemetry["timestamp"]) < parse_time(observation["observedAt"]) - timedelta(seconds=2)):
-        raise ValueError("Invalid central telemetry sequence or timestamp")
+    telemetry = integration_observation_event(step, team_state)
     return {**pi_proof, "dispatchEventId": started_event["eventId"], "settlementEventId": settled_event["eventId"],
-            "telemetryEventId": telemetry["eventId"], "observationId": observation_id,
-            "centralTelemetrySequence": sequence, "nativeResourceId": resource["ri"],
-            "centralTelemetryPayloadVerified": True if has_payload_hash else None}
+            "telemetryEventId": telemetry["eventId"], "observationId": telemetry["observationId"],
+            "centralTelemetrySequence": telemetry["sequence"], "nativeResourceId": resource["ri"],
+            "centralTelemetryPayloadVerified": True if "payloadHash" in observation else None}
 
 
 def verify_integration_evidence(cycle, database, team_state, observed_led=None, *, observed_display=None,

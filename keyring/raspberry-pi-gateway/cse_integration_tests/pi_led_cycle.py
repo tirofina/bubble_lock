@@ -210,6 +210,7 @@ async def run_led_cycle(operator_post, cse, paths, output, *, gateway_id=GATEWAY
         results.append(step)
         print(f"LED_{label}_RECORDED", flush=True)
     write_new_json(output / "led-cycle.json", {"steps": results, "firmwareRevision": firmware, "physicalLedObserved": None})
+    return results
 
 
 def verify_step(step, state, boot_id, *, gateway_id=GATEWAY, firmware=FIRMWARE):

@@ -1,14 +1,18 @@
+import asyncio
 from contextlib import closing
 import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from bubble_gateway.model import central_observation_id, payload_hash
 from bubble_gateway.store import Store
 from pi_led_cycle import receipt_name
 from scoped_feather_evidence import (ROUTE, inspect_command, inspect_integration_step, inspect_interrupted_bench,
-                                    integration_settlement, operator_evidence, physical_observations)
+                                    integration_observation_event, integration_settlement, operator_evidence,
+                                    physical_observations)
+from scoped_feather_led_cycle import record_central_observations
 from scoped_feather_pi import DISPLAY_FIRMWARE
 from helpers import BINDING
 
@@ -158,10 +162,32 @@ class ScopedFeatherEvidenceTests(unittest.TestCase):
             with self.subTest(central_hash=value):
                 telemetry["payloadHash"] = value
                 with self.assertRaisesRegex(ValueError, "GATEWAY_TELEMETRY_ACCEPTED"):
-                    inspect_integration_step(self.step, self.pi, self.team)
+                    integration_observation_event(self.step, self.team, allow_pending=True)
         observation["payloadHash"] = "invalid"
         with self.assertRaisesRegex(ValueError, "Invalid native observation payload hash"):
             inspect_integration_step(self.step, self.pi, self.team)
+
+    def test_central_observation_record_waits_for_both_committed_events(self):
+        command, _ = self.integration_fixture()
+        on_observation = self.step["observation"]
+        on = self.team["receipts"][2]
+        on_observation["payloadHash"] = on["payloadHash"] = "c" * 64
+        off_observation = dict(on_observation, sequence=11, payloadHash="d" * 64)
+        off = dict(on, eventId="evt-telemetry-off", sequence=8, payloadHash=off_observation["payloadHash"],
+                   observationId=central_observation_id({**off_observation, "gatewayId": command["gatewayId"],
+                                                         "deviceId": command["deviceId"]}))
+        off_step = {"command": dict(command, commandId="led-off"), "observation": off_observation}
+        pending = self.team
+        committed = dict(self.team, receipts=[*self.team["receipts"], off])
+        self.assertIsNone(integration_observation_event(off_step, pending, allow_pending=True))
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            with patch("scoped_feather_led_cycle.read_json", side_effect=[pending, committed]) as read:
+                asyncio.run(record_central_observations([self.step, off_step], output / "runtime.json", output))
+            self.assertEqual(read.call_count, 2)
+            evidence = json.loads((output / "central-telemetry.json").read_text(encoding="utf-8"))
+        self.assertEqual([item["commandId"] for item in evidence["observations"]], [command["commandId"], "led-off"])
+        self.assertEqual([item["eventId"] for item in evidence["observations"]], [on["eventId"], off["eventId"]])
 
     def interrupted_fixture(self):
         temporary = tempfile.TemporaryDirectory()
