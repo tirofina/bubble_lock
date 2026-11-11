@@ -402,7 +402,6 @@ class Gateway:
     async def _outbox_loop(self, *, scoped: bool = False,
                            central_route: Literal["telemetry", "receipt"] | None = None) -> None:
         epochs = self.config.core_telemetry_epochs
-        central_receipts = self.config.central_receipts_enabled
         receipt_attempts = 0
         next_expiry_check = 0.0
         if central_route == "telemetry":
@@ -412,13 +411,8 @@ class Gateway:
             # holds the native observation or command-receipt worker.
             epochs = {}
         while not self.stop.is_set():
-            if not scoped and central_route != "telemetry":
-                # Either receipt worker can stage durable rows while the other awaits I/O.
-                self.store.stage_receipts(self.config.receipt_container, self.config.core_bridge_enabled,
-                                          central_enabled=central_receipts)
-                if central_route is None:
-                    self.store.stage_credential_receipt()
             if central_route == "receipt":
+                self.store.stage_central_receipts()
                 item = self.store.due_central_receipt()
             elif central_route == "telemetry":
                 now = time.monotonic()
@@ -429,6 +423,9 @@ class Gateway:
                     next_expiry_check = now if expired == CENTRAL_TELEMETRY_EXPIRY_BATCH else now + CENTRAL_TELEMETRY_EXPIRY_INTERVAL
                 item = self.store.due_central_telemetry()
             else:
+                if not scoped:
+                    self.store.stage_receipts(self.config.receipt_container, self.config.core_bridge_enabled)
+                    self.store.stage_credential_receipt()
                 prefer_receipts = None if scoped else receipt_attempts < RECEIPT_BURST
                 hold = NativeDeliveryHold() if scoped else self.transport.native_delivery_hold()
                 item = self.store.due(core_epochs=epochs, scoped_only=scoped, prefer_receipts=prefer_receipts,

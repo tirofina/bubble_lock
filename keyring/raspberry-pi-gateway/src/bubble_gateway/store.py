@@ -216,32 +216,23 @@ class Store:
         return {row["device_id"]: (row["boot_id"], row["sequence"])
                 for row in self.db.execute("SELECT device_id,boot_id,sequence FROM observations")}
 
-    def stage_receipts(self, container: str, core_enabled: bool = False, *, central_enabled: bool = False) -> None:
-        """Stage new receipt routes atomically without recreating completed deliveries."""
+    def stage_receipts(self, container: str, core_enabled: bool = False) -> None:
+        """Stage the native receipt and its optional CORE ACK in one transaction."""
         # Already staged native receipts can remain undelivered during backoff.
         # They must not consume slots in the batch of receipts that still need staging.
         rows = self.db.execute("""
-            SELECT command_id,receipt,receipt_delivered,central_receipt_staged FROM commands
+            SELECT command_id,receipt FROM commands
             WHERE receipt IS NOT NULL AND receipt_delivered=0
               AND NOT EXISTS (SELECT 1 FROM outbox WHERE outbox.command_id=commands.command_id)
             ORDER BY commands.rowid LIMIT 128
         """).fetchall()
-        if central_enabled:
-            native_ids = {row["command_id"] for row in rows}
-            central_rows = self.db.execute("""
-                SELECT command_id,receipt,receipt_delivered,central_receipt_staged FROM commands
-                WHERE receipt IS NOT NULL AND central_receipt_staged=0
-                ORDER BY commands.rowid LIMIT 128
-            """)
-            rows.extend(row for row in central_rows if row["command_id"] not in native_ids)
         for row in rows:
             try:
                 with self.db:
                     receipt = json.loads(row["receipt"])
                     command_id = row["command_id"]
-                    created = (not row["receipt_delivered"]
-                               and self._enqueue(self.request_id("receipt", command_id), container,
-                                                 receipt, True, command_id))
+                    created = self._enqueue(self.request_id("receipt", command_id), container,
+                                            receipt, True, command_id)
                     # The retained native row (then receipt_delivered after its
                     # confirmation) is the durable staging marker. Recreating a
                     # completed ACK here would bypass the native retry backoff.
@@ -249,9 +240,23 @@ class Store:
                         projected = acknowledgement(receipt)
                         if projected is not None:
                             self._enqueue(self.request_id("core-ack", command_id), "@core/ack", projected, True)
-                    if central_enabled and not row["central_receipt_staged"]:
-                        self._enqueue(self.request_id("central-receipt", command_id), "@central/receipt", receipt, True)
-                        self.db.execute("UPDATE commands SET central_receipt_staged=1 WHERE command_id=?", (command_id,))
+            except CapacityError:
+                break
+
+    def stage_central_receipts(self) -> None:
+        """Stage the central route and its durable marker together."""
+        rows = self.db.execute("""
+            SELECT command_id,receipt FROM commands
+            WHERE receipt IS NOT NULL AND central_receipt_staged=0
+            ORDER BY commands.rowid LIMIT 128
+        """).fetchall()
+        for row in rows:
+            try:
+                with self.db:
+                    command_id = row["command_id"]
+                    self._enqueue(self.request_id("central-receipt", command_id), "@central/receipt",
+                                  json.loads(row["receipt"]), True)
+                    self.db.execute("UPDATE commands SET central_receipt_staged=1 WHERE command_id=?", (command_id,))
             except CapacityError:
                 break
 

@@ -155,24 +155,45 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         self.stage()
         self.assertEqual(self.store.counts()[0], 2)
 
-    async def test_central_receipt_staging_is_atomic_and_confirmation_survives_restart(self):
+    async def test_native_pair_stages_when_central_copy_cannot_fit_and_restart_preserves_each_route(self):
         central_rqi = self.store.request_id("central-receipt", self.cmd["commandId"])
         self.store.max_rows = 2
-        self.store.stage_receipts(BINDING["receiptContainer"], True, central_enabled=True)
-        self.assertEqual(self.store.counts()[0], 0)
+        self.stage()
+        self.store.stage_central_receipts()
+        self.assertEqual(self.queued(BINDING["receiptContainer"]), 1)
+        self.assertEqual(self.queued("@core/ack"), 1)
+        self.assertEqual(self.queued("@central/receipt"), 0)
         self.assertEqual(self.store.db.execute("SELECT central_receipt_staged FROM commands").fetchone()[0], 0)
 
-        self.store.max_rows = 3
-        self.store.stage_receipts(BINDING["receiptContainer"], True, central_enabled=True)
-        self.assertEqual(self.store.counts()[0], 3)
+        self.store.delivered(self.ack_rqi)
+        self.store.stage_central_receipts()
+        self.assertEqual(self.store.due_central_receipt()["rqi"], central_rqi)
         self.store.delivered(central_rqi)
         self.store.close()
         self.store = self.open_store()
-        self.store.stage_receipts(BINDING["receiptContainer"], True, central_enabled=True)
+        self.stage()
+        self.store.stage_central_receipts()
         self.assertEqual(self.native_delivered(), 0)
         self.assertEqual(self.queued("@central/receipt"), 0)
-        self.assertEqual(self.queued("@core/ack"), 1)
+        self.assertEqual(self.queued("@core/ack"), 0)
         self.assertEqual(self.queued(BINDING["receiptContainer"]), 1)
+
+    async def test_central_copy_stages_even_when_native_pair_cannot_fit(self):
+        self.store.max_rows = 1
+        self.stage()
+        self.store.stage_central_receipts()
+        item = self.store.due_central_receipt()
+        self.assertEqual(item["payload"], self.receipt)
+        self.assertEqual(self.queued(BINDING["receiptContainer"]), 0)
+        self.assertEqual(self.queued("@core/ack"), 0)
+        self.store.delivered(item["rqi"])
+
+        self.store.max_rows = 2
+        self.stage()
+        self.store.stage_central_receipts()
+        self.assertEqual(self.queued(BINDING["receiptContainer"]), 1)
+        self.assertEqual(self.queued("@core/ack"), 1)
+        self.assertIsNone(self.store.due_central_receipt())
 
     async def test_central_route_can_stage_receipt_already_confirmed_by_native_cse(self):
         self.stage()
@@ -183,7 +204,7 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
             self.store.db.execute("ALTER TABLE commands DROP COLUMN central_receipt_staged")
         self.store.close()
         self.store = self.open_store()
-        self.store.stage_receipts(BINDING["receiptContainer"], True, central_enabled=True)
+        self.store.stage_central_receipts()
         self.assertEqual(self.native_delivered(), 1)
         self.assertEqual(self.queued("@central/receipt"), 1)
         self.assertIsNone(self.store.due())
@@ -192,6 +213,7 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.store.central_receipt_claim(item["payload"]), self.cmd["claimId"])
 
     async def test_central_worker_retries_same_receipt_while_native_cse_is_held(self):
+        self.store.stage_receipts(BINDING["receiptContainer"])
         gateway = Gateway.__new__(Gateway)
         gateway.config, gateway.store = config(), self.store
         gateway.config.central_receipts_enabled = True
