@@ -1831,5 +1831,11 @@
     "piPreflightExecuted": false,
     "physicalCommandVerified": false,
     "sourceCommit": "3b2edcc91e19a7812cc93dd6ec1d2cd8fbbd730a"
+  },
+  "r18PulseTraceEvidence": {
+    "reference": "raspberry-pi-gateway/TESTING.md#r18-펄스-계측값-연결",
+    "regressionsExecuted": false,
+    "physicalPulseMeasured": false,
+    "sourceCommit": "b22ecc25b78fa413941c31a598094b67c12aed2a"
   }
 }

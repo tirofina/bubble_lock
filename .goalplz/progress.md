@@ -1874,3 +1874,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11. 직전 goal turn은 펌
 - 새 리스너는 `r18-hand-solder`, `keyring-0.7.19`, 팀 commit `bc2a45d`로 `READY`를 보고했다. 상태 파일 SHA-256은 재시작 전후 같았고 저장된 명령은 0건이다. 빌드·회귀시험·정적 분석·Pi 사전 확인·플래시·실물 명령 시험은 미수행이다. [격리 명령 API](../keyring/dev/mobius4/README.md#r18-격리-명령-api)
 
 배포한 프로필 소스는 `3b2edcc91e19a7812cc93dd6ec1d2cd8fbbd730a`이며 `origin/codex/keyring-namho`에 있다. goal은 active/progress다.
+
+## 2026-11-11 — r18 모터 부하 펄스 계측 연결
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05, R10. 직전 goal turn은 임시 r18 명령 API를 0.7.19 프로필로 전환하고 준비 상태를 기록한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀 명령 readback 계약을 확인했다.
+
+- r18 오프라인 대조가 J6 부하 전압 CSV를 최초 `APPLIED` 영수증에 연결한다. 명령 ID·CSE 자원 ID·영수증 해시·계측 파일 해시를 확인하고, 측정 임계값과 인접 샘플로 상승·하강·지속 시간의 범위를 계산한다. 1,000ms 상한 경계에 걸린 결과와 여러 펄스·잘린 에지를 구분한다.
+- 계측값과 명령의 연결은 작업자 기록을 사용한다. 상한 이내·초과·판정 불가 및 잘못 연결된 영수증의 회귀시험 소스와 절차를 추가했다. 빌드·테스트·정적 분석·실제 J6 전압 및 진동 계측은 미수행이다. [r18 펄스 계측값 연결](../keyring/raspberry-pi-gateway/TESTING.md#r18-펄스-계측값-연결)
+
+소스 commit `b22ecc25b78fa413941c31a598094b67c12aed2a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `aad0f28..b22ecc2`다. goal은 active/progress다.
