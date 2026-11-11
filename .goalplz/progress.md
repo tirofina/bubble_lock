@@ -1149,3 +1149,12 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 실제 Pi Gateway `0.2.43`으로 Feather `0.2.0`의 ON/OFF를 다시 실행했다. 고정 컨테이너와 활성 자격을 확인했고 두 건 모두 장치 ACK·GPIO readback·후속 관측·Mobius4·인증 콜백·중앙 정산이 일치했다. 사용자는 빨간 LED를 식별하지 못했고 ON/OFF에서 점등 변화를 관찰하지 못했다. Pi의 명령 영수증 대기열은 0건이었고 시험 데몬과 SSH 터널을 종료했다. [실물 시험 결과](../keyring/evidence/2026-11-11-feather-visual/receipt.json)
 
 소스 commit `36276bd62467c409a1c8c4778b379f89da02983a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `bd1d5ec..36276bd`다. goal은 active/progress다.
+
+## 2026-11-11 — 중앙 dispatch-start와 BLE 명령 연결
+
+직전 goal turn은 고정 영수증 재전송 구현을 올리고 Feather 육안 시험 결과를 기록한 progress다. DOC-REV 2.0.0과 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 head는 직전과 같다.
+
+- Gateway `0.2.45`는 `PC_DISPATCH_START_REQUIRED=true` 설정에서 최초 승인과 SQLite 실행 의도 저장 뒤 같은 claim으로 중앙 `dispatch-start`를 호출한다. 두 응답 중 이른 기한을 적용하고 BLE 세션과 자격을 다시 확인한다. 연결 실패, 경로 부재, 승인 거절이나 불일치 시 BLE 명령을 보내기 전에 거절 영수증을 남긴다. 기존 격리 프로필은 기본값 `false`를 사용한다. [승인 및 전송 경계](../keyring/raspberry-pi-gateway/BLE_SESSIONS.md#승인-기한과-gatt-전송)
+- 요청 바인딩, 로컬 실행 의도 기록 순서, 기한 단축·만료, 세션 교체, 취소와 경로 부재를 다루는 회귀시험 소스를 추가했다. 빌드·시험·중앙 API 연결·Pi 시험은 미실행이다. 새 중앙 `/receipts`와 `/telemetry` 전송 경로 및 실제 연동 시험이 남아 있다.
+
+소스 commit `1d9dd4fc9bb94bf2a9f953090d0f274827953cac`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `bac1c3f..1d9dd4f`다. goal은 active/progress다.
