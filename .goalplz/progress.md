@@ -1802,3 +1802,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 r18 실�
 - 격리 Pi 도구는 세 새 revision을 선택할 수 있다. 이전 펌웨어 로그, 다른 빌드·손상된 이미지·해시 읽기 실패를 다루는 회귀시험 소스와 첫 구동 절차를 갱신했다. 빌드·테스트·정적 분석·장비 업로드·실물 USB/BLE 해시 대조는 미수행이다. [첫 구동 절차](../keyring/pcb/BRING_UP.md)
 
 소스 commit `65b3e2fb547dbb12f6901c58556442ae822184f5`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `000485a..65b3e2f`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 첫 구동과 중앙 관측 증거 연결
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R05, R15. 직전 goal turn은 실행 이미지 해시의 첫 구동 기록을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f` 및 main의 중앙 관측 수용 계약을 확인했다.
+
+- 격리 관측 대조에 `--bringup-report`와 `--firmware-image`를 함께 지정하면 첫 구동의 장치·펌웨어·USB 로그·실행 이미지와 Mobius4 관측을 묶는다. 첫 구동의 마지막 BLE 순번보다 뒤인 관측만 수용하고, 결과에 첫 구동 보고서와 바이너리의 SHA-256을 남긴다. 기존 중앙 수용 및 물리 전달 판정도 이어서 적용한다.
+- 정상 연결과 USB 로그·바이너리·관측 순번 불일치의 회귀시험 소스 및 절차를 추가했다. 빌드·테스트·정적 분석·실제 PCB/Pi·Mobius4·중앙/웹 연결은 미수행이다. [관측 전달 증거 대조](../keyring/raspberry-pi-gateway/TESTING.md#관측-전달-증거-대조)
+
+소스 commit `b9f119ef306bd82398198d2311397037c8ce68a8`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `a9e1a52..b9f119e`다. goal은 active/progress다.
