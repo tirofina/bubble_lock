@@ -1,5 +1,6 @@
 param(
   [switch]$PrepareOnly,
+  [switch]$EnableLocationTrial,
   [string]$OpenSslPath = 'C:/Program Files/Git/usr/bin/openssl.exe',
   [ValidateSet('legacy', 'integration', 'r18')][string]$Mode = 'legacy'
 )
@@ -8,6 +9,9 @@ $ErrorActionPreference = 'Stop'
 $profileRoot = Join-Path $PSScriptRoot '.local/scoped'
 $tlsRoot = Join-Path $profileRoot 'tls'
 $Mode = $Mode.ToLowerInvariant()
+if ($EnableLocationTrial -and $Mode -ne 'r18') {
+  throw 'EnableLocationTrial requires the r18 loopback profile.'
+}
 $selection = (Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot 'scoped-command-profiles.json') | ConvertFrom-Json).$Mode
 $apiRoot = Join-Path $profileRoot $selection.directory
 $revision = $selection.revision
@@ -62,5 +66,7 @@ if ($Mode -ne 'legacy') {
     }
   }
 }
-node (Join-Path $PSScriptRoot 'scoped-command-api.mjs') $Mode
+$nodeArgs = @((Join-Path $PSScriptRoot 'scoped-command-api.mjs'), $Mode)
+if ($EnableLocationTrial) { $nodeArgs += '--enable-location-trial' }
+node @nodeArgs
 if ($LASTEXITCODE -ne 0) { throw 'Scoped command API exited with an error.' }

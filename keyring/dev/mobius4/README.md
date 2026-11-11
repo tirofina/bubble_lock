@@ -254,6 +254,16 @@ Pi loopback에 기존 CSE 포트와 API `8789`를 전달한다. Pi에서는 Gate
 
 2026-11-11에 PC의 `8789`를 시작하고 Gateway B 인증서로 기능 응답, `ACTIVE` 자격과 대기 명령 0건을 확인했다. 동일한 팀 잠금 파일의 의존성 63개를 pnpm 오프라인 캐시에서 설치했다. 격리 Mobius4에서 B의 관측·영수증 ID를 읽었고 Feather·r18의 교차 조회는 각각 403이었다. Pi 접속과 실물 명령은 미실행이다. [실행 기록](../../evidence/2026-11-11-scoped-r18-enrollment/provisioning.json)
 
+##### r18 격리 위치 시험
+
+기존 r18 API를 정상 종료한 뒤 같은 PC 루프백 프로필에 위치 시험 옵션을 붙여 시작한다. 기존 `gw-b` 등록·텔레메트리와 Pi 포트는 그대로 사용한다.
+
+```powershell
+& './keyring/dev/mobius4/start-scoped-command-api.ps1' -Mode r18 -EnableLocationTrial
+```
+
+추가 경로는 r18 보호자 시험 인증서에만 열리며 팀 API의 현재 consent·grant·사건·lease 검사를 사용한다. lease는 지정된 r18 장치 한 개와 같은 보호자 수신자에 최대 60초를 허용한다. [PC 위치 응답 수집](../../raspberry-pi-gateway/TESTING.md#중앙-위치-api와-웹-응답-대조)은 팀 API에서 승인과 회수를 수행한다. 웹 OIDC 세션과 별도 앱의 배치는 팀 환경을 사용한다. 이 시험 옵션의 실제 실행은 미수행이다.
+
 ### 격리 소유권 전환
 
 새 소비자와 ACL을 배치한 뒤 아래 명령을 쓴다. `Forward`는 A의 epoch 7에서 B의 8로, `Rollback`은 B의 8에서 A의 9로 전환한다. 이전 epoch 토픽은 지연 관측 재현을 위해 격리 ACL에 남긴다. 실제 활성 소유권은 소비자가 대조한다.

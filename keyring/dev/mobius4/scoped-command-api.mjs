@@ -3,6 +3,7 @@ import { once } from 'node:events';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
+import { permitsLocationTrial } from './scoped-r18-location-routes.mjs';
 
 const mode = process.argv[2] ?? 'legacy';
 const profiles = JSON.parse(await readFile(new URL('./scoped-command-profiles.json', import.meta.url), 'utf8'));
@@ -11,6 +12,11 @@ const { directory, revision, port, gatewayId = 'gw-a', deviceId = 'keyring-feath
   subjectId = 'scoped-feather-bench', boardRevision, firmwareRevision } = profiles[mode];
 const integrated = mode !== 'legacy';
 const r18 = mode === 'r18';
+const locationFlag = process.argv[3];
+if (locationFlag !== undefined && (!r18 || locationFlag !== '--enable-location-trial' || process.argv.length !== 4)) {
+  throw new Error('The location trial is only available for the r18 loopback profile.');
+}
+const locationTrial = locationFlag === '--enable-location-trial';
 const gatewaySlot = gatewayId.slice(3);
 const profile = new URL('./.local/scoped/', import.meta.url);
 const local = new URL(`${directory}/`, profile);
@@ -35,7 +41,8 @@ const fingerprint = (certificate) => new X509Certificate(certificate).fingerprin
 const principals = [
   { principalId: gatewayPrincipalId, mtlsFingerprint: fingerprint(gatewayCert), scopes: [] },
   { principalId: operatorId, mtlsFingerprint: fingerprint(operatorCert),
-    scopes: ['consent:write', 'grant:write', 'grant:revoke', 'bubble:command'] },
+    scopes: ['consent:write', 'grant:write', 'grant:revoke', 'bubble:command',
+      ...(locationTrial ? ['portal:read', 'incident:write', 'incident:resolve'] : [])] },
 ];
 
 const gatewayPath = `/api/v1/gateways/${gatewayId}`;
@@ -68,6 +75,10 @@ const server = createIntegrationServer({ tls: { ca, cert, key }, principals, api
     if (request.principal.principalId === operatorId && operatorRoutes.has(route)
         && (path !== '/v1/consents' || request.body?.subjectId === subjectId)) {
       return runtimeApi.handle(request);
+    }
+    if (locationTrial && permitsLocationTrial(request, path, { operatorId, subjectId, deviceId, store: runtime.store })) {
+      const result = await runtimeApi.handle(request);
+      return { ...result, headers: { ...result.headers, 'cache-control': 'no-store' } };
     }
     return denied(403, 'Scoped command route denied');
   },

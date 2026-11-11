@@ -1,5 +1,7 @@
 # Gateway 로컬 시험
 
+Gateway 0.2.73의 격리 r18 위치 시험은 기존 팀 API의 단기 위치 승인으로 실제 조회 응답을 저장하고 종료 때 회수 여부를 대조한다. 회귀시험 소스는 수신자·기기 범위, 시험 경로, 회수 전후 조회를 다룬다. 빌드·시험·서버 실행은 미실행이다.
+
 Gateway 0.2.72의 r18 관측 도구는 RSSI가 있는 샘플과 중앙 위치 API·LIVE 웹 응답을 대조한다. 권한 거절, 만료, 다른 RSSI와 출처 혼합을 다루는 회귀시험 소스를 추가했다. 빌드·시험·실제 위치 조회는 미실행이다.
 
 Gateway 0.2.71의 r18 관측 대조 도구는 같은 USB 부팅의 Mobius4 관측·health, Pi SQLite 순번과 중앙 수용 이벤트를 연결한다. 중앙 수용 지연, 본문 해시 불일치와 다른 부팅·컨테이너를 다루는 회귀시험 소스를 추가했다. 빌드·시험·실제 관측 전달은 미실행이다.
@@ -395,7 +397,16 @@ python $tool compare --firmware-revision $r18BringupFirmware --usb-boot-log $r18
 
 위치 화면까지 확인할 때는 새 BLE 연결 직전에 `capture --require-rssi`를 시작한다. Pi의 광고 RSSI 보존 시간 안에 같은 부팅의 관측을 확보하면 `R18_LOCATION_SAMPLE`에 관측 시각이 출력된다. 위치 API와 웹은 최신 관측을 제공하므로 두 응답에서 그 시각의 자료를 확보한다.
 
-현재 격리 r18 명령 API는 위치 조회를 허용하지 않는다. 같은 관측을 받는 팀 포털 배치의 승인된 사용자 세션과 유효한 위치 grant·lease를 사용해 `GET /v1/portal/locations`와 LIVE 웹의 `GET /api/portal/locations`를 확보한다. 응답 사본에는 인증 헤더·쿠키 없이 `path`, 숫자 `status`, UTC 조회 시각 `capturedAt`, JSON `body`를 기록한다.
+격리 PC에서 중앙 응답을 수집하려면 r18 API를 [위치 시험 옵션](../dev/mobius4/README.md#r18-격리-위치-시험)으로 시작한다. 아래 도구를 먼저 실행하고 `R18_LOCATION_LEASE_READY`가 표시되면 위의 `capture --require-rssi`가 새 파일에 기록되도록 같은 부팅의 Pi 관측 전용 세션을 시작한다. `$r18ObservationCapture`는 두 명령에서 같은 경로를 사용한다.
+
+```powershell
+python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_r18_portal_capture.py `
+  --observation-capture $r18ObservationCapture --output $privateLocationTrial
+```
+
+도구는 일치한 `portal-response.json`과 회수 뒤의 `portal-after-revocation.json`을 보관한다. `location-trial.json`에서 일치 여부와 lease·grant·consent 회수 및 사건 종료를 확인한다. 중앙 관측이 바뀌어 일치하는 응답을 받지 못하면 종료 코드 1을 반환한다.
+
+팀 포털을 사용하는 시험은 승인된 사용자 세션과 유효한 위치 grant·lease에서 `GET /v1/portal/locations`와 LIVE 웹의 `GET /api/portal/locations`를 확보한다. 수동 사본에는 인증 헤더·쿠키 없이 `path`, 숫자 `status`, UTC 조회 시각 `capturedAt`, JSON `body`를 기록한다.
 
 위 `compare` 명령에 `--portal-response $portalResponseCopy`와 `--web-response $webResponseCopy` 중 확보한 파일을 추가한다. 결과는 수용 이벤트와 기기·Gateway·관측 시각·RSSI·모의 표시가 일치하면 `matched`를 반환한다. 웹 출처는 `live`의 `portal-api`여야 한다. `combined`는 파일 입력도 섞이므로 출처 미확인으로 남긴다. 화면 표시와 별도 앱의 실물 연동은 각각 화면 증거를 남긴다.
 
