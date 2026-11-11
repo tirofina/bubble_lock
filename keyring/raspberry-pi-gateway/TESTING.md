@@ -199,12 +199,12 @@ bubble-keyring-ble-characterize --mode reconnect --hardware r18-pcb --verify-but
 
 ### r18 wake 기록
 
-Gateway 0.2.17의 `--mode wake`는 r18 전용이다. 로컬 provisioning에서 sleep을 켠 keyring-0.7.4를 대상으로 한다. 먼저 연결해서 알림을 받은 뒤 BLE를 닫고 `--idle-seconds` 동안 기다린다. 다른 BLE 클라이언트가 붙어 있거나 움직임이 감지되면 실제 절전 진입이 늦어질 수 있다. 도구의 wake 안내가 나오면 해당 자극을 가한다. 버튼·움직임 시험은 장치가 실제로 절전한 뒤 타이머로 먼저 깨기 전에 진행한다. 타이머 시험은 안내 후 장치를 움직이지 않는다.
+Gateway의 `--mode wake`는 r18 전용이다. 최신 소스는 로컬 provisioning에서 sleep을 켠 빌드를 `keyring-0.7.20-sleep`으로 보고한다. 먼저 연결해서 알림을 받은 뒤 BLE를 닫고 `--idle-seconds` 동안 기다린다. 다른 BLE 클라이언트가 붙어 있거나 움직임이 감지되면 실제 절전 진입이 늦어질 수 있다. 도구의 wake 안내가 나오면 해당 자극을 가한다. 버튼·움직임 시험은 장치가 실제로 절전한 뒤 타이머로 먼저 깨기 전에 진행한다. 타이머 시험은 안내 후 장치를 움직이지 않는다.
 
 ```sh
 bubble-keyring-ble-characterize --mode wake --hardware r18-pcb \
   --gateway-id "$GATEWAY_ID" --device-id "$KEYRING_ID" --address "$KEYRING_ADDRESS" \
-  --firmware-revision keyring-0.7.4 --distance-cm "$MEASURED_DISTANCE_CM" \
+  --firmware-revision keyring-0.7.20-sleep --distance-cm "$MEASURED_DISTANCE_CM" \
   --idle-seconds "$IDLE_SECONDS" --expect-wake confirm --seconds 90 \
   --database "$GATEWAY_DATABASE" --output "$PRIVATE_EVIDENCE/r18-wake-confirm.json"
 ```

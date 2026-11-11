@@ -1,10 +1,10 @@
 # r18 저전력·깨우기 구현
 
-ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.7.4 · 상태 implemented / unverified.
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.7.20-sleep · 상태 implemented / unverified.
 
 ## 설정과 가용성
 
-장치의 로컬 `provisioning.h`에서 `KEYRING_ENABLE_SLEEP=1`로 선택한다. 기본값0은 BLE 가용성을 유지한다. 절전은 BLE 연결을 유지하는 방법이 아니므로 사용자 배포 정책과 통신 지연 허용 범위를 정한 후 켠다. Gateway가 같은 펌웨어를 받아들이려면 revision 허용 목록을 갱신해야 한다.
+장치의 로컬 `provisioning.h`에서 `KEYRING_ENABLE_SLEEP=1`을 선택한 빌드는 `keyring-0.7.20-sleep`으로 보고한다. 기본값 0은 BLE 가용성을 유지한다. 절전을 켜기 전에 배포 정책과 통신 지연 허용 범위를 정한다. Gateway 또는 Pi wake 기록 도구에 실제 설치한 revision을 지정한다.
 
 - `KEYRING_IDLE_SLEEP_MS`: 기본60000, 허용10000~3600000. 연결·버튼·움직임이 마지막으로 관측된 후의 유휴 시간이다.
 - `KEYRING_SLEEP_POLL_MS`: 기본30000, 허용1000~300000. 새 연결 기회를 제공하는 RTC timer다. 타이머로 깨면 다시 유휴 대기 시간 동안 광고한다.
@@ -35,7 +35,9 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.7.4 · 상태 imple
 
 keyring-0.7.11은 센서 또는 움직임 인터럽트 설정 오류가 나면 awake 상태에서 재시도한다. 축 읽기 실패 뒤에는 새 샘플을 받은 뒤에만 절전 조건을 평가한다. 복구 시 부팅 중 누적한 움직임 카운트는 보존하며, 장애 구간에 계측하지 못한 움직임은 복원할 수 없다.
 
-[ESP-IDF4.4.7 ESP32-S3 sleep 문서](https://docs.espressif.com/projects/esp-idf/en/v4.4.7/esp32s3/api-reference/system/sleep_modes.html)의 EXT0/EXT1/timer 방식을 적용했다. EXT0는 motion GPIO17의 HIGH, EXT1 ANY_LOW는 확인/비상 GPIO6·7, timer는 재광고 기회를 담당한다. 지원 핀·API 오류는 runtime에서 진입을 막는다. RTC 버튼 pull-up과 출력 hold를 설정하고 BLE stack을 종료한 뒤 deep sleep을 호출한다.
+EXT0는 motion GPIO17의 HIGH, EXT1 ANY_LOW는 확인/비상 GPIO6·7, timer는 재광고 기회를 담당한다. RTC 버튼 pull-up, 안전 출력 쓰기, 핀별 hold를 설정하고 모터·AUX의 LOW 읽기값을 확인한다. 버튼·가속도 인터럽트·메인 fault 입력이 유휴 상태인 것을 다시 확인한 뒤 BLE stack을 종료하고 deep sleep을 호출한다. [ESP-IDF 4.4.7 sleep](https://docs.espressif.com/projects/esp-idf/en/v4.4.7/esp32s3/api-reference/system/sleep_modes.html) · [ESP-IDF GPIO hold](https://docs.espressif.com/projects/esp-idf/en/v4.4.7/esp32s3/api-reference/peripherals/gpio.html)
+
+준비 중 실패하면 wake source와 이미 적용한 hold를 해제하고 버튼 pull-up·가속도 입력을 복구한다. BLE 광고를 이어가며 관측의 `power`에 출력 실패는 `output_error`, hold 실패는 `hold_error`, 마지막 입력 확인에서 발생한 취소는 `active`를 남긴다.
 
 GPIO 출력은 진동/AUX/충전모드 EN을 LOW, amp mute/백라이트 OFF/CS를 HIGH로 유지한다. USB 충전은 기존 USB100 설정이다. flash·PSRAM 핀을 임의로 isolate하거나 별도 절전 전압으로 바꾸지 않는다. deep wake는 setup부터 다시 시작하며 safe output latch를 준비한 뒤 hold를 해제한다. NVS 명령 journal은 유지되고 RAM queue·연결·sequence·bootId는 새 부팅 상태가 된다. Gateway의 bootId/CORE sequence 변환은 이를 구분한다.
 

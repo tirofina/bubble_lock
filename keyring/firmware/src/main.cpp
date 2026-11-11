@@ -68,6 +68,8 @@ void readRunningImageDigest(char (&hex)[65]) {
   }
   hex[64] = '\0';
 }
+#elif KEYRING_ENABLE_SLEEP
+constexpr char FirmwareRevision[] = "keyring-0.7.20-sleep";
 #else
 constexpr char FirmwareRevision[] = "keyring-0.7.19";
 #endif

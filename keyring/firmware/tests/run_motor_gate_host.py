@@ -1,4 +1,4 @@
-"""Exercise the r18 timer gate, shared rail and BLE session with host-side mocks."""
+"""Exercise the r18 timer gate, shared rail, BLE session and sleep preparation with host-side mocks."""
 import argparse
 from pathlib import Path
 import subprocess
@@ -26,7 +26,9 @@ def main():
     (output / "motor_disconnect_subject.inc").write_text(source[start:end] + "\n", encoding="utf-8")
     rail = (firmware / "src" / "aux_rail.cpp").read_text(encoding="utf-8")
     (output / "aux_rail_subject.inc").write_text(rail[rail.index("namespace {"):], encoding="utf-8")
-    for subject in (test, test.with_name("aux_rail_host.cpp")):
+    power = (firmware / "src" / "power_state.cpp").read_text(encoding="utf-8")
+    (output / "power_sleep_subject.inc").write_text(power[power.index("namespace {"):], encoding="utf-8")
+    for subject in (test, test.with_name("aux_rail_host.cpp"), test.with_name("power_sleep_host.cpp")):
         executable = subject.stem + ".exe"
         subprocess.run(["cl", "/nologo", "/utf-8", "/std:c++14", "/EHsc", "/W4", "/I" + str(output),
                         "/I" + str(firmware / "include"), str(subject), "/Fe:" + executable],

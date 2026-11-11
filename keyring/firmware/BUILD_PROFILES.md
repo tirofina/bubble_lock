@@ -22,6 +22,8 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.7.0.
 
 `keyring_r18_bringup_st7789`와 `keyring_r18_bringup_jd9853`는 첫 구동 뒤 장착한 패널 한 개를 점검한다. 로컬 provisioning은 장치 등록과 패널 geometry 설정에 사용하고, 컨트롤러는 환경 이름으로 선택한다. 명령·저널·오디오 재생·SD·deep sleep은 비활성 상태다. 두 프로필의 빌드·실물 화면 시험은 미실행이다. [화면만 연결한 두 번째 구동](../pcb/BRING_UP.md#화면만-연결한-두-번째-구동)
 
+정식 `keyring_r18`에서 `KEYRING_ENABLE_SLEEP=1`을 지정하면 펌웨어는 `keyring-0.7.20-sleep`으로 식별된다. 이 빌드의 절전 진입과 복구는 별도 실물 시험으로 기록한다. [저전력·깨우기](POWER_WAKE.md)
+
 ```sh
 pio run -e keyring_compile_minimal -e keyring_compile_st7789 -e keyring_compile_jd9853
 ```
