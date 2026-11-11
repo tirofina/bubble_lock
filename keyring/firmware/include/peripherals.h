@@ -6,7 +6,7 @@
 #include <freertos/task.h>
 
 struct KeyringScreen {
-  bool linked = false, authenticated = false, batteryValid = false;
+  bool linked = false, authenticated = false, batteryValid = false, batteryLow = false;
   bool confirm = false, panic = false, motor = false, fault = false, journal = false;
   float battery = 0;
   bool supplyValid = false;

@@ -15,10 +15,11 @@ DEVICES = {"kr-test": "00:00:00:00:00:01"}
 def config(database=None):
     return SimpleNamespace(
         database=database, gateway_id="gw-test", originator="Ctest", cse_id="test-cse", rvi="3",
+        cse_deployment_id=None, receipt_container_ri=None,
         observation_container=BINDING["observationContainer"],
         receipt_container=BINDING["receiptContainer"], health_container=BINDING["healthContainer"],
         ble_gatt_profile="core-v1", ble_devices=DEVICES, ble_command_timeout=1,
-        core_bridge_enabled=True, credential_ttl=60,
+        core_bridge_enabled=True, core_telemetry_epochs=None, m2m_mqtt_enabled=True, credential_ttl=60,
     )
 
 

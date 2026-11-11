@@ -1,0 +1,22 @@
+name: privacy-bubble-keyring-receipt-dev
+services:
+  postgres:
+    image: postgis/postgis:17-3.5
+    environment:
+      POSTGRES_DB: keyring_receipt_dev
+      POSTGRES_USER: keyring_receipt_dev
+      POSTGRES_PASSWORD_FILE: /run/secrets/receipt_password
+    ports: ["127.0.0.1:5544:5432"]
+    secrets: [receipt_password]
+    volumes:
+      - receipt_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "keyring_receipt_dev", "-d", "keyring_receipt_dev"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+secrets:
+  receipt_password:
+    file: ./.local/database-password
+volumes:
+  receipt_pgdata:

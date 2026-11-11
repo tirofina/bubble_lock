@@ -4,10 +4,10 @@
   "document": "PROJECT_IMPLEMENTATION_RUBRIC_PLAN.md",
   "documentRevision": "2.0.0",
   "contractRevision": "0.1.0-candidate",
-  "date": "2026-11-10",
+  "date": "2026-11-11",
   "branch": "codex/keyring-namho",
-  "status": "implemented",
-  "verificationStatus": "local builds and 58 Gateway tests passed; Feather/Pi authenticated BLE buttons verified; full daemon, Pi-to-CSE, central integration and production PCB pending",
+  "status": "implementation-in-progress",
+  "verificationStatus": "Feather 0.2.0 and Pi Gateway 0.2.28 produced two APPLIED GPIO command receipts that matched pinned Mobius4, the Pi database, authenticated CSE callback and isolated PostgreSQL settlement. Gateway 0.2.43 passed 153 local tests from its built wheel, including receipt persistence before the final GATT response. Visual LED confirmation, Gateway 0.2.43 on Pi and BlueZ, r18 hardware and physical power characterization remain unverified.",
   "rubricIds": [
     "R01",
     "R02",
@@ -20,14 +20,38 @@
   ],
   "implemented": [
     "r18 pin-based firmware and safe boot outputs",
+    "r18 observation-only bring-up firmware with first boot diagnostics and Gateway fencing for cached GATT write handles",
+    "operator-only Pi r18 bring-up capture requiring buttons, sensors, power and inactive output in one authenticated BLE session",
+    "operator-only r18 reconnect continuity capture comparing first recovery with the last pre-loss notification",
+    "boot-local observation replay fence across BLE reconnect and SQLite-backed Gateway startup with session-local receipt time anchors",
+    "receipt arrival and UTC estimates frozen at BLE notification with causal bounds and device result preservation",
+    "preserve a timely authenticated device receipt after loss or timeout of the final GATT write response",
     "MAX17048 battery and LIS2DW12 acceleration observations",
+    "r18 configurable battery alert hysteresis, explicit unknown readings, LCD warning and native CSE observation validation",
+    "operator-only Pi battery alert capture with both sides of the hysteresis band in a single BLE session",
+    "r18 bounded accelerometer and motion-route recovery after I2C failures, with fresh sampling required for deep sleep",
     "debounced confirm/panic buttons",
     "LIS2DW12 latched motion events and optional ESP32-S3 deep sleep/button/timer wake",
     "BLE MITM bonding, GATT identity and framed JSON notifications",
+    "r18 GATT writes, subscriptions, disconnects and notification fragments bound to the active BLE connection",
+    "r18 assembled command execution and receipt transmission bound to the original receipt subscription generation",
+    "r18 identity, observation, receipt and journal GATT reads bound to the active connection with immutable long-read snapshots",
     "bounded NVS command journal, fencing, GPIO readback and timed motor output",
+    "r18 startup lockout before Arduino default NVS format and fail-closed slot validation",
+    "r18 journal boot continuity and nondecreasing fences plus exact post-commit NVS readback",
+    "r18 NVS journal tail count checkpoint, legacy adoption, and metadata-only recovery of an interrupted PREPARED append",
+    "offline comparison of a trusted older device archive and a later capture for journal continuity",
     "Raspberry Pi BLE fleet and SQLite durable outbox",
+    "bounded priority for due native command receipts and CORE ACKs over the observation backlog",
+    "bounded staging of unstaged command receipts across persisted retry backlogs",
     "mTLS current authorization, credential status and deadline gating",
+    "Gateway local credential continuity fence across failed status reads, TTL gaps and same-revision recoveries",
+    "durable first authenticated credential status and transition receipts with ordered native health delivery",
+    "native CSE HTTPS readback before marking credential receipts delivered, with selective Retry-After holds",
+    "absolute monotonic BLE deadline and per-fragment credential revision and clock checks",
     "MQTT 3.1.1 oneM2M request/response and HTTPS fallback",
+    "HTTPS Retry-After for CSE and control API with same-origin deferral and durable per-item outbox deadlines",
+    "outbox eligibility excludes HTTPS-dependent routes during an active CSE Retry-After hold",
     "health/runtime digest and uncertain execution receipts",
     "CORE v1 BLE UUID profile and optional durable MQTT projection",
     "persistent CORE sequence across firmware restarts",
@@ -41,23 +65,58 @@
     "authenticated read-only frozen BLE NVS journal snapshots",
     "operator-invoked private journal archives with actual record count and SHA256",
     "journal usage observations and explicit non-settlement archive contracts",
+    "read-only comparison of journal archive evidence and scoped PostgreSQL receipt settlements",
+    "CSE instance and native resource binding for immutable receipt settlement replay",
     "portable r18 native KiCad project snapshot with local CAD dependencies and inherited BOM/wiring",
     "source byte inventory and explicit stale GPIO prose corrections for hardware handoff",
     "INA219 single-shot load-side supply current/voltage and derived signed power telemetry",
     "INA219 standby/readback error/backoff/staleness and deep-sleep coordination",
     "bounded per-detail observation coalescing with publication-order sequence preservation",
     "Gateway INA219 integer unit/null/time/product runtime checks and LCD current display",
+    "optional r18 BLE power evidence with same-boot sample deduplication and first-boot coverage for wake",
     "configured Gateway/CSE resource identity binding for persistent SQLite state",
+    "configured CSE deployment identity for new Gateway databases and scoped receipt archive comparison",
+    "optional native receipt container resource ID binding for MQTT and HTTPS writes and confirmation",
+    "pinned receipt completion requires an HTTPS readback matching the created native resource identity and exact outbox payload",
+    "explicit HTTPS-only command route preflight for pinned CSE, Gateway credentials and active command list",
+    "offline reconciliation of interrupted scoped Feather command evidence using intent and payload bindings",
+    "isolated TLS receipt pin provisioning and optional pin in new Feather command sessions",
     "operator-invoked consistent WAL state archives with quarantine and private manifests",
     "explicit legacy DB identity adoption after a cold snapshot with original data rows preserved",
     "MAX9850 mute/shutdown control requests at boot, periodic readback and before sleep",
     "shared-I2S installation/playback guard while headphone shutdown controls are unknown",
-    "three unprovisioned compile profiles built successfully on Windows; no hardware execution",
+    "three unprovisioned production-firmware compile profiles built successfully on Windows; production PCB execution pending",
     "per-connection BLE generation guards, pinned command writes and failed-handshake readiness fencing",
+    "per-device acknowledged-write readiness in health and fresh same-boot gating before Feather bench issuance",
     "atomic first staging of native receipt and optional CORE ACK; no completed ACK regeneration during native retry/restart",
     "HTTP address scope reversed for native MQTT To; real disposable Mobius4/PostgreSQL storage/readback/idempotency/conflict/restart tests",
     "Real SQLite sender/CSE integration: reopened dedup, native receipt confirmation, persisted outage backoff, abrupt child exit after remote commit, conflicting outbox retention",
-    "Opt-in unprivileged Linux POSIX state CLI container runner: actual flock/fsync/permissions, committed WAL, ENOSPC, guarded adoption and concurrent-write rejection"
+    "Opt-in unprivileged Linux POSIX state CLI container runner: actual flock/fsync/permissions, committed WAL, ENOSPC, guarded adoption and concurrent-write rejection",
+    "Feather0.1.1 latched display and authenticated Pi BLE observations with BlueZ READ-before-NOTIFY handling in Gateway0.2.4",
+    "Opt-in real Feather/Pi relay harness with explicit env isolation, fresh private SQLite outbox, native HTTPS CSE readback and successful-channel MQTT/HTTPS accounting",
+    "GATT command readiness deferral, current authorization for the same BLE generation, bounded fair pending batches, and graceful Gateway stop",
+    "Opt-in Feather 0.2.0 GPIO13 command/receipt profile with scoped NVS intent journal; observation profile remains 0.1.1",
+    "Offline deployment preflight for TLS files and paths beneath systemd STATE_DIRECTORY; checked by ExecStartPre before the daemon",
+    "KEYRING handoff candidate for binding native receipt and optional CORE ACK to the authenticated Gateway and historical central issuance/authorization",
+    "Authoritative HTTPS command polling ahead of CORE MQTT and exact current central hash binding before admitting MQTT-only commands",
+    "Fresh BLE APPLIED receipt binding to the current GATT boot; historical DUPLICATE readbacks retained",
+    "r18 motor timer armed before AUX and GPIO, with final deadline, fault and BLE session checks",
+    "KEYRING handover candidate binding device epoch and active edge to the enrolled gateway",
+    "r18 raw BLE command validation for duplicate members, decoded NUL and trailing data before NVS and GPIO",
+    "operator-only device and Gateway archive verification with native CSE receipt comparison and explicit unresolved outcomes",
+    "boot-local confirm/panic press counts retained through observation replacement and native CSE storage",
+    "per-device ordering of CORE telemetry retries with independent native and receipt delivery",
+    "KEYRING CORE telemetry ordering candidate with a per-resource queue, source epoch checks and a durable pending update cursor",
+    "opt-in immutable CORE telemetry epoch in SQLite, epoch-specific MQTT publish and topic-bound central ingress candidate",
+    "separate scoped Mobius4 profile with exclusive broker ACLs, dedicated TLS identities, a persisted CSE consumer cursor, and optional native HTTPS routing",
+    "scoped CSE application receipts bound to the original MQTT bytes, exact reply ACLs, and replay from the latest durable APPLIED cursor",
+    "serialized scoped owner transitions with pending UPDATE fencing, monotonic rollback and a bench operator command",
+    "operator-only retirement of obsolete CORE telemetry after a durable cold archive and exact row fingerprint comparison",
+    "operator-only BlueZ range/reconnect recorder with hardware identity checks, post-handshake notifications and private monotonic evidence",
+    "wake source and GPIO mask retention in bounded r18 health frames, plus operator-only Pi capture of a newly observed boot",
+    "scoped nullable telemetry and a distinct Mobius4 Feather resource, gateway binding and reply topic",
+    "operator-only scoped Feather relay capture with bound reusable bench SQLite, per-observation application receipt evidence and final SDT readback",
+    "operator-only scoped Feather outbox replay with a durable recovery plan, per-route confirmation ledger and no new BLE capture"
   ],
   "existingHardware": {
     "status": "source-snapshot-included-unverified",
@@ -72,12 +131,14 @@
   "pendingIntegration": [
     "PC-MOBIUS-CORE BLE extension and application receipt acceptance",
     "Deployment and end-to-end acceptance of main central authorization APIs and canonical claim/grant fields",
-    "AE/container/ACP and broker capability configuration",
+    "Production AE/container/ACP and broker capability configuration; isolated test CSE resources already provisioned",
     "Production PCB passkeys and BlueZ enrollment; Feather bench enrollment verified",
     "central PKI registration and mTLS credential deployment",
     "strict UTC device deadline contract if needed beyond relative BLE budget",
     "central settlement/checkpoint and crash-safe device journal reclaim",
-    "authoritative recovery checkpoint and fenced Gateway snapshot activation"
+    "authoritative recovery checkpoint and fenced Gateway snapshot activation",
+    "authoritative per-device Edge-to-Gateway mapping and atomic handover drain/approval binding",
+    "production broker ACL, live scoped application receipt and ACL rejection testing, authoritative handover fencing and pending cursor reconciliation"
   ],
   "notImplemented": [
     "purchased JD9853 module-specific power/gamma initialization confirmation",
@@ -86,39 +147,47 @@
     "central-authorized Gateway snapshot restore activation"
   ],
   "notPerformed": [
-    "flash",
+    "production keyring PCB flash and bring-up; Feather bench flash verified",
     "lint",
-    "hardware validation",
-    "power/range measurement",
-    "integration demo",
+    "production PCB sensor, battery, charging, audio and actuator hardware validation",
+    "production PCB power/range measurement",
+    "full app/web/central authorization integration demo",
     "video evidence",
-    "real-device and CSE end-to-end tests",
-    "Gateway daemon/device hardware execution",
+    "production PCB to production-authorized CSE end-to-end acceptance; actual Feather/Pi to isolated CSE HTTPS observation relay verified",
+    "Production systemd installation on Pi and physical command/ACK/readback with production central grants",
     "Pi-deployed state operator CLI and existing operational database snapshot/adoption"
   ],
-  "actualReceipt": "evidence/2026-10-30-posix-state/receipt.json",
+  "actualReceipt": "evidence/2026-11-10-pi-cse/receipt.json",
+  "actualReceiptPublicationStatus": "published in source commit dfa5129c2374070f8e3fcdf46fa85eefb2ca9663",
   "temporaryServer": {
     "upstreamRevision": "e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8",
     "composeProject": "privacy-bubble-keyring-dev",
-    "status": "empty-resources-provisioned",
+    "status": "isolated-disposable-CSE-HTTPS-MQTT-and-fallback-device-relay-verified-and-cleaned",
     "provisioningReceipt": "dev/mobius4/provisioning-receipt.json",
-    "scope": "loopback-only development server; no device integration evidence"
+    "provisioningScope": "Historical compose project and provisioning receipt retained; current relay uses a separate DisposableMobius fixture with fresh test DB and PKI",
+    "scope": "actual Feather BLE to Pi private SQLite to native HTTPS/MQTT with test TLS/mTLS to disposable PC Mobius4/PostgreSQL through SSH loopback reverse tunnels; existing development/operational DB and PKI preserved"
   },
-  "logSha256": "772491be7821661d193122248ffe86d1732b6e789ac26d147c9fa0a882107ea1",
+  "logSha256": "0c25234a13f2542bb13ff4ed2fd39c8aa015375a435bc6b6156f90cf0b7d6efa",
+  "logSha256Scope": "private actual Pi observations.jsonl captured in the HTTPS outage/replay run; digest recorded by actualReceipt",
   "releaseSha": null,
-  "firmwareRevision": "keyring-0.7.0",
+  "firmwareRevision": "keyring-0.7.13",
+  "benchFirmwareRevision": "feather-probe-0.2.0",
   "publication": {
-    "sourceCommit": "0017edac40815f9d3a812d7f858705496f7aaa3b",
+    "sourceCommit": "596e44ce7ff2857d015d057ce82f6236a985d34a",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "0017edac40815f9d3a812d7f858705496f7aaa3b",
-    "latestCheckpoint": "POSIX test runner/source pushed; Linux source/installed CLI10 each passed; Gateway0.2.3 runtime unchanged"
+    "latestLocalSourceCommit": "596e44ce7ff2857d015d057ce82f6236a985d34a",
+    "lastPushedCommit": "596e44ce7ff2857d015d057ce82f6236a985d34a",
+    "latestCheckpoint": "Commit the matching BLE receipt before waiting for the final GATT response.",
+    "lastPushedCommitBeforeThisCheckpoint": "6af22799c5d05fe94803f9f64191371d4d58e382"
   },
-  "gatewayRevision": "0.2.3",
-  "pendingValidationScope": "Actual central PKI/principal/AE/ACP/grants, INTEGRATION APIs, Pi/BlueZ/keyring/app/web, hardware power/range/video/release remain.",
+  "gatewayRevision": "0.2.43",
+  "pendingValidationScope": "Visual Feather LED observation, r18 physical commands and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE MQTT ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
+    "historical": true,
+    "supersededBy": "2026-11-10 benchCheckpoint for current execution and verification state",
     "sourceRef": "0017edac40815f9d3a812d7f858705496f7aaa3b",
     "scope": "Plan and actual POSIX state operator evidence vs remaining Pi/central integration requirements",
     "outcome": "incomplete",
@@ -132,27 +201,32 @@
     "currentBuildTestAuthorization": "Latest user AGENTS requires related code verification; local mock tests/package build performed"
   },
   "goalExecutionState": {
-    "lastReportedGoalStatus": "blocked",
-    "previousConsecutiveBlockedTurns": 3,
+    "executionStatus": "active",
+    "currentGoalTurnClassification": "progress",
+    "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "continued KEYRING development: actual Linux state operator locking/filesystem/legacy adoption boundaries",
+    "executionRequest": "Persist matching BLE receipts at notification under DOC-REV 2.0.0",
     "remainingCompletionDependencies": [
-      "central deployment, settlement and recovery activation",
+      "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
       "named source references",
-      "real Pi/device/measurement/CSE integration/video/release evidence"
+      "full daemon and production-authorized device integration, production PCB measurements, app/web, video and release evidence"
     ],
     "latestRemoteCore": "d54a43a",
-    "sourceCommit": "0017edac40815f9d3a812d7f858705496f7aaa3b",
-    "sourceValidation": "Linux source/installed POSIX10 passed; prior CSE10 default56 MQTT6 firmware3 retained; full system incomplete",
+    "sourceCommit": "596e44ce7ff2857d015d057ce82f6236a985d34a",
+    "sourceValidation": "Read the current plan, remote team heads, team ACK contract and Gateway BLE and SQLite receipt paths. Built a wheel and ran 153 local tests on Windows Python 3.11. This Gateway version was not deployed to Pi or tested on hardware.",
     "goalComplete": false,
-    "pendingInput": "Pi Zero 2 W operator is reconfiguring network. Await hostname/IP and first SSH. Main now contains authoritative commands/authorize/credentials API.",
-    "previousGoalTurnClassification": "no-progress",
-    "currentGoalTurnClassification": "no-progress",
-    "currentConsecutiveBlockedAuditTurns": 3,
-    "blockedAt": "2026-10-30T03:09:21.672985+00:00"
+    "pendingInput": null,
+    "currentDependencyState": "The Feather 0.2.0 and Pi Gateway 0.2.28 command path was verified through isolated Mobius4 and PostgreSQL. Gateway 0.2.43 was built and tested locally. Firmware 0.7.13 bring-up, assembled r18 identification, first power-on, Pi capture and physical reconnect, restart and receipt response-loss behavior remain. Credential continuity, durable transition and real CSE readback, central issuance or rotation evidence, real battery alert capture, LCD and charger observation, native CSE battery observation readback, visual Feather LED observation, r18 physical sensor recovery, BLE resubscription and long-read tests, NVS fault verification, archive comparison execution, authoritative production CSE routes, approved journal reclaim and automatic external rollback detection contracts, production CORE, and physical power/range/wake capture and an external supply measurement also remain.",
+    "historicalBlock": {
+      "lastReportedGoalStatus": "blocked",
+      "consecutiveBlockedTurns": 3,
+      "goalTurnClassification": "no-progress",
+      "blockedAt": "2026-10-30T03:09:21.672985+00:00",
+      "supersededBy": "2026-11-10 active physical-bench implementation and validation"
+    }
   },
-  "actualReceiptScope": "Non-root Linux POSIX CLI10 from source and installed wheel; actual flock/fsync/permissions/WAL/ENOSPC/new legacy adoption and concurrent write detection",
+  "actualReceiptScope": "35 actual Feather/Pi observations with matching isolated CSE readback: HTTPS normal5+normal5+same-process CSE-outage-replay5, native MQTT5, broker-loss HTTPS-fallback15; all these relay frames are released; test PKI/principal and SSH tunnels, no production command or full-daemon acceptance",
   "localValidation": {
     "date": "2026-10-30",
     "sourceCommit": "0017edac40815f9d3a812d7f858705496f7aaa3b",
@@ -252,6 +326,7 @@
     "previousDefaultAndMqttReceipt": "evidence/2026-10-30-real-cse/receipt.json"
   },
   "completionDependencyAudit": {
+    "historical": true,
     "checkedAt": "2026-10-30T03:09:21.672985+00:00",
     "localHeadAtCheck": "ad17aac41aab7550fdc4ec75a464030a6834d241",
     "previousGoalTurnClassification": "no-progress",
@@ -325,6 +400,822 @@
     },
     "gatewayVersion": "0.2.4",
     "gatewayTestsPassed": 58,
-    "piFeatherReceipt": "evidence/2026-11-10-pi-feather/receipt.json"
+    "piFeatherReceipt": "evidence/2026-11-10-pi-feather/receipt.json",
+    "piCseHttps": {
+      "status": "verified-isolated-observation-scope",
+      "runsPassed": 3,
+      "observationsPerRun": 5,
+      "includesOutageRecoveryRun": true,
+      "totalStoredContentInstances": 15,
+      "readbackPayloadHashesMatched": true,
+      "buttonStatesObservedInTheseRuns": [
+        "released"
+      ],
+      "outage": {
+        "realCseStopped": true,
+        "pendingDuringOutage": 5,
+        "attemptsDuringOutage": 1,
+        "sameProcessReplayPassed": true,
+        "pendingAfter": 0,
+        "receipt": "evidence/2026-11-10-pi-cse/https-outage.json"
+      },
+      "tlsProbe": {
+        "measuredVersion": "TLSv1.3",
+        "scope": "separate actual Pi TLS probe; relay receipt TLS fields remain policy-only",
+        "receipt": "evidence/2026-11-10-pi-cse/tls-probe.json"
+      },
+      "receipts": [
+        "evidence/2026-11-10-pi-cse/https-initial.json",
+        "evidence/2026-11-10-pi-cse/https-normal.json",
+        "evidence/2026-11-10-pi-cse/https-outage.json",
+        "evidence/2026-11-10-pi-cse/https-final-checks.json"
+      ],
+      "limits": "test principal/PKI and disposable CSE through SSH reverse tunnel; no production PCB, full daemon, app/web or command authorization integration"
+    },
+    "piCseMqtt": {
+      "status": "verified-isolated-observation-scope",
+      "capturedCount": 5,
+      "publishedCount": 5,
+      "readbackCount": 5,
+      "deliveryChannels": {
+        "mqtt": 5,
+        "https": 0
+      },
+      "sequences": [
+        1039,
+        1040,
+        1041,
+        1042,
+        1043
+      ],
+      "buttonStatesObserved": [
+        "released"
+      ],
+      "brokerLossFallback": {
+        "brokerStoppedAfterMqttReady": true,
+        "capturedCount": 15,
+        "publishedCount": 15,
+        "readbackCount": 15,
+        "deliveryChannels": {
+          "mqtt": 0,
+          "https": 15
+        },
+        "firstSequence": 1060,
+        "lastSequence": 1074,
+        "buttonStatesObserved": [
+          "released"
+        ],
+        "exitCode": 0
+      },
+      "receipt": "evidence/2026-11-10-pi-cse/receipt.json",
+      "scope": "actual Pi native oneM2M MQTT application responses and HTTPS CSE readback, plus actual broker-loss HTTPS fallback; test principal/PKI only"
+    },
+    "piCseFinalization": {
+      "matchedObservationCount": 35,
+      "finalCseContentInstanceCount": 35,
+      "fixtureCleanupStatus": "verified-no-owned-resources-remaining",
+      "evidencePublicationStatus": "pushed in dfa5129c2374070f8e3fcdf46fa85eefb2ca9663",
+      "cleanupReceipt": "evidence/2026-11-10-pi-cse/cleanup.json"
+    }
+  },
+  "centralDispatchValidation": {
+    "receipt": "evidence/2026-11-10-central-dispatch/receipt.json",
+    "teamMain": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+    "gatewayUnitPassed": 63,
+    "isolatedFullWorkerCasesPassed": 2,
+    "physicalGatts": false,
+    "coreAckSettlementVerified": false,
+    "sourceCommit": "2014b18bb44ce5e9304cb9494de743313f3bf1e2"
+  },
+  "featherCommandValidation": {
+    "sourceStatus": "implemented",
+    "firmwareRevision": "feather-probe-0.2.0",
+    "compiledProfilesPassed": 2,
+    "nativeTestGroupsPassed": 4,
+    "flashPerformed": false,
+    "physicalCommandVerified": false,
+    "receipt": "evidence/2026-11-10-feather-command/receipt.json",
+    "sourceCommit": "cd4818b77f2ef05552e4fabe3c096ac9942d739e"
+  },
+  "piFullDaemonValidation": {
+    "receipt": "evidence/2026-11-10-pi-full-daemon/receipt.json",
+    "gatewayVersion": "0.2.5",
+    "actualPi": true,
+    "transientUnitsPassed": 2,
+    "cseObservations": 27,
+    "cseHealth": 16,
+    "replayedPendingObservations": 1,
+    "productionSystemdVerified": false,
+    "physicalCommandVerified": false,
+    "sourceCommit": "f7e917cfbc4a77ddc2e11bac80f7146a363f4986"
+  },
+  "deploymentPreflightValidation": {
+    "gatewayVersion": "0.2.6",
+    "basicTestsPassed": 67,
+    "systemdCasesPassed": 3,
+    "productionDeploymentPerformed": false,
+    "receipt": "evidence/2026-11-10-deployment-preflight/receipt.json",
+    "sourceCommit": "106050ae31a087268ad38d9bf406348dedd9cd29"
+  },
+  "coreAckBindingValidation": {
+    "receipt": "evidence/2026-11-10-core-ack-binding/receipt.json",
+    "teamMain": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+    "isolatedCseCasesPassed": 2,
+    "candidateValidCases": 2,
+    "candidateRejectedCases": 7,
+    "productionSettlementVerified": false,
+    "sourceCommit": "c441f7c7586f9b5dfbf45e143e88de9bec42765d"
+  },
+  "commandIngressValidation": {
+    "evidence": "evidence/2026-11-10-command-ingress/README.md",
+    "gatewayVersion": "0.2.7",
+    "teamMain": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+    "basicTestsPassed": 71,
+    "centralMtlsIntegrationCasesPassed": 3,
+    "wheelSourceModulesMatched": 13,
+    "actualBrokerCommandIngressVerified": false,
+    "physicalDeploymentPerformed": false,
+    "sourceCommit": "cbef49eb88999dc173f4455666da45c789e073e3"
+  },
+  "mqttCommandWireValidation": {
+    "evidence": "evidence/2026-11-10-mqtt-command-wire/README.md",
+    "gatewayVersion": "0.2.7",
+    "teamMain": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+    "basicTestsPassed": 71,
+    "centralCasesPassed": 4,
+    "standaloneMqttCasesPassed": 6,
+    "mqttVersion": "3.1.1",
+    "tlsVersion": "1.3",
+    "qos": 1,
+    "gatewayCommandPublishDenied": true,
+    "forgedPayloadDenied": true,
+    "coreAckMatchesCseReceipt": true,
+    "mockGATT": true,
+    "productionCoreSettlementVerified": false,
+    "sourceCommit": "9b0f412adde512a1f28e10fe3f0814e7d13d1290"
+  },
+  "ledCycleRehearsal": {
+    "evidence": "evidence/2026-11-10-pi-led-rehearsal/README.md",
+    "gatewayVersion": "0.2.7",
+    "teamMain": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+    "basicTestsPassed": 71,
+    "rehearsalCasesPassed": 2,
+    "actualCentralApi": true,
+    "actualDisposableCse": true,
+    "softwareFeather": true,
+    "matchedCseAndJournalReceipts": 2,
+    "actualPiOrLedVerified": false,
+    "sourceCommit": "a3cf82d8d7c0eb808005a4980fd0410309ed077c"
+  },
+  "receiptBootValidation": {
+    "evidence": "evidence/2026-11-10-receipt-boot/README.md",
+    "gatewayVersion": "0.2.8",
+    "basicTestsPassed": 73,
+    "centralCasesPassed": 5,
+    "wrongBootFreshApplySettled": false,
+    "historicalDuplicatePreserved": true,
+    "indeterminateCseReceipts": 1,
+    "commandFrames": 1,
+    "physicalDeviceVerified": false,
+    "sourceCommit": "37e654b1f9f9074ffc92e26aa4ee9e222e3112dc"
+  },
+  "motorGateValidation": {
+    "evidence": "evidence/2026-11-10-motor-gate/README.md",
+    "firmwareVersion": "keyring-0.7.1",
+    "unprovisionedProfilesBuilt": ["keyring_compile_minimal", "keyring_compile_st7789", "keyring_compile_jd9853"],
+    "hostTestGroupsPassed": 6,
+    "physicalMotorWaveformMeasured": false,
+    "flashPerformed": false,
+    "sourceCommit": "aa0874f818d9629bc752335835fdcaba849c5613"
+  },
+  "handoverOwnerValidation": {
+    "evidence": "evidence/2026-11-10-handover-owner/README.md",
+    "teamMain": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+    "transport": "loopback-mtls-tls1.3",
+    "formerGatewayAllowedByUnmodifiedTeamApiAtNewEpoch": true,
+    "candidateBlockedIssuePollAndAuthorize": true,
+    "rollbackOwnerSurvivedRuntimeRestart": true,
+    "invalidOwnershipInputsRejected": 5,
+    "productionIntegrationVerified": false,
+    "sourceCommit": "96faff50f71bdf29adae1bc0259ee6a1b7fc04ae"
+  },
+  "rawBleCommandValidation": {
+    "evidence": "evidence/2026-11-10-command-wire/README.md",
+    "firmwareVersion": "keyring-0.7.2",
+    "arduinoJsonVersion": "6.21.5",
+    "unprovisionedProfilesBuilt": 3,
+    "r18HostGroupsPassed": 4,
+    "featherHostGroupsPassed": 4,
+    "flashPerformed": false,
+    "actualBleVerified": false,
+    "sourceCommit": "e6895b1e50838b250859f048185a4bc5d1fc3eaa"
+  },
+  "journalReconcileValidation": {
+    "evidence": "evidence/2026-11-10-journal-reconcile/README.md",
+    "gatewayVersion": "0.2.9",
+    "installedModulesMatched": 14,
+    "basicTestsPassed": 73,
+    "realCseTestsPassed": 1,
+    "syntheticDeviceRecordsCompared": 10,
+    "reviewRecords": 9,
+    "unchangedCseInstances": 6,
+    "physicalJournalCaptured": false,
+    "settlementPerformed": false,
+    "sourceCommit": "42cba320bb6cc8b616c6b8044d2f8e20d008b45f"
+  },
+  "buttonPressValidation": {
+    "evidence": "evidence/2026-11-10-button-presses/README.md",
+    "firmwareVersion": "keyring-0.7.3",
+    "gatewayVersion": "0.2.10",
+    "unprovisionedProfilesBuilt": 3,
+    "hostGroupsPassed": 4,
+    "basicTestsPassed": 74,
+    "realCseTestsPassed": 11,
+    "largestExercisedEnergyFrameBytes": 505,
+    "physicalButtonsVerified": false,
+    "sourceCommit": "534379bc39c5f4afd272865e22d315de7fda3c99"
+  },
+  "coreRetryOrderValidation": {
+    "evidence": "evidence/2026-11-10-core-retry-order/README.md",
+    "gatewayVersion": "0.2.11",
+    "basicTestsPassed": 75,
+    "nativeCseTestsPassed": 11,
+    "teamCoreSdtTestsPassed": 1,
+    "ubuntuSqliteRegressionPassed": true,
+    "reversedOrderSdtState": true,
+    "orderedRetrySdtState": false,
+    "nativeCinsDuringCoreBackoff": 2,
+    "physicalPiVerified": false,
+    "sourceCommit": "02ed4d367ad1f6a3a77d08b753890ebb545130ea"
+  },
+  "coreConcurrentOrderValidation": {
+    "evidence": "evidence/2026-11-10-core-concurrent-order/README.md",
+    "teamMain": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+    "teamCoreSdtTestsPassed": 2,
+    "transport": "loopback-mtls-tls1.3",
+    "originalConcurrentSdtState": true,
+    "serializedConcurrentSdtState": false,
+    "formerGatewayAndEpochRejectedWithTestOwnership": true,
+    "unresolvedCursorPreservedOnStoreReload": true,
+    "productionIngressVerified": false,
+    "physicalDeviceVerified": false,
+    "sourceCommit": "b945b15dc38f7df39ba3c7739029b8e8ddef4f65"
+  },
+  "coreScopedIngress": {
+    "reference": "integration-candidate/README.md",
+    "gatewayVersion": "0.2.12",
+    "status": "source-only",
+    "teamMain": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+    "sourceCommit": "9782c8aa7ca88718ba21ea5df2e6a6a4861cea02"
+  },
+  "coreScopedStack": {
+    "evidence": "evidence/2026-11-10-core-scoped-stack/README.md",
+    "gatewayVersion": "0.2.13",
+    "project": "privacy-bubble-keyring-scoped",
+    "emptyResourcesCreated": 5,
+    "existingResourcesReadBack": 5,
+    "consumerMqttSubscriptionObserved": true,
+    "telemetryPublished": false,
+    "gatewayBuildOrTestExecuted": false,
+    "sourceCommit": "8b2081f1d4d4e9299bae8a4292e35e8523b94151"
+  },
+  "coreScopedApplicationReceipt": {
+    "reference": "integration-candidate/README.md",
+    "gatewayVersion": "0.2.14",
+    "status": "local-consumer-deployed-gateway-source-only",
+    "legacyTopicUnchanged": true,
+    "scopedConsumerAndAclRolledOut": true,
+    "regressionsExecuted": false,
+    "sourceCommit": "935847a4a1fd8260530e804bb5018b31a590ee8c"
+  },
+  "coreScopedReceiptRollout": {
+    "evidence": "evidence/2026-11-10-core-scoped-receipt-rollout/README.md",
+    "scopedConsumerSubscribed": true,
+    "mountedFilesMatched": 4,
+    "existingContainerIdsPreserved": 7,
+    "cursorUnchanged": true,
+    "telemetryPublished": false,
+    "sourceCommit": "e615f54752bf1edcd487bc4ccf4a21eb37ea8186"
+  },
+  "coreScopedOwnerTransition": {
+    "reference": "dev/mobius4/README.md",
+    "status": "isolated-consumer-deployed",
+    "stagedSequence": ["gw-a:7", "gw-b:8", "gw-a:9"],
+    "deployed": true,
+    "transitionExecuted": false,
+    "sourceCommit": "fa62263120786dddac752efb89808c998ac94d6f"
+  },
+  "coreScopedOwnerRollout": {
+    "evidence": "evidence/2026-11-10-core-scoped-handover-rollout/README.md",
+    "startupSubscriptionObserved": true,
+    "initialOwner": "gw-a:7",
+    "cursorPhase": "EMPTY",
+    "mountedFilesMatched": 4,
+    "existingContainerIdsPreserved": 7,
+    "transitionExecuted": false,
+    "telemetryPublished": false,
+    "sourceCommit": "7af699ab4902f5ef937a1ca3ed7ae635c336ed9d"
+  },
+  "coreOutboxRetirement": {
+    "reference": "raspberry-pi-gateway/STATE_RECOVERY.md",
+    "gatewayVersion": "0.2.15",
+    "status": "source-only",
+    "dbOperationExecuted": false,
+    "regressionExecuted": false,
+    "sourceCommit": "a95bd8482867ece24150cb6b6b1478565c6f73ba"
+  },
+  "physicalBleCharacterization": {
+    "reference": "raspberry-pi-gateway/TESTING.md",
+    "gatewayVersion": "0.2.16",
+    "status": "source-only",
+    "supportedHardware": ["feather-bench", "r18-pcb"],
+    "physicalMeasurementExecuted": false,
+    "regressionExecuted": false,
+    "sourceCommit": "30131330493c5f9d6400b5ff5ee63958f789602a"
+  },
+  "physicalWakeCapture": {
+    "reference": "raspberry-pi-gateway/TESTING.md",
+    "firmwareVersion": "keyring-0.7.4",
+    "gatewayVersion": "0.2.17",
+    "status": "source-only",
+    "wakeCases": ["confirm", "panic", "motion", "timer"],
+    "physicalMeasurementExecuted": false,
+    "regressionsExecuted": false,
+    "sourceCommit": "1f89a884683fb13d03f273108b547e55ef206a74"
+  },
+  "scopedFeatherRollout": {
+    "evidence": "evidence/2026-11-10-core-scoped-feather-rollout/README.md",
+    "gatewayVersion": "0.2.18",
+    "candidateSchemaVersion": "1.1.0",
+    "featherSdtCreated": true,
+    "scopedConsumerSubscribed": true,
+    "persistedOwner": "gw-a:1",
+    "physicalTelemetryExecuted": false,
+    "regressionsExecuted": false,
+    "sourceCommit": "03ffb8206eab409b6e669a696f713d561d90f640"
+  },
+  "scopedFeatherCapture": {
+    "evidence": "evidence/2026-11-10-core-scoped-feather-readback/README.md",
+    "gatewayVersion": "0.2.19",
+    "initialSdtGetHttp": 200,
+    "initialSdtGetRsc": 2000,
+    "gatewayAInitialSdtReadback": true,
+    "physicalRelayExecuted": false,
+    "regressionsExecuted": false,
+    "sourceCommit": "ed404f6a39333829c597a3d54dc59f2fb20e0190"
+  },
+  "scopedFeatherRecovery": {
+    "reference": "firmware/feather_probe/README.md",
+    "gatewayVersion": "0.2.19",
+    "status": "source-only",
+    "recoveryExecuted": false,
+    "regressionsExecuted": false,
+    "sourceCommit": "36ecd72491f9a70e51f2a6388d78d51820b7d76b"
+  },
+  "commandReceiptSettlement": {
+    "reference": "integration-candidate/README.md#cse-명령-영수증의-중앙-정산-후보",
+    "teamMain": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+    "status": "source-only",
+    "authenticatedCseIngressWired": false,
+    "centralUniqueStoreWired": false,
+    "regressionsExecuted": false,
+    "sourceCommit": "4caa505c069dcd0b64b5cac9a30503544e043e5a"
+  },
+  "scopedCommandReceiptSettlement": {
+    "reference": "dev/mobius4/README.md#명령-영수증-정산-준비",
+    "teamMain": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+    "status": "isolated-empty-resources-provisioned",
+    "routesDeployed": true,
+    "provisioningEvidence": "evidence/2026-11-10-scoped-command-receipts/provisioning.json",
+    "gatewayAclExercised": false,
+    "operatorSettlementExecuted": false,
+    "physicalReceiptObserved": false,
+    "sourceCommit": "e5ffd4b5a8e899491b65097bcebe72932ea61156",
+    "provisioningCommit": "b8c9177c60741976f1127ef5d12dedfe1807fa29"
+  },
+  "scopedCommandApi": {
+    "reference": "dev/mobius4/README.md#feather-벤치-명령-api",
+    "provisioningEvidence": "evidence/2026-11-10-scoped-command-api/provisioning.json",
+    "teamMain": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+    "status": "isolated-loopback-ready",
+    "gatewayEnrolled": true,
+    "gatewayApiExercised": false,
+    "commandsIssued": 0,
+    "sourceCommit": "7383facdfaf670996931a55d1c15fa62ab9eaf82"
+  },
+  "scopedFeatherLedCycle": {
+    "reference": "raspberry-pi-gateway/TESTING.md#기존-scoped-mobius4에서-feather-led-시험",
+    "provisioningEvidence": "evidence/2026-11-10-scoped-feather-led-cycle/provisioning.json",
+    "status": "isolated-observation-resource-provisioned",
+    "ledCycleExecuted": false,
+    "grantRevocationExercised": false,
+    "physicalLedObserved": null,
+    "sourceCommit": "47697ec03421b9b0b708797ed254752c3a8d0300"
+  },
+  "scopedFeatherPiSession": {
+    "reference": "raspberry-pi-gateway/TESTING.md#pi-명령-세션",
+    "status": "source-only",
+    "piProfileCreated": false,
+    "piGatewayExecuted": false,
+    "regressionsExecuted": false,
+    "sourceCommit": "6f20aaf67838a245892f6987fb1dea560ebdd841"
+  },
+  "postgresCommandReceiptSettlement": {
+    "reference": "integration-candidate/README.md#postgresql-정산-저장-후보",
+    "teamMain": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+    "status": "source-only",
+    "migrationApplied": false,
+    "coreIngressWired": false,
+    "regressionsExecuted": false,
+    "sourceCommit": "a551e9ee797dfa18b26c85a79c23d5ceccd55df5"
+  },
+  "mobiusReceiptNotificationInbox": {
+    "reference": "integration-candidate/README.md#mobius4-알림에서-원본-정산까지",
+    "teamMain": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+    "status": "source-only",
+    "migrationApplied": false,
+    "subscriptionCreated": false,
+    "regressionsExecuted": false,
+    "sourceCommit": "b498e396e6aedcc2a4635eee38961f218d1755e7"
+  },
+  "missedReceiptNotificationRecovery": {
+    "reference": "integration-candidate/README.md#대기열-도달-전-유실-복구",
+    "teamMain": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+    "status": "source-only",
+    "schedulerWired": false,
+    "recoveryExecuted": false,
+    "regressionsExecuted": false,
+    "sourceCommit": "c078b3193cde2ea25712884854ab0861ea5b3310"
+  },
+  "scopedReceiptDatabase": {
+    "reference": "dev/mobius4/README.md#격리-postgresql-정산-실행",
+    "provisioningEvidence": "evidence/2026-11-10-receipt-database/provisioning.json",
+    "status": "isolated-schema-provisioned",
+    "isolatedMigrationApplied": true,
+    "nodeProcessExecuted": true,
+    "physicalReceiptObserved": false,
+    "sourceCommit": "2224c26a2b68edc7e6a509a50b8475bfe97e8c63"
+  },
+  "scopedReceiptRuntime": {
+    "reference": "dev/mobius4/README.md#격리-postgresql-정산-실행",
+    "startupEvidence": "evidence/2026-11-10-scoped-receipt-runtime/startup.json",
+    "latestRefreshEvidence": "evidence/2026-11-10-scoped-receipt-worker-refresh/startup.json",
+    "latestWorkerCheckout": "806416bfdf148645c29ca62e708cccb3e652acab",
+    "status": "refreshed-worker-ready-with-empty-inbox",
+    "cseReceiptReadObserved": false,
+    "physicalReceiptObserved": false,
+    "sourceCommit": "6799b9d934aa3b62d4ce0ea7cd3af84793024a12"
+  },
+  "scopedReceiptCallback": {
+    "reference": "dev/mobius4/README.md#격리-영수증-콜백-수신",
+    "startupEvidence": "evidence/2026-11-10-scoped-receipt-callback/startup.json",
+    "status": "loopback-listener-observed",
+    "cseSubscriptionCreated": true,
+    "callbackRequestExercised": false,
+    "sourceCommit": "f64bb1f3354793794aa15612d7857f0a50db23b7"
+  },
+  "scopedReceiptRelay": {
+    "reference": "dev/mobius4/README.md#격리-영수증-콜백-수신",
+    "provisioningEvidence": "evidence/2026-11-10-scoped-receipt-relay/provisioning.json",
+    "status": "relay-and-subscriptions-provisioned",
+    "subscriptionsCreated": 2,
+    "notificationReceived": false,
+    "physicalReceiptObserved": false,
+    "sourceCommit": "3d78e2d53beb16a462d6703b51556875356a2216"
+  },
+  "scopedReceiptProvenance": {
+    "reference": "dev/mobius4/README.md#명령별-영수증-증거-조회",
+    "provisioningEvidence": "evidence/2026-11-10-scoped-receipt-provenance/provisioning.json",
+    "status": "isolated-schema-and-processes-deployed",
+    "inspectionCliExecuted": false,
+    "regressionsExecuted": false,
+    "physicalReceiptObserved": false,
+    "sourceCommit": "7e72b25acc19b84b23c454f4f13245ea4e9350a5"
+  },
+  "scopedFeatherCommandEvidence": {
+    "reference": "raspberry-pi-gateway/TESTING.md#실물-명령-증거-대조",
+    "status": "source-only",
+    "evidenceVerifierExecuted": false,
+    "regressionsExecuted": false,
+    "physicalReceiptObserved": false,
+    "sourceCommit": "503f9c9ed2095c29c4d23f47657756500a4be276"
+  },
+  "negativeCommandReceiptOutcomes": {
+    "reference": "integration-candidate/README.md#cse-명령-영수증의-중앙-정산-후보",
+    "status": "isolated-worker-loaded-no-receipt",
+    "isolatedWorkerReloaded": true,
+    "regressionsExecuted": false,
+    "sourceCommit": "f2cc3f90f59c1bb0a28c307b81ea542eefaa7323"
+  },
+  "journalCentralEvidence": {
+    "reference": "JOURNAL_RETENTION.md#격리-postgresql-정산-기록-대조",
+    "status": "source-only",
+    "isolatedDatabaseQueryExecuted": false,
+    "regressionsExecuted": false,
+    "journalReclaimAuthorized": false,
+    "sourceCommit": "a2c9976e612bca2c033a13bd7b1cf903d4e5d9ae"
+  },
+  "settlementNativeOrigin": {
+    "reference": "integration-candidate/README.md#cse-명령-영수증의-중앙-정산-후보",
+    "status": "isolated-worker-loaded-no-receipt",
+    "isolatedWorkerReloaded": true,
+    "regressionsExecuted": false,
+    "legacyRecordsRewritten": false,
+    "authoritativeCommandRouteContractAvailable": false,
+    "sourceCommit": "36bc81624abfe9887592b3315217738de097e96e"
+  },
+  "receiptStagingBacklog": {
+    "reference": "raspberry-pi-gateway/tests/test_receipt_outbox.py",
+    "status": "source-only",
+    "gatewayVersion": "0.2.20",
+    "wheelBuilt": false,
+    "regressionExecuted": false,
+    "piDeployed": false,
+    "sourceCommit": "d584caad89ef9dc04f12462b9240dad986baff5d"
+  },
+  "firmwareJournalNvsRecovery": {
+    "reference": "firmware/README.md",
+    "status": "source-only",
+    "firmwareVersion": "keyring-0.7.5",
+    "journalFormat": 1,
+    "linkedFirmwareBuilt": false,
+    "hostFaultInjectionExecuted": false,
+    "physicalPowerCutExecuted": false,
+    "sourceCommit": "da4e29131f92ad03e2ffee9fc75eba5998bace13"
+  },
+  "bleDispatchAuthority": {
+    "reference": "raspberry-pi-gateway/BLE_SESSIONS.md#승인-기한과-gatt-전송",
+    "status": "source-only",
+    "gatewayVersion": "0.2.21",
+    "regressionsExecuted": false,
+    "piDeployed": false,
+    "sourceCommit": "edd4b6c22ce15dd2988a02d792f7a7ef052d3179"
+  },
+  "cseDeploymentStateBinding": {
+    "reference": "raspberry-pi-gateway/STATE_RECOVERY.md#cse-배포-전환",
+    "status": "source-only",
+    "gatewayVersion": "0.2.22",
+    "newBindingVersion": 2,
+    "regressionsExecuted": false,
+    "actualCutoverExecuted": false,
+    "sourceCommit": "3f954cef262aec7741913dad69af1fe645159dd0"
+  },
+  "nativeReceiptContainerPin": {
+    "reference": "raspberry-pi-gateway/STATE_RECOVERY.md#명령-영수증-컨테이너-id-고정",
+    "status": "source-only",
+    "gatewayVersion": "0.2.23",
+    "regressionsExecuted": false,
+    "scopedAclUpdated": true,
+    "piDeployed": false,
+    "sourceCommit": "19c95a0b37c57b1dd440bbedbb704a9ed95f174f"
+  },
+  "scopedReceiptPinAccess": {
+    "evidence": "evidence/2026-11-11-scoped-receipt-pin/provisioning.json",
+    "status": "isolated-proxy-provisioned-and-parent-gets-observed",
+    "ownParentGetsObserved": 2,
+    "crossParentDenialsObserved": 2,
+    "receiptPostExecuted": false,
+    "piDeployed": false,
+    "sourceCommit": "3cb1175e24eb7dc24b102dc47e1962fd625d40dc"
+  },
+  "firmwareBleSessionBinding": {
+    "reference": "firmware/README.md",
+    "status": "source-only",
+    "firmwareVersion": "keyring-0.7.6",
+    "hostRegressionsExecuted": false,
+    "built": false,
+    "physicalBleExecuted": false,
+    "sourceCommit": "8c340992d3cde9208338fc24acc3db2a866c2f75"
+  },
+  "firmwareProtectedGattReads": {
+    "reference": "firmware/README.md",
+    "status": "source-only",
+    "firmwareVersion": "keyring-0.7.7",
+    "hostRegressionsExecuted": false,
+    "linkedFirmwareBuilt": false,
+    "physicalLongReadExecuted": false,
+    "sourceCommit": "82d76bb80aeb903ea3cad1681e8abe838a99ee47"
+  },
+  "scopedCommandRoutePreflight": {
+    "reference": "raspberry-pi-gateway/TESTING.md#pi-명령-세션",
+    "status": "source-only",
+    "gatewayVersion": "0.2.24",
+    "regressionsExecuted": false,
+    "piPreflightExecuted": false,
+    "sourceCommit": "1cb9e6988103f1d3419bf385e8acfd17c2c14c6d"
+  },
+  "scopedInterruptedFeatherEvidence": {
+    "reference": "raspberry-pi-gateway/TESTING.md",
+    "status": "source-only",
+    "evidenceToolExecuted": false,
+    "regressionsExecuted": false,
+    "physicalReceiptObserved": false,
+    "sourceCommit": "6a5537f67d8786ea9bf2f1fb571c24a0855d9553"
+  },
+  "r18BlePowerEvidence": {
+    "reference": "raspberry-pi-gateway/TESTING.md#r18-ble-시험의-전원-샘플",
+    "status": "source-only",
+    "gatewayVersion": "0.2.25",
+    "regressionsExecuted": false,
+    "piCharacterizationExecuted": false,
+    "externalPowerMeasured": false,
+    "sourceCommit": "b5be18d47436890e2c80a59b3a8367226c718754"
+  },
+  "gatewayHttpRetryAfter": {
+    "reference": "raspberry-pi-gateway/README.md#저장소권한시간-동작",
+    "status": "source-only",
+    "gatewayVersion": "0.2.26",
+    "regressionsExecuted": false,
+    "piRuntimeVerified": false,
+    "sourceCommit": "3cc69fd9d14a08988475c26e203899f506c478e2"
+  },
+  "gatewayPinnedReceiptReadback": {
+    "reference": "raspberry-pi-gateway/STATE_RECOVERY.md#명령-영수증-컨테이너-id-고정",
+    "status": "source-only",
+    "gatewayVersion": "0.2.27",
+    "regressionsExecuted": false,
+    "isolatedCseVerified": false,
+    "physicalReceiptObserved": false,
+    "sourceCommit": "6f61b3920ffb75c5c31efedab492695ed5d6eef4"
+  },
+  "firmwareJournalContinuity": {
+    "reference": "firmware/README.md",
+    "status": "source-only",
+    "firmwareVersion": "keyring-0.7.8",
+    "hostRegressionsExecuted": false,
+    "firmwareBuilt": false,
+    "physicalFaultInjectionExecuted": false,
+    "sourceCommit": "f7a356405c0b6fe26a299e6b3ca1210ea5aff581"
+  },
+  "firmwareJournalTailCheckpoint": {
+    "reference": "JOURNAL_RETENTION.md",
+    "status": "source-only",
+    "firmwareVersion": "keyring-0.7.9",
+    "checkpointScope": "same NVS partition, with independent CSE or external rollback evidence pending",
+    "hostRegressionsExecuted": false,
+    "firmwareBuilt": false,
+    "physicalFaultInjectionExecuted": false,
+    "sourceCommit": "b38dd6b93e4d537d844624738283e6d366344edf"
+  },
+  "gatewayJournalHistoryComparison": {
+    "reference": "JOURNAL_RETENTION.md#이전-장치-보관본과-비교",
+    "status": "source-only",
+    "gatewayVersion": "0.2.28",
+    "regressionsExecuted": false,
+    "physicalArchiveCompared": false,
+    "sourceCommit": "2ba76bebbbfe2961b6f33637f0491bfb2136b4c8"
+  },
+  "actualScopedFeatherCommandBench": {
+    "reference": "evidence/2026-11-11-scoped-feather-led/receipt.json",
+    "status": "verified-feather-gpio-and-isolated-settlement",
+    "successfulCommands": 2,
+    "priorExpiredCommands": 1,
+    "physicalLedMatched": null,
+    "sourceCommit": "e6bf4c1b23a8be8cddce4e2d8e2716035995fff2"
+  },
+  "featherBenchCommandReadiness": {
+    "reference": "raspberry-pi-gateway/TESTING.md#feather-led-onoff-시험",
+    "status": "source-only",
+    "gatewayVersion": "0.2.29",
+    "regressionsExecuted": false,
+    "physicalRetestExecuted": false,
+    "sourceCommit": "3bdd273a1a183fbb40d77d4b0288e647fcc72aa7"
+  },
+  "firmwareReceiptSubscriptionFencing": {
+    "reference": "firmware/README.md",
+    "status": "source-only",
+    "firmwareVersion": "keyring-0.7.10",
+    "hostRegressionsExecuted": false,
+    "firmwareBuilt": false,
+    "physicalBleExecuted": false,
+    "sourceCommit": "28df2d166565bafdd8ced6d2b9447032aa041e58"
+  },
+  "gatewayReceiptOutboxPriority": {
+    "reference": "raspberry-pi-gateway/RECEIPT_ROUTING.md",
+    "status": "source-only",
+    "gatewayVersion": "0.2.30",
+    "receiptBurstAttempts": 4,
+    "regressionsExecuted": false,
+    "liveOutageReplayExecuted": false,
+    "sourceCommit": "733c45504018f7a5e878f6cae7e09c3bfc1925f1"
+  },
+  "gatewayHttpsOutboxHold": {
+    "reference": "raspberry-pi-gateway/README.md",
+    "status": "source-only",
+    "gatewayVersion": "0.2.31",
+    "regressionsExecuted": false,
+    "liveOutageReplayExecuted": false,
+    "sourceCommit": "420c07df34944681f86b763f35765db849bd55ae"
+  },
+  "firmwareSensorRecovery": {
+    "reference": "firmware/POWER_WAKE.md",
+    "status": "source-only",
+    "firmwareVersion": "keyring-0.7.11",
+    "hostRegressionsExecuted": false,
+    "firmwareBuilt": false,
+    "physicalFaultInjectionExecuted": false,
+    "sourceCommit": "ecbf579e2b80916739af5c07f3c634966ffcd7be"
+  },
+  "batteryAlert": {
+    "reference": "firmware/README.md#센서버튼저전력",
+    "status": "source-only",
+    "firmwareVersion": "keyring-0.7.12",
+    "gatewayVersion": "0.2.32",
+    "defaultWarnPercent": 20,
+    "defaultRecoverPercent": 25,
+    "regressionsExecuted": false,
+    "physicalDisplayVerified": false,
+    "sourceCommit": "dd71dace86f89367cd6a51b99bbcbc0f5d980e07"
+  },
+  "batteryAlertCapture": {
+    "reference": "raspberry-pi-gateway/TESTING.md#r18-배터리-경보-기록",
+    "status": "source-only",
+    "gatewayVersion": "0.2.33",
+    "regressionsExecuted": false,
+    "physicalCaptureExecuted": false,
+    "sourceCommit": "3e4185bf9ecdc6c542686c65bd6bb5134c5a033e"
+  },
+  "credentialContinuityFence": {
+    "reference": "raspberry-pi-gateway/README.md",
+    "status": "source-only",
+    "gatewayVersion": "0.2.34",
+    "regressionsExecuted": false,
+    "liveDispatchExecuted": false,
+    "sourceCommit": "723342f7ad6cc2b28cc70fa0cf82ac23d530db97"
+  },
+  "credentialTransitionReceipts": {
+    "reference": "raspberry-pi-gateway/RECEIPT_ROUTING.md#자격-상태-전환-영수증",
+    "status": "source-only",
+    "gatewayVersion": "0.2.35",
+    "regressionsExecuted": false,
+    "liveCseDeliveryExecuted": false,
+    "sourceCommit": "bf1e4a947b00064687277e91e3f917d5ac667755"
+  },
+  "credentialReceiptReadback": {
+    "reference": "raspberry-pi-gateway/RECEIPT_ROUTING.md#자격-상태-전환-영수증",
+    "status": "source-only",
+    "gatewayVersion": "0.2.36",
+    "regressionsExecuted": false,
+    "liveCseReadbackExecuted": false,
+    "sourceCommit": "4b82cbfd01cd3154d144443de4e87d5ad0a205f0"
+  },
+  "r18ObservationBringup": {
+    "reference": "pcb/BRING_UP.md",
+    "status": "source-only",
+    "firmwareVersion": "keyring-0.7.13-bringup",
+    "gatewayVersion": "0.2.37",
+    "regressionsExecuted": false,
+    "physicalBringupExecuted": false,
+    "sourceCommit": "b63c795ef872099372191021e846cc3f79571f93"
+  },
+  "r18BringupCapture": {
+    "reference": "raspberry-pi-gateway/TESTING.md#r18-초기-구동-기록",
+    "status": "source-only",
+    "firmwareVersion": "keyring-0.7.13-bringup",
+    "gatewayVersion": "0.2.38",
+    "regressionsExecuted": false,
+    "physicalCaptureExecuted": false,
+    "sourceCommit": "815d89ce6879af204c21f9cfdd9cbef1724cf679"
+  },
+  "r18ReconnectContinuity": {
+    "reference": "raspberry-pi-gateway/TESTING.md#r18-재연결-전후-버튼-누계-기록",
+    "status": "source-only",
+    "gatewayVersion": "0.2.39",
+    "regressionsExecuted": false,
+    "physicalReconnectExecuted": false,
+    "sourceCommit": "ff473c2fd7b834de6b9d1ad239b8f67690006117"
+  },
+  "observationReplayFence": {
+    "reference": "raspberry-pi-gateway/BLE_SESSIONS.md#재연결과-관측-시각-기준",
+    "status": "source-only",
+    "gatewayVersion": "0.2.40",
+    "regressionsExecuted": false,
+    "physicalReconnectExecuted": false,
+    "sourceCommit": "1536b05139a6613cf2e2774f5910ef8fa748d4c5"
+  },
+  "receiptTimingBounds": {
+    "reference": "raspberry-pi-gateway/BLE_SESSIONS.md#재연결과-관측-시각-기준",
+    "status": "source-only",
+    "gatewayVersion": "0.2.41",
+    "regressionsExecuted": false,
+    "physicalReceiptTimingExecuted": false,
+    "sourceCommit": "19712ecf9e29430bbc4599eff44b30c8842aa2b8"
+  },
+  "receiptResponseLoss": {
+    "reference": "raspberry-pi-gateway/BLE_SESSIONS.md#승인-기한과-gatt-전송",
+    "status": "source-only",
+    "gatewayVersion": "0.2.42",
+    "regressionsExecuted": false,
+    "physicalResponseLossExecuted": false,
+    "sourceCommit": "2cdc96baae12cb85524488aa5daab0c2f893d627"
+  },
+  "receiptDurability": {
+    "reference": "raspberry-pi-gateway/BLE_SESSIONS.md#승인-기한과-gatt-전송",
+    "status": "locally-verified",
+    "gatewayVersion": "0.2.43",
+    "wheelSha256": "63f236ed68faae8f1bcde735480827b9ddc4af7a053a96e43520f0786624c51d",
+    "localTestsPassed": 153,
+    "physicalResponseLossExecuted": false,
+    "sourceCommit": "596e44ce7ff2857d015d057ce82f6236a985d34a"
   }
 }

@@ -8,9 +8,27 @@ SQLite journal/outbox/fence/dedup/CORE sequence를 보관하고 다른 Gateway �
 
 새 빈 DB는 gateway_state metadata에 configured Gateway ID/Originator/CSE ID/RVI/관측·receipt·health container path를 기록한다. 시작할 때 같은 binding인지 확인하며 다른 설정이거나 archive quarantine이면 BLE·전송을 시작하지 않는다. 신원이 있는 DB에서 필수 data table이 빠져도 조용히 새로 만들어 실행하지 않는다.
 
+Gateway 0.2.35는 기존 binding과 기본 테이블을 확인한 뒤 `credential_receipts`를 추가한다. 보관본에는 이 테이블과 행 수가 포함된다. 이전 버전의 보관 도구로 열려면 0.2.35 적용 전 보관본을 사용한다. [자격 전환 영수증](RECEIPT_ROUTING.md#자격-상태-전환-영수증)
+
 이 binding은 **로컬 설정·파일 일관성**이다. 중앙 신원 인증·grant·lease·attestation이나 rollback 방지 checkpoint가 아니다. mTLS·credential status·실행 직전 authorize·장치 NVS journal은 계속 필요하다. 동일한 CSE ID를 다른 서버에서 재사용하면 이 metadata만으로 같은 실제 서버라고 확인할 수 없다.
 
 endpoint URL·broker 주소·인증서 경로는 binding에 넣지 않아 주소/credential 교체는 설정으로 가능하다. Gateway principal/CSE 자원 경로를 바꾸는 경우에는 이전 state를 그대로 새 정체성에 연결하지 않는다. 새로운 realm에는 새 DB 경로를 사용하고 이전 파일·fence·미정산 자료를 보존한다. 테스트 서버의 데이터·credential을 운영 환경에 자동 이관하지 않는다.
+
+## CSE 배포 전환
+
+Gateway 0.2.22에서 새 DB를 만들 때 `M2M_CSE_DEPLOYMENT_ID`에 CSE 데이터 저장소를 식별하는 운영자 배정 ID를 지정한다. 같은 저장소의 주소나 터널이 바뀌면 ID는 유지한다. 별도 저장소로 교체할 때는 새 ID와 새 `GATEWAY_DATABASE`를 함께 지정한다. ID가 바뀌거나 설정에서 빠지면 Gateway가 `STATE_CSE_DEPLOYMENT_MISMATCH`를 기록하고 기존 DB의 쓰기와 BLE·전송 시작 전에 종료한다.
+
+배포 ID 없는 기존 DB는 기존 환경 파일로 계속 사용한다. 이 파일에 새 ID만 넣어 DB에 덧씌우는 경로는 차단된다. 기존 큐는 원래 환경에서 처리하고, 보관이 필요하면 해당 환경 파일로 아래 snapshot을 만든다. 새 배포에서 이전 파일을 활성화하려면 중앙 복구 승인이 필요하다.
+
+배포 ID는 Gateway 설정과 SQLite가 같은 저장소를 가리킨다는 운영자 배정값이다. 실제 서버와 연결할 때는 mTLS 설정과 CSE 자원도 확인한다. 새 Feather 명령 벤치 프로필은 `scoped-mobius4`를 기록한다.
+
+### 명령 영수증 컨테이너 ID 고정
+
+Gateway 0.2.23의 선택 설정 `M2M_RECEIPT_CONTAINER_RI`에는 CSE 관리자가 기존 경로에서 확인한 컨테이너의 `ri`를 지정한다. 새 DB에 배포 ID와 함께 기록하며 이후 pin을 바꾸거나 빼면 `STATE_RECEIPT_CONTAINER_MISMATCH`로 시작을 중단한다. 기존 설정과 DB는 원래 방식으로 유지할 수 있다.
+
+전송 전 Gateway가 mTLS HTTPS로 이름 경로를 조회해 요청 ID, 응답 코드, container 타입과 `ri`를 확인한다. MQTT와 HTTPS fallback은 확인한 자원 ID에 직접 CREATE한다. Gateway 0.2.27부터는 CREATE 응답의 contentInstance 타입·부모 ID·이름·자원 ID를 확인하고, 같은 영수증을 HTTPS GET으로 다시 읽어 자원 ID와 본문이 일치할 때만 전달 완료로 기록한다. 중복 CREATE 응답은 기존 자원의 타입·부모 ID·이름·본문을 대조한다. 조회 오류와 불일치 때는 원래 요청 ID를 큐에 보존한다. MQTT CREATE 성공 뒤 GET이 실패하면 그 시도에서 HTTPS CREATE를 추가로 보내지 않는다.
+
+설정 전 Gateway 자격에 이름 경로 GET, 자원 ID로 contentInstance CREATE, 원래 이름 경로의 자식 GET을 허용한다. 격리 벤치에서는 [컨테이너 권한 준비](../dev/mobius4/README.md#명령-영수증-정산-준비)를 완료한 뒤 새 세션에 해당 Gateway의 ID를 지정한다.
 
 ## 수동 snapshot
 
@@ -50,6 +68,23 @@ sudo -u bubble-gateway /opt/bubble_lock/keyring/raspberry-pi-gateway/.venv/bin/b
 원본에 metadata를 추가하기 **전에** 새 격리 snapshot과 manifest를 완성한다. 이후 source data_version이 바뀌지 않았는지 확인하고 SQLite write transaction에서 binding을 추가한다. 초기 daemon에 없던 core_sequences table은 필요한 경우 빈 table로 추가한다. command/fence/observation/outbox/기존 CORE sequence row는 수정·삭제·재실행하지 않는다. 이미 올바르게 bound된 원본이면 binding을 다시 쓰지 않는다.
 
 commit 후 [adoption.json](../../contracts/keyring/gateway-state-adoption.schema.json)에 실제 bindingAdded 여부를 기록한다. DB commit 뒤 receipt 쓰기 실패가 날 수도 있어, receipt 부재만으로 metadata가 추가되지 않았다고 단정하지 않는다. 원본/부분 output을 보존하고 startup error·metadata 상태를 기준으로 조사한다. mismatch나 quarantine을 강제로 LIVE로 바꾸는 flag는 없다.
+
+## 종료된 CORE epoch 보관
+
+Gateway 0.2.15의 `bubble-gateway-state retire-core`는 중앙에서 종료가 확인된 CORE telemetry 전송 행을 보관한 뒤 활성 outbox에서 정리한다. 같은 Gateway와 CSE의 LIVE DB, scoped 설정에 있는 장치, 현재 설정보다 낮은 epoch만 선택할 수 있다. epoch 전환 전의 기존 토픽 행을 보관할 때는 `--retired-epoch unscoped`를 명시한다. 해당 장치의 중앙 전환과 이전 경로 종료 여부는 운영자가 확인한다.
+
+예를 들어 scoped 설정에 `kr-handover`의 epoch 9가 배정된 같은 Gateway에서 epoch 7 행을 보관할 때는 서비스를 중지한 유지보수 창에서 다음 명령을 쓴다.
+
+```sh
+sudo -u bubble-gateway /opt/bubble_lock/keyring/raspberry-pi-gateway/.venv/bin/bubble-gateway-state retire-core \
+  --env-file /etc/privacy-bubble/gateway.env \
+  --device-id kr-handover --retired-epoch 7 \
+  --output /var/lib/privacy-bubble-gateway/keyring-gateway-archives/core-epoch-7
+```
+
+동일한 daemon lock을 잡은 상태에서 전체 WAL 포함 스냅샷을 먼저 저장한다. 스냅샷과 원본에서 선택한 행의 개수·해시, Gateway·장치·epoch, 원본 request ID를 대조한다. 원본 파일이나 SQLite 내용이 바뀌면 정리를 중단한다. native 관측, 명령 영수증, command journal, fence, CORE sequence는 그대로 남는다. 선택된 CORE 행은 격리 스냅샷에 보존된다.
+
+`retirement-plan.json`은 원본 변경 전, `retirement.json`은 SQLite commit 후에 기록한다. 행 해시는 RQI 순서의 각 SQLite 행을 canonical JSON으로 인코딩하고 행마다 LF를 붙인 바이트의 SHA-256이다. commit 후 파일 기록이 실패하면 plan과 스냅샷을 보존한 채 실제 대기열 상태를 확인한다. 두 파일의 스키마는 [CORE 보관 기록](../../contracts/keyring/gateway-core-retirement.schema.json)에 있다. 중앙 적용이나 명령 정산을 증명하는 영수증은 아니다. 소스와 회귀시험 코드만 반영했으며 기존 DB에서 실행한 기록은 없다.
 
 ## 복구 활성화에 남은 중앙 계약
 

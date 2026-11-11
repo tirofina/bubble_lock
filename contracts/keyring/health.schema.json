@@ -4,6 +4,17 @@
   "title": "Gateway → oneM2M health",
   "description": "KEYRING 후보 계약 0.1.0. PC-MOBIUS canonical contract 확정 및 실물 검증 전.",
   "type": "object",
+  "$defs": {
+    "observedCredential": {
+      "type": "object",
+      "properties": {
+        "status": { "enum": ["ACTIVE", "LOST", "REVOKED"] },
+        "credentialRevision": { "type": "string", "minLength": 1, "maxLength": 64 }
+      },
+      "required": ["status", "credentialRevision"],
+      "additionalProperties": false
+    }
+  },
   "properties": {
     "version": {
       "const": 1
@@ -54,6 +65,17 @@
         }
       ]
     },
+    "credentialTransition": {
+      "description": "Historical receipt of a validated central status response. Use ordinary heartbeats for live readiness.",
+      "type": "object",
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+        "previous": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/observedCredential" }] },
+        "current": { "$ref": "#/$defs/observedCredential" }
+      },
+      "required": ["sequence", "previous", "current"],
+      "additionalProperties": false
+    },
     "outboxDepth": {
       "type": "integer",
       "minimum": 0,
@@ -75,6 +97,10 @@
             "minLength": 1,
             "maxLength": 64,
             "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+          },
+          "commandReady": {
+            "type": "boolean",
+            "description": "The current authenticated BLE session supports acknowledged command writes. Central authorization is evaluated at dispatch."
           }
         },
         "required": [

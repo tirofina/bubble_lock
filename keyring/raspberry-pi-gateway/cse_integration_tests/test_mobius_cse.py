@@ -14,6 +14,7 @@ import uuid
 import httpx
 
 from bubble_gateway.transport import TransportHub, RemoteResponseError
+from bubble_gateway.ble import BleFleet
 from bubble_gateway.model import iso_time, payload_hash
 from bubble_gateway.service import Gateway
 from bubble_gateway.state_identity import configured_binding
@@ -165,6 +166,29 @@ class MobiusCseTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((await self.stored(rqi))["con"], payload)
         self.assertEqual(await self.count(), 1)
 
+    async def test_pinned_receipt_parent_for_https_mqtt_and_duplicate_readback(self):
+        rqi = "parent-" + uuid.uuid4().hex
+        status, headers, body = await self.hub._http_json(
+            "GET", self.stack.origin + self.parent, headers=self.hub._m2m_headers(rqi))
+        self.assertEqual((status, self.hub._response_rsc(status, headers, rqi)), (200, 2000))
+        parent_ri = body["m2m:cnt"]["ri"]
+        for use_mqtt in (False, True):
+            hub = await self.hub_for(mqtt=True) if use_mqtt else self.hub
+            hub.config.receipt_container = self.parent
+            hub.config.receipt_container_ri = parent_ri
+            rqi = "pinned-" + uuid.uuid4().hex
+            payload = {"synthetic": True, "value": rqi}
+            await hub.publish(rqi, self.parent, payload)
+            await hub.publish(rqi, self.parent, payload)
+            stored = await self.stored(rqi)
+            self.assertEqual((stored["pi"], stored["con"]), (parent_ri, payload))
+            digest = hashlib.sha256(rqi.encode()).hexdigest()
+            logs = await asyncio.to_thread(self.stack.logs, "proxy")
+            self.assertEqual(logs.count(f"GET {self.parent}/gw-{digest} read-{digest}"), 2)
+            if use_mqtt:
+                self.assertNotIn(f"POST /{parent_ri} {rqi}", logs)
+        self.assertEqual(await self.count(), 2)
+
     async def test_same_rqi_different_payload_is_rejected_and_original_preserved(self):
         rqi, original = "conflict-" + uuid.uuid4().hex, {"synthetic": True, "value": 4}
         await self.hub.publish(rqi, self.parent, original)
@@ -173,6 +197,26 @@ class MobiusCseTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(caught.exception.rsc, 4105)
         self.assertEqual((await self.stored(rqi))["con"], original)
         self.assertEqual(await self.count(), 1)
+
+    async def test_credential_transition_requires_real_cse_readback_on_both_bindings(self):
+        for use_mqtt in (False, True):
+            with self.subTest(use_mqtt=use_mqtt):
+                hub = await self.hub_for(mqtt=True) if use_mqtt else self.hub
+                hub.config.health_container = self.parent
+                rqi = "credential-" + uuid.uuid4().hex
+                payload = {"synthetic": True, "credentialTransition": {
+                    "sequence": 1, "previous": None,
+                    "current": {"status": "LOST", "credentialRevision": "synthetic-rev"},
+                }}
+                await hub.publish(rqi, self.parent, payload)
+                await hub.publish(rqi, self.parent, payload)
+                digest = hashlib.sha256(rqi.encode()).hexdigest()
+                logs = await asyncio.to_thread(self.stack.logs, "proxy")
+                self.assertEqual(logs.count(f"GET {self.parent}/gw-{digest} read-{digest}"), 2)
+                if use_mqtt:
+                    self.assertNotIn(f"POST {self.parent} {rqi}", logs)
+                self.assertEqual((await self.stored(rqi))["con"], payload)
+        self.assertEqual(await self.count(), 2)
 
     async def test_cse_process_restart_preserves_committed_cin(self):
         rqi, payload = "restart-" + uuid.uuid4().hex, {"synthetic": True, "value": 6}
@@ -199,6 +243,29 @@ class MobiusCseTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await self.count(), 1)
         self.delivery_facts = {"queueSurvivedReopen": True, "published": 1, "remainingOutbox": 0,
                                "duplicateObservationQueued": False, "remoteCinCount": 1, "rqi": original["rqi"]}
+
+    async def test_released_observation_keeps_boot_local_presses_in_native_cse(self):
+        store, reopen, _path, _binding = self.store_for()
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store, gateway.counters = self.hub.config, store, Counter()
+        fleet = BleFleet(gateway.config)
+        peer = fleet._peers["kr-test"]
+        peer.identity = dict(bootId="boot-test", firmwareRevision="keyring-0.7.3")
+        frame = dict(version=1, deviceId="kr-test", bootId="boot-test", sequence=4, uptimeMs=150,
+                     battery=None, buttonState="released", sensorValues={"buttonPresses": [1, 2]}, state=False)
+        fleet._queue_observation(peer, frame)
+        normalized = peer.observations.get_nowait()
+        await gateway.observation(normalized)
+        rqi = self.queued(store)["rqi"]
+        store.close()
+        store = reopen()
+        self.assertEqual(await self.drain_due(store), {"published": 1})
+        result = (await self.stored(rqi))["con"]
+        self.assertEqual(result, normalized)
+        self.assertEqual((result["buttonState"], result["sensorValues"]["buttonPresses"]), ("released", [1, 2]))
+        self.assertEqual(await self.count(), 1)
+        self.delivery_facts = {"liveState": "released", "buttonPresses": [1, 2], "nativeCinCount": 1,
+                               "queueSurvivedReopen": True}
 
     async def test_outbox_receipt_flag_requires_real_mqtt_application_response(self):
         store, _reopen, _path, _binding = self.store_for()

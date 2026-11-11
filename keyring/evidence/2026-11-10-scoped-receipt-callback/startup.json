@@ -1,0 +1,15 @@
+{
+  "documentRevision": "2.0.0",
+  "scope": "isolated-receipt-callback-listener-startup",
+  "observedAt": "2026-11-10T13:56:55.850Z",
+  "teamRevision": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+  "endpoint": "https://127.0.0.1:8790/onem2m/keyring/receipt-notifications",
+  "readyStatus": "SCOPED_RECEIPT_CALLBACK_READY",
+  "loopbackListenerObserved": true,
+  "relayCertificateIssued": true,
+  "rows": { "keyring_command_settlement": 0, "keyring_receipt_notification": 0 },
+  "cseRelayConnected": false,
+  "cseSubscriptionCreated": false,
+  "clientRequestExercised": false,
+  "physicalReceiptObserved": false
+}

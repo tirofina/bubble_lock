@@ -22,7 +22,7 @@
       "properties": {
         "bindingVersion": {
           "type": "integer",
-          "const": 1
+          "enum": [1, 2]
         },
         "gatewayId": {
           "type": "string",
@@ -36,6 +36,10 @@
           "type": "string",
           "minLength": 1
         },
+        "cseDeploymentId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$"
+        },
         "rvi": {
           "type": "string",
           "minLength": 1
@@ -47,6 +51,10 @@
         "receiptContainer": {
           "type": "string",
           "pattern": "^/"
+        },
+        "receiptContainerRi": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$"
         },
         "healthContainer": {
           "type": "string",
@@ -63,6 +71,9 @@
         "receiptContainer",
         "healthContainer"
       ],
+      "if": { "properties": { "bindingVersion": { "const": 2 } } },
+      "then": { "required": ["cseDeploymentId"] },
+      "else": { "not": { "anyOf": [{ "required": ["cseDeploymentId"] }, { "required": ["receiptContainerRi"] }] } },
       "additionalProperties": false
     },
     "bindingSha256": {
@@ -113,6 +124,10 @@
           "minimum": 0
         },
         "core_sequences": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "credential_receipts": {
           "type": "integer",
           "minimum": 0
         }

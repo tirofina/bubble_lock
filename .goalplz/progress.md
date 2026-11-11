@@ -337,3 +337,806 @@ Pi Zero 2 W는 USB 데이터 포트에 연결됐고 초록 LED가 계속 켜져 
 실물 Pi에서 initial READ가 BlueZ notify callback에도 전달돼 JSON fragment 버퍼를 오염시키는 오류를 재현했다. 초기 READ를 observation 구독 이전으로 옮기고 모의 회귀시험의 수정 전 FAIL→후 PASS, 전체58개 통과를 확인했다. 보안·형식·generation 검사를 유지한 Gateway0.2.4 wheel을 Pi에 설치하고 소스 일치를 확인했다. 실제90초45개 관측·연결 상태18회 모두 정상, 사용자 버튼 입력으로 released/confirm/panic 수신·observer exit0을 확보했다.
 
 원격 main715ef58/COREd54a43a/WEB80ed37f는 시작 조회에서 이전과 같았다. PIN·SSH 암호·주소·raw BLE 로그는 공개하지 않았다. 전체 daemon/Pi→CSE/실물PCB/앱·웹 통합은 남았고 Docker API는 엔진 pipe 부재로 연결되지 않았다. [실물 Pi 실행 기록](../keyring/evidence/2026-11-10-pi-feather/README.md)
+
+## 2026-11-10 — 실물 Pi에서 HTTPS·MQTT·서버 장애 복구
+
+직전 `686f7b4`에서 Gateway0.2.4·Feather0.1.1·실물 BLE 증거를 업로드했다. 이번 DOC-REV2.0.0과 원격 main715ef58/COREd54a43a/WEB80ed37f를 재확인했고 팀 HEAD는 같았다. Docker 엔진이 다시 정상 응답한 뒤 사용자 목표의 임시 PC Mobius4 서버와 실물 Pi/Feather 경로를 진행했다.
+
+- 새 `relay.py` 벤치 도구는 실제 BLE·Gateway 관측 검증·SQLite·outbox 송신·제품 MQTT/HTTPS를 사용한다. 기존 DB를 거부하고 새 private 출력·명시적 환경 파일 격리·전체 제한시간·실패 receipt·송신 경로 집계·CSE canonical readback을 추가했다. 모의 BLE/HTTP와 실제 임시 SQLite 회귀시험4개 통과, 독립 read-only 검토에서 차단 결함 없음. 제품 Gateway/펌웨어는 이번에 변경하지 않았다.
+- 기존 개발 container/DB 네 개를 보존한 새 test-owned CSE/PostgreSQL/nginx/Mosquitto와 fresh PKI를 사용했다. Pi loopback에서 Windows loopback으로 SSH reverse tunnel 두 개를 사용했고 방화벽/LAN bind·운영 권한을 변경하지 않았다.
+- 실제 `released` 관측35개: HTTPS 정상5+정상5+CSE중단복구5, MQTT5(HTTPS0), broker중단 후 HTTPSfallback15(MQTT0). 모두 CSE 저장값을 읽어 원본 hash 일치. 마지막 cni35, 다섯 Pi SQLite outbox 각각0, private directory0700/DB0600 확인. 별도 Pi TLS probe 둘은 TLS1.3을 실측했다.
+- CSE만 중단했을 때 pending5/attempts1을 확인하고 같은 송신 프로세스에서 복구 후5건을 완료했다. MQTT 응답 구독 준비 후 broker만 중단한 별도 run은15건을 HTTPS로 완료했다. 해당 run의 관측2개 확인 시각은 broker중단 뒤이며, 중단 전 MQTT성공으로 표시하지 않았다. 정상MQTT5건은 별도 run이다.
+- 최초 host setup은 request_timeout 누락으로 실패/정리했고 수정한 새 폴더에서 재실행했다. 최초 stop 제어는 Docker inspect UTF8을CP949로읽다 실패하여 실제서버가 중단되지 않았다. 당시 `outage` 이름의 run은 정상HTTPS로 기록했고 실제장애는 `outage-02`다. 실패를 성공장애시험에 합산하지 않았다.
+- runner exit0·소유 container/broker/network 잔여0·SSH터널 종료·기존 개발 네 container running을 확인했다. 공개증거에는 raw관측·DB·개인키·PIN·SSH암호·실제BLE주소를 제외했다. [실행 증거](../keyring/evidence/2026-11-10-pi-cse/README.md)
+
+현재 goal은 active/progress/미완료다. 실물 관측→임시CSE 전송은 검증됐고, 전체 daemon의 중앙 승인 명령·ACK, pb:binarySwitch/Group·앱/웹, 제작PCB·전력/거리·SD전원손실·운영 principal/AE/ACP/grant·영상/release는 남았다. 이번 relay/증거를 역할 브랜치에 일반 commit/push한다.
+
+업로드 확인: 구현·회귀시험·35개 실물 관측 증거 commit `dfa5129c2374070f8e3fcdf46fa85eefb2ca9663`를 `origin/codex/keyring-namho`에 일반 push했고 exit0 / `686f7b4..dfa5129`를 확인했다. 이 뒤 기록 commit은 업로드 상태만 현행화한다.
+
+## 2026-11-10 — 중앙 명령 연결 대기와 native receipt
+
+이전 goal turn은 실물 관측35개와 역할 브랜치 `615de79`를 확보한 progress다. 이번 DOC-REV2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 HEAD는 같으며 main의 중앙 API와 팀 시험 fixture를 별도 임시 경로로 추출해 사용했다.
+
+- Gateway 0.2.5는 인증된 GATT의 쓰기 가능한 명령 세션까지 `RECEIVED` 상태로 기다린다. 세션 교체 시 승인을 다시 받아야 하며 이전 generation에 대한 승인은 새 연결에 쓰지 않는다. 대기 행이 후속 장치를 막지 않도록 SQLite rowid 범위로 dispatch 배치를 순환한다. 정상 stop의 worker 완료 경합을 수정했다.
+- 기본 63개와 팀 Node mTLS API→전체 Gateway worker→모의 GATT→실제 격리 Mobius4 통합 2개가 통과했다. 승인된 명령은 중복 poll에도 한 번 처리되고 native receipt 1건이 저장됐다. 연결 전에 grant를 회수하면 쓰기 0회, 거절 receipt 1건이다. 두 경우 CSE의 내용을 SQLite와 대조했고 정상 종료했다. [증거](../keyring/evidence/2026-11-10-central-dispatch/README.md)
+- 새 PKI·DB·시험 stack만 사용했다. 종료 후 시험 container/network 0개와 기존 개발 4개 running을 확인했다. 이번에는 Pi에 0.2.5를 설치하거나 Feather에 flash하지 않았다.
+- 전체 goal은 active/progress다. 실물 GATT 명령·출력, 제작 PCB, Pi systemd, CORE의 HTTP 발급 명령과 ACK 결속, 운영 principal/AE/ACP/grant, 앱/웹·전력/거리·영상/release가 남았다.
+
+Gateway 0.2.5 wheel 로컬 빌드와 Python 모듈 13개 소스 일치를 확인했다. 구현·시험 증거 commit `2014b18bb44ce5e9304cb9494de743313f3bf1e2`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `615de79..2014b18`이다.
+
+## 2026-11-10 — 실물 명령을 위한 Feather 내장 LED 프로필
+
+이전 goal turn은 중앙 mTLS·Gateway 전체 worker·모의 GATT·실제 CSE의 명령 영수증 시험 2개를 확보한 progress다. DOC-REV 2.0.0과 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 재확인했으며 팀 HEAD가 같았다.
+
+- 기존 배선의 Feather V2 GPIO13 내장 LED를 시험 출력으로 선택했다. opt-in 명령 프로필 0.2.0이 CORE v1 WRITE/NOTIFY, 인증·구독·세션 확인, 상대 기한, 16개 NVS intent/완료 journal, epoch·grant, GPIO readback을 처리한다. 실제 핀 값을 관측과 ACK로 보낸다. 기존 0.1.1 관측 프로필과 버튼 화면 동작은 이어간다.
+- 실제 보드용 컴파일은 관측·명령 두 프로필 exit 0이다. 첫 컴파일에서 sample 내부 변수 위치를 잘못 넣어 실패했고 위치를 수정한 최종 소스로 다시 빌드했다. MSVC에서 실제 명령 코드와 모의 NVS·GPIO를 실행한 네 그룹도 통과했다. [빌드·시험 로그와 해시](../keyring/evidence/2026-11-10-feather-command/README.md)
+- 합성 PIN 빌드 산출물은 로컬에 보관했다. 실물 업로드와 Pi 명령·LED·CSE 영수증은 대기 중이다. 실제 LED 시험이 제작 PCB의 센서·모터·전력 수용이나 CORE 정산을 대체하지 않는다.
+
+구현·빌드·시험 증거 commit `cd4818b77f2ef05552e4fabe3c096ac9942d739e`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `7b2b295..cd4818b`다. 전체 goal은 active/progress다.
+
+## 2026-11-10 — 실제 Pi의 Gateway 전체 데몬과 재시작
+
+이전 goal turn은 Feather 명령 프로필 소스·빌드·호스트 시험을 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 다시 확인했다. 팀 HEAD는 이전과 같다.
+
+- 팀 중앙 API와 Mobius4를 별도 시험 PKI·새 PostgreSQL로 실행하는 fixture를 추가했다. 팀 main의 API 원본은 임시 폴더에 추출해 사용했다. Pi에는 Gateway 0.2.5 wheel을 새 target에 설치했고 소스 파일 13개가 wheel과 바이트 일치했다.
+- Pi의 임시 사용자 systemd 두 unit에서 전체 worker를 실행했다. 첫 실행 BLE timeout 1회 뒤 연결됐고 시험 credential `ACTIVE` 상태에서 실물 관측 27개와 health 16개가 CSE에 저장됐다. 마지막 시퀀스 2284와 장치·부팅 ID가 Pi SQLite와 일치했다.
+- 첫 종료 직전 대기 관측 2230은 CSE에서 404/4004였다. 같은 DB로 재시작한 뒤 200/2000으로 조회됐고 원본 해시가 일치했다. 최종 outbox 0, 두 unit exit 0 및 종료 뒤 `not-found`를 확인했다.
+- 시험 container/network 잔여 0, 기존 개발 container 4개 실행, 터널 종료와 시험 client 키 복사본 제거를 확인했다. [실행 기록과 해시](../keyring/evidence/2026-11-10-pi-full-daemon/README.md)
+
+전체 goal은 active/progress다. 현재 Feather 0.1.1로 관측·상태만 검증했다. 별도 승인 뒤 0.2.0 실물 명령, 제작 PCB·센서·출력·전력, 배포용 systemd와 운영 권한 등록, CORE 정산·앱/웹·release 검증이 남았다.
+
+fixture와 실물 실행 증거 commit `f7e917cfbc4a77ddc2e11bac80f7146a363f4986`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `77b5ba8..f7e917c`다.
+
+## 2026-11-10 — 배포용 systemd 시작 전 설정 검사
+
+이전 goal turn은 실제 Pi 전체 데몬과 관측 재전송을 검증한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 재확인했다. 팀 HEAD는 이전과 같다.
+
+- Gateway 0.2.6에 `--check-config`를 추가하고 배포 unit의 `ExecStartPre`로 연결했다. 실제 transport와 같은 TLS context 함수로 CA·인증서·키를 확인한다. `STATE_DIRECTORY` 안에 SQLite와 잠금 파일이 있어야 하며, 점검 중에는 DB·잠금 파일을 만들지 않는다.
+- 기본 67개가 통과했고 로컬 wheel의 모듈 13개가 원본 소스와 일치했다. Ubuntu WSL systemd에서 정상 설정은 본 실행 표시까지 도달했고, 키 불일치와 상태 경로 이탈은 그 전에 차단됐다. 세 경우 상태 파일 0개다. 첫 실행에서 fixture의 반복 `Environment` 파싱을 수정한 뒤 재실행했다.
+- 시험 unit과 임시 경로를 정리했다. Pi의 0.2.5 실물 관측 증거와 이 0.2.6 로컬 배포 검사는 범위가 다르다. 배포 unit 운영 설치·중앙 운영 PKI·실물 명령·제작 PCB·정산은 남아 있다. [시험 기록](../keyring/evidence/2026-11-10-deployment-preflight/README.md)
+
+구현·시험 증거 commit `106050ae31a087268ad38d9bf406348dedd9cd29`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8fdbaec..106050a`다. 전체 goal은 active/progress다.
+
+## 2026-11-10 — 중앙 HTTP 명령과 CORE ACK 결속
+
+이전 goal turn은 Gateway 0.2.6 배포 시작 검사와 실제 WSL systemd 시험을 완료한 progress다. DOC-REV 2.0.0, main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 다시 확인했다. 팀 HEAD는 이전과 같다.
+
+- 팀 mTLS API에서 발급한 명령, Gateway 전체 worker와 모의 GATT, 실제 격리 Mobius4로 native receipt를 저장·조회했다. 실제 실행 전 승인 응답과 CSE readback을 Node 시험에 전달했다.
+- 팀 CORE 원본은 HTTP 발급 ACK를 `REVIEW`로 분류했다. CORE 등록 뒤 ACK hash만 바꾼 사례는 `ACK_RECORDED`로 기록됐다. 이 결과는 합성 MQTT를 사용한 원본 handler 직접 호출 범위다.
+- KEYRING 결속 후보는 인증된 Gateway·발급 명령·승인 응답과 native receipt를 비교한다. 정상 2개와 변조/거절 7개를 확인했다. 별도 권한 회수 실행은 BLE 쓰기 0회, 거절 receipt 1개였다. 시험 container/network 잔여 0을 확인했다. [증거](../keyring/evidence/2026-11-10-core-ack-binding/README.md)
+- 운영 ACK 수신기 연결과 원자적 정산은 팀 owner 단계다. Feather 0.2.0 플래시·실물 명령과 제작 PCB 수용이 남았다. 전체 goal은 active/progress다.
+
+후보 코드·재현 증거 commit `c441f7c7586f9b5dfbf45e143e88de9bec42765d`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `7891d2c..c441f7c`다.
+
+## 2026-11-10 — 중앙 명령 수신 우선순위
+
+DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 HEAD는 이전과 같다.
+
+- Gateway 0.2.7은 MQTT 대기열과 관계없이 중앙 HTTPS 목록을 조회한다. 같은 commandId에서는 중앙 발급본을 배치에 넣는다. MQTT 단독 사본은 실제 중앙 권한과 해시·기한 확인 뒤에만 저장 대상이 된다. 이미 저장한 명령과 영수증은 그대로 유지한다.
+- 기본 71개와 팀 중앙 mTLS 통합 3개가 통과했다. 새 사례는 목록 조회 실패를 주입하고 실제 팀 API가 같은 ID의 변조본을 거절하며 정확한 사본을 승인하는지 확인했다. 기존 두 사례에서 모의 GATT와 격리 Mobius4 receipt를 재확인했다. wheel의 모듈 13개가 소스와 일치했다. [시험 증거](../keyring/evidence/2026-11-10-command-ingress/README.md)
+- 0.2.7 Pi 설치와 실제 broker 명령 수신 시험은 남아 있다. 다음 실물 관문은 Feather 명령 프로필과 Pi를 이용한 출력·receipt·CSE 대조다. 운영 CORE 정산·제작 PCB 수용은 별도 관문이다. 전체 goal은 active/progress다.
+
+소스 및 시험 증거 commit `cbef49eb88999dc173f4455666da45c789e073e3`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `058355f..cbef49e`다.
+
+## 2026-11-10 — 실제 MQTT 명령과 ACK 전송
+
+이전 goal turn은 Gateway 0.2.7의 명령 수신 변경을 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- 테스트 전용 CORE/Gateway 인증서와 ACL로 실제 Mosquitto 명령·ACK 토픽을 사용했다. Gateway 인증서의 명령 발행은 ACL이 막았다. CORE 인증서가 보낸 같은 ID의 변조본은 실제 팀 중앙 API가 거절했고 SQLite 명령 행이 생기지 않았다.
+- 정확한 원본은 목록 조회 오류를 주입한 상태에서 MQTT로 수신됐다. 장치 연결 후 재승인했고 모의 GATT 명령 프레임 1개, CSE receipt 1건, 수신한 QoS 1 ACK의 CSE 영수증 일치를 확인했다.
+- 기본 71개, 중앙 4개, 별도 MQTT 6개가 통과했다. 시험 컨테이너와 네트워크 잔여는 0개다. [시험 기록](../keyring/evidence/2026-11-10-mqtt-command-wire/README.md)
+- 팀 CORE 발행기와 운영 ACK 정산, Pi 0.2.7 실물 실행, Feather 출력·제작 PCB 수용은 남았다. 전체 goal은 active/progress다.
+
+시험 코드와 증거 commit `9b0f412adde512a1f28e10fe3f0814e7d13d1290`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `7d44bf2..9b0f412`다.
+
+## 2026-11-10 — Feather ON/OFF 현장 시험 절차
+
+이전 goal turn은 실제 MQTT 명령·ACK 경로를 검증한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- 기존 Pi fixture에 명시적인 ON/OFF 옵션을 추가했다. 기본 실행은 중앙 명령이 0개다. opt-in에서만 PC 시험 Guardian 인증서를 등록하며, 보드의 최근 관측이 맞고 각각의 입력 파일을 만들면 기한이 있는 명령을 한 번 발급한다.
+- 부팅 ID, GPIO readback, 후속 관측, CSE receipt를 묶어 기록한다. 읽기 전용 CLI가 SQLite 사본의 명령 본문·해시·전송 완료를 대조한다. 단계가 중단돼도 기록된 발급/관측 증거는 각각 남는다.
+- 기본 71개와 리허설 2개가 통과했다. 실제 팀 mTLS와 새 CSE에서 소프트웨어 Feather의 ON/OFF 영수증 2건과 SQLite가 일치했고 변조 영수증은 거절됐다. 시험 컨테이너와 네트워크 잔여 0개다. [시험 기록](../keyring/evidence/2026-11-10-pi-led-rehearsal/README.md)
+- Feather 0.2.0 업로드와 실물 Pi·LED 시험, 제작 PCB 수용과 팀 운영 정산은 대기 중이다. 전체 goal은 active/progress다.
+
+시험 절차·코드·증거 commit `a3cf82d8d7c0eb808005a4980fd0410309ed077c`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `f0814e3..a3cf82d`다.
+
+## 2026-11-10 — 현재 부팅의 BLE 적용 영수증
+
+이전 goal turn은 Feather ON/OFF 절차와 로컬 리허설을 완료한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- 수정 전에는 이전 bootId의 `APPLIED`가 현재 연결에서 대기 중인 명령을 성공으로 완료했다. Gateway 0.2.8은 명령 ID와 해시가 맞는 새 `APPLIED`가 현재 bootId를 사용할 때만 수신한다. journal의 과거 `DUPLICATE` readback은 유지한다.
+- 기본 73개와 중앙 연동 5개가 통과했다. 모의 GATT에서 이전 bootId를 주입한 사례는 명령 프레임 1개, 미확정 CSE receipt 1건과 자동 재실행 없음으로 끝났다. 실제 팀 API와 격리 Mobius4를 사용했다. wheel 소스 모듈 13개가 일치했다. [시험 기록](../keyring/evidence/2026-11-10-receipt-boot/README.md)
+- Pi 0.2.8 설치, 실제 장치의 재부팅·영수증과 Feather 0.2.0 출력 검증은 남았다. 제작 PCB와 팀 운영 정산 역시 대기 중이다. 전체 goal은 active/progress다.
+
+구현·시험 증거 commit `37e654b1f9f9074ffc92e26aa4ee9e222e3112dc`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `cbec589..37e654b`다.
+
+## 2026-11-10 — r18 진동 출력 차단
+
+이전 goal turn은 Gateway 0.2.8 영수증 검증을 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- 펌웨어 0.7.1은 타이머를 먼저 시작한다. AUX 준비 전후 기한·인증 generation·전원 이상을 확인하고 GPIO를 켠다. BLE 종료 콜백도 같은 잠금에서 GPIO를 즉시 내린다.
+- 호스트 6개 시험과 provisioning 없는 기본·ST7789·JD9853 빌드가 통과했다. 타이머 실패, 기한·fault 변화, 연결 종료, 만료 정리 중 재활성 차단을 확인했다. [시험과 빌드 해시](../keyring/evidence/2026-11-10-motor-gate/README.md)
+- 실제 r18 모터 파형·차단 시간·진동, Feather 명령 flash·Pi 실물 검증과 팀 운영 정산은 대기 중이다. 전체 goal은 active/progress다.
+
+구현·시험 증거 commit `aa0874f818d9629bc752335835fdcaba849c5613`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `3de5360..aa0874f`다.
+
+## 2026-11-10 — Handover 활성 Gateway 결속
+
+이전 goal turn은 r18 펌웨어 0.7.1을 빌드하고 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- 팀 main의 실제 mTLS API에서 전환 전 epoch는 거절됐다. 그러나 등록을 유지한 이전 Gateway에 현재 epoch로 새 명령을 발급하면 기존 API가 승인했다.
+- KEYRING 후보는 대상 장치·현재 epoch와 설정에 지정된 활성 Edge/Gateway를 결속한다. 테스트 런타임의 발급·목록·실행 승인에서 이전 Gateway를 차단했다. 대상 Gateway와 롤백 후 재기동한 원래 Gateway는 승인됐다. 누락과 불일치 입력 5개를 거절했다. [실행 기록](../keyring/evidence/2026-11-10-handover-owner/README.md)
+- 실제 중앙 정본 매핑·원자적 drain/승인·운영 정산과 Pi/Feather 및 제작 PCB 검증은 남았다. 전체 goal은 active/progress다.
+
+후보·시험 증거 commit `96faff50f71bdf29adae1bc0259ee6a1b7fc04ae`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `6255e97..96faff5`다.
+
+## 2026-11-10 — r18 BLE 명령 원본 검사
+
+이전 goal turn은 handover 소유권 후보와 팀 mTLS 재현을 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- ArduinoJson에서 최상위와 중첩 중복 키가 파싱 후 정상 필드 수로 보이는 현상을 재현했다. r18 펌웨어 0.7.2는 원본 명령 프레임의 중복 키·이스케이프된 NUL·추가 데이터를 NVS/GPIO 처리 전에 거절한다. 정상 공백·키 순서·ASCII 이스케이프는 허용한다.
+- 기본·ST7789·JD9853 빌드, r18 호스트 4개 그룹, 기존 Feather 호스트 4개 그룹이 통과했다. [시험과 바이너리 해시](../keyring/evidence/2026-11-10-command-wire/README.md)
+- 실제 BLE 명령·Feather flash·Pi/제작 PCB 수용과 팀 운영 정산은 대기 중이다. 전체 goal은 active/progress다.
+
+구현·시험 증거 commit `e6895b1e50838b250859f048185a4bc5d1fc3eaa`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `9e51f82..e6895b1`이다.
+
+## 2026-11-10 — 장치 journal과 원본 CSE 영수증 대조
+
+이전 goal turn은 r18 펌웨어 0.7.2의 명령 원본 검사를 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- Gateway 0.2.9의 `bubble-keyring-reconcile`은 장치 archive와 격리 Gateway SQLite의 해시와 식별자를 검증하고, 설정된 CSE의 영수증을 읽어 저장 당시 bootId·명령 hash·GPIO readback을 대조한다.
+- 합성 장치 기록 10건을 격리 Mobius4에서 대조했다. 로컬 전송 완료 표시가 0이지만 CSE 본문은 일치한 경우를 검토 대상으로 남겼다. 누락·충돌·PREPARED를 따로 분류하고 입력 변조와 다른 자원 결속을 거절했다. 보관본과 CSE 영수증 6건은 그대로였다.
+- 설치본 기본 시험 73개와 실제 CSE 통합 1개가 통과했다. 모듈 14개를 소스와 대조했다. [시험 기록](../keyring/evidence/2026-11-10-journal-reconcile/README.md)
+- 실제 Pi/키링의 journal 수집과 장치 명령, 팀 중앙 정산·reclaim과 제작 PCB 수용은 남았다. 전체 goal은 active/progress다.
+
+구현·시험 증거 commit `42cba320bb6cc8b616c6b8044d2f8e20d008b45f`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `5e8eba8..42cba32`다.
+
+## 2026-11-10 — 짧은 확인·비상 입력의 관측 보존
+
+이전 goal turn은 장치 journal과 CSE 영수증 대조를 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- r18 0.7.3은 현재 상태 외에 같은 부팅의 확인·비상 누계를 보낸다. 기존 대기열에서 누름 프레임이 해제로 교체되거나 센서 상세가 최소 프레임으로 줄어도 누계를 포함한다. 비상 우선과 uint32 상한을 적용한다.
+- Gateway 0.2.10은 누계 필드의 타입·길이·범위를 검증한다. 실제 격리 Mobius4의 native cin에서 합성 BLE 입력의 해제 상태와 누계 `[1,2]`를 SQLite 재열기 뒤 확인했다. 두 스키마는 기존 프레임도 허용한다.
+- 세 펌웨어 프로필, 호스트 4개 그룹, 기본 74개와 CSE 11개 시험이 통과했다. [시험과 해시](../keyring/evidence/2026-11-10-button-presses/README.md)
+- 실제 r18/Pi 버튼 및 명령, 앱 알림, 중앙 정산과 제작 PCB 수용은 대기 중이다. 전체 goal은 active/progress다.
+
+구현·시험 증거 commit `534379bc39c5f4afd272865e22d315de7fda3c99`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `45b1c5d..534379b`다.
+
+## 2026-11-10 — CORE 관측 재시도 순서
+
+이전 goal turn은 r18 확인·비상 누계를 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- 기존 SQLite는 오래된 CORE 관측이 backoff 중일 때 같은 장치의 최신 값을 먼저 전송 대상으로 선택했다. Gateway 0.2.11은 장치별 선두 행만 선택한다. 다른 장치와 native 관측·영수증의 독립 전송을 유지한다.
+- 팀 원본 handler로 격리 Mobius4의 실제 SDT를 갱신했다. 역순 1→0은 옛 ON, 수정된 순서 0→1은 최신 OFF가 남았다. CORE backoff 동안 native cin 2건도 저장됐다.
+- 기본 75개, native CSE 11개, SDT 1개, Ubuntu SQLite 회귀시험과 wheel 소스 대조가 통과했다. [시험 기록](../keyring/evidence/2026-11-10-core-retry-order/README.md)
+- 중앙 동시 UPDATE 순서와 다중 Gateway handover, 실제 Pi/r18·Feather 명령은 대기 중이다. 전체 goal은 active/progress다.
+
+구현·시험 증거 commit `02ed4d367ad1f6a3a77d08b753890ebb545130ea`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `22f312e..02ed4d3`다.
+
+## 2026-11-10 — CORE 관측 동시 갱신 후보
+
+이전 goal turn은 Gateway의 CORE 재시도 순서를 검증한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- 팀 원본 CORE가 두 UPDATE를 동시에 처리하면 최신 OFF가 저장된 뒤 지연된 옛 ON이 덮었다. 후보를 거치면 동일 자원의 완료 순서가 ON → OFF가 됐고 실제 격리 Mobius4에서 최신 OFF를 읽었다.
+- 시험용 소유권을 공급해 이전 Gateway와 epoch, 불일치 payload를 차단했다. CSE 반영 직후 응답 유실을 주입해 파일 저장소를 다시 열었고 후속 갱신이 보류됐다. 재시도 순서를 포함한 통합 시험 2개가 통과했다. [실행 기록](../keyring/evidence/2026-11-10-core-concurrent-order/README.md)
+- 운영에는 원래 epoch를 결속하는 인증된 CORE 수신, 중복 판정 범위, 중앙 handover drain과 미확정 갱신 복구가 남아 있다. 실제 Pi·Feather 명령과 r18 PCB 수용은 대기 중이다. 전체 goal은 active/progress다.
+
+구현·시험 증거 commit `b945b15dc38f7df39ba3c7739029b8e8ddef4f65`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `7220fec..b945b15`다.
+
+## 2026-11-10 — CORE 관측의 발행 epoch 결속
+
+이전 goal turn은 중앙 동시 갱신을 재현하고 후보를 검증한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- Gateway 0.2.12의 선택 설정은 중앙이 배정한 장치별 epoch를 CORE 관측과 한 트랜잭션으로 저장한다. 발행은 저장된 epoch의 MQTT 토픽으로 제한한다. 설정에서 제외된 행은 보류되며 현재 관측 순서를 막지 않는다. 보류 행은 outbox 용량에 포함된다.
+- 중앙 수신 후보는 토픽의 Gateway·장치·epoch를 정본 SDT 라우팅과 순서 함수에 연결한다. 정확한 토픽에 쓰는 mTLS 주체를 하나로 제한하는 ACL, 익명 발행 차단, 기존 구독 종료 및 handover drain 조건을 문서화했다. [연동 조건](../keyring/integration-candidate/README.md#발행-당시-epoch를-보존하는-mqtt-수신-후보)
+- 이번 체크포인트는 소스 단계다. 최신 goal의 검증 범위에 따라 빌드·정적분석·시험·실행을 생략했다. 전용 ACL에서 두 Gateway를 전환하며 실제 broker/CSE readback을 확인하는 작업과 실물 명령 시험이 남아 있다. 전체 goal은 active/progress다.
+
+구현 commit `9782c8aa7ca88718ba21ea5df2e6a6a4861cea02`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `3c24c0b..9782c8a`다.
+
+## 2026-11-10 — Epoch 전용 Mobius4 프로필 준비
+
+이전 goal turn은 epoch를 SQLite에 보존하고 수신 후보를 추가한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- 별도 Compose 프로젝트에 전용 mTLS 브로커와 Gateway 인증서 2개, Mobius4, 팀 저장소를 쓰는 scoped 소비자를 연결했다. Gateway 0.2.13은 native cin에 HTTPS만 쓰면서 CORE MQTT를 사용할 수 있다.
+- 빈 AE 1개·cnt 3개·SDT 1개를 실제로 생성했다. 이어서 자원 5개의 RQI·이름·타입·specialization을 조회했다. 소비자는 `SCOPED_SUBSCRIBED` 상태였고 기존 개발 프로필의 컨테이너 4개도 계속 실행됐다. [포트와 로컬 로그 해시](../keyring/evidence/2026-11-10-core-scoped-stack/README.md)
+- 실행은 임시 서버 준비 범위다. 관측 발행, Gateway 빌드, ACL 거절, handover SDT readback 및 실물 시험은 미실행이다. 전체 goal은 active/progress다.
+
+구현·준비 증거 commit `8b2081f1d4d4e9299bae8a4292e35e8523b94151`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `786c306..8b2081f`다.
+
+## 2026-11-10 — Scoped CORE 관측의 CSE 적용 영수증
+
+이전 goal turn은 전용 mTLS 브로커·소비자·Mobius4 자원을 준비한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- Gateway 0.2.14의 scoped 작업자는 토픽·장치·epoch·sequence·본문 해시가 일치하는 CSE 적용 영수증을 받아 SQLite 행을 완료한다. 일반 관측과 명령 영수증은 별도 작업자에서 전송한다.
+- 중앙 소비자는 oneM2M 응답 2004와 RQI를 확인해 cursor를 저장한 뒤 영수증을 보낸다. 동일한 최신 적용 기록은 재전송에 응답하고 본문이 다른 같은 sequence에는 완료 응답을 내지 않는다. 중앙 쓰기·해당 Gateway 읽기 ACL과 JSON 계약을 추가했다. [연동 조건](../keyring/integration-candidate/README.md#epoch-관측의-적용-영수증)
+- 회귀시험 소스를 추가했다. 새 Gateway 빌드, 시험 실행, scoped 브로커·소비자 재배치, handover readback과 실물 연동은 대기 중이다. 전체 goal은 active/progress다.
+
+구현 commit `935847a4a1fd8260530e804bb5018b31a590ee8c`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `4211af6..935847a`다.
+
+## 2026-11-10 — Scoped 영수증 소비자와 ACL 배치
+
+이전 goal turn은 영수증 처리와 회귀시험 소스를 작성한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- `start-scoped.ps1 -RefreshIngress`를 추가하고 적용했다. 기존 소비자 종료 코드 0을 확인한 뒤 격리 브로커와 소비자만 교체했다. 기존 개발 프로필 4개와 격리 CSE·DB·TLS의 컨테이너 ID는 교체 전과 같았다.
+- ACL과 소비자 모듈 3개의 컨테이너 파일 해시가 작업본과 일치했다. 기존 빈 cursor의 해시도 유지됐다. 새 소비자는 `SCOPED_SUBSCRIBED receipts=1`을 기록했다. [배치 기록](../keyring/evidence/2026-11-10-core-scoped-receipt-rollout/README.md)
+- 이번 실행은 임시 서버 구성 반영까지다. 관측·영수증 발행, ACL 차단, Gateway 빌드, handover readback과 실물 시험은 미실행이다. 전체 goal은 active/progress다.
+
+구현·배치 증거 commit `e615f54752bf1edcd487bc4ccf4a21eb37ea8186`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `98ad8cd..e615f54`다.
+
+## 2026-11-10 — SDT 갱신과 소유권 전환 결속
+
+이전 goal turn은 격리 소비자와 영수증 ACL을 배치한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- SDT 갱신과 소유권 전환을 같은 자원 대기열에 넣는다. 이전 UPDATE가 미확정이면 전환을 보류한다. 현재 소유권과 expected epoch가 맞을 때만 새 소유권을 저장하고, 저장 결과가 불확실한 자원은 후속 갱신도 보류한다.
+- 격리 소비자의 소유권은 첫 기동에 설정을 읽고 이후에는 영속 저장소를 사용한다. 운영 명령 소스는 A7 → B8과 B8 → A9 및 상태 조회를 지원한다. 중앙 정본의 원자적 전환 연결은 팀 담당 경계다. [격리 명령](../keyring/dev/mobius4/README.md#격리-소유권-전환)
+- 회귀시험 소스를 추가했다. handover 소비자·ACL 배치, 실제 소유권 변경, 빌드·시험·실물 검증은 미실행이다. 전체 goal은 active/progress다.
+
+구현 commit `fa62263120786dddac752efb89808c998ac94d6f`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `3cb9dbf..fa62263`다.
+
+## 2026-11-10 — Scoped handover 초기 소유권 배치
+
+이전 goal turn은 SDT 갱신과 handover 대기열을 연결한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- `start-scoped.ps1 -RefreshIngress`로 handover 소비자와 롤백 ACL을 배치했다. 시작·갱신 스크립트는 현재 소비자의 구독 로그를 확인한 뒤 반환한다.
+- `handover-scoped.ps1 -Status`가 영속 소유권 `gw-a:7`과 `EMPTY` cursor를 반환했다. 배치 파일 4개의 해시가 일치했고 교체 대상 밖의 컨테이너 ID 7개도 일치했다. [배치 기록](../keyring/evidence/2026-11-10-core-scoped-handover-rollout/README.md)
+- 임시 프로필 배치와 상태 조회만 실행했다. 실제 Forward·Rollback, 관측과 영수증 발행, 빌드·시험·실물 검증은 미실행이다. 전체 goal은 active/progress다.
+
+구현·배치 증거 commit `7af699ab4902f5ef937a1ca3ed7ae635c336ed9d`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `3a0e9ad..7af699a`다.
+
+## 2026-11-10 — 종료된 CORE epoch의 활성 대기열 정리
+
+이전 goal turn은 격리 handover 소비자 배치와 초기 A7 소유권 확인을 마친 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- Gateway 0.2.15의 `bubble-gateway-state retire-core`는 daemon lock을 잡고 이전 epoch의 전송 행을 보관한다. 격리 스냅샷과 준비 계획을 먼저 기록한다. 장치·Gateway·epoch·RQI와 행 해시를 대조한 뒤 선택한 CORE telemetry 행만 활성 outbox에서 정리한다.
+- 현재 epoch는 거절한다. native 관측·명령 영수증·fence·CORE sequence는 정리 대상에서 제외한다. 원본 변경 전후 기록의 스키마와 합성 POSIX 회귀시험 소스를 추가했다. [보관 절차](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#종료된-core-epoch-보관)
+- 이번 체크포인트는 소스 단계다. 빌드·시험·명령 실행과 기존 DB 변경은 없었다. 전체 goal은 active/progress다.
+
+구현 commit `a95bd8482867ece24150cb6b6b1478565c6f73ba`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `a37a580..a95bd84`다.
+
+## 2026-11-10 — Pi 실물 BLE 거리·재연결 기록 도구
+
+이전 goal turn은 종료된 CORE 행의 스냅샷·수동 정리 명령을 구현한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- Gateway 0.2.16은 BlueZ에서 Feather·r18 보드 revision을 대조하는 운영자용 `bubble-keyring-ble-characterize`를 추가했다. 운영자 실측 거리, 광고 RSSI와 나이, 알림 수, sequence 간격, 링크 종료부터 새 세션의 첫 알림까지의 단조 시각을 private JSON으로 기록한다.
+- 최초 READ와 끊긴 세션의 콜백을 알림 수에 포함하지 않는 회귀시험 소스를 추가했다. 주소와 원래 boot ID·센서 payload는 결과에 싣지 않는다. [현장 절차](../keyring/raspberry-pi-gateway/TESTING.md#실물-ble-거리재연결-기록)
+- 이번 체크포인트는 소스 단계다. 빌드·시험, BLE 접속, 거리·재연결·전원 실측은 미실행이다. 전체 goal은 active/progress다.
+
+구현 commit `30131330493c5f9d6400b5ff5ee63958f789602a`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `f61a0ce..3013133`다.
+
+## 2026-11-10 — r18 wake 관측 보존과 Pi 기록
+
+이전 goal turn은 Pi 실물 BLE 거리·재연결 기록 소스를 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- r18 0.7.4는 health 프레임을 줄여도 `wake`, `wakePins`, `power`를 남긴다. 기존 512바이트 검사를 거치며 최소 프레임에서 버튼 누계와 wake 필드를 함께 확인하는 호스트 회귀 소스를 추가했다.
+- Gateway 0.2.17의 `--mode wake`는 BLE를 비운 뒤 초기와 복구 부팅을 대조한다. 첫 복구 부팅의 health 알림에서 확인·비상·움직임·타이머 원인을 구분한다. 실제 절전 진입과 소비전류는 별도 실물 근거가 필요하다. [Pi wake 절차](../keyring/raspberry-pi-gateway/TESTING.md#r18-wake-기록)
+- 이번 변경은 소스 단계다. 빌드·회귀시험, 펌웨어 flash, Pi·r18 wake와 전원 실측은 미실행이다. 전체 goal은 active/progress다.
+
+구현 commit `1f89a884683fb13d03f273108b547e55ef206a74`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `e13212e..1f89a88`다.
+
+## 2026-11-10 — Feather 벤치의 scoped Mobius4 경로
+
+이전 goal turn은 r18 wake 필드와 Pi 기록 모드를 작성한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- Gateway 0.2.18은 배터리나 RSSI가 없을 때 epoch 전용 토픽에서만 nullable 1.1.0을 사용한다. 일반 CORE v1은 숫자 계측값을 계속 요구한다. Feather의 버튼 상태는 native cin에 남고 실제 관측의 `state`를 별도 SDT에 쓴다.
+- 격리 CSE에서 `featherState` CREATE 201/2001, 영속 `gw-a:1` 소유권, 새 소비자의 구독을 확인했다. ACL과 모듈 해시를 기록했다. [서버 준비 기록](../keyring/evidence/2026-11-10-core-scoped-feather-rollout/README.md)
+- 실행은 임시 서버 준비까지다. Gateway 빌드와 회귀시험, Pi 연결 및 실제 Feather 관측·적용 영수증은 미실행이다. 전체 goal은 active/progress다.
+
+구현·준비 기록 commit `03ffb8206eab409b6e669a696f713d561d90f640`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `efe77c7..03ffb82`다.
+
+## 2026-11-10 — Feather scoped 관측·영수증 기록 준비
+
+이전 goal turn은 Feather 전용 SDT와 scope를 준비한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- Gateway 0.2.19의 relay는 세 버튼 상태가 담긴 일반 관측, 같은 관측의 MQTT 적용 영수증, 최종 SDT readback을 분리해 기록한다. 반복 실행에 쓸 시험 전용 SQLite는 scope를 대조하고 미전송 행이 남으면 실행을 중단한다.
+- 격리 프록시의 첫 시작은 Nginx map hash 크기 오류로 실패했다. 전체 경로 일치 패턴으로 고친 뒤 Gateway A 인증서로 `featherState` 초기값을 조회해 TLS 1.3·200/2000·RQI 일치를 확인했다. [읽기 경로 배치 기록](../keyring/evidence/2026-11-10-core-scoped-feather-readback/README.md)
+- 실제 실행은 임시 TLS 설정과 읽기 경로 확인까지다. 빌드·회귀시험, Pi relay 실행, Feather 관측과 실제 적용 영수증은 미실행이다. 전체 goal은 active/progress다.
+
+구현·준비 기록 commit `ed404f6a39333829c597a3d54dc59f2fb20e0190`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `01e25eb..ed404f6`다.
+
+## 2026-11-10 — 중단된 Feather scoped 관측 복구
+
+이전 goal turn은 scoped relay 작성과 Gateway A의 초기 SDT 조회를 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- `relay.py --recover-scoped`는 이미 생성된 벤치 DB의 native·scoped 관측만 선택한다. 대기열 원본을 보존한 뒤 기존 RQI·sequence·재시도 일정으로 전송한다. 새 BLE 캡처를 시작하지 않는다.
+- native cin의 동일 payload readback과 scoped 적용 영수증을 경로별로 기록한다. 각 기록을 fsync한 뒤 대기열 행의 완료를 허용한다. timeout 결과는 확인 수와 남은 수를 별도로 기록한다. [복구 명령](../keyring/firmware/feather_probe/README.md#중단된-scoped-전송-복구)
+- 구현과 회귀시험 소스만 반영했다. 복구 실행·빌드·시험·기존 DB 변경은 미실행이다. 전체 goal은 active/progress다.
+
+구현 commit `36ecd72491f9a70e51f2a6388d78d51820b7d76b`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `913393d..36ecd72`다.
+
+## 2026-11-10 — CSE 명령 영수증의 중앙 정산 후보
+
+DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 중앙의 `gatewayCommands` 발급 레코드 및 `GATEWAY_COMMAND_AUTHORIZED` 승인 이력을 KEYRING 정산 입력으로 연결할 수 있도록 후보를 추가했다.
+
+- 설정에 등록된 Gateway별 CSE receipt 컨테이너에서 원본 cin을 읽는다. Gateway 요청 ID로 자원명을 대조하고, 중앙 발급 해시·과거 승인·GPIO readback·선택 ACK가 일치하는 영수증을 정산한다. CSE 생성 시각의 초 단위 정밀도로 선후를 확정할 수 없는 경우에는 검토로 남긴다.
+- `(gatewayId, commandId)` 고유 키와 영수증 해시로 재전송과 내용 충돌을 구분한다. 격리 POSIX 파일 저장 후보와 재전송·충돌·저장 장애·동시 쓰기 회귀시험 소스를 추가했다. [중앙 정산 후보](../keyring/integration-candidate/README.md#cse-명령-영수증의-중앙-정산-후보)
+- 빌드·회귀시험·Pi/Feather 실행은 미실행이다. 운영 CORE의 인증된 CSE 조회, 중앙 저장소, ACK 수신기 연결과 실제 장치 정산 증거가 남아 있다. 전체 goal은 active/progress다.
+
+구현 commit `4caa505c069dcd0b64b5cac9a30503544e043e5a`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `055bdc3..4caa505`다.
+
+## 2026-11-10 — 격리 Mobius4 명령 영수증 정산 경로
+
+직전 goal turn은 정산 후보와 진행 기록을 원격에 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 다시 확인했다.
+
+- scoped bootstrap과 TLS 프록시 설정에 Gateway A/B의 전용 명령 영수증 컨테이너를 추가했다. 각 Gateway 인증서에 자신의 컨테이너의 생성·이름 조회만 허용하는 경로를 구성했다. 기존 관측·상태·공용 영수증의 기존 정규 경로는 보존한다.
+- `receipt-settlement/settle.mjs`는 명령 ID에서 native 자원명을 계산하고 CORE 인증서로 CSE를 조회한다. TLS 1.3·서버 인증서·응답 RQI를 확인하고 KEYRING JSON Schema와 팀 원본의 `approvalHash`로 검증한다. 팀 API의 실제 발급·승인 기록은 같은 스냅샷에서 읽으며 별도 POSIX 정산 디렉터리에 결과를 기록한다. [설정과 실행](../keyring/dev/mobius4/README.md#명령-영수증-정산-준비)
+- 소스와 배치 절차를 반영했다. npm 설치·빌드·시험·기존 scoped TLS 교체·CSE 자원 생성·Pi/Feather 실행은 미실행이다. 운영 CORE 자동 수신과 중앙 DB 연결, 실제 장치 readback 및 재전송 영수증은 남아 있다. 전체 goal은 active/progress다.
+
+구현 commit `e5ffd4b5a8e899491b65097bcebe72932ea61156`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `3892946..e5ffd4b`다.
+
+## 2026-11-10 — 격리 Mobius4의 명령 영수증 컨테이너 실제 준비
+
+직전 goal turn은 경로와 수동 정산 명령 소스를 원격에 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- `prepare-scoped-command-receipts.ps1`은 기존 격리 프로젝트의 TLS 프록시를 교체하고 `bootstrap.mjs --scoped-command-receipts`로 전용 컨테이너 두 개만 준비한다. 기존 이름을 조회해 재사용하며 전용 준비 로그를 분리한다.
+- 실제 실행에서 격리 Mobius4의 `command-receipts-a`와 `command-receipts-b`가 HTTP 201·RSC 2001로 생성됐고 각각 응답 RQI가 일치했다. 실행 중인 TLS 프록시의 Gateway별 경로 설정을 읽었고 CSE와 PostgreSQL이 같은 인스턴스로 유지된 것을 확인했다. [배치 증거](../keyring/evidence/2026-11-10-scoped-command-receipts/provisioning.json)
+- Gateway 인증서별 교차 접근 시험, 실제 팀 발급·승인 연동과 영수증 정산 명령, Pi/Feather 실행·빌드·회귀시험은 미실행이다. 운영 CORE의 자동 수신과 중앙 DB 연결도 남아 있다. 전체 goal은 active/progress다.
+
+준비 절차와 증거 commit `b8c9177c60741976f1127ef5d12dedfe1807fa29`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `cf6b152..b8c9177`다.
+
+## 2026-11-10 — Feather용 격리 팀 명령 API 준비
+
+직전 goal turn은 scoped TLS와 두 빈 CSE 영수증 컨테이너를 실제 배치한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- 팀 원본을 고정 SHA의 Git 객체에서 추출하고 KEYRING 런처에서 팀 mTLS 서버·정책·GatewayControl을 사용한다. 벤치 운영자는 별도 scoped 인증서로, Gateway A는 기존 인증서로 등록한다. 루프백 한 포트와 Feather 한 대로 범위를 지정하고 재시작 시 기존 자격 상태를 보존한다.
+- 임시 API가 PC의 `127.0.0.1:8787`에서 `READY`를 보고했고 해당 프로세스가 포트를 열고 있음을 확인했다. 전용 상태 파일에 `gw-a`·`keyring-feather-lab`·epoch 1이 등록됐다. 동의·grant·발급 명령·감사 기록은 모두 0건이다. [배치 증거](../keyring/evidence/2026-11-10-scoped-command-api/provisioning.json)
+- 실행 범위는 임시 API 준비와 등록까지다. API 요청·실제 발급·정산·Pi 터널/BLE·장비 명령·빌드·회귀시험은 미실행이다. 운영 CORE 자동 수신과 중앙 DB 연결은 남아 있다. 전체 goal은 active/progress다.
+
+명령 API 준비 commit `7383facdfaf670996931a55d1c15fa62ab9eaf82`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1233b97..7383fac`다.
+
+## 2026-11-10 — Feather ON/OFF와 scoped 영수증 증거 절차 연결
+
+직전 goal turn은 팀 원본 명령 API와 벤치 장치 등록을 실제 준비한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- 기존 LED 흐름을 팀 API와 scoped CSE의 별도 mTLS 연결에 연결했다. 단계별 명시적 파일 신호, 같은 부팅 세션의 전후 관측, 명령 ID에서 계산한 원본 영수증을 대조한다. 요청 전 intent 파일을 동기화하고 ON/OFF 각각 60초 grant를 사용해 단계 종료 시 회수한다. 기존 독립 fixture와 Pi SQLite 대조 도구도 같은 절차를 사용한다. [실행 절차](../keyring/raspberry-pi-gateway/TESTING.md#기존-scoped-mobius4에서-feather-led-시험)
+- 임시 CSE의 `command-observations-a`와 Gateway A 경로 설정을 실제 준비했다. 빈 컨테이너 생성 응답은 HTTP 201·RSC 2001이고 RQI가 일치했다. Mobius4와 PostgreSQL은 같은 인스턴스를 유지했다. [배치 증거](../keyring/evidence/2026-11-10-scoped-feather-led-cycle/provisioning.json)
+- ON/OFF 도구·회귀시험·실제 API 발급·BLE·장비 시험·중앙 정산은 미실행이다. 전용 Pi 데몬의 관측, 실제 LED 확인과 영수증 대조가 남아 있다. 전체 goal은 active/progress다.
+
+LED 절차와 준비 증거 commit `47697ec03421b9b0b708797ed254752c3a8d0300`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `29a1150..47697ec`다.
+
+## 2026-11-10 — Pi의 Feather 명령 세션 분리
+
+직전 goal turn은 scoped LED 흐름을 연결하고 전용 CSE 관측 컨테이너를 실제 준비한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`가 유지됐다.
+
+- `scoped_feather_pi.py`에 `prepare`와 `run`을 추가했다. Pi에서 기존 BLE 등록을 지정하고 Gateway A의 로컬 mTLS 파일을 읽어 소유자 전용 세션 프로필을 만든다. `run`은 고정된 Feather 명령 프로필과 두 loopback HTTPS 연결, 별도 SQLite와 명령 세션 잠금을 사용한다. 같은 세션 재개는 기존 SQLite를 유지한다.
+- SSH 역방향 포워딩과 Pi 명령 세션의 사용 절차를 연결했다. 임시 프록시가 mTLS 주체의 CSE originator를 매핑하므로 CSE 관리자 값은 PC에 둔다. [Pi 명령 세션](../keyring/raspberry-pi-gateway/TESTING.md#pi-명령-세션)
+- PC에서 격리 CSE와 팀 API loopback 리스너가 열려 있음을 관찰했다. Pi 접속·설정 실행·인증서 복사·빌드·시험·장치 명령·정산은 미실행이다. 전체 goal은 active/progress다.
+
+Pi 세션 소스 commit `6f20aaf67838a245892f6987fb1dea560ebdd841`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1499805..6f20aaf`다.
+
+## 2026-11-10 — 팀 PostgreSQL용 명령 영수증 정산 저장
+
+직전 goal turn은 Feather 전용 Pi 실행 경로를 원격에 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- 팀 PostgreSQL의 감사 journal과 별개로 `(gateway_id, command_id)`를 기본 키로 갖는 KEYRING 정산 테이블 후보를 추가했다. 정산 함수와 호환되는 `pg.Pool` 어댑터는 한 트랜잭션에서 삽입을 시도하고, 충돌하면 다음 조회에서 먼저 저장된 행을 반환한다. 커밋 확인 뒤에만 성공을 반환한다. [PostgreSQL 정산 저장 후보](../keyring/integration-candidate/README.md#postgresql-정산-저장-후보)
+- 저장 충돌, 키 불일치, 커밋 응답 유실과 연결 폐기 처리를 위한 회귀시험 소스를 추가했다. DB 적용·회귀시험·CORE 수신기 연결·Pi/Feather 실행은 미실행이다. 중앙 DB 실사용과 물리 명령 영수증은 남아 있다. 전체 goal은 active/progress다.
+
+PostgreSQL 정산 소스 commit `a551e9ee797dfa18b26c85a79c23d5ceccd55df5`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `f1a58a5..a551e9e`다.
+
+## 2026-11-10 — Mobius4 알림의 영속 수신과 원본 정산 재시도
+
+직전 goal turn은 PostgreSQL 정산 저장 어댑터 후보를 반영한 progress다. DOC-REV 2.0.0, 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`와 임시 Mobius4 소스 `e8f75b1`을 확인했다.
+
+- 인증된 CSE의 등록 구독만 받는 수신 함수를 추가했다. `nct=3`의 URI를 정확한 컨테이너에 결속하고 `(cse_key, native_ref)`로 PostgreSQL 대기열에 저장한 뒤 응답한다. 구독 확인 요청은 큐를 만들지 않는다. [알림 정산 후보](../keyring/integration-candidate/README.md#mobius4-알림에서-원본-정산까지)
+- 작업자는 기간이 있는 lease로 한 행을 맡고 인증된 CSE 원본과 기존 정산 함수를 사용한다. 미도착·일시 오류는 재시도하고, 한도를 넘기거나 불일치하면 검토 상태로 남긴다. 중복 알림과 작업자 재시작은 원본 정산 고유 키를 유지한다.
+- DB 마이그레이션·실제 CSE 구독·CORE 배치·시험·실물 명령은 미실행이다. 대기열에 들어오기 전에 실패한 알림은 중앙 발급 기록과 CSE 원본을 대조할 후속 복구가 필요하다. 전체 goal은 active/progress다.
+
+알림 정산 소스 commit `b498e396e6aedcc2a4635eee38961f218d1755e7`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `00270d0..b498e39`다.
+
+## 2026-11-10 — 대기열 도달 전 유실된 영수증 알림 복구
+
+직전 goal turn은 인증된 CSE 알림 수신과 영속 대기열 후보를 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- 커밋된 팀 상태의 `gatewayCommands`와 실행 승인 이력을 같은 승인 검증 함수로 결속한다. 허용 시각 구간과 커서로 나누어 확인한다. CSE 교체 시에는 중앙이 명령에 배정한 원래 자원 경로를 공급한다. [알림 유실 복구 후보](../keyring/integration-candidate/README.md#대기열-도달-전-유실-복구)
+- 대기열에 행이 없으면 인증된 CSE에서 계산된 native URI를 읽는다. Gateway·명령이 맞는 원본이 있을 때만 기존 고유 키로 넣는다. 기존 검토 기록을 보존하고 미도착·조회 실패·불일치를 보고한다. 콜백과 스윕이 동시에 넣어도 중복 삽입을 막는다.
+- 복구 및 회귀시험 소스를 추가했다. 주기 실행·DB 적용·실제 CSE 알림 유실 복구·회귀시험·실물 장치 명령은 미실행이다. 전체 goal은 active/progress다.
+
+알림 유실 복구 commit `c078b3193cde2ea25712884854ab0861ea5b3310`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8b9c589..c078b31`다.
+
+## 2026-11-10 — 격리 정산 프로세스와 PostgreSQL 실제 준비
+
+직전 goal turn은 유실 복구 스윕을 원격에 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- 개발용 `run.mjs`에 팀 상태 스냅샷, scoped mTLS CSE 조회, 복구 스윕과 PostgreSQL 대기열·정산 작업자를 연결했다. 수동 정산은 같은 조회·상태 로더를 사용하며 기존 POSIX ledger를 유지한다. [격리 정산 실행](../keyring/dev/mobius4/README.md#격리-postgresql-정산-실행)
+- PostgreSQL 17.5 전용 프로젝트를 `127.0.0.1:5544`에 준비했다. 최초 Windows SQL 바인드 읽기가 실패해 새 볼륨을 보존한 채 SQL을 `psql`의 한 트랜잭션으로 적용했다. 팀 CORE 스키마와 KEYRING 테이블 두 개를 만들었고 정산·대기열은 각각 0행이다. 기존 scoped·base Mobius4 DB는 같은 인스턴스로 유지됐다. [DB 준비 증거](../keyring/evidence/2026-11-10-receipt-database/provisioning.json)
+- DB 준비와 SQL 적용을 실행했다. Node 의존성 설치·정산 프로세스 실행·실제 CSE 알림·Pi/Feather 명령·회귀시험은 미실행이다. 전체 goal은 active/progress다.
+
+격리 정산 연결과 DB 준비 증거 commit `2224c26a2b68edc7e6a509a50b8475bfe97e8c63`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1f07be0..2224c26`다.
+
+## 2026-11-10 — 격리 Node 정산 프로세스 실제 기동
+
+직전 goal turn은 격리 PostgreSQL 준비와 프로세스 연결 소스를 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- 호스트에 npm 명령이 없어 pnpm을 사용했다. 오프라인 캐시에 AJV가 없어 지정된 세 가지 의존성을 레지스트리에서 설치했고 설치 스크립트는 비활성화했다. 정산 PostgreSQL 연결에 전용 `application_name`을 부여했다.
+- 실제 정산 프로세스가 `SCOPED_RECEIPT_PROCESS_READY`를 출력하고 실행을 유지했다. PostgreSQL에서 해당 프로세스의 대기열 조회를 확인했다. 팀 발급 명령은 0건이고 정산·대기열은 각각 0행이다. [기동 증거](../keyring/evidence/2026-11-10-scoped-receipt-runtime/startup.json)
+- 이번 실행은 임시 서버의 기동과 빈 대기열 조회까지다. CSE 명령 영수증 조회·정산·콜백·회귀시험·Pi/Feather 장치 명령은 미실행이다. 전체 goal은 active/progress다.
+
+정산 프로세스 기동 증거 commit `6799b9d934aa3b62d4ce0ea7cd3af84793024a12`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `0f6e0c0..6799b9d`다.
+
+## 2026-11-10 — 격리 영수증 mTLS 콜백 수신기 준비
+
+직전 goal turn은 격리 Node 정산 프로세스를 기동하고 빈 PostgreSQL 대기열 조회를 관찰한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- TLS 1.3 클라이언트 인증서의 등록 지문으로 CSE 키를 결정하는 HTTPS 콜백 어댑터를 추가했다. 정확한 POST 경로와 최대 8 KiB JSON을 검증해 기존 영속 대기열로 넘긴다. 기존 팀 서버 코드는 유지했다.
+- scoped CA로 전용 중계 인증서를 발급하고 콜백 수신기를 `127.0.0.1:8790`에 기동했다. `SCOPED_RECEIPT_CALLBACK_READY`와 OS 리스너를 관찰했고 대기열과 정산은 각각 0행이다. [시작 증거](../keyring/evidence/2026-11-10-scoped-receipt-callback/startup.json)
+- 이번 실행은 임시 콜백 준비까지다. 실제 Mobius4 발신과 mTLS 중계 연결·구독 등록·콜백 요청·회귀시험·Pi/Feather 명령은 미실행이다. 전체 goal은 active/progress다.
+
+콜백 수신기 소스와 기동 증거 commit `f64bb1f3354793794aa15612d7857f0a50db23b7`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `e45a36a..f64bb1f`다.
+
+## 2026-11-10 — Mobius4 영수증 중계와 구독 실제 등록
+
+직전 goal turn은 격리 mTLS 콜백 리스너를 실제 준비한 progress다. DOC-REV 2.0.0, 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- scoped Mobius4의 네트워크 공간 내부 루프백에서만 요청을 받는 전용 중계를 추가했다. 호스트 포트를 게시하지 않고 기존 CSE 인스턴스를 유지했다. 중계의 HEAD 준비 요청은 PC 콜백에서 mTLS를 거쳐 HTTP 405·RSC 4005를 받았다.
+- `gw-a`와 `gw-b`의 전용 영수증 컨테이너에 직접 자식 cin 생성 구독 `keyring-settlement`를 등록했다. 두 요청은 HTTP 201·RSC 2001이고 RQI가 일치했다. 현재 Mobius4의 직접 URL 구독은 등록 때 알림 발신을 검증하지 않는다. [준비 증거](../keyring/evidence/2026-11-10-scoped-receipt-relay/provisioning.json)
+- 이번에는 임시 중계 연결과 구독 등록까지 실행했다. 수신 대기열과 정산은 각각 0행이며 실제 영수증 알림·정산·회귀시험·Pi/Feather 명령은 미실행이다. 전체 goal은 active/progress다.
+
+중계와 구독 준비 commit `3d78e2d53beb16a462d6703b51556875356a2216`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `55df99a..3d78e2d`다.
+
+## 2026-11-10 — 영수증 전달 경로와 정산 증거 조회
+
+직전 goal turn은 격리 중계와 두 CSE 구독을 실제 등록한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- 대기열 삽입 트랜잭션에 `CSE_CALLBACK`·`RECOVERY_SWEEP`의 최초 수신 시각과 최초 생성 여부를 추가했다. 기존 대기열 상태나 정산 결과를 덮어쓰지 않는다. `inspect.mjs`는 명령 ID로 대기열·전달 경로·정산을 읽는다. [조회 절차](../keyring/dev/mobius4/README.md#명령별-영수증-증거-조회)
+- 전용 PostgreSQL에 003 마이그레이션을 적용하고, 발급 명령과 대기열이 비어 있을 때 scoped 콜백과 작업자 두 프로세스만 재기동했다. 각 준비 로그와 콜백 리스너를 확인했다. Mobius4와 중계는 같은 인스턴스이며 대기열·전달·정산은 각각 0행이다. [배치 증거](../keyring/evidence/2026-11-10-scoped-receipt-provenance/provisioning.json)
+- 이번 실행 범위는 격리 배치다. 명령별 조회 도구 실행·실제 영수증 수신·정산·회귀시험·Pi/Feather 명령은 미실행이다. 전체 goal은 active/progress다.
+
+전달 경로 기록과 배치 commit `7e72b25acc19b84b23c454f4f13245ea4e9350a5`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `d8116cc..7e72b25`다.
+
+## 2026-11-10 — Feather 실물 명령 증거 대조 도구
+
+직전 goal turn은 전달 경로 테이블과 격리 프로세스 배치를 완료한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- ON/OFF 실행 도구는 CSE 원본 receipt의 `ri`와 `ct`를 보존한다. 읽기 전용 검증 도구는 Pi SQLite의 명령·영수증 해시, CSE 원본 ID·시각, 팀 발급·승인, PostgreSQL 정산과 전달 경로를 명령별로 대조한다. 콜백 수신, 중앙 정산과 운영자가 보고한 LED 상태를 별도로 기록한다. [증거 대조 절차](../keyring/raspberry-pi-gateway/TESTING.md#실물-명령-증거-대조)
+- 검증·회귀시험 소스만 추가했다. Feather 명령 프로필 0.2.0 flash, Pi 시험 세션·LED 명령·실제 영수증 확인은 별도 실행 승인과 실제 장치가 필요하다. 전체 goal은 active/progress다.
+
+증거 대조 소스 commit `503f9c9ed2095c29c4d23f47657756500a4be276`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `0d8ebe7..503f9c9`다.
+
+## 2026-11-10 — 명령 거절·시간 초과·불확정 영수증 분류
+
+직전 goal turn은 실물 명령 증거 대조 도구를 반영한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- 발급 기록과 결속된 `REJECTED`, `TIMEOUT`, `INDETERMINATE` 원본은 실제 ACK 코드와 함께 검토 사유로 보존한다. 긍정 승인 이력이 필요한 성공 정산과 분리하며, 모순되는 성공 ACK는 거절한다. CSE `ct` 초 안에서 승인과 보관의 선후를 확정할 수 없는 건 `AUTHORIZATION_ORDER_UNCERTAIN`으로 남긴다.
+- 복구 스윕은 승인 이력이 없는 발급 명령도 마감 시각이 범위에 들어오면 확인한다. 인증 CSE에서 원래 영수증이 존재해야 대기열에 넣으며 원본 부재를 실패 영수증으로 만들지 않는다. [정산과 복구](../keyring/integration-candidate/README.md#cse-명령-영수증의-중앙-정산-후보)
+- 구현·회귀시험 소스만 반영했다. 실행 중인 격리 작업자 재기동·실제 실패 영수증·빌드·시험·실물 장치 작업은 미실행이다. 이전 Feather/Pi 실물 승인 요청은 대기 중이다. 전체 goal은 active/progress다.
+
+부정 영수증 분류와 복구 commit `f2cc3f90f59c1bb0a28c307b81ea542eefaa7323`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `a6cc9eb..f2cc3f9`다.
+
+## 2026-11-10 — 장치 저널과 격리 중앙 정산 기록 대조
+
+DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 브랜치에 새 변경은 없다.
+
+- 장치·Gateway·CSE 대조 보고서에 장치 기록 파일 SHA256과 CSE 원본 영수증의 ID·생성 시각을 추가했다. 격리 PostgreSQL 조회 도구는 이 보고서로 최대 32개 명령을 한 쿼리에서 비교한다. 정산 일치·누락·불일치와 기존 검토 건을 구분한다. Gateway 전송 미확인은 검토 건수에 남긴다. [운영 절차](../keyring/JOURNAL_RETENTION.md#격리-postgresql-정산-기록-대조)
+- 구현·회귀시험 소스만 반영했다. 새 PostgreSQL 조회, 빌드, 시험, 실물 명령은 미실행이다. 장치 저널 회수에는 중앙 계약이 필요하다. 이전 Feather/Pi 실물 승인 요청은 대기 중이며 goal은 active/progress다.
+
+대조 도구 commit `a2c9976e612bca2c033a13bd7b1cf903d4e5d9ae`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `325ba5b..a2c9976`이다.
+
+## 2026-11-10 — 명령 재정산에서 CSE 원본 출처 고정
+
+직전 goal turn은 장치 저널과 격리 중앙 정산 기록의 대조 도구를 올린 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- 새 정산 행은 인증 조회의 CSE 키와 경로를 영수증 해시·원본 ID·생성 시각과 함께 저장한다. 재정산에서 원본이 재생성되거나 다른 CSE로 조회되면 검토로 분류한다. 기존 행에 출처 필드가 없으면 그대로 보존하고 출처 미확인으로 남긴다. 저널과 Feather 실물 증거 도구도 정산 행의 출처를 대조한다. [정산 후보](../keyring/integration-candidate/README.md#cse-명령-영수증의-중앙-정산-후보)
+- 소스와 회귀시험 사례를 반영했다. 격리 작업자 재기동, DB 조회, 빌드, 시험, 실물 명령은 미실행이다. 명령별 원본 CSE 배정과 저널 회수는 팀 계약에 의존한다. Feather/Pi 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
+
+출처 고정 commit `36bc81624abfe9887592b3315217738de097e96e`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `08d2eb2..36bc816`이다.
+
+## 2026-11-10 — Pi 재시작 뒤 새 명령 영수증의 큐 등록
+
+직전 goal turn은 명령 재정산의 CSE 출처를 고정한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 브랜치에 새 변경은 없다.
+
+- 재시도 중인 native 영수증을 새 등록용 128개 한도에서 제외한다. 이전 행의 대기 시각과 전송한 CORE ACK의 중복 방지는 유지한다. 이전 영수증 128개가 남은 DB를 다시 열고 다음 영수증이 발송 가능한지 확인하는 회귀시험 소스를 추가했다. [Gateway 큐](../keyring/raspberry-pi-gateway/README.md)
+- 기존 wheel 버전 `0.2.19`와 실행 모듈 버전 `0.2.6`의 불일치를 정리했다. wheel 설정이 모듈 버전을 읽도록 바꿨고 이번 소스의 버전은 `0.2.20`이다.
+- wheel 빌드, 시험, 기존 DB 접근과 Pi 배포는 미실행이다. 이전 Feather/Pi 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
+
+큐 수정 commit `d584caad89ef9dc04f12462b9240dad986baff5d`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `448cd2a..d584caa`다.
+
+## 2026-11-10 — r18 NVS 시작 오류에서 명령 저널 보존
+
+직전 goal turn은 Pi 영수증 큐와 Gateway 버전의 수정 사항을 올린 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- 설치된 Arduino 코어의 `esp32-hal-misc.c`는 `NO_FREE_PAGES`와 `NEW_VERSION_FOUND`에서 기본 NVS 파티션을 자동 삭제한다. r18 펌웨어 `keyring-0.7.5`는 이 자동 삭제 분기를 막고 두 상태에서 BLE 시작 전에 잠근다. 기존 파티션·namespace·record format 1을 사용한다.
+- 슬롯 읽기는 NVS API 상태를 그대로 받는다. 명시적 미존재만 빈 슬롯으로 취급한다. 읽기 오류·중복 명령·기록 모순은 저장 오류로 분류해 정상 영수증 재발행과 새 명령 실행을 차단한다. [펌웨어 복구 경계](../keyring/firmware/README.md)
+- 호스트 오류 주입 시험 소스를 추가했다. 빌드·링크 확인·호스트 시험·flash·전원 차단은 미실행이다. Feather/Pi 실물 명령 승인 요청은 대기 중이며 goal은 active/progress다.
+
+저널 보호 commit `da4e29131f92ad03e2ffee9fc75eba5998bace13`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `37d6cac..da4e291`이다.
+
+## 2026-11-10 — Pi BLE 명령의 승인 기한과 자격 상태 검사
+
+직전 goal turn은 r18 NVS 시작 오류에서 저널을 보존하는 펌웨어 변경을 올린 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- Gateway `0.2.21`은 중앙 승인과 명령 기한 중 이른 값을 단조 시계로 고정한다. SQLite 기록, BLE 작업 시작·잠금 대기, 조각 전송에 같은 기한을 적용한다. 각 조각 직전에 현재 인증 세션, 자격 상태·revision과 시계·기한을 확인한다.
+- 실행 의도 기록 전 자격이 바뀌면 다음 승인을 기다린다. 기록 후 BLE 전송 전에는 거절을 남기며, BLE 처리 중 중단은 미확정 또는 시간 초과로 보존한다. 조각 중단 시 해당 세션을 무효화한다. [BLE 경계](../keyring/raspberry-pi-gateway/BLE_SESSIONS.md#승인-기한과-gatt-전송)
+- 회귀시험 소스만 반영했다. 빌드, 시험, Pi 배포와 실물 BLE 명령은 미실행이다. Feather/Pi 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
+
+승인 기한 고정 commit `edd4b6c22ce15dd2988a02d792f7a7ef052d3179`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1e4cb66..edd4b6c`다.
+
+## 2026-11-10 — Pi·Feather 명령 시험용 격리 정산 작업자 갱신
+
+직전 goal turn은 BLE 조각 전송의 승인 기한과 자격 검사를 올린 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- 발급 명령과 영수증이 없는 격리 팀 상태와 전용 PostgreSQL의 대기열·전달·정산 각 0행을 확인한 뒤 정산 작업자만 교체했다. 새 프로세스는 checkout `806416b`의 경로로 실행했고 `SCOPED_RECEIPT_PROCESS_READY`, stderr 0바이트, 전용 DB 작업자 연결 1개를 관찰했다. 전후 네 개 격리 리스너의 프로세스 소유자가 일치했다. [기동 증거](../keyring/evidence/2026-11-10-scoped-receipt-worker-refresh/startup.json)
+- 이번 실행은 격리 작업자 배치와 읽기 전용 DB 확인까지다. 이후 대기열·전달·정산은 여전히 각 0행이다. 명령 발급·CSE 실물 영수증·빌드·회귀시험·Pi 및 Feather 장치 작업은 미실행이다. 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
+
+기동 증거 commit `558dafb4159ea289ec1589a275adf3f42f6389ca`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `806416b..558dafb`다.
+
+## 2026-11-10 — Mobius4 배포별 Gateway DB 분리
+
+직전 goal turn은 Pi·Feather 시험용 격리 작업자를 갱신한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- 새 Gateway DB는 설정의 `M2M_CSE_DEPLOYMENT_ID`를 저장한다. 같은 배포에서 주소만 바뀌면 계속 사용할 수 있고, 다른 ID 또는 ID 누락으로 열면 기존 큐의 쓰기와 전송 전에 중단한다. 배포 ID 없는 원본은 기존 설정으로 계속 사용할 수 있다. [전환 절차](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#cse-배포-전환)
+- 새 Feather 시험 프로필은 격리 ID를 설정한다. Gateway 보관 계약과 중앙 저널 대조에도 배포 구분을 반영했다. 배포 ID는 운영자 배정값이며, 실제 서버 확인에는 mTLS와 중앙 자원 확인이 필요하다.
+- 회귀시험 소스만 반영했다. 빌드·시험·기존 DB 변경·서버 전환·Pi 배포는 미실행이다. Feather/Pi 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
+
+배포 구분 commit `3f954cef262aec7741913dad69af1fe645159dd0`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `10dfa3e..3f954ce`다.
+
+## 2026-11-10 — 명령 영수증의 CSE 컨테이너 자원 ID 고정
+
+직전 goal turn은 Gateway DB를 CSE 배포 ID별로 분리한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- Gateway `0.2.23`의 선택 설정은 새 SQLite에 원본 컨테이너 `ri`를 기록한다. 이름 경로를 mTLS로 조회해 자원 ID를 대조한 뒤 MQTT와 HTTPS는 같은 `ri`에 직접 기록한다. 성공 응답이나 기존 영수증의 부모 `pi`가 다르면 발송 완료로 표시하지 않는다. [전환 절차](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#명령-영수증-컨테이너-id-고정)
+- 모의·격리 CSE 회귀시험 소스를 추가했다. 빌드, 시험, CSE ACL 변경, Pi 배포와 실제 명령은 미실행이다. 현재 격리 프록시에서 이 옵션을 켜려면 컨테이너 GET과 자원 ID CREATE 권한을 준비해야 한다. Feather/Pi 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
+
+자원 ID 고정 commit `19c95a0b37c57b1dd440bbedbb704a9ed95f174f`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `def9f1e..19c95a0`다.
+
+## 2026-11-11 — 격리 영수증 ID 경로 권한 준비
+
+직전 goal turn은 영수증을 CSE 컨테이너 자원 ID에 고정한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- 관리자 인증으로 기존 두 컨테이너를 조회하고 Gateway별 이름 경로 GET과 정확한 자원 ID POST 규칙을 생성했다. 같은 설정으로 재실행할 수 있으며 기존에 저장한 ID가 달라지면 프록시 갱신 전에 중단한다. 새 Pi 명령 세션에 `--receipt-container-ri` 옵션을 추가했다.
+- 발급 명령이 0건인 격리 환경에서 TLS 프록시만 갱신했다. 각 Gateway 인증서의 자기 컨테이너 GET은 HTTP 200·oneM2M 2000 및 RQI 일치, 상대 컨테이너 GET은 HTTP 403을 관찰했다. CSE·DB·broker·소비자·중계 컨테이너 ID는 동일했다. [배치 증거](../keyring/evidence/2026-11-11-scoped-receipt-pin/provisioning.json)
+- 이번 실행은 격리 설정과 조회 권한 확인까지다. 영수증 POST·정산·빌드·회귀시험·Pi/Feather 실물 명령은 미실행이다. 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
+
+격리 권한 배치 commit `3cb1175e24eb7dc24b102dc47e1962fd625d40dc`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `d6ba576..3cb1175`다.
+
+## 2026-11-11 — r18 BLE 명령·영수증의 피어 세션 결속
+
+직전 goal turn은 격리 프록시의 ID 경로 권한을 배치한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- 설치된 Arduino BLE 소스에서 기존 콜백이 연결 ID를 생략하고 기본 `notify()`가 피어 전체를 순회하는 것을 확인했다. 펌웨어 `keyring-0.7.6`은 현재 인증된 피어의 쓰기·구독만 처리하고 해당 연결 ID로만 알림을 전송한다. 다른 피어의 종료 이벤트는 활성 연결을 끊지 않는다.
+- 연결 교체·재구독 후 이전 부분 프레임을 섞지 않는다. 알림 API 오류 시 같은 조각을 재시도한다. 활성 피어 종료 시 모터를 끄고 영수증 캐시·대기열을 정리한 뒤 새 관측과 광고를 준비한다. [펌웨어 설명](../keyring/firmware/README.md)
+- 기존 호스트 회귀시험 코드를 확장했다. 빌드·시험·flash·실물 BLE 세션은 미실행이다. Feather/Pi 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
+
+BLE 세션 commit `8c340992d3cde9208338fc24acc3db2a866c2f75`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `3681088..8c34099`다.
+
+## 2026-11-11 — r18 GATT 읽기와 긴 읽기 사본의 세션 분리
+
+직전 goal turn은 r18 명령·저널 쓰기와 알림을 인증 세션에 결속한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- 설치된 Arduino BLE의 긴 읽기는 공유 characteristic offset을 쓰며 후속 요청에서 read callback을 건너뛴다. `keyring-0.7.7`은 GATT 이벤트 등록을 감싸 identity·관측·영수증·저널의 각 READ를 기본 처리기 전에 인증 연결 ID와 대조한다.
+- 첫 요청에서 최대 512바이트의 사본을 잡고 같은 세션의 후속 offset에 제공한다. 다른 피어, 범위를 벗어난 offset, 재연결 후 예전 offset을 거절한다. 게시 중 값이 바뀌어도 진행 중인 읽기의 바이트는 유지한다. [펌웨어 설명](../keyring/firmware/README.md)
+- 호스트 회귀시험 소스만 확장했다. 빌드·링크·시험·flash·실물 BlueZ 읽기는 미실행이다. Feather/Pi 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
+
+GATT 읽기 commit `82d76bb80aeb903ea3cad1681e8abe838a99ee47`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `2aba11d..82d76bb`다.
+
+## 2026-11-11 — Pi 명령 시험의 mTLS 경로 사전 점검
+
+직전 goal turn은 r18 GATT의 읽기와 긴 읽기 사본을 세션에 묶은 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- Gateway `0.2.24`와 격리 Pi 명령 세션에 명시적 `preflight`를 추가했다. Pi 인증서로 영수증 컨테이너 ID, 팀 API의 현재 자격, 활성 명령 목록을 HTTPS GET으로 확인한다. 성공 JSON은 확인한 컨테이너 ID·자격 상태·활성 명령 수·시각을 포함한다. [Pi 사용 절차](../keyring/raspberry-pi-gateway/TESTING.md#pi-명령-세션)
+- 모의 시험 소스를 추가했다. 이번 변경의 실행·빌드·시험과 Pi 배포는 미실행이다. Gateway/장치 준비는 이후 실제 BLE 관측으로 별도 확인해야 한다. Feather/Pi 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
+
+사전 점검 commit `1cb9e6988103f1d3419bf385e8acfd17c2c14c6d`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `02baf23..1cb9e69`다.
+
+## 2026-11-11 — 중단된 Feather 명령 시험 기록 대조
+
+직전 goal turn은 Pi 명령 경로 사전 점검 도구를 올린 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- ON/OFF 중간에 멈춰도 `--interrupted-output`으로 원래 발급 의도와 팀 상태의 intent hash·command hash, Pi 저널·전송 상태, 보존된 CSE 읽기 기록을 단계별로 대조할 수 있다. 발급 HTTP 응답이 유실돼도 저장된 원래 명령의 ID와 CSE 경로를 확인할 수 있다. [시험과 증거 절차](../keyring/raspberry-pi-gateway/TESTING.md)
+- 도구는 로컬 사본을 읽는다. 중단 시험에서 물리 LED와 중앙 정산은 미확인으로 표시한다. 실행·빌드·시험·실물 명령은 미실행이다. Feather/Pi 실물 시험 승인 요청은 대기 중이며 goal은 active/progress다.
+
+중단 기록 대조 commit `6a5537f67d8786ea9bf2f1fb571c24a0855d9553`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `0138f0f..6a5537f`다.
+
+## 2026-11-11 — r18 전원과 BLE 시험 기록 통합
+
+직전 goal turn은 중단된 Feather 명령 기록을 대조하는 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 세 팀 브랜치의 head는 직전과 같다.
+
+- Gateway `0.2.25`에서 `--include-power`를 선택하면 r18 거리·재연결·wake JSON에 INA219 상태, 전압·전류·부하 전력, 부팅별 측정 시각을 추가한다. 같은 부팅에서 재연결한 뒤 반복 수신한 샘플은 구분한다. wake 전후 첫 부팅의 유효 샘플이 비어 있으면 `INSUFFICIENT`로 남긴다. [Pi 사용 절차](../keyring/raspberry-pi-gateway/TESTING.md#r18-ble-시험의-전원-샘플)
+- 동일 부팅에서의 반복 계측과 후속 부팅의 잘못된 대체를 다루는 회귀시험 소스를 추가했다. 빌드·시험·실물 계측은 미실행이다. BLE 해제 중 sleep 전류와 배터리 입력은 외부 계측이 필요하다. Feather/Pi 명령 시험과 r18 PCB 인수 시험은 남아 있으며 goal은 active/progress다.
+
+전원 기록 commit `b5be18d47436890e2c80a59b3a8367226c718754`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `133183e..b5be18d`다.
+
+## 2026-11-11 — Gateway HTTPS 서버 지정 재시도
+
+직전 goal turn은 r18 전원·BLE 시험 기록 도구를 올린 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 브랜치 head는 직전과 같다.
+
+- Gateway `0.2.26`은 CSE·중앙 API의 HTTPS 429/503 `Retry-After`를 처리한다. 프로세스 안에서는 같은 origin의 새 HTTPS 요청을 보류하며, 개별 outbox 행은 서버 대기 시간과 기존 재시도 간격 중 긴 값을 SQLite에 기록한다. 원래 `rqi`와 payload를 사용해 다시 보낸다. [Gateway 저장과 전송](../keyring/raspberry-pi-gateway/README.md#저장소권한시간-동작)
+- HTTP 날짜·초 파싱, 별도 origin 분리, 같은 ID 재시도, SQLite 재개를 다루는 회귀시험 소스를 추가했다. 이번 변경의 빌드·시험·Pi 실행은 미실행이다. Feather/Pi 명령 정산과 r18 실물 인수 시험은 남아 있으며 goal은 active/progress다.
+
+HTTPS 재시도 commit `3cc69fd9d14a08988475c26e203899f506c478e2`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `237c33a..3cc69fd`다.
+
+## 2026-11-11 — 고정 컨테이너의 명령 영수증 저장 확인
+
+직전 goal turn은 Gateway HTTPS 재시도 처리를 올린 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 브랜치 head는 직전과 같다.
+
+- Gateway `0.2.27`은 컨테이너 ID가 고정된 명령 영수증을 CREATE한 뒤 동일한 CSE 자원을 HTTPS GET으로 읽는다. CREATE와 조회의 자원 ID가 같고, 부모 ID·이름·타입·저장 본문이 일치할 때만 완료 처리한다. 조회 실패 시 큐를 보존하며 MQTT 응답 뒤 발생한 조회 실패를 HTTPS CREATE fallback으로 처리하지 않는다. [확인 절차](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#명령-영수증-컨테이너-id-고정)
+- 기존 격리 proxy 소스에서 Gateway별 자식 GET 경로를 확인했다. 모의·격리 CSE 회귀시험 소스를 보강했다. 이번 빌드·시험·Pi 실행·실물 영수증 관측은 미실행이다. 실물 명령 실행·정산과 r18 인수 검증은 남아 있으며 goal은 active/progress다.
+
+영수증 저장 확인 commit `6f61b3920ffb75c5c31efedab492695ed5d6eef4`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `de4e9e6..6f61b39`다.
+
+## 2026-11-11 — r18 명령 저널 연속성과 쓰기 확인
+
+직전 goal turn은 고정 CSE 영수증 저장 확인을 올린 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 브랜치 head는 직전과 같다.
+
+- 펌웨어 `keyring-0.7.8`은 NVS 부팅 복구 중 빈 슬롯 뒤에 기록이 있거나 epoch·grantRevision이 감소하면 새 실행을 막는다. 기존 format 1을 유지한다. PREPARED·COMPLETED commit 뒤 같은 키의 blob을 다시 읽어 바이트가 일치해야 기록을 RAM에 반영한다. PREPARED 확인 실패는 출력 시작을 막고, 완료 확인 실패는 출력을 끄고 `INDETERMINATE`를 보낸다. [저널 경계](../keyring/JOURNAL_RETENTION.md)
+- 중간 슬롯 유실, fence 역전, commit 뒤 불일치와 읽기 실패를 주입하는 호스트 시험 소스를 추가했다. 이번 빌드·시험·flash는 미실행이다. 끝쪽 기록만 유실된 경우를 식별하려면 독립 체크포인트가 필요하다. r18 실물 장애 시험과 Feather/Pi 명령 정산은 남아 있으며 goal은 active/progress다.
+
+저널 확인 commit `f7a356405c0b6fe26a299e6b3ca1210ea5aff581`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `d38f943..f7a3564`다.
+
+## 2026-11-11 — r18 저널 끝부분 유실 감지
+
+직전 goal turn은 r18 저널 연속성과 쓰기 확인을 올린 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 브랜치 head는 직전과 같다.
+
+- 펌웨어 `keyring-0.7.9`는 기존 NVS 형식 1을 읽고 새 명령부터 같은 namespace의 별도 키에 사용 슬롯 수를 저장한다. 새 PREPARED 기록과 개수가 모두 확인된 뒤 출력을 허용한다. 부팅 때 기록이 줄면 실행을 잠근다. PREPARED 슬롯 하나가 앞선 경우 개수만 복구하고 해당 명령을 미확정으로 유지한다. [저널 경계](../keyring/JOURNAL_RETENTION.md)
+- 기존 기록 도입, PREPARED와 개수 갱신 사이 장애, 마지막 슬롯 누락, 체크포인트 유실·손상을 주입하는 호스트 시험 소스를 추가했다. 빌드·시험·flash는 미실행이다. 전체 NVS 손실이나 기록과 체크포인트의 동시 롤백에는 외부 체크포인트가 필요하다. 실물 장애 시험과 중앙 명령 정산은 남아 있으며 goal은 active/progress다.
+
+저널 끝부분 확인 commit `b38dd6b93e4d537d844624738283e6d366344edf`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `e71f2a6..b38dd6b`다.
+
+## 2026-11-11 — 장치 밖 저널 보관본 대조
+
+직전 goal turn은 r18 저널 끝부분 감지의 구현과 업로드로 진행됐다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 브랜치 head는 직전과 같다.
+
+- Gateway `0.2.28`의 `bubble-keyring-journal-compare`는 같은 장치의 이전·최신 보관본 두 개를 읽어 해시·수집 순서·기록의 순서와 내용·권한 상한을 대조한다. 누락이나 변경은 `REVIEW_REQUIRED`로 반환한다. 도구는 로컬 파일만 읽으며 정산 상태는 `not-settled`다. 회귀시험 소스를 추가했고 비교 도구와 시험 실행은 미실행이다. [보관본 비교](../keyring/JOURNAL_RETENTION.md#이전-장치-보관본과-비교)
+- 사용자에게 Feather 명령 프로필 0.2.0 플래시와 Pi·Mobius4 실물 시험 승인을 받았다. 해당 벤치 실행 결과는 별도로 기록한다.
+
+보관본 비교 commit `2ba76bebbbfe2961b6f33637f0491bfb2136b4c8`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `adb68b5..2ba76be`다.
+
+## 2026-11-11 — 실제 Feather·Pi 명령과 격리 정산 검증
+
+- 사용자 승인에 따라 Feather 0.2.0을 빌드해 COM12에 올렸고 플래시 쓰기 해시를 확인했다. Pi Gateway 0.2.28의 격리 사전 점검에서 고정 컨테이너 ID, 활성 자격, 활성 명령 0건을 확인했다. 기존 격리 CA의 `keyUsage` 누락은 같은 격리 CA 키로 보완한 클라이언트용 인증서로 해결했다. 엄격한 TLS 검증은 유지했다.
+- 최초 ON은 Pi의 기존 GATT 캐시에 쓰기 특성이 빠져 `EXPIRED`였다. Mobius4 영수증과 `CSE_CALLBACK`, 중앙 `REVIEW`를 보존했다. Feather만 재등록해 BlueZ의 `write` 특성을 확인한 뒤 새 ON과 OFF를 발급했다.
+- 같은 Feather 부팅에서 두 명령 모두 `APPLIED`였고 GPIO readback과 후속 관측이 각각 true와 false였다. Pi SQLite, Mobius4 원본, 팀 승인, 인증 콜백과 격리 PostgreSQL 정산이 일치했다. 성공 명령을 이전 만료 건으로 지정하면 대조 도구가 거절하는 것도 확인했다. Pi 시험 데몬과 SSH 터널은 종료했고, 명령 영수증 대기열은 0건, 관측 대기열은 1건이었다. LED 육안 확인과 r18 검증은 남아 있다. [증거와 해시](../keyring/evidence/2026-11-11-scoped-feather-led/receipt.json)
+
+벤치 보완 commit `e6bf4c1b23a8be8cddce4e2d8e2716035995fff2`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8694de0..e6bf4c1`이다. goal은 active/progress다.
+
+## 2026-11-11 — Feather 발급 전 Pi 명령 준비 확인
+
+직전 goal turn은 실물 Feather와 Pi Gateway 0.2.28의 ON/OFF 및 격리 정산 증거를 확보한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 브랜치 head는 직전과 같다.
+
+- Gateway `0.2.29`는 현재 GATT 세션이 응답형 명령 쓰기를 지원하는지 장치별 `commandReady`로 보고한다. LED 벤치는 같은 Feather 부팅의 관측과 활성 자격을 확인한다. 단계 trigger를 본 뒤 새 health를 기다리고, grant 발급 뒤 같은 Pi 부팅의 준비 상태를 재확인해야 명령을 보낸다. [시험 절차](../keyring/raspberry-pi-gateway/TESTING.md#feather-led-onoff-시험)
+- 준비 상태 필드 누락·false, 다른 부팅, 오래된 health를 다루는 회귀시험 소스를 추가했다. 빌드·시험·Pi 배포·실물 재시험은 미실행이다. 앞선 0.2.28의 실물 증거와 범위를 분리한다. goal은 active/progress다.
+
+준비 확인 commit `3bdd273a1a183fbb40d77d4b0288e647fcc72aa7`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1efe0ba..3bdd273`이다.
+
+## 2026-11-11 — r18 명령·영수증의 알림 구독 경계
+
+직전 goal turn은 Feather 발급 전 Pi 준비 확인을 구현한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 브랜치 head는 직전과 같다.
+
+- r18 펌웨어 `keyring-0.7.10`은 조립된 명령과 BLE 영수증을 수신 당시 연결 및 영수증 알림 구독에 묶는다. 구독이 바뀌면 이전 대기 명령은 새 모터 출력을 시작할 수 없고, 이전 구독의 미전송 영수증과 READ 사본은 폐기한다. NVS에 저장된 결과는 보존한다. [펌웨어 계약](../keyring/firmware/README.md)
+- 타이머 준비 중 재구독, 오래된 큐 명령, 미전송 조각과 긴 READ의 재사용을 다루는 호스트 회귀시험 소스를 추가했다. 빌드·시험·flash는 미실행이다. r18 실물 검증은 남아 있으며 goal은 active/progress다.
+
+구독 경계 commit `28df2d166565bafdd8ced6d2b9447032aa041e58`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `d56fe0f..28df2d1`이다.
+
+## 2026-11-11 — 장애 복구 시 명령 영수증 우선 전송
+
+직전 goal turn은 r18 명령·영수증을 원래 BLE 구독에 묶은 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 브랜치 head는 직전과 같다.
+
+- Gateway `0.2.30`은 재전송 시각이 된 native 명령 영수증과 CORE ACK를 먼저 시도한다. 네 번 연속 시도 뒤 일반 항목에도 우선권을 주며, SQLite의 원래 요청 ID와 backoff, scoped CORE 장치별 순서를 보존한다. [영수증 대기열 계약](../keyring/raspberry-pi-gateway/RECEIPT_ROUTING.md)
+- 오래된 관측, 재전송 시각 전의 영수증과 전송 가능한 ACK가 함께 쌓인 경우를 다루는 회귀시험 소스를 추가했다. 이번 빌드·시험·Pi 배포·실물 장애 복구는 미실행이다. goal은 active/progress다.
+
+영수증 우선순위 commit `733c45504018f7a5e878f6cae7e09c3bfc1925f1`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `c4130e0..733c455`다.
+
+## 2026-11-11 — CSE Retry-After 동안 대기열 선택 보류
+
+직전 goal turn은 전송 가능한 명령 영수증에 제한된 우선권을 준 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 브랜치 head는 직전과 같다.
+
+- Gateway `0.2.31`은 CSE의 HTTPS 보류 기간에 HTTPS가 필요한 경로를 SQLite 송신 선택에서 제외한다. 아직 시도하지 않은 행의 retry 횟수와 시각은 그대로다. oneM2M MQTT가 준비돼 있으면 HTTPS 사전 조회가 필요한 고정 영수증 컨테이너만 제외하며, CORE MQTT 경로는 독립적으로 선택한다. [재시도 동작](../keyring/raspberry-pi-gateway/README.md)
+- CSE 보류 시작·종료, 고정 컨테이너 경로, ACK 독립 송신과 대기 행 보존을 다루는 회귀시험 소스를 추가했다. 빌드·시험·Pi 배포·실물 장애 복구는 미실행이다. goal은 active/progress다.
+
+HTTPS 선택 보류 commit `420c07df34944681f86b763f35765db849bd55ae`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `982321c..420c07d`다.
+
+## 2026-11-11 — r18 가속도계와 움직임 경로 재시도
+
+직전 goal turn은 CSE `Retry-After` 동안 막힌 송신 경로의 선택을 보류한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 브랜치 head는 직전과 같다.
+
+- 펌웨어 `keyring-0.7.11`은 가속도계 초기화 또는 축 읽기가 실패하면 기존 설정으로 재시도한다. 인터럽트 오류만 있으면 해당 경로를 따로 복구하고 부팅 중 누적 움직임 수를 보존한다. 축 샘플과 인터럽트가 모두 정상인 때만 절전을 검토한다. [절전 경계](../keyring/firmware/POWER_WAKE.md)
+- 부팅 시 응답 없음, 축·인터럽트 읽기 장애와 복구, 배터리 경로 독립성을 다루는 호스트 회귀시험 소스를 추가했다. 빌드·시험·flash는 미실행이다. r18 실물 검증은 남아 있으며 goal은 active/progress다.
+
+가속도계 복구 commit `ecbf579e2b80916739af5c07f3c634966ffcd7be`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `e651bc2..ecbf579`다.
+
+## 2026-11-11 — r18 배터리 잔량 경보
+
+직전 goal turn은 가속도계와 움직임 경로의 복구를 구현한 progress다. DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 브랜치 head는 직전과 같다.
+
+- 펌웨어 `keyring-0.7.12`의 경보 기본값은 잔량 20% 이하에서 설정, 25% 이상에서 해제다. BLE는 `batteryAlert`를 모든 detail과 축약 관측에 보내고 읽기 오류에는 `null`을 보낸다. 켜진 LCD는 낮은 잔량을 `LOW`로 표시한다. Gateway `0.2.32`는 잔량과 경보의 일관성을 검사해 native CSE로 전달한다. [센서 설정](../keyring/firmware/README.md)
+- 경계값과 임시 읽기 오류, 축약 관측, BLE 및 Gateway 관측 계약을 다루는 회귀시험 소스를 추가했다. 빌드·시험·flash·LCD/배터리 실물 검증은 미실행이다. goal은 active/progress다.
+
+배터리 경보 commit `dd71dace86f89367cd6a51b99bbcbc0f5d980e07`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `738bced..dd71dac`다.
+
+## 2026-11-11 — Pi에서 r18 배터리 경보 전환 기록
+
+직전 goal turn은 r18 저전압 경보를 BLE·LCD·native CSE 관측에 추가한 progress다. DOC-REV 2.0.0 및 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 head와 Gateway 관련 계약은 직전과 같다.
+
+- Gateway `0.2.33`의 배터리 기록 모드는 인증된 r18 알림에서 정상 잔량, 방전 중 중간 구간, 경보 설정, 충전 중 중간 구간, 경보 해제를 한 BLE 세션 안에서 대조한다. 반대 경보, 필드 누락, 잔량 미확인을 구분하고 실제 팩과 계측 IC 모사 입력을 별도로 표기한다. [Pi 실행 절차](../keyring/raspberry-pi-gateway/TESTING.md#r18-배터리-경보-기록)
+- 회귀시험 소스는 임계값, 세션 분리, 알림 필드 누락, 센서 읽기 미확인과 다른 기록 모드의 출력 범위를 다룬다. 빌드·시험·Pi 배포·실물 기록은 미실행이다. LCD·충전 표시와 CSE 수신은 별도 증거가 필요하다. goal은 active/progress다.
+
+Pi 배터리 기록 commit `3e4185bf9ecdc6c542686c65bd6bb5134c5a033e`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `49341a8..3e4185b`다.
+
+## 2026-11-11 — 자격 조회 단절 후 이전 명령 승인 차단
+
+직전 goal turn은 Pi의 r18 배터리 전환 기록 모드를 구현한 progress다. DOC-REV 2.0.0, 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`와 팀 중앙의 자격 상태·승인 계약을 확인했다. 팀 head는 직전과 같다.
+
+- Gateway `0.2.34`는 중앙 자격 상태의 변경, 조회 실패, TTL 만료로 생긴 단절을 로컬 승인 세대에 반영한다. 같은 revision으로 복구돼도 단절 전에 요청한 중앙 승인은 사용할 수 없다. BLE 조각 송신 중이면 다음 쓰기를 중단하고 미확정 영수증을 보존한다. 자격 TTL은 조회 요청 시작부터 계산한다. [명령 실행 정책](../keyring/raspberry-pi-gateway/README.md)
+- 동일 revision 복구, TTL 공백, 지연된 응답, 정상 연속 갱신과 부분 전송 중단을 다루는 회귀시험 소스를 추가했다. 빌드·시험·Pi 배포·실물 명령은 미실행이다. goal은 active/progress다.
+
+자격 단절 commit `723342f7ad6cc2b28cc70fa0cf82ac23d530db97`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `9095f64..723342f`다.
+
+## 2026-11-11 — 자격 상태 전환 영수증 보관과 재전송
+
+직전 goal turn은 자격 단절 후 기존 명령 승인 재사용을 막은 progress다. DOC-REV 2.0.0, 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`와 팀 자격 상태 응답 계약을 확인했다. 팀 head는 직전과 같다.
+
+- Gateway `0.2.35`는 중앙 mTLS의 첫 자격 관측과 상태·revision 전환을 SQLite에 저장한다. 일반 outbox 포화 중에도 별도 대기 한도까지 보존하고, 기존 health 컨테이너로 같은 요청 ID와 본문을 순서대로 전송한다. 전송 완료 시각과 최근 완료 128건을 로컬에 남긴다. [전환 영수증](../keyring/raspberry-pi-gateway/RECEIPT_ROUTING.md#자격-상태-전환-영수증)
+- 기존 DB의 추가 테이블, 보관본, 큐 포화·재시작·동일 ID, 완료 이력 제한, 저장 실패 시 실행 차단과 벤치 heartbeat 분리를 다루는 회귀시험 소스를 추가했다. 빌드·시험·Pi 배포·실제 CSE 전송은 미실행이다. 중앙의 실제 발급·회전 시각 증거와 실물 연결은 남아 있다. goal은 active/progress다.
+
+자격 전환 영수증 commit `bf1e4a947b00064687277e91e3f917d5ac667755`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `9ff2ad9..bf1e4a9`다.
+
+## 2026-11-11 — 자격 전환 영수증의 CSE 저장 확인
+
+직전 goal turn은 자격 전환 영수증을 SQLite에 보관하고 재전송하도록 구현한 progress다. DOC-REV 2.0.0, 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`와 자격 상태 계약을 확인했다. 팀 head는 직전과 같다.
+
+- Gateway `0.2.36`은 MQTT·HTTPS CREATE와 중복 응답 후 해당 contentInstance를 HTTPS로 읽어 이름·유형·리소스 ID·부모 ID·본문을 검사한다. CREATE가 인스턴스를 반환한 경우 조회에서 같은 리소스·부모를 확인한다. 조회 실패는 원래 영수증을 재시도한다. CSE HTTPS 보류 중에는 이 영수증만 health 경로의 선택에서 제외하고 MQTT 일반 heartbeat는 선택할 수 있다. [저장 확인 정책](../keyring/raspberry-pi-gateway/RECEIPT_ROUTING.md#자격-상태-전환-영수증)
+- 모의 전송·SQLite 대기열 및 격리 Mobius4 양쪽 binding의 회귀시험 소스를 추가했다. 이번 빌드·시험·Pi 배포·실제 CSE 저장 확인은 미실행이다. 기존 완료 행은 당시 판정 기준으로 남는다. goal은 active/progress다.
+
+자격 영수증 저장 확인 commit `4b82cbfd01cd3154d144443de4e87d5ad0a205f0`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `daadb12..4b82cbf`다.
+
+## 2026-11-11 — r18 제작 PCB 관측 전용 초기 구동
+
+직전 goal turn은 자격 전환 영수증의 CSE 저장 확인을 추가한 progress다. DOC-REV 2.0.0, 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 head와 관련 GATT 계약은 직전과 같다.
+
+- `keyring_r18_bringup`은 별도 identity `keyring-0.7.13-bringup`으로 배터리·가속도·버튼·전원 관측을 제공한다. LCD·오디오 재생·SD·deep sleep을 끄고 BLE 명령과 장치 journal을 열지 않는다. USB 부팅 로그에 모터·AUX·fault와 센서 상태를 추가했다. [PCB 구동 절차](../keyring/pcb/BRING_UP.md)
+- Gateway `0.2.37`은 BlueZ에 기존 쓰기 특성이 캐시돼도 관측 전용 identity에서 명령과 저널 selector 쓰기를 차단한다. 펌웨어 관측과 Gateway 캐시 사례의 회귀시험 소스를 추가했다. 빌드·시험·플래시·전원 인가·Pi 연결은 미실행이다. goal은 active/progress다.
+
+r18 초기 구동 commit `b63c795ef872099372191021e846cc3f79571f93`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `d0a5cad..b63c795`다.
+
+## 2026-11-11 — Pi에서 r18 초기 구동 증거 한 세션에 기록
+
+직전 goal turn은 r18 관측 전용 펌웨어와 Gateway의 쓰기 차단을 구현한 progress다. DOC-REV 2.0.0, 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`와 팀 GATT 계약을 확인했다. 팀 head는 직전과 같다.
+
+- Gateway `0.2.38`은 `--mode bringup`에서 최초 알림 세션의 확인·비상 누름/해제와 누계, 배터리·3축·motion, INA219, 저널·절전 비활성과 명령 준비·fault를 대조한다. 같은 boot여도 후속 세션 자료로 부족한 단계를 채우지 않는다. 판정에 필요한 필드만 로컬 JSON에 남긴다. [Pi 기록 절차](../keyring/raspberry-pi-gateway/TESTING.md#r18-초기-구동-기록)
+- 관측 성공, 세션 분리, 유효하지 않은 누계, 위험 상태 및 원본 프레임 제외 회귀시험 소스를 추가했다. 빌드·시험·Pi 접속·실물 캡처는 미실행이다. 전원 레일·외부 입력 및 충전 전류 실측은 별도다. goal은 active/progress다.
+
+r18 Pi 기록 commit `815d89ce6879af204c21f9cfdd9cbef1724cf679`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `2302da3..815d89c`다.
+
+## 2026-11-11 — r18 BLE 재연결 전후 버튼 누계 기록
+
+직전 goal turn은 r18 초기 구동의 한 세션 기록을 구현한 progress다. DOC-REV 2.0.0, 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`와 팀 BLE 계약을 확인했다. 팀 head는 직전과 같다.
+
+- Gateway `0.2.39`는 재연결 전 마지막 알림과 복구 직후 첫 알림의 부팅·sequence·uptime·두 버튼 누계를 대조한다. 알림이 없던 중간 세션은 복구 시간의 끝으로 쓰지 않고, 중간에 관측된 부팅 변경은 별도로 검출한다. [Pi 재연결 기록 절차](../keyring/raspberry-pi-gateway/TESTING.md#r18-재연결-전후-버튼-누계-기록)
+- 중간 세션, 부팅 변경, 첫 복구 알림의 역행, 증거 누락과 원본 제외를 다루는 회귀시험 소스를 추가했다. 빌드·시험·Pi 접속·실물 재연결 기록은 미실행이다. goal은 active/progress다.
+
+r18 재연결 기록 commit `ff473c2fd7b834de6b9d1ad239b8f67690006117`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `b4e7cd6..ff473c2`다.
+
+## 2026-11-11 — 재연결 및 재시작 후 이전 BLE 관측 차단
+
+직전 goal turn은 r18의 재연결 전후 버튼 누계 기록을 구현한 progress다. DOC-REV 2.0.0, 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`와 팀 BLE 계약을 확인했다. 팀 head는 직전과 같다.
+
+- Gateway `0.2.40`은 장치의 마지막 관측 번호를 연결 종료 뒤에도 유지하고, 프로세스 시작에는 기존 SQLite에서 마지막 부팅과 번호를 읽는다. 같은 부팅의 이미 받은 번호를 거르고 높은 번호의 uptime 역행은 프로토콜 오류로 처리한다. 영수증의 시각 기준은 연결 종료 시 지우고 새 연결에서 수용한 관측으로만 갱신한다. [BLE 경계](../keyring/raspberry-pi-gateway/BLE_SESSIONS.md#재연결과-관측-시각-기준)
+- 이전 READ·알림, 새 부팅, uptime 역행, 큐 포화와 SQLite 재시작 커서를 다루는 회귀시험 소스를 추가했다. 빌드·시험·Pi 접속·실물 재연결은 미실행이다. goal은 active/progress다.
+
+이전 관측 차단 commit `1536b05139a6613cf2e2774f5910ef8fa748d4c5`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `7217401..1536b05`다.
+
+## 2026-11-11 — BLE 영수증 수신 시각과 UTC 추정 경계
+
+직전 goal turn은 BLE 재연결·Gateway 재시작 때 이전 관측을 차단한 progress다. DOC-REV 2.0.0, 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`와 영수증 연동 계약을 확인했다. 팀 head는 직전과 같다.
+
+- Gateway `0.2.41`은 일치하는 BLE 영수증의 수신 시점에 관측 기준과 UTC 추정값을 확정한다. 새 `APPLIED`가 마지막 조각 전송 이전으로 추정되거나 적용이 수신 이후로 추정되면 수락·적용 추정값을 비운다. 시계 이동에도 같은 처리를 하고 장치 결과·readback·수신 시각을 보존한다. [영수증 시각 경계](../keyring/raspberry-pi-gateway/BLE_SESSIONS.md#재연결과-관측-시각-기준)
+- 늦게 반환한 GATT 쓰기 응답, 나중 관측, 시간 범위 위반, 저널 중복 결과와 수신 시각 보관을 다루는 회귀시험 소스를 추가했다. 빌드·시험·Pi 접속·실물 영수증 검증은 미실행이다. goal은 active/progress다.
+
+영수증 시각 commit `19712ecf9e29430bbc4599eff44b30c8842aa2b8`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `e5f048c..19712ec`다.
+
+## 2026-11-11 — 마지막 GATT 응답 유실 뒤 장치 영수증 보존
+
+직전 goal turn은 BLE 영수증의 수신 시각과 UTC 추정 경계를 구현한 progress다. DOC-REV 2.0.0, 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`와 팀 ACK 계약을 확인했다. 팀 head는 직전과 같다.
+
+- Gateway `0.2.42`는 마지막 GATT 쓰기 시작 이후, 하나의 BLE 기한 안에 해당 세션에서 받은 일치 영수증을 수용한다. 이후 연결 종료·쓰기 응답 오류·내부 타임아웃에도 그 결과와 readback을 SQLite 경로에 전달한다. 새 연결로 조각을 이어 보내지 않는다. [BLE 처리](../keyring/raspberry-pi-gateway/BLE_SESSIONS.md#승인-기한과-gatt-전송)
+- 이른 응답, 기한 이후 응답, 사용자 취소, 기존 연결 교체 방어와 SQLite 정산을 다루는 회귀시험 소스를 추가했다. 빌드·시험·Pi 접속·실물 검증은 미실행이다. goal은 active/progress다.
+
+영수증 보존 commit `2cdc96baae12cb85524488aa5daab0c2f893d627`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `4bde3f7..2cdc96b`다.
+
+## 2026-11-11 — 마지막 GATT 응답 전 SQLite 영수증 저장
+
+DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 head는 직전과 같다.
+
+- Gateway `0.2.43`은 현재 세션의 기한 내 일치 영수증을 알림 처리 중 SQLite에 커밋한다. 마지막 쓰기 응답을 기다리는 동안 종료되어도 커밋된 결과를 유지한다. SQLite 저장이 일시적으로 실패하면 보관한 영수증으로 저장만 재시도한다. [BLE 처리](../keyring/raspberry-pi-gateway/BLE_SESSIONS.md#승인-기한과-gatt-전송)
+- Windows Python 3.11에서 wheel을 빌드하고 설치본의 기본 시험 153개가 통과했다. 마지막 응답을 보류한 상태에서 별도 SQLite 연결로 결과를 읽고, 취소 후 결과와 카운터, SQLite 오류 후 저장 재시도를 확인했다. 해당 버전의 Pi·BlueZ와 r18 시험은 남아 있다. [로컬 시험](../keyring/raspberry-pi-gateway/TESTING.md)
+- 사용자가 승인한 Feather 0.2.0·Pi 0.2.28 격리 시험은 이전에 수행했다. ON/OFF 모두 GPIO readback, Mobius4 원본과 중앙 정산이 일치했다. [실물 시험 기록](../keyring/evidence/2026-11-11-scoped-feather-led/receipt.json)
+
+소스 commit `596e44ce7ff2857d015d057ce82f6236a985d34a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `6af2279..596e44c`다. goal은 active/progress다.

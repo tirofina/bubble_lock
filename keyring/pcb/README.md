@@ -14,6 +14,7 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · source included / unverified.
 | 핀 정정·기능별 구현 상태 | [HARDWARE_FIRMWARE_MAP.md](HARDWARE_FIRMWARE_MAP.md) |
 | 원본 네트 표 | [GPIO](r18/external_parts/GPIO_pinmap.csv) / [커넥터](r18/external_parts/Connector_pinout.csv) |
 | 펌웨어 선언·요약 핀맵 | [board_r18.h](../firmware/include/board_r18.h) / [board_pinmap.csv](board_pinmap.csv) |
+| 초기 구동·Pi 관측 | [BRING_UP.md](BRING_UP.md) |
 
 KiCad 10 형식이며 설치된 표준 라이브러리를 참조하는 모델도 있다. 인계 목록은 원본 복사222개 파일·16,312,470byte를 기록한다. hash는 파일 식별 정보이며 설계 검증 결과가 아니다. 새 안내 문서는 목록에 포함하지 않는다.
 

@@ -1,0 +1,36 @@
+{
+  "documentRevision": "2.0.0",
+  "scope": "isolated-receipt-worker-refresh",
+  "observedAt": "2026-11-10T14:43:56.0924771Z",
+  "checkout": "806416bfdf148645c29ca62e708cccb3e652acab",
+  "settlementChanges": {
+    "negativeReceipts": "f2cc3f90f59c1bb0a28c307b81ea542eefaa7323",
+    "nativeOrigin": "36bc81624abfe9887592b3315217738de097e96e"
+  },
+  "worker": {
+    "previousPid": 92124,
+    "pid": 16064,
+    "readyAt": "2026-11-10T14:43:41.5126243Z",
+    "readyStatus": "SCOPED_RECEIPT_PROCESS_READY",
+    "stderrBytesAtReady": 0,
+    "entryMatchedCheckout": true,
+    "previousProcessPresentAfterRefresh": false,
+    "localStdoutFile": "worker-refresh-20261110T144341192Z.out.log"
+  },
+  "scopedCommandStateBefore": { "issuedCommands": 0, "receipts": 0 },
+  "scopedPostgres": {
+    "database": "keyring_receipt_dev",
+    "workerConnectionsObserved": 1,
+    "rowsBefore": { "inbox": 0, "deliveries": 0, "settlements": 0 },
+    "rowsAfter": { "inbox": 0, "deliveries": 0, "settlements": 0 }
+  },
+  "sameListenerOwnersBeforeAndAfter": {
+    "postgres": "127.0.0.1:5544",
+    "mobius4": "127.0.0.1:8760",
+    "teamCommandApi": "127.0.0.1:8787",
+    "receiptCallback": "127.0.0.1:8790"
+  },
+  "commandIssued": false,
+  "cseReceiptObserved": false,
+  "piOrFeatherUsed": false
+}

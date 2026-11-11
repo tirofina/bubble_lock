@@ -1,0 +1,6 @@
+{
+  "tlsVersion": "TLSv1.3",
+  "cipher": "TLS_AES_256_GCM_SHA384",
+  "peerCertificateSha256": "777c27978bcd82e61060dee2d56706582844be844ba8e1623b03aaab500b9f9f",
+  "httpStatusLine": "HTTP/1.1 200 OK"
+}

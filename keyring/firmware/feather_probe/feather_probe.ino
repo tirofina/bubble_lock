@@ -10,18 +10,35 @@
 #if !defined(ARDUINO_ADAFRUIT_FEATHER_ESP32_V2)
 #error Select Adafruit Feather ESP32 V2
 #endif
-#if __has_include("provisioning.h")
+#if !defined(KEYRING_FEATHER_IGNORE_PROVISIONING) && __has_include("provisioning.h")
 #include "provisioning.h"
 #endif
 #ifndef KEYRING_FEATHER_PASSKEY
 #define KEYRING_FEATHER_PASSKEY 0
 #endif
+#ifndef KEYRING_FEATHER_ENABLE_COMMANDS
+#define KEYRING_FEATHER_ENABLE_COMMANDS 0
+#endif
+#if KEYRING_FEATHER_ENABLE_COMMANDS
+#include <driver/gpio.h>
+#include "feather_commands.h"
+#endif
+static_assert(KEYRING_FEATHER_ENABLE_COMMANDS == 0 || KEYRING_FEATHER_ENABLE_COMMANDS == 1,
+              "Choose the observation or command bench profile");
 static_assert(KEYRING_FEATHER_PASSKEY == 0 ||
               (KEYRING_FEATHER_PASSKEY >= 100000 && KEYRING_FEATHER_PASSKEY <= 999999),
               "Set a six digit local Feather passkey");
 
 namespace {
 constexpr char DeviceId[] = "keyring-feather-lab";
+#if KEYRING_FEATHER_ENABLE_COMMANDS
+constexpr char FirmwareRevision[] = "feather-probe-0.2.0";
+constexpr char CommandId[] = "7f8a0003-4b6e-4f4e-9b0a-505249564255";
+constexpr auto LedPin = static_cast<gpio_num_t>(LED_BUILTIN);
+static_assert(LED_BUILTIN == 13, "Confirm the Feather V2 onboard LED pin");
+#else
+constexpr char FirmwareRevision[] = "feather-probe-0.1.1";
+#endif
 constexpr char ServiceId[] = "7f8a0001-4b6e-4f4e-9b0a-505249564255";
 constexpr char ObservationId[] = "7f8a0002-4b6e-4f4e-9b0a-505249564255";
 constexpr char ReceiptId[] = "7f8a0004-4b6e-4f4e-9b0a-505249564255";
@@ -34,6 +51,12 @@ Adafruit_ST7789 display(32, 33, 27);
 BLEServer *server;
 BLECharacteristic *observation;
 char bootId[17];
+#if KEYRING_FEATHER_ENABLE_COMMANDS
+FeatherCommands commands(DeviceId, FirmwareRevision, bootId);
+BLECharacteristic *commandAttribute, *receiptAttribute;
+BLE2902 *receiptCccd;
+bool ledConfigured;
+#endif
 char frame[320], txFrame[sizeof(frame)];
 size_t frameSize, txSize, txOffset;
 uint32_t sequence, lastSample, lastFragment;
@@ -61,6 +84,9 @@ struct Link {
   uint16_t id = 0;
   esp_gatt_if_t interfaceId = ESP_GATT_IF_NONE;
   bool connected = false, trusted = false, subscribed = false;
+#if KEYRING_FEATHER_ENABLE_COMMANDS
+  bool receiptSubscribed = false;
+#endif
 };
 Link link;
 uint8_t peerAddress[6];
@@ -79,6 +105,20 @@ void onGattsEvent(esp_gatts_cb_event_t event, esp_gatt_if_t interfaceId, esp_ble
     link.interfaceId = interfaceId;
     portEXIT_CRITICAL(&linkMux);
   }
+#if KEYRING_FEATHER_ENABLE_COMMANDS
+  if (event != ESP_GATTS_WRITE_EVT || param->write.is_prep || param->write.offset != 0) return;
+  const auto &write = param->write;
+  if (receiptCccd && write.handle == receiptCccd->getHandle()) {
+    portENTER_CRITICAL(&linkMux);
+    if (link.connected && link.id == write.conn_id)
+      link.receiptSubscribed = write.len == 2 && write.value[0] == 1 && write.value[1] == 0;
+    portEXIT_CRITICAL(&linkMux);
+  }
+  const auto session = currentLink();
+  if (commandAttribute && write.handle == commandAttribute->getHandle() && write.need_rsp &&
+      session.connected && session.trusted && session.receiptSubscribed && session.id == write.conn_id)
+    commands.receive(write.value, write.len, session.generation);
+#endif
 }
 
 class ServerCallbacks : public BLEServerCallbacks {
@@ -90,6 +130,9 @@ class ServerCallbacks : public BLEServerCallbacks {
       link.id = event->connect.conn_id;
       link.connected = true;
       link.trusted = link.subscribed = false;
+#if KEYRING_FEATHER_ENABLE_COMMANDS
+      link.receiptSubscribed = false;
+#endif
       memcpy(peerAddress, event->connect.remote_bda, sizeof(peerAddress));
     }
     portEXIT_CRITICAL(&linkMux);
@@ -101,11 +144,19 @@ class ServerCallbacks : public BLEServerCallbacks {
   }
   void onDisconnect(BLEServer *, esp_ble_gatts_cb_param_t *event) override {
     portENTER_CRITICAL(&linkMux);
-    if (link.connected && link.id == event->disconnect.conn_id) {
+    const bool wasCurrent = link.connected && link.id == event->disconnect.conn_id;
+    if (wasCurrent) {
       ++link.generation;
       link.connected = link.trusted = link.subscribed = false;
+#if KEYRING_FEATHER_ENABLE_COMMANDS
+      link.receiptSubscribed = false;
+      if (ledConfigured) gpio_set_level(LedPin, 0);
+#endif
     }
     portEXIT_CRITICAL(&linkMux);
+#if KEYRING_FEATHER_ENABLE_COMMANDS
+    if (wasCurrent && commandAttribute) commands.discardInput();
+#endif
   }
 };
 
@@ -120,7 +171,12 @@ class SecurityCallbacks : public BLESecurityCallbacks {
     portENTER_CRITICAL(&linkMux);
     const bool isCurrent = link.connected && memcmp(peerAddress, event.bd_addr, sizeof(peerAddress)) == 0;
     const auto id = link.id;
-    if (isCurrent) link.trusted = trusted;
+    if (isCurrent) {
+      link.trusted = trusted;
+#if KEYRING_FEATHER_ENABLE_COMMANDS
+      if (!trusted && ledConfigured) gpio_set_level(LedPin, 0);
+#endif
+    }
     portEXIT_CRITICAL(&linkMux);
     if (isCurrent && !trusted) server->disconnect(id);
   }
@@ -135,12 +191,62 @@ class SubscriptionCallbacks : public BLEDescriptorCallbacks {
   }
 };
 
-void addCccd(BLECharacteristic *characteristic, bool observeSubscription = false) {
+BLE2902 *addCccd(BLECharacteristic *characteristic, bool observeSubscription = false) {
   auto *cccd = new BLE2902();
   cccd->setAccessPermissions(CccdPermission);
   if (observeSubscription) cccd->setCallbacks(new SubscriptionCallbacks());
   characteristic->addDescriptor(cccd);
+  return cccd;
 }
+
+#if KEYRING_FEATHER_ENABLE_COMMANDS
+bool readLed() { return ledConfigured && gpio_get_level(LedPin) != 0; }
+
+void clearLed() { gpio_set_level(LedPin, 0); }
+
+bool applyLed(uint32_t generation, bool desired, uint64_t deadline, uint64_t &appliedAt, bool &readback) {
+  portENTER_CRITICAL(&linkMux);
+  const auto now = FeatherCommands::nowMs();
+  bool applied = false;
+  if (link.connected && link.trusted && link.receiptSubscribed && link.generation == generation &&
+      now < deadline && gpio_set_level(LedPin, desired) == ESP_OK) {
+    appliedAt = now;
+    readback = readLed();
+    applied = true;
+  }
+  portEXIT_CRITICAL(&linkMux);
+  return applied;
+}
+
+void pumpCommands() {
+  if (!commandAttribute) return;
+  static char receipt[FeatherCommands::ReceiptCapacity];
+  static size_t length, offset;
+  static uint32_t generation, lastSent;
+  auto session = currentLink();
+  if (session.generation != generation || !session.receiptSubscribed) {
+    generation = session.generation;
+    length = offset = 0;
+  }
+  if (!session.trusted || !session.receiptSubscribed || session.interfaceId == ESP_GATT_IF_NONE) return;
+  if (!length) length = commands.process(generation, receipt, readLed, applyLed, clearLed);
+  if (!length || millis() - lastSent < 15) return;
+  // Storage can block long enough for the original peer to disconnect.
+  session = currentLink();
+  if (session.generation != generation || !session.trusted || !session.receiptSubscribed) {
+    length = offset = 0;
+    return;
+  }
+  const auto count = static_cast<uint16_t>(min(size_t(20), length - offset));
+  const auto status = esp_ble_gatts_send_indicate(session.interfaceId, session.id, receiptAttribute->getHandle(),
+      count, reinterpret_cast<uint8_t *>(receipt + offset), false);
+  lastSent = millis();
+  if (status == ESP_OK) {
+    offset += count;
+    if (offset == length) length = offset = 0;
+  }
+}
+#endif
 
 void render(ButtonState button, bool trusted) {
   display.fillRect(8, 48, 224, 135, ST77XX_BLACK);
@@ -157,11 +263,15 @@ void render(ButtonState button, bool trusted) {
 void sample(ButtonState button) {
   const char *value = button == ButtonState::Panic ? "panic" :
                       button == ButtonState::Confirm ? "confirm" : "released";
+  bool state = false;
+#if KEYRING_FEATHER_ENABLE_COMMANDS
+  state = readLed();
+#endif
   const int length = snprintf(frame, sizeof(frame),
       "{\"version\":1,\"deviceId\":\"%s\",\"bootId\":\"%s\",\"sequence\":%lu,\"uptimeMs\":%llu,"
-      "\"battery\":null,\"buttonState\":\"%s\",\"sensorValues\":{},\"state\":false}\n",
+      "\"battery\":null,\"buttonState\":\"%s\",\"sensorValues\":{},\"state\":%s}\n",
       DeviceId, bootId, static_cast<unsigned long>(sequence++),
-      static_cast<unsigned long long>(esp_timer_get_time() / 1000), value);
+      static_cast<unsigned long long>(esp_timer_get_time() / 1000), value, state ? "true" : "false");
   if (length < 1 || static_cast<size_t>(length) >= sizeof(frame)) return;
   frameSize = static_cast<size_t>(length);
   if (observation) observation->setValue(reinterpret_cast<const uint8_t *>(frame), frameSize - 1);
@@ -185,17 +295,27 @@ void initBle() {
   char identityJson[240];
   snprintf(identityJson, sizeof(identityJson),
       "{\"version\":1,\"deviceId\":\"%s\",\"boardRevision\":\"feather-esp32-v2\","
-      "\"firmwareRevision\":\"feather-probe-0.1.1\",\"bootId\":\"%s\"}", DeviceId, bootId);
+      "\"firmwareRevision\":\"%s\",\"bootId\":\"%s\"}", DeviceId, FirmwareRevision, bootId);
   identity->setValue(String(identityJson));
   constexpr auto readNotify = BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY;
   observation = service->createCharacteristic(ObservationId, readNotify);
   observation->setAccessPermissions(ReadPermission);
   observation->setValue(reinterpret_cast<const uint8_t *>(frame), frameSize - 1);
   addCccd(observation, true);
-  // Gateway discovery subscribes to this characteristic. The bench has no actuator.
+  // The observation profile retains the receipt characteristic for Gateway discovery.
   auto *receipt = service->createCharacteristic(ReceiptId, readNotify);
   receipt->setAccessPermissions(ReadPermission);
-  addCccd(receipt);
+  auto *cccd = addCccd(receipt);
+#if KEYRING_FEATHER_ENABLE_COMMANDS
+  if (ledConfigured && commands.begin()) {
+    receiptAttribute = receipt;
+    receiptCccd = cccd;
+    commandAttribute = service->createCharacteristic(CommandId, BLECharacteristic::PROPERTY_WRITE);
+    commandAttribute->setAccessPermissions(ESP_GATT_PERM_WRITE_ENC_MITM);
+  }
+#else
+  (void)cccd;
+#endif
   service->start();
   auto *advertising = BLEDevice::getAdvertising();
   advertising->addServiceUUID(ServiceId);
@@ -234,6 +354,12 @@ void setup() {
   Serial.begin(115200);
   pinMode(A0, INPUT_PULLUP);
   pinMode(A1, INPUT_PULLUP);
+#if KEYRING_FEATHER_ENABLE_COMMANDS
+  gpio_config_t led{};
+  led.pin_bit_mask = uint64_t{1} << LedPin;
+  led.mode = GPIO_MODE_INPUT_OUTPUT;
+  ledConfigured = gpio_set_level(LedPin, 0) == ESP_OK && gpio_config(&led) == ESP_OK;
+#endif
   snprintf(bootId, sizeof(bootId), "%08lx%08lx", static_cast<unsigned long>(esp_random()),
            static_cast<unsigned long>(esp_random()));
   display.init(240, 240);
@@ -266,7 +392,15 @@ void loop() {
   else if (confirm.pressed && !confirmWasPressed && !panic.pressed) nextDisplay = ButtonState::Confirm;
   const auto session = currentLink();
   if (nextDisplay != displayed || session.trusted != wasTrusted) render(nextDisplay, session.trusted);
-  if (button != previous || now - lastSample >= 2000) {
+  bool outputChanged = false;
+#if KEYRING_FEATHER_ENABLE_COMMANDS
+  static bool previousLed;
+  pumpCommands();
+  const bool led = readLed();
+  outputChanged = led != previousLed;
+  previousLed = led;
+#endif
+  if (button != previous || outputChanged || now - lastSample >= 2000) {
     sample(button);
     lastSample = now;
   }
@@ -275,6 +409,6 @@ void loop() {
   confirmWasPressed = confirm.pressed;
   panicWasPressed = panic.pressed;
   wasTrusted = session.trusted;
-  pumpObservation(session, now);
+  pumpObservation(currentLink(), millis());
   delay(2);
 }

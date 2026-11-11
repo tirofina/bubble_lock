@@ -13,7 +13,8 @@ from typing import Any
 from .model import canonical, iso_time, payload_hash
 from .config import ID
 
-DATA_TABLES = ("commands", "fences", "observations", "outbox", "core_sequences")
+BASE_TABLES = ("commands", "fences", "observations", "outbox", "core_sequences")
+DATA_TABLES = (*BASE_TABLES, "credential_receipts")
 META = "gateway_state"
 BINDING_KEYS = {"bindingVersion", "gatewayId", "originator", "cseId", "rvi",
                 "observationContainer", "receiptContainer", "healthContainer"}
@@ -25,12 +26,36 @@ class StateIdentityError(RuntimeError):
 
 def configured_binding(config: Any) -> dict[str, Any]:
     # Addresses and certificate paths can change without rewriting stored resource identities.
-    return {
+    binding = {
         "bindingVersion": 1, "gatewayId": config.gateway_id, "originator": config.originator,
         "cseId": config.cse_id, "rvi": config.rvi,
         "observationContainer": config.observation_container,
         "receiptContainer": config.receipt_container, "healthContainer": config.health_container,
     }
+    if config.cse_deployment_id is not None:
+        binding.update(bindingVersion=2, cseDeploymentId=config.cse_deployment_id)
+    if config.receipt_container_ri is not None:
+        binding["receiptContainerRi"] = config.receipt_container_ri
+    return binding
+
+
+def _valid_binding(binding: Any) -> bool:
+    if not isinstance(binding, dict) or type(binding.get("bindingVersion")) is not int:
+        return False
+    if any(not isinstance(binding.get(key), str) or not binding[key] for key in BINDING_KEYS - {"bindingVersion"}):
+        return False
+    if binding["bindingVersion"] == 1:
+        return binding.keys() == BINDING_KEYS
+    deployment = binding.get("cseDeploymentId")
+    v2_keys = BINDING_KEYS | {"cseDeploymentId"}
+    if (binding["bindingVersion"] != 2 or not isinstance(deployment, str)
+            or ID.fullmatch(deployment) is None):
+        return False
+    if "receiptContainerRi" not in binding:
+        return binding.keys() == v2_keys
+    receipt_ri = binding["receiptContainerRi"]
+    return (binding.keys() == (v2_keys | {"receiptContainerRi"})
+            and isinstance(receipt_ri, str) and ID.fullmatch(receipt_ri) is not None)
 
 
 def readonly(path: Path) -> sqlite3.Connection:
@@ -62,10 +87,7 @@ def metadata(db: sqlite3.Connection, names: set[str] | None = None) -> dict | No
         binding = json.loads(row["binding"])
     except (ValueError, TypeError, RecursionError):
         raise StateIdentityError("STATE_INVALID_IDENTITY") from None
-    if (not isinstance(binding, dict) or set(binding) != BINDING_KEYS
-            or type(binding["bindingVersion"]) is not int or binding["bindingVersion"] != 1
-            or any(not isinstance(binding[key], str) or not binding[key] for key in BINDING_KEYS - {"bindingVersion"})
-            or row["recovery_state"] not in {"LIVE", "QUARANTINED"}):
+    if not _valid_binding(binding) or row["recovery_state"] not in {"LIVE", "QUARANTINED"}:
         raise StateIdentityError("STATE_INVALID_IDENTITY")
     row["binding"] = binding
     return row
@@ -79,6 +101,10 @@ def counts(db: sqlite3.Connection, names: set[str] | None = None) -> dict[str, i
 
 
 def match(record: dict, expected: dict, *, require_live: bool = True) -> None:
+    if record["binding"].get("cseDeploymentId") != expected.get("cseDeploymentId"):
+        raise StateIdentityError("STATE_CSE_DEPLOYMENT_MISMATCH")
+    if record["binding"].get("receiptContainerRi") != expected.get("receiptContainerRi"):
+        raise StateIdentityError("STATE_RECEIPT_CONTAINER_MISMATCH")
     if canonical(record["binding"]) != canonical(expected):
         raise StateIdentityError("STATE_IDENTITY_MISMATCH")
     if require_live and record["recovery_state"] != "LIVE":
@@ -94,7 +120,7 @@ def preflight(path: Path, expected: dict) -> None:
         record = metadata(db, names)
         if record is not None:
             match(record, expected)
-            if not set(DATA_TABLES) <= names:
+            if not set(BASE_TABLES) <= names:
                 raise StateIdentityError("STATE_INCOMPLETE_SCHEMA")
         elif any(counts(db, names).values()):
             raise StateIdentityError("STATE_LEGACY_ADOPTION_REQUIRED")
@@ -133,9 +159,13 @@ def quarantine_copy(db: sqlite3.Connection, expected: dict, archive_id: str) -> 
 
 def legacy_ownership(db: sqlite3.Connection, expected: dict) -> None:
     """Check retained records before explicit adoption; not CSE authentication."""
+    if expected["bindingVersion"] != 1:
+        raise StateIdentityError("STATE_CSE_DEPLOYMENT_UNBOUND")
     names = tables(db)
     if not {"commands", "fences", "observations", "outbox"} <= names:
         raise StateIdentityError("STATE_INCOMPLETE_SCHEMA")
+    if "credential_receipts" in names and db.execute("SELECT 1 FROM credential_receipts LIMIT 1").fetchone():
+        raise StateIdentityError("STATE_UNBOUND_CREDENTIAL_RECEIPTS")
     for name in ("fences", "observations", "core_sequences"):
         if name in names:
             for row in db.execute(f"SELECT device_id FROM {name}"):

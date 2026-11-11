@@ -1,0 +1,1 @@
+2026-11-10 19:18:22,767 ERROR __main__ Gateway configuration blocked: GATEWAY_DATABASE and its lock must be files inside STATE_DIRECTORY

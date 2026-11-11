@@ -1,0 +1,47 @@
+{
+  "status": "passed",
+  "error": null,
+  "capturedCount": 5,
+  "publishedCount": 5,
+  "readbackCount": 5,
+  "deliveryChannels": {
+    "mqtt": 5,
+    "https": 0
+  },
+  "sequences": [
+    1039,
+    1040,
+    1041,
+    1042,
+    1043
+  ],
+  "buttonStates": [
+    "released",
+    "released",
+    "released",
+    "released",
+    "released"
+  ],
+  "payloadSha256": [
+    "6efa8e9928a0a1a7e26a6c117e1cb68fc6ed7715c6b0e0df37d55aad716bae6c",
+    "cb85de9bc5060b13b06f1b50b18958dd1c7e8c83990fc50e8746249de73d045d",
+    "97aadc3e3255e9965b02afc441509d0d9bbbd34f2ab92f0b3691eadfcd5f35bd",
+    "3fedc13e8f6c3e2f064185571e056b58cdf47759432d4372569c4fe455d35fca",
+    "8b345a59db9131ff76337ed6d37d59bbbd5614f94df10e901bd556fe61fb6b3d"
+  ],
+  "readbackSha256": [
+    "6efa8e9928a0a1a7e26a6c117e1cb68fc6ed7715c6b0e0df37d55aad716bae6c",
+    "cb85de9bc5060b13b06f1b50b18958dd1c7e8c83990fc50e8746249de73d045d",
+    "97aadc3e3255e9965b02afc441509d0d9bbbd34f2ab92f0b3691eadfcd5f35bd",
+    "3fedc13e8f6c3e2f064185571e056b58cdf47759432d4372569c4fe455d35fca",
+    "8b345a59db9131ff76337ed6d37d59bbbd5614f94df10e901bd556fe61fb6b3d"
+  ],
+  "tlsPolicy": {
+    "minimumVersion": "TLSv1.3",
+    "verifyServerCertificate": true,
+    "verifyServerHostname": true,
+    "clientCertificateRequired": true,
+    "handshakeVersionMeasured": false
+  },
+  "sourceCaptureSha256": "9026e441d1e3212a0cef6c95eee982126cabc39ca2b684ec280bdf1df86e58fa"
+}

@@ -1,0 +1,86 @@
+{
+  "role": "KEYRING",
+  "documentRevision": "2.0.0",
+  "date": "2026-11-10",
+  "gatewayVersion": "0.2.5",
+  "roleBase": "615de7908cce11908f76eefdb911a09e9d00c941",
+  "teamMain": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+  "teamArchiveSha256": "46dd62eabcf08ed69385c74581441512355fccdb8cd8f6b89ed34040be266978",
+  "runtime": {
+    "python": "3.12.14",
+    "node": "v24.22.1"
+  },
+  "suite": {
+    "gateway": {
+      "passed": 63,
+      "exit": 0
+    },
+    "centralCse": {
+      "passed": 2,
+      "exit": 0
+    }
+  },
+  "scenarios": [
+    {
+      "status": "APPLIED",
+      "ackCode": "APPLIED",
+      "gattWrites": 13,
+      "commandFrames": 1,
+      "cinCount": 1,
+      "readbackMatchesJournal": true,
+      "gracefulStop": true
+    },
+    {
+      "status": "REJECTED",
+      "ackCode": "NOT_AUTHORIZED",
+      "gattWrites": 0,
+      "commandFrames": 0,
+      "cinCount": 1,
+      "readbackMatchesJournal": true,
+      "gracefulStop": true
+    }
+  ],
+  "preFix": {
+    "dispatchRegressionFailures": 3,
+    "dispatchLogSha256Lf": "c1f0b957044f0a22491cbf1c7a0dc6ef4fe0de52f9c65934aba88cb35bfcf896",
+    "normalStopRaceObserved": true,
+    "stopRaceLogSha256Lf": "eafc0087fe7eaab8fa515fbda9d15cae514c4894da42250a3063856bb7986f48"
+  },
+  "cleanup": {
+    "ownedContainersRemaining": {
+      "privacy-bubble.cse-test-token": 0,
+      "privacy-bubble.test-token": 0
+    },
+    "ownedNetworksRemaining": 0,
+    "existingDevRunning": 4
+  },
+  "scope": {
+    "centralApi": "actual team Node loopback mTLS",
+    "gateway": "actual full worker run on PC",
+    "device": "fake GATT",
+    "cse": "actual disposable Mobius4/PostgreSQL",
+    "piVersionTestedInPriorCheckpoint": "0.2.4",
+    "goalComplete": false
+  },
+  "sha256Lf": {
+    "keyring/raspberry-pi-gateway/pyproject.toml": "c45fda48ab5a9951a845bbcf70d24f376eefd2416de71f126f0c5ebbc9293fed",
+    "keyring/raspberry-pi-gateway/src/bubble_gateway/__init__.py": "19c33aeb121774f3668df4cf12bf9440fee68044b758185940e40a0261a4ef45",
+    "keyring/raspberry-pi-gateway/src/bubble_gateway/ble.py": "e697db6157abf39e4b22d64ff8d3ece3cff3f42070b6620232cd1e9bf063ba8e",
+    "keyring/raspberry-pi-gateway/src/bubble_gateway/service.py": "4a91c770d6df41e1d618c3acd1a140918fdb58099415bee4c0da2fab53864f0a",
+    "keyring/raspberry-pi-gateway/src/bubble_gateway/store.py": "10b2e3bc24be702312c6d502ee2d7d7e572ad0efd24168f99c94dda884387891",
+    "keyring/raspberry-pi-gateway/tests/test_ble_sessions.py": "84c85e244a9efc4386275e1bab218e827aa12b67c0c93687834f0d54a2e6530e",
+    "keyring/raspberry-pi-gateway/tests/test_dispatch.py": "742308c2130cc655e23e8d23390e9f2c2c90fcc1d4831680a377ed70d9ebe961",
+    "keyring/raspberry-pi-gateway/cse_integration_tests/central_dispatch.py": "8594b69571a9d440fe6e625ec79efe99a2d5503bbc893b9b813bd3f64063c9d4"
+  },
+  "logSha256Lf": {
+    "gateway-tests.log": "50ebdb1d318a440db32c5cc593a04a8fc1e362224671a0ee8bf4ec8f8514506a",
+    "central-dispatch.log": "fd8f927e8c55061c62a76059e87151d52c79d878a9d67b2b43d782e06f16d884"
+  },
+  "wheel": {
+    "name": "privacy_bubble_gateway-0.2.5-py3-none-any.whl",
+    "bytes": 41371,
+    "sha256": "637e562c2a246258e047803806a0d845038be4968efdade88b2f05f3d16f03f3",
+    "matchingPythonFiles": 13,
+    "buildExit": 0
+  }
+}

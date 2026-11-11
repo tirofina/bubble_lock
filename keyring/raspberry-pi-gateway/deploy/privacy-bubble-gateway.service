@@ -14,6 +14,7 @@ WorkingDirectory=/opt/bubble_lock/keyring/raspberry-pi-gateway
 EnvironmentFile=/etc/privacy-bubble/gateway.env
 Environment=PYTHONUNBUFFERED=1
 Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStartPre=/opt/bubble_lock/keyring/raspberry-pi-gateway/.venv/bin/bubble-gateway --check-config
 ExecStart=/opt/bubble_lock/keyring/raspberry-pi-gateway/.venv/bin/bubble-gateway --log-level INFO
 Restart=on-failure
 RestartSec=5

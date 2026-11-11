@@ -1,0 +1,53 @@
+services:
+  broker:
+    volumes:
+      - ./scoped-telemetry/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./.local/scoped/tls/ca.pem:/mosquitto/tls/ca.pem:ro
+      - ./.local/scoped/tls/server.pem:/mosquitto/tls/server.pem:ro
+      - ./.local/scoped/tls/server.key:/mosquitto/tls/server.key:ro
+      - ./scoped-telemetry/mqtt.acl:/mosquitto/config/keyring.acl:ro
+  mobius4:
+    environment:
+      MQTT_ENABLED: "false"
+  tls:
+    volumes:
+      - ./scoped-telemetry/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./.local/scoped/receipt-routes:/etc/nginx/keyring-receipt-routes:ro
+      - ./.local/scoped/tls/ca.pem:/etc/nginx/keyring-tls/ca.pem:ro
+      - ./.local/scoped/tls/server.pem:/etc/nginx/keyring-tls/server.pem:ro
+      - ./.local/scoped/tls/server.key:/etc/nginx/keyring-tls/server.key:ro
+  scoped-consumer:
+    image: privacy-bubble-keyring-mobius4:local
+    container_name: privacy-bubble-keyring-scoped-consumer
+    entrypoint: ["node", "/scoped/consumer.mjs"]
+    depends_on: [broker, tls]
+    environment:
+      CSE_ADMIN: ${CSE_ADMIN:?Run prepare-scoped.ps1 first}
+    volumes:
+      - ./scoped-telemetry/consumer.mjs:/scoped/consumer.mjs:ro
+      - ../../integration-candidate:/scoped/integration-candidate:ro
+      - ${SCOPED_TEAM_STORE:?Set the pinned team IntegrationStore path}:/scoped/integration-store.mjs:ro
+      - ./.local/scoped/config:/scoped/config:ro
+      - ./.local/scoped/tls/ca.pem:/scoped/tls/ca.pem:ro
+      - ./.local/scoped/tls/client.pem:/scoped/tls/client.pem:ro
+      - ./.local/scoped/tls/client.key:/scoped/tls/client.key:ro
+      - scoped_cursor:/var/lib/mobius4
+    read_only: true
+    cap_drop: [ALL]
+    stop_grace_period: 30s
+  receipt-relay:
+    profiles: [receipt-relay]
+    image: privacy-bubble-keyring-mobius4:local
+    network_mode: service:mobius4
+    entrypoint: ["node", "/relay/relay.mjs"]
+    user: "0:0"
+    volumes:
+      - ./receipt-settlement/relay.mjs:/relay/relay.mjs:ro
+      - ./.local/scoped/tls/ca.pem:/relay/tls/ca.pem:ro
+      - ./receipt-settlement/.local/callback-peer/relay.pem:/relay/tls/relay.pem:ro
+      - ./receipt-settlement/.local/callback-peer/relay.key:/relay/tls/relay.key:ro
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+volumes:
+  scoped_cursor:

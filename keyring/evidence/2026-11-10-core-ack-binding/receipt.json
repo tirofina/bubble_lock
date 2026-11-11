@@ -1,0 +1,54 @@
+{
+  "role": "KEYRING",
+  "date": "2026-11-10",
+  "documentRevision": "2.0.0",
+  "gatewayVersion": "0.2.6",
+  "roleBase": "7891d2ccb50e1ad0acf47b6ee765d7e858708c7e",
+  "teamMain": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+  "teamArchiveSha256": "46dd62eabcf08ed69385c74581441512355fccdb8cd8f6b89ed34040be266978",
+  "testExit": 0,
+  "integrationCasesPassed": 2,
+  "scenarios": [
+    {
+      "status": "APPLIED",
+      "ackCode": "APPLIED",
+      "gattWrites": 13,
+      "commandFrames": 1,
+      "cinCount": 1,
+      "readbackMatchesJournal": true,
+      "coreAckBinding": {
+        "hashesMatchAcrossRuntimes": true,
+        "upstreamHttpIssuedAck": "REVIEW",
+        "upstreamRegisteredWrongHashAck": "ACK_RECORDED",
+        "candidateValidCases": 2,
+        "candidateRejectedCases": 7
+      },
+      "gracefulStop": true
+    },
+    {
+      "status": "REJECTED",
+      "ackCode": "NOT_AUTHORIZED",
+      "gattWrites": 0,
+      "commandFrames": 0,
+      "cinCount": 1,
+      "readbackMatchesJournal": true,
+      "gracefulStop": true
+    }
+  ],
+  "scope": "real team Node mTLS API, Gateway workers and disposable CSE; fake GATT and direct CORE handler with stub MQTT",
+  "candidateProductionConnected": false,
+  "settlementPersistenceVerified": false,
+  "cleanup": {
+    "ownedContainersRemaining": 0,
+    "ownedNetworksRemaining": 0,
+    "existingDevRunning": 4
+  },
+  "sourceSha256Lf": {
+    "keyring/integration-candidate/receipt-binding.mjs": "5fd739ecc97ec2e560521d7d360e542f5a66e0ef4ce740ddfbe0a3c5d63fe5da",
+    "keyring/raspberry-pi-gateway/cse_integration_tests/check_core_ack.mjs": "99b496fe2b875272d0fc3543c7c4a657839cb1908c0782a9f10b3272e998e348",
+    "keyring/raspberry-pi-gateway/cse_integration_tests/central_dispatch.py": "ee903fa2dca38a5b80d4fee581557668f808c7b348af8e1fb19a1bb0689c8c1f"
+  },
+  "logSha256Lf": {
+    "central-dispatch.log": "4ac60b4436ecfe5af6d61b8f58bd06857a3d7011610c122c2f702aaa31c53d15"
+  }
+}

@@ -80,6 +80,28 @@ def authorization_deadline(command: dict, digest: str, response: Any) -> datetim
     return min(parse_time(response["expiresAt"]), parse_time(command["deadline"]))
 
 
+def validate_credential_status(raw: Any, gateway_id: str) -> dict:
+    if (not isinstance(raw, dict) or set(raw) != {"gatewayId", "credentialRevision", "status"}
+            or raw["gatewayId"] != gateway_id
+            or raw["status"] not in ("ACTIVE", "LOST", "REVOKED")
+            or not isinstance(raw["credentialRevision"], str)
+            or not 1 <= len(raw["credentialRevision"]) <= 64):
+        raise ValueError("Credential status contract mismatch")
+    return raw
+
+
+def valid_battery_alert(battery: Any, sensor_values: dict) -> bool:
+    if "batteryAlert" not in sensor_values:
+        return True
+    alert = sensor_values["batteryAlert"]
+    return alert is None if battery is None else type(alert) is bool
+
+
+def valid_button_presses(presses: Any) -> bool:
+    return (isinstance(presses, list) and len(presses) == 2
+            and all(type(value) is int and 0 <= value <= 4294967295 for value in presses))
+
+
 def validate_observation(raw: Any, gateway_id: str, devices: dict[str, str]) -> dict:
     keys = {"version", "gatewayId", "deviceId", "bootId", "sequence", "observedAt", "receivedAt",
             "rssi", "battery", "buttonState", "sensorValues", "state", "firmwareRevision", "timestampSource"}
@@ -103,8 +125,12 @@ def validate_observation(raw: Any, gateway_id: str, devices: dict[str, str]) -> 
         raise ValueError("Invalid observation state")
     if not isinstance(raw["sensorValues"], dict) or len(raw["sensorValues"]) > 32:
         raise ValueError("Invalid sensor values")
+    if not valid_battery_alert(raw["battery"], raw["sensorValues"]):
+        raise ValueError("Invalid battery alert for the reported charge")
     if any(not isinstance(key, str) or not 1 <= len(key) <= 64 for key in raw["sensorValues"]):
         raise ValueError("Invalid sensor name")
+    if "buttonPresses" in raw["sensorValues"] and not valid_button_presses(raw["sensorValues"]["buttonPresses"]):
+        raise ValueError("Invalid boot-local button press counts")
     if not isinstance(raw["firmwareRevision"], str) or not 1 <= len(raw["firmwareRevision"]) <= 64:
         raise ValueError("Invalid firmware revision")
     if raw["timestampSource"] != "gateway-received" or len(canonical(raw).encode("utf-8")) > 8192:

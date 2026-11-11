@@ -1,0 +1,14 @@
+{
+  "encoding": "raw working-tree bytes as executed; Git may normalize line endings",
+  "files": {
+    "keyring/firmware/feather_probe/relay.py": "e466215c531709b9d9b85b6e1d723978d68c95afa51dff3b3c09b62538012c3a",
+    "keyring/firmware/feather_probe/tests/test_relay.py": "f539e9f20d5227f86beaab4c454d2618c8ee798c4fc3f1a470cb6a9a6a2148f5",
+    "keyring/raspberry-pi-gateway/src/bubble_gateway/ble.py": "b04e73f6018ac27b1362a36a22b476a22f27d8f2c5042263733232fede26eeef",
+    "keyring/raspberry-pi-gateway/src/bubble_gateway/service.py": "e6649210103decb3e02dfe81a576c2b09ede3f8c9130d8c842a0014329a3ebf1",
+    "keyring/raspberry-pi-gateway/src/bubble_gateway/transport.py": "b8fdc12a0ea6a60dbda9d1f0ed6321e37cc724b5888fe94344ff8f48e33c9f85",
+    "keyring/raspberry-pi-gateway/src/bubble_gateway/store.py": "82c811e448779005545287699a9bcb9f5827f6dc4273e0a0ff87c98bec4afe1c",
+    "keyring/raspberry-pi-gateway/cse_integration_tests/mobius_fixture.py": "aa09d5ded6549bae34f4fb5a8c72dafa5f4a3043e03f291ab78ee5b59cdd29d6",
+    "keyring/raspberry-pi-gateway/integration_tests/mqtt_fixture.py": "f495ad00021f5c6fbb2f4e5c013bd3aa5c48a4c47388f2f0971ac53bc5d41aa8",
+    "keyring/raspberry-pi-gateway/tests/tls_fixture.py": "59c90f59f48df9f43fa694b2b7644299ad495bc4be5f78434833edb000d1ad68"
+  }
+}

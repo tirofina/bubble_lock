@@ -1,0 +1,65 @@
+{
+  "role": "KEYRING",
+  "documentRevision": "2.0.0",
+  "date": "2026-11-10",
+  "roleBase": "7b2b295523bc147fae6c2d3f2c3255bc901aea72",
+  "teamMain": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+  "toolchain": {
+    "arduinoCli": "1.4.1",
+    "esp32Arduino": "3.3.11",
+    "fqbn": "esp32:esp32:adafruit_feather_esp32_v2",
+    "arduinoJson": "6.21.5",
+    "native": "MSVC 14.29"
+  },
+  "buildScope": "isolated copies using a synthetic compile PIN; binaries retained locally",
+  "profiles": {
+    "observation": {
+      "revision": "feather-probe-0.1.1",
+      "exit": 0,
+      "programBytes": 1160616,
+      "globalBytes": 44480,
+      "applicationBytes": 1160768,
+      "applicationSha256": "65a7c047b876e7107fc2972aaab9903c9535e2e66588df013cd2d5196e03c578",
+      "log": "observation-build.log"
+    },
+    "command": {
+      "revision": "feather-probe-0.2.0",
+      "exit": 0,
+      "programBytes": 1171220,
+      "globalBytes": 48568,
+      "applicationBytes": 1171376,
+      "applicationSha256": "183b82d50e2e9d123422b912f07b4086d075c8693595de50bc2962a8b22d8faa",
+      "log": "command-build.log"
+    }
+  },
+  "firstBuildFailure": {
+    "exit": 1,
+    "cause": "observation state variable placed outside sample(); corrected before final builds",
+    "rawLogSha256": "faa9c4bea7490022cea2d55b3765e1fac77e496eb6fda0c064e31753ea43b777"
+  },
+  "nativeTests": {
+    "passedGroups": 4,
+    "exit": 0,
+    "scope": "actual FeatherCommands and ArduinoJson, stub GPIO/time/NVS/RTOS queue"
+  },
+  "hardware": {
+    "uploaded": false,
+    "actualGpioReadbackVerified": false,
+    "physicalCommandCseReceiptVerified": false
+  },
+  "sha256Lf": {
+    "keyring/firmware/feather_probe/feather_probe.ino": "a4a4eb2caec1c2b80207e89fda43624a59f9bbc3323283316416e28047845bff",
+    "keyring/firmware/feather_probe/feather_commands.h": "d3e29b0c25891f735961cb218c7a2fb8446b5d3b88ae3c79c320334ab00d0dfa",
+    "keyring/firmware/feather_probe/tests/native/stubs/bench_platform.h": "0d4576d6ae2b9951d21835e3860ff80461874592a463ce19b92e2675b3bf479d",
+    "keyring/firmware/feather_probe/tests/native/stubs/esp_timer.h": "97f77a5201d3e04bf4be225124e0717d8c0b4b93ad4ae1a49c52795df35a6fdc",
+    "keyring/firmware/feather_probe/tests/native/stubs/freertos/FreeRTOS.h": "9661ce50d39393ec8ba77629de4ea10cf9ea88c1f8cbbf281356d06cb4fe767c",
+    "keyring/firmware/feather_probe/tests/native/stubs/freertos/queue.h": "9661ce50d39393ec8ba77629de4ea10cf9ea88c1f8cbbf281356d06cb4fe767c",
+    "keyring/firmware/feather_probe/tests/native/stubs/nvs.h": "97f77a5201d3e04bf4be225124e0717d8c0b4b93ad4ae1a49c52795df35a6fdc",
+    "keyring/firmware/feather_probe/tests/native/feather_commands_test.cpp": "82cba438e97ea509d2e13fd75b2592d3921f3a24f49064b1712b179e99753e01"
+  },
+  "logSha256Lf": {
+    "command-build.log": "103015dc324b7b313939c7cf73cc99d22d7d89f0b2f0e791907e60f0837dbe88",
+    "native-tests.log": "62034fe8995d01643555dfa78a9d5382ffdb8705102c66022ec7d806ba87c32a",
+    "observation-build.log": "63cd13305a9b18075cc3989666ccb7904bda5803a5536dac935ab4e9624af35c"
+  }
+}

@@ -1,0 +1,6 @@
+Running as unit: keyring-live-daemon-20261110.service
+2026-11-10 19:06:23,609 WARNING bubble_gateway.ble BLE reconnect scheduled for keyring-feather-lab (TimeoutError)
+Finished with result: success
+Main processes terminated with: code=exited, status=0/SUCCESS
+Service runtime: 51.024s
+CPU time consumed: 5.980s

@@ -1,0 +1,5 @@
+Running as unit: keyring-live-daemon-restart-20261110.service
+Finished with result: success
+Main processes terminated with: code=exited, status=0/SUCCESS
+Service runtime: 23.804s
+CPU time consumed: 4.113s

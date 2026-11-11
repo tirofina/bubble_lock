@@ -14,7 +14,7 @@ class DisposableMobius:
     label = "privacy-bubble.cse-test-token"
     admin, cse_id = "Skeyring-fixture", "Mobius4"
 
-    def __init__(self, pki):
+    def __init__(self, pki, *, core_gateway_id=None):
         self.pki, self.token = pki, uuid.uuid4().hex
         self.network, self.broker, self.containers = None, None, {}
         self.password = secrets.token_hex(16)
@@ -27,7 +27,8 @@ class DisposableMobius:
                                   "keyring-cse-test-" + self.token).stdout.strip()
             self.check_network()
             self.broker = DockerBroker(pki, network=self.network, originator=self.admin,
-                                       cse_id=self.cse_id, internal_listener=True)
+                                       cse_id=self.cse_id, internal_listener=True,
+                                       core_gateway_id=core_gateway_id)
             self.run("postgres", ["--user", "999:999", "--read-only", "--cap-drop", "ALL", "--memory", "512m",
                 "--tmpfs", "/var/lib/postgresql/data:rw,size=256m,uid=999,gid=999,mode=0700",
                 "--tmpfs", "/var/run/postgresql:rw,size=16m,uid=999,gid=999,mode=0700",

@@ -1,0 +1,11 @@
+{
+  "checkedAt": "2026-11-10T09:32:01.863638+00:00",
+  "method": "git ls-remote --heads origin",
+  "heads": {
+    "main": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+    "PC-MOBIUS-CORE": "d54a43a95a7ef9748d795fd614114877efa7787c",
+    "feature/web-dashboard": "80ed37fc526ae5d82482fb835085917d63116941",
+    "codex/keyring-namho": "686f7b44b94cf5668df86cc97c2722a18024854b"
+  },
+  "teamChangesSinceCheckpoint": false
+}

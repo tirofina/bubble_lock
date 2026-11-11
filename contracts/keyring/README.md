@@ -14,8 +14,10 @@
 | [ble-command.schema.json](ble-command.schema.json) | Gateway → 키링 | 중앙 명령을 제한된 실행 시간으로 변환한 BLE 명령 |
 | [ble-receipt.schema.json](ble-receipt.schema.json) | 키링 → Gateway | ACK, uptime, GPIO readback |
 | [observation.schema.json](observation.schema.json) | Gateway → CSE | Gateway 시각·실측 RSSI를 결합한 관측 |
+| [core-telemetry-receipt.schema.json](core-telemetry-receipt.schema.json) | CORE → Gateway | scoped 관측 본문의 SHA-256과 oneM2M SDT 적용 결과 |
+| [scoped-nullable-telemetry.schema.json](scoped-nullable-telemetry.schema.json) | Gateway → scoped CORE | 배터리·RSSI 중 미확인 값이 있는 scoped 관측 1.1.0 |
 | [receipt.schema.json](receipt.schema.json) | Gateway → CSE | 정산 상태, 명령 hash, 시각의 근거, 장치 결과 |
-| [health.schema.json](health.schema.json) | Gateway → CSE | 실행 프로세스, credential, queue 및 연결 상태 |
+| [health.schema.json](health.schema.json) | Gateway → CSE | 실행 프로세스, credential, queue 및 연결 상태. 이력 프레임은 `credentialTransition` 포함 |
 | [ble-journal-manifest.schema.json](ble-journal-manifest.schema.json) | 장치 → Gateway | frozen NVS journal manifest, KEYRING 확장 |
 | [ble-journal-record-part.schema.json](ble-journal-record-part.schema.json) | 장치 → Gateway | snapshot에 묶인 READ record 조각 |
 | [journal-record.schema.json](journal-record.schema.json) | Gateway 보관 | 조립한 PREPARED/COMPLETED record |
@@ -24,8 +26,9 @@
 | [gateway-state-binding.schema.json](gateway-state-binding.schema.json) | Gateway 로컬 DB | configured principal/CSE 자원 identity, 중앙 승인 아님 |
 | [gateway-state-archive.schema.json](gateway-state-archive.schema.json) | Gateway 로컬 보관 | WAL snapshot·실제 수/hash·QUARANTINED/not-settled |
 | [gateway-state-adoption.schema.json](gateway-state-adoption.schema.json) | Gateway 로컬 보관 | 기존 원본 DB에 identity 추가 결과. restore 승인 아님 |
+| [gateway-core-retirement.schema.json](gateway-core-retirement.schema.json) | Gateway 로컬 보관 | 종료된 CORE scope의 스냅샷·정리 계획과 실제 commit 상태 |
 
-각 파일은 외부 `$ref` 없이 사용할 수 있다. top-level 속성은 모두 필수이며, 미확인 값에는 스키마에서 허용하는 `null`을 사용한다. `additionalProperties:false`를 기본으로 두되 센서 값과 장치별 health 확장 필드는 별도로 허용한다. JSON Schema 라이브러리에서 `format` 검사를 기본적으로 생략하는 경우에는 `date-time` 검사기를 함께 설정해야 한다.
+각 파일은 외부 `$ref` 없이 사용할 수 있다. 필수 속성은 각 스키마의 `required`를 따르며, 미확인 값에는 스키마에서 허용하는 `null`을 사용한다. `additionalProperties:false`를 기본으로 두되 센서 값과 장치별 health 확장 필드는 별도로 허용한다. JSON Schema 라이브러리에서 `format` 검사를 기본적으로 생략하는 경우에는 `date-time` 검사기를 함께 설정해야 한다.
 
 ## 식별자와 시간
 
@@ -41,11 +44,14 @@
 
 동일 commandId와 hash의 재수신은 저장된 처리 결과와 연결한다. 같은 commandId에 다른 hash가 오면 충돌로 거절한다. 전송 ACK와 실제 적용 receipt는 구분한다. MQTT PUBACK만으로 장치 실행이나 oneM2M CREATE 성공을 주장하지 않는다.
 
+Scoped CORE 관측 영수증의 `payloadHash`는 발행한 MQTT 본문의 UTF-8 바이트 그대로 계산한다. `gatewayId`·`deviceId`·`ownershipEpoch`는 mTLS ACL로 제한한 발행·응답 토픽과 결속한다. `responseStatus=2004`는 oneM2M SDT UPDATE의 RQI가 일치했고 적용 기록을 저장했음을 뜻한다.
+
 ## 관측과 receipt의 해석
 
 - `observation.observedAt`은 Gateway가 BLE 값을 수신한 시각이다. `timestampSource`는 `gateway-received`이며 장치에서 정확한 UTC를 측정했다는 뜻이 아니다.
 - `battery:null`은 배터리 값 미확인, `rssi:null`은 scan RSSI 미확인이다. RSSI로 물리적 거리를 계산하거나 예시 측정값을 채우지 않는다.
 - `sensorValues`의 필드 의미는 [펌웨어 문서](../../keyring/firmware/README.md)와 함께 확정한다. 센서 오류를 정상 측정값 0으로 대체하지 않는다.
+- `sensorValues.buttonPresses`는 선택형 `[확인, 비상]` 누름 누계이며 두 값은 0..4294967295 정수다. `buttonState`는 순간 상태다. 누계 비교 범위는 동일 `deviceId`와 `bootId`다.
 - Gateway receipt의 `acceptedAt`과 `appliedAt`은 동일 boot의 시간 anchor가 있을 때만 계산한다. 이때 `timestampSource`는 `gateway-estimated`다. 근거가 없으면 두 필드를 `null`, source를 `unavailable`로 설정한다.
 - `readback.state`는 GPIO 출력 수준이다. 모터 회전이나 진동 강도를 측정한 결과로 해석하지 않는다.
 - `APPLIED`는 명령 처리 상태다. 모터 자동 OFF 같은 이후 상태 변화는 새로운 관측에서 확인한다. 과거 APPLIED receipt를 현재 출력 상태로 사용하지 않는다.

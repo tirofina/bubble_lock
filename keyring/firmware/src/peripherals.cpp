@@ -163,10 +163,14 @@ void Peripherals::draw(const KeyringScreen &screen) {
   display.setTextColor(Cyan); display.setCursor(8, 8); display.print("PRIVACY BUBBLE");
   display.setTextColor(White); display.setCursor(8, 38);
   display.print(screen.authenticated ? "BLE: BONDED" : screen.linked ? "BLE: PAIRING" : "BLE: OFFLINE");
+  display.setTextColor(screen.batteryValid && screen.batteryLow ? Red : White);
   display.setCursor(8, 64); display.print("Battery: ");
-  if (screen.batteryValid) { display.print(screen.battery, 0); display.print('%'); }
-  else display.print("--");
-  display.setCursor(8, 90); display.print(screen.panic ? "Button: PANIC" : screen.confirm ? "Button: CONFIRM" : "Button: RELEASED");
+  if (screen.batteryValid) {
+    display.print(screen.battery, 0); display.print('%');
+    if (screen.batteryLow) display.print(" LOW");
+  } else display.print("--");
+  display.setTextColor(White); display.setCursor(8, 90);
+  display.print(screen.panic ? "Button: PANIC" : screen.confirm ? "Button: CONFIRM" : "Button: RELEASED");
   display.setCursor(8, 116); display.print(screen.motor ? "Motor GPIO: ON" : "Motor GPIO: OFF");
   display.setCursor(8, 142); display.print("Motion: "); display.print(screen.motionEvents);
   display.setCursor(8, 168); display.setTextColor(screen.fault || !screen.journal ? Red : White);

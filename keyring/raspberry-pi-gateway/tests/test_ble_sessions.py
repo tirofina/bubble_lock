@@ -1,13 +1,302 @@
 """Connection replacement races using fake GATT clients; no scanner or radio."""
 import asyncio
 import json
+import time
 import unittest
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
-from bubble_gateway.ble import BleFleet, BleUnavailable
+from bubble_gateway.ble import BleFleet, BleProtocolError, BleUnavailable
+from bubble_gateway.ble_characterize import summarize
 from bubble_gateway.model import payload_hash
 from helpers import command, config, device_receipt
+
+
+class WakeCaptureTests(unittest.TestCase):
+    def test_requires_a_new_boot_and_the_expected_button_mask(self):
+        board = "r18-hand-solder"
+
+        def frame(kind, at, phase, boot, **fields):
+            return dict(event=kind, atNs=at * 1_000_000, phase=phase, generation=1,
+                        bootId=boot, boardRevision=board, **fields)
+
+        ready = {"advertisingRssiDbm": None, "advertisingAgeMs": None}
+        for boot, pins, status in (("boot-after", 64, "RECORDED"), ("boot-before", 64, "INSUFFICIENT"),
+                                   ("boot-after", 128, "INSUFFICIENT"), ("boot-after", 192, "INSUFFICIENT")):
+            with self.subTest(boot=boot, pins=pins):
+                events = [
+                    frame("ready", 1, "baseline", "boot-before", **ready),
+                    frame("notification", 2, "baseline", "boot-before", sequence=1),
+                    frame("ready", 20, "after-wake", boot, **ready),
+                    frame("notification", 21, "after-wake", boot, sequence=2,
+                          wakeCause="button", wakePins=pins, deviceUptimeMs=700),
+                ]
+                report = summarize(events, 0, 30_000_000, board=board, mode="wake", truncated=False,
+                                   dropped=0, expected_wake="confirm", release_ms=5)
+                self.assertEqual(report["status"], status)
+                self.assertEqual(len(report["sessions"]), 2)
+                self.assertEqual(report["wake"]["releaseToFirstNotificationMs"], 16)
+
+    def test_power_capture_deduplicates_same_boot_and_requires_first_wake_boot(self):
+        board = "r18-hand-solder"
+
+        def frame(kind, at, phase, boot, generation, **fields):
+            return dict(event=kind, atNs=at * 1_000_000, phase=phase, generation=generation,
+                        bootId=boot, boardRevision=board, **fields)
+
+        ready = {"advertisingRssiDbm": None, "advertisingAgeMs": None}
+        sample = dict(status="ok", busVoltageMv=3300, currentUa=-100, loadPowerUw=-330,
+                      shuntVoltageUv=-10, readUptimeMs=700)
+        stale = dict.fromkeys(sample)
+        stale["status"] = "stale"
+        events = [
+            frame("ready", 1, "baseline", "before", 1, **ready),
+            frame("notification", 2, "baseline", "before", 1, sequence=1, ina219=sample, deviceUptimeMs=750),
+            frame("lost", 3, "baseline", "before", 1),
+            frame("ready", 4, "baseline", "before", 2, **ready),
+            frame("notification", 5, "baseline", "before", 2, sequence=2, ina219=sample, deviceUptimeMs=800),
+            frame("ready", 10, "after-wake", "first-after", 1, **ready),
+            frame("notification", 11, "after-wake", "first-after", 1, sequence=1,
+                  wakeCause="button", wakePins=64, deviceUptimeMs=600),
+            frame("notification", 12, "after-wake", "first-after", 1, sequence=2, ina219=None, deviceUptimeMs=650),
+            frame("notification", 13, "after-wake", "first-after", 1, sequence=3, ina219=stale, deviceUptimeMs=690),
+            frame("ready", 20, "after-wake", "later-after", 2, **ready),
+            frame("notification", 21, "after-wake", "later-after", 2, sequence=1, ina219=sample, deviceUptimeMs=750),
+        ]
+        options = dict(board=board, mode="wake", truncated=False, dropped=0, expected_wake="confirm", release_ms=6)
+        baseline = summarize(events, 0, 30_000_000, **options)
+        self.assertEqual(baseline["status"], "RECORDED")
+        self.assertNotIn("power", baseline)
+        self.assertTrue(all("ina219" not in row for row in baseline["events"]))
+
+        missing = summarize(events, 0, 30_000_000, include_power=True, **options)
+        self.assertEqual(missing["status"], "INSUFFICIENT")
+        self.assertEqual(missing["power"], dict(uniqueValidSamples=2, repeatedValidFrames=1,
+                                               invalidFrames=1, missingEnergyFrames=1, missingPhases=["after-wake"]))
+
+        after_power = frame("notification", 14, "after-wake", "first-after", 1,
+                            sequence=4, ina219=sample, deviceUptimeMs=750)
+        complete_events = sorted([*events, after_power], key=lambda event: event["atNs"])
+        complete = summarize(complete_events, 0, 30_000_000, include_power=True, **options)
+        self.assertEqual(complete["status"], "RECORDED")
+        self.assertEqual(complete["power"]["uniqueValidSamples"], 3)
+        self.assertEqual([row["newPowerSample"] for row in complete["events"] if "newPowerSample" in row],
+                         [True, False, True, True])
+
+
+class BatteryCaptureTests(unittest.TestCase):
+    def capture(self, samples, *, split_at=None, thresholds=(20, 25), mode="battery"):
+        board = "r18-hand-solder"
+        events = []
+
+        def event(kind, generation, **fields):
+            events.append(dict(event=kind, generation=generation, atNs=len(events) * 1_000_000,
+                               bootId="same-boot", boardRevision=board, **fields))
+
+        def ready(generation):
+            event("ready", generation, advertisingRssiDbm=None, advertisingAgeMs=None)
+
+        generation = 1
+        ready(generation)
+        for sequence, sample in enumerate(samples, start=1):
+            if sequence == split_at:
+                event("lost", generation)
+                generation += 1
+                ready(generation)
+            fields = {} if sample is None else dict(batteryPercent=sample[0], batteryAlert=sample[1])
+            event("notification", generation, sequence=sequence, **fields)
+        return summarize(events, 0, len(events) * 1_000_000, board=board, mode=mode,
+                         truncated=False, dropped=0, battery_thresholds=thresholds)
+
+    def test_both_in_band_states_and_boundary_samples_in_one_session(self):
+        report = self.capture([(26, False), (22, False), (20, True), (None, None), (22, True), (25, False)])
+        self.assertEqual(report["status"], "RECORDED")
+        self.assertEqual(report["battery"]["unknownFrames"], 1)
+        cycle = report["battery"]["matchedCycle"]
+        self.assertEqual([marker["stage"] for marker in cycle],
+                         ["initialClear", "clearInBand", "lowAlert", "alertInBand", "recovered"])
+        self.assertEqual([marker["sequence"] for marker in cycle], [1, 2, 3, 5, 6])
+        self.assertEqual({marker["session"] for marker in cycle}, {1})
+
+    def test_incomplete_sweeps_and_sessions_are_not_combined(self):
+        samples = [(25, False), (22, False), (20, True), (22, True), (25, False)]
+        for report in (self.capture(samples, split_at=4), self.capture(samples[:3] + samples[4:]),
+                       self.capture(samples[:3] + [(22, False)] + samples[3:])):
+            self.assertEqual(report["status"], "INSUFFICIENT")
+            self.assertIsNone(report["battery"]["matchedCycle"])
+
+    def test_mismatch_or_missing_field_prevents_recorded_status(self):
+        samples = [(25, False), (22, False), (20, True), (22, True), (25, False)]
+        for mismatch in ((20, False), (25, True)):
+            report = self.capture([*samples, mismatch])
+            self.assertEqual(report["status"], "MISMATCH")
+            self.assertEqual(report["battery"]["mismatchedFrames"], 1)
+        missing = self.capture([*samples, None])
+        self.assertEqual(missing["status"], "INSUFFICIENT")
+        self.assertEqual(missing["battery"]["missingAlertFrames"], 1)
+
+    def test_custom_thresholds_and_battery_data_omitted_from_range_report(self):
+        samples = [(35, False), (32, False), (30, True), (32, True), (35, False)]
+        self.assertEqual(self.capture(samples, thresholds=(30, 35))["status"], "RECORDED")
+        self.assertEqual(self.capture(samples)["status"], "MISMATCH")
+        report = self.capture(samples, mode="range")
+        self.assertNotIn("battery", report)
+        self.assertTrue(all("batteryAlert" not in row and "batteryPercent" not in row for row in report["events"]))
+
+
+class BringupCaptureTests(unittest.TestCase):
+    board = "r18-hand-solder"
+
+    def events(self, *, split_at=None, command_ready=False):
+        events = []
+
+        def add(kind, generation, **fields):
+            events.append(dict(event=kind, generation=generation, atNs=len(events) * 1_000_000,
+                               bootId="private-boot", boardRevision=self.board, **fields))
+
+        def ready(generation):
+            add("ready", generation, commandReady=command_ready, advertisingRssiDbm=None, advertisingAgeMs=None)
+
+        generation = 1
+        ready(generation)
+        cases = (
+            ("released", [2, 1], dict(detail="sensors", batteryStatus="ok", accelStatus="ok",
+                                      motion="ready", accelerationG=[0, 0, 1])),
+            ("confirm", [3, 1], {}),
+            ("released", [3, 1], dict(detail="energy")),
+            ("panic", [3, 2], {}),
+            ("released", [3, 2], dict(detail="health", power="disabled")),
+        )
+        for sequence, (button, presses, sensor) in enumerate(cases):
+            if sequence == split_at:
+                add("lost", generation)
+                generation += 1
+                ready(generation)
+            energy = {"ina219": {"status": "ok", "readUptimeMs": 100}, "deviceUptimeMs": 150} if sequence == 2 else {}
+            observation = dict(state=False, buttonState=button, battery=73, deviceId="private-device", uptimeMs=150,
+                               sensorValues=dict(sensor, fault=False, journal="disabled", buttonPresses=presses,
+                                                 arbitraryField="private-payload"))
+            add("notification", generation, sequence=sequence, observation=observation, **energy)
+        return events
+
+    def report(self, events):
+        return summarize(events, 0, len(events) * 1_000_000, board=self.board, mode="bringup",
+                         truncated=False, dropped=0)
+
+    def test_one_session_records_buttons_sensors_power_and_health_without_raw_frame(self):
+        report = self.report(self.events())
+        self.assertEqual(report["status"], "RECORDED")
+        self.assertEqual(report["bringup"], dict(session=1, buttonSequences=[0, 1, 2, 3, 4],
+                                                 sensorSequence=0, powerSequence=2, healthSequence=4,
+                                                 missing=[], mismatches=[]))
+        contents = json.dumps(report)
+        for private in ("private-boot", "private-device", "private-payload"):
+            self.assertNotIn(private, contents)
+
+    def test_capture_does_not_splice_sessions_even_on_the_same_boot(self):
+        report = self.report(self.events(split_at=3))
+        self.assertEqual(report["status"], "INSUFFICIENT")
+        self.assertEqual(report["bringup"]["buttonSequences"], [0, 1, 2])
+        self.assertEqual(report["bringup"]["missing"], ["buttons", "health"])
+
+    def test_counter_requires_an_observed_press_and_release(self):
+        events = self.events()
+        events[2]["observation"]["sensorValues"]["buttonPresses"] = [True, 1]
+        report = self.report(events)
+        self.assertEqual(report["status"], "INSUFFICIENT")
+        self.assertIn("buttons", report["bringup"]["missing"])
+
+    def test_safety_mismatches_and_counter_regression_prevent_recorded_status(self):
+        events = self.events(command_ready=True)
+        events[1]["observation"]["state"] = True
+        events[4]["observation"]["sensorValues"]["fault"] = True
+        events[5]["observation"]["sensorValues"].update(journal="ready", buttonPresses=[1, 1])
+        report = self.report(events)
+        self.assertEqual(report["status"], "MISMATCH")
+        self.assertEqual(set(report["bringup"]["mismatches"]),
+                         {"commandReady", "outputActive", "mainFault", "journalEnabled", "buttonCounterRegressed"})
+
+
+class ReconnectContinuityTests(unittest.TestCase):
+    board = "r18-hand-solder"
+
+    def events(self, *, intermediate_boot=None, recovered_boot="original-boot"):
+        events = []
+
+        def add(kind, generation, boot, **fields):
+            events.append(dict(event=kind, generation=generation, atNs=len(events) * 1_000_000,
+                               bootId=boot, boardRevision=self.board, **fields))
+
+        def ready(generation, boot):
+            add("ready", generation, boot, advertisingRssiDbm=None, advertisingAgeMs=None)
+
+        def notify(generation, boot, sequence, uptime, presses):
+            add("notification", generation, boot, sequence=sequence, observation={
+                "uptimeMs": uptime, "buttonState": "released",
+                "sensorValues": {"buttonPresses": presses, "unselected": "private-payload"},
+            })
+
+        ready(1, "original-boot")
+        notify(1, "original-boot", 9, 900, [1, 2])
+        notify(1, "original-boot", 12, 1200, [2, 3])
+        add("lost", 1, "original-boot")
+        generation = 2
+        if intermediate_boot is not None:
+            ready(generation, intermediate_boot)
+            add("lost", generation, intermediate_boot)
+            generation += 1
+        ready(generation, recovered_boot)
+        notify(generation, recovered_boot, 17, 1900, [2, 4])
+        return events
+
+    def report(self, events, *, verify=True):
+        return summarize(events, 0, len(events) * 1_000_000, board=self.board, mode="reconnect",
+                         truncated=False, dropped=0, verify_button_continuity=verify)
+
+    def test_boundary_uses_last_before_and_first_recovered_notifications_across_empty_session(self):
+        events = self.events(intermediate_boot="original-boot")
+        report = self.report(events)
+        self.assertEqual(report["status"], "RECORDED")
+        self.assertEqual(report["reconnects"], [dict(fromSession=1, toSession=3, lossToNotificationMs=4, sameBoot=True)])
+        evidence = report["buttonContinuity"]
+        self.assertEqual((evidence["before"]["sequence"], evidence["after"]["sequence"]), (12, 17))
+        self.assertEqual(evidence["sequenceGap"], 4)
+        self.assertEqual(evidence["buttonDelta"], [0, 1])
+        serialized = json.dumps(report)
+        self.assertNotIn("original-boot", serialized)
+        self.assertNotIn("private-payload", serialized)
+        ordinary = self.report(events, verify=False)
+        self.assertNotIn("buttonContinuity", ordinary)
+        self.assertTrue(all("buttonPresses" not in row for row in ordinary["events"]))
+
+    def test_new_boot_is_not_button_continuity_even_if_numbers_increase(self):
+        for events in (self.events(recovered_boot="replacement-boot"),
+                       self.events(intermediate_boot="replacement-boot")):
+            with self.subTest(events=events):
+                report = self.report(events)
+                self.assertEqual(report["status"], "MISMATCH")
+                self.assertEqual(report["buttonContinuity"]["mismatches"], ["bootChanged"])
+                self.assertIsNone(report["buttonContinuity"]["buttonDelta"])
+
+    def test_regression_at_first_recovery_is_not_hidden_by_later_good_sample(self):
+        events = self.events()
+        recovered = events[-1]
+        later = {**recovered, "sequence": 18, "atNs": len(events) * 1_000_000}
+        recovered["sequence"] = 12
+        recovered["observation"] = dict(uptimeMs=1000, buttonState="released", sensorValues={"buttonPresses": [1, 3]})
+        report = self.report([*events, later])
+        self.assertEqual(report["status"], "MISMATCH")
+        self.assertEqual(report["buttonContinuity"]["mismatches"],
+                         ["sequenceDidNotAdvance", "uptimeRegressed", "buttonCounterRegressed"])
+
+    def test_missing_baseline_or_recovered_button_counts_are_insufficient(self):
+        events = self.events()
+        events[2]["observation"]["sensorValues"]["buttonPresses"] = [2, 0]
+        events[-1]["observation"]["sensorValues"]["buttonPresses"] = [False, 4]
+        report = self.report(events)
+        self.assertEqual(report["status"], "INSUFFICIENT")
+        self.assertEqual(report["buttonContinuity"]["missing"], ["buttonBaseline", "recoveredButtons"])
+        self.assertEqual(self.report(events[:-1])["buttonContinuity"]["missing"], ["recovery"])
 
 
 class SessionTests(unittest.IsolatedAsyncioTestCase):
@@ -34,7 +323,9 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
 
         class Client:
             is_connected = True
-            services = SimpleNamespace(get_service=lambda _: object())
+            services = SimpleNamespace(get_service=lambda _: SimpleNamespace(
+                get_characteristic=lambda uuid: SimpleNamespace(properties=["write"])
+                if uuid == fleet.command_uuid else None))
 
             def __init__(self):
                 self.callbacks = {}
@@ -65,14 +356,14 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
     async def ready(self, number):
         async with asyncio.timeout(1):
             while not (len(self.clients) == number and self.peer.ready.is_set()
-                       and self.peer.identity.get("bootId") == f"boot-{number}"):
-                if self.watcher.done():
+                       and self.peer.client is self.clients[number - 1]):
+                if self.watcher is not None and self.watcher.done():
                     self.watcher.result()
                     self.fail("fake connection watcher stopped before readiness")
                 await asyncio.sleep(0)
 
-    async def reconnect(self):
-        self.patch_client = patch("bubble_gateway.ble.BleakClient", side_effect=self.factory)
+    async def reconnect(self, *, factory=None, before_disconnect=None):
+        self.patch_client = patch("bubble_gateway.ble.BleakClient", side_effect=factory or self.factory)
         self.patch_client.start()
         self.addCleanup(self.patch_client.stop)
 
@@ -86,9 +377,73 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
         self.watcher = asyncio.create_task(self.fleet._watch(self.peer))
         await self.ready(1)
         old = self.clients[0]
+        if before_disconnect is not None:
+            before_disconnect(old)
         old.disconnect_callback(old)
         await self.ready(2)
         return old, self.clients[1]
+
+    def same_boot_factory(self, *args, **kwargs):
+        client = self.factory(*args, **kwargs)
+        client.identity["bootId"] = "boot-1"
+        return client
+
+    def notify_observation(self, client, sequence, uptime_ms):
+        frame = dict(client.frame(sequence), uptimeMs=uptime_ms)
+        client.callbacks[self.fleet.observation_uuid](None, bytearray((json.dumps(frame) + "\n").encode()))
+
+    async def test_same_boot_reconnect_ignores_stale_read_and_notify_until_new_observation(self):
+        events = []
+        self.fleet._trace = events.append
+        _, current = await self.reconnect(factory=self.same_boot_factory,
+                                          before_disconnect=lambda client: self.notify_observation(client, 6, 600))
+        self.assertEqual(self.peer.observations.qsize(), 2)  # First READ and the last notification of session one.
+        self.assertIsNone(self.peer.anchor)
+        self.notify_observation(current, 6, 600)
+        self.assertEqual(self.peer.observations.qsize(), 2)
+        self.assertEqual(self.peer.observation_watermark, ("boot-1", 6, 600))
+        cmd = command()
+        receipt = device_receipt(cmd, payload_hash(cmd), bootId="boot-1", ackCode="DUPLICATE",
+                                 acceptedUptimeMs=610, appliedUptimeMs=620)
+        self.assertEqual(self.fleet._receipt_times(self.peer, receipt)["timestampSource"], "unavailable")
+
+        self.notify_observation(current, 7, 700)
+        self.assertEqual(self.peer.observations.qsize(), 3)
+        self.assertEqual([event["sequence"] for event in events if event["event"] == "notification"], [6, 7])
+        self.assertEqual(self.fleet._receipt_times(self.peer, receipt)["timestampSource"], "gateway-estimated")
+
+    async def test_higher_sequence_cannot_hide_an_uptime_regression_on_same_boot(self):
+        _, current = await self.reconnect(factory=self.same_boot_factory)
+        self.notify_observation(current, 2, 99)
+        self.assertEqual(self.peer.observations.qsize(), 1)
+        self.assertEqual(self.peer.observation_watermark, ("boot-1", 1, 100))
+        self.assertIsNone(self.peer.anchor)
+        self.assertFalse(self.peer.ready.is_set())
+        self.assertEqual(self.peer.last_error, "invalid_observation")
+
+    async def test_new_boot_admits_its_lower_sequence_and_uptime(self):
+        await self.reconnect(before_disconnect=lambda client: self.notify_observation(client, 6, 600))
+        self.assertEqual(self.peer.observations.qsize(), 3)
+        self.assertEqual(self.peer.observation_watermark, ("boot-2", 1, 100))
+        self.assertEqual(self.peer.anchor[:2], ("boot-2", 100))
+
+    async def test_start_uses_committed_sequence_without_reusing_a_clock_anchor(self):
+        self.peer.discovered = object()
+        self.peer.seen.set()
+        deliver = AsyncMock()
+        with (patch("bubble_gateway.ble.BleakClient", side_effect=self.factory),
+              patch.object(self.fleet, "_scan", new_callable=AsyncMock)):
+            await self.fleet.start(deliver, observation_heads={"kr-test": ("boot-1", 6)})
+            try:
+                await self.ready(1)
+                self.assertEqual(self.peer.observation_watermark, ("boot-1", 6, None))
+                deliver.assert_not_awaited()
+                self.assertIsNone(self.peer.anchor)
+                self.notify_observation(self.clients[0], 7, 700)
+                self.assertEqual(self.peer.observation_watermark, ("boot-1", 7, 700))
+                self.assertEqual(self.peer.anchor[:2], ("boot-1", 700))
+            finally:
+                await self.fleet.close()
 
     async def test_old_disconnect_does_not_disconnect_replacement(self):
         old, current = await self.reconnect()
@@ -102,6 +457,99 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(BleUnavailable):
             await pending
         self.assertFalse(self.peer.ready.is_set())
+
+    async def test_diagnostic_trace_excludes_reads_and_old_connection_notifications(self):
+        events = []
+        self.fleet._trace = events.append
+        old, current = await self.reconnect()
+        self.assertEqual([event["event"] for event in events], ["ready", "lost", "ready"])
+        old.callbacks[self.fleet.observation_uuid](None, bytearray((json.dumps(old.frame(2)) + "\n").encode()))
+        current.callbacks[self.fleet.observation_uuid](None, bytearray((json.dumps(current.frame(2)) + "\n").encode()))
+        self.assertEqual([event["event"] for event in events], ["ready", "lost", "ready", "notification"])
+        self.assertEqual(events[-1]["generation"], events[2]["generation"])
+        self.assertEqual(events[-1]["sequence"], 2)
+        self.assertNotIn("observation", events[-1])
+
+    async def test_observation_trace_is_opt_in_and_excludes_initial_read(self):
+        events = []
+        self.fleet._trace = events.append
+        self.fleet._trace_observation = True
+        _, current = await self.reconnect()
+        self.assertTrue(all("observation" not in event for event in events))
+        frame = current.frame(2)
+        current.callbacks[self.fleet.observation_uuid](None, bytearray((json.dumps(frame) + "\n").encode()))
+        self.assertEqual(events[-1]["observation"], frame)
+
+    async def test_diagnostic_trace_distinguishes_missing_unknown_and_known_battery_alerts(self):
+        events = []
+        self.fleet._trace = events.append
+        _, current = await self.reconnect()
+        callback = current.callbacks[self.fleet.observation_uuid]
+        for sequence, battery, sensor in ((2, 55, {}), (3, None, {"batteryAlert": None}),
+                                          (4, 18, {"batteryAlert": True})):
+            frame = dict(current.frame(sequence), battery=battery, sensorValues=sensor)
+            callback(None, bytearray((json.dumps(frame) + "\n").encode()))
+        notifications = [event for event in events if event["event"] == "notification"]
+        self.assertEqual(len(notifications), 3)
+        self.assertNotIn("batteryAlert", notifications[0])
+        self.assertIsNone(notifications[1]["batteryAlert"])
+        self.assertIsNone(notifications[1]["batteryPercent"])
+        self.assertIs(notifications[2]["batteryAlert"], True)
+        self.assertEqual(notifications[2]["batteryPercent"], 18)
+
+    async def test_observation_ready_without_command_characteristic(self):
+        def observation_only(*args, **kwargs):
+            client = self.factory(*args, **kwargs)
+            client.services = SimpleNamespace(get_service=lambda _: SimpleNamespace(
+                get_characteristic=lambda _uuid: None))
+            return client
+
+        self.peer.discovered = object()
+        self.peer.seen.set()
+        with patch("bubble_gateway.ble.BleakClient", side_effect=observation_only):
+            self.watcher = asyncio.create_task(self.fleet._watch(self.peer))
+            await self.ready(1)
+            self.assertEqual(self.peer.observations.qsize(), 1)
+            self.assertIsNone(self.fleet.command_session("kr-test"))
+            snapshot = self.fleet.snapshot()[0]
+            self.assertTrue(snapshot["connected"])
+            self.assertFalse(snapshot["commandReady"])
+
+    async def test_r18_bringup_accepts_observations_and_rejects_cached_write_handles(self):
+        def bringup(*args, **kwargs):
+            client = self.factory(*args, **kwargs)
+            client.identity.update(boardRevision="r18-hand-solder", firmwareRevision="keyring-0.7.13-bringup")
+            client.write_gatt_char = AsyncMock()
+            return client
+
+        self.peer.discovered = object()
+        self.peer.seen.set()
+        with patch("bubble_gateway.ble.BleakClient", side_effect=bringup):
+            self.watcher = asyncio.create_task(self.fleet._watch(self.peer))
+            await self.ready(1)
+            client = self.clients[0]
+            self.assertIsNotNone(client.services.get_service(None).get_characteristic(self.fleet.command_uuid))
+            self.assertEqual(self.peer.observations.qsize(), 1)
+            self.assertTrue(self.fleet.snapshot()[0]["connected"])
+            self.assertIsNone(self.fleet.command_session("kr-test"))
+            cmd = command()
+            with self.assertRaisesRegex(BleUnavailable, "does not support command"):
+                await self.fleet.execute(cmd, 1000, payload_hash(cmd))
+            with self.assertRaisesRegex(BleProtocolError, "does not expose the command journal"):
+                await self.fleet.capture_journal("kr-test")
+            client.write_gatt_char.assert_not_awaited()
+
+    async def test_authorized_generation_cannot_write_on_replacement(self):
+        old, current = await self.reconnect()
+        old_generation = self.peer.generation - 2
+        self.assertEqual(self.fleet.command_session("kr-test"), self.peer.generation)
+        self.assertTrue(self.fleet.snapshot()[0]["commandReady"])
+        current.write_gatt_char = AsyncMock()
+        cmd = command()
+        with self.assertRaises(BleUnavailable):
+            await self.fleet.execute(cmd, 1000, payload_hash(cmd), expected_generation=old_generation)
+        current.write_gatt_char.assert_not_awaited()
+        self.assertTrue(self.peer.ready.is_set())
 
     async def test_scan_completion_preserves_watcher_cancellation(self):
         started = asyncio.Event()
@@ -177,18 +625,54 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(self.peer.observations.empty())
             self.assertEqual(self.peer.observation_frames.data, bytearray())
 
+    def wait_for_receipt(self, cmd, digest):
+        pending = self.peer.pending = asyncio.get_running_loop().create_future()
+        self.peer.pending_command, self.peer.pending_hash = cmd["commandId"], digest
+        self.peer.pending_final_write_at = time.monotonic()
+        self.peer.pending_receipt_deadline = self.peer.pending_final_write_at + 1
+        return pending
+
     async def test_old_receipt_cannot_settle_current_pending_command(self):
         old, current = await self.reconnect()
         cmd = command()
         digest = payload_hash(cmd)
-        pending = self.peer.pending = asyncio.get_running_loop().create_future()
-        self.peer.pending_command, self.peer.pending_hash = cmd["commandId"], digest
+        pending = self.wait_for_receipt(cmd, digest)
         receipt = device_receipt(cmd, digest, bootId=old.identity["bootId"])
         old.callbacks[self.fleet.receipt_uuid](None, bytearray(json.dumps(receipt).encode() + b"\n"))
         self.assertFalse(pending.done())
         receipt["bootId"] = current.identity["bootId"]
         current.callbacks[self.fleet.receipt_uuid](None, bytearray(json.dumps(receipt).encode() + b"\n"))
         self.assertEqual((await pending)["bootId"], "boot-2")
+
+    async def test_applied_from_a_different_boot_cannot_settle_current_command(self):
+        old, current = await self.reconnect()
+        cmd = command()
+        digest = payload_hash(cmd)
+        pending = self.wait_for_receipt(cmd, digest)
+        receipt = device_receipt(cmd, digest, bootId=old.identity["bootId"])
+        notify = current.callbacks[self.fleet.receipt_uuid]
+        unrelated = dict(receipt, commandId="unrelated")
+        notify(None, bytearray(json.dumps(unrelated).encode() + b"\n"))
+        self.assertFalse(pending.done())
+        self.assertTrue(self.peer.ready.is_set())
+        notify(None, bytearray(json.dumps(receipt).encode() + b"\n"))
+        with self.assertRaises(BleUnavailable):
+            await pending
+        self.assertEqual(self.peer.last_error, "receipt_boot_mismatch")
+        self.assertFalse(self.peer.ready.is_set())
+
+    async def test_duplicate_from_a_different_boot_preserves_historical_readback(self):
+        old, current = await self.reconnect()
+        cmd = command()
+        digest = payload_hash(cmd)
+        pending = self.wait_for_receipt(cmd, digest)
+        receipt = device_receipt(cmd, digest, bootId=old.identity["bootId"], ackCode="DUPLICATE")
+        current.callbacks[self.fleet.receipt_uuid](None, bytearray(json.dumps(receipt).encode() + b"\n"))
+        result = await pending
+        self.assertEqual(result["bootId"], "boot-1")
+        self.assertEqual(result["readback"], {"state": True})
+        self.assertEqual(result["timestampSource"], "unavailable")
+        self.assertTrue(self.peer.ready.is_set())
 
     async def test_partial_command_never_continues_on_replacement_client(self):
         replacement = SimpleNamespace(is_connected=True, write_gatt_char=AsyncMock())
@@ -202,6 +686,7 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
         original = SimpleNamespace(is_connected=True, write_gatt_char=AsyncMock(side_effect=switch_connection))
         self.peer.client = original
         self.peer.ready.set()
+        self.peer.command_writable = True
         cmd = command()
         with self.assertRaises(BleUnavailable):
             await self.fleet.execute(cmd, 1000, payload_hash(cmd))

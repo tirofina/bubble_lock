@@ -1,0 +1,24 @@
+{
+  "documentRevision": "2.0.0",
+  "scope": "isolated-feather-command-api-provisioning",
+  "observedAt": "2026-11-10T13:19:06.899Z",
+  "endpoint": "https://127.0.0.1:8787",
+  "teamRevision": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+  "teamArchiveSha256": "a4118826ef5c67e2dc70e6b9823b39c12e2b5219591915ddba03bcdf686fa024",
+  "readyReported": true,
+  "loopbackListenerObserved": true,
+  "persistedEnrollment": {
+    "gatewayId": "gw-a",
+    "deviceId": "keyring-feather-lab",
+    "subjectId": "scoped-feather-bench",
+    "credentialStatus": "ACTIVE",
+    "ownershipEpoch": 1
+  },
+  "consents": 0,
+  "grants": 0,
+  "issuedCommands": 0,
+  "auditRecords": 0,
+  "gatewayApiExercised": false,
+  "deviceCommandExecuted": false,
+  "receiptSettled": false
+}

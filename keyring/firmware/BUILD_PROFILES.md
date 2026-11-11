@@ -1,5 +1,11 @@
 # 빌드용 프로필과 실제 로컬 결과
 
+keyring-0.7.3의 부팅별 버튼 누계는 세 프로필과 실제 관측 코드의 호스트 시험을 통과했다. [시험과 바이너리 해시](../evidence/2026-11-10-button-presses/README.md)
+
+keyring-0.7.2의 BLE 명령 프레임 검사는 같은 세 프로필과 r18·Feather 호스트 시험으로 확인했다. [빌드·시험 로그와 해시](../evidence/2026-11-10-command-wire/README.md)
+
+keyring-0.7.1의 출력 차단 변경은 아래 세 프로필과 호스트 시험 6개에서 확인했다. [빌드·시험 로그와 해시](../evidence/2026-11-10-motor-gate/README.md)
+
 ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.7.0.
 
 ## 2026-11-10 MAX9850 PCM 컴파일 및 host 시험
@@ -34,6 +40,8 @@ python test/run_headphone_host.py --output ../../.local/firmware-pcm/host
 | keyring_compile_jd9853 | JD9853, audio/SD/sleep을 컴파일에 포함 |
 
 세 compile profile은 KEYRING_IGNORE_PROVISIONING으로 로컬 provisioning.h와 jd9853_panel.h를 포함하지 않는다. 장치별 passkey는 기본 invalid0이며 이 결과물을 provisioned device firmware로 취급하지 않는다. local 실제 장치 환경 keyring_r18은 기존 provisioning 경로를 사용한다. bare pio run의 default는 keyring_r18으로 유지했다.
+
+`keyring_r18_bringup`은 기존 로컬 provisioning의 장치 ID·passkey를 쓰는 첫 구동용 프로필이다. BLE revision은 `keyring-0.7.13-bringup`이며 LCD·오디오 재생·SD·deep sleep 및 BLE 명령·저널을 비활성화한다. 정식 `keyring_r18`의 0.7.13과 구분한다. 이 프로필은 빌드와 실물 구동이 미실행이다. [구동 절차](../pcb/BRING_UP.md)
 
 ```sh
 pio run -e keyring_compile_minimal -e keyring_compile_st7789 -e keyring_compile_jd9853

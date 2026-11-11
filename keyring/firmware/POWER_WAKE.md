@@ -1,6 +1,6 @@
 # r18 저전력·깨우기 구현
 
-ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.7.0 · 상태 implemented / unverified.
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.7.4 · 상태 implemented / unverified.
 
 ## 설정과 가용성
 
@@ -33,6 +33,8 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.7.0 · 상태 imple
 
 가속도계 인터럽트가 정상 구성되고 저장소가 정상이며, 연결·대기 명령·전송 중 receipt·출력·하드웨어 fault가 없을 때만 진입을 검토한다. keyring-0.4.0은 audio worker·보조 전원 화면 창·LCD/SD I/O·SD queue도 유휴여야 하며 절전 예약 후 peripheral worker의 신규 I/O를 막는다. 기존 interrupt를 지우는 순간 새 움직임이 발견되면 진입을 취소한다. 연결 callback과 절전 예약은 같은 link lock으로 조정하고 절전 예약 후 새 연결을 수락하지 않는다.
 
+keyring-0.7.11은 센서 또는 움직임 인터럽트 설정 오류가 나면 awake 상태에서 재시도한다. 축 읽기 실패 뒤에는 새 샘플을 받은 뒤에만 절전 조건을 평가한다. 복구 시 부팅 중 누적한 움직임 카운트는 보존하며, 장애 구간에 계측하지 못한 움직임은 복원할 수 없다.
+
 [ESP-IDF4.4.7 ESP32-S3 sleep 문서](https://docs.espressif.com/projects/esp-idf/en/v4.4.7/esp32s3/api-reference/system/sleep_modes.html)의 EXT0/EXT1/timer 방식을 적용했다. EXT0는 motion GPIO17의 HIGH, EXT1 ANY_LOW는 확인/비상 GPIO6·7, timer는 재광고 기회를 담당한다. 지원 핀·API 오류는 runtime에서 진입을 막는다. RTC 버튼 pull-up과 출력 hold를 설정하고 BLE stack을 종료한 뒤 deep sleep을 호출한다.
 
 GPIO 출력은 진동/AUX/충전모드 EN을 LOW, amp mute/백라이트 OFF/CS를 HIGH로 유지한다. USB 충전은 기존 USB100 설정이다. flash·PSRAM 핀을 임의로 isolate하거나 별도 절전 전압으로 바꾸지 않는다. deep wake는 setup부터 다시 시작하며 safe output latch를 준비한 뒤 hold를 해제한다. NVS 명령 journal은 유지되고 RAM queue·연결·sequence·bootId는 새 부팅 상태가 된다. Gateway의 bootId/CORE sequence 변환은 이를 구분한다.
@@ -42,6 +44,8 @@ GPIO 출력은 진동/AUX/충전모드 EN을 LOW, amp mute/백라이트 OFF/CS�
 `sensorValues`에 motion 상태·부팅 중 누적 motionEvents·wake(cold/motion/button/timer/other)·wakePins·power 상태를 추가했다. 버튼으로 부팅했지만 debounce 전에 손을 떼는 경우에도 RTC wakePins는 별도로 남는다. 이 값은 사용자 승인·보호자 grant를 생성하지 않는다. 외부 서버나 파일에 추가 원시 기록을 자동 생성하지 않는다.
 
 keyring-0.6.0은 detail별로 센서/INA219/health를 순환한다. INA219 변환 중에는 절전하지 않고 진입 전 power-down readback을 요구한다.0.7.0은 MAX9850의 mute/shutdown control readback도 요구하며 확인되지 않으면 절전을 취소한다. [계측/전송 정책](POWER_MONITOR.md)을 함께 따른다. 512byte를 넘는 일반 관측은 accelerationG·voltage·중복 상태 설명을 우선 생략하고 truncated=true를 표시한다. 측정 가능한 배터리 값은 유지한다. 그래도 한도를 넘으면 기존 최소 sensorValues 상태만 사용한다. mandatory top-level 필드·framing·버전1은 유지한다.
+
+keyring-0.7.4는 health 프레임을 축약할 때도 `wake`·`wakePins`·`power`를 남긴다. 일반 축약과 최소 프레임 경로 모두 512바이트 검사 뒤 발행한다. Gateway 0.2.17의 [Pi wake 기록 절차](../raspberry-pi-gateway/TESTING.md#r18-wake-기록)는 BLE를 비운 뒤 새 부팅의 알림에서 원인과 핀을 대조한다. 이번 변경의 빌드와 장비 실행은 미실행이다.
 
 ## 인수 항목 — 전부 미실행
 

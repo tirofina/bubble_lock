@@ -59,6 +59,8 @@ overflow 때 sensors의 선택 상세나 health의 낮은 우선순위 상태를
 
 Gateway는 INA219 객체가 있을 때 shape/null·정수 단위·시각 순서·ADC step·signed power 계산을 runtime에서 판정한다. 원본 sensorValues는 native observation cin으로 전달한다. 기존 CORE v1 MQTT telemetry projection은 이 sensor 확장을 싣지 않으므로 CORE 쪽 추가 계약 전에는 그 topic에서 계측값을 기대하지 않는다. 두 LCD profile에는 유효한 공급 전류만 mA로 표시하고, 오래되거나 모르면 --를 표시한다.
 
+Pi의 [BLE 전원 샘플 기록 절차](../raspberry-pi-gateway/TESTING.md#r18-ble-시험의-전원-샘플)는 같은 부팅의 BLE 알림과 계측 uptime을 JSON에 함께 남긴다. BLE 연결 중의 3.3V 부하 샘플을 외부 입력 전력·sleep 소비전류 기록과 구분해 보관한다.
+
 ## 미실행 인수 항목
 
 | ID | 남은 확인 | 결과 |

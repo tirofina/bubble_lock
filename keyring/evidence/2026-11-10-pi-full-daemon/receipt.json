@@ -1,0 +1,141 @@
+{
+  "role": "KEYRING",
+  "documentRevision": "2.0.0",
+  "date": "2026-11-10",
+  "roleBase": "77b5ba846283051e4020c048456eef117d2627ec",
+  "teamRef": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+  "cachedImageIds": {
+    "postgres": "sha256:01a6a70e41e6c4467c8f55f6063555ed72db2d6662cd0d571040d42eadaeb6f6",
+    "cse": "sha256:43e83c7bed2d0acf46506fb59d59e8803ea55ab00b92a4ff65fd575bc37a427c",
+    "proxy": "sha256:a8b39bd9cf0f83869a2162827a0caf6137ddf759d50a171451b335cecc87d236",
+    "broker": "sha256:860aeb5d63ce509508f6dcfb2bc8a1c1dd2bc60555b562b45ce90e52d8dabb0f"
+  },
+  "execution": {
+    "piModel": "Pi Zero 2 W",
+    "architecture": "aarch64",
+    "python": "3.13.5",
+    "mode": "transient user systemd units",
+    "scope": "real BLE, complete Gateway workers, test mTLS, real isolated Mobius4, no issued commands",
+    "transport": "HTTPS over two loopback SSH reverse tunnels",
+    "installed": {
+      "gatewayVersion": "0.2.5",
+      "matchingSources": 13,
+      "isolatedTarget": true
+    },
+    "serviceRuntimeSeconds": {
+      "daemon.log": 51.024,
+      "restart.log": 23.804
+    }
+  },
+  "initialPi": {
+    "exitCode": 0,
+    "unitLoadStateAfter": "not-found",
+    "counts": {
+      "commands": 0,
+      "observations": 1,
+      "outbox": 1
+    },
+    "databaseMode": "0o600",
+    "directoryMode": "0o700",
+    "lastObservation": {
+      "deviceId": "keyring-feather-lab",
+      "sequence": 2230
+    }
+  },
+  "finalPi": {
+    "exitCodes": [
+      0,
+      0
+    ],
+    "unitLoadStates": {
+      "keyring-live-daemon-20261110": "not-found",
+      "keyring-live-daemon-restart-20261110": "not-found"
+    },
+    "counts": {
+      "commands": 0,
+      "observations": 1,
+      "outbox": 0
+    },
+    "databaseMode": "0o600",
+    "directoryMode": "0o700",
+    "lastObservation": {
+      "deviceId": "keyring-feather-lab",
+      "sequence": 2284
+    }
+  },
+  "cseReadback": {
+    "contentInstances": {
+      "observation": 27,
+      "receipt": 0,
+      "health": 16
+    },
+    "remainingCentralCommands": 0,
+    "latestObservation": {
+      "gatewayId": "gw-feather-bench",
+      "deviceId": "keyring-feather-lab",
+      "sequence": 2284,
+      "firmwareRevision": "feather-probe-0.1.1"
+    },
+    "latestHealth": {
+      "credentialStatus": "ACTIVE",
+      "credentialRevision": "1",
+      "runtimeDigest": "2c05b2551894a0de5dc4c3d5c964fc7fa1c4de040f24be1cc3787061a13dd9f2",
+      "uptimeSeconds": 15,
+      "commandCount": 0,
+      "outboxDepth": 0,
+      "devices": [
+        {
+          "deviceId": "keyring-feather-lab",
+          "connected": true,
+          "lastError": null,
+          "boardRevision": "feather-esp32-v2",
+          "firmwareRevision": "feather-probe-0.1.1",
+          "droppedObservations": 0,
+          "pendingObservations": 0
+        }
+      ],
+      "counters": {
+        "published": 12,
+        "credential_changes": 1,
+        "observations_queued": 7
+      }
+    }
+  },
+  "piCseObservationIdentityAndSequenceMatched": true,
+  "replay": {
+    "before": {
+      "rqi": "kr-6115fcbbf2fea22ae90eaf0080b830a75feb4f8e4f76b2a6",
+      "payloadSha256": "97509e8eb20be65250938b4b5ad010565696e1239561937cbbcfe0cafd401c69",
+      "sequence": 2230,
+      "http": 404,
+      "rsc": 4004
+    },
+    "after": {
+      "rqi": "kr-6115fcbbf2fea22ae90eaf0080b830a75feb4f8e4f76b2a6",
+      "payloadSha256": "97509e8eb20be65250938b4b5ad010565696e1239561937cbbcfe0cafd401c69",
+      "sequence": 2230,
+      "http": 200,
+      "rsc": 2000,
+      "payloadMatched": true,
+      "originalOutboxRowRemaining": false
+    }
+  },
+  "initialBleTimeoutsObservedInUnitLog": 1,
+  "cleanup": {
+    "ownedStackClosed": true,
+    "centralExited": true,
+    "ownedContainersRemaining": 0,
+    "ownedNetworksRemaining": 0,
+    "existingDevRunning": 4,
+    "testClientCopiesRemoved": true,
+    "sshSessionsClosed": true
+  },
+  "hashPolicy": "SHA-256 after CRLF-to-LF normalization for source and public logs",
+  "sourceSha256Lf": {
+    "keyring/raspberry-pi-gateway/cse_integration_tests/pi_daemon_fixture.py": "62ee1620cc8cd63c2081cfc96f90ce98b9f76f13fda55a96cce9e5b8b4b8eb47"
+  },
+  "logSha256Lf": {
+    "daemon.log": "4764be75630c676c72b00ce8571cdbe558bfc1a4e26e1fd41599bc78e9582223",
+    "restart.log": "97547b3ccc91313dc5c4f39073eb63b49a41c2239b9e36810b707a79757f6d19"
+  }
+}

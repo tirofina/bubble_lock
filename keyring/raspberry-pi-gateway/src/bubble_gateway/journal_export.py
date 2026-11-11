@@ -13,7 +13,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from .ble import BleProtocolError, IDENTIFIER, MAX_UPTIME_MS, _integer, _object
+from .ble import BleProtocolError, IDENTIFIER, MAX_UPTIME_MS, _integer, _object, _r18_bringup
+from .model import parse_time
 
 JOURNAL_UUIDS = {
     "core-v1": "7f8a0006-4b6e-4f4e-9b0a-505249564255",
@@ -22,6 +23,8 @@ JOURNAL_UUIDS = {
 HEX32 = re.compile(r"[0-9a-f]{32}\Z")
 HEX64 = re.compile(r"[0-9a-f]{64}\Z")
 HEX8 = re.compile(r"[0-9a-f]{8}\Z")
+RECORD_FIELDS = {"commandId", "payloadHash", "bootId", "ownershipEpoch", "grantRevision", "phase",
+                 "ackCode", "desiredState", "readback", "acceptedUptimeMs", "appliedUptimeMs", "storageCrc32"}
 
 
 def validate_identity(identity: dict[str, Any], device_id: str) -> None:
@@ -72,6 +75,8 @@ def _part(frame: dict[str, Any], manifest: dict[str, Any], index: int, part: int
 
 
 def _record(record: dict[str, Any], manifest: dict[str, Any]) -> None:
+    if set(record) != RECORD_FIELDS:
+        raise BleProtocolError("invalid journal record shape")
     for key in ("commandId", "bootId"):
         if not isinstance(record[key], str) or IDENTIFIER.fullmatch(record[key]) is None:
             raise BleProtocolError("invalid journal record identity")
@@ -98,6 +103,8 @@ def _record(record: dict[str, Any], manifest: dict[str, Any]) -> None:
 async def capture(client: Any, identity: dict[str, Any], profile: str) -> dict[str, Any]:
     """Caller owns an authenticated client and its exclusive per-device operation lock."""
     validate_identity(identity, identity.get("deviceId", ""))
+    if _r18_bringup(identity):
+        raise BleProtocolError("r18 bring-up firmware does not expose the command journal")
     uuid = JOURNAL_UUIDS[profile]
     if client.services.get_characteristic(uuid) is None:
         raise BleProtocolError("firmware does not expose the journal export extension")
@@ -161,10 +168,7 @@ def _new_file(path: Path, data: bytes) -> None:
         os.fsync(handle.fileno())
 
 
-def write_archive(snapshot: dict[str, Any], identity: dict[str, Any], profile: str, output: Path) -> Path:
-    """Create a private new archive; never replace or prune source/device records."""
-    if os.name != "posix":
-        raise RuntimeError("journal archive requires POSIX owner-only file permissions")
+def _validate_snapshot(snapshot: dict[str, Any], identity: dict[str, Any]) -> None:
     validate_identity(identity, identity.get("deviceId", ""))
     _manifest(snapshot["manifest"], identity)
     if len(snapshot["records"]) != snapshot["manifest"]["recordCount"]:
@@ -174,6 +178,81 @@ def write_archive(snapshot: dict[str, Any], identity: dict[str, Any], profile: s
     if (len({r["commandId"] for r in snapshot["records"]}) != len(snapshot["records"])
             or sum(r["phase"] == "prepared" for r in snapshot["records"]) != snapshot["manifest"]["preparedCount"]):
         raise BleProtocolError("inconsistent journal archive membership")
+
+
+def read_archive(directory: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Read the complete export, verifying its local digest and membership."""
+    with (directory / "manifest.json").open("rb") as stream:
+        archive = _object(stream.read(8193), 8192)
+    if (type(archive.get("archiveVersion")) is not int or archive["archiveVersion"] != 1
+            or archive.get("settlementStatus") != "not-settled" or archive.get("deviceJournalModified") is not False
+            or not isinstance(archive.get("identity"), dict) or not isinstance(archive.get("deviceSnapshot"), dict)
+            or not _integer(archive.get("recordCount"), maximum=32)):
+        raise BleProtocolError("invalid journal archive manifest")
+    with (directory / "records.jsonl").open("rb") as stream:
+        data = stream.read(32 * 2048 + 1)
+    descriptor = [{"path": "records.jsonl", "bytes": len(data), "sha256": hashlib.sha256(data).hexdigest()}]
+    if len(data) > 32 * 2048 or _json(archive.get("files")) != _json(descriptor) or (data and not data.endswith(b"\n")):
+        raise BleProtocolError("journal archive bytes do not match manifest")
+    lines = data.splitlines()
+    if len(lines) != archive["recordCount"]:
+        raise BleProtocolError("journal archive record count mismatch")
+    records = [_object(line, 2048) for line in lines]
+    _validate_snapshot({"manifest": archive["deviceSnapshot"], "records": records}, archive["identity"])
+    return archive, records
+
+
+def compare_archives(baseline: Path, current: Path) -> dict[str, Any]:
+    """Check an append-only device history against an older, trusted archive."""
+    before, before_records = read_archive(baseline)
+    after, after_records = read_archive(current)
+    before_id, after_id = before["identity"], after["identity"]
+    if any(before_id[key] != after_id[key] for key in ("deviceId", "boardRevision")):
+        raise BleProtocolError("journal archives identify different devices or boards")
+    before_snapshot, after_snapshot = before["deviceSnapshot"], after["deviceSnapshot"]
+    if before_snapshot["snapshotId"] == after_snapshot["snapshotId"]:
+        raise BleProtocolError("journal comparison requires two distinct captures")
+    try:
+        before_time, after_time = parse_time(before.get("archivedAt")), parse_time(after.get("archivedAt"))
+    except (ValueError, OverflowError) as exc:
+        raise BleProtocolError("journal archive time is invalid") from exc
+    same_boot = before_id["bootId"] == after_id["bootId"]
+    if after_time <= before_time or (same_boot and after_snapshot["capturedUptimeMs"] < before_snapshot["capturedUptimeMs"]):
+        raise BleProtocolError("current journal archive must be captured after the baseline")
+
+    findings = []
+    for field in ("maxEpoch", "maxGrant"):
+        if after_snapshot[field] < before_snapshot[field]:
+            findings.append({"code": "fence_regressed", "field": field})
+    current_by_id = {record["commandId"]: (index, record) for index, record in enumerate(after_records)}
+    for index, expected in enumerate(before_records):
+        match = current_by_id.get(expected["commandId"])
+        if match is None:
+            findings.append({"code": "record_missing", "baselineIndex": index})
+            continue
+        current_index, actual = match
+        if current_index != index:
+            findings.append({"code": "record_reordered", "baselineIndex": index, "currentIndex": current_index})
+        fields = sorted(field for field in RECORD_FIELDS if expected[field] != actual[field])
+        if fields:
+            findings.append({"code": "record_changed", "baselineIndex": index, "fields": fields})
+
+    return {
+        "version": 1, "deviceId": before_id["deviceId"], "boardRevision": before_id["boardRevision"],
+        "status": "REVIEW_REQUIRED" if findings else "CONTINUOUS", "sameBoot": same_boot,
+        "baselineSnapshotId": before_snapshot["snapshotId"], "currentSnapshotId": after_snapshot["snapshotId"],
+        "baselineRecordsSha256": before["files"][0]["sha256"], "currentRecordsSha256": after["files"][0]["sha256"],
+        "baselineRecordCount": len(before_records), "currentRecordCount": len(after_records),
+        "appendedRecordCount": None if findings else len(after_records) - len(before_records),
+        "settlementStatus": "not-settled", "findings": findings,
+    }
+
+
+def write_archive(snapshot: dict[str, Any], identity: dict[str, Any], profile: str, output: Path) -> Path:
+    """Create a private new archive; never replace or prune source/device records."""
+    if os.name != "posix":
+        raise RuntimeError("journal archive requires POSIX owner-only file permissions")
+    _validate_snapshot(snapshot, identity)
     output.mkdir(mode=0o700, parents=False, exist_ok=False)
     data = b"".join(_json(record) for record in snapshot["records"])
     _new_file(output / "records.jsonl", data)

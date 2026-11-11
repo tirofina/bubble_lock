@@ -1,0 +1,28 @@
+{
+  "token": "1ffbe5f7d5684e07a60ea1705e4c4c4e",
+  "origin": "https://127.0.0.1:56610",
+  "parent": "/Mobius/pi-feather-1ffbe5f7d568",
+  "images": {
+    "postgres": "sha256:01a6a70e41e6c4467c8f55f6063555ed72db2d6662cd0d571040d42eadaeb6f6",
+    "cse": "sha256:43e83c7bed2d0acf46506fb59d59e8803ea55ab00b92a4ff65fd575bc37a427c",
+    "proxy": "sha256:a8b39bd9cf0f83869a2162827a0caf6137ddf759d50a171451b335cecc87d236"
+  },
+  "brokerImage": "sha256:860aeb5d63ce509508f6dcfb2bc8a1c1dd2bc60555b562b45ce90e52d8dabb0f",
+  "containers": {
+    "postgres": "c90db7804b3722afd93a7d676444cdfa19246a3be4d05a9cbe4446dc2f558417",
+    "cse": "e687ddcb50e3a600cfb7bc20e6337c2fe79fb833cda56c770d406b8d2bb6f0d4",
+    "proxy": "e39af404ed5db6065a364266998824bb03828b7092e86af0a8b8eaf5f258735d"
+  },
+  "network": "8252fe8dbc0be7586722d327215c891c93b5f9576711e08f8549a3fd0fbacf77",
+  "mqttContainer": "b4f5b25399e75a9668490587fb7ef8c38431b2142fdd543c4e01bbae931dce3e",
+  "mqttToken": "a7ee93b403ab4103a79cf9576d7445ed",
+  "serverTlsMountedFiles": [
+    "acl-a7ee93b403ab4103a79cf9576d7445ed.txt",
+    "broker-a7ee93b403ab4103a79cf9576d7445ed.conf",
+    "cse-proxy.conf",
+    "server.key",
+    "server.pem",
+    "trusted.pem"
+  ],
+  "clientCertificateSha256": "5fcae1546c6b3e53133be029bb710b66eb670fd7eb5ac3ef3a186c1a7ae9869e"
+}

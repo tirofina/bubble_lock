@@ -1,0 +1,44 @@
+map $ssl_client_s_dn $keyring_identity_allowed {
+    default 0;
+    "CN=scoped-core" 1;
+    "CN=scoped-gateway-a" 1;
+    "CN=scoped-gateway-b" 1;
+}
+map "$ssl_client_s_dn:$request_method:$request_uri" $scoped_cse_allowed {
+    default 0;
+    include /etc/nginx/keyring-receipt-routes/receipt-*.conf;
+    ~^CN=scoped-core: 1;
+    ~^CN=scoped-gateway-a:GET:/Mobius/privacy-bubble-test-ae/featherState$ 1;
+    "~^CN=scoped-gateway-[ab]:POST:/Mobius/privacy-bubble-test-ae/(observations|receipts|health)$" 1;
+    "~^CN=scoped-gateway-[ab]:GET:/Mobius/privacy-bubble-test-ae/(observations|receipts|health)/gw-[a-f0-9]{64}$" 1;
+    ~^CN=scoped-gateway-a:POST:/Mobius/privacy-bubble-test-ae/(command-receipts-a|command-observations-a)$ 1;
+    ~^CN=scoped-gateway-b:POST:/Mobius/privacy-bubble-test-ae/command-receipts-b$ 1;
+    "~^CN=scoped-gateway-a:GET:/Mobius/privacy-bubble-test-ae/(command-receipts-a|command-observations-a)/gw-[a-f0-9]{64}$" 1;
+    "~^CN=scoped-gateway-b:GET:/Mobius/privacy-bubble-test-ae/command-receipts-b/gw-[a-f0-9]{64}$" 1;
+}
+server {
+    listen 8759 ssl;
+    server_name localhost;
+    ssl_protocols TLSv1.3;
+    ssl_certificate /etc/nginx/keyring-tls/server.pem;
+    ssl_certificate_key /etc/nginx/keyring-tls/server.key;
+    ssl_client_certificate /etc/nginx/keyring-tls/ca.pem;
+    ssl_verify_client on;
+    ssl_verify_depth 2;
+    client_max_body_size 256k;
+    access_log off;
+    if ($keyring_identity_allowed = 0) { return 403; }
+    location /api/ {
+        default_type application/json;
+        return 503 '{"error":"INTEGRATION_API_NOT_CONFIGURED","allowed":false}';
+    }
+    location / {
+        if ($scoped_cse_allowed = 0) { return 403; }
+        # Scoped development CSE only. This is not a production AE/ACP binding.
+        proxy_pass http://mobius4:7599;
+        proxy_set_header X-M2M-Origin "${CSE_ADMIN}";
+        proxy_set_header Host $host;
+        proxy_connect_timeout 5s;
+        proxy_read_timeout 15s;
+    }
+}

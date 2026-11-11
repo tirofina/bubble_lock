@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import ssl
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -61,8 +62,15 @@ class GatewayConfig:
     max_commands: int
     core_bridge_enabled: bool
     ble_gatt_profile: str
+<<<<<<< HEAD
     central_telemetry_enabled: bool = True
     central_receipts_enabled: bool = True
+=======
+    core_telemetry_epochs: dict[str, int] | None = None
+    m2m_mqtt_enabled: bool = True
+    cse_deployment_id: str | None = None
+    receipt_container_ri: str | None = None
+>>>>>>> origin/codex/keyring-namho
 
     @classmethod
     def from_env(cls) -> "GatewayConfig":
@@ -127,20 +135,36 @@ class GatewayConfig:
         if not pair:
             raise ValueError("Secure pairing is required; BLE_PAIR=false is not supported")
         revisions = tuple(v.strip() for v in os.getenv("FIRMWARE_REVISION_ALLOWLIST", "").split(",") if v.strip())
+        mqtt_enabled = boolean("MQTT_ENABLED", "true")
+        m2m_mqtt_enabled = boolean("M2M_MQTT_ENABLED", str(mqtt_enabled).lower())
         core_bridge = boolean("CORE_BRIDGE_ENABLED", "false")
-        if core_bridge and not boolean("MQTT_ENABLED", "true"):
+        if core_bridge and not mqtt_enabled:
             raise ValueError("CORE_BRIDGE_ENABLED requires MQTT_ENABLED=true")
+        if m2m_mqtt_enabled and not mqtt_enabled:
+            raise ValueError("M2M_MQTT_ENABLED requires MQTT_ENABLED=true")
+        if mqtt_enabled and not (core_bridge or m2m_mqtt_enabled):
+            raise ValueError("MQTT_ENABLED requires a CORE or oneM2M MQTT route")
+        epochs = None
+        if "CORE_TELEMETRY_EPOCHS" in os.environ:
+            epochs = json.loads(required("CORE_TELEMETRY_EPOCHS"))
+            if (not core_bridge or not isinstance(epochs, dict) or epochs.keys() != devices.keys()
+                    or any(type(epoch) is not int or not 0 <= epoch <= 2147483647 for epoch in epochs.values())):
+                raise ValueError("CORE_TELEMETRY_EPOCHS requires CORE bridge and an epoch for every BLE device")
         profile = os.getenv("BLE_GATT_PROFILE", "core-v1")
         if profile not in {"core-v1", "keyring-v01"}:
             raise ValueError("BLE_GATT_PROFILE must be core-v1 or keyring-v01")
+        deployment = identifier("M2M_CSE_DEPLOYMENT_ID") if "M2M_CSE_DEPLOYMENT_ID" in os.environ else None
+        receipt_ri = identifier("M2M_RECEIPT_CONTAINER_RI") if "M2M_RECEIPT_CONTAINER_RI" in os.environ else None
+        if receipt_ri is not None and deployment is None:
+            raise ValueError("M2M_RECEIPT_CONTAINER_RI requires M2M_CSE_DEPLOYMENT_ID")
         return cls(
             gateway_id=identifier("GATEWAY_ID"), originator=identifier("M2M_ORIGINATOR"),
             cse_id=identifier("M2M_CSE_ID"), cse_url=endpoint("M2M_CSE_URL", True),
             api_url=endpoint("PC_API_URL"), ca_file=secret_file("TLS_CA_FILE"),
             cert_file=secret_file("TLS_CERT_FILE"), key_file=secret_file("TLS_KEY_FILE"),
-            mqtt_host=required("MQTT_HOST") if boolean("MQTT_ENABLED", "true") else "",
+            mqtt_host=required("MQTT_HOST") if mqtt_enabled else "",
             mqtt_port=int(number("MQTT_PORT", "8883", 1, 65535)),
-            mqtt_enabled=boolean("MQTT_ENABLED", "true"),
+            mqtt_enabled=mqtt_enabled, m2m_mqtt_enabled=m2m_mqtt_enabled,
             mqtt_wrapped_primitive=boolean("MQTT_WRAPPED_PRIMITIVE", "false"),
             mqtt_keepalive=int(number("MQTT_KEEPALIVE", "60", 10, 600)),
             request_timeout=number("REQUEST_TIMEOUT", "10", 1, 60), rvi=required("M2M_RVI"),
@@ -158,7 +182,41 @@ class GatewayConfig:
             max_outbox_rows=int(number("MAX_OUTBOX_ROWS", "10000", 100, 1000000)),
             max_outbox_bytes=int(number("MAX_OUTBOX_BYTES", "33554432", 1048576, 1073741824)),
             max_commands=int(number("MAX_COMMANDS", "100000", 100, 10000000)),
+<<<<<<< HEAD
             core_bridge_enabled=core_bridge, ble_gatt_profile=profile,
             central_telemetry_enabled=boolean("CENTRAL_TELEMETRY_ENABLED", "true"),
             central_receipts_enabled=boolean("CENTRAL_RECEIPTS_ENABLED", "true"),
+=======
+            core_bridge_enabled=core_bridge, ble_gatt_profile=profile, core_telemetry_epochs=epochs,
+            cse_deployment_id=deployment, receipt_container_ri=receipt_ri,
+>>>>>>> origin/codex/keyring-namho
         )
+
+
+def tls_context(config: GatewayConfig) -> ssl.SSLContext:
+    context = ssl.create_default_context(cafile=str(config.ca_file))
+    context.minimum_version = ssl.TLSVersion.TLSv1_3
+    context.load_cert_chain(str(config.cert_file), str(config.key_file))
+    return context
+
+
+class DeploymentConfigError(ValueError):
+    """A diagnostic for deployment checks that does not include private values."""
+
+
+def check_state_directory(database: Path) -> None:
+    directory = os.getenv("STATE_DIRECTORY")
+    if directory is None:
+        return  # A foreground or bench run can choose a separate state root.
+    state = Path(directory)
+    if not state.is_absolute() or not state.is_dir():
+        raise DeploymentConfigError("Expected one absolute STATE_DIRECTORY")
+    root = state.resolve()
+    lock = database.with_suffix(".lock")
+    if database == lock:
+        raise DeploymentConfigError("GATEWAY_DATABASE and its lock must be different files")
+    for path in (database, lock):
+        resolved = path.resolve()
+        if (path.is_symlink() or (path.exists() and not path.is_file()) or
+                resolved == root or not resolved.is_relative_to(root)):
+            raise DeploymentConfigError("GATEWAY_DATABASE and its lock must be files inside STATE_DIRECTORY")

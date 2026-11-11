@@ -1,0 +1,25 @@
+{
+  "documentRevision": "2.0.0",
+  "scope": "isolated-postgresql-receipt-provisioning",
+  "observedAt": "2026-11-10T13:48:57.202Z",
+  "composeProject": "privacy-bubble-keyring-receipt-dev",
+  "listener": "127.0.0.1:5544",
+  "database": "keyring_receipt_dev",
+  "serverVersion": "17.5",
+  "teamRevision": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+  "migrationSha256": {
+    "teamCoreReceipts": "7a0c07e41890539eee3fa4cb2633b688efcf280f24c788dee245bc8d84a97b9c",
+    "keyringCommandSettlement": "2da2432e2305af7ef1041a4297fa13b141c80b77fc357361814dd449e4b547a5",
+    "keyringReceiptNotification": "7b5c81b326341c5915ae1b7534a6fe334e7f1002ce7168996446ef6c12bd15a8"
+  },
+  "firstPreparationError": "Input/output error reading a bind-mounted SQL file",
+  "retry": "Kept the new data volume and streamed all migration SQL through psql in one transaction",
+  "rows": {
+    "keyring_command_settlement": 0,
+    "keyring_receipt_notification": 0
+  },
+  "scopedMobiusDatabasePreserved": true,
+  "baseMobiusDatabasePreserved": true,
+  "nodeSettlementProcessExecuted": false,
+  "physicalReceiptObserved": false
+}

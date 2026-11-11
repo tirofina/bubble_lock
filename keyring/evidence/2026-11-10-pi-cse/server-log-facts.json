@@ -1,0 +1,19 @@
+{
+  "sourceLogSha256": {
+    "broker": "a61e3e2e646b3218329f1b9c99eaa9d9a95801e3c567e122701c83e98715a8b5",
+    "proxy": "a2eece3f0781ece2a4f1be788e06ee6c218ce7ab56a90e335fa43ce6544871b4"
+  },
+  "brokerGatewayQos1Publishes": 5,
+  "brokerPublishLines": [
+    "1794302838: Received PUBLISH from gw-4226f7bc1d258fd862f4 (d0, q1, r0, m2, '/oneM2M/req/Skeyring-fixture/Mobius4/json', ... (637 bytes))",
+    "1794302840: Received PUBLISH from gw-4226f7bc1d258fd862f4 (d0, q1, r0, m3, '/oneM2M/req/Skeyring-fixture/Mobius4/json', ... (637 bytes))",
+    "1794302842: Received PUBLISH from gw-4226f7bc1d258fd862f4 (d0, q1, r0, m4, '/oneM2M/req/Skeyring-fixture/Mobius4/json', ... (637 bytes))",
+    "1794302844: Received PUBLISH from gw-4226f7bc1d258fd862f4 (d0, q1, r0, m5, '/oneM2M/req/Skeyring-fixture/Mobius4/json', ... (637 bytes))",
+    "1794302846: Received PUBLISH from gw-4226f7bc1d258fd862f4 (d0, q1, r0, m6, '/oneM2M/req/Skeyring-fixture/Mobius4/json', ... (637 bytes))"
+  ],
+  "proxyObservationPostAttempts": 34,
+  "proxyUniqueObservationPostRqi": 30,
+  "proxyCinReadbackGets": 35,
+  "proxyUniqueCinReadbackPaths": 35,
+  "proxyAccessLogHasStatusCodes": false
+}
