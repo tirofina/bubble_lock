@@ -10,6 +10,7 @@ $compose = @('--project-name', 'privacy-bubble-keyring-scoped', '--env-file', $e
   '-f', (Join-Path $PSScriptRoot 'compose.yaml'), '-f', (Join-Path $PSScriptRoot 'compose.scoped.yaml'))
 
 function Wait-ScopedSubscription {
+  $expectR18Mqtt = Test-Path -LiteralPath (Join-Path $PSScriptRoot '.local/scoped/config/r18-mqtt.json') -PathType Leaf
   $consumerId = docker compose @compose ps --all --quiet scoped-consumer
   if ($LASTEXITCODE -ne 0 -or -not $consumerId) { throw 'Could not identify the scoped consumer after start.' }
   $timer = [Diagnostics.Stopwatch]::StartNew()
@@ -19,11 +20,13 @@ function Wait-ScopedSubscription {
     $status, $startedAt = $state -split '\|', 2
     if ($status -in @('exited', 'dead')) { throw 'Scoped consumer exited before subscribing. Inspect its logs.' }
     if ($status -eq 'running') {
-      $ready = docker logs --since $startedAt --tail 80 $consumerId 2>&1 |
-        Select-String -CaseSensitive -Pattern '^SCOPED_SUBSCRIBED receipts=1 handover=1 feather=1$'
+      $logs = docker logs --since $startedAt --tail 80 $consumerId 2>&1
       if ($LASTEXITCODE -ne 0) { throw 'Could not read scoped consumer startup logs.' }
-      if ($ready) {
+      $ready = $logs -ccontains 'SCOPED_SUBSCRIBED receipts=1 handover=1 feather=1'
+      $r18Ready = $logs -ccontains 'SCOPED_R18_MQTT_SUBSCRIBED'
+      if ($ready -and (-not $expectR18Mqtt -or $r18Ready)) {
         Write-Host 'Scoped consumer subscribed with receipts, handover and Feather enabled.'
+        if ($expectR18Mqtt) { Write-Host 'Scoped r18 MQTT observation ingress subscribed.' }
         return
       }
     }

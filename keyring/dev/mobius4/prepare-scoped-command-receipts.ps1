@@ -1,11 +1,12 @@
 param([switch]$FeatherObservationsOnly, [switch]$R18TelemetryOnly,
-  [switch]$PinReceiptRoutes, [switch]$PinObservationRoute, [switch]$PinR18ObservationRoute, [switch]$PinR18HealthRoute)
+  [switch]$PinReceiptRoutes, [switch]$PinObservationRoute, [switch]$PinR18ObservationRoute, [switch]$PinR18HealthRoute,
+  [switch]$PrepareR18Mqtt)
 
 $ErrorActionPreference = 'Stop'
 $selectedOperations = @($FeatherObservationsOnly, $R18TelemetryOnly, $PinReceiptRoutes,
-  $PinObservationRoute, $PinR18ObservationRoute, $PinR18HealthRoute) | Where-Object { $_.IsPresent }
+  $PinObservationRoute, $PinR18ObservationRoute, $PinR18HealthRoute, $PrepareR18Mqtt) | Where-Object { $_.IsPresent }
 if (@($selectedOperations).Count -gt 1) { throw 'Select one scoped operation.' }
-$pinning = $PinReceiptRoutes -or $PinObservationRoute -or $PinR18ObservationRoute -or $PinR18HealthRoute
+$pinning = $PinReceiptRoutes -or $PinObservationRoute -or $PinR18ObservationRoute -or $PinR18HealthRoute -or $PrepareR18Mqtt
 $environmentPath = Join-Path $PSScriptRoot '.local/scoped/compose.env'
 if (-not (Test-Path -LiteralPath $environmentPath)) { throw 'Run prepare-scoped.ps1 first.' }
 foreach ($key in @('MOBIUS4_ROOT', 'SCOPED_TEAM_STORE', 'DB_PW', 'CSE_ADMIN', 'KEYRING_CSE_TLS_PORT', 'KEYRING_MQTT_TLS_PORT')) {
@@ -22,7 +23,9 @@ try {
   }
   if ($pinning) {
     if ($running -notcontains 'tls') { throw 'Start the scoped TLS proxy before pinning existing routes.' }
-    $pinScope = if ($PinObservationRoute) {
+    $pinScope = if ($PrepareR18Mqtt) {
+      '--scoped-prepare-r18-mqtt'
+    } elseif ($PinObservationRoute) {
       '--scoped-pin-command-observation'
     } elseif ($PinR18ObservationRoute) {
       '--scoped-pin-r18-observation'

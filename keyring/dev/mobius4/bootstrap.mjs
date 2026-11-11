@@ -10,7 +10,7 @@ import {receiptIdentifier} from '../../integration-candidate/receipt-authorizati
 const args = process.argv.slice(2);
 const scopedActions = ['--scoped', '--scoped-command-receipts', '--scoped-feather-command-observation',
   '--scoped-r18-telemetry', '--scoped-pin-command-receipts', '--scoped-pin-command-observation',
-  '--scoped-pin-r18-observation', '--scoped-pin-r18-health'];
+  '--scoped-pin-r18-observation', '--scoped-pin-r18-health', '--scoped-prepare-r18-mqtt'];
 if (args.length && (args.length !== 1 || !scopedActions.includes(args[0]))) {
   throw new Error(`Usage: node bootstrap.mjs [${scopedActions.join(' | ')}]`);
 }
@@ -22,7 +22,8 @@ const pinReceiptRoutes = args[0] === '--scoped-pin-command-receipts';
 const pinObservationRoute = args[0] === '--scoped-pin-command-observation';
 const pinR18ObservationRoute = args[0] === '--scoped-pin-r18-observation';
 const pinR18HealthRoute = args[0] === '--scoped-pin-r18-health';
-const pinning = pinReceiptRoutes || pinObservationRoute || pinR18ObservationRoute || pinR18HealthRoute;
+const prepareR18Mqtt = args[0] === '--scoped-prepare-r18-mqtt';
+const pinning = pinReceiptRoutes || pinObservationRoute || pinR18ObservationRoute || pinR18HealthRoute || prepareR18Mqtt;
 const fullProfile = !commandReceiptsOnly && !commandObservationOnly && !r18TelemetryOnly && !pinning;
 const root = new URL(scoped ? './.local/scoped/' : './.local/', import.meta.url);
 const environment = Object.fromEntries((await readFile(new URL('compose.env', root), 'utf8'))
@@ -135,7 +136,7 @@ async function readContainerId(path) {
   return parent.ri;
 }
 
-async function preparePinnedRoutes(containers, routeFile, pinLabel) {
+async function readPins(containers) {
   const pins = new Map();
   for (const [gateway, path] of Object.entries(containers)) {
     if (pins.size) await delay(7000);
@@ -143,7 +144,30 @@ async function preparePinnedRoutes(containers, routeFile, pinLabel) {
     if ([...pins.values()].includes(resourceId)) throw new Error('Scoped container identity mismatch.');
     pins.set(gateway, resourceId);
   }
+  return pins;
+}
 
+async function writeScopedFile(directory, name, content, mismatch, matches = (previous) => previous === content) {
+  await mkdir(directory, {recursive: true});
+  const target = new URL(name, directory);
+  const previous = await readFile(target, 'utf8').catch(error => {
+    if (error.code === 'ENOENT') return null;
+    throw error;
+  });
+  if (previous !== null) {
+    if (!matches(previous)) throw new Error(mismatch);
+    return;
+  }
+  const staged = new URL(`.${randomUUID()}.tmp`, directory);
+  await writeFile(staged, content, {flag: 'wx', mode: 0o600, flush: true});
+  try {
+    await link(staged, target);
+  } finally {
+    await unlink(staged);
+  }
+}
+
+async function writePinnedRoutes(containers, pins, routeFile, pinLabel) {
   const lines = [];
   for (const [gateway, ri] of pins) {
     const identity = `CN=scoped-gateway-${gateway.slice(3)}`;
@@ -151,27 +175,32 @@ async function preparePinnedRoutes(containers, routeFile, pinLabel) {
     lines.push(`"~^${identity}:GET:${path}$" 1;`);
     lines.push(`"~^${identity}:POST:/${ri.replaceAll('.', '[.]')}$" 1;`);
   }
-  const directory = new URL('receipt-routes/', root);
-  const routes = new URL(routeFile, directory);
-  const content = lines.join('\n') + '\n';
-  await mkdir(directory, {recursive: true});
-  const previous = await readFile(routes, 'utf8').catch(error => {
-    if (error.code === 'ENOENT') return null;
-    throw error;
-  });
-  if (previous !== null && previous !== content) {
-    throw new Error('Existing scoped resource pins differ. Keep the old routes and prepare a separate deployment.');
-  }
-  if (previous === null) {
-    const staged = new URL(`.${randomUUID()}.tmp`, directory);
-    await writeFile(staged, content, {flag: 'wx', mode: 0o600, flush: true});
-    try {
-      await link(staged, routes);
-    } finally {
-      await unlink(staged);
-    }
-  }
+  await writeScopedFile(new URL('receipt-routes/', root), routeFile, lines.join('\n') + '\n',
+    'Existing scoped resource pins differ. Keep the old routes and prepare a separate deployment.');
   for (const [gateway, ri] of pins) console.log(`${pinLabel} ${gateway} ${ri}`);
+}
+
+async function preparePinnedRoutes(containers, routeFile, pinLabel) {
+  await writePinnedRoutes(containers, await readPins(containers), routeFile, pinLabel);
+}
+
+async function prepareR18MqttRoutes() {
+  const observation = {'gw-b': scopedR18CommandObservationContainer};
+  const health = {'gw-b': scopedR18CommandHealthContainer};
+  const observationPins = await readPins(observation);
+  await delay(7000);
+  const healthPins = await readPins(health);
+  const profile = {observationContainerRi: observationPins.get('gw-b'), healthContainerRi: healthPins.get('gw-b')};
+  if (profile.observationContainerRi === profile.healthContainerRi) throw new Error('Expected distinct r18 container pins.');
+  await writePinnedRoutes(observation, observationPins, 'observation-gw-b.conf', 'SCOPED_OBSERVATION_PIN');
+  await writePinnedRoutes(health, healthPins, 'health-gw-b.conf', 'SCOPED_HEALTH_PIN');
+  await writeScopedFile(new URL('config/', root), 'r18-mqtt.json', JSON.stringify(profile) + '\n',
+    'Existing r18 MQTT profile differs from the scoped CSE pins.', (previous) => {
+      const saved = JSON.parse(previous);
+      return saved != null && Object.keys(saved).length === 2
+        && saved.observationContainerRi === profile.observationContainerRi && saved.healthContainerRi === profile.healthContainerRi;
+    });
+  console.log('SCOPED_R18_MQTT_PROFILE_PREPARED');
 }
 
 async function provisionEmptyResources() {
@@ -205,4 +234,5 @@ else if (pinR18ObservationRoute) await preparePinnedRoutes({'gw-b': scopedR18Com
   'observation-gw-b.conf', 'SCOPED_OBSERVATION_PIN');
 else if (pinR18HealthRoute) await preparePinnedRoutes({'gw-b': scopedR18CommandHealthContainer},
   'health-gw-b.conf', 'SCOPED_HEALTH_PIN');
+else if (prepareR18Mqtt) await prepareR18MqttRoutes();
 else await provisionEmptyResources();
