@@ -9,11 +9,11 @@ from unittest.mock import patch
 from bubble_gateway.integration_evidence import integration_settlement
 from bubble_gateway.model import central_observation_id, payload_hash
 from bubble_gateway.store import Store
-from pi_led_cycle import receipt_name
+from pi_led_cycle import receipt_name, write_new_json
 from scoped_feather_evidence import (ROUTE, inspect_command, inspect_integration_step, inspect_interrupted_bench,
                                     integration_observation_event, operator_evidence,
-                                    physical_observations)
-from scoped_feather_led_cycle import record_central_observations
+                                    physical_observations, read_display_observations)
+from scoped_feather_led_cycle import record_central_observations, record_display
 from scoped_feather_pi import DISPLAY_FIRMWARE
 from helpers import BINDING
 
@@ -97,6 +97,52 @@ class ScopedFeatherEvidenceTests(unittest.TestCase):
                     operator_evidence(cycle, None, [invalid, observations[1]])
         with self.assertRaisesRegex(ValueError, "Invalid command display text"):
             operator_evidence(cycle, None, [dict(observations[0], screenText="ON"), observations[1]])
+
+    def write_display_steps(self, output, cycle):
+        for label, step in zip(("on", "off"), cycle["steps"]):
+            command = step["command"]
+            state = command["desiredState"]["state"]
+            observation = dict(step["observation"], bootId="boot-a", state=state, sequence=2)
+            baseline = dict(observation, state=not state, sequence=1, receivedAt=command["issuedAt"])
+            receipt = {key: command[key] for key in ("gatewayId", "deviceId", "commandId", "grantRevision", "ownershipEpoch")}
+            receipt.update(status="APPLIED", ackCode="APPLIED", payloadHash=payload_hash(command),
+                           firmwareRevision=DISPLAY_FIRMWARE, bootId="boot-a",
+                           receivedAt=observation["receivedAt"], readback={"state": state})
+            write_new_json(output / f"led-{label}-readback.json",
+                           dict(step, firmwareRevision=DISPLAY_FIRMWARE, baseline=baseline, observation=observation,
+                                cseReceiptName=receipt_name(command["commandId"]), cseReceipt=receipt))
+
+    def test_record_display_uses_stage_identity_and_keeps_unreadable_screen(self):
+        cycle, observed = self.display_fixture()
+        with tempfile.TemporaryDirectory() as folder:
+            output = Path(folder)
+            self.write_display_steps(output, cycle)
+            for label in ("on", "off"):
+                write_new_json(output / f"led-{label}-grant-revoked.json", {"status": "REVOKED"})
+            with patch("scoped_feather_led_cycle.iso_time", side_effect=[row["observedAt"] for row in observed]):
+                record_display(output, "ON", "CMD ON")
+                record_display(output, "OFF", None)
+            records = read_display_observations(output)
+            self.assertEqual(records, [observed[0], dict(observed[1], screenText=None)])
+            self.assertFalse(operator_evidence(cycle, None, records)["commandDisplayMatched"])
+            with patch("scoped_feather_led_cycle.iso_time", return_value=observed[0]["observedAt"]):
+                with self.assertRaises(FileExistsError):
+                    record_display(output, "ON", "CMD GPIO ERROR")
+            self.assertEqual(read_display_observations(output), records)
+
+    def test_record_display_rejects_on_before_step_complete_or_after_off_intent(self):
+        cycle, observed = self.display_fixture()
+        with tempfile.TemporaryDirectory() as folder:
+            output = Path(folder)
+            self.write_display_steps(output, cycle)
+            with patch("scoped_feather_led_cycle.iso_time", return_value=observed[0]["observedAt"]):
+                with self.assertRaises(FileNotFoundError):
+                    record_display(output, "ON", "CMD ON")
+                write_new_json(output / "led-on-grant-revoked.json", {"status": "REVOKED"})
+                write_new_json(output / "led-off-intent.json", {})
+                with self.assertRaisesRegex(ValueError, "before the OFF command"):
+                    record_display(output, "ON", "CMD ON")
+            self.assertFalse((output / "display-on.json").exists())
 
     def integration_fixture(self):
         command = self.step["command"]

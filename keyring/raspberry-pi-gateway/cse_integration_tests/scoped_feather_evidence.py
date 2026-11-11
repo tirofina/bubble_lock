@@ -18,11 +18,18 @@ from scoped_feather_pi import DISPLAY_FIRMWARE
 GATEWAY = "gw-a"
 ROUTE = "/Mobius/privacy-bubble-test-ae/command-receipts-a"
 SOURCES = {"CSE_CALLBACK", "RECOVERY_SWEEP"}
+DISPLAY_TEXTS = ("CMD ON", "CMD OFF", "CMD GPIO ERROR")
 
 
 def read_json(path):
     with path.open(encoding="utf-8-sig") as stream:
         return json.load(stream)
+
+
+def read_display_observations(path):
+    if path.is_dir():
+        return [read_json(path / f"display-{label.lower()}.json") for label, _ in STEPS]
+    return read_json(path)
 
 
 def matches_approval(event, command, payload_hash, native_stored_at):
@@ -110,6 +117,22 @@ def physical_observations(steps, observations):
     return report
 
 
+def check_display_observation(step, observation, *, next_issued_at=None):
+    if not isinstance(observation, dict) or observation.keys() != {"commandId", "screenText", "observedAt"}:
+        raise ValueError("Invalid command display observation fields")
+    command = step["command"]
+    text = observation["screenText"]
+    if text is not None and text not in DISPLAY_TEXTS:
+        raise ValueError("Invalid command display text")
+    when = parse_time(observation["observedAt"])
+    if (observation["commandId"] != command["commandId"]
+            or when < parse_time(step["observation"]["receivedAt"])
+            or (next_issued_at is not None and when >= parse_time(next_issued_at))):
+        raise ValueError("Command display observation is outside the recorded command interval")
+    expected = "CMD ON" if command["desiredState"]["state"] else "CMD OFF"
+    return {**observation, "matched": text == expected}
+
+
 def display_observations(cycle, observations):
     if observations is None:
         return None
@@ -120,19 +143,8 @@ def display_observations(cycle, observations):
         raise ValueError("Record one screen observation for each command")
     report = []
     for index, (step, observation) in enumerate(zip(steps, observations)):
-        if not isinstance(observation, dict) or observation.keys() != {"commandId", "screenText", "observedAt"}:
-            raise ValueError("Invalid command display observation fields")
-        command = step["command"]
-        text = observation["screenText"]
-        if text not in ("CMD ON", "CMD OFF", "CMD GPIO ERROR", None):
-            raise ValueError("Invalid command display text")
-        when = parse_time(observation["observedAt"])
-        if (observation["commandId"] != command["commandId"]
-                or when < parse_time(step["observation"]["receivedAt"])
-                or (index + 1 < len(steps) and when >= parse_time(steps[index + 1]["command"]["issuedAt"]))):
-            raise ValueError("Command display observation is outside the recorded command interval")
-        expected = "CMD ON" if command["desiredState"]["state"] else "CMD OFF"
-        report.append({**observation, "matched": text == expected})
+        next_issued_at = steps[index + 1]["command"]["issuedAt"] if index + 1 < len(steps) else None
+        report.append(check_display_observation(step, observation, next_issued_at=next_issued_at))
     return report
 
 
@@ -359,7 +371,8 @@ if __name__ == "__main__":
     parser.add_argument("--team-state", required=True, type=Path)
     parser.add_argument("--api-mode", choices=("legacy", "integration"), default="legacy")
     parser.add_argument("--operator-observations", type=Path)
-    parser.add_argument("--display-observations", type=Path, help="Operator observations of the Feather command display")
+    parser.add_argument("--display-observations", type=Path,
+                        help="Bench directory with recorded ON/OFF display files, or a JSON array of operator observations")
     parser.add_argument("--prior-expired-command", action="append", default=[],
                         help="Exact command ID of an earlier, delivered pre-device expiration in the same Pi database")
     args = parser.parse_args()
@@ -372,13 +385,14 @@ if __name__ == "__main__":
         parser.error("Settlement and operator inputs require a completed --cycle")
     try:
         team_state = read_json(args.team_state)
+        observed_display = read_display_observations(args.display_observations) if args.display_observations else None
         if args.interrupted_output:
             result = inspect_interrupted_bench(args.interrupted_output, team_state, args.database)
         elif args.api_mode == "integration":
             result = verify_integration_evidence(
                 read_json(args.cycle), args.database, team_state,
                 read_json(args.operator_observations) if args.operator_observations else None,
-                observed_display=read_json(args.display_observations) if args.display_observations else None,
+                observed_display=observed_display,
                 prior_expired_commands=args.prior_expired_command,
             )
         else:
@@ -386,7 +400,7 @@ if __name__ == "__main__":
                                             [read_json(args.on_inspection), read_json(args.off_inspection)],
                                             team_state,
                                             read_json(args.operator_observations) if args.operator_observations else None,
-                                            observed_display=read_json(args.display_observations) if args.display_observations else None,
+                                            observed_display=observed_display,
                                             prior_expired_commands=args.prior_expired_command)
     except (AttributeError, KeyError, TypeError, OSError, ValueError, RuntimeError, sqlite3.Error) as error:
         parser.exit(1, f"Evidence could not be bound ({type(error).__name__}).\n")
