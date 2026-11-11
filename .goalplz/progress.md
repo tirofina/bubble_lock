@@ -1820,3 +1820,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 r18 첫 
 - r18 대조 도구의 `--pi-log`는 동일 요청 ID·관측 본문 해시를 Mobius4 및 Pi DB 상태와 대조한다. 서로 다른 경로가 같은 요청을 완료했다고 기록됐거나 DB에 아직 대기 중이면 실패한다. 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·실물 Pi 및 Mobius4 경로 검증은 미수행이다. [관측 전달 증거 대조](../keyring/raspberry-pi-gateway/TESTING.md#관측-전달-증거-대조)
 
 소스 commit `120c18e1b69f267075b5f195d200e0e213494c74`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `b66e581..120c18e`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 격리 MQTT 관측 중계
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 Mobius4 관측 확인 경로 기록을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 고정 Mobius4 `e8f75b1`의 MQTT·HTTPS 요청 구현을 확인했다.
+
+- Gateway B mTLS 브로커 요청·응답 ACL과 격리 소비자의 선택적 oneM2M MQTT 중계를 추가했다. 시작 시 실제 r18 관측·health의 이름과 고정 ID를 확인하고, 두 컨테이너에 대한 CREATE만 같은 RQI·본문으로 기존 Mobius4 HTTPS에 전달한다. 내장 CSE MQTT listener는 기존 격리 설정을 따른다.
+- Pi 관측 전용 세션에 `--mqtt-port`를 추가했다. 별도 터널을 사용해 HTTPS 경로를 유지하면서 MQTT 연결을 끊는 절차와, 두 관측의 전송 로그 대조 절차를 문서화했다. Originator·고정 ID·명령 차단·중복 응답을 다루는 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·Compose 실행·Pi 및 실물 MQTT/HTTPS 전환은 미수행이다. [격리 설정](../keyring/dev/mobius4/README.md#r18-관측-mqtt-중계)
+
+소스 commit `1bdec28748e68ca0a1695672871f91432c14c3b7`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `333623d..1bdec28`이다. goal은 active/progress다.

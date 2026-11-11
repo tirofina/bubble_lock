@@ -1781,5 +1781,12 @@
     "regressionsExecuted": false,
     "physicalTransportVerified": false,
     "sourceCommit": "120c18e1b69f267075b5f195d200e0e213494c74"
+  },
+  "r18ScopedMqttIngress": {
+    "reference": "dev/mobius4/README.md#r18-관측-mqtt-중계",
+    "regressionsExecuted": false,
+    "composeExecuted": false,
+    "physicalFallbackVerified": false,
+    "sourceCommit": "1bdec28748e68ca0a1695672871f91432c14c3b7"
   }
 }
