@@ -1594,3 +1594,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R11. 직전 goal turn은 Gat
 - Gateway 0.2.80은 같은 BLE 세션의 버튼 누계와 마지막 화면 그리기 기록을 대조한다. 이전 USB 로그와 Pi 세션은 계속 읽을 수 있다. 프로필 불일치, 작업자·버스 오류, 누락과 잘못된 버튼 누계를 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·업로드·Pi 접속·실제 화면 확인은 미수행이다. [화면 초기 구동](../keyring/pcb/BRING_UP.md#화면만-연결한-두-번째-구동)
 
 소스 commit `7a3875eb711fb000ae73b920814d75006c77c809`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `9e85efd..7a3875e`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 초기 구동 버튼과 화면 표시 요청의 동기화
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R11. 직전 goal turn은 r18 화면 그리기 기록과 BLE 버튼 입력 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀 GATT 관측 계약을 확인했다.
+
+- r18 화면 초기 구동 0.7.17은 버튼 상태와 표시 요청을 같은 잠금 안에서 기록하고 화면 작업자를 깨운다. 초기화가 아직 진행 중이면 요청을 보관한다. 준비된 작업자는 정기 갱신 기한을 기다리지 않고 새 상태로 그린다. 요청과 백라이트 활성 시 보드 fault를 확인한다.
+- Gateway 0.2.81의 USB/BLE 기록과 격리 세션에 두 0.7.17 revision을 연결했다. 초기화 중 누름, 정기 상태 갱신과 요청 보존, 비상 버튼의 즉시 선택을 다루는 호스트 시험 소스와 USB 호환성 회귀 소스를 반영했다. 빌드·시험·정적 분석·업로드·Pi 접속·화면 확인은 미수행이다. [화면 초기 구동](../keyring/pcb/BRING_UP.md#화면만-연결한-두-번째-구동)
+
+소스 commit `7f5510c2e445419901a0af7dcb2926c3a63cd61e`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `5f38663..7f5510c`다. goal은 active/progress다.
