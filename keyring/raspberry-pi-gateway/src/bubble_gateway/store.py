@@ -17,6 +17,20 @@ from .state_identity import preflight, install
 MAX_PENDING_CREDENTIAL_RECEIPTS = 1024
 RETAIN_DELIVERED_CREDENTIAL_RECEIPTS = 128
 
+# Reused by plan-cutover so its epoch counts match the daemon's queue selection.
+CORE_TELEMETRY_ROWS = """
+    SELECT rowid, CASE WHEN json_valid(payload) THEN payload END AS message
+    FROM outbox WHERE container='@core/telemetry'
+"""
+CORE_TELEMETRY_EPOCH_MATCH = """
+    json_type(message)='object' AND CASE WHEN ?1 IS NULL THEN json_type(message, '$.ownershipEpoch') IS NULL
+        ELSE json_type(message, '$.ownershipEpoch')='integer' AND EXISTS (
+            SELECT 1 FROM json_each(?1) AS assignment
+            WHERE assignment.key=json_extract(message, '$.deviceId')
+              AND assignment.value=json_extract(message, '$.ownershipEpoch')
+        ) END
+"""
+
 
 class CapacityError(RuntimeError):
     pass
@@ -309,25 +323,17 @@ class Store:
         return json.loads(row["payload"])["claimId"]
 
     def due(self, *, core_epochs: dict[str, int] | None = None, scoped_only: bool = False,
-            prefer_receipts: bool | None = None, skip_native: bool = False,
+            prefer_receipts: bool | None = None, skip_native: bool = False, skip_core: bool = False,
             held_receipt_container: str | None = None, hold_credential_receipts: bool = False,
             held_observation_container: str | None = None,
             disabled_command_receipt_container: str | None = None) -> dict | None:
         # Old ownership routes stay on disk and cannot block the active route.
         # Within the active route, only the oldest projection per device can run.
         epochs = canonical(core_epochs) if core_epochs is not None else None
-        row = self.db.execute("""
-            WITH core_rows AS (
-                SELECT rowid, CASE WHEN json_valid(payload) THEN payload ELSE '{}' END AS message
-                FROM outbox WHERE container='@core/telemetry'
-            ), core_heads AS (
+        row = self.db.execute(f"""
+            WITH core_rows AS ({CORE_TELEMETRY_ROWS}), core_heads AS (
                 SELECT MIN(rowid) AS head FROM core_rows
-                WHERE CASE WHEN ?1 IS NULL THEN json_type(message, '$.ownershipEpoch') IS NULL
-                    ELSE json_type(message, '$.ownershipEpoch') = 'integer' AND EXISTS (
-                       SELECT 1 FROM json_each(?1) AS assignment
-                       WHERE assignment.key = json_extract(message, '$.deviceId')
-                         AND assignment.value = json_extract(message, '$.ownershipEpoch')
-                    ) END
+                WHERE ?10=0 AND ({CORE_TELEMETRY_EPOCH_MATCH})
                 GROUP BY json_extract(message, '$.deviceId')
             )
             SELECT *, (command_id IS NOT NULL OR container='@core/ack') AS is_receipt
@@ -340,10 +346,11 @@ class Store:
               AND (?7=0 OR NOT EXISTS (SELECT 1 FROM credential_receipts AS credentials WHERE credentials.rqi=outbox.rqi))
               AND (?8 IS NULL OR container<>?8)
               AND (?9 IS NULL OR (command_id IS NULL AND container NOT IN ('@core/ack', ?9)))
+              AND (?10=0 OR container NOT IN ('@core/ack', '@core/telemetry'))
             ORDER BY CASE WHEN is_receipt=?4 THEN 0 ELSE 1 END, created_at,rqi LIMIT 1
         """, (epochs, time.time(), scoped_only, prefer_receipts, skip_native,
               held_receipt_container, hold_credential_receipts, held_observation_container,
-              disabled_command_receipt_container)).fetchone()
+              disabled_command_receipt_container, skip_core)).fetchone()
         return self._outbox_row(row)
 
     def due_central_receipt(self) -> dict | None:

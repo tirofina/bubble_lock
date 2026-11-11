@@ -2,8 +2,9 @@
 from contextlib import closing
 
 from .config import GatewayConfig
-from .model import iso_time
+from .model import canonical, iso_time
 from .state_identity import BASE_TABLES, StateIdentityError, configured_binding, match, metadata, readonly, tables
+from .store import CORE_TELEMETRY_EPOCH_MATCH, CORE_TELEMETRY_ROWS
 
 
 def cutover_plan(current: GatewayConfig, target: GatewayConfig) -> dict:
@@ -42,6 +43,7 @@ def cutover_plan(current: GatewayConfig, target: GatewayConfig) -> dict:
         "central_telemetry_retention_seconds", "pc_dispatch_start_required",
     )
     changed_delivery = [name for name in delivery_settings if getattr(current, name) != getattr(target, name)]
+    source_central_staging = current.commands_enabled and current.central_receipts_enabled
 
     with closing(readonly(current.database)) as db:
         db.execute("BEGIN")
@@ -86,6 +88,31 @@ def cutover_plan(current: GatewayConfig, target: GatewayConfig) -> dict:
         journal["credentialReceiptsNotDelivered"] = (db.execute(
             "SELECT COUNT(*) FROM credential_receipts WHERE delivered_at IS NULL"
         ).fetchone()[0] if credential_table else 0)
+        target_holds = None
+        if action == "reuse-existing":
+            core_scope_held = 0
+            if target.core_bridge_enabled and outbox.get("coreTelemetry"):
+                epochs = target.core_telemetry_epochs
+                core_scope_held = db.execute(f"""
+                    WITH core_rows AS ({CORE_TELEMETRY_ROWS})
+                    SELECT COUNT(*) FROM core_rows WHERE NOT COALESCE(({CORE_TELEMETRY_EPOCH_MATCH}), 0)
+                """, (None if epochs is None else canonical(epochs),)).fetchone()[0]
+            central_receipts = outbox.get("centralReceipt", 0)
+            if source_central_staging:
+                central_receipts += journal["centralReceiptsWithoutStageMarker"]
+            native_receipts = outbox.get("nativeCommandReceipt", 0) + journal["nativeReceiptsNotStaged"]
+            pending_commands = journal["commandsReceived"] + journal["commandsDispatching"]
+            target_holds = {
+                "coreTelemetryScopeMismatch": core_scope_held,
+                "coreTelemetryBridgeDisabled": 0 if target.core_bridge_enabled else outbox.get("coreTelemetry", 0),
+                "coreAckDisabled": (0 if target.core_bridge_enabled and target.commands_enabled
+                                    else outbox.get("coreAck", 0)),
+                "nativeCommandReceiptsDisabled": 0 if target.commands_enabled else native_receipts,
+                "pendingCommandsDisabled": 0 if target.commands_enabled else pending_commands,
+                "centralTelemetryDisabled": 0 if target.central_telemetry_enabled else outbox.get("centralTelemetry", 0),
+                "centralReceiptsDisabled": (0 if target.commands_enabled and target.central_receipts_enabled
+                                            else central_receipts),
+            }
 
     return {
         "reportVersion": 1,
@@ -96,7 +123,8 @@ def cutover_plan(current: GatewayConfig, target: GatewayConfig) -> dict:
         "changedDeliverySettings": changed_delivery,
         "targetMissingDeploymentIds": [name for name in ("cseDeploymentId", "pcApiDeploymentId")
                                        if name not in target_binding],
-        "sourceCentralReceiptStagingEnabled": current.commands_enabled and current.central_receipts_enabled,
+        "sourceCentralReceiptStagingEnabled": source_central_staging,
         "outboxByRoute": outbox,
         "journal": journal,
+        "targetHolds": target_holds,
     }

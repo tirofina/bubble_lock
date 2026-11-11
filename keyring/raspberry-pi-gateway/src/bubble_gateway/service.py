@@ -437,7 +437,8 @@ class Gateway:
                 prefer_receipts = None if scoped else receipt_attempts < RECEIPT_BURST
                 hold = NativeDeliveryHold() if scoped else self.transport.native_delivery_hold()
                 item = self.store.due(core_epochs=epochs, scoped_only=scoped, prefer_receipts=prefer_receipts,
-                                      skip_native=hold.all_native, held_receipt_container=hold.receipt_container,
+                                      skip_native=hold.all_native, skip_core=not self.config.core_bridge_enabled,
+                                      held_receipt_container=hold.receipt_container,
                                       hold_credential_receipts=hold.credential_receipts,
                                       held_observation_container=hold.observation_container,
                                       disabled_command_receipt_container=None if commands_enabled else self.config.receipt_container)

@@ -86,6 +86,35 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.queued("@core/ack"), 1)
         self.assertEqual(self.native_delivered(), 0)
 
+    async def test_disabled_core_preserves_queued_rows_until_reenabled(self):
+        self.stage()
+        self.store.observation(BINDING["observationContainer"], observation(), core_enabled=True)
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.config.core_bridge_enabled = False
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+        gateway.transport = SimpleNamespace(publish=AsyncMock(), native_delivery_hold=NativeDeliveryHold)
+
+        async def idle(_seconds):
+            gateway.stop.set()
+
+        gateway._pause = idle
+        async with asyncio.timeout(1):
+            await gateway._outbox_loop()
+        published = {call.args[1] for call in gateway.transport.publish.await_args_list}
+        self.assertEqual(published, {BINDING["receiptContainer"], BINDING["observationContainer"]})
+        rows = self.store.db.execute("SELECT container,attempts FROM outbox").fetchall()
+        self.assertCountEqual([tuple(row) for row in rows], [("@core/ack", 0), ("@core/telemetry", 0)])
+
+        gateway.config.core_bridge_enabled = True
+        gateway.stop.clear()
+        gateway.transport.publish.reset_mock()
+        async with asyncio.timeout(1):
+            await gateway._outbox_loop()
+        published = {call.args[1] for call in gateway.transport.publish.await_args_list}
+        self.assertEqual(published, {"@core/ack", "@core/telemetry"})
+        self.assertEqual(self.store.counts()[0], 0)
+
     async def test_observation_only_daemon_skips_command_recovery_and_workers(self):
         gateway = Gateway.__new__(Gateway)
         gateway.config, gateway.stop = config(), asyncio.Event()

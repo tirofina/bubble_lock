@@ -59,6 +59,9 @@ sudo -u bubble-gateway /opt/bubble_lock/keyring/raspberry-pi-gateway/.venv/bin/b
 - `databaseAction`이 `reuse-existing`이면 설정상 동일한 binding과 기존 DB 경로를 사용한다. URL이나 MQTT 주소가 바뀌면 팀의 CSE·중앙 API·브로커와 실제 저장소의 동일성을 확인한다. `targetMissingDeploymentIds`는 설정에 빠진 배포 ID를 보여준다.
 - `use-new-database`이면 binding이 바뀌고 새 DB 경로가 비어 있다. 기존 DB에 다른 binding을 지정하거나 같은 binding으로 별도 빈 DB를 지정하면 오류가 난다. 새 DB 경로에 파일이나 SQLite WAL·SHM·journal이 있어도 오류가 난다.
 - `outboxByRoute`는 native 관측·health, native 명령 영수증, credential 영수증, CORE telemetry·ACK, 중앙 telemetry·영수증의 저장 행 수다. 표시되지 않는 경로는 0건이다. `journal`에는 수신·dispatch 중 명령, outbox 등록 전 native 영수증, 중앙 등록 표시가 없는 명령 영수증과 미전달 credential 영수증이 포함된다. 각 단계에 같은 영수증이 포함될 수 있다. `sourceCentralReceiptStagingEnabled`로 중앙 등록 경로가 켜져 있었는지 확인한다.
+- Gateway 0.2.76의 `targetHolds`는 기존 DB를 재사용할 때 후보 설정에 의해 보류될 건수를 보여준다. CORE 브리지·명령·중앙 전송 경로의 비활성화와 CORE telemetry의 epoch 불일치를 반영한다. 기존 중앙 영수증 경로가 활성화돼 있었다면 중앙 등록 전 명령 영수증도 센다. 새 DB를 사용할 때 값은 `null`이며 기존 큐는 원본 DB에 남는다.
+
+CORE 브리지를 끈 데몬은 기존 CORE telemetry와 ACK를 SQLite에 남기고 native 전송을 이어간다. 같은 배포에서 브리지를 다시 켜면 설정된 epoch에 해당하는 telemetry와 활성화된 명령 경로의 ACK가 재전송 대상에 들어간다. 보류 행은 계속 outbox 용량에 포함된다.
 
 보고서는 집계와 변경된 설정 이름을 stdout에 출력한다. 새 DB를 초기화하거나 기존 큐를 복사·삭제·전송하는 동작은 없다. 배포 전 기존 큐와 dispatch 중 명령을 원래 배포에서 대조하고 필요한 상태를 [격리 snapshot](#수동-snapshot)으로 보관한다. 집계가 비어 있어도 중앙 정산과 새 배포의 실제 신원·권한 확인은 남는다. 팀 저장소와 실제 Pi에서의 전환 시험은 대기 중이다.
 
