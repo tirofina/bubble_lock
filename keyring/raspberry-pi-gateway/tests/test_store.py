@@ -180,6 +180,50 @@ class StoreTests(unittest.TestCase):
         self.store.enqueue("receipt", "synthetic", BINDING["receiptContainer"], {}, critical=True)
         self.assertEqual(self.store.counts()[0], 1)
 
+    def test_central_observation_is_durable_with_native_copy_and_watermark(self):
+        container = BINDING["observationContainer"]
+        payload = observation(sensorValues={"location": {"lat": 37.5, "lon": 127.0, "source": "gps"}})
+        self.store.max_rows = 2  # One ordinary slot fits only the native copy.
+        with self.assertRaises(CapacityError):
+            self.store.observation(container, payload, central_enabled=True)
+        self.assertEqual(self.store.counts()[0], 0)
+        self.assertEqual(self.store.observation_heads(), {})
+
+        self.store.max_rows = 4
+        self.assertTrue(self.store.observation(container, payload, central_enabled=True))
+        self.store.close()
+        self.store = self.open_store()
+        self.assertFalse(self.store.observation(container, payload, central_enabled=True))
+        item = self.store.due(central_telemetry_enabled=True, skip_native=True)
+        self.assertEqual((item["container"], item["payload"]), ("@central/telemetry", payload))
+        self.store.delivered(item["rqi"])
+        self.assertEqual(self.store.due()["payload"], payload)
+
+    def test_central_retry_preserves_device_order_without_holding_other_devices(self):
+        container = BINDING["observationContainer"]
+        first = observation(sequence=9)
+        second = observation(bootId="boot-new", sequence=0)
+        other = observation(deviceId="kr-other")
+        for payload in (first, second, other):
+            self.assertTrue(self.store.observation(container, payload, central_enabled=True))
+        identity = {key: first[key] for key in ("gatewayId", "deviceId", "bootId", "sequence")}
+        first_rqi = self.store.request_id("central-telemetry", payload_hash(identity))
+        with patch("bubble_gateway.store.time.time", return_value=1000):
+            self.assertIsNone(self.store.due(skip_native=True))
+            self.store.retry(first_rqi, 0)
+            self.store.close()
+            self.store = self.open_store()
+            remaining = self.store.due(central_telemetry_enabled=True, skip_native=True)
+            self.assertEqual(remaining["payload"], other)
+            self.store.delivered(remaining["rqi"])
+            self.assertIsNone(self.store.due(central_telemetry_enabled=True, skip_native=True))
+
+        with patch("bubble_gateway.store.time.time", return_value=2000):
+            for payload in (first, second):
+                item = self.store.due(central_telemetry_enabled=True, skip_native=True)
+                self.assertEqual(item["payload"], payload)
+                self.store.delivered(item["rqi"])
+
     def test_nullable_projection_uses_only_the_scoped_route(self):
         container = BINDING["observationContainer"]
         base = observation(battery=None, rssi=None, buttonState="confirm", state=False)

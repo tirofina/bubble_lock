@@ -18,3 +18,11 @@
 - broker ACL, topic 경로, 실제 CSE ID 표기, RVI, HTTP 응답 헤더, deterministic contentInstance 이름의 재전송 동작은 PC-MOBIUS와 capability probe로 확정해야 한다. 아직 실제 Mobius와 연동한 결과가 없다.
 
 API 작성 참고: [Bleak GATT client](https://bleak.readthedocs.io/en/latest/api/client.html), [Paho MQTT client](https://eclipse.dev/paho/files/paho.mqtt.python/html/client.html). BLE bond 신뢰 정책과 oneM2M 배포 계약은 이 라이브러리 문서만으로 확정되지 않는다.
+
+## 중앙 관측 전달
+
+Gateway 0.2.47에서 `CENTRAL_TELEMETRY_ENABLED=true`를 사용하면 검증한 BLE 관측을 Mobius4용 항목 및 관측 커서와 같은 SQLite 트랜잭션에 중앙용으로 등록한다. 배포 예시 파일은 중앙 경로를 켜고, 기존 격리 프로필은 기본값 `false`를 사용한다. 중앙 API에서 Gateway·장치·가구 등록을 마친 뒤 같은 배포의 상태 DB를 사용한다.
+
+중앙 송신은 장치별로 가장 오래된 미전송 관측부터 처리한다. 재시도 중인 장치가 있어도 다른 장치의 관측은 진행한다. 재시작과 재시도에는 동일 본문과 `Idempotency-Key`를 사용한다. 중앙 응답의 장치 ID와 Gateway·장치·부팅 ID·순번으로 계산한 `observationId`를 확인한다. `ACCEPTED`와 `DUPLICATE`는 확인, `STALE`은 중앙이 더 새 관측을 보유한 결과로 집계한다.
+
+Pi의 시계가 정상이고 관측 시각에서 24시간 2초가 지났으면 중앙 전송 대기열의 해당 항목을 만료로 집계한다. 중앙 보관 기간 상한은 24시간이다. Mobius4 전송은 해당 경로에서 처리한다. 이 경로는 원격 main `bc2a45d`의 INTEGRATION API 계약을 따른다.

@@ -360,6 +360,26 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
                 with self.assertRaises(RemoteResponseError):
                     await self.hub.publish(self.rqi, "@central/receipt", receipt, expected_claim_id=cmd["claimId"])
 
+    async def test_central_telemetry_requires_the_bound_observation_id(self):
+        self.hub.config.central_telemetry_enabled = True
+        payload = observation(bootId="boot-test-2", sequence=0)
+        identity = {"gatewayId": "gw-test", "deviceId": "kr-test", "bootId": "boot-test-2", "sequence": 0}
+        response = {"status": "ACCEPTED", "deviceId": "kr-test", "observationId": payload_hash(identity)}
+        for status in ("ACCEPTED", "DUPLICATE", "STALE"):
+            with self.subTest(status=status):
+                self.hub._http_json.return_value = (200, httpx.Headers(), dict(response, status=status))
+                result = await self.hub.publish(self.rqi, "@central/telemetry", payload)
+                self.assertEqual(result["status"], status)
+                exchange = self.hub._http_json.await_args
+                self.assertEqual(exchange.args, ("POST", "https://api.invalid/api/v1/gateways/gw-test/telemetry"))
+                self.assertEqual(exchange.kwargs["headers"]["Idempotency-Key"], self.rqi)
+                self.assertEqual(exchange.kwargs["body"], payload)
+        for key in ("status", "deviceId", "observationId"):
+            with self.subTest(mismatch=key):
+                self.hub._http_json.return_value = (200, httpx.Headers(), dict(response, **{key: "wrong"}))
+                with self.assertRaises(RemoteResponseError):
+                    await self.hub.publish(self.rqi, "@central/telemetry", payload)
+
     async def test_conflict_requires_exact_existing_content(self):
         rn = "gw-" + hashlib.sha256(self.rqi.encode()).hexdigest()
         read_rqi = "read-" + hashlib.sha256(self.rqi.encode()).hexdigest()

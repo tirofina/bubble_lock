@@ -20,6 +20,7 @@ from .transport import HttpRetryDeferred, NativeDeliveryHold, TransportHub
 
 LOG = logging.getLogger(__name__)
 RECEIPT_BURST = 4
+CENTRAL_TELEMETRY_MAX_AGE = timedelta(hours=24, seconds=2)
 DEVICE_ACKS = {"APPLIED", "DUPLICATE", "REJECTED_EPOCH", "REJECTED_GRANT", "EXPIRED",
                "CONFLICT", "INVALID", "JOURNAL_FULL", "STORAGE_ERROR", "INDETERMINATE", "READBACK_MISMATCH"}
 
@@ -60,6 +61,7 @@ class Gateway:
             "receiptContainerRi": self.config.receipt_container_ri,
             "apiUrl": self.config.api_url, "pcDispatchStartRequired": self.config.pc_dispatch_start_required,
             "centralReceiptsEnabled": self.config.central_receipts_enabled,
+            "centralTelemetryEnabled": self.config.central_telemetry_enabled,
             "rvi": self.config.rvi,
             "mqttEnabled": self.config.mqtt_enabled, "mqttHost": self.config.mqtt_host,
             "m2mMqttEnabled": self.config.m2m_mqtt_enabled,
@@ -124,7 +126,8 @@ class Gateway:
         try:
             payload = validate_observation(raw, self.config.gateway_id, self.config.ble_devices)
             if self.store.observation(self.config.observation_container, payload, self.config.core_bridge_enabled,
-                                      core_epochs=self.config.core_telemetry_epochs):
+                                      core_epochs=self.config.core_telemetry_epochs,
+                                      central_enabled=self.config.central_telemetry_enabled):
                 self.counters["observations_queued"] += 1
             else:
                 self.counters["observations_duplicate"] += 1
@@ -410,7 +413,8 @@ class Gateway:
             item = self.store.due(core_epochs=epochs, scoped_only=scoped, prefer_receipts=prefer_receipts,
                                   skip_native=hold.all_native, held_receipt_container=hold.receipt_container,
                                   hold_credential_receipts=hold.credential_receipts,
-                                  central_receipts_enabled=central_receipts)
+                                  central_receipts_enabled=central_receipts,
+                                  central_telemetry_enabled=self.config.central_telemetry_enabled)
             if item is None:
                 await self._pause(0.5)
                 continue
@@ -423,9 +427,14 @@ class Gateway:
                 else:
                     self.store.mark_receipt_attempt(item["rqi"])
             try:
+                if (item["container"] == "@central/telemetry" and self._clock_ok()
+                        and utc_now() - parse_time(item["payload"]["observedAt"]) > CENTRAL_TELEMETRY_MAX_AGE):
+                    self.store.delivered(item["rqi"])
+                    self.counters["central_telemetry_expired"] += 1
+                    continue
                 if item["container"] == "@central/receipt":
                     delivery_options["expected_claim_id"] = self.store.central_receipt_claim(item["payload"])
-                await self.transport.publish(item["rqi"], item["container"], item["payload"], **delivery_options)
+                confirmation = await self.transport.publish(item["rqi"], item["container"], item["payload"], **delivery_options)
             except asyncio.CancelledError:
                 raise
             except Exception as exc:
@@ -438,6 +447,9 @@ class Gateway:
                 self.counters["published"] += 1
                 if item["container"] == "@central/receipt":
                     self.counters["central_receipts_confirmed"] += 1
+                if item["container"] == "@central/telemetry":
+                    outcome = "stale" if confirmation["status"] == "STALE" else "confirmed"
+                    self.counters[f"central_telemetry_{outcome}"] += 1
                 if scoped:
                     self.counters["core_applied_confirmed"] += 1
 

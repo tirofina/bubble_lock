@@ -9,7 +9,7 @@ import time
 from pathlib import Path
 from typing import Callable
 
-from .model import canonical, iso_time
+from .model import canonical, central_observation_id, iso_time
 from .core_bridge import telemetry, measurable, acknowledgement
 from .state_identity import preflight, install
 
@@ -53,6 +53,7 @@ class Store:
             );
             CREATE INDEX IF NOT EXISTS outbox_due ON outbox(next_attempt, created_at);
             CREATE INDEX IF NOT EXISTS outbox_core_pending ON outbox(container) WHERE container='@core/telemetry';
+            CREATE INDEX IF NOT EXISTS outbox_central_pending ON outbox(container) WHERE container='@central/telemetry';
             CREATE INDEX IF NOT EXISTS outbox_native_receipt ON outbox(command_id) WHERE command_id IS NOT NULL;
             CREATE INDEX IF NOT EXISTS commands_pending_receipt ON commands(receipt_delivered)
                 WHERE receipt IS NOT NULL AND receipt_delivered=0;
@@ -185,7 +186,7 @@ class Store:
                 pass  # Still in the independent journal; retry after outbox space opens.
 
     def observation(self, container: str, payload: dict, core_enabled: bool = False, *,
-                    core_epochs: dict[str, int] | None = None) -> bool:
+                    core_epochs: dict[str, int] | None = None, central_enabled: bool = False) -> bool:
         with self.db:
             previous = self.db.execute("SELECT boot_id,sequence FROM observations WHERE device_id=?", (payload["deviceId"],)).fetchone()
             if previous and previous["boot_id"] == payload["bootId"] and payload["sequence"] <= previous["sequence"]:
@@ -203,6 +204,9 @@ class Store:
                 self._enqueue(self.request_id("core-telemetry", identity), "@core/telemetry", projection)
                 self.db.execute("INSERT INTO core_sequences(device_id,wire_sequence) VALUES(?,?) ON CONFLICT(device_id) DO UPDATE SET wire_sequence=excluded.wire_sequence",
                                 (payload["deviceId"], wire_sequence))
+            if central_enabled:
+                rqi = self.request_id("central-telemetry", central_observation_id(payload))
+                self._enqueue(rqi, "@central/telemetry", payload)
             self.db.execute("INSERT INTO observations(device_id,boot_id,sequence) VALUES(?,?,?) ON CONFLICT(device_id) DO UPDATE SET boot_id=excluded.boot_id,sequence=excluded.sequence",
                             (payload["deviceId"], payload["bootId"], payload["sequence"]))
         return True
@@ -260,7 +264,7 @@ class Store:
     def due(self, *, core_epochs: dict[str, int] | None = None, scoped_only: bool = False,
             prefer_receipts: bool | None = None, skip_native: bool = False,
             held_receipt_container: str | None = None, hold_credential_receipts: bool = False,
-            central_receipts_enabled: bool = False) -> dict | None:
+            central_receipts_enabled: bool = False, central_telemetry_enabled: bool = False) -> dict | None:
         # Old ownership routes stay on disk and cannot block the active route.
         # Within the active route, only the oldest projection per device can run.
         epochs = canonical(core_epochs) if core_epochs is not None else None
@@ -277,18 +281,24 @@ class Store:
                          AND assignment.value = json_extract(message, '$.ownershipEpoch')
                     ) END
                 GROUP BY json_extract(message, '$.deviceId')
+            ), central_heads AS (
+                SELECT MIN(rowid) AS head FROM outbox
+                WHERE ?9=1 AND container='@central/telemetry'
+                GROUP BY CASE WHEN json_valid(payload) THEN json_extract(payload, '$.deviceId') END
             )
             SELECT *, (command_id IS NOT NULL OR container IN ('@core/ack', '@central/receipt')) AS is_receipt
             FROM outbox WHERE next_attempt<=?2
               AND (container<>'@core/telemetry' OR rowid IN (SELECT head FROM core_heads))
+              AND (container<>'@central/telemetry' OR rowid IN (SELECT head FROM central_heads))
               AND (?3=0 OR container='@core/telemetry')
-              AND (?5=0 OR container IN ('@core/ack', '@core/telemetry', '@central/receipt'))
+              AND (?5=0 OR container IN ('@core/ack', '@core/telemetry', '@central/receipt', '@central/telemetry'))
               AND (?6 IS NULL OR container<>?6)
               AND (?7=0 OR NOT EXISTS (SELECT 1 FROM credential_receipts AS credentials WHERE credentials.rqi=outbox.rqi))
               AND (?8=1 OR container<>'@central/receipt')
             ORDER BY CASE WHEN is_receipt=?4 THEN 0 ELSE 1 END, created_at,rqi LIMIT 1
         """, (epochs, time.time(), scoped_only, prefer_receipts, skip_native,
-              held_receipt_container, hold_credential_receipts, central_receipts_enabled)).fetchone()
+              held_receipt_container, hold_credential_receipts, central_receipts_enabled,
+              central_telemetry_enabled)).fetchone()
         if row is None:
             return None
         result = dict(row)

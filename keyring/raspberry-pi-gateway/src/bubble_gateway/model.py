@@ -42,6 +42,10 @@ def payload_hash(value: Any) -> str:
     return hashlib.sha256(canonical(value).encode("utf-8")).hexdigest()
 
 
+def central_observation_id(observation: dict) -> str:
+    return payload_hash({key: observation[key] for key in ("gatewayId", "deviceId", "bootId", "sequence")})
+
+
 def validate_command(raw: Any, gateway_id: str, devices: dict[str, str]) -> dict:
     if not isinstance(raw, dict) or set(raw) != COMMAND_KEYS:
         raise ValueError("Command fields do not match keyring-command schema")

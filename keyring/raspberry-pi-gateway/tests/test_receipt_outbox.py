@@ -4,15 +4,16 @@ import json
 import tempfile
 import unittest
 from collections import Counter
+from datetime import timedelta
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
-from bubble_gateway.model import iso_time, payload_hash
+from bubble_gateway.model import iso_time, payload_hash, utc_now
 from bubble_gateway.service import Gateway
 from bubble_gateway.store import Store
 from bubble_gateway.transport import NativeDeliveryHold, RemoteResponseError
-from helpers import BINDING, command, config
+from helpers import BINDING, command, config, observation
 
 
 class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
@@ -222,6 +223,34 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.queued("@central/receipt"), 0)
         self.assertEqual(self.queued(BINDING["receiptContainer"]), 1)
         self.assertEqual(self.native_delivered(), 0)
+
+    async def test_central_worker_expires_old_projection_and_finishes_bound_stale_observation(self):
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.config.central_telemetry_enabled = True
+        gateway.config.core_bridge_enabled = False
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+        gateway._clock_ok = Mock(return_value=True)
+        gateway.transport = SimpleNamespace(publish=AsyncMock(return_value={"status": "STALE"}),
+                                             native_delivery_hold=Mock(return_value=NativeDeliveryHold(all_native=True)))
+        expired_at = iso_time(utc_now() - timedelta(hours=25))
+        old = observation(observedAt=expired_at, receivedAt=expired_at)
+        fresh = observation(sequence=2)
+        await gateway.observation(old)
+        await gateway.observation(fresh)
+
+        async def idle(_seconds):
+            gateway.stop.set()
+
+        gateway._pause = idle
+        async with asyncio.timeout(1):
+            await gateway._outbox_loop()
+        gateway.transport.publish.assert_awaited_once()
+        self.assertEqual(gateway.transport.publish.await_args.args[1:], ("@central/telemetry", fresh))
+        self.assertEqual(gateway.counters["central_telemetry_expired"], 1)
+        self.assertEqual(gateway.counters["central_telemetry_stale"], 1)
+        self.assertEqual(self.queued("@central/telemetry"), 0)
+        self.assertEqual(self.queued(BINDING["observationContainer"]), 2)
 
     async def test_outbox_worker_does_not_spin_publishing_ack_while_native_is_backed_off(self):
         gateway = Gateway.__new__(Gateway)

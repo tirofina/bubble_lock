@@ -20,7 +20,7 @@ import httpx
 import paho.mqtt.client as mqtt
 from .config import ID, tls_context
 from .core_bridge import command as core_command
-from .model import authorization_deadline, parse_time, payload_hash, utc_now
+from .model import authorization_deadline, central_observation_id, parse_time, payload_hash, utc_now
 
 LOG = logging.getLogger(__name__)
 MAX_BODY = 256 * 1024
@@ -468,6 +468,8 @@ class TransportHub:
             raise ValueError("invalid request ID")
         if container == "@central/receipt":
             return await self._publish_central_receipt(rqi, payload, expected_claim_id)
+        if container == "@central/telemetry":
+            return await self._publish_central_telemetry(rqi, payload)
         path = _resource_path(container)
         rn = "gw-" + hashlib.sha256(rqi.encode("utf-8")).hexdigest()
         cin = {"rn": rn, "cnf": "application/json:0", "con": payload}
@@ -549,6 +551,17 @@ class TransportHub:
                 or result.get("claimId") != claim_id
                 or result.get("receiptHash") != payload_hash(receipt)):
             raise RemoteResponseError("Central receipt confirmation does not match the queued receipt")
+        return result
+
+    async def _publish_central_telemetry(self, rqi: str, observation: dict[str, Any]) -> dict[str, Any]:
+        if not self.config.central_telemetry_enabled or observation["gatewayId"] != self.config.gateway_id:
+            raise ValueError("Central telemetry route requires an enabled route and the configured gateway")
+        observation_id = central_observation_id(observation)
+        result = await self._api("POST", "/telemetry", observation, rqi, idempotency_key=rqi)
+        if (result.get("status") not in ("ACCEPTED", "DUPLICATE", "STALE")
+                or result.get("deviceId") != observation["deviceId"]
+                or result.get("observationId") != observation_id):
+            raise RemoteResponseError("Central telemetry confirmation does not match the queued observation")
         return result
 
     async def _publish_core(self, target: str, payload: dict[str, Any]) -> dict[str, Any] | None:
