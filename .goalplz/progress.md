@@ -1576,3 +1576,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R11, R12. 직전 goal turn은 Pi·키�
 - 로컬·CSE 영수증 누락과 본문 불일치를 별도로 표시하고, 일치한 행도 중앙 정산과 장치 근거를 확인할 목록에 남긴다. 정상·누락·다른 본문·다른 컨테이너를 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·실제 CSE 조회·Pi 접속·배포 전환은 미수행이다. [기존 CSE 대조 절차](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#기존-배포의-명령과-키링-저널-대조)
 
 소스 commit `9b1cad8517b9c62c2a69f4a971441038e788b192`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `912c91f..9b1cad8`다. goal은 active/progress다.
+
+## 2026-11-11 — Gateway 상태 보고의 Mobius4 자원 고정
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11, R12. 직전 goal turn은 Pi에만 남은 명령의 CSE 영수증 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 Gateway 전송 계약을 확인했다.
+
+- Gateway 0.2.79는 `M2M_HEALTH_CONTAINER_RI`로 heartbeat와 credential 상태 전환 영수증을 같은 CSE 자원에 연결한다. SQLite와 snapshot에 ID를 기록하며 경로에 새 컨테이너가 생기면 원래 큐를 보류한다. 이름 조회, 자원 ID CREATE, 원본 재조회 순서와 HTTPS backoff를 기존 관측·명령 영수증 경로와 공유한다.
+- 임시 Mobius4의 `-PinR18HealthRoute`와 새 Pi 세션의 `--health-container-ri`를 연결했다. DB binding 변경·공유 경로 충돌, preflight와 mock MQTT/CSE 재조회 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·ACL 적용·Pi 접속·서버 전환은 미수행이다. [상태 컨테이너 고정](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#gateway-상태-컨테이너-id-고정)
+
+소스 commit `53d1e7658cdef779bade6a6d3cac58e40bdaf9b3`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1e26510..53d1e76`다. goal은 active/progress다.
