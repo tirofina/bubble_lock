@@ -1621,3 +1621,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R11. 직전 goal turn은 LCD
 - 기존 DB는 새 열을 추가한 뒤 새 유효 관측부터 누계를 기록한다. 이전 버전이 관측 부팅을 갱신한 경우 다른 부팅에서 남은 누계는 사용하지 않는다. SQLite 업그레이드·재시작·BLE 재연결 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·실제 Pi 접속과 BLE 재연결·운영 DB 업그레이드는 미수행이다. [BLE 통신 메모](../keyring/raspberry-pi-gateway/IO_NOTES.md)
 
 소스 commit `7c7c207a5ff48f238041bb09c36a13821c28bf42`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `f3db5f7..7c7c207`다. goal은 active/progress다.
+
+## 2026-11-11 — BLE 관측 세션과 명령 영수증 구독 조건
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R11. 직전 goal turn은 BLE 재연결·Pi 재시작 후 버튼 누계를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀의 GATT 상태·명령·ACK 특성을 확인했다.
+
+- Gateway 0.2.84는 r18 초기 구동이나 명령 쓰기가 없는 장치에서 관측 특성만 구독한다. 명령 쓰기가 있어도 알림 가능한 영수증 특성이 빠지면 관측을 유지하고 health에 원인을 남긴다. 명령 준비 상태는 같은 인증 세션에서 영수증 구독이 성공한 뒤에만 열린다.
+- 캐시된 명령 특성, 영수증 특성 누락, 구독 실패, 정상 명령 구독을 다루는 회귀시험 소스와 기존 중앙 통합 fixture를 갱신했다. 빌드·시험·정적 분석·실제 Pi 접속·BlueZ 연결·실물 명령은 미수행이다. [BLE 통신 메모](../keyring/raspberry-pi-gateway/IO_NOTES.md)
+
+소스 commit `fbd62e8f0193e2d59afe4b6ac719fa1a5be00260`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1140a9f..fbd62e8`다. goal은 active/progress다.
