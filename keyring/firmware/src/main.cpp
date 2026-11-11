@@ -25,6 +25,10 @@
 #include "peripherals.h"
 #include "supply_monitor.h"
 #include "headphone_standby.h"
+#if KEYRING_R18_BRINGUP
+#include <esp_ota_ops.h>
+#include <esp_partition.h>
+#endif
 
 static bool journalNvsNeedsRecovery = false;
 extern "C" esp_err_t __real_nvs_flash_init();
@@ -42,16 +46,28 @@ extern "C" esp_err_t __wrap_nvs_flash_init() {
 namespace {
 #if KEYRING_R18_BRINGUP
 #if KEYRING_R18_BRINGUP_DISPLAY == 1
-constexpr char FirmwareRevision[] = "keyring-0.7.17-st7789-bringup";
+constexpr char FirmwareRevision[] = "keyring-0.7.18-st7789-bringup";
 constexpr char BringupPanelField[] = " panel=st7789";
 #elif KEYRING_R18_BRINGUP_DISPLAY == 2
-constexpr char FirmwareRevision[] = "keyring-0.7.17-jd9853-bringup";
+constexpr char FirmwareRevision[] = "keyring-0.7.18-jd9853-bringup";
 constexpr char BringupPanelField[] = " panel=jd9853";
 #else
-constexpr char FirmwareRevision[] = "keyring-0.7.15-bringup";
+constexpr char FirmwareRevision[] = "keyring-0.7.18-bringup";
 constexpr char BringupPanelField[] = "";
 #endif
-char bringupBootRecord[256] = {};
+char bringupBootRecord[320] = {};
+
+void readRunningImageDigest(char (&hex)[65]) {
+  uint8_t digest[32];
+  const esp_partition_t *running = esp_ota_get_running_partition();
+  if (!running || esp_partition_get_sha256(running, digest) != ESP_OK) return;
+  constexpr char digits[] = "0123456789abcdef";
+  for (size_t index = 0; index < sizeof(digest); ++index) {
+    hex[index * 2] = digits[digest[index] >> 4];
+    hex[index * 2 + 1] = digits[digest[index] & 0x0f];
+  }
+  hex[64] = '\0';
+}
 #else
 constexpr char FirmwareRevision[] = "keyring-0.7.14";
 #endif
@@ -1069,12 +1085,15 @@ void setup() {
       radioSleepEnabled ? "enabled" : "unavailable");
 #if KEYRING_R18_BRINGUP
   // Retain the initial readbacks even if the USB console attaches after setup.
+  const int motor = readState();
+  const int aux = gpio_get_level(static_cast<gpio_num_t>(board::AuxEnable));
+  const int fault = digitalRead(board::MainFaultN) == LOW;
+  char imageDigest[65] = "unavailable";
+  readRunningImageDigest(imageDigest);
   const int length = snprintf(bringupBootRecord, sizeof(bringupBootRecord),
-      "KEYRING bringup: board=%s firmware=%s boot=%s motor=%d aux=%d fault=%d fuel=%s accel=%s motion=%s%s",
-      board::Revision, FirmwareRevision, bootId,
-      static_cast<int>(readState()), gpio_get_level(static_cast<gpio_num_t>(board::AuxEnable)),
-      digitalRead(board::MainFaultN) == LOW, sensors.fuel ? "ok" : "unavailable",
-      sensors.accel ? "ok" : "unavailable", motion.ready() ? "ready" : "unavailable", BringupPanelField);
+      "KEYRING bringup: board=%s firmware=%s boot=%s motor=%d aux=%d fault=%d fuel=%s accel=%s motion=%s%s appSha256=%s",
+      board::Revision, FirmwareRevision, bootId, motor, aux, fault, sensors.fuel ? "ok" : "unavailable",
+      sensors.accel ? "ok" : "unavailable", motion.ready() ? "ready" : "unavailable", BringupPanelField, imageDigest);
   if (length > 0 && static_cast<size_t>(length) < sizeof(bringupBootRecord)) {
     Serial.println(bringupBootRecord);
   } else {

@@ -6,7 +6,7 @@ ESP32-S3-WROOM-1-N16R8 / r18-hand-solder 보드를 대상으로 작성한 소스
 
 배송 대기 중에는 Adafruit Feather ESP32 V2와 1.54인치 ST7789에서 화면·버튼·BLE 관측을 [별도 벤치 스케치](feather_probe/README.md)로 시험한다.
 
-r18 제작 PCB의 첫 구동에는 `keyring_r18_bringup`을 사용한다. BLE revision `keyring-0.7.15-bringup`으로 버튼·센서·전원 관측을 제공하고 출력 명령과 장치 저널은 비활성화한다. USB 모니터에서 `?`를 보내면 현재 부팅의 초기 기록을 재출력한다. USB 로그의 부팅 ID를 Pi의 BLE 기록과 대조할 수 있다. [초기 구동 절차](../pcb/BRING_UP.md)
+r18 제작 PCB의 첫 구동에는 `keyring_r18_bringup`을 사용한다. BLE revision `keyring-0.7.18-bringup`으로 버튼·센서·전원 관측을 제공하고 출력 명령과 장치 저널은 비활성화한다. USB 모니터에서 `?`를 보내면 현재 부팅의 초기 기록을 재출력한다. Pi 기록 도구가 USB의 부팅 ID를 BLE와, 실행 중인 앱의 SHA-256을 빌드 파일과 대조한다. [초기 구동 절차](../pcb/BRING_UP.md)
 
 ## 구성과 준비
 

@@ -10,7 +10,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
 from bubble_gateway.ble import BleFleet, BleProtocolError, BleUnavailable
-from bubble_gateway.ble_characterize import read_usb_boot, summarize
+from bubble_gateway.ble_characterize import read_firmware_image, read_usb_boot, summarize
 from bubble_gateway.model import payload_hash
 from helpers import command, config, device_receipt
 
@@ -226,10 +226,12 @@ class BringupCaptureTests(unittest.TestCase):
             path = Path(folder) / "usb.log"
             for revision, panel in (("0.7.15", "st7789"), ("0.7.15", "jd9853"),
                                     ("0.7.16", "st7789"), ("0.7.16", "jd9853"),
-                                    ("0.7.17", "st7789"), ("0.7.17", "jd9853")):
+                                    ("0.7.17", "st7789"), ("0.7.17", "jd9853"),
+                                    ("0.7.18", "st7789"), ("0.7.18", "jd9853")):
                 firmware = f"keyring-{revision}-{panel}-bringup"
                 raw = self.usb_log().replace(self.firmware.encode(), firmware.encode())
-                full = raw.replace(b"motion=ready\r\n", f"motion=ready panel={panel}\r\n".encode())
+                digest_field = f" appSha256={'a' * 64}" if revision == "0.7.18" else ""
+                full = raw.replace(b"motion=ready\r\n", f"motion=ready panel={panel}{digest_field}\r\n".encode())
                 with self.subTest(firmware=firmware):
                     path.write_bytes(full)
                     evidence = read_usb_boot(path, self.board, firmware)
@@ -244,6 +246,44 @@ class BringupCaptureTests(unittest.TestCase):
                     path.write_bytes(full.replace(f"panel={panel}".encode(), f"panel={other}".encode()))
                     with self.assertRaisesRegex(ValueError, "one matching r18 bring-up record"):
                         read_usb_boot(path, self.board, firmware)
+
+    def test_usb_app_digest_matches_the_unsigned_firmware_file_and_same_ble_boot(self):
+        firmware = "keyring-0.7.18-bringup"
+        header = bytearray(24)
+        header[0], header[1], header[12], header[23] = 0xe9, 1, 9, 1
+        segment = b"\x32\x54\xcd\xab" + bytes(252)
+        unsigned = bytes(header) + bytes(4) + len(segment).to_bytes(4, "little") + segment + bytes(15) + b"\xef"
+        digest = hashlib.sha256(unsigned).digest()
+        image = unsigned + digest
+        raw = self.usb_log().replace(self.firmware.encode(), firmware.encode())
+        with tempfile.TemporaryDirectory() as folder:
+            log = Path(folder) / "usb.log"
+            binary = Path(folder) / "firmware.bin"
+            log.write_bytes(raw.replace(b"motion=ready", f"motion=ready appSha256={digest.hex()}".encode()))
+            usb = read_usb_boot(log, self.board, firmware)
+            binary.write_bytes(image)
+            usb["firmwareImage"] = read_firmware_image(binary, usb)
+            events = [dict(row, bootId=self.boot) for row in self.events()]
+            result = self.report(events, usb_boot=usb, firmware_revision=firmware)["bringup"]["usbBoot"]
+            self.assertTrue(result["sameBoot"])
+            self.assertEqual(result["appSha256"], digest.hex())
+            self.assertEqual(result["firmwareImage"], {"fileSha256": hashlib.sha256(image).hexdigest(), "sizeBytes": len(image)})
+
+            other = unsigned[:36] + b"\x01" + unsigned[37:-1] + b"\xee"
+            for data, error in ((other + digest, "does not match its contents"),
+                                (other + hashlib.sha256(other).digest(), "differs from the running app"),
+                                (image + bytes(16), "no trailing data")):
+                with self.subTest(error=error):
+                    binary.write_bytes(data)
+                    with self.assertRaisesRegex(ValueError, error):
+                        read_firmware_image(binary, usb)
+
+            log.write_bytes(raw)
+            with self.assertRaisesRegex(ValueError, "one matching r18 bring-up record"):
+                read_usb_boot(log, self.board, firmware)
+            log.write_bytes(raw.replace(b"motion=ready", b"motion=ready appSha256=unavailable"))
+            with self.assertRaisesRegex(ValueError, "no running app image digest"):
+                read_firmware_image(binary, read_usb_boot(log, self.board, firmware))
 
     def test_display_draws_must_match_button_counts_in_the_selected_session(self):
         for panel in ("st7789", "jd9853"):

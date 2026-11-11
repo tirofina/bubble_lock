@@ -25,19 +25,22 @@ BATTERY_THRESHOLDS = (20, 25)
 BATTERY_STAGES = ("initialClear", "clearInBand", "lowAlert", "alertInBand", "recovered")
 BRINGUP_BUTTON_STATES = ("released", "confirm", "released", "panic", "released")
 USB_LOG_LIMIT = 1 << 20
+R18_APP_IMAGE_LIMIT = 0x600000  # Factory app partition in keyring/firmware/partitions.csv.
 USB_BOOT_LINE = re.compile(
     r"KEYRING bringup: board=(?P<board>\S+) firmware=(?P<firmware>\S+) boot=(?P<boot>[0-9a-f]{32}) "
     r"motor=(?P<motor>[01]) aux=(?P<aux>[01]) fault=(?P<fault>[01]) "
     r"fuel=(?P<batteryStatus>ok|unavailable) accel=(?P<accelStatus>ok|unavailable) "
     r"motion=(?P<motion>ready|unavailable)(?: panel=(?P<panel>st7789|jd9853))?"
+    r"(?: appSha256=(?P<app>[0-9a-f]{64}|unavailable))?"
 )
 BRINGUP_SENSOR_STATUS = ("batteryStatus", "accelStatus", "motion")
 DISPLAY_TEST_PROFILES = {f"keyring-{revision}-{panel}-bringup": panel
-                         for revision in ("0.7.16", "0.7.17") for panel in ("st7789", "jd9853")}
+                         for revision in ("0.7.16", "0.7.17", "0.7.18") for panel in ("st7789", "jd9853")}
 BRINGUP_DISPLAY_PROFILES = {
     "keyring-0.7.15-st7789-bringup": "st7789", "keyring-0.7.15-jd9853-bringup": "jd9853",
     **DISPLAY_TEST_PROFILES,
 }
+APP_DIGEST_PROFILES = {"keyring-0.7.18-bringup", "keyring-0.7.18-st7789-bringup", "keyring-0.7.18-jd9853-bringup"}
 
 
 def read_usb_boot(path: Path, board: str, firmware: str) -> dict:
@@ -49,14 +52,45 @@ def read_usb_boot(path: Path, board: str, firmware: str) -> dict:
              if line.startswith("KEYRING bringup:")}
     record = USB_BOOT_LINE.fullmatch(lines.pop()) if len(lines) == 1 else None
     if (record is None or record["board"] != board or record["firmware"] != firmware
-            or record["panel"] != BRINGUP_DISPLAY_PROFILES.get(firmware)):
+            or record["panel"] != BRINGUP_DISPLAY_PROFILES.get(firmware)
+            or (record["app"] is not None) != (firmware in APP_DIGEST_PROFILES)):
         raise ValueError("USB log must contain one matching r18 bring-up record")
     evidence = {"bootId": record["boot"], "logSha256": hashlib.sha256(raw).hexdigest(),
                 "motorActive": record["motor"] == "1", "auxEnabled": record["aux"] == "1",
                 "mainFault": record["fault"] == "1", "sensorStatus": {key: record[key] for key in BRINGUP_SENSOR_STATUS}}
     if record["panel"] is not None:
         evidence["displayProfile"] = record["panel"]
+    if record["app"] is not None:
+        evidence["appSha256"] = record["app"]
     return evidence
+
+
+def read_firmware_image(path: Path, usb_boot: dict) -> dict:
+    running_digest = usb_boot.get("appSha256")
+    if running_digest in (None, "unavailable"):
+        raise ValueError("USB record has no running app image digest")
+    with path.open("rb") as stream:
+        image = stream.read(R18_APP_IMAGE_LIMIT + 1)
+    # ESP32-S3 application image, with the app descriptor in its first segment.
+    if (not 80 <= len(image) <= R18_APP_IMAGE_LIMIT or image[0] != 0xe9 or not 1 <= image[1] <= 16
+            or image[12:14] != b"\x09\x00" or image[23] != 1 or image[32:36] != b"\x32\x54\xcd\xab"):
+        raise ValueError("Expected an ESP32-S3 app image with a SHA-256 footer")
+    offset = 24
+    payload_end = len(image) - 32
+    for _ in range(image[1]):
+        if offset + 8 > payload_end:
+            raise ValueError("Invalid ESP32-S3 image segment layout")
+        offset += 8 + int.from_bytes(image[offset + 4:offset + 8], "little")
+    # One checksum byte ends the padded 16-byte block, immediately before the hash.
+    checksum_end = (offset + 16) & ~15
+    if checksum_end != payload_end:
+        raise ValueError("Expected an unsigned app image with no trailing data")
+    digest = hashlib.sha256(memoryview(image)[:payload_end]).digest()
+    if digest != image[payload_end:]:
+        raise ValueError("Firmware image SHA-256 footer does not match its contents")
+    if digest.hex() != running_digest:
+        raise ValueError("Firmware image differs from the running app in the USB log")
+    return {"fileSha256": hashlib.sha256(image).hexdigest(), "sizeBytes": len(image)}
 
 
 def wake_result(sessions: list[dict], rows: list[dict], expected: str, release_ms: int | None) -> dict:
@@ -427,6 +461,10 @@ def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mo
         bringup["usbBoot"] = {key: usb_boot[key] for key in ("logSha256", "motorActive", "auxEnabled", "mainFault", "sensorStatus")}
         if "displayProfile" in usb_boot:
             bringup["usbBoot"]["displayProfile"] = usb_boot["displayProfile"]
+        if "appSha256" in usb_boot:
+            bringup["usbBoot"]["appSha256"] = usb_boot["appSha256"]
+        if "firmwareImage" in usb_boot:
+            bringup["usbBoot"]["firmwareImage"] = usb_boot["firmwareImage"]
         bringup["usbBoot"].update(sameBoot=same_boot, pinsSafe=pins_safe)
         if same_boot is None:
             bringup["missing"].append("usbBootMatch")
@@ -588,6 +626,7 @@ def main() -> None:
     parser.add_argument("--battery-thresholds", nargs=2, type=int, metavar=("WARN", "RECOVER"),
                         help="battery mode only; firmware percentages (default: 20 25)")
     parser.add_argument("--usb-boot-log", type=Path, help="private USB CDC capture from one r18 bring-up boot")
+    parser.add_argument("--firmware-image", type=Path, help="local r18 firmware.bin to match against the USB app digest")
     parser.add_argument("--print-power-markers", action="store_true", help="print new INA219 samples from the USB-matched bring-up session")
     parser.add_argument("--database", type=Path, required=True, help="Gateway state path; used only to find its lock")
     parser.add_argument("--output", type=Path, required=True, help="new private JSON file under an existing directory")
@@ -621,6 +660,8 @@ def main() -> None:
         parser.error("bringup mode requires r18-pcb and an observation-only -bringup firmware revision")
     if args.print_power_markers and (args.mode != "bringup" or args.usb_boot_log is None):
         parser.error("--print-power-markers requires bringup mode and --usb-boot-log")
+    if args.firmware_image is not None and (args.mode != "bringup" or args.usb_boot_log is None):
+        parser.error("--firmware-image requires bringup mode and --usb-boot-log")
     usb_boot = None
     if args.usb_boot_log is not None:
         if args.mode != "bringup" or not args.usb_boot_log.is_file():
@@ -631,6 +672,13 @@ def main() -> None:
             parser.error(str(exc))
         except OSError:
             parser.error("could not read the USB capture file")
+    if args.firmware_image is not None:
+        try:
+            usb_boot["firmwareImage"] = read_firmware_image(args.firmware_image, usb_boot)
+        except ValueError as exc:
+            parser.error(str(exc))
+        except OSError:
+            parser.error("could not read the firmware image file")
     lock_path = args.database.with_suffix(".lock")
     if (args.output.exists() or args.output.is_symlink() or not args.output.parent.is_dir()
             or args.output.resolve() in {args.database.resolve(), lock_path.resolve()}):
