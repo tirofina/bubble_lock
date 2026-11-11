@@ -16,6 +16,69 @@ from helpers import BINDING, DEVICES, command, config
 
 
 class JournalArchiveReconcileTests(unittest.IsolatedAsyncioTestCase):
+    async def test_completed_device_record_explains_uncertain_gateway_receipt_offline(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            current = config(root / "source.sqlite3")
+            current.commands_enabled = True
+            gateway_archive = root / "gateway"
+            team = {"gatewayCommands": {}, "gatewayDeviceReceipts": {}, "receipts": []}
+            board, firmware = "r18-hand-solder", "keyring-0.7.22"
+            journal = {"identity": {"deviceId": "kr-test", "boardRevision": board,
+                                    "firmwareRevision": firmware, "bootId": "same-boot"},
+                       "deviceSnapshot": {"snapshotId": "snapshot"}, "files": [{"sha256": "test-digest"}]}
+            records = []
+            with closing(Store(current.database, 100, 100000, 20, configured_binding(current))) as store:
+                for name, final_attempted in (("uncertain", True), ("in-flight", True), ("before-final", False)):
+                    cmd = command(commandId=name)
+                    digest = payload_hash(cmd)
+                    store.accept(cmd, digest)
+                    store.begin_dispatch(cmd)
+                    if final_attempted:
+                        self.assertTrue(store.mark_ble_final_write(name, digest))
+                    records.append({"commandId": name, "payloadHash": digest, "bootId": "same-boot",
+                                    "grantRevision": cmd["grantRevision"], "ownershipEpoch": cmd["ownershipEpoch"],
+                                    "phase": "completed", "ackCode": "APPLIED", "desiredState": True, "readback": True,
+                                    "acceptedUptimeMs": 500, "appliedUptimeMs": 510})
+                    if name != "uncertain":
+                        continue
+                    stamp = iso_time()
+                    receipt = {key: cmd[key] for key in ("gatewayId", "deviceId", "commandId", "grantRevision", "ownershipEpoch")}
+                    receipt.update(version=1, payloadHash=digest, status="INDETERMINATE", ackCode="RESTART_INTERRUPTED",
+                                   acceptedAt=None, appliedAt=None, receivedAt=stamp, bootId=None, readback=None,
+                                   firmwareRevision=None, timestampSource="unavailable")
+                    store.finish(name, receipt)
+                    receipt_hash = payload_hash(receipt)
+                    team["gatewayCommands"][name] = {"command": cmd, "payloadHash": digest,
+                                                       "lastReceiptHash": receipt_hash, "desiredGeneration": 1,
+                                                       "executionState": "DISPATCH_UNCERTAIN"}
+                    team["gatewayDeviceReceipts"][name] = {"receiptHash": receipt_hash, "receipt": receipt, "receivedAt": stamp}
+                    team["receipts"].append({
+                        "type": "GATEWAY_RECEIPT_SETTLED", "eventId": "evt-uncertain",
+                        "contractId": "privacy-bubble.integration.v1", "docRevision": "2.0.0",
+                        "gatewayId": cmd["gatewayId"], "commandId": name, "ueId": cmd["deviceId"],
+                        "claimId": cmd["claimId"], "epoch": cmd["ownershipEpoch"], "desiredGeneration": 1,
+                        "payloadHash": digest, "receiptHash": receipt_hash, "executionState": "DISPATCH_UNCERTAIN",
+                        "deviceAppliedAt": None, "timestamp": stamp,
+                    })
+                with patch("bubble_gateway.state_archive._sync_directory"):
+                    archive(current, gateway_archive, adopt=False, timeout=5)
+
+            with (patch("bubble_gateway.journal_reconcile.read_archive", return_value=(journal, records)),
+                  patch("bubble_gateway.journal_reconcile.TransportHub", side_effect=AssertionError("unexpected network"))):
+                full = await reconcile(current, root / "device", gateway_archive, archive_only=True, team_state=team)
+                selected = await reconcile(current, root / "device", gateway_archive, archive_only=True, team_state=team,
+                                           same_boot_command="uncertain", board_revision=board, firmware_revision=firmware)
+            by_id = {row["commandId"]: row for row in full["results"]}
+            uncertainty = by_id["uncertain"]["recoveryEvidence"]
+            self.assertEqual(uncertainty["classification"], "device_completed_gateway_uncertain")
+            self.assertEqual(uncertainty["deviceRecordSha256"], payload_hash(records[0]))
+            self.assertEqual(uncertainty["centralReceipt"]["executionState"], "DISPATCH_UNCERTAIN")
+            self.assertEqual(selected["results"][0]["recoveryEvidence"], uncertainty)
+            self.assertEqual(selected["settlementStatus"], "not-settled")
+            self.assertEqual(by_id["in-flight"]["recoveryEvidence"]["classification"], "device_completed_gateway_receipt_missing")
+            self.assertNotIn("recoveryEvidence", by_id["before-final"])
+
     async def test_archive_only_reports_unseen_gateway_commands_and_independent_receipts(self):
         temp = tempfile.TemporaryDirectory()
         self.addCleanup(temp.cleanup)

@@ -25,15 +25,19 @@ from .transport import RemoteResponseError, TransportHub
 TEAM_STATE_MAX_BYTES = 32 * 1024 * 1024
 NATIVE_RECEIPT_MAX_BYTES = 16 * 1024
 GATEWAY_ONLY_COMMAND_LIMIT = 128
+UNCERTAIN_RECEIPTS = {
+    ("TIMEOUT", "TIMEOUT"),
+    ("INDETERMINATE", "RESTART_INTERRUPTED"),
+    ("INDETERMINATE", "DEVICE_UNAVAILABLE"),
+    ("INDETERMINATE", "CANCELLED"),
+}
 
 
 def _gateway_only_pending(db: sqlite3.Connection, device_id: str, command_ids: list[str],
-                          include_unstaged_central: bool) -> dict:
-    columns = {row["name"] for row in db.execute("PRAGMA table_info(commands)")}
+                          include_unstaged_central: bool, columns: set[str], final_write: str) -> dict:
     central_unstaged = "receipt IS NOT NULL"
     if "central_receipt_staged" in columns:
         central_unstaged += " AND central_receipt_staged=0"
-    final_write = "ble_final_write_started" if "ble_final_write_started" in columns else "NULL"
     rows = db.execute(f"""
         WITH candidates AS (
             SELECT command_id, payload_hash, status, {final_write} AS final_write,
@@ -92,13 +96,16 @@ def _read_gateway_archive(directory: Path, expected: dict, command_ids: list[str
                 or identity["archive_id"] != archive_id):
             raise StateIdentityError("RECONCILE_ARCHIVE_IDENTITY")
         match(identity, expected, require_live=False)
-        pending = None if device_id is None else _gateway_only_pending(db, device_id, command_ids, include_unstaged_central)
+        columns = {row["name"] for row in db.execute("PRAGMA table_info(commands)")}
+        final_write = "ble_final_write_started" if "ble_final_write_started" in columns else "NULL"
+        pending = None if device_id is None else _gateway_only_pending(
+            db, device_id, command_ids, include_unstaged_central, columns, final_write)
         if include_pending_rows and pending is not None:
             command_ids = command_ids + [entry["commandId"] for entry in pending["commands"]]
         rows = {}
         for command_id in command_ids:
-            row = db.execute("SELECT payload,payload_hash,status,receipt,receipt_delivered FROM commands "
-                             "WHERE command_id=?", (command_id,)).fetchone()
+            row = db.execute("SELECT payload,payload_hash,status,receipt,receipt_delivered,"
+                             f"{final_write} AS final_write FROM commands WHERE command_id=?", (command_id,)).fetchone()
             if row is not None:
                 rows[command_id] = dict(row)
     verify_file()
@@ -149,6 +156,39 @@ def _compared_result(record, receipt, *, expected_firmware=None):
             or canonical(receipt.get("readback")) != canonical({"state": record["readback"]})):
         return "device_result_mismatch"
     return "matched_applied" if status == "APPLIED" else "matched_readback_failure"
+
+
+def _recovery_evidence(record, row, command, receipt, team_state):
+    marker = row["final_write"]
+    if record["phase"] != "completed" or marker not in (1, None):
+        return None
+    if receipt is None:
+        if row["status"] != "DISPATCHING":
+            return None
+        classification = "device_completed_gateway_receipt_missing"
+    else:
+        unknown_fields = ("bootId", "firmwareRevision", "readback", "acceptedAt", "appliedAt")
+        if ((receipt["status"], receipt["ackCode"]) not in UNCERTAIN_RECEIPTS
+                or receipt.get("timestampSource") != "unavailable"
+                or any(key not in receipt or receipt[key] is not None for key in unknown_fields)):
+            return None
+        classification = "device_completed_gateway_uncertain"
+    evidence = {"classification": classification, "deviceAckCode": record["ackCode"],
+                "deviceRecordSha256": payload_hash(record), "gatewayStatus": row["status"],
+                "gatewayAckCode": None if receipt is None else receipt["ackCode"],
+                "bleFinalWriteMayHaveStarted": True if marker == 1 else None}
+    if team_state is not None:
+        evidence["centralReceipt"] = _inspect_central_receipt(command, receipt, team_state)
+    return evidence
+
+
+def _inspect_central_receipt(command, receipt, team_state):
+    if receipt is None:
+        return {"result": "missing_gateway_receipt"}
+    try:
+        return inspect_integration_receipt(command, receipt, team_state)
+    except (ValueError, KeyError, TypeError, AttributeError, OverflowError):
+        return {"result": "central_receipt_mismatch"}
 
 
 def _captured_receipt(artifact, command_id, config):
@@ -216,13 +256,7 @@ def _check_gateway_only_central(config, device_id, rows, pending, team_state):
         except (ValueError, KeyError, TypeError, AttributeError, BleProtocolError):
             entry["centralReceipt"] = {"result": "gateway_binding_mismatch"}
             continue
-        if receipt is None:
-            entry["centralReceipt"] = {"result": "missing_gateway_receipt"}
-            continue
-        try:
-            entry["centralReceipt"] = inspect_integration_receipt(command, receipt, team_state)
-        except (ValueError, KeyError, TypeError, AttributeError, OverflowError):
-            entry["centralReceipt"] = {"result": "central_receipt_mismatch"}
+        entry["centralReceipt"] = _inspect_central_receipt(command, receipt, team_state)
 
 
 async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive: Path, *,
@@ -233,7 +267,7 @@ async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive
     compare_pending_central = archive_only and same_boot_command is None and team_state is not None
     if native_receipt is not None and (same_boot_command is None or archive_only):
         raise ValueError("Saved native receipt comparison requires a same-boot command outside archive-only mode")
-    if team_state is not None and not compare_pending_central and (same_boot_command is None or archive_only):
+    if team_state is not None and same_boot_command is None and not archive_only:
         raise ValueError("Team state requires a same-boot command or a full-device archive-only comparison")
     if check_gateway_only_native:
         if archive_only or same_boot_command is not None:
@@ -269,7 +303,7 @@ async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive
         replace(config, mqtt_enabled=False, core_bridge_enabled=False))
     results = []
     central = ({"status": "journal_review_required", "originalApplicationMatched": False}
-               if team_state is not None and same_boot_command is not None else None)
+               if team_state is not None and same_boot_command is not None and not archive_only else None)
     try:
         if transport is not None:
             await transport.start()
@@ -288,6 +322,9 @@ async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive
             except (ValueError, KeyError, TypeError, AttributeError, BleProtocolError):
                 result["result"] = "gateway_binding_mismatch"
                 continue
+            recovery = _recovery_evidence(record, row, command, receipt, team_state)
+            if recovery is not None:
+                result["recoveryEvidence"] = recovery
             if receipt is None:
                 result["result"] = "missing_gateway_receipt"
                 continue
@@ -360,8 +397,6 @@ def main():
     elif any(value is not None for value in (args.board_revision, args.firmware_revision, args.native_receipt)):
         parser.error("Revision options and --native-receipt require --same-boot-command")
     if args.team_state is not None:
-        if args.archive_only and args.same_boot_command is not None:
-            parser.error("--archive-only with --team-state compares the full device")
         if not args.archive_only and args.same_boot_command is None:
             parser.error("--team-state requires --same-boot-command or --archive-only")
     if args.check_gateway_only_native and args.same_boot_command is not None:

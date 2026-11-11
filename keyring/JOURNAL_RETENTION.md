@@ -99,6 +99,19 @@ env -i PATH=/usr/bin:/bin /opt/bubble_lock/keyring/raspberry-pi-gateway/.venv/bi
 
 보고서의 정산 상태는 `not-settled`다. 중앙 승인과 장치 journal 회수는 아래 계약을 따른다. [격리 Mobius4 시험](evidence/2026-11-10-journal-reconcile/README.md)
 
+### Pi 중단 뒤 장치 완료 기록 찾기
+
+Gateway 0.2.109부터 장치 저널의 완료 기록과 Pi 명령의 ID·본문 해시·grant revision·epoch·요청 상태가 일치하면 `recoveryEvidence`를 남긴다. 마지막 BLE 쓰기가 시작됐거나 이전 버전에서 기록 여부를 알 수 없는 명령이 대상이다. Pi에 명령 실행 중 상태만 남은 경우는 `device_completed_gateway_receipt_missing`, Pi가 타임아웃·중단으로 자체 불확정 영수증을 만든 경우는 `device_completed_gateway_uncertain`으로 표시한다. 장치 ACK가 `READBACK_MISMATCH`면 그 코드도 함께 표시한다.
+
+```sh
+bubble-keyring-reconcile --archive-only --env-file gateway-old.env \
+  --device-archive /path/to/device-archive --gateway-archive /path/to/gateway-archive \
+  --same-boot-command "$COMMAND_ID" --board-revision r18-hand-solder \
+  --firmware-revision "$FIRMWARE_REVISION" --team-state /path/to/runtime.json
+```
+
+중앙 보관본이 있으면 기존 Pi 영수증의 해시·claim·epoch와 중앙 `GATEWAY_RECEIPT_SETTLED` 기록을 대조한다. 중앙이 불확정 영수증을 받았다면 `DISPATCH_UNCERTAIN`을 보고한다. 보고서는 검토 대상으로 유지되며 네트워크 요청, 명령 재실행 및 기존 영수증 변경 없이 읽기 전용으로 생성한다.
+
 ### r18 실물 명령 한 건 대조
 
 Pi 벤치에서는 [r18 Pi 시험 증거 보관](raspberry-pi-gateway/TESTING.md#r18-pi-시험-증거-보관)의 `export-env`와 `capture-r18`을 사용해 기존 세션 설정을 장치 저널·SQLite 보관본에 연결한다.
