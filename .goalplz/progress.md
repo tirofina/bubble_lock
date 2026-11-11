@@ -1829,3 +1829,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 Mob
 - Pi 관측 전용 세션에 `--mqtt-port`를 추가했다. 별도 터널을 사용해 HTTPS 경로를 유지하면서 MQTT 연결을 끊는 절차와, 두 관측의 전송 로그 대조 절차를 문서화했다. Originator·고정 ID·명령 차단·중복 응답을 다루는 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·Compose 실행·Pi 및 실물 MQTT/HTTPS 전환은 미수행이다. [격리 설정](../keyring/dev/mobius4/README.md#r18-관측-mqtt-중계)
 
 소스 commit `1bdec28748e68ca0a1695672871f91432c14c3b7`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `333623d..1bdec28`이다. goal은 active/progress다.
+
+## 2026-11-11 — r18 한 부팅의 MQTT와 HTTPS 전환 증거
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R05. 직전 goal turn은 격리 r18 MQTT 중계를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f` 및 CORE 전송·중앙 관측 수용 계약을 확인했다.
+
+- Gateway 0.2.101은 native 관측 완료 로그에 Gateway 부팅 ID를 추가한다. 관측 대조의 `--fallback-capture`는 같은 장치·Gateway 부팅, 같은 고정 컨테이너와 Pi 로그에서 MQTT와 HTTPS fallback으로 각각 생성된 관측을 요구한다. BLE 및 비모의 중앙 수용 순번의 증가와 서로 다른 Mobius4 자원을 확인한다.
+- 정상 경로와 기존 자원, 중앙 수용 대기, 다른 Gateway 부팅을 다루는 회귀시험 소스와 절차를 추가했다. 빌드·테스트·정적 분석·Pi 및 제작 PCB 실물 전송은 미수행이다. [r18 전환 시험](../keyring/raspberry-pi-gateway/TESTING.md#r18-mqtt와-https-fallback-시험)
+
+소스 commit `f3985b26f7dbd6b2f26fdf70a8d03dcc5f326825`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `97f37a5..f3985b2`다. goal은 active/progress다.

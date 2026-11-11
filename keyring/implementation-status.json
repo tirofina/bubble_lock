@@ -1788,5 +1788,12 @@
     "composeExecuted": false,
     "physicalFallbackVerified": false,
     "sourceCommit": "1bdec28748e68ca0a1695672871f91432c14c3b7"
+  },
+  "r18SameBootTransportTransition": {
+    "reference": "raspberry-pi-gateway/TESTING.md#r18-mqtt와-https-fallback-시험",
+    "gatewayVersion": "0.2.101",
+    "regressionsExecuted": false,
+    "physicalFallbackVerified": false,
+    "sourceCommit": "f3985b26f7dbd6b2f26fdf70a8d03dcc5f326825"
   }
 }
