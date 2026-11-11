@@ -1845,5 +1845,13 @@
     "regressionsExecuted": false,
     "physicalWakeVerified": false,
     "sourceCommit": "00a65e28dbc3aeab153f6a9d44c495233f76177a"
+  },
+  "r18SleepCommandProfile": {
+    "reference": "raspberry-pi-gateway/TESTING.md#r18-pi-명령-세션",
+    "firmwareRevision": "keyring-0.7.20-sleep",
+    "regressionsExecuted": false,
+    "apiStartedWithSleepProfile": false,
+    "physicalPostWakeCommandVerified": false,
+    "sourceCommit": "3c4569339d1b0b968b4b53d94942b7b84ce8e4bb"
   }
 }

@@ -1892,3 +1892,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 부하 �
 - 출력 쓰기·읽기, 부분 hold, pull-up 실패와 마지막 버튼 입력을 다루는 회귀시험 소스와 wake 기록 절차를 추가했다. 빌드·테스트·정적 분석·플래시·실물 sleep/wake·전류 계측은 미수행이다. [저전력·깨우기](../keyring/firmware/POWER_WAKE.md)
 
 소스 commit `00a65e28dbc3aeab153f6a9d44c495233f76177a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8d489de..00a65e2`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 절전 빌드의 명령 시험 프로필
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11. 직전 goal turn은 r18 저전력 GPIO hold 수정과 wake 절차를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀의 명령 readback 수용 조건을 확인했다.
+
+- `keyring-0.7.20-sleep`을 격리 API·Pi 명령 세션·펄스 도구에서 명시적으로 선택할 수 있다. 기본 명령 프로필은 0.7.19다. 펄스 도구는 파일 생성과 명령 준비 전에 Gateway B mTLS 인증서로 실행 중인 API의 revision을 확인한다. 장치 저널 및 오프라인 대조는 시험에서 고정한 revision을 사용한다.
+- 0.7.14/0.7.19와 다른 firmware를 광고하는 API 및 0.7.20-sleep 성공 조건을 다루는 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·API 재시작·플래시·실물 wake 후 명령은 미수행이다. [Pi 명령 세션](../keyring/raspberry-pi-gateway/TESTING.md#r18-pi-명령-세션)
+
+소스 commit `3c4569339d1b0b968b4b53d94942b7b84ce8e4bb`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `4d2a95a..3c45693`다. goal은 active/progress다.
