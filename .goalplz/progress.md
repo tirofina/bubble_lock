@@ -1411,3 +1411,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R03, R10. 직전 goal turn�
 - Pi Gateway `0.2.62`와 시험 프로필은 중앙 기능 응답의 Gateway·장치·보드·펌웨어를 확인하고 BLE identity에서도 지정한 보드 revision을 확인한다. 명령 펌웨어 `keyring-0.7.14`만 허용한다. 회귀시험 소스를 추가했다. 실제 배치·키 발급·CSE 권한 확인·빌드·시험·Pi 및 r18 실물 실행은 미실행이다. [Pi r18 명령 세션](../keyring/raspberry-pi-gateway/TESTING.md#r18-pi-명령-세션)
 
 소스 commit `2fec0b4164361e1641af109083f2babb2934c92c`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `a3ec3cd..2fec0b4`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 격리 진동 명령 한 건 발급 도구
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R03, R05, R10. 직전 goal turn은 r18 격리 등록 프로필을 추가한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 팀 명령 기한·현재 grant·실행 시작·정산과 CORE ACK/readback 경계를 확인했다.
+
+- PC의 r18 단일 펄스 도구는 현재 부팅·출력 OFF·fault 없음과 Pi 명령 준비를 확인한 뒤 작업자의 `PULSE` 입력을 기다린다. 의도를 저장하고 명령을 한 건 발급한다. 원본 영수증, 중앙 실행 시작·정산, 같은 부팅·컨테이너의 더 새 OFF 관측과 grant 회수를 기록한다. 발급 응답이 끊기면 기존 ID로 증거를 이어 간다. [r18 단일 펄스 시험](../keyring/raspberry-pi-gateway/TESTING.md#r18-단일-펄스-시험)
+- 성공·발급 응답 유실·작업자 중단 회귀시험 소스를 추가했다. Gateway 패키지 revision은 `0.2.62`다. 빌드·회귀시험·서버 실행·실물 명령 및 펄스 계측은 미실행이다.
+
+소스 commit `5011fb98c404bb98a3c28af2145abef2d63065d7`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `ffeaad7..5011fb9`다. goal은 active/progress다.
