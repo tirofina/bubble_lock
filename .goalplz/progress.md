@@ -1294,3 +1294,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 Mob
 - 주소 변경, 다른 배포 ID, 기존 DB의 ID 덧씌우기 거절과 보관본 격리를 다루는 회귀시험 소스를 추가했다. ID는 운영자 배정값이며 서버의 실제 인증은 mTLS와 중앙 정책을 따른다. 빌드·회귀시험·배포 전환·실제 Pi 연동은 미실행이다.
 
 소스 commit `ed770bf0bb50fd08e2091ab185c810b9d1fd3a9a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `6fa4e31..ed770bf`다. goal은 active/progress다.
+
+## 2026-11-11 — Mobius4 관측 컨테이너 자원 ID 고정
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 중앙 API의 DB 연결을 고정한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 중앙의 CSE 자원 ID 검증과 CORE·웹 자원 경로 계약을 확인했다.
+
+- Gateway `0.2.55`의 선택 설정 `M2M_OBSERVATION_CONTAINER_RI`는 새 DB의 관측 컨테이너를 실제 `ri`에 묶는다. HTTPS 이름 조회가 일치할 때만 MQTT 또는 HTTPS로 해당 ID에 전송하며, 저장본의 부모·자원 ID·본문을 대조한다. 같은 이름이 다른 자원에 배정되면 SQLite가 원래 관측을 보존한다. 명령 사전 검사에서도 설정된 관측 ID를 대조한다. [관측 컨테이너 ID 고정](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#관측-컨테이너-id-고정)
+- 이름 재사용, 전송 전환과 readback, DB 재시작·사전 검사 및 HTTPS 보류를 다루는 회귀시험 소스를 추가했다. 실제 배포의 관측 컨테이너 ID와 Gateway 권한이 필요하다. 빌드·회귀시험·Mobius4/Pi 실물 연동은 미실행이다.
+
+소스 commit `aff5ac29b7798f73bf420453f8a54cf11b83b7a5`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `a2a15bd..aff5ac2`다. goal은 active/progress다.
