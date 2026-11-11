@@ -173,18 +173,18 @@
   "firmwareRevision": "keyring-0.7.14",
   "benchFirmwareRevision": "feather-probe-0.2.1",
   "publication": {
-    "sourceCommit": "d8ce9e0ba6ce5e5eee3e2bdf1800a524a38d2a0f",
+    "sourceCommit": "8a7377ed8a2c2dfa43d591e50584e3775a919a06",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "d8ce9e0ba6ce5e5eee3e2bdf1800a524a38d2a0f",
-    "lastPushedCommit": "d8ce9e0ba6ce5e5eee3e2bdf1800a524a38d2a0f",
-    "latestCheckpoint": "Release expired central observation copies independently of retry eligibility and match central retention by configuration.",
-    "lastPushedCommitBeforeThisCheckpoint": "e2c8e127142f5ef6298c42d135db7e1cec4b96e6"
+    "latestLocalSourceCommit": "8a7377ed8a2c2dfa43d591e50584e3775a919a06",
+    "lastPushedCommit": "8a7377ed8a2c2dfa43d591e50584e3775a919a06",
+    "latestCheckpoint": "Send central command receipts independently of Mobius4 requests.",
+    "lastPushedCommitBeforeThisCheckpoint": "b2b03706eeb38c463cb8fe39ea9ce1d5f2a07440"
   },
-  "gatewayRevision": "0.2.50",
-  "pendingValidationScope": "Gateway 0.2.50 central telemetry retention and independent delivery, r18 USB/BLE startup capture, central receipt replay and database upgrade, central dispatch-start and pinned-receipt restart and replay, Feather 0.2.1 flash and visible ST7789 command state, r18 physical commands and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE MQTT ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
+  "gatewayRevision": "0.2.51",
+  "pendingValidationScope": "Gateway 0.2.51 independent central receipt delivery, central telemetry retention and independent delivery, r18 USB/BLE startup capture, central receipt replay and database upgrade, central dispatch-start and pinned-receipt restart and replay, Feather 0.2.1 flash and visible ST7789 command state, r18 physical commands and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE MQTT ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
     "supersededBy": "2026-11-10 benchCheckpoint for current execution and verification state",
@@ -205,7 +205,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Release expired central telemetry from shared SQLite capacity during API backoff under DOC-REV 2.0.0",
+    "executionRequest": "Separate central command receipt delivery from the Mobius4 I/O wait under DOC-REV 2.0.0",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -214,8 +214,8 @@
     ],
     "latestRemoteCore": "d54a43a",
     "latestRemoteMain": "bc2a45d",
-    "sourceCommit": "d8ce9e0ba6ce5e5eee3e2bdf1800a524a38d2a0f",
-    "sourceValidation": "The current rubric and team heads were read. Central observation retention was made configurable and expired rows can be released during backoff when the clock is trusted. Regression source was added. Builds, tests, evidence tooling and device execution were not run in this checkpoint.",
+    "sourceCommit": "8a7377ed8a2c2dfa43d591e50584e3775a919a06",
+    "sourceValidation": "The current rubric and team heads were read. Central receipt delivery uses its own worker and route-specific selection with shared atomic staging. Regression source was added. Builds, tests, evidence tooling and device execution were not run in this checkpoint.",
     "goalComplete": false,
     "pendingInput": null,
     "currentDependencyState": "The Feather 0.2.0 and Pi Gateway 0.2.43 command path matched isolated Mobius4 and PostgreSQL on the pinned 715ef58 API. The operator saw no LED change during either command. Feather 0.2.1 mirrors the command GPIO readback on the ST7789. The latest Pi integration workflow and LCD response still need hardware evidence, as do r18 first power-on, physical reconnect, battery, LCD, charger, sensor, NVS fault, power, range and wake. Production CSE, CORE and release acceptance remain.",
@@ -1339,5 +1339,12 @@
     "regressionsExecuted": false,
     "piVerified": false,
     "sourceCommit": "d8ce9e0ba6ce5e5eee3e2bdf1800a524a38d2a0f"
+  },
+  "centralReceiptDeliveryIsolation": {
+    "reference": "raspberry-pi-gateway/RECEIPT_ROUTING.md#중앙-명령-영수증-정산",
+    "gatewayVersion": "0.2.51",
+    "regressionsExecuted": false,
+    "piVerified": false,
+    "sourceCommit": "8a7377ed8a2c2dfa43d591e50584e3775a919a06"
   }
 }

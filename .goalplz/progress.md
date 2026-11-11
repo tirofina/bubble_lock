@@ -1258,3 +1258,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R15. 직전 goal turn은 중
 - UTC 오프셋·만료 경계, 재시도 대기, 용량 반환, 시계 불신 상태를 다루는 회귀시험 소스를 추가했다. 빌드·회귀시험·Pi 실행·실물 연동은 미실행이다. 제작 PCB와 실제 Pi의 통합 증거가 남아 있다.
 
 소스 commit `d8ce9e0ba6ce5e5eee3e2bdf1800a524a38d2a0f`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `e2c8e12..d8ce9e0`다. goal은 active/progress다.
+
+## 2026-11-11 — 중앙 명령 영수증의 독립 전송
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01~R03, R10. 직전 goal turn은 중앙 관측 만료 처리를 추가한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 중앙 응답의 command ID·claim ID·영수증 해시 경계를 확인했다. 팀 head는 직전과 같다.
+
+- Gateway `0.2.51`은 중앙 명령 영수증을 전용 작업에서 보낸다. Mobius4 요청과 중앙 요청은 각자의 응답을 기다린다. 두 작업은 같은 SQLite 명령 저널에서 원자적으로 전송을 등록하고 각각 자기 경로의 행을 전송한다. 재시작 뒤 같은 요청 ID와 backoff를 사용한다. [중앙 영수증 정산](../keyring/raspberry-pi-gateway/RECEIPT_ROUTING.md#중앙-명령-영수증-정산)
+- 중앙 응답 대기 중 Mobius4 영수증 완료와 중앙 행 보존을 확인하는 회귀시험 소스를 추가했다. 빌드·회귀시험·실제 Pi 연동은 미실행이다. 두 서버와 Pi의 실제 영수증 대조 및 제작 PCB 검증이 남아 있다.
+
+소스 commit `8a7377ed8a2c2dfa43d591e50584e3775a919a06`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `b2b0370..8a7377e`다. goal은 active/progress다.
