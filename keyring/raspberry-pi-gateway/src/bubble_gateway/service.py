@@ -10,6 +10,7 @@ import uuid
 from collections import Counter
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Literal
 
 from .ble import BleFleet
 from .config import GatewayConfig, ID
@@ -398,23 +399,28 @@ class Gateway:
             cursor = batch[-1]["rowid"] if len(batch) == batch_size and batch[-1]["rowid"] < through else 0
             await self._pause(1)
 
-    async def _outbox_loop(self, *, scoped: bool = False, central_telemetry: bool = False) -> None:
+    async def _outbox_loop(self, *, scoped: bool = False,
+                           central_route: Literal["telemetry", "receipt"] | None = None) -> None:
         epochs = self.config.core_telemetry_epochs
         central_receipts = self.config.central_receipts_enabled
         receipt_attempts = 0
         next_expiry_check = 0.0
-        if central_telemetry:
+        if central_route == "telemetry":
             max_age = timedelta(seconds=self.config.central_telemetry_retention_seconds + CENTRAL_TELEMETRY_CLOCK_MARGIN)
         if not scoped and epochs is not None:
             # The scoped worker owns this lane, so awaiting its receipt never
             # holds the native observation or command-receipt worker.
             epochs = {}
         while not self.stop.is_set():
-            if not scoped and not central_telemetry:
+            if not scoped and central_route != "telemetry":
+                # Either receipt worker can stage durable rows while the other awaits I/O.
                 self.store.stage_receipts(self.config.receipt_container, self.config.core_bridge_enabled,
                                           central_enabled=central_receipts)
-                self.store.stage_credential_receipt()
-            if central_telemetry:
+                if central_route is None:
+                    self.store.stage_credential_receipt()
+            if central_route == "receipt":
+                item = self.store.due_central_receipt()
+            elif central_route == "telemetry":
                 now = time.monotonic()
                 if now >= next_expiry_check:
                     expired = (self.store.expire_central_telemetry(utc_now() - max_age, CENTRAL_TELEMETRY_EXPIRY_BATCH)
@@ -427,12 +433,11 @@ class Gateway:
                 hold = NativeDeliveryHold() if scoped else self.transport.native_delivery_hold()
                 item = self.store.due(core_epochs=epochs, scoped_only=scoped, prefer_receipts=prefer_receipts,
                                       skip_native=hold.all_native, held_receipt_container=hold.receipt_container,
-                                      hold_credential_receipts=hold.credential_receipts,
-                                      central_receipts_enabled=central_receipts)
+                                      hold_credential_receipts=hold.credential_receipts)
             if item is None:
                 await self._pause(0.5)
                 continue
-            if not central_telemetry:
+            if central_route is None:
                 receipt_attempts = min(receipt_attempts + 1, RECEIPT_BURST) if item["is_receipt"] else 0
             delivery_options = {}
             if (item["command_id"] is not None and item["container"] == self.config.receipt_container
@@ -442,7 +447,7 @@ class Gateway:
                 else:
                     self.store.mark_receipt_attempt(item["rqi"])
             try:
-                if (central_telemetry and self._clock_ok()
+                if (central_route == "telemetry" and self._clock_ok()
                         and utc_now() - parse_time(item["payload"]["observedAt"]) > max_age):
                     self.store.delivered(item["rqi"])
                     self.counters["central_telemetry_expired"] += 1
@@ -504,7 +509,9 @@ class Gateway:
             if self.config.core_telemetry_epochs is not None:
                 tasks.append(asyncio.create_task(self._outbox_loop(scoped=True), name="scoped_outbox"))
             if self.config.central_telemetry_enabled:
-                tasks.append(asyncio.create_task(self._outbox_loop(central_telemetry=True), name="central_telemetry_outbox"))
+                tasks.append(asyncio.create_task(self._outbox_loop(central_route="telemetry"), name="central_telemetry_outbox"))
+            if self.config.central_receipts_enabled:
+                tasks.append(asyncio.create_task(self._outbox_loop(central_route="receipt"), name="central_receipt_outbox"))
             stop_task = asyncio.create_task(self.stop.wait(), name="stop")
             tasks.append(stop_task)
             done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)

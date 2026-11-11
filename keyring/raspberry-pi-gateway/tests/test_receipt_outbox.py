@@ -187,7 +187,7 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.native_delivered(), 1)
         self.assertEqual(self.queued("@central/receipt"), 1)
         self.assertIsNone(self.store.due())
-        item = self.store.due(central_receipts_enabled=True)
+        item = self.store.due_central_receipt()
         self.assertEqual(item["payload"], self.receipt)
         self.assertEqual(self.store.central_receipt_claim(item["payload"]), self.cmd["claimId"])
 
@@ -206,7 +206,7 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         gateway._pause = idle
         with patch("bubble_gateway.store.time.time", return_value=1000):
             async with asyncio.timeout(1):
-                await gateway._outbox_loop()
+                await gateway._outbox_loop(central_route="receipt")
         rqi = self.store.request_id("central-receipt", self.cmd["commandId"])
         args = (rqi, "@central/receipt", self.receipt)
         gateway.transport.publish.assert_awaited_once_with(*args, expected_claim_id=self.cmd["claimId"])
@@ -218,11 +218,42 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         gateway.transport.publish = AsyncMock()
         with patch("bubble_gateway.store.time.time", return_value=2000):
             async with asyncio.timeout(1):
-                await gateway._outbox_loop()
+                await gateway._outbox_loop(central_route="receipt")
         gateway.transport.publish.assert_awaited_once_with(*args, expected_claim_id=self.cmd["claimId"])
         self.assertEqual(self.queued("@central/receipt"), 0)
         self.assertEqual(self.queued(BINDING["receiptContainer"]), 1)
         self.assertEqual(self.native_delivered(), 0)
+
+    async def test_native_receipt_confirms_while_central_receipt_response_is_pending(self):
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.config.central_receipts_enabled = True
+        gateway.config.core_bridge_enabled = False
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+        awaiting_central, release_central, native_sent = asyncio.Event(), asyncio.Event(), asyncio.Event()
+
+        async def publish(_rqi, container, _payload, **_options):
+            if container == "@central/receipt":
+                awaiting_central.set()
+                await release_central.wait()
+            elif container == gateway.config.receipt_container:
+                native_sent.set()
+
+        gateway.transport = SimpleNamespace(publish=AsyncMock(side_effect=publish),
+                                             native_delivery_hold=Mock(return_value=NativeDeliveryHold()))
+        async with asyncio.timeout(1), asyncio.TaskGroup() as workers:
+            workers.create_task(gateway._outbox_loop(central_route="receipt"))
+            await awaiting_central.wait()
+            workers.create_task(gateway._outbox_loop())
+            await native_sent.wait()
+            self.assertEqual(self.native_delivered(), 1)
+            self.assertEqual(self.queued("@central/receipt"), 1)
+            gateway.stop.set()
+            release_central.set()
+
+        self.assertEqual(self.queued("@central/receipt"), 0)
+        self.assertEqual(gateway.counters["central_receipts_confirmed"], 1)
+        self.assertEqual(gateway.transport.publish.await_count, 2)
 
     async def test_central_worker_expires_old_projection_and_finishes_bound_stale_observation(self):
         gateway = Gateway.__new__(Gateway)
@@ -246,7 +277,7 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
 
         gateway._pause = idle
         async with asyncio.timeout(1):
-            await gateway._outbox_loop(central_telemetry=True)
+            await gateway._outbox_loop(central_route="telemetry")
         gateway.transport.publish.assert_awaited_once()
         self.assertEqual(gateway.transport.publish.await_args.args[1:], ("@central/telemetry", fresh))
         self.assertEqual(gateway.counters["central_telemetry_expired"], 1)
@@ -272,7 +303,7 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
 
         gateway._pause = idle
         async with asyncio.timeout(1):
-            await gateway._outbox_loop(central_telemetry=True)
+            await gateway._outbox_loop(central_route="telemetry")
         gateway.transport.publish.assert_not_awaited()
         self.assertEqual(gateway.counters["central_telemetry_expired"], 0)
         self.assertEqual(self.queued("@central/telemetry"), 1)
@@ -299,7 +330,7 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
                                              native_delivery_hold=Mock(return_value=NativeDeliveryHold()))
         await gateway.observation(observation())
         async with asyncio.timeout(1), asyncio.TaskGroup() as workers:
-            workers.create_task(gateway._outbox_loop(central_telemetry=True))
+            workers.create_task(gateway._outbox_loop(central_route="telemetry"))
             await awaiting_central.wait()
             workers.create_task(gateway._outbox_loop())
             await native_observation_sent.wait()
