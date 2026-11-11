@@ -97,7 +97,7 @@ Gateway 0.2.99의 `--firmware-image`에 업로드에 사용한 서명 없는 ESP
 
 0.7.16~0.7.18 및 0.7.21 ST7789·JD9853 프로필은 마지막 `health` 프레임의 화면 상태와 `displayDrawnPresses`도 확인한다. 각 패턴을 확인할 시간을 두고 버튼을 순서대로 누르고 떼며, 비상 버튼을 뗀 뒤에도 `health`가 한 번 더 전송될 때까지 기록한다. 화면 작업자·버스 오류나 다른 프로필이 보고되면 `MISMATCH`다. 현재 시험의 버튼 누계와 대조할 그리기 기록이 없으면 `INSUFFICIENT`다. 실제 화면의 테두리·색·글자는 별도 사진이나 영상에 남긴다.
 
-0.7.21의 짧은 버튼 입력은 Pi가 같은 r18 부팅에 구독한 상태에서 확인한다. 주기 관측이 들어오는 동안 확인 버튼을 짧게 눌렀다 떼고 비상 버튼도 같은 방식으로 누른다. Pi에서 `confirm → released → panic → released`와 증가하는 순번을 확인한다. 등록된 격리 중앙에서 같은 순번의 관측 수용과 비상 관측에 연결된 사건을 대조한다. 각 누름과 해제는 35ms 디바운스 구간을 넘긴다.
+0.7.21의 짧은 버튼 입력은 [r18 버튼 사건 시험](#r18-버튼-사건-시험)에서 Pi와 중앙을 함께 대조한다.
 
 ### r18 화면 관찰 기록 연결
 
@@ -425,6 +425,20 @@ r18_bringup_firmware=keyring-0.7.21-bringup
 ```
 
 사전 확인은 지정된 컨테이너 ID와 중앙 자격을 대조해 `commandsEnabled:false`를 보고한다. 실행 중에는 BLE 관측·health와 중앙 텔레메트리를 전송하며, 명령 조회·실행·장치 명령 영수증 전송은 중지 상태다. 같은 BLE 장치를 쓰는 초기 구동 기록 도구와 Gateway는 순차적으로 실행한다. 실제 연결은 `command-health-b`에서 `commandReady:false`를, 전송은 `command-observations-b`와 중앙 `GATEWAY_TELEMETRY_ACCEPTED`에서 같은 관측을 확인한다. `$r18_gateway_log`는 해당 세션의 새 비공개 파일로 지정한다. 위 기본 설정의 관측은 HTTPS 확인 경로를 남긴다. 명령 시험에는 별도의 [r18 Pi 명령 세션](#r18-pi-명령-세션)을 준비한다.
+
+##### r18 버튼 사건 시험
+
+0.7.21 계열의 bring-up 펌웨어로 관측 전용 Pi 세션을 연다. 두 버튼을 뗀 상태에서 아래 [관측 캡처](#관측-전달-증거-대조)의 `capture`로 기준 파일을 만든다. 같은 장치·Pi 부팅을 유지하고 확인 버튼을 짧게 눌렀다 뗀 뒤 비상 버튼도 같은 방식으로 누른다. 각 누름과 해제는 35ms 디바운스 구간을 넘긴다. 관측 전송이 끝나면 Pi Gateway를 정상 종료하고 같은 세션의 로그와 SQLite 사본, 격리 r18 API의 `runtime.json` 사본을 준비한다. 로그와 원본 관측은 Git 밖에 보관한다.
+
+```powershell
+$buttonsTool = 'keyring/raspberry-pi-gateway/cse_integration_tests/scoped_r18_buttons.py'
+python $buttonsTool --baseline $r18Baseline --usb-boot-log $r18UsbLog --pi-log $r18GatewayLogCopy `
+  capture --output $r18ButtonCapture
+python $buttonsTool --baseline $r18Baseline --usb-boot-log $r18UsbLog --pi-log $r18GatewayLogCopy `
+  compare --button-capture $r18ButtonCapture --database $piDatabaseCopy --team-state $teamStateCopy
+```
+
+`capture`는 Pi 로그에서 기준 관측 이후 최대 64개의 완료 요청 ID를 읽고 Mobius4에서 해당 자원을 조회한다. `compare`는 `released → confirm → released → panic → released`의 순번과 누계를 대조한다. 중앙의 관측 수용 순서, 동일 비상 관측 ID의 `DEVICE_PANIC_RECONCILED` 영수증 및 같은 기기의 안전 사건이 모두 있어야 통과한다. 중앙의 사건 처리 시한은 관측 후 30초다. 보고서는 새 사건 생성과 열린 사건 재사용을 결과 코드로 표시한다.
 
 ##### r18 MQTT와 HTTPS fallback 시험
 
