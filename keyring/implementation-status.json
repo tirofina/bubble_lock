@@ -173,18 +173,18 @@
   "firmwareRevision": "keyring-0.7.14",
   "benchFirmwareRevision": "feather-probe-0.2.1",
   "publication": {
-    "sourceCommit": "fa149ec91d45e2ea8a5cad1043aa6375a9ac8a8a",
+    "sourceCommit": "a0e4819564ec22d90c0fad3d3747aad7feb09358",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "fa149ec91d45e2ea8a5cad1043aa6375a9ac8a8a",
-    "lastPushedCommit": "fa149ec91d45e2ea8a5cad1043aa6375a9ac8a8a",
-    "latestCheckpoint": "Pair live r18 CSE and portal records by their exact central observation ID.",
-    "lastPushedCommitBeforeThisCheckpoint": "a5f0551ee9d10a2f33451306ca3e79de7b196147"
+    "latestLocalSourceCommit": "a0e4819564ec22d90c0fad3d3747aad7feb09358",
+    "lastPushedCommit": "a0e4819564ec22d90c0fad3d3747aad7feb09358",
+    "latestCheckpoint": "Inventory Gateway delivery and command journals before switching CSE or central API deployment.",
+    "lastPushedCommitBeforeThisCheckpoint": "216105745cc7dfd69b91c62dfc39610919e185ef"
   },
-  "gatewayRevision": "0.2.74",
-  "pendingValidationScope": "Gateway 0.2.74 live r18 CSE and portal observation pairing, Gateway 0.2.73 scoped r18 location approval and revocation, Gateway 0.2.72 r18 authorized central portal and LIVE dashboard response evidence, Gateway 0.2.71 actual r18 observation relay evidence, Gateway 0.2.70 r18 observation-only Pi relay and central acceptance, Gateway 0.2.69 r18 INA219 and external meter pairing, r18 ST7789/JD9853 observation-only builds, physical LCD checks and Gateway 0.2.68 USB/BLE profile evidence, Gateway 0.2.67 offline native receipt comparison with actual Pi and device archives, Gateway 0.2.66 post-pulse OFF telemetry acceptance on the actual r18 bench, Gateway 0.2.65 scoped r18 container pins, Gateway 0.2.64 interrupted r18 evidence with actual artifacts, Gateway 0.2.63 r18 Pi evidence export and journal capture, operator-triggered scoped r18 pulse bench and physical pulse measurement, Gateway 0.2.62 r18 Pi preflight, actual BLE board pin and Mobius4 publication, Gateway 0.2.61 r18 command reconciliation with the latest central API snapshot, Gateway 0.2.59 initial and final r18 sensor capture and r18 0.7.15-bringup USB replay, Gateway 0.2.57 HTTPS Retry-After restart and SQLite schema upgrade, central Retry-After outbox hold, pinned Mobius4 observation delivery, central API datastore binding and deployment transition, health snapshot admission during CSE outages, independent central receipt staging and delivery, central telemetry retention and independent delivery, central receipt replay and database upgrade, central dispatch-start and pinned-receipt restart and replay, Feather 0.2.1 flash and visible ST7789 command state, r18 physical commands and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE MQTT ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
+  "gatewayRevision": "0.2.75",
+  "pendingValidationScope": "Gateway 0.2.75 deployment cutover inventory on Pi and the team server, Gateway 0.2.74 live r18 CSE and portal observation pairing, Gateway 0.2.73 scoped r18 location approval and revocation, Gateway 0.2.72 r18 authorized central portal and LIVE dashboard response evidence, Gateway 0.2.71 actual r18 observation relay evidence, Gateway 0.2.70 r18 observation-only Pi relay and central acceptance, Gateway 0.2.69 r18 INA219 and external meter pairing, r18 ST7789/JD9853 observation-only builds, physical LCD checks and Gateway 0.2.68 USB/BLE profile evidence, Gateway 0.2.67 offline native receipt comparison with actual Pi and device archives, Gateway 0.2.66 post-pulse OFF telemetry acceptance on the actual r18 bench, Gateway 0.2.65 scoped r18 container pins, Gateway 0.2.64 interrupted r18 evidence with actual artifacts, Gateway 0.2.63 r18 Pi evidence export and journal capture, operator-triggered scoped r18 pulse bench and physical pulse measurement, Gateway 0.2.62 r18 Pi preflight, actual BLE board pin and Mobius4 publication, Gateway 0.2.61 r18 command reconciliation with the latest central API snapshot, Gateway 0.2.59 initial and final r18 sensor capture and r18 0.7.15-bringup USB replay, Gateway 0.2.57 HTTPS Retry-After restart and SQLite schema upgrade, central Retry-After outbox hold, pinned Mobius4 observation delivery, central API datastore binding and deployment transition, health snapshot admission during CSE outages, independent central receipt staging and delivery, central telemetry retention and independent delivery, central receipt replay and database upgrade, central dispatch-start and pinned-receipt restart and replay, Feather 0.2.1 flash and visible ST7789 command state, r18 physical commands and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE MQTT ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
     "supersededBy": "2026-11-10 benchCheckpoint for current execution and verification state",
@@ -205,7 +205,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Pair live r18 CSE and portal reads under DOC-REV 2.0.0",
+    "executionRequest": "Inventory Gateway state before a Mobius4 or central API deployment change under DOC-REV 2.0.0",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -214,8 +214,8 @@
     ],
     "latestRemoteCore": "d54a43a",
     "latestRemoteMain": "bc2a45d",
-    "sourceCommit": "fa149ec91d45e2ea8a5cad1043aa6375a9ac8a8a",
-    "sourceValidation": "Regression source covers portal updates during reads, delayed CSE observations, and identical timestamps and RSSI with distinct observation IDs. Build, static analysis, tests, server startup, Pi and actual responses were not executed.",
+    "sourceCommit": "a0e4819564ec22d90c0fad3d3747aad7feb09358",
+    "sourceValidation": "Regression source covers same-database URL changes, committed pending lanes, a fresh target, a leftover WAL, and invalid binding/path pairings. Build, static analysis, tests, inventory execution, Pi access, and actual cutover were not performed.",
     "goalComplete": false,
     "pendingInput": null,
     "currentDependencyState": "The Feather 0.2.0 and Pi Gateway 0.2.43 command path matched isolated Mobius4 and PostgreSQL on the pinned 715ef58 API. The operator saw no LED change during either command. Feather 0.2.1 mirrors the command GPIO readback on the ST7789. The latest Pi integration workflow and LCD response still need hardware evidence, as do r18 first power-on, physical reconnect, battery, LCD, charger, sensor, NVS fault, power, range and wake. Production CSE, CORE and release acceptance remain.",
@@ -1555,5 +1555,13 @@
     "piVerified": false,
     "scopedPortalVerified": false,
     "sourceCommit": "fa149ec91d45e2ea8a5cad1043aa6375a9ac8a8a"
+  },
+  "gatewayDeploymentCutoverPlan": {
+    "reference": "raspberry-pi-gateway/STATE_RECOVERY.md#전환-전-대기열-확인",
+    "gatewayVersion": "0.2.75",
+    "regressionsExecuted": false,
+    "piVerified": false,
+    "teamDeploymentVerified": false,
+    "sourceCommit": "a0e4819564ec22d90c0fad3d3747aad7feb09358"
   }
 }

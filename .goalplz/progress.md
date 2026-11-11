@@ -1540,3 +1540,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 격
 - 조회 중 최신 관측 교체, 늦은 Mobius4 관측과 동일 시각·RSSI의 다른 ID를 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·서버 실행·Pi 접속·실제 응답 대조는 미수행이다.
 
 소스 commit `fa149ec91d45e2ea8a5cad1043aa6375a9ac8a8a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `a5f0551..fa149ec`다. goal은 active/progress다.
+
+## 2026-11-11 — 임시 Mobius4에서 팀 서버로 전환하기 전 Pi 상태 확인
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R11, R12. 직전 goal turn은 r18 위치 관측 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 CORE Gateway·중앙 영수증 계약을 확인했다.
+
+- Gateway 0.2.75의 `bubble-gateway-state plan-cutover`는 독립적으로 읽은 환경 파일 두 개와 원본 SQLite binding을 대조한다. 같은 binding의 기존 DB 재사용과 변경된 binding의 새 DB 경로를 판별하고, DB·WAL·SHM·journal이 남아 있는 새 경로를 거절한다. [전환 전 대기열 확인](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#전환-전-대기열-확인)
+- native·CORE·중앙 outbox, 수신·dispatch 명령, outbox 등록 전 영수증과 미전달 credential 영수증을 집계한다. 저장소 주소와 배포 ID의 실제 동일성, 기존 큐와 명령의 정산, 팀 저장소의 인증·권한 및 Pi 전환은 현장 확인이 남았다. DB 경로 변경과 committed WAL을 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·도구 실행·Pi 접속·배포 전환은 미수행이다.
+
+소스 commit `a0e4819564ec22d90c0fad3d3747aad7feb09358`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `2161057..a0e4819`다. goal은 active/progress다.
