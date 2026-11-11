@@ -1249,3 +1249,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 r18 USB�
 - 중앙 응답을 보류한 동안 Mobius4 관측·명령 영수증 전송과 중앙 항목 보존을 확인하는 회귀시험 소스를 추가했다. 빌드·회귀시험·Pi 실행·실물 연동은 미실행이다. 현재 중앙 API와 실제 Pi의 전송 및 제작 PCB 검증은 남아 있다.
 
 소스 commit `b15b4403e1ea31463412947e7985936939d044d4`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `5870cd2..b15b440`다. goal은 active/progress다.
+
+## 2026-11-11 — 재시도 대기 중인 중앙 관측 만료
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R15. 직전 goal turn은 중앙 관측 전송을 독립시킨 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`가 직전과 같다. 중앙의 관측 시각 기반 보관 기간과 CORE·웹 영수증 경계를 확인했다.
+
+- Gateway `0.2.50`은 시계를 신뢰할 때 재시도 예정 시각과 별개로 만료된 중앙 관측 복제본을 SQLite에서 정리한다. `CENTRAL_TELEMETRY_RETENTION_SECONDS`로 배포별 중앙 보관 기간을 맞추며 기본은 24시간이다. Mobius4 관측과 영수증은 각 전송 규칙을 적용한다. 만료되지 않은 행으로 용량을 채우면 기존 제한이 적용된다. [중앙 관측 전달](../keyring/raspberry-pi-gateway/IO_NOTES.md#중앙-관측-전달)
+- UTC 오프셋·만료 경계, 재시도 대기, 용량 반환, 시계 불신 상태를 다루는 회귀시험 소스를 추가했다. 빌드·회귀시험·Pi 실행·실물 연동은 미실행이다. 제작 PCB와 실제 Pi의 통합 증거가 남아 있다.
+
+소스 commit `d8ce9e0ba6ce5e5eee3e2bdf1800a524a38d2a0f`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `e2c8e12..d8ce9e0`다. goal은 active/progress다.
