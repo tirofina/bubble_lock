@@ -1937,3 +1937,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 버튼 �
 - 대기 중단, 재실행 보호, 권한, 원본 보존과 이어지는 순번을 다루는 POSIX 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·실제 Pi 준비 명령·서버 전환은 미수행이다. [전환 절차](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#새-배포-db에-core-순번-이어받기)
 
 소스 commit `3a1c423409d324d4a290bf41b13010ca0d2d7611`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `41cd094..3a1c423`이다. goal은 active/progress다.
+
+## 2026-11-11 — r18 조립 기록과 첫 구동 연결
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · PCB schematic/layout/BOM/assembly revision. 직전 goal turn은 새 배포 DB의 CORE 순번 보존을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 조회했다.
+
+- Gateway 0.2.105의 `bubble-keyring-assembly-evidence`는 인계 목록에서 프로젝트·회로도·PCB·reference별 BOM·커넥터 표를 해시로 대조한다. 작업자가 기록한 조립 revision 출처, 실장 상태, 패널과 보드 앞뒤 사진 해시를 새 기록에 남긴다. 조립 revision을 읽지 못했으면 미확인으로 유지한다.
+- 격리 Pi 관측 비교에 작업자가 다시 읽은 보드 식별표를 연결할 수 있다. 조립 기록의 해시를 첫 부팅·펌웨어·Pi 관측 대조 결과에 추가한다. 회귀시험 소스를 추가했으며 테스트·빌드·정적 분석·KiCad 실행·실제 조립 기록 및 첫 구동은 미수행이다. [인수 절차](../keyring/pcb/BRING_UP.md#실물-조립-기록)
+
+소스 commit `e9f4e9d39d166a20c47c731d7d3b71134216561e`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `5d7765e..e9f4e9d`이다. goal은 active/progress다.

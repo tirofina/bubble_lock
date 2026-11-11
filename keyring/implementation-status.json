@@ -1885,5 +1885,12 @@
     "regressionsExecuted": false,
     "physicalDeploymentCutoverVerified": false,
     "sourceCommit": "3a1c423409d324d4a290bf41b13010ca0d2d7611"
+  },
+  "r18AssemblyEvidence": {
+    "reference": "pcb/BRING_UP.md#실물-조립-기록",
+    "gatewayVersion": "0.2.105",
+    "regressionsExecuted": false,
+    "physicalAssemblyRecorded": false,
+    "sourceCommit": "e9f4e9d39d166a20c47c731d7d3b71134216561e"
   }
 }
