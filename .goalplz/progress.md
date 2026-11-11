@@ -1793,3 +1793,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R15. 직전 goal turn은 중
 - Pi 관측 세션 준비 명령에 실제로 사용할 펌웨어 revision을 넘기도록 예시를 갱신했다. 빌드·테스트·정적 분석·제작 PCB와 Pi 실물 시험·중앙/웹 실물 연동은 미수행이다. [r18 관측 전달 대조](../keyring/raspberry-pi-gateway/TESTING.md#관측-전달-증거-대조)
 
 소스 commit `f2c3126aefa850089feae80e736a15eff8e96b41`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `0250b64..f2c3126`이다. goal은 active/progress다.
+
+## 2026-11-11 — r18 첫 구동에서 실제 펌웨어 파일 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 r18 실물 관측 전달 판정을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 중앙 관측 수용 계약을 확인했다.
+
+- 화면 없음·ST7789·JD9853의 0.7.18 관측 프로필은 실행 중인 앱 파티션의 SHA-256을 최초 USB 기록과 `?` 재출력에 남긴다. Gateway 0.2.99의 `--firmware-image`는 실제 업로드에 사용한 서명 없는 ESP32-S3 앱 파일의 SHA-256 footer와 USB 해시를 대조하고, 같은 BLE 부팅의 보고서에 파일 전체 해시와 크기를 기록한다.
+- 격리 Pi 도구는 세 새 revision을 선택할 수 있다. 이전 펌웨어 로그, 다른 빌드·손상된 이미지·해시 읽기 실패를 다루는 회귀시험 소스와 첫 구동 절차를 갱신했다. 빌드·테스트·정적 분석·장비 업로드·실물 USB/BLE 해시 대조는 미수행이다. [첫 구동 절차](../keyring/pcb/BRING_UP.md)
+
+소스 commit `65b3e2fb547dbb12f6901c58556442ae822184f5`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `000485a..65b3e2f`다. goal은 active/progress다.

@@ -1759,5 +1759,14 @@
     "regressionsExecuted": false,
     "physicalRelayVerified": false,
     "sourceCommit": "f2c3126aefa850089feae80e736a15eff8e96b41"
+  },
+  "r18BringupRunningImage": {
+    "reference": "pcb/BRING_UP.md",
+    "gatewayVersion": "0.2.99",
+    "firmwareRevisions": ["keyring-0.7.18-bringup", "keyring-0.7.18-st7789-bringup", "keyring-0.7.18-jd9853-bringup"],
+    "buildExecuted": false,
+    "regressionsExecuted": false,
+    "physicalImageVerified": false,
+    "sourceCommit": "65b3e2fb547dbb12f6901c58556442ae822184f5"
   }
 }
