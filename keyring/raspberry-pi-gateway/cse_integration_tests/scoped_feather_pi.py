@@ -22,6 +22,7 @@ R18_COMMAND_FIRMWARE = "keyring-0.7.14"
 R18_BRINGUP_FIRMWARES = (
     "keyring-0.7.15-bringup", "keyring-0.7.15-st7789-bringup", "keyring-0.7.15-jd9853-bringup",
     "keyring-0.7.16-st7789-bringup", "keyring-0.7.16-jd9853-bringup",
+    "keyring-0.7.17-st7789-bringup", "keyring-0.7.17-jd9853-bringup",
 )
 R18_BOARD = "r18-hand-solder"
 R18_DEVICE = "keyring-r18-lab"

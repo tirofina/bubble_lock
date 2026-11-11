@@ -1,4 +1,4 @@
-"""Exercise the r18 observation queue and frame sizing on a host without BLE."""
+"""Exercise r18 observation framing and screen requests on a host without BLE."""
 import argparse
 from pathlib import Path
 import subprocess
@@ -16,6 +16,9 @@ def main():
     source = (firmware / "src" / "main.cpp").read_text(encoding="utf-8")
     production = source[source.index("std::string jsonText("):source.index("void publishReceipt(")]
     (output / "button_observation_subject.inc").write_text(production, encoding="utf-8")
+    lcd = (firmware / "src" / "peripherals.cpp").read_text(encoding="utf-8")
+    screen = lcd[lcd.index("void Peripherals::update("):lcd.index("void Peripherals::show(")]
+    (output / "button_screen_subject.inc").write_text(screen, encoding="utf-8")
     subprocess.run(["cl", "/nologo", "/utf-8", "/std:c++14", "/EHsc", "/W4", "/I" + str(output),
                     "/I" + str(firmware / "include"), "/I" + str(args.arduinojson.resolve()), str(test),
                     "/Fe:button_observation_host.exe"], cwd=output, check=True)

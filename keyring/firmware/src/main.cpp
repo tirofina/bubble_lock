@@ -42,10 +42,10 @@ extern "C" esp_err_t __wrap_nvs_flash_init() {
 namespace {
 #if KEYRING_R18_BRINGUP
 #if KEYRING_R18_BRINGUP_DISPLAY == 1
-constexpr char FirmwareRevision[] = "keyring-0.7.16-st7789-bringup";
+constexpr char FirmwareRevision[] = "keyring-0.7.17-st7789-bringup";
 constexpr char BringupPanelField[] = " panel=st7789";
 #elif KEYRING_R18_BRINGUP_DISPLAY == 2
-constexpr char FirmwareRevision[] = "keyring-0.7.16-jd9853-bringup";
+constexpr char FirmwareRevision[] = "keyring-0.7.17-jd9853-bringup";
 constexpr char BringupPanelField[] = " panel=jd9853";
 #else
 constexpr char FirmwareRevision[] = "keyring-0.7.15-bringup";
@@ -1120,7 +1120,9 @@ void loop() {
   if (changedPanic && panic.pressed) displayTestButton = DisplayTestButton::Panic;
   else if (changedConfirm && confirm.pressed && !panic.pressed) displayTestButton = DisplayTestButton::Confirm;
 #endif
-  if ((changedConfirm && confirm.pressed) || (changedPanic && panic.pressed)) peripherals.show();
+  const bool showScreen = (changedConfirm && confirm.pressed) || (changedPanic && panic.pressed);
+  const bool requestDisplay = KEYRING_R18_BRINGUP_DISPLAY && showScreen && digitalRead(board::MainFaultN) != LOW;
+  if (showScreen && !KEYRING_R18_BRINGUP_DISPLAY) peripherals.show();
   if (changedConfirm || changedPanic) observationDirty = true;
   if (confirm.pressed || panic.pressed || changedConfirm || changedPanic) powerState::activity(now);
   if (motion.poll(now)) { powerState::activity(now); observationDirty = true; }
@@ -1142,7 +1144,7 @@ void loop() {
   if (uptime() - lastObservation >= board::ObserveMs) observationDirty = true;
   if (observationDirty) publishObservation();
   if (!ObservationOnly || KEYRING_R18_BRINGUP_DISPLAY) auxRail::service();
-  if (now >= nextScreenAt) {
+  if (requestDisplay || now >= nextScreenAt) {
     KeyringScreen screen;
     screen.linked = connected; screen.authenticated = authenticated;
     screen.batteryValid = sensors.fuel; screen.battery = sensors.battery; screen.batteryLow = sensors.batteryLow;
@@ -1157,7 +1159,7 @@ void loop() {
     screen.journal = storageHealthy; screen.motionEvents = motion.events();
     screen.supplyValid = supply.valid(uptime()); screen.supplyCurrentMa = supply.reading().currentUa / 1000.0f;
     screen.supplyReadAt = supply.reading().readAt;
-    peripherals.update(screen); nextScreenAt = now + 250;
+    peripherals.update(screen, requestDisplay); nextScreenAt = now + 250;
   }
   if (!ObservationOnly) receiptTx.tick(now);
   observationTx.tick(now);

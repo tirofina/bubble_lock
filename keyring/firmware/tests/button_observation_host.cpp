@@ -42,6 +42,30 @@ constexpr esp_gatt_if_t ESP_GATT_IF_NONE = 255;
 constexpr int ESP_OK = 0;
 void portENTER_CRITICAL(bool *lock) { assert(!*lock); *lock = true; }
 void portEXIT_CRITICAL(bool *lock) { assert(*lock); *lock = false; }
+
+struct KeyringScreen {
+  bool confirm = false, panic = false;
+  uint32_t confirmPress = 0, panicPress = 0;
+};
+
+class Peripherals {
+public:
+  void update(const KeyringScreen &screen, bool requestDisplay = false);
+  bool takeScreen(KeyringScreen &screen, bool due, bool &requestDisplay);
+
+  bool mux = false, displayReady = false, displayRequested = false;
+  KeyringScreen snapshot;
+  Peripherals *worker = this;
+  unsigned notifications = 0;
+};
+
+void xTaskNotifyGive(Peripherals *worker) {
+  assert(!worker->mux && worker->displayRequested);
+  ++worker->notifications;
+}
+
+#include "button_screen_subject.inc"
+
 bool commandChannelOpen(uint32_t generation, uint32_t subscription);
 int esp_ble_gatts_send_indicate(esp_gatt_if_t, uint16_t, uint16_t, uint16_t, uint8_t *, bool) { return ESP_OK; }
 uint64_t uptime() { return UINT64_C(9007199254740991); }
@@ -90,6 +114,27 @@ DynamicJsonDocument readFrame(unsigned section) {
 }
 
 int main() {
+  Peripherals lcd;
+  KeyringScreen pressed, drawn;
+  bool requestDisplay = false;
+  pressed.confirm = true;
+  pressed.confirmPress = 3;
+  lcd.update(pressed, true);
+  assert(!lcd.takeScreen(drawn, true, requestDisplay));
+  lcd.update(pressed); // A periodic snapshot must preserve the queued display request.
+  lcd.displayReady = true;
+  assert(lcd.takeScreen(drawn, false, requestDisplay) && requestDisplay && drawn.confirm && drawn.confirmPress == 3);
+  assert(!lcd.takeScreen(drawn, false, requestDisplay));
+
+  pressed.confirm = false;
+  pressed.panic = true;
+  pressed.panicPress = 2;
+  lcd.update(pressed, true);
+  assert(lcd.takeScreen(drawn, false, requestDisplay) && requestDisplay && drawn.panic && drawn.panicPress == 2);
+  assert(lcd.takeScreen(drawn, true, requestDisplay) && !requestDisplay && drawn.panic);
+  assert(lcd.notifications == 2);
+  std::puts("PASS LCD request survives startup and consumes the latest button snapshot before the redraw deadline");
+
   std::memset(deviceId, 'k', sizeof(deviceId) - 1);
   std::memset(bootId, 'b', sizeof(bootId) - 1);
   observationTx.characteristic = &attribute;

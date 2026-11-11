@@ -225,7 +225,8 @@ class BringupCaptureTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / "usb.log"
             for revision, panel in (("0.7.15", "st7789"), ("0.7.15", "jd9853"),
-                                    ("0.7.16", "st7789"), ("0.7.16", "jd9853")):
+                                    ("0.7.16", "st7789"), ("0.7.16", "jd9853"),
+                                    ("0.7.17", "st7789"), ("0.7.17", "jd9853")):
                 firmware = f"keyring-{revision}-{panel}-bringup"
                 raw = self.usb_log().replace(self.firmware.encode(), firmware.encode())
                 full = raw.replace(b"motion=ready\r\n", f"motion=ready panel={panel}\r\n".encode())
@@ -246,7 +247,7 @@ class BringupCaptureTests(unittest.TestCase):
 
     def test_display_draws_must_match_button_counts_in_the_selected_session(self):
         for panel in ("st7789", "jd9853"):
-            firmware = f"keyring-0.7.16-{panel}-bringup"
+            firmware = f"keyring-0.7.17-{panel}-bringup"
             for status, drawn, expected in (
                 (f"{panel}_unverified", [3, 2], "RECORDED"),
                 (f"{panel}_unverified", [2, 1], "INSUFFICIENT"),

@@ -26,7 +26,7 @@ struct KeyringDisplayTest {
 class Peripherals {
 public:
   void begin();
-  void update(const KeyringScreen &screen);
+  void update(const KeyringScreen &screen, bool requestDisplay = false);
   void show();
   void logReceipt(const char *jsonLine, size_t length);
   bool busy();
@@ -41,6 +41,7 @@ private:
   static void entry(void *context);
   void run();
   void draw(const KeyringScreen &screen);
+  bool takeScreen(KeyringScreen &screen, bool due, bool &requestDisplay);
   void append(const LogLine &line);
   bool setIo(bool active);
   void drop();
@@ -51,6 +52,7 @@ private:
   KeyringScreen snapshot;
   const char *displayState = "disabled", *sdState = "disabled";
   uint32_t drawnConfirmPress = 0, drawnPanicPress = 0;
+  bool displayRequested = false;
   bool ioActive = false, sleeping = false, displayReady = false, sdReady = false;
   uint32_t drops = 0;
 };

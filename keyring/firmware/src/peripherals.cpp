@@ -60,8 +60,23 @@ void Peripherals::begin() {
     if (logs) { vQueueDelete(logs); logs = nullptr; }
   }
 }
-void Peripherals::update(const KeyringScreen &screen) {
-  portENTER_CRITICAL(&mux); snapshot = screen; portEXIT_CRITICAL(&mux);
+void Peripherals::update(const KeyringScreen &screen, bool requestDisplay) {
+  portENTER_CRITICAL(&mux);
+  snapshot = screen;
+  if (requestDisplay) displayRequested = true;
+  portEXIT_CRITICAL(&mux);
+  if (requestDisplay && worker) xTaskNotifyGive(worker);
+}
+bool Peripherals::takeScreen(KeyringScreen &screen, bool due, bool &requestDisplay) {
+  portENTER_CRITICAL(&mux);
+  const bool available = displayReady && (due || displayRequested);
+  if (available) {
+    screen = snapshot;
+    requestDisplay = displayRequested;
+    displayRequested = false;
+  }
+  portEXIT_CRITICAL(&mux);
+  return available;
 }
 void Peripherals::show() {
   portENTER_CRITICAL(&mux); const bool ready = displayReady; portEXIT_CRITICAL(&mux);
@@ -156,10 +171,11 @@ void Peripherals::run() {
   for (;;) {
     ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(100));
     const uint64_t now = nowMs();
-    if (displayReady && auxRail::displayVisible() && now >= nextDraw) {
-      KeyringScreen screen;
-      portENTER_CRITICAL(&mux); screen = snapshot; portEXIT_CRITICAL(&mux);
-      if (setIo(true)) {
+    KeyringScreen screen;
+    bool requestDisplay = false;
+    if (displayReady && takeScreen(screen, now >= nextDraw && auxRail::displayVisible(), requestDisplay)) {
+      if (requestDisplay) auxRail::displayFor(KEYRING_LCD_SHOW_MS);
+      if (auxRail::displayVisible() && setIo(true)) {
         draw(screen);
 #if KEYRING_R18_BRINGUP_DISPLAY
         portENTER_CRITICAL(&mux);
@@ -168,8 +184,8 @@ void Peripherals::run() {
         portEXIT_CRITICAL(&mux);
 #endif
         setIo(false);
+        nextDraw = nowMs() + 1000;
       }
-      nextDraw = nowMs() + 1000;
     }
     LogLine line = {};
     // Mark busy before dequeueing so sleep cannot slip into the queue/I/O gap.

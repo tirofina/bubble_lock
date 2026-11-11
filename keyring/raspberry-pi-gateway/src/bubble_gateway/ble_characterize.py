@@ -32,7 +32,8 @@ USB_BOOT_LINE = re.compile(
     r"motion=(?P<motion>ready|unavailable)(?: panel=(?P<panel>st7789|jd9853))?"
 )
 BRINGUP_SENSOR_STATUS = ("batteryStatus", "accelStatus", "motion")
-DISPLAY_TEST_PROFILES = {f"keyring-0.7.16-{panel}-bringup": panel for panel in ("st7789", "jd9853")}
+DISPLAY_TEST_PROFILES = {f"keyring-{revision}-{panel}-bringup": panel
+                         for revision in ("0.7.16", "0.7.17") for panel in ("st7789", "jd9853")}
 BRINGUP_DISPLAY_PROFILES = {
     "keyring-0.7.15-st7789-bringup": "st7789", "keyring-0.7.15-jd9853-bringup": "jd9853",
     **DISPLAY_TEST_PROFILES,
