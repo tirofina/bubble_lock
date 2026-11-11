@@ -60,6 +60,11 @@ class NativeDeliveryHold(NamedTuple):
     health_container: str | None = None
 
 
+class NativeConfirmation(NamedTuple):
+    route: str
+    created: bool
+
+
 def _retry_after(value: str | None) -> float | None:
     if value is None:
         return None
@@ -514,7 +519,8 @@ class TransportHub:
                                    credential_receipt=credential_receipt)
 
     async def publish(self, rqi: str, container: str, payload: dict[str, Any], *,
-                      confirm_existing: bool = False, expected_claim_id: str | None = None) -> dict[str, Any] | None:
+                      confirm_existing: bool = False,
+                      expected_claim_id: str | None = None) -> NativeConfirmation | dict[str, Any] | None:
         if container.startswith("@core/"):
             return await self._publish_core(container, payload)
         if not isinstance(rqi, str) or not 1 <= len(rqi) <= 128:
@@ -544,7 +550,7 @@ class TransportHub:
                     if (exc.status_code, exc.rsc) != (404, 4004):
                         raise
                 else:
-                    return
+                    return NativeConfirmation("https-readback", False)
             # Write to the verified resource itself even if its name is later rebound.
             target = f"/{pin}"
             path = _resource_path(target)
@@ -568,11 +574,11 @@ class TransportHub:
                 if rsc == 2001:
                     await self._confirm_create(rqi, container, payload, rn, response.get("pc"), pin=pin,
                                                credential_receipt=credential_receipt)
-                    return
+                    return NativeConfirmation("mqtt", True)
                 if rsc == 4105:
                     await self._confirm_stored(rqi, container, payload, credential_receipt=credential_receipt,
                                                conflict=True)
-                    return
+                    return NativeConfirmation("mqtt", False)
                 # A real CSE rejection is terminal for this attempt. HTTPS is a
                 # network fallback, not a second route around permission denial.
                 raise RemoteResponseError("oneM2M MQTT request rejected", rsc)
@@ -585,13 +591,14 @@ class TransportHub:
         status, headers, document = await self._http_json(
             "POST", self._cse_url + path, headers=self._m2m_headers(rqi, create=True), body={"m2m:cin": cin})
         rsc = self._response_rsc(status, headers, rqi)
+        route = "https-fallback" if self.config.m2m_mqtt_enabled else "https"
         if 200 <= status < 300 and rsc == 2001:
             await self._confirm_create(rqi, container, payload, rn, document, pin=pin,
                                        credential_receipt=credential_receipt, status=status)
-            return
+            return NativeConfirmation(route, True)
         if rsc == 4105:
             await self._confirm_stored(rqi, container, payload, credential_receipt=credential_receipt, conflict=True)
-            return
+            return NativeConfirmation(route, False)
         raise RemoteResponseError("oneM2M HTTPS request rejected", rsc, status)
 
     async def _publish_central_receipt(self, rqi: str, receipt: dict[str, Any],

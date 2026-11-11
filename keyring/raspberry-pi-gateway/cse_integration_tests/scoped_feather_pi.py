@@ -132,7 +132,8 @@ def gateway_environment(profile, session, *, verify_api=False):
     if r18:
         environment.update(BLE_BOARD_REVISION=R18_BOARD, PC_API_DEPLOYMENT_ID="scoped-command-api-r18")
     if observe_only:
-        environment.update(COMMANDS_ENABLED="false", PC_DISPATCH_START_REQUIRED="false", CENTRAL_RECEIPTS_ENABLED="false")
+        environment.update(COMMANDS_ENABLED="false", PC_DISPATCH_START_REQUIRED="false", CENTRAL_RECEIPTS_ENABLED="false",
+                           NATIVE_OBSERVATION_TRACE="true")
     if "cseDeploymentId" in profile:
         if profile["cseDeploymentId"] != CSE_DEPLOYMENT:
             raise ValueError("Expected the scoped Mobius4 deployment")

@@ -13,7 +13,7 @@ from unittest.mock import AsyncMock, Mock, patch
 from bubble_gateway.model import iso_time, payload_hash, utc_now
 from bubble_gateway.service import Gateway
 from bubble_gateway.store import Store
-from bubble_gateway.transport import NativeDeliveryHold, RemoteResponseError
+from bubble_gateway.transport import NativeConfirmation, NativeDeliveryHold, RemoteResponseError
 from helpers import BINDING, command, config, observation
 
 
@@ -68,21 +68,27 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
     async def test_observation_only_keeps_old_command_receipts_and_delivers_native_observations(self):
         self.stage()
         self.store.enqueue("conflict", "prior-conflict", BINDING["receiptContainer"], {"existing": True})
-        self.store.enqueue("observation", "sample", BINDING["observationContainer"], {"state": False})
+        sample = observation()
+        self.store.observation(BINDING["observationContainer"], sample)
+        rqi = self.store.request_id("observation", f"{sample['deviceId']}:{sample['bootId']}:{sample['sequence']}")
         gateway = Gateway.__new__(Gateway)
         gateway.config, gateway.store = config(), self.store
         gateway.config.commands_enabled = False
+        gateway.config.native_observation_trace = True
         gateway.stop, gateway.counters = asyncio.Event(), Counter()
-        gateway.transport = SimpleNamespace(publish=AsyncMock(), native_delivery_hold=NativeDeliveryHold)
+        gateway.transport = SimpleNamespace(publish=AsyncMock(return_value=NativeConfirmation("https", True)),
+                                            native_delivery_hold=NativeDeliveryHold)
 
         async def idle(_seconds):
             gateway.stop.set()
 
         gateway._pause = idle
-        async with asyncio.timeout(1):
-            await gateway._outbox_loop()
-        gateway.transport.publish.assert_awaited_once_with(
-            self.store.request_id("observation", "sample"), BINDING["observationContainer"], {"state": False})
+        with self.assertLogs("bubble_gateway.service", level="INFO") as logged:
+            async with asyncio.timeout(1):
+                await gateway._outbox_loop()
+        gateway.transport.publish.assert_awaited_once_with(rqi, BINDING["observationContainer"], sample)
+        self.assertIn(f"rqi={rqi} payloadSha256={payload_hash(sample)} route=https created=true", logged.output[0])
+        self.assertEqual(self.queued(BINDING["observationContainer"]), 0)
         self.assertEqual(self.queued(BINDING["receiptContainer"]), 2)
         self.assertEqual(self.queued("@core/ack"), 1)
         self.assertEqual(self.native_delivered(), 0)

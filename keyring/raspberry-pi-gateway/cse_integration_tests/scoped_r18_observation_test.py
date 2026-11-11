@@ -134,6 +134,26 @@ class ScopedR18ObservationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Pending Pi payload .* differs"):
             self.compare([self.event])
 
+    def test_pi_log_binds_the_native_confirmation_and_distinguishes_existing_content(self):
+        path = self.database.with_name("gateway.log")
+        rqi = Store.request_id("observation", f"{R18_DEVICE}:{self.usb['bootId']}:{self.observation['sequence']}")
+        prefix = f"INFO bubble_gateway.service Native observation confirmed rqi={rqi} payloadSha256="
+        line = f"{prefix}{payload_hash(self.observation)} route=https-fallback created=false\n"
+        path.write_bytes(line.encode())
+
+        def compare():
+            return compare_observation(self.capture, self.usb, self.database, {"receipts": [self.event]},
+                                       payload_hash, pi_log=path)
+
+        self.assertEqual(compare()["nativeDelivery"], {"requestId": rqi, "route": "https-fallback", "created": False,
+                                                        "logSha256": hashlib.sha256(line.encode()).hexdigest()})
+        path.write_bytes((line + line.replace("https-fallback", "mqtt")).encode())
+        with self.assertRaisesRegex(ValueError, "one unambiguous native confirmation"):
+            compare()
+        path.write_bytes(f"{prefix}{'b' * 64} route=https created=true\n".encode())
+        with self.assertRaisesRegex(ValueError, "conflicts with the scoped observation"):
+            compare()
+
     def test_simulated_central_acceptance_and_old_unpinned_database_do_not_match_physical_evidence(self):
         report = self.compare([dict(self.event, simulation=True)])
         self.assertTrue(report["centralTelemetryAccepted"])

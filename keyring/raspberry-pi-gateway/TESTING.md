@@ -419,10 +419,10 @@ r18_bringup_firmware=keyring-0.7.18-bringup
   --receipt-container-ri "$gw_b_receipt_ri" --observation-container-ri "$gw_b_observation_ri" \
   --health-container-ri "$gw_b_health_ri"
 "$pi_python" "$tool" preflight --session "$r18_observation_session"
-"$pi_python" "$tool" run --session "$r18_observation_session"
+(umask 077; "$pi_python" "$tool" run --session "$r18_observation_session" > "$r18_gateway_log" 2>&1)
 ```
 
-사전 확인은 지정된 컨테이너 ID와 중앙 자격을 대조해 `commandsEnabled:false`를 보고한다. 실행 중에는 BLE 관측·health와 중앙 텔레메트리를 전송하며, 명령 조회·실행·장치 명령 영수증 전송은 중지 상태다. 같은 BLE 장치를 쓰는 초기 구동 기록 도구와 Gateway는 순차적으로 실행한다. 실제 연결은 `command-health-b`에서 `commandReady:false`를, 전송은 `command-observations-b`와 중앙 `GATEWAY_TELEMETRY_ACCEPTED`에서 같은 관측을 확인한다. 명령 시험에는 별도의 [r18 Pi 명령 세션](#r18-pi-명령-세션)을 준비한다.
+사전 확인은 지정된 컨테이너 ID와 중앙 자격을 대조해 `commandsEnabled:false`를 보고한다. 실행 중에는 BLE 관측·health와 중앙 텔레메트리를 전송하며, 명령 조회·실행·장치 명령 영수증 전송은 중지 상태다. 같은 BLE 장치를 쓰는 초기 구동 기록 도구와 Gateway는 순차적으로 실행한다. 실제 연결은 `command-health-b`에서 `commandReady:false`를, 전송은 `command-observations-b`와 중앙 `GATEWAY_TELEMETRY_ACCEPTED`에서 같은 관측을 확인한다. `$r18_gateway_log`는 해당 세션의 새 비공개 파일로 지정한다. 이 격리 세션은 native MQTT를 비활성화하므로 정상 관측은 HTTPS 확인 경로를 남긴다. 명령 시험에는 별도의 [r18 Pi 명령 세션](#r18-pi-명령-세션)을 준비한다.
 
 ##### 관측 전달 증거 대조
 
@@ -435,17 +435,19 @@ python $tool capture --firmware-revision $r18BringupFirmware --usb-boot-log $r18
   --output $r18ObservationCapture
 ```
 
-Gateway를 정상 종료한 뒤 같은 세션의 SQLite 사본과 격리 r18 API의 `runtime.json` 사본을 확보한다. Pi DB는 [시험 증거 보관](#r18-pi-시험-증거-보관)의 `export-env`와 `state_archive snapshot`으로 확보할 수 있다.
+Gateway를 정상 종료한 뒤 같은 세션의 SQLite 사본, Pi 로그와 격리 r18 API의 `runtime.json` 사본을 확보한다. Pi DB는 [시험 증거 보관](#r18-pi-시험-증거-보관)의 `export-env`와 `state_archive snapshot`으로 확보할 수 있다.
 
 ```powershell
 python $tool compare --firmware-revision $r18BringupFirmware --usb-boot-log $r18UsbLog `
   --capture $r18ObservationCapture --database $piDatabaseCopy --team-state $teamStateCopy --require-physical `
-  --bringup-report $r18BringupReport --firmware-image $r18FirmwareBin
+  --bringup-report $r18BringupReport --firmware-image $r18FirmwareBin --pi-log $r18GatewayLogCopy
 ```
 
 `compare`는 Pi의 같은 부팅에서 관측 순번이 저장됐는지 확인하고, 관측·health 컨테이너를 SQLite에 고정한 자원 ID와 대조한다. 해당 관측이나 health가 Pi 전송 큐에 남아 있으면 본문도 비교한다. 기존 health ID 미고정 세션은 `healthContainerVerified:null`로 보고한다.
 
 `--bringup-report`와 `--firmware-image`는 함께 지정한다. 도구는 첫 구동 보고서가 `RECORDED`인지, 같은 USB 로그와 실행 이미지 해시가 들어 있는지, Mobius4 관측 순번이 첫 구동에서 받은 순번보다 큰지 확인한다. 일치하면 첫 구동 보고서와 펌웨어 파일의 해시를 `firstBringupEvidence`에 남긴다. 이전 펌웨어 또는 관측 전송만 진단할 때는 두 옵션을 생략할 수 있다.
+
+`--pi-log`는 Gateway 0.2.100 이후의 완료 로그에서 같은 요청 ID와 관측 본문 해시를 찾아 `nativeDelivery`에 연결한다. `mqtt`는 MQTT 응답으로, `https`는 HTTPS 전용 설정에서, `https-fallback`은 MQTT가 설정돼 있었지만 HTTPS CREATE 요청 응답으로 완료된 경로다. `created:false`이면 CSE에 있던 동일 자원을 확인한 결과다. 처음 생성한 경로를 이 값으로 판정할 수 없다. SQLite에 관측이 아직 대기 중이거나 로그의 경로가 충돌하면 대조가 실패한다. 기존 세션의 로그가 없으면 옵션을 생략한다.
 
 중앙 수용은 고정 팀 소스의 해시 함수로 Mobius4 관측 본문과 대조한다. `physicalRelayEvidenceMatched`는 Pi의 health 고정 ID가 맞고 같은 중앙 수용 이벤트에 `simulation:false`가 기록됐을 때 `true`다. `--require-physical`은 이 값이 `true`여야 성공 코드 0을 반환한다. 모의 이벤트, health ID 미고정 세션, 중앙 이벤트 미도착은 보고서를 출력하고 종료 코드 1을 반환한다. 중앙 수용만 진단할 때는 옵션을 생략하고 `centralTelemetryAccepted`를 확인한다. 최신 중앙 사본으로 같은 기록을 다시 대조할 수 있다.
 

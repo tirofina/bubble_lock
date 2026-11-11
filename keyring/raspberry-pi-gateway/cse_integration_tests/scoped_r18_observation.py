@@ -8,11 +8,12 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 
 from bubble_gateway.ble_characterize import read_firmware_image, read_usb_boot
 from bubble_gateway.config import ID
 from bubble_gateway.integration_evidence import inspect_integration_observation
-from bubble_gateway.model import canonical, central_observation_id, iso_time, parse_time, utc_now, validate_observation
+from bubble_gateway.model import canonical, central_observation_id, iso_time, parse_time, payload_hash, utc_now, validate_observation
 from bubble_gateway.state_identity import metadata, readonly
 from bubble_gateway.store import Store
 from pi_led_cycle import content_name, verify_observation_resource, write_new_json
@@ -20,6 +21,11 @@ from scoped_command_io import hash_observation, scoped_api, scoped_clients
 from scoped_feather_evidence import read_json
 from scoped_feather_pi import CSE_DEPLOYMENT, R18_BOARD, R18_BRINGUP_FIRMWARES, R18_DEVICE
 from scoped_r18_pulse import GATEWAY, PATHS, TELEMETRY_EVENT_FIELDS
+
+NATIVE_CONFIRMATION_LINE = re.compile(
+    rb"Native observation confirmed rqi=(kr-[0-9a-f]{48}) payloadSha256=([0-9a-f]{64}) "
+    rb"route=(mqtt|https|https-fallback|https-readback) created=(true|false)$"
+)
 
 
 def bound_observation(native, health, *, usb, firmware, observation_pin, health_pin, started_at, captured_at):
@@ -159,8 +165,29 @@ def bind_bringup_report(path, firmware_image, usb, observation):
             "firmwareImage": image, "lastBleSequence": max(sequences)}
 
 
+def bind_native_confirmation(path, rqi, observation):
+    expected_rqi = rqi.encode("ascii")
+    expected_digest = payload_hash(observation).encode("ascii")
+    log_hash = hashlib.sha256()
+    outcomes = set()
+    with path.open("rb") as stream:
+        for line in stream:
+            log_hash.update(line)
+            match = NATIVE_CONFIRMATION_LINE.search(line.rstrip(b"\r\n"))
+            if match is None or match[1] != expected_rqi:
+                continue
+            if match[2] != expected_digest or (match[3], match[4]) == (b"https-readback", b"true"):
+                raise ValueError("Pi native confirmation conflicts with the scoped observation")
+            outcomes.add((match[3], match[4]))
+    if len(outcomes) != 1:
+        raise ValueError("Pi log must contain one unambiguous native confirmation for the scoped observation")
+    route, created = outcomes.pop()
+    return {"requestId": rqi, "route": route.decode("ascii"), "created": created == b"true",
+            "logSha256": log_hash.hexdigest()}
+
+
 def compare_observation(capture, usb, database, team_state, hasher, *, portal_response=None, web_response=None,
-                        bringup_report=None, firmware_image=None):
+                        bringup_report=None, firmware_image=None, pi_log=None):
     if (bringup_report is None) != (firmware_image is None):
         raise ValueError("First bring-up report and firmware image must be supplied together")
     if capture["usbLogSha256"] != usb["logSha256"]:
@@ -220,6 +247,10 @@ def compare_observation(capture, usb, database, team_state, hasher, *, portal_re
         report["webLocationResponse"] = inspect_location_response(web_response, observation, event, web=True)
     if bringup_evidence is not None:
         report["firstBringupEvidence"] = bringup_evidence
+    if pi_log is not None:
+        if pending[native_request]:
+            raise ValueError("Pi snapshot still has the scoped native observation pending")
+        report["nativeDelivery"] = bind_native_confirmation(pi_log, native_request, observation)
     return report
 
 
@@ -257,6 +288,7 @@ def main():
                          help="require the pinned Pi health container and a non-simulated central event")
     compare.add_argument("--bringup-report", type=Path, help="first bring-up BLE report from the same USB boot")
     compare.add_argument("--firmware-image", type=Path, help="firmware.bin used for the first bring-up report")
+    compare.add_argument("--pi-log", type=Path, help="Pi Gateway log containing the scoped native confirmation")
     compare.add_argument("--portal-response", type=Path, help="saved central portal location response")
     compare.add_argument("--web-response", type=Path, help="saved live dashboard location response")
     args = parser.parse_args()
@@ -283,7 +315,8 @@ def main():
         report = compare_observation(artifact, usb, args.database, read_json(args.team_state),
                                      lambda observation: hash_observation(team_utils, observation),
                                      portal_response=portal_response, web_response=web_response,
-                                     bringup_report=args.bringup_report, firmware_image=args.firmware_image)
+                                     bringup_report=args.bringup_report, firmware_image=args.firmware_image,
+                                     pi_log=args.pi_log)
         print(json.dumps(report, indent=2))
         raise SystemExit(0 if comparison_passed(report, require_physical=args.require_physical) else 1)
 

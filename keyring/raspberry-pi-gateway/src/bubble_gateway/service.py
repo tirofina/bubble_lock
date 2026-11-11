@@ -17,7 +17,7 @@ from .config import GatewayConfig, ID, configured_container_pins
 from .model import (authorization_deadline, canonical, iso_time, parse_time, payload_hash, utc_now,
                     validate_command, validate_credential_status, validate_observation)
 from .store import CapacityError, Store
-from .transport import COMMAND_BATCH, HttpRetryDeferred, TransportHub
+from .transport import COMMAND_BATCH, HttpRetryDeferred, NativeConfirmation, TransportHub
 
 LOG = logging.getLogger(__name__)
 RECEIPT_BURST = 4
@@ -561,6 +561,11 @@ class Gateway:
             else:
                 await self._commit_outbox_confirmation(item["rqi"])
                 self.counters["published"] += 1
+                if (getattr(self.config, "native_observation_trace", False)
+                        and isinstance(confirmation, NativeConfirmation) and item.get("native_observation_device_id")):
+                    LOG.info("Native observation confirmed rqi=%s payloadSha256=%s route=%s created=%s",
+                             item["rqi"], payload_hash(item["payload"]), confirmation.route,
+                             "true" if confirmation.created else "false")
                 if item["container"] == "@central/receipt":
                     self.counters["central_receipts_confirmed"] += 1
                 if item["container"] == "@central/telemetry":

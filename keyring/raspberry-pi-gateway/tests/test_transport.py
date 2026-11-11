@@ -17,7 +17,7 @@ from bubble_gateway.core_bridge import telemetry
 from bubble_gateway.model import iso_time, payload_hash, utc_now
 from bubble_gateway.service import Gateway
 from bubble_gateway.store import Store
-from bubble_gateway.transport import (MAX_RETRY_AFTER_SECONDS, HttpRetryDeferred, NativeDeliveryHold, ReceiptParentMismatch,
+from bubble_gateway.transport import (MAX_RETRY_AFTER_SECONDS, HttpRetryDeferred, NativeConfirmation, NativeDeliveryHold, ReceiptParentMismatch,
                                       RemoteResponseError, TransportHub, _mqtt_to, _retry_after)
 from helpers import BINDING, command, config, observation
 
@@ -204,18 +204,25 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_mqtt_application_receipt_avoids_http(self):
         self.mqtt(2001)
-        await self.hub.publish(self.rqi, self.container, self.payload)
+        result = await self.hub.publish(self.rqi, self.container, self.payload)
+        self.assertEqual(result, NativeConfirmation("mqtt", True))
         self.hub._http_json.assert_not_awaited()
         self.assertEqual(self.hub._pending, {})
 
     async def test_broker_acceptance_without_application_receipt_uses_same_cin_http(self):
         self.mqtt()
-        await self.hub.publish(self.rqi, self.container, self.payload)
+        result = await self.hub.publish(self.rqi, self.container, self.payload)
+        self.assertEqual(result, NativeConfirmation("https-fallback", True))
         self.hub._http_json.assert_awaited_once()
         _, kwargs = self.hub._http_json.call_args
         mqtt_cin = json.loads(self.hub._mqtt.publish.call_args.kwargs["payload"])["m2m:rqp"]["pc"]
         self.assertEqual(kwargs["body"], mqtt_cin)
         self.assertEqual(self.hub._pending, {})
+
+    async def test_https_only_confirmation_is_not_counted_as_fallback(self):
+        self.hub.config.m2m_mqtt_enabled = False
+        result = await self.hub.publish(self.rqi, self.container, self.payload)
+        self.assertEqual(result, NativeConfirmation("https", True))
 
     def pin_container(self, observed_ri, *, readback_changes=None, readback_error=None, route="receipt"):
         self.container = getattr(self.hub.config, f"{route}_container")
@@ -318,7 +325,8 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
     async def test_pinned_retry_confirms_existing_instance_without_create(self):
         self.pin_receipt_container("cnt-original")
         self.mqtt(target="cnt-original")
-        await self.hub.publish(self.rqi, self.container, self.payload, confirm_existing=True)
+        result = await self.hub.publish(self.rqi, self.container, self.payload, confirm_existing=True)
+        self.assertEqual(result, NativeConfirmation("https-readback", False))
         self.assertEqual([entry.args for entry in self.hub._http_json.await_args_list],
                          [("GET", "https://cse.invalid/test/receipts"),
                           ("GET", "https://cse.invalid/test/receipts/" + self.rn)])

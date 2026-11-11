@@ -100,6 +100,7 @@ class GatewayConfig:
     commands_enabled: bool = True
     health_container_ri: str | None = None
     ble_observation_timeout: float = 30.0
+    native_observation_trace: bool = False
 
     @classmethod
     def from_env(cls, values: Mapping[str, str] | None = None, *, require_tls_files: bool = True) -> "GatewayConfig":
@@ -242,6 +243,7 @@ class GatewayConfig:
             health_container_ri=health_ri,
             ble_board_revision=board_revision,
             commands_enabled=commands_enabled,
+            native_observation_trace=boolean("NATIVE_OBSERVATION_TRACE", "false"),
         )
 
 
