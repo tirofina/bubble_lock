@@ -1639,3 +1639,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R10, R11. 직전 goal turn은 BLE 관�
 - 기한 만료에 의한 요청 취소, 더 짧은 요청 제한, 늦게 도착한 승인 응답의 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·실제 Pi 접속·중앙 API 정산·실물 명령은 미수행이다. [BLE 통신 메모](../keyring/raspberry-pi-gateway/IO_NOTES.md)
 
 소스 commit `fddc45578a3444a4fac94bb7ae742e1b44db68ae`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `afd7aa7..fddc455`다. goal은 active/progress다.
+
+## 2026-11-11 — 장치별 중앙 승인과 BLE 명령 처리
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R10, R11. 직전 goal turn은 명령 기한에 맞춘 승인 대기를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀의 device별 generation·dispatch 계약을 확인했다.
+
+- Gateway 0.2.86은 등록 장치별 명령 처리 루프를 운용한다. 한 장치의 승인이나 BLE 영수증 대기가 다른 장치의 처리를 막지 않으며, 같은 장치 안에서는 기존 순서대로 한 건씩 시도한다. 이전 등록의 대기 명령은 기존 기한 검사를 거친다.
+- SQLite는 기존 대기 명령의 저장 payload에서 조회용 device ID를 채운다. 명령 본문·해시·영수증은 그대로 보존한다. 느린 승인과 별도 장치 처리, 같은 장치 순서, 이전 DB 대기 행을 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·Pi 접속·실물 명령·운영 DB 업그레이드는 미수행이다. [BLE 통신 메모](../keyring/raspberry-pi-gateway/IO_NOTES.md)
+
+소스 commit `dc18ac12a1da621fb11b37a1651323ad0f93837a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `75dfee3..dc18ac1`다. goal은 active/progress다.
