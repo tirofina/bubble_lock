@@ -1549,3 +1549,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R11, R12. 직전 goal turn은 r18
 - native·CORE·중앙 outbox, 수신·dispatch 명령, outbox 등록 전 영수증과 미전달 credential 영수증을 집계한다. 저장소 주소와 배포 ID의 실제 동일성, 기존 큐와 명령의 정산, 팀 저장소의 인증·권한 및 Pi 전환은 현장 확인이 남았다. DB 경로 변경과 committed WAL을 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·도구 실행·Pi 접속·배포 전환은 미수행이다.
 
 소스 commit `a0e4819564ec22d90c0fad3d3747aad7feb09358`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `2161057..a0e4819`다. goal은 active/progress다.
+
+## 2026-11-11 — 배포 전환 시 비활성 CORE 경로의 큐 보존
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R11, R12. 직전 goal turn은 배포 전환 전 SQLite 집계를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 CORE 전송 계약을 확인했다.
+
+- Gateway 0.2.76은 CORE 브리지가 비활성화된 동안 기존 CORE telemetry·ACK를 선택하지 않는다. SQLite에 기존 행과 시도 횟수를 보존하고 native 전송을 계속한다. 브리지를 다시 켰을 때는 현재 epoch에 해당하는 telemetry와 활성 명령 경로의 ACK를 선택한다.
+- `plan-cutover`는 기존 DB 재사용 시 브리지·명령·중앙 전송 설정과 CORE epoch에 의해 보류될 건수를 보여준다. daemon과 같은 epoch 선택 조건을 사용한다. 두 모드 전환, native 전송 유지, 이전 epoch 및 비활성 중앙 경로의 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·도구 실행·Pi 접속·배포 전환은 미수행이다. [전환 절차](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#전환-전-대기열-확인)
+
+소스 commit `426d9c5f57ce2a2a32f06d061c80dd680d4d1d96`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `601ef7a..426d9c5`다. goal은 active/progress다.
