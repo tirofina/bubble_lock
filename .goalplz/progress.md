@@ -1312,3 +1312,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 Gat
 - ID 전달과 잘못된 ID를 다루는 회귀시험 소스를 추가했다. 빌드·회귀시험·PC 프로비저닝·격리 프록시 갱신·Pi 실행은 미실행이다. `gw-a` 권한과 `gw-b` 교차 차단, Pi→Mobius4 저장 대조가 남아 있다.
 
 소스 commit `a761eaac7945f90dd32bab633be83d920e840a56`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `2569d2e..a761eaa`다. goal은 active/progress다.
+
+## 2026-11-11 — Pi 고정 컨테이너와 Mobius4 관측 증거 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R05. 직전 goal turn은 PC·Pi의 격리 관측 ID 설정을 연결한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 중앙의 관측 수용 이벤트와 CORE·웹 자원 경로 계약을 확인했다.
+
+- 새 ON/OFF 시험은 각 명령 전후의 Mobius4 관측에 인스턴스 유형·이름·자원 ID·부모 ID를 기록한다. Pi DB에 관측 ID가 고정돼 있으면 대조 도구는 모든 부모 ID, 장치·부팅·순번에서 계산한 이름, 해당 요청의 outbox 잔류 여부를 검사한다. 이전 비고정 세션의 관측 컨테이너 검증 결과는 `null`이다. [시험 결과 대조](../keyring/raspberry-pi-gateway/TESTING.md#최신-중앙-api의-시험-결과-대조)
+- 다른 부모, 다른 이름·타입, 기록 누락과 대기열 잔류를 다루는 회귀시험 소스를 추가했다. 빌드·회귀시험·증거 도구 실행·실제 Pi–Mobius4 연동은 미실행이다.
+
+소스 commit `e12a8ecf516f4fb764fffad51a283868f09d4319`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `b7ced7e..e12a8ec`다. goal은 active/progress다.
