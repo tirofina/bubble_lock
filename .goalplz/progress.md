@@ -1504,3 +1504,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 INA219�
 - 명령 목록을 읽지 않는 사전 확인, 명령 작업 중지, 기존 영수증 보존과 관측 전달의 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·Pi 접속·BLE·실제 관측 전달 및 중앙 수용 확인은 미수행이다.
 
 소스 commit `98b5ad988af171329e226ecdedf4aef29245ec9c`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `229a881..98b5ad9`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 관측 전용 전송 증거 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 관측 전용 Pi Gateway 세션을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`의 현재 계약을 확인했다. 중앙 텔레메트리 수용의 관측 ID·본문 해시·시각을 적용했다.
+
+- Gateway 0.2.71의 r18 도구는 USB와 같은 부팅의 최신 Mobius4 관측·health를 읽어 고정 컨테이너와 명령 비활성 상태를 확인한다. 저장한 Pi SQLite의 마지막 순번과 해당 전송 대기 여부를 대조하고, Mobius4 본문의 팀 해시가 중앙 수용 이벤트에 남았는지 확인한다. 중앙 사본에 이벤트가 없으면 대기 상태를 출력한다. [관측 전달 증거 대조](../keyring/raspberry-pi-gateway/TESTING.md#관측-전달-증거-대조)
+- 중앙 수용 지연, 본문 해시 불일치, 다른 부팅·부모 컨테이너를 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·Pi 접속·BLE·실제 관측 전달과 중앙 수용 검증은 미수행이다.
+
+소스 commit `cf9b7e48d65729a471174b47e8a9857d3166edd7`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1fc4360..cf9b7e4`다. goal은 active/progress다.
