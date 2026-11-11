@@ -65,7 +65,8 @@ class R18PulseTests(unittest.IsolatedAsyncioTestCase):
             receipt.update(payloadHash=payload_hash(command), status="APPLIED", ackCode="APPLIED",
                            firmwareRevision=R18_COMMAND_FIRMWARE, bootId="r18-boot", receivedAt=timestamp,
                            readback={"state": True})
-            native = {"ri": "cin-receipt", "pi": "cnt-receipt", "ct": "20261111T000000", "con": receipt}
+            native = {"ty": 4, "rn": receipt_name(command["commandId"]), "ri": "cin-receipt",
+                      "pi": "cnt-receipt", "ct": "20261111T000000", "con": receipt}
         if self.replaced_parent == native["pi"] and (self.output / "PULSE").is_file():
             native["pi"] = "cnt-replacement"
         return 200, 2000, {"m2m:cin": native}
@@ -107,8 +108,11 @@ class R18PulseTests(unittest.IsolatedAsyncioTestCase):
         self.proof.assert_awaited_once()
         result = json.loads((self.output / "pulse-result.json").read_text(encoding="utf-8"))
         scope = json.loads((self.output / "pulse-scope.json").read_text(encoding="utf-8"))
+        receipt = json.loads((self.output / "pulse-receipt.json").read_text(encoding="utf-8"))
         self.assertEqual(scope["containerPins"], self.pins)
         self.assertEqual(result["commandId"], self.issued["commandId"])
+        self.assertEqual(receipt["cseResource"]["rn"], receipt_name(self.issued["commandId"]))
+        self.assertEqual(receipt["cseResource"]["ty"], 4)
         self.assertEqual(result["postPulseObservation"]["sequence"], 6)
         self.assertIsNone(result["physicalPulseMeasured"])
         central = json.loads((self.output / "pulse-central-telemetry.json").read_text(encoding="utf-8"))

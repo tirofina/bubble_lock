@@ -150,7 +150,7 @@ async def run_pulse(operator_post, cse, central_proof, output, *, pins, observat
         async with asyncio.timeout(35):
             native = await wait_for(lambda: read_cin("receipt", rn))
             receipt = native["con"]
-            resource = {key: native.get(key) for key in ("ri", "pi", "ct")}
+            resource = {key: native.get(key) for key in ("ty", "rn", "ri", "pi", "ct")}
             if not isinstance(resource["ct"], str) or not re.fullmatch(r"[0-9]{8}T[0-9]{6}", resource["ct"]):
                 raise RuntimeError("Invalid native r18 receipt identity")
             write_new_json(output / "pulse-receipt.json", {"cseReceipt": receipt, "cseResource": resource})

@@ -123,6 +123,9 @@ def inspect_pulse(directory, team_state, database=None):
         if (any(not isinstance(resource[key], str) or not ID.fullmatch(resource[key]) for key in ("ri", "pi"))
                 or not re.fullmatch(r"[0-9]{8}T[0-9]{6}", resource["ct"])):
             raise ValueError("Invalid saved r18 CSE resource")
+        if ("ty" in resource or "rn" in resource) and (type(resource.get("ty")) is not int
+                or resource["ty"] != 4 or resource.get("rn") != intent["cseReceiptName"]):
+            raise ValueError("Saved r18 CSE receipt has a different resource type or name")
         if pins is not None and parent != pins["receipt"]:
             raise ValueError("Saved r18 CSE receipt has a different container parent")
         datetime.strptime(resource["ct"], "%Y%m%dT%H%M%S")

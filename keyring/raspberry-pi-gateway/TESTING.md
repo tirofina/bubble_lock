@@ -1,5 +1,7 @@
 # Gateway 로컬 시험
 
+Gateway 0.2.67은 펄스 시험에서 저장한 Mobius4 영수증을 장치 저널·Pi 보관본과 오프라인으로 대조한다. 사본의 부모나 자원 이름이 바뀐 경우, 본문이 Pi와 다른 경우의 회귀시험 소스를 추가했다. 빌드·시험·Pi 실행은 미실행이다.
+
 Gateway 0.2.66의 r18 벤치는 펄스 뒤의 Mobius4 OFF 관측을 중앙 API의 수용 이벤트와 대조한다. 회귀시험 소스는 중앙 수용 지연, 본문 해시 불일치, grant 회수 뒤 대조를 다룬다. 빌드·시험·Pi 실행은 미실행이다.
 
 Gateway 0.2.65의 r18 벤치는 관측·health·영수증의 컨테이너 ID를 고정한다. 교체된 health·영수증 경로에서 발급을 중단하고, 다른 부모에서 읽은 영수증과 Pi SQLite를 거절하는 회귀시험 소스를 추가했다. 빌드·시험·Pi 실행은 미실행이다.
@@ -365,7 +367,7 @@ python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_r18_evidence.py
 
 #### r18 Pi 시험 증거 보관
 
-시험 Gateway를 정상 종료한 뒤 r18 전원을 유지한다. `$private_r18_evidence`는 Pi에서 이미 만든 소유자 전용 폴더다. `$team_state_copy`에는 PC 격리 r18 API의 `runtime.json` 사본을, `$pulse_command_id`에는 PC의 `pulse-intent.json`에 저장된 명령 ID를 지정한다.
+시험 Gateway를 정상 종료한 뒤 r18 전원을 유지한다. `$private_r18_evidence`는 Pi에서 이미 만든 소유자 전용 폴더다. `$team_state_copy`와 `$pulse_receipt_copy`는 PC에서 같은 시험의 `runtime.json`과 `pulse-receipt.json`을 복사한 경로다. `$pulse_command_id`에는 PC의 `pulse-intent.json`에 저장된 명령 ID를 지정한다.
 
 ```sh
 tool=keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_pi.py
@@ -379,10 +381,11 @@ env -i PATH=/usr/bin:/bin PYTHONPATH="$source_path" "$pi_python" -m bubble_gatew
 env -i PATH=/usr/bin:/bin PYTHONPATH="$source_path" "$pi_python" -m bubble_gateway.journal_reconcile \
   --env-file "$gateway_env" --device-archive "$private_r18_evidence/device" \
   --gateway-archive "$private_r18_evidence/gateway" --same-boot-command "$pulse_command_id" \
-  --board-revision r18-hand-solder --firmware-revision keyring-0.7.14 --team-state "$team_state_copy"
+  --board-revision r18-hand-solder --firmware-revision keyring-0.7.14 \
+  --team-state "$team_state_copy" --native-receipt "$pulse_receipt_copy"
 ```
 
-`export-env`는 세션의 DB·인증서 파일 경로와 컨테이너 ID를 `gateway.env`에 저장한다. 장치 주소도 포함하므로 시험 폴더 안에 둔다. 기존 환경 파일은 다시 사용한다. `capture-r18`은 같은 시험 잠금과 DB 잠금을 사용하며, 지정한 장치·보드·펌웨어가 맞을 때 저널을 보관한다. 마지막 대조에는 Pi에서 격리 Mobius4로 연결하는 기존 loopback 전달이 필요하다.
+`export-env`는 세션의 DB·인증서 파일 경로와 컨테이너 ID를 `gateway.env`에 저장한다. 장치 주소도 포함하므로 시험 폴더 안에 둔다. 기존 환경 파일은 다시 사용한다. `capture-r18`은 같은 시험 잠금과 DB 잠금을 사용하며, 지정한 장치·보드·펌웨어가 맞을 때 저널을 보관한다. `--native-receipt`를 쓰는 마지막 대조는 Pi의 Mobius4 loopback 전달을 닫은 뒤에도 실행할 수 있다. 이전 버전의 영수증을 사용할 때는 이 옵션을 빼고 loopback 전달을 유지한다.
 
 ## 이전 시험 기록
 

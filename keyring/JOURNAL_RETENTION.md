@@ -116,6 +116,12 @@ bubble-keyring-reconcile --env-file "$GATEWAY_ENV" \
 
 r18의 ON은 최대 1,000ms의 펄스다. 펄스 길이와 출력이 꺼지는 시점은 계측기로 기록하고 같은 command ID를 붙인다. 이후 중앙 정산은 아래 절차로 대조한다.
 
+#### 저장한 Mobius4 영수증으로 오프라인 대조
+
+Gateway 0.2.67 이상에서 실행한 r18 펄스의 `pulse-receipt.json` 사본을 위 명령의 `--native-receipt "$PULSE_RECEIPT_COPY"`로 지정한다. 같은 시험의 `gateway.env`와 장치·Pi 보관본을 사용한다. 비교 도구는 저장된 CIN 유형·이름·부모 ID를 명령 ID와 Pi의 고정 컨테이너 ID에 대조한 뒤, 영수증 본문을 Pi 보관본과 비교한다. 이 모드의 대조는 Mobius4와 중앙 API 접속 없이 실행된다. 중앙 정산까지 대조할 때는 아래의 상태 사본도 지정한다.
+
+보고서의 `nativeReceiptSource: captured`와 `nativeReceiptArtifactSha256`은 비교에 사용한 사본을 식별한다. 원본 자원 유형·이름이 없는 이전 펄스 기록은 위 기본 명령으로 Mobius4에서 다시 읽는다.
+
 #### 최신 중앙 API 상태 대조
 
 [r18 격리 중앙 API](dev/mobius4/README.md#r18-격리-명령-api)로 실행한 경우, 해당 시험의 `.local/scoped/command-api-r18/runtime.json`을 비공개 위치에 복사한다. Gateway 0.2.61의 위 단일 명령 대조에 `--team-state "$TEAM_STATE_COPY"`를 추가한다. 장치·Pi·Mobius4 기록이 먼저 일치해야 중앙 명령 해시, 영수증 본문, 실행 시작·정산 이벤트와 시각을 대조한다. 보고서에는 두 이벤트 ID와 상태 사본의 SHA-256을 남긴다.

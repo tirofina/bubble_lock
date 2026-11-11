@@ -22,6 +22,7 @@ from .store import Store
 from .transport import RemoteResponseError, TransportHub
 
 TEAM_STATE_MAX_BYTES = 32 * 1024 * 1024
+NATIVE_RECEIPT_MAX_BYTES = 16 * 1024
 
 
 def _read_gateway_archive(directory: Path, expected: dict, command_ids: list[str]) -> tuple[str, dict]:
@@ -101,11 +102,24 @@ def _compared_result(record, receipt, *, expected_firmware=None):
     return "matched_applied" if status == "APPLIED" else "matched_readback_failure"
 
 
+def _captured_receipt(artifact, command_id, config):
+    resource = artifact.get("cseResource")
+    receipt = artifact.get("cseReceipt")
+    request_id = Store.request_id("receipt", command_id)
+    name = "gw-" + hashlib.sha256(request_id.encode("utf-8")).hexdigest()
+    if (config.receipt_container_ri is None or not isinstance(resource, dict) or not isinstance(receipt, dict)
+            or resource.get("pi") != config.receipt_container_ri or resource.get("rn") != name
+            or type(resource.get("ty")) is not int or resource["ty"] != 4 or receipt.get("commandId") != command_id):
+        raise StateIdentityError("RECONCILE_CAPTURED_RECEIPT_BINDING")
+    return {**resource, "con": receipt}
+
+
 async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive: Path, *,
                     same_boot_command: str | None = None, board_revision: str | None = None,
-                    firmware_revision: str | None = None, team_state: dict | None = None) -> dict:
-    if team_state is not None and same_boot_command is None:
-        raise ValueError("Team state comparison requires a same-boot command")
+                    firmware_revision: str | None = None, team_state: dict | None = None,
+                    native_receipt: dict | None = None) -> dict:
+    if (team_state is not None or native_receipt is not None) and same_boot_command is None:
+        raise ValueError("Saved receipt and team state comparison require a same-boot command")
     journal, records = read_archive(device_archive)
     identity = journal["identity"]
     device_id = identity["deviceId"]
@@ -126,11 +140,14 @@ async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive
         records = [record]
     archive_id, rows = _read_gateway_archive(gateway_archive, configured_binding(config),
                                              [record["commandId"] for record in records])
-    transport = TransportHub(replace(config, mqtt_enabled=False, core_bridge_enabled=False))
+    captured = _captured_receipt(native_receipt, same_boot_command, config) if native_receipt is not None else None
+    transport = None if captured is not None else TransportHub(
+        replace(config, mqtt_enabled=False, core_bridge_enabled=False))
     results = []
     central = {"status": "journal_review_required", "originalApplicationMatched": False} if team_state is not None else None
-    await transport.start()
     try:
+        if transport is not None:
+            await transport.start()
         for record in records:
             command_id = record["commandId"]
             row = rows.get(command_id)
@@ -152,14 +169,16 @@ async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive
             if selected is not None:
                 result["gatewayAckCode"] = receipt["ackCode"]
             result["gatewayReceiptSha256"] = payload_hash(receipt)
-            try:
-                cin = await transport.read_content_instance(
-                    Store.request_id("receipt", command_id), config.receipt_container)
-            except RemoteResponseError as exc:
-                if (exc.status_code, exc.rsc) != (404, 4004):
-                    raise
-                result["result"] = "missing_cse_receipt"
-                continue
+            cin = captured
+            if transport is not None:
+                try:
+                    cin = await transport.read_content_instance(
+                        Store.request_id("receipt", command_id), config.receipt_container)
+                except RemoteResponseError as exc:
+                    if (exc.status_code, exc.rsc) != (404, 4004):
+                        raise
+                    result["result"] = "missing_cse_receipt"
+                    continue
             content = cin["con"]
             result["cseReceiptSha256"] = payload_hash(content)
             resource_id, created = cin.get("ri"), cin.get("ct")
@@ -190,9 +209,11 @@ async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive
                         central.update(proof, status="settlement_matched",
                                        originalApplicationMatched=result["gatewayDelivered"] and receipt["ackCode"] == "APPLIED")
     finally:
-        await transport.close()
+        if transport is not None:
+            await transport.close()
     return {"reportVersion": 1, "checkedAt": iso_time(), "gatewayId": config.gateway_id, "deviceId": device_id,
             "cseId": config.cse_id, "cseDeploymentId": config.cse_deployment_id, "receiptContainer": config.receipt_container,
+            "nativeReceiptSource": "captured" if captured is not None else "live",
             "gatewayArchiveId": archive_id, "deviceSnapshotId": journal["deviceSnapshot"]["snapshotId"],
             "deviceRecordsSha256": journal["files"][0]["sha256"], "recordCount": len(records),
             **({"selectedCommand": selected} if selected is not None else {}),
@@ -213,12 +234,13 @@ def main():
     parser.add_argument("--board-revision", help="Expected board revision for --same-boot-command")
     parser.add_argument("--firmware-revision", help="Expected firmware revision for --same-boot-command")
     parser.add_argument("--team-state", type=Path, help="Private scoped integration runtime.json snapshot")
+    parser.add_argument("--native-receipt", type=Path, help="Saved pulse-receipt.json for offline same-boot comparison")
     args = parser.parse_args()
     if args.same_boot_command is not None:
         if not ID.fullmatch(args.same_boot_command) or not args.board_revision or not args.firmware_revision:
             parser.error("--same-boot-command requires a valid command ID, --board-revision and --firmware-revision")
-    elif args.board_revision is not None or args.firmware_revision is not None or args.team_state is not None:
-        parser.error("Revision options and --team-state require --same-boot-command")
+    elif any(value is not None for value in (args.board_revision, args.firmware_revision, args.team_state, args.native_receipt)):
+        parser.error("Revision options, --team-state and --native-receipt require --same-boot-command")
     try:
         read_env_file(args.env_file)
         state = None
@@ -226,11 +248,18 @@ def main():
             with args.team_state.open("rb") as stream:
                 raw = stream.read(TEAM_STATE_MAX_BYTES + 1)
             state = _object(raw, TEAM_STATE_MAX_BYTES)
+        captured = None
+        if args.native_receipt is not None:
+            with args.native_receipt.open("rb") as stream:
+                receipt_bytes = stream.read(NATIVE_RECEIPT_MAX_BYTES + 1)
+            captured = _object(receipt_bytes, NATIVE_RECEIPT_MAX_BYTES)
         report = asyncio.run(reconcile(GatewayConfig.from_env(), args.device_archive, args.gateway_archive,
                                        same_boot_command=args.same_boot_command, board_revision=args.board_revision,
-                                       firmware_revision=args.firmware_revision, team_state=state))
+                                       firmware_revision=args.firmware_revision, team_state=state, native_receipt=captured))
         if state is not None:
             report["integrationStateSha256"] = hashlib.sha256(raw).hexdigest()
+        if captured is not None:
+            report["nativeReceiptArtifactSha256"] = hashlib.sha256(receipt_bytes).hexdigest()
         print(canonical(report))
     except KeyboardInterrupt:
         raise SystemExit(130) from None

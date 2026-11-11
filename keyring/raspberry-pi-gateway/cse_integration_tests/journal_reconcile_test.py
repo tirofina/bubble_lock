@@ -15,6 +15,7 @@ import uuid
 
 import httpx
 from bubble_gateway.config import GatewayConfig
+from bubble_gateway.journal_reconcile import reconcile
 from bubble_gateway.model import canonical, iso_time, parse_time, payload_hash
 from bubble_gateway.service import Gateway
 from bubble_gateway.state_archive import archive
@@ -134,7 +135,7 @@ class JournalReconcileTests(unittest.IsolatedAsyncioTestCase):
                 if name == "applied":
                     gateway.store.stage_receipts(self.parent, False)
                     gateway.store.delivered(rqi)
-                if current_boot:
+                if current_boot and name == "applied":
                     self.integration_state = self.directory / "runtime.json"
                     self.integration_state.write_text(canonical(self.applied_integration_state(cmd, receipt)),
                                                       encoding="utf-8")
@@ -279,6 +280,33 @@ class JournalReconcileTests(unittest.IsolatedAsyncioTestCase):
         status, stdout, stderr = await self.audit("--same-boot-command", "unconfirmed", *revisions)
         self.assertEqual(status, 0, stderr.decode())
         self.assertEqual(json.loads(stdout)["results"][0]["result"], "device_result_mismatch")
+
+    async def test_same_boot_reconciles_saved_native_receipt_without_transport(self):
+        parent = (await self.cse("GET", self.parent))[2]["m2m:cnt"]["ri"]
+        self.env.update(M2M_CSE_DEPLOYMENT_ID="reconcile-test-cse", M2M_RECEIPT_CONTAINER_RI=parent)
+        with patch.dict(os.environ, self.env, clear=True):
+            self.config = GatewayConfig.from_env()
+        await self.create_archives(current_boot=True)
+        native = await self.hub.read_content_instance(Store.request_id("receipt", "applied"), self.parent)
+        artifact = {"cseResource": {key: native[key] for key in ("ty", "rn", "ri", "pi", "ct")},
+                    "cseReceipt": native["con"]}
+        state = json.loads(self.integration_state.read_bytes())
+        options = {"same_boot_command": "applied", "board_revision": "r18",
+                   "firmware_revision": "keyring-0.7.2", "team_state": state}
+        with patch("bubble_gateway.journal_reconcile.TransportHub", side_effect=AssertionError("unexpected transport")):
+            report = await reconcile(self.config, self.device_archive, self.gateway_archive,
+                                     native_receipt=artifact, **options)
+            self.assertEqual(report["nativeReceiptSource"], "captured")
+            self.assertEqual(report["results"][0]["nativeResourceId"], native["ri"])
+            self.assertTrue(report["integrationSettlement"]["originalApplicationMatched"])
+            for field, wrong_value in (("pi", "replacement-container"), ("rn", "another-receipt")):
+                with self.subTest(field=field), self.assertRaisesRegex(RuntimeError, "RECONCILE_CAPTURED_RECEIPT_BINDING"):
+                    altered = dict(artifact, cseResource={**artifact["cseResource"], field: wrong_value})
+                    await reconcile(self.config, self.device_archive, self.gateway_archive, native_receipt=altered, **options)
+            altered = dict(artifact, cseReceipt=dict(native["con"], readback={"state": False}))
+            mismatch = await reconcile(self.config, self.device_archive, self.gateway_archive,
+                                       native_receipt=altered, **options)
+            self.assertEqual(mismatch["results"][0]["result"], "cse_receipt_mismatch")
 
 
 if __name__ == "__main__":
