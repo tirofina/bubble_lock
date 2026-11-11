@@ -1231,3 +1231,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01~R03, R05. 직전 goal turn은 Feat
 - 기존 0.2.0의 GPIO·Mobius4·중앙 정산 증거를 완료 상태 표에 반영했다. 0.2.1 화면 관측과 잘못된 명령·시각을 다루는 회귀시험 소스를 추가했다. 이번 도구 실행·빌드·회귀시험·flash·실물 검증은 미실행이다. 제작 PCB와 최신 중앙 API의 실물 통합은 대기 중이다.
 
 소스 commit `426ec9d25344f53f75686490e67f46db37699c7e`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `fec9536..426ec9d`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 USB 부팅과 Pi BLE 기록 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R05. 직전 goal turn은 Feather 화면 관측과 명령 증거 연결을 올린 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`에서 Gateway 등록, BLE 계약과 웹 영수증 매핑을 확인했다. 팀 head는 직전과 같다.
+
+- `keyring-0.7.14-bringup`은 USB CDC에 보드·펌웨어 revision, BLE에 사용하는 부팅 ID와 motor·aux·fault 상태를 기록한다. Gateway `0.2.48`의 `--usb-boot-log`는 한 번의 부팅 로그를 읽고, 알림을 수집한 모든 BLE 세션이 그 부팅인지 대조한다. 다른 부팅 또는 USB 출력·fault 활성은 `MISMATCH`로 보고한다. 결과에는 로그 SHA-256과 일치 여부를 기록하며 원본 부팅 ID는 로컬 로그에만 둔다. [r18 첫 구동](../keyring/pcb/BRING_UP.md)
+- 로그 형식 오류, 다른 부팅, 두 번째 부팅의 알림, 출력 활성과 부팅 ID 비공개를 다루는 회귀시험 소스를 추가했다. 빌드·회귀시험·캡처 도구 실행·flash·전원 인가·Pi 접속은 미실행이다. 제작 PCB가 도착하면 USB와 BLE 기록, 전원 레일의 실측이 필요하다.
+
+소스 commit `9644be7a19dfb6c9aa39b774be2549cd3d7c64c0`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `0c12529..9644be7`다. goal은 active/progress다.
