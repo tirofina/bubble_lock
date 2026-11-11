@@ -29,9 +29,10 @@ USB_BOOT_LINE = re.compile(
     r"KEYRING bringup: board=(?P<board>\S+) firmware=(?P<firmware>\S+) boot=(?P<boot>[0-9a-f]{32}) "
     r"motor=(?P<motor>[01]) aux=(?P<aux>[01]) fault=(?P<fault>[01]) "
     r"fuel=(?P<batteryStatus>ok|unavailable) accel=(?P<accelStatus>ok|unavailable) "
-    r"motion=(?P<motion>ready|unavailable)"
+    r"motion=(?P<motion>ready|unavailable)(?: panel=(?P<panel>st7789|jd9853))?"
 )
 BRINGUP_SENSOR_STATUS = ("batteryStatus", "accelStatus", "motion")
+BRINGUP_DISPLAY_PROFILES = {"keyring-0.7.15-st7789-bringup": "st7789", "keyring-0.7.15-jd9853-bringup": "jd9853"}
 
 
 def read_usb_boot(path: Path, board: str, firmware: str) -> dict:
@@ -42,11 +43,15 @@ def read_usb_boot(path: Path, board: str, firmware: str) -> dict:
     lines = {line for line in raw.decode("utf-8-sig", errors="replace").splitlines()
              if line.startswith("KEYRING bringup:")}
     record = USB_BOOT_LINE.fullmatch(lines.pop()) if len(lines) == 1 else None
-    if record is None or record["board"] != board or record["firmware"] != firmware:
+    if (record is None or record["board"] != board or record["firmware"] != firmware
+            or record["panel"] != BRINGUP_DISPLAY_PROFILES.get(firmware)):
         raise ValueError("USB log must contain one matching r18 bring-up record")
-    return {"bootId": record["boot"], "logSha256": hashlib.sha256(raw).hexdigest(),
-            "motorActive": record["motor"] == "1", "auxEnabled": record["aux"] == "1",
-            "mainFault": record["fault"] == "1", "sensorStatus": {key: record[key] for key in BRINGUP_SENSOR_STATUS}}
+    evidence = {"bootId": record["boot"], "logSha256": hashlib.sha256(raw).hexdigest(),
+                "motorActive": record["motor"] == "1", "auxEnabled": record["aux"] == "1",
+                "mainFault": record["fault"] == "1", "sensorStatus": {key: record[key] for key in BRINGUP_SENSOR_STATUS}}
+    if record["panel"] is not None:
+        evidence["displayProfile"] = record["panel"]
+    return evidence
 
 
 def wake_result(sessions: list[dict], rows: list[dict], expected: str, release_ms: int | None) -> dict:
@@ -385,6 +390,8 @@ def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mo
         same_boot = observed_boots == {boots.get(usb_boot["bootId"])} if observed_boots else None
         pins_safe = not (usb_boot["motorActive"] or usb_boot["auxEnabled"] or usb_boot["mainFault"])
         bringup["usbBoot"] = {key: usb_boot[key] for key in ("logSha256", "motorActive", "auxEnabled", "mainFault", "sensorStatus")}
+        if "displayProfile" in usb_boot:
+            bringup["usbBoot"]["displayProfile"] = usb_boot["displayProfile"]
         bringup["usbBoot"].update(sameBoot=same_boot, pinsSafe=pins_safe)
         if same_boot is None:
             bringup["missing"].append("usbBootMatch")

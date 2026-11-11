@@ -221,6 +221,28 @@ class BringupCaptureTests(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, "one matching r18 bring-up record"):
                         read_usb_boot(path, self.board, self.firmware)
 
+    def test_display_bringup_profile_matches_usb_revision_and_same_ble_boot(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "usb.log"
+            for panel in ("st7789", "jd9853"):
+                firmware = f"keyring-0.7.15-{panel}-bringup"
+                raw = self.usb_log().replace(self.firmware.encode(), firmware.encode())
+                full = raw.replace(b"motion=ready\r\n", f"motion=ready panel={panel}\r\n".encode())
+                with self.subTest(panel=panel):
+                    path.write_bytes(full)
+                    evidence = read_usb_boot(path, self.board, firmware)
+                    events = [dict(row, bootId=self.boot) for row in self.events()]
+                    report = self.report(events, usb_boot=evidence)
+                    self.assertEqual(report["bringup"]["usbBoot"]["displayProfile"], panel)
+                    self.assertTrue(report["bringup"]["usbBoot"]["sameBoot"])
+                    path.write_bytes(raw)
+                    with self.assertRaisesRegex(ValueError, "one matching r18 bring-up record"):
+                        read_usb_boot(path, self.board, firmware)
+                    other = "st7789" if panel == "jd9853" else "jd9853"
+                    path.write_bytes(full.replace(f"panel={panel}".encode(), f"panel={other}".encode()))
+                    with self.assertRaisesRegex(ValueError, "one matching r18 bring-up record"):
+                        read_usb_boot(path, self.board, firmware)
+
     def test_usb_boot_match_is_required_when_supplied_and_raw_identity_is_private(self):
         initial_status = dict(self.ready_sensor_status, accelStatus="unavailable")
         raw = self.usb_log().replace(b"accel=ok", b"accel=unavailable")

@@ -40,4 +40,17 @@ USB 모니터를 열고 `?`를 보내면 현재 부팅의 `KEYRING bringup` 줄�
 | 재연결 | [Pi 재연결 전후 버튼 누계 기록](../raspberry-pi-gateway/TESTING.md#r18-재연결-전후-버튼-누계-기록)에서 링크 복구 시간, 동일 부팅, sequence·누계 연속성 확인 |
 | 후속 시험 | 실장한 화면·배터리·외장 부하를 확인한 뒤 별도 승인으로 정식 `keyring_r18` 프로필의 명령·출력·충전·절전 시험 수행. [r18 실물 명령 한 건 대조](../JOURNAL_RETENTION.md#r18-실물-명령-한-건-대조)에 장치·Pi·Mobius4 증거를 연결 |
 
+## 화면만 연결한 두 번째 구동
+
+기본 첫 구동을 마친 뒤 전원을 끄고, [J3 커넥터 표](r18/external_parts/Connector_pinout.csv)에 맞춰 확인한 LCD 한 개를 연결한다. 모터·스피커·SD는 분리된 상태로 유지한다. 장착한 패널에 해당하는 프로필 하나를 선택한다. 빌드·업로드·USB 모니터 명령의 환경 이름만 바꾼다.
+
+| 장착한 LCD | PlatformIO 환경 | Pi 펌웨어 revision |
+|---|---|---|
+| 1.54인치 ST7789 | `keyring_r18_bringup_st7789` | `keyring-0.7.15-st7789-bringup` |
+| 2.01인치 JD9853 | `keyring_r18_bringup_jd9853` | `keyring-0.7.15-jd9853-bringup` |
+
+USB 초기 구동 줄의 `panel`과 `motor=0 aux=0 fault=0`을 확인한다. 확인 버튼을 눌러 백라이트를 켜고 흰색 테두리의 네 변, 왼쪽부터 빨강·초록·파랑 막대, 패널 이름·가로×세로·`CONFIRM`을 기록한다. 비상 버튼을 누르면 `PANIC`을 표시한다. 버튼을 떼어도 마지막 표시는 백라이트가 켜져 있는 동안 유지된다. 새 누름이 없으면 설정된 창이 만료될 때 백라이트가 꺼진다. Pi 초기 구동 기록에는 표의 revision과 같은 부팅의 USB 로그를 지정한다. 사진이나 영상은 같은 시험의 비공개 기록에 둔다.
+
+Pi JSON의 `bringup.usbBoot.displayProfile`은 USB 로그와 일치한 빌드 선택값이다. 테두리·색상·문구는 패널에서 관찰한 결과를 기록한다. JD9853은 기존 초기화 경로를 쓰며 구매한 패널의 전원·감마 설정과 실제 표시가 남아 있다. [패널 설정](../firmware/PERIPHERALS.md#jd9853-미확인-범위)
+
 passkey·BLE 주소·원시 관측은 로컬 증거에 보관한다. 빌드·플래시·전원 인가·Pi 접속은 미실행이다.

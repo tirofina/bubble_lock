@@ -41,7 +41,16 @@ extern "C" esp_err_t __wrap_nvs_flash_init() {
 
 namespace {
 #if KEYRING_R18_BRINGUP
+#if KEYRING_R18_BRINGUP_DISPLAY == 1
+constexpr char FirmwareRevision[] = "keyring-0.7.15-st7789-bringup";
+constexpr char BringupPanelField[] = " panel=st7789";
+#elif KEYRING_R18_BRINGUP_DISPLAY == 2
+constexpr char FirmwareRevision[] = "keyring-0.7.15-jd9853-bringup";
+constexpr char BringupPanelField[] = " panel=jd9853";
+#else
 constexpr char FirmwareRevision[] = "keyring-0.7.15-bringup";
+constexpr char BringupPanelField[] = "";
+#endif
 char bringupBootRecord[256] = {};
 #else
 constexpr char FirmwareRevision[] = "keyring-0.7.14";
@@ -330,6 +339,10 @@ struct Button {
 };
 Button confirm{board::Confirm}, panic{board::Panic};
 ButtonPresses buttonPresses;
+#if KEYRING_R18_BRINGUP_DISPLAY
+enum class DisplayTestButton { None, Confirm, Panic };
+DisplayTestButton displayTestButton = DisplayTestButton::None;
+#endif
 
 bool readRegisters(uint8_t address, uint8_t reg, uint8_t *data, size_t count) {
   Wire.beginTransmission(address); Wire.write(reg);
@@ -1027,7 +1040,7 @@ void setup() {
     return;
   }
   initializeAudioWhenQuiet(); // I2S installation also waits for the other receiver's quiet state.
-  if (!ObservationOnly) auxRail::begin();
+  if (!ObservationOnly || KEYRING_R18_BRINGUP_DISPLAY) auxRail::begin();
   peripherals.begin();
   initBle(); sampleSensors(); publishObservation();
   Serial.printf("KEYRING ready: %s, storage=%s, radioSleep=%s\n", deviceId,
@@ -1036,11 +1049,11 @@ void setup() {
 #if KEYRING_R18_BRINGUP
   // Retain the initial readbacks even if the USB console attaches after setup.
   const int length = snprintf(bringupBootRecord, sizeof(bringupBootRecord),
-      "KEYRING bringup: board=%s firmware=%s boot=%s motor=%d aux=%d fault=%d fuel=%s accel=%s motion=%s",
+      "KEYRING bringup: board=%s firmware=%s boot=%s motor=%d aux=%d fault=%d fuel=%s accel=%s motion=%s%s",
       board::Revision, FirmwareRevision, bootId,
       static_cast<int>(readState()), gpio_get_level(static_cast<gpio_num_t>(board::AuxEnable)),
       digitalRead(board::MainFaultN) == LOW, sensors.fuel ? "ok" : "unavailable",
-      sensors.accel ? "ok" : "unavailable", motion.ready() ? "ready" : "unavailable");
+      sensors.accel ? "ok" : "unavailable", motion.ready() ? "ready" : "unavailable", BringupPanelField);
   if (length > 0 && static_cast<size_t>(length) < sizeof(bringupBootRecord)) {
     Serial.println(bringupBootRecord);
   } else {
@@ -1082,6 +1095,10 @@ void loop() {
   }
   bool changedConfirm = confirm.update(now), changedPanic = panic.update(now);
   buttonPresses.record(changedConfirm && confirm.pressed, changedPanic && panic.pressed, panic.pressed);
+#if KEYRING_R18_BRINGUP_DISPLAY
+  if (changedPanic && panic.pressed) displayTestButton = DisplayTestButton::Panic;
+  else if (changedConfirm && confirm.pressed && !panic.pressed) displayTestButton = DisplayTestButton::Confirm;
+#endif
   if ((changedConfirm && confirm.pressed) || (changedPanic && panic.pressed)) peripherals.show();
   if (changedConfirm || changedPanic) observationDirty = true;
   if (confirm.pressed || panic.pressed || changedConfirm || changedPanic) powerState::activity(now);
@@ -1103,12 +1120,16 @@ void loop() {
   if (uptime() - lastSensorRead >= board::ObserveMs) { sampleSensors(); observationDirty = true; }
   if (uptime() - lastObservation >= board::ObserveMs) observationDirty = true;
   if (observationDirty) publishObservation();
-  if (!ObservationOnly) auxRail::service();
+  if (!ObservationOnly || KEYRING_R18_BRINGUP_DISPLAY) auxRail::service();
   if (now >= nextScreenAt) {
     KeyringScreen screen;
     screen.linked = connected; screen.authenticated = authenticated;
     screen.batteryValid = sensors.fuel; screen.battery = sensors.battery; screen.batteryLow = sensors.batteryLow;
     screen.confirm = confirm.pressed; screen.panic = panic.pressed;
+#if KEYRING_R18_BRINGUP_DISPLAY
+    screen.confirm = displayTestButton == DisplayTestButton::Confirm;
+    screen.panic = displayTestButton == DisplayTestButton::Panic;
+#endif
     screen.motor = readState(); screen.fault = digitalRead(board::MainFaultN) == LOW;
     screen.journal = storageHealthy; screen.motionEvents = motion.events();
     screen.supplyValid = supply.valid(uptime()); screen.supplyCurrentMa = supply.reading().currentUa / 1000.0f;

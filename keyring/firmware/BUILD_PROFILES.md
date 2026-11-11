@@ -20,6 +20,8 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.7.0.
 
 `keyring_r18_bringup`은 기존 로컬 provisioning의 장치 ID·passkey를 쓰는 첫 구동용 프로필이다. BLE revision은 `keyring-0.7.15-bringup`이며 LCD·오디오 재생·SD·deep sleep 및 BLE 명령·저널을 비활성화한다. USB 모니터에서 `?`를 보내면 부팅 ID와 초기 GPIO 읽기값을 다시 받을 수 있다. 정식 `keyring_r18`의 revision은 `keyring-0.7.14`다. 이 첫 구동용 프로필의 빌드와 실물 구동은 미실행이다. [구동 절차](../pcb/BRING_UP.md)
 
+`keyring_r18_bringup_st7789`와 `keyring_r18_bringup_jd9853`는 첫 구동 뒤 장착한 패널 한 개를 점검한다. 로컬 provisioning은 장치 등록과 패널 geometry 설정에 사용하고, 컨트롤러는 환경 이름으로 선택한다. 명령·저널·오디오 재생·SD·deep sleep은 비활성 상태다. 두 프로필의 빌드·실물 화면 시험은 미실행이다. [화면만 연결한 두 번째 구동](../pcb/BRING_UP.md#화면만-연결한-두-번째-구동)
+
 ```sh
 pio run -e keyring_compile_minimal -e keyring_compile_st7789 -e keyring_compile_jd9853
 ```
