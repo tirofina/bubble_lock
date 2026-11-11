@@ -271,6 +271,8 @@ tool=keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_pi.py
 
 격리 TLS 프록시에 컨테이너 권한을 준비한 경우, 새 세션의 `prepare`에 `--receipt-container-ri "$gw_a_receipt_ri"`를 추가한다. 이 값에는 PC 준비 도구의 `SCOPED_RECEIPT_PIN gw-a` 출력에서 읽은 ID를 넣는다.
 
+관측 ID를 고정하려면 PC의 `-PinObservationRoute` 출력에서 `SCOPED_OBSERVATION_PIN gw-a` 뒤의 값을 읽어 같은 `prepare`에 `--observation-container-ri "$gw_a_observation_ri"`를 추가한다. 중앙 저장소를 새로 구분할 때는 `--pc-api-deployment-id "$central_datastore_id"`도 넣는다. 이 ID는 운영자가 배정하고 중앙 팀 소스 커밋은 `--api-team-revision`에서 별도로 대조한다. 기존 세션의 DB와 다른 고정값을 쓰려면 새 세션을 준비한다. [PC 관측 권한 준비](../dev/mobius4/README.md#feather-벤치-명령-api)
+
 핀을 지정한 세션은 두 SSH 포워딩이 열린 상태에서 아래 명령으로 전송 경로를 점검한다.
 
 ```sh

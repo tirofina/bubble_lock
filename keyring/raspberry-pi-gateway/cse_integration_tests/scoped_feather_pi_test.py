@@ -66,3 +66,20 @@ class ScopedPiProfileTests(unittest.TestCase):
             self.assertEqual(gateway_environment(lcd, root)["FIRMWARE_REVISION_ALLOWLIST"], "feather-probe-0.2.1")
             with self.assertRaisesRegex(ValueError, "Unknown Feather command firmware"):
                 gateway_environment(dict(profile, firmwareRevision="feather-probe-0.1.1"), root)
+
+    def test_new_session_can_forward_both_container_pins_and_the_central_deployment(self):
+        root = Path.cwd()
+        profile = {"version": 1, "address": "00:00:00:00:00:01", "csePort": 8760, "apiPort": 8788,
+                   "tlsDirectory": str(root), "apiMode": "integration", "cseDeploymentId": "scoped-mobius4",
+                   "receiptContainerRi": "cnt-receipt", "observationContainerRi": "cnt-observation",
+                   "pcApiDeploymentId": "central-bench-a"}
+        with patch("scoped_feather_pi.load_tls", return_value=(root / "ca.pem", root / "cert.pem",
+                                                              root / "key.pem", self.context)):
+            env = gateway_environment(profile, root)
+            self.assertEqual(env["M2M_RECEIPT_CONTAINER_RI"], "cnt-receipt")
+            self.assertEqual(env["M2M_OBSERVATION_CONTAINER_RI"], "cnt-observation")
+            self.assertEqual(env["PC_API_DEPLOYMENT_ID"], "central-bench-a")
+            for invalid in (dict(profile, observationContainerRi="/foreign/path"),
+                            dict(profile, cseDeploymentId="other-cse"), dict(profile, pcApiDeploymentId="a/b")):
+                with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                    gateway_environment(invalid, root)

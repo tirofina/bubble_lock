@@ -17,6 +17,7 @@ API_PORTS = {"legacy": 8787, "integration": 8788}
 INTEGRATION_TEAM_REVISION = "bc2a45dfcc014b7cdb0a57a03aca2c04ca8eb989"
 DISPLAY_FIRMWARE = "feather-probe-0.2.1"
 COMMAND_FIRMWARES = ("feather-probe-0.2.0", DISPLAY_FIRMWARE)
+IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,63}")
 
 
 class ScopedApiError(ValueError):
@@ -103,12 +104,18 @@ def gateway_environment(profile, session, *, verify_api=False):
         if profile["cseDeploymentId"] != CSE_DEPLOYMENT:
             raise ValueError("Expected the scoped Mobius4 deployment")
         environment["M2M_CSE_DEPLOYMENT_ID"] = profile["cseDeploymentId"]
-    if "receiptContainerRi" in profile:
-        ri = profile["receiptContainerRi"]
-        if (profile.get("cseDeploymentId") != CSE_DEPLOYMENT or not isinstance(ri, str)
-                or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,63}", ri)):
-            raise ValueError("Expected a verified scoped receipt container ID")
-        environment["M2M_RECEIPT_CONTAINER_RI"] = ri
+    for field, variable in (("receiptContainerRi", "M2M_RECEIPT_CONTAINER_RI"),
+                            ("observationContainerRi", "M2M_OBSERVATION_CONTAINER_RI")):
+        if field in profile:
+            ri = profile[field]
+            if profile.get("cseDeploymentId") != CSE_DEPLOYMENT or not isinstance(ri, str) or not IDENTIFIER.fullmatch(ri):
+                raise ValueError(f"Expected a verified scoped resource ID for {field}")
+            environment[variable] = ri
+    if "pcApiDeploymentId" in profile:
+        deployment = profile["pcApiDeploymentId"]
+        if not isinstance(deployment, str) or not IDENTIFIER.fullmatch(deployment):
+            raise ValueError("Expected a central API deployment ID")
+        environment["PC_API_DEPLOYMENT_ID"] = deployment
     if verify_api and mode == "integration":
         verify_integration_api(api, revision, context)
     return environment
@@ -131,6 +138,10 @@ def prepare(args, session):
         raise ValueError("A team revision requires integration mode")
     if args.receipt_container_ri is not None:
         profile["receiptContainerRi"] = args.receipt_container_ri
+    if args.observation_container_ri is not None:
+        profile["observationContainerRi"] = args.observation_container_ri
+    if args.pc_api_deployment_id is not None:
+        profile["pcApiDeploymentId"] = args.pc_api_deployment_id
     gateway_environment(profile, session)
     session.mkdir(mode=0o700)
     with (session / "profile.json").open("x", encoding="utf-8") as stream:
@@ -147,8 +158,10 @@ def load_environment(session):
     with profile_path.open(encoding="utf-8") as stream:
         profile = json.loads(stream.read(8193))
     fields = {"version", "address", "tlsDirectory", "csePort", "apiPort"}
+    optional = {"cseDeploymentId", "receiptContainerRi", "observationContainerRi", "pcApiDeploymentId",
+                "apiMode", "apiTeamRevision", "firmwareRevision"}
     if (not isinstance(profile, dict) or not fields <= profile.keys()
-            or profile.keys() - fields - {"cseDeploymentId", "receiptContainerRi", "apiMode", "apiTeamRevision", "firmwareRevision"}):
+            or profile.keys() - fields - optional):
         raise ValueError("Expected a prepared Feather command session")
     return gateway_environment(profile, session, verify_api=True)
 
@@ -176,8 +189,10 @@ def main():
     setup.add_argument("--api-team-revision", help="Override the pinned full team commit for integration mode")
     setup.add_argument("--firmware-revision", choices=COMMAND_FIRMWARES, default=COMMAND_FIRMWARES[0])
     setup.add_argument("--receipt-container-ri", help="Use the scoped gw-a receipt pin in a fresh session")
+    setup.add_argument("--observation-container-ri", help="Use the scoped gw-a observation pin in a fresh session")
+    setup.add_argument("--pc-api-deployment-id", help="Bind a fresh session to the chosen central datastore ID")
     start = modes.add_parser("run", help="Start the Gateway for an explicitly prepared session")
-    check = modes.add_parser("preflight", help="Check the pinned receipt and central command routes over mTLS")
+    check = modes.add_parser("preflight", help="Check pinned CSE containers and the central command route over mTLS")
     for mode in (setup, start, check):
         mode.add_argument("--session", required=True)
     args = parser.parse_args()

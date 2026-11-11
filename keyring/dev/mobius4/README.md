@@ -189,6 +189,14 @@ Pi에는 scoped CA의 `ca.pem`, `gateway-a.pem`, `gateway-a.key`를 소유자 �
 
 명령 프로필의 관측은 `gw-a` 전용 `command-observations-a`에, 영수증은 `command-receipts-a`에 보낸다. 이미 시작한 scoped 프로필에서는 발행을 마친 뒤 `prepare-scoped-command-receipts.ps1 -FeatherObservationsOnly`로 관측 컨테이너만 준비한다. [관측 컨테이너 배치 증거](../../evidence/2026-11-10-scoped-feather-led-cycle/provisioning.json)
 
+관측 자원 ID 고정을 쓰는 새 Pi 세션에는 발행을 멈춘 뒤 아래 명령으로 기존 컨테이너의 `ri`를 조회한다. 격리 프록시는 `gw-a`의 컨테이너 이름 GET과 해당 ID의 POST를 허용한다. 기존에 고정한 `ri`와 다른 자원이 조회되면 프록시 갱신 전에 멈춘다.
+
+```powershell
+./keyring/dev/mobius4/prepare-scoped-command-receipts.ps1 -PinObservationRoute
+```
+
+출력의 `SCOPED_OBSERVATION_PIN gw-a` 뒤 ID를 새 Pi 세션의 `--observation-container-ri`에 넣는다. 영수증 ID는 `-PinReceiptRoutes`로 별도로 확인한다. [Pi 명령 세션](../../raspberry-pi-gateway/TESTING.md#pi-명령-세션)
+
 정산 명령의 `--team-root`에는 `.local/scoped/command-api/team-source`, `--state`에는 같은 폴더의 `runtime.json`을 넣는다. 다른 연결 설정은 [Feather 명령 프로필](../../firmware/feather_probe/README.md#내장-led를-쓰는-명령-프로필)과 [Scoped LED 시험 절차](../../raspberry-pi-gateway/TESTING.md#기존-scoped-mobius4에서-feather-led-시험)를 따른다. 2026-11-10에는 로컬 API 리스너와 장치 등록까지 준비했다. [API 배치 증거](../../evidence/2026-11-10-scoped-command-api/provisioning.json)
 
 #### 최신 INTEGRATION API 벤치
