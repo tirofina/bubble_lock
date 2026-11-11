@@ -24,9 +24,28 @@ GUARDIAN = "guardian-feather-bench"
 STEPS = (("ON", True), ("OFF", False))
 
 
-def receipt_name(command_id):
-    rqi = Store.request_id("receipt", command_id)
+def content_name(rqi):
     return "gw-" + hashlib.sha256(rqi.encode()).hexdigest()
+
+
+def receipt_name(command_id):
+    return content_name(Store.request_id("receipt", command_id))
+
+
+def verify_observation_resource(snapshot, device_id, pin=None):
+    resource = snapshot.get("cseResource")
+    boot, sequence = snapshot["bootId"], snapshot["sequence"]
+    if (not isinstance(boot, str) or ID.fullmatch(boot) is None
+            or type(sequence) is not int or not 0 <= sequence <= 4294967295):
+        raise RuntimeError("Invalid native observation boot or sequence")
+    rqi = Store.request_id("observation", f"{device_id}:{boot}:{sequence}")
+    if (not isinstance(resource, dict) or type(resource.get("ty")) is not int or resource["ty"] != 4
+            or resource.get("rn") != content_name(rqi)
+            or any(not isinstance(resource.get(key), str) or ID.fullmatch(resource[key]) is None for key in ("ri", "pi"))):
+        raise RuntimeError("Invalid native observation resource identity")
+    if pin is not None and resource["pi"] != pin:
+        raise RuntimeError("Native observation parent differs from the Pi container binding")
+    return rqi
 
 
 def write_new_json(path, data):
@@ -95,6 +114,8 @@ async def run_led_cycle(operator_post, cse, paths, output, *, gateway_id=GATEWAY
                 and (boot_id is None or current["bootId"] == boot_id)
                 and (after is None or observed >= after)):
             snapshot = {key: current[key] for key in ("bootId", "sequence", "receivedAt", "state")}
+            snapshot["cseResource"] = {key: native.get(key) for key in ("ty", "rn", "ri", "pi")}
+            verify_observation_resource(snapshot, current["deviceId"])
             if central_settlement is not None:
                 snapshot["observedAt"] = current["observedAt"]
             return snapshot
@@ -216,11 +237,14 @@ def verify_database(evidence, database, *, gateway_id=GATEWAY, prior_expired_com
     confirmed = []
     with closing(sqlite3.connect(database.resolve().as_uri() + "?mode=ro", uri=True)) as db:
         db.execute("BEGIN")
+        db.row_factory = sqlite3.Row
+        identity = metadata(db)
+        db.row_factory = None
+        binding = identity["binding"] if identity else {}
+        observation_pin = binding.get("observationContainerRi")
+        if observation_pin is not None and binding.get("gatewayId") != gateway_id:
+            raise RuntimeError("Pi database observation binding belongs to a different Gateway")
         if require_central_receipts:
-            db.row_factory = sqlite3.Row
-            identity = metadata(db)
-            db.row_factory = None
-            binding = identity["binding"] if identity else {}
             pin = binding.get("receiptContainerRi")
             if (binding.get("gatewayId") != gateway_id or binding.get("cseDeploymentId") != "scoped-mobius4"
                     or not pin or any(step["cseResource"]["pi"] != pin for step in steps)):
@@ -255,6 +279,11 @@ def verify_database(evidence, database, *, gateway_id=GATEWAY, prior_expired_com
             if row != expected or db.execute("SELECT 1 FROM outbox WHERE rqi=?",
                                              (Store.request_id("receipt", command_id),)).fetchone():
                 raise RuntimeError("Pi SQLite journal does not match the delivered CSE receipt")
+            if observation_pin is not None:
+                for snapshot in (step["baseline"], step["observation"]):
+                    rqi = verify_observation_resource(snapshot, command["deviceId"], observation_pin)
+                    if db.execute("SELECT 1 FROM outbox WHERE rqi=?", (rqi,)).fetchone():
+                        raise RuntimeError("Native observation is still pending in the Pi outbox")
             if require_central_receipts:
                 staged = db.execute("SELECT central_receipt_staged FROM commands WHERE command_id=?",
                                     (command_id,)).fetchone()
@@ -264,7 +293,8 @@ def verify_database(evidence, database, *, gateway_id=GATEWAY, prior_expired_com
                     raise RuntimeError("Central receipt delivery is not complete in the Pi journal")
             confirmed.append({"commandId": command_id, "payloadHash": row[0], "receiptHash": payload_hash(receipt),
                               "state": state})
-    return {"dataBindingsVerified": True, "commands": confirmed, "physicalLedObserved": None}
+    return {"dataBindingsVerified": True, "observationContainerVerified": True if observation_pin is not None else None,
+            "commands": confirmed, "physicalLedObserved": None}
 
 
 if __name__ == "__main__":

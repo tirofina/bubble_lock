@@ -255,6 +255,8 @@ python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_evidenc
 
 보고서는 명령별 중앙 실행 시작·정산·관측 수용 이벤트 ID를 반환한다. Pi의 컨테이너 ID와 중앙 영수증 대기열, 중앙 영수증 해시와 읽어 온 장치 상태, 중앙 관측의 부팅 ID·순번·시각을 대조한다. 직접 본 LED 상태에는 `--operator-observations`를, 0.2.1 화면 문구에는 `--display-observations`를 사용한다. 현재 도구의 실행과 실제 Pi 연동 시험은 남아 있다.
 
+새 실행에서는 명령 전·후 관측의 Mobius4 인스턴스 유형, 이름, 자원 ID와 부모 ID를 `led-cycle.json`에 기록한다. Pi DB에 `observationContainerRi`가 있으면 관측마다 부모 ID와 장치·부팅·순번에서 만든 자원 이름을 대조하고 해당 요청이 Pi outbox에 남아 있는지 확인한다. 모두 일치하면 `observationContainerVerified`가 `true`다. 관측 ID를 고정하지 않은 이전 세션에서는 이 필드가 `null`이다.
+
 #### Pi 명령 세션
 
 Pi의 일반 계정에서 저장소 루트로 이동한다. 짝지은 Feather 주소 한 줄을 소유자 전용 파일에 기록한다. `--address-file`에는 그 파일을, `--tls-dir`에는 `ca.pem`, `gateway-a.pem`, `gateway-a.key`가 있는 소유자 전용 폴더를 지정한다. Gateway 의존성이 설치된 기존 시험 가상환경의 Python을 사용한다.

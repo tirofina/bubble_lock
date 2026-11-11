@@ -154,6 +154,7 @@ def verify_scoped_evidence(cycle, database, inspections, team_state, observed_le
     commands = [inspect_command(step, pi_proof, inspection, team_state)
                 for step, pi_proof, inspection in zip(steps, proof["commands"], inspections)]
     return {"piCseBindingVerified": True,
+            "observationContainerVerified": proof["observationContainerVerified"],
             "priorExpiredCommandCount": len(prior_expired_commands),
             "centralSettlementVerified": all(row["settlementVerified"] for row in commands),
             "cseCallbackRecorded": all("CSE_CALLBACK" in row["deliverySources"] for row in commands),
@@ -245,6 +246,7 @@ def verify_integration_evidence(cycle, database, team_state, observed_led=None, 
     if commands[0]["centralTelemetrySequence"] >= commands[1]["centralTelemetrySequence"]:
         raise ValueError("Central telemetry order does not match the LED cycle")
     return {"piCseBindingVerified": True, "centralDispatchVerified": True, "centralSettlementVerified": True,
+            "observationContainerVerified": proof["observationContainerVerified"],
             "centralTelemetryVerified": True, "priorExpiredCommandCount": len(prior_expired_commands),
             **operator_evidence(cycle, observed_led, observed_display),
             "commands": commands}

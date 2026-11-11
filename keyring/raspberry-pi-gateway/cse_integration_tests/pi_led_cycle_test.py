@@ -1,6 +1,7 @@
 """Opt-in real team API/CSE bench rehearsal with a software Feather peer."""
 import asyncio
 from copy import deepcopy
+from contextlib import closing
 from datetime import datetime, timedelta, timezone
 import json
 import os
@@ -13,9 +14,11 @@ import unittest
 from unittest.mock import patch
 
 from bubble_gateway.config import GatewayConfig
+from bubble_gateway.model import payload_hash
 from bubble_gateway.service import Gateway
-from helpers import device_receipt, observation
-from pi_led_cycle import DEVICE, FIRMWARE, GATEWAY, ready_heartbeat, verify_database
+from bubble_gateway.store import Store
+from helpers import BINDING, command, device_receipt, observation
+from pi_led_cycle import DEVICE, FIRMWARE, GATEWAY, content_name, ready_heartbeat, receipt_name, verify_database
 
 
 class PiCommandReadinessTests(unittest.TestCase):
@@ -43,6 +46,58 @@ class PiCommandReadinessTests(unittest.TestCase):
                     self.assertIsNone(ready_heartbeat(health | {"devices": [old_health]}, GATEWAY, "device-boot", since))
             stale = health | {"observedAt": (now - timedelta(seconds=16)).isoformat()}
             self.assertIsNone(ready_heartbeat(stale, GATEWAY, "device-boot", now - timedelta(seconds=20)))
+
+
+class PiObservationBindingTests(unittest.TestCase):
+    def test_pinned_database_requires_native_resource_identity_and_no_pending_observation(self):
+        pin = "cnt-observation"
+        boot = "device-boot"
+        received = "2026-11-11T00:00:10.000Z"
+        binding = dict(BINDING, gatewayId=GATEWAY, bindingVersion=2, cseDeploymentId="scoped-mobius4",
+                       observationContainerRi=pin)
+        evidence = {"steps": []}
+
+        def snapshot(sequence, state):
+            rqi = Store.request_id("observation", f"{DEVICE}:{boot}:{sequence}")
+            return {"bootId": boot, "sequence": sequence, "receivedAt": received, "state": state,
+                    "cseResource": {"ty": 4, "pi": pin, "ri": f"cin-{sequence}", "rn": content_name(rqi)}}
+
+        with tempfile.TemporaryDirectory() as folder:
+            database = Path(folder) / "gateway.sqlite3"
+            with closing(Store(database, 100, 100000, 20, binding)) as store:
+                for index, state in enumerate((True, False)):
+                    cmd = command(commandId=f"command-{index}", gatewayId=GATEWAY, deviceId=DEVICE,
+                                  desiredState={"state": state})
+                    digest = payload_hash(cmd)
+                    receipt = {key: cmd[key] for key in ("gatewayId", "deviceId", "commandId", "grantRevision", "ownershipEpoch")}
+                    receipt.update(payloadHash=digest, status="APPLIED", ackCode="APPLIED", firmwareRevision=FIRMWARE,
+                                   bootId=boot, readback={"state": state}, receivedAt=received)
+                    store.accept(cmd, digest)
+                    store.finish(cmd["commandId"], receipt)
+                    evidence["steps"].append({"command": cmd, "cseReceipt": receipt, "cseReceiptName": receipt_name(cmd["commandId"]),
+                                              "baseline": snapshot(2 * index, not state),
+                                              "observation": snapshot(2 * index + 1, state)})
+                store.stage_receipts(binding["receiptContainer"])
+                for step in evidence["steps"]:
+                    store.delivered(Store.request_id("receipt", step["command"]["commandId"]))
+                self.assertTrue(verify_database(evidence, database)["observationContainerVerified"])
+
+                for field, replacement, message in (("pi", "cnt-recreated", "parent differs"),
+                                                    ("rn", "other-name", "resource identity"),
+                                                    ("ty", 3, "resource identity")):
+                    with self.subTest(field=field):
+                        tampered = deepcopy(evidence)
+                        tampered["steps"][0]["baseline"]["cseResource"][field] = replacement
+                        with self.assertRaisesRegex(RuntimeError, message):
+                            verify_database(tampered, database)
+                missing = deepcopy(evidence)
+                del missing["steps"][1]["observation"]["cseResource"]
+                with self.assertRaisesRegex(RuntimeError, "resource identity"):
+                    verify_database(missing, database)
+
+                store.observation(binding["observationContainer"], observation(deviceId=DEVICE, bootId=boot, sequence=3))
+                with self.assertRaisesRegex(RuntimeError, "still pending"):
+                    verify_database(evidence, database)
 
 
 class SoftwareFeather:
