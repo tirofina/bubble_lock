@@ -1,0 +1,166 @@
+"""Issue one operator-triggered r18 pulse on the isolated loopback bench."""
+
+import argparse
+import asyncio
+from datetime import timedelta
+from pathlib import Path
+import re
+import uuid
+
+from bubble_gateway.config import ID
+from bubble_gateway.integration_evidence import inspect_integration_command
+from bubble_gateway.model import iso_time, parse_time, utc_now, validate_command
+from pi_led_cycle import ready_heartbeat, receipt_name, verify_observation_resource, verify_receipt, write_new_json
+from scoped_command_io import scoped_api, scoped_clients
+from scoped_feather_evidence import read_json
+from scoped_feather_pi import PARENT, R18_BOARD, R18_COMMAND_FIRMWARE, R18_DEVICE
+
+GATEWAY = "gw-b"
+SUBJECT = "scoped-r18-bench"
+PATHS = {"observation": f"{PARENT}/command-observations-b", "receipt": f"{PARENT}/command-receipts-b",
+         "health": f"{PARENT}/command-health-b"}
+
+
+async def run_pulse(operator_post, cse, central_proof, output):
+    stop, trigger = output / "STOP", output / "PULSE"
+
+    async def wait_for(check):
+        while not stop.exists():
+            result = await check()
+            if result is not None:
+                return result
+            await asyncio.sleep(0.25)
+        raise RuntimeError("Stopped during the r18 pulse bench")
+
+    async def read_cin(role, name="la"):
+        status, rsc, body = await cse("GET", f"{PATHS[role]}/{name}")
+        if (status, rsc) == (404, 4004):
+            return None
+        if (status, rsc) != (200, 2000):
+            raise RuntimeError("Scoped CSE readback failed")
+        return body["m2m:cin"]
+
+    async def off_observation(*, boot_id=None, after=None, after_sequence=None):
+        native = await read_cin("observation")
+        if native is None:
+            return None
+        current = native["con"]
+        if (current.get("gatewayId") != GATEWAY or current.get("deviceId") != R18_DEVICE
+                or current.get("firmwareRevision") != R18_COMMAND_FIRMWARE or current.get("state") is not False
+                or current.get("sensorValues", {}).get("fault") is not False
+                or (boot_id is not None and current.get("bootId") != boot_id)):
+            return None
+        received_at = parse_time(current["receivedAt"])
+        if not -2 <= (utc_now() - received_at).total_seconds() <= 15 or (after is not None and received_at < after):
+            return None
+        snapshot = {key: current[key] for key in ("bootId", "sequence", "receivedAt", "state")}
+        snapshot["cseResource"] = {key: native.get(key) for key in ("ty", "rn", "ri", "pi")}
+        verify_observation_resource(snapshot, R18_DEVICE)
+        if after_sequence is not None and snapshot["sequence"] <= after_sequence:
+            return None
+        return snapshot
+
+    async def ready(not_before, *, boot_id=None):
+        observation = await off_observation(boot_id=boot_id, after=not_before)
+        if observation is None:
+            return None
+        native = await read_cin("health")
+        if native is None:
+            return None
+        heartbeat = ready_heartbeat(native["con"], GATEWAY, observation["bootId"], not_before,
+                                    firmware=R18_COMMAND_FIRMWARE, device_id=R18_DEVICE, board_revision=R18_BOARD)
+        return (observation, heartbeat) if heartbeat is not None else None
+
+    async def post(path, body, expected=201):
+        status, result = await operator_post(path, body)
+        if status != expected or not isinstance(result, dict):
+            raise RuntimeError(f"Scoped r18 operator request failed with HTTP {status} at {path}")
+        return result
+
+    async def pulse_trigger():
+        return utc_now() if trigger.is_file() else None
+
+    waiting_since = utc_now()
+    baseline, armed = await wait_for(lambda: ready(waiting_since))
+    boot_id = baseline["bootId"]
+    if trigger.exists():
+        raise RuntimeError("Create PULSE only after R18_PULSE_READY")
+    print("R18_PULSE_READY", flush=True)
+    triggered_at = await wait_for(pulse_trigger)
+    _, fresh = await wait_for(lambda: ready(triggered_at, boot_id=boot_id))
+    if fresh["gatewayBootId"] != armed["gatewayBootId"] or stop.exists():
+        raise RuntimeError("The Pi session changed or stopped before r18 command issuance")
+
+    scope = ["bubble:command"]
+    consent = await post("/v1/consents", {"subjectId": SUBJECT, "purpose": "keyring-r18-pulse-bench",
+                                         "scopes": scope, "ttlSec": 120})
+    grant = await post("/v1/grants", {"consentId": consent["consentId"], "scopes": scope, "ttlSec": 60})
+    grant_id = grant["grantId"]
+    if not isinstance(grant_id, str) or ID.fullmatch(grant_id) is None:
+        raise RuntimeError("Invalid scoped grant ID")
+    try:
+        write_new_json(output / "pulse-grant.json", grant)
+        checked = await ready(triggered_at, boot_id=boot_id)
+        if (checked is None or checked[1]["gatewayBootId"] != armed["gatewayBootId"]
+                or checked[0]["cseResource"]["pi"] != baseline["cseResource"]["pi"] or stop.exists()):
+            raise RuntimeError("The r18 or Pi session changed or stopped before command issuance")
+        baseline, readiness = checked
+        command_id = f"r18-pulse-{uuid.uuid4().hex}"
+        intent = {"deviceId": R18_DEVICE, "commandId": command_id, "grantId": grant_id,
+                  "desiredState": {"state": True}, "deadline": iso_time(utc_now() + timedelta(seconds=25))}
+        rn = receipt_name(command_id)
+        write_new_json(output / "pulse-intent.json", {"gatewayId": GATEWAY, "request": intent, "cseReceiptName": rn,
+                                                     "baseline": baseline, "commandReadiness": readiness})
+        issued = await post(f"/api/v1/gateways/{GATEWAY}/commands", intent)
+        command = validate_command(issued, GATEWAY, {R18_DEVICE: ""})
+        if (command["commandId"] != command_id or command["desiredState"]["state"] is not True
+                or parse_time(command["deadline"]) != parse_time(intent["deadline"])):
+            raise RuntimeError("Scoped API returned a different r18 command")
+        write_new_json(output / "pulse-issued.json", {"command": command, "cseReceiptName": rn})
+
+        async with asyncio.timeout(35):
+            native = await wait_for(lambda: read_cin("receipt", rn))
+            receipt = native["con"]
+            resource = {key: native.get(key) for key in ("ri", "pi", "ct")}
+            if (any(not isinstance(resource[key], str) or ID.fullmatch(resource[key]) is None for key in ("ri", "pi"))
+                    or not isinstance(resource["ct"], str) or re.fullmatch(r"[0-9]{8}T[0-9]{6}", resource["ct"]) is None):
+                raise RuntimeError("Invalid native r18 receipt identity")
+            write_new_json(output / "pulse-receipt.json", {"cseReceipt": receipt, "cseResource": resource})
+            verify_receipt(command, receipt, boot_id, True, firmware=R18_COMMAND_FIRMWARE)
+            settled = await wait_for(lambda: central_proof(command, receipt))
+            final_off = await wait_for(lambda: off_observation(boot_id=boot_id, after=parse_time(receipt["receivedAt"]),
+                                                               after_sequence=baseline["sequence"]))
+            verify_observation_resource(final_off, R18_DEVICE, baseline["cseResource"]["pi"])
+    finally:
+        revoked = await post("/v1/grants/revoke", {"grantId": grant_id, "reason": "keyring-r18-pulse-bench-ended"}, 200)
+        if revoked.get("grantId") != grant_id or revoked.get("status") != "REVOKED":
+            raise RuntimeError("Scoped API did not confirm grant revocation")
+        write_new_json(output / "pulse-grant-revoked.json", revoked)
+
+    write_new_json(output / "pulse-result.json", {"commandId": command_id, **settled, "postPulseObservation": final_off,
+                                                 "physicalPulseMeasured": None})
+    print("R18_PULSE_RECORDED", flush=True)
+
+
+async def run(output, seconds):
+    api, operator_dir = scoped_api("r18")
+    if (api["gatewayId"], api["deviceId"], api["subjectId"], api["boardRevision"], api["firmwareRevision"]) != (
+            GATEWAY, R18_DEVICE, SUBJECT, R18_BOARD, R18_COMMAND_FIRMWARE):
+        raise RuntimeError("Configured scoped r18 profile differs from the pulse bench identity")
+    state_path = operator_dir / "runtime.json"
+
+    async def central_proof(command, receipt):
+        state = await asyncio.to_thread(read_json, state_path)
+        return inspect_integration_command(command, receipt, state)
+
+    async with scoped_clients(api, operator_dir) as (cse, operator_post), asyncio.timeout(seconds):
+        output.mkdir(mode=0o700)
+        await run_pulse(operator_post, cse, central_proof, output)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output", required=True, type=Path, help="New private directory for the trigger and evidence")
+    parser.add_argument("--seconds", type=int, default=600, choices=range(30, 1801), metavar="30..1800")
+    args = parser.parse_args()
+    asyncio.run(run(args.output.resolve(), args.seconds))

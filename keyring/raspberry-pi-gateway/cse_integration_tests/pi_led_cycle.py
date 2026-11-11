@@ -66,7 +66,8 @@ def verify_receipt(command, receipt, boot_id, state, *, firmware=FIRMWARE):
     parse_time(receipt["receivedAt"])
 
 
-def ready_heartbeat(health, gateway_id, device_boot, not_before, *, firmware=FIRMWARE):
+def ready_heartbeat(health, gateway_id, device_boot, not_before, *, firmware=FIRMWARE, device_id=DEVICE,
+                    board_revision=None):
     gateway_boot = health.get("bootId")
     if ("credentialTransition" in health or health.get("gatewayId") != gateway_id or health.get("credentialStatus") != "ACTIVE"
             or not isinstance(gateway_boot, str) or ID.fullmatch(gateway_boot) is None):
@@ -74,12 +75,13 @@ def ready_heartbeat(health, gateway_id, device_boot, not_before, *, firmware=FIR
     observed = parse_time(health["observedAt"])
     if observed < not_before or not -2 <= (utc_now() - observed).total_seconds() <= 15:
         return None
-    devices = [device for device in health["devices"] if device.get("deviceId") == DEVICE]
+    devices = [device for device in health["devices"] if device.get("deviceId") == device_id]
     if len(devices) != 1:
         return None
     device = devices[0]
     if (device.get("connected") is not True or device.get("commandReady") is not True
-            or device.get("bootId") != device_boot or device.get("firmwareRevision") != firmware):
+            or device.get("bootId") != device_boot or device.get("firmwareRevision") != firmware
+            or (board_revision is not None and device.get("boardRevision") != board_revision)):
         return None
     return {"gatewayBootId": gateway_boot, "observedAt": health["observedAt"]}
 

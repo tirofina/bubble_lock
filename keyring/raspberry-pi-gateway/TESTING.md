@@ -1,5 +1,7 @@
 # Gateway 로컬 시험
 
+r18 단일 펄스 벤치의 회귀시험 소스는 준비 신호 이후 한 건 발급, 같은 부팅의 후속 OFF 관측, 응답 유실 뒤 grant 회수와 중단 신호를 다룬다. 빌드·시험·실제 명령 발급은 미실행이다.
+
 Gateway 0.2.62의 회귀시험 소스는 r18 Pi의 `gw-b` 인증서·전용 컨테이너·중앙 API 프로필 선택과 BLE 보드 revision 불일치 차단을 다룬다. 빌드·시험·실제 Pi 연동은 미실행이다.
 
 Gateway 0.2.61은 r18 단일 명령을 최신 격리 중앙 API의 상태 사본과 대조하는 `--team-state`를 추가했다. 회귀시험 소스는 같은 영수증의 실행 시작·정산 확인과 잘못된 claim을 다룬다. [최신 중앙 API 상태 대조](../JOURNAL_RETENTION.md#최신-중앙-api-상태-대조). 빌드·시험·실물 연동은 미실행이다.
@@ -322,6 +324,18 @@ tool=keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_pi.py
 ```
 
 r18 모드는 중앙 API 포트 `8789`와 `gw-b` 전용 경로를 사용한다. Pi Gateway는 BLE 장치 ID, `r18-hand-solder` 보드, `keyring-0.7.14` 명령 펌웨어가 일치할 때 연결을 준비한다. `preflight` 후 승인된 시험에서만 `run`으로 해당 세션을 시작한다. Feather 명령 시험과 r18 명령 시험은 Pi 사용자당 같은 실행 잠금을 사용한다. r18의 모터 펄스는 [실물 명령 대조](../JOURNAL_RETENTION.md#r18-실물-명령-한-건-대조)의 절차에 연결한다.
+
+#### r18 단일 펄스 시험
+
+격리 r18 API와 Pi 세션을 시작하고, 출력 계측기를 준비한 뒤 PC에서 새 비공개 폴더를 출력 경로로 지정한다.
+
+```powershell
+python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_r18_pulse.py --output $privatePulseEvidence
+```
+
+`R18_PULSE_READY`가 나오면 실제 시험을 시작할 때 다른 터미널에서 같은 폴더에 빈 `PULSE` 파일을 만든다. 도구는 같은 부팅에서 출력 OFF·fault 없음·Pi 명령 준비를 다시 읽고 기한이 있는 명령 한 건을 발급한다. `STOP` 파일이 감지되면 발급 전에는 멈추고, grant가 생성됐으면 회수를 시도한다.
+
+발급 전에 `pulse-intent.json`을 저장한다. `R18_PULSE_RECORDED`는 장치 ACK의 적용 당시 ON, 중앙 실행 시작·정산, 같은 부팅의 더 새 OFF 관측과 grant 회수가 확인된 경우에 출력된다. 응답이 끊기면 `pulse-intent.json`의 command ID로 원래 명령을 조회한다. 시험 도구는 그 명령을 자동으로 다시 발급하지 않는다. 펄스 길이와 종료 시점은 계측기로 기록하고 같은 command ID로 [장치 저널 대조](../JOURNAL_RETENTION.md#r18-실물-명령-한-건-대조)에 연결한다.
 
 ## 이전 시험 기록
 
