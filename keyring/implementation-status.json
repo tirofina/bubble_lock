@@ -173,18 +173,18 @@
   "firmwareRevision": "keyring-0.7.14",
   "benchFirmwareRevision": "feather-probe-0.2.1",
   "publication": {
-    "sourceCommit": "6ff3fc1cbb99c107c5a5c377c8ffda63d6a9a9ce",
+    "sourceCommit": "5a3248e167f86f5f3b54798831ada69a8e827380",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "6ff3fc1cbb99c107c5a5c377c8ffda63d6a9a9ce",
-    "lastPushedCommit": "6ff3fc1cbb99c107c5a5c377c8ffda63d6a9a9ce",
-    "latestCheckpoint": "Hold central outbox selection during Retry-After while keeping telemetry expiry and independent Mobius4 delivery.",
-    "lastPushedCommitBeforeThisCheckpoint": "315c0f02b89cf74c93d8c5ac5b9de9eaec522504"
+    "latestLocalSourceCommit": "5a3248e167f86f5f3b54798831ada69a8e827380",
+    "lastPushedCommit": "5a3248e167f86f5f3b54798831ada69a8e827380",
+    "latestCheckpoint": "Restore origin-level HTTPS Retry-After windows after daemon restart within the same Linux boot.",
+    "lastPushedCommitBeforeThisCheckpoint": "320f482dd6c372435480d4321f79cb3c7dc2ddaf"
   },
-  "gatewayRevision": "0.2.56",
-  "pendingValidationScope": "Gateway 0.2.56 central Retry-After outbox hold, pinned Mobius4 observation delivery, central API datastore binding and deployment transition, health snapshot admission during CSE outages, independent central receipt staging and delivery, central telemetry retention and independent delivery, r18 USB/BLE startup capture, central receipt replay and database upgrade, central dispatch-start and pinned-receipt restart and replay, Feather 0.2.1 flash and visible ST7789 command state, r18 physical commands and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE MQTT ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
+  "gatewayRevision": "0.2.57",
+  "pendingValidationScope": "Gateway 0.2.57 HTTPS Retry-After restart and SQLite schema upgrade, central Retry-After outbox hold, pinned Mobius4 observation delivery, central API datastore binding and deployment transition, health snapshot admission during CSE outages, independent central receipt staging and delivery, central telemetry retention and independent delivery, r18 USB/BLE startup capture, central receipt replay and database upgrade, central dispatch-start and pinned-receipt restart and replay, Feather 0.2.1 flash and visible ST7789 command state, r18 physical commands and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE MQTT ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
     "supersededBy": "2026-11-10 benchCheckpoint for current execution and verification state",
@@ -205,7 +205,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Preserve Pi central outbox state during a Retry-After window under DOC-REV 2.0.0",
+    "executionRequest": "Preserve HTTPS origin Retry-After windows across Pi daemon restarts under DOC-REV 2.0.0",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -214,8 +214,8 @@
     ],
     "latestRemoteCore": "d54a43a",
     "latestRemoteMain": "bc2a45d",
-    "sourceCommit": "6ff3fc1cbb99c107c5a5c377c8ffda63d6a9a9ce",
-    "sourceValidation": "The current rubric and team heads were read. Gateway 0.2.56 checks the existing central origin hold before staging or selecting outbound work and continues central observation expiry. Regression source was added. Builds, tests and device execution were not run in this checkpoint.",
+    "sourceCommit": "5a3248e167f86f5f3b54798831ada69a8e827380",
+    "sourceValidation": "The current rubric and team heads were read. Gateway 0.2.57 stores origin Retry-After deadlines in SQLite and restores them only within the same Linux boot. Regression source was added. Builds, tests, schema upgrade on existing databases and device execution were not run in this checkpoint.",
     "goalComplete": false,
     "pendingInput": null,
     "currentDependencyState": "The Feather 0.2.0 and Pi Gateway 0.2.43 command path matched isolated Mobius4 and PostgreSQL on the pinned 715ef58 API. The operator saw no LED change during either command. Feather 0.2.1 mirrors the command GPIO readback on the ST7789. The latest Pi integration workflow and LCD response still need hardware evidence, as do r18 first power-on, physical reconnect, battery, LCD, charger, sensor, NVS fault, power, range and wake. Production CSE, CORE and release acceptance remain.",
@@ -1396,5 +1396,12 @@
     "regressionsExecuted": false,
     "piVerified": false,
     "sourceCommit": "6ff3fc1cbb99c107c5a5c377c8ffda63d6a9a9ce"
+  },
+  "httpRetryAfterRestart": {
+    "reference": "raspberry-pi-gateway/STATE_RECOVERY.md",
+    "gatewayVersion": "0.2.57",
+    "regressionsExecuted": false,
+    "piVerified": false,
+    "sourceCommit": "5a3248e167f86f5f3b54798831ada69a8e827380"
   }
 }

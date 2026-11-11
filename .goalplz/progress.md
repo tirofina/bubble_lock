@@ -1348,3 +1348,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10, R15. 직전 goal turn�
 - 중앙 보류 및 해제, 시도 횟수 보존, 만료와 Mobius4 전송을 다루는 회귀시험 소스를 추가했다. 빌드·시험·Pi 실행 및 Feather 0.2.1 화면 검증은 미실행이다.
 
 소스 commit `6ff3fc1cbb99c107c5a5c377c8ffda63d6a9a9ce`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `315c0f0..6ff3fc1`이다. goal은 active/progress다.
+
+## 2026-11-11 — Pi 데몬 재시작 후 HTTPS Retry-After 복원
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 중앙 API 보류 중 대기열 보존을 구현한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 팀 중앙 관측의 중복 처리와 CORE의 HTTPS/MQTT 및 ACK 경계를 확인했다.
+
+- Gateway `0.2.57`은 서버 호스트·포트별 `Retry-After` 대기 종료를 현재 Linux 부팅 ID와 함께 SQLite에 저장한다. 같은 부팅에서 데몬을 재시작하면 남은 시간을 이어받고, 새 Pi 부팅에서는 지난 부팅의 대기를 정리한다. 기존 SQLite는 시작할 때 테이블이 추가된다. 새 테이블을 추가한 DB는 0.2.56 이하의 스키마 검사에서 거절된다. [SQLite 복구](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md)
+- SQLite 재개, 다른 포트, 기한 만료와 새 Linux 부팅을 다루는 회귀시험 소스를 추가했다. 빌드·시험·기존 DB 마이그레이션 실행·Pi 및 Feather 실물 시험은 미실행이다.
+
+소스 commit `5a3248e167f86f5f3b54798831ada69a8e827380`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `320f482..5a3248e`다. goal은 active/progress다.
