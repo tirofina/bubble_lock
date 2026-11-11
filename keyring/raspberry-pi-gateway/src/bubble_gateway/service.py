@@ -408,12 +408,22 @@ class Gateway:
                 self._finish_device_result(command, digest, raw)
 
     async def _dispatch_loop(self) -> None:
+        enrolled = tuple(self.config.ble_devices)
+        async with asyncio.TaskGroup() as tasks:
+            for device_id in enrolled:
+                tasks.create_task(self._dispatch_device_loop(device_id=device_id), name=f"dispatch-{device_id}")
+            # Rows from an earlier enrollment still reach the existing expiry path.
+            tasks.create_task(self._dispatch_device_loop(excluded_devices=enrolled), name="dispatch-unassigned")
+
+    async def _dispatch_device_loop(self, *, device_id: str | None = None,
+                                    excluded_devices: tuple[str, ...] = ()) -> None:
         cursor = through = 0
         batch_size = 16
         while not self.stop.is_set():
             if cursor == 0:
                 through = self.store.command_high_water()
-            batch = self.store.pending(batch_size, after_rowid=cursor, through_rowid=through)
+            batch = self.store.pending(batch_size, after_rowid=cursor, through_rowid=through,
+                                       device_id=device_id, excluded_devices=excluded_devices)
             for item in batch:
                 if self.stop.is_set():
                     return

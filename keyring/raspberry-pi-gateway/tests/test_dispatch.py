@@ -333,6 +333,51 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
         self.gateway.ble.execute.assert_awaited_once()
         self.assertEqual(len(self.store.pending()), 16)
 
+    async def test_slow_authorization_does_not_block_another_device_or_reorder_its_own_commands(self):
+        self.gateway.config.ble_devices = {**self.gateway.config.ble_devices, "kr-other": "00:00:00:00:00:02"}
+        next_cmd = command(commandId="next-on-first-device")
+        other = command(commandId="other-device", deviceId="kr-other")
+        self.store.accept(next_cmd, payload_hash(next_cmd))
+        self.store.accept(other, payload_hash(other))
+        first_waiting, release_first = asyncio.Event(), asyncio.Event()
+        other_executed, second_executed = asyncio.Event(), asyncio.Event()
+        started = []
+
+        async def authorize(cmd, digest):
+            started.append(cmd["commandId"])
+            if cmd["commandId"] == self.cmd["commandId"]:
+                first_waiting.set()
+                await release_first.wait()
+            return {**{key: cmd[key] for key in ("commandId", "deviceId", "claimId", "grantRevision", "ownershipEpoch")},
+                    "allowed": True, "payloadHash": digest, "expiresAt": cmd["deadline"]}
+
+        async def execute(cmd, _budget, digest, **_options):
+            if cmd["commandId"] == other["commandId"]:
+                other_executed.set()
+            if cmd["commandId"] == next_cmd["commandId"]:
+                second_executed.set()
+            return device_receipt(cmd, digest)
+
+        self.gateway.transport.authorize.side_effect = authorize
+        self.gateway.ble.execute.side_effect = execute
+        task = asyncio.create_task(self.gateway._dispatch_loop())
+        try:
+            async with asyncio.timeout(1):
+                await first_waiting.wait()
+                await other_executed.wait()
+                self.assertEqual(started, [self.cmd["commandId"], other["commandId"]])
+                self.assertEqual(self.store.interrupted(), [])
+                release_first.set()
+                await second_executed.wait()
+                self.gateway.stop.set()
+                await task
+        finally:
+            if not task.done():
+                task.cancel()
+                await asyncio.gather(task, return_exceptions=True)
+        self.assertEqual(started, [self.cmd["commandId"], other["commandId"], next_cmd["commandId"]])
+        self.assertEqual(self.store.pending(), [])
+
     async def test_intent_is_durable_before_ble_and_repeat_does_not_replay(self):
         async def execute(*args, **kwargs):
             self.assertEqual(len(self.store.interrupted()), 1)

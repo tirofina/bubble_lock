@@ -7,6 +7,7 @@
 - 스캐너는 전체 fleet에서 하나를 사용한다. 어댑터의 동시 scan/connection 지원은 실제 Raspberry Pi와 BlueZ에서 확인해야 한다. RSSI가 마지막 scan 이후 30초를 넘으면 null을 보낸다. 이 값은 거리 측정값이 아니다.
 - 명령은 장치별 직렬 WRITE with response를 사용하고, 20 byte 조각에 LF 종결 JSON을 전송한다. fragment timeout/overflow, 잘못된 payload, 전송 중단 시 연결을 해제해 다음 명령과 이전 조각이 섞이지 않게 한다.
 - Gateway 0.2.85는 최초 중앙 승인 요청을 남은 명령 기한과 `REQUEST_TIMEOUT` 중 짧은 값으로 제한한다. 명령 기한이 끝나면 `REJECTED / EXPIRED` 영수증을 저장한다. 명령 기한이 남은 상태에서 요청 제한에 도달하면 `RECEIVED`를 유지하고 다음 순회에서 다시 승인받는다.
+- Gateway 0.2.86은 등록 장치별로 명령을 순서대로 처리한다. 한 장치의 중앙 승인이나 BLE 영수증을 기다리는 동안 다른 장치의 명령을 진행한다. 이전 등록에서 남은 명령도 기존 기한 검사 경로를 거친다.
 - Gateway 0.2.84는 r18 초기 구동 revision과 명령 쓰기 특성이 없는 장치에서 관측만 구독한다. 명령 쓰기 특성이 있으면 영수증 알림 특성과 구독 성공을 확인한 뒤 `commandReady`를 연다. 영수증 특성이 없거나 알림을 지원하지 않으면 관측을 이어가며 health의 `lastError`에 `receipt_characteristic_unavailable`을 기록한다. 구독 요청이 실패하면 연결을 다시 시도한다.
 - commandId와 payloadHash가 일치하는 receipt만 해당 명령을 정산한다. 성공·거절 여부의 최종 해석은 Gateway service가 담당한다. BLE timeout은 성공으로 바꾸지 않는다.
 - 같은 bootId의 60초 이내 uptime anchor만 acceptedAt/appliedAt으로 환산한다. UTC를 확정할 수 없으면 null과 timestampSource=unavailable을 남긴다. gateway-estimated 값은 BLE 수신 지연을 포함하는 추정값이다.

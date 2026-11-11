@@ -59,6 +59,7 @@ class Store:
             CREATE TABLE IF NOT EXISTS commands (
                 command_id TEXT PRIMARY KEY, payload_hash TEXT NOT NULL,
                 payload TEXT NOT NULL, status TEXT NOT NULL,
+                device_id TEXT,
                 received_at TEXT NOT NULL, receipt TEXT,
                 receipt_delivered INTEGER NOT NULL DEFAULT 0,
                 central_receipt_staged INTEGER NOT NULL DEFAULT 0
@@ -105,6 +106,16 @@ class Store:
                 columns = {row["name"] for row in self.db.execute("PRAGMA table_info(commands)")}
                 if "central_receipt_staged" not in columns:
                     self.db.execute("ALTER TABLE commands ADD COLUMN central_receipt_staged INTEGER NOT NULL DEFAULT 0")
+                if "device_id" not in columns:
+                    self.db.execute("ALTER TABLE commands ADD COLUMN device_id TEXT")
+                self.db.execute("""
+                    CREATE INDEX IF NOT EXISTS commands_pending_device ON commands(device_id) WHERE status='RECEIVED'
+                """)
+                self.db.execute("""
+                    UPDATE commands SET device_id=CASE WHEN json_valid(payload) THEN
+                        CASE WHEN json_type(payload,'$.deviceId')='text' THEN json_extract(payload,'$.deviceId') END END
+                    WHERE status='RECEIVED' AND device_id IS NULL
+                """)
                 observation_columns = {row["name"] for row in self.db.execute("PRAGMA table_info(observations)")}
                 if "button_presses_boot_id" not in observation_columns:
                     self.db.execute("ALTER TABLE observations ADD COLUMN button_presses_boot_id TEXT")
@@ -151,15 +162,26 @@ class Store:
             count = self.db.execute("SELECT COUNT(*) FROM commands").fetchone()[0]
             if count >= self.max_commands:
                 raise CapacityError("Command journal full; explicit archival/reprovisioning required")
-            self.db.execute("INSERT INTO commands(command_id,payload_hash,payload,status,received_at) VALUES(?,?,?,'RECEIVED',?)",
-                            (command["commandId"], digest, canonical(command), iso_time()))
+            self.db.execute("INSERT INTO commands(command_id,payload_hash,payload,device_id,status,received_at) "
+                            "VALUES(?,?,?,?,'RECEIVED',?)",
+                            (command["commandId"], digest, canonical(command), command["deviceId"], iso_time()))
         return "NEW"
 
     def pending(self, limit: int = 16, *, after_rowid: int = 0,
-                through_rowid: int = 2**63 - 1) -> list[dict]:
+                through_rowid: int = 2**63 - 1, device_id: str | None = None,
+                excluded_devices: tuple[str, ...] = ()) -> list[dict]:
+        scope = ""
+        parameters = [after_rowid, through_rowid]
+        if device_id is not None:
+            scope = "AND device_id=? "
+            parameters.append(device_id)
+        elif excluded_devices:
+            scope = "AND (device_id IS NULL OR device_id NOT IN (SELECT value FROM json_each(?))) "
+            parameters.append(canonical(excluded_devices))
         rows = self.db.execute(
-            "SELECT rowid,payload,payload_hash FROM commands WHERE status='RECEIVED' AND rowid>? AND rowid<=? "
-            "ORDER BY rowid LIMIT ?", (after_rowid, through_rowid, limit))
+            "SELECT rowid,payload,payload_hash FROM commands INDEXED BY commands_pending_device "
+            "WHERE status='RECEIVED' AND rowid>? AND rowid<=? " + scope + "ORDER BY rowid LIMIT ?",
+            (*parameters, limit))
         return [{"command": json.loads(row["payload"]), "digest": row["payload_hash"], "rowid": row["rowid"]}
                 for row in rows]
 

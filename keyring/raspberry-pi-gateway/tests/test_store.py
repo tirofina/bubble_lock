@@ -250,6 +250,27 @@ class StoreTests(unittest.TestCase):
             self.store.observation(BINDING["observationContainer"], observation(), True)
         self.assertEqual(self.store.observation_heads(), {})
 
+    def test_migrates_pending_commands_into_device_workers_without_changing_payloads(self):
+        assigned = command(commandId="assigned")
+        retired = command(commandId="retired", deviceId="kr-retired")
+        with self.store.db:
+            self.store.db.execute("DROP TABLE commands")
+            self.store.db.execute("""
+                CREATE TABLE commands (command_id TEXT PRIMARY KEY, payload_hash TEXT NOT NULL,
+                    payload TEXT NOT NULL, status TEXT NOT NULL, received_at TEXT NOT NULL,
+                    receipt TEXT, receipt_delivered INTEGER NOT NULL DEFAULT 0,
+                    central_receipt_staged INTEGER NOT NULL DEFAULT 0)
+            """)
+            for cmd in (assigned, retired):
+                self.store.db.execute("INSERT INTO commands(command_id,payload_hash,payload,status,received_at) "
+                                      "VALUES(?,?,?,'RECEIVED',?)",
+                                      (cmd["commandId"], payload_hash(cmd), canonical(cmd), cmd["issuedAt"]))
+        self.store.close()
+        self.store = self.open_store()
+        for rows, cmd in ((self.store.pending(device_id="kr-test"), assigned),
+                          (self.store.pending(excluded_devices=("kr-test",)), retired)):
+            self.assertEqual([(row["command"], row["digest"]) for row in rows], [(cmd, payload_hash(cmd))])
+
     def test_button_press_floor_survives_missing_sample_and_database_reopen(self):
         container = BINDING["observationContainer"]
         self.store.observation(container, observation(sensorValues={"buttonPresses": [5, 3]}), True, central_enabled=True)
