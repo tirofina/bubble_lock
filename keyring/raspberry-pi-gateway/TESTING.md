@@ -74,6 +74,8 @@ Gateway 0.2.40의 회귀시험 소스는 재연결의 이전 READ·알림, 같�
 
 Gateway 0.2.37의 회귀시험 소스는 BlueZ가 쓰기 특성을 캐시한 상황에서 r18 관측 전용 revision의 관측은 받고 명령·저널 쓰기는 거절하는지 다룬다. [PCB 초기 구동](../pcb/BRING_UP.md)의 실물 실행은 미수행이다.
 
+Gateway 0.2.84는 관측 전용 세션에서 영수증 알림 구독을 생략한다. 명령 특성이 있지만 영수증 알림 특성이 빠진 장치는 `connected:true`, `commandReady:false`, `lastError:receipt_characteristic_unavailable`로 보고한다. 명령 경로는 두 특성이 있고 영수증 구독이 성공한 뒤 열린다. 실제 BlueZ 연결과 장치별 특성 확인은 대기 중이다.
+
 ## r18 초기 구동 기록
 
 Gateway의 `--mode bringup`은 페어링된 r18과 `-bringup` 펌웨어에서 인증된 BLE 알림을 수집한다. 기존 Gateway를 중지하고 그 서비스와 같은 `--database` 경로를 지정한다. 기록 도구는 그 경로에서 잠금 이름만 얻는다. Mobius나 중앙 API에 연결하지 않고 새 로컬 JSON을 기록한다. 0.7.15-bringup의 USB 모니터에서 `?`를 보내 초기 구동 기록을 요청하고 UTF-8 로그로 저장한다. `--usb-boot-log`는 이 로그와 BLE 부팅을 대조한다. 한 로그에 같은 줄이 반복되면 허용하고 다른 부팅 ID나 다른 값이 섞이면 거절한다. 아래 명령을 실행할 때까지 같은 보드 전원을 유지한다.

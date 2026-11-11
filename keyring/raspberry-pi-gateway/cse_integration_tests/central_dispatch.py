@@ -190,9 +190,10 @@ class CentralDispatchTests(unittest.IsolatedAsyncioTestCase):
 
         class Client:
             is_connected = True
+            characteristics = {fleet.command_uuid: SimpleNamespace(properties=["write"]),
+                               fleet.receipt_uuid: SimpleNamespace(properties=["notify"])}
             services = SimpleNamespace(get_service=lambda _: SimpleNamespace(
-                get_characteristic=lambda uuid: SimpleNamespace(properties=["write"])
-                if uuid == fleet.command_uuid else None))
+                get_characteristic=lambda uuid: Client.characteristics.get(uuid)))
 
             def __init__(self, _device, *, pair, **_kwargs):
                 test.assertTrue(pair)

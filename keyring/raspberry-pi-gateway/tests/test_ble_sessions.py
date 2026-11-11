@@ -457,9 +457,10 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
 
         class Client:
             is_connected = True
+            characteristics = {fleet.command_uuid: SimpleNamespace(properties=["write"]),
+                               fleet.receipt_uuid: SimpleNamespace(properties=["notify"])}
             services = SimpleNamespace(get_service=lambda _: SimpleNamespace(
-                get_characteristic=lambda uuid: SimpleNamespace(properties=["write"])
-                if uuid == fleet.command_uuid else None))
+                get_characteristic=lambda uuid: Client.characteristics.get(uuid)))
 
             def __init__(self):
                 self.callbacks = {}
@@ -694,6 +695,7 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
             self.watcher = asyncio.create_task(self.fleet._watch(self.peer))
             await self.ready(1)
             self.assertEqual(self.peer.observations.qsize(), 1)
+            self.assertEqual(set(self.clients[0].callbacks), {self.fleet.observation_uuid})
             self.assertIsNone(self.fleet.command_session("kr-test"))
             snapshot = self.fleet.snapshot()[0]
             self.assertTrue(snapshot["connected"])
@@ -713,6 +715,7 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
             await self.ready(1)
             client = self.clients[0]
             self.assertIsNotNone(client.services.get_service(None).get_characteristic(self.fleet.command_uuid))
+            self.assertEqual(set(client.callbacks), {self.fleet.observation_uuid})
             self.assertEqual(self.peer.observations.qsize(), 1)
             self.assertTrue(self.fleet.snapshot()[0]["connected"])
             self.assertIsNone(self.fleet.command_session("kr-test"))
@@ -721,6 +724,29 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
                 await self.fleet.execute(cmd, 1000, payload_hash(cmd))
             with self.assertRaisesRegex(BleProtocolError, "does not expose the command journal"):
                 await self.fleet.capture_journal("kr-test")
+            client.write_gatt_char.assert_not_awaited()
+
+    async def test_missing_receipt_characteristic_preserves_observation_only_session(self):
+        def missing_receipt(*args, **kwargs):
+            client = self.factory(*args, **kwargs)
+            client.characteristics.pop(self.fleet.receipt_uuid)
+            client.write_gatt_char = AsyncMock()
+            return client
+
+        self.peer.discovered = object()
+        self.peer.seen.set()
+        with patch("bubble_gateway.ble.BleakClient", side_effect=missing_receipt):
+            self.watcher = asyncio.create_task(self.fleet._watch(self.peer))
+            await self.ready(1)
+            client = self.clients[0]
+            self.assertEqual(set(client.callbacks), {self.fleet.observation_uuid})
+            self.notify_observation(client, 2, 200)
+            self.assertEqual(self.peer.observations.qsize(), 2)
+            self.assertIsNone(self.fleet.command_session("kr-test"))
+            self.assertEqual(self.peer.last_error, "receipt_characteristic_unavailable")
+            cmd = command()
+            with self.assertRaisesRegex(BleUnavailable, "does not support command"):
+                await self.fleet.execute(cmd, 1000, payload_hash(cmd))
             client.write_gatt_char.assert_not_awaited()
 
     async def test_authorized_generation_cannot_write_on_replacement(self):
@@ -734,6 +760,27 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
             await self.fleet.execute(cmd, 1000, payload_hash(cmd), expected_generation=old_generation)
         current.write_gatt_char.assert_not_awaited()
         self.assertTrue(self.peer.ready.is_set())
+
+    async def test_command_session_requires_successful_receipt_subscription(self):
+        def rejected_receipt(*args, **kwargs):
+            client = self.factory(*args, **kwargs)
+            client.start_notify = AsyncMock(side_effect=BleUnavailable("receipt subscription failed"))
+            return client
+
+        self.peer.discovered = object()
+        self.peer.seen.set()
+
+        async def stop_after_attempt(_seconds):
+            self.fleet._closed.set()
+
+        self.fleet._pause = stop_after_attempt
+        with patch("bubble_gateway.ble.BleakClient", side_effect=rejected_receipt):
+            async with asyncio.timeout(1):
+                await self.fleet._watch(self.peer)
+        self.clients[0].start_notify.assert_awaited_once()
+        self.assertEqual(self.clients[0].start_notify.await_args.args[0], self.fleet.receipt_uuid)
+        self.assertIsNone(self.fleet.command_session("kr-test"))
+        self.assertFalse(self.fleet.snapshot()[0]["commandReady"])
 
     async def test_scan_completion_preserves_watcher_cancellation(self):
         started = asyncio.Event()

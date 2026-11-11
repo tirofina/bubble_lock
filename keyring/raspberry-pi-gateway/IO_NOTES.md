@@ -6,6 +6,7 @@
 - 등록한 address를 스캔한 다음 암호화된 GATT identity의 deviceId가 설정과 일치하는지 확인한다. 펌웨어가 요구하는 encrypted/MITM characteristic을 읽고 쓸 수 있어야 한다. 빈 firmware revision allowlist는 revision 제한을 추가하지 않는다는 뜻이며, address/deviceId 등록을 생략할 수 있다는 뜻은 아니다.
 - 스캐너는 전체 fleet에서 하나를 사용한다. 어댑터의 동시 scan/connection 지원은 실제 Raspberry Pi와 BlueZ에서 확인해야 한다. RSSI가 마지막 scan 이후 30초를 넘으면 null을 보낸다. 이 값은 거리 측정값이 아니다.
 - 명령은 장치별 직렬 WRITE with response를 사용하고, 20 byte 조각에 LF 종결 JSON을 전송한다. fragment timeout/overflow, 잘못된 payload, 전송 중단 시 연결을 해제해 다음 명령과 이전 조각이 섞이지 않게 한다.
+- Gateway 0.2.84는 r18 초기 구동 revision과 명령 쓰기 특성이 없는 장치에서 관측만 구독한다. 명령 쓰기 특성이 있으면 영수증 알림 특성과 구독 성공을 확인한 뒤 `commandReady`를 연다. 영수증 특성이 없거나 알림을 지원하지 않으면 관측을 이어가며 health의 `lastError`에 `receipt_characteristic_unavailable`을 기록한다. 구독 요청이 실패하면 연결을 다시 시도한다.
 - commandId와 payloadHash가 일치하는 receipt만 해당 명령을 정산한다. 성공·거절 여부의 최종 해석은 Gateway service가 담당한다. BLE timeout은 성공으로 바꾸지 않는다.
 - 같은 bootId의 60초 이내 uptime anchor만 acceptedAt/appliedAt으로 환산한다. UTC를 확정할 수 없으면 null과 timestampSource=unavailable을 남긴다. gateway-estimated 값은 BLE 수신 지연을 포함하는 추정값이다.
 - 순간적인 관측 수신 버퍼는 장치별 128개다. durable queue에 전달하지 못한 현재 항목은 재시도한다. 버퍼 초과 시 명시적으로 drop counter를 늘리고 연결을 끊는다. 프로세스가 비정상 종료되기 전 SQLite에 아직 저장되지 않은 BLE 알림은 복구할 수 없다.

@@ -320,11 +320,20 @@ class BleFleet:
                     if board is not None and identity["boardRevision"] != board:
                         raise BleProtocolError("board revision does not match enrollment")
                     peer.identity = identity
-                    commands_enabled = getattr(self.config, "commands_enabled", True)
-                    if commands_enabled:
-                        await client.start_notify(self.receipt_uuid,
-                            lambda _, data, session=generation: self._receipt_fragment(peer, data, session))
-                        self._require_session(peer, client, generation, ready=False)
+                    command_ready = False
+                    handshake_error = None
+                    # BlueZ may still list writable handles from the full image.
+                    if getattr(self.config, "commands_enabled", True) and not _r18_bringup(identity):
+                        command = service.get_characteristic(self.command_uuid)
+                        if command is not None and "write" in command.properties:
+                            receipt = service.get_characteristic(self.receipt_uuid)
+                            if receipt is not None and not {"notify", "indicate"}.isdisjoint(receipt.properties):
+                                await client.start_notify(self.receipt_uuid,
+                                    lambda _, data, session=generation: self._receipt_fragment(peer, data, session))
+                                self._require_session(peer, client, generation, ready=False)
+                                command_ready = True
+                            else:
+                                handshake_error = "receipt_characteristic_unavailable"
                     # BlueZ also publishes READ values through PropertiesChanged.
                     # Read before subscribing so full JSON cannot enter the LF-
                     # framed notification buffer through the notify callback.
@@ -335,12 +344,9 @@ class BleFleet:
                     await client.start_notify(self.observation_uuid,
                         lambda _, data, session=generation: self._observation_fragment(peer, data, session))
                     self._require_session(peer, client, generation, ready=False)
-                    command = service.get_characteristic(self.command_uuid)
-                    # BlueZ may still list writable handles from the full image.
-                    peer.command_writable = (commands_enabled and not _r18_bringup(identity)
-                                             and command is not None and "write" in command.properties)
+                    peer.command_writable = command_ready
                     peer.ready.set()
-                    peer.last_error = None
+                    peer.last_error = handshake_error
                     if self._trace is not None:
                         age = None if peer.rssi_monotonic is None else time.monotonic() - peer.rssi_monotonic
                         fresh = peer.rssi is not None and age is not None and 0 <= age <= 30
