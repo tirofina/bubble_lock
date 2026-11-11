@@ -1,5 +1,7 @@
 # Gateway 로컬 시험
 
+Gateway 0.2.69는 r18 첫 구동 중 같은 USB 부팅의 INA219 샘플 번호를 표시하고 외부 계측값을 오프라인에서 연결한다. 다른 캡처·다른 BLE 세션의 샘플과 측정 지점 혼용을 다루는 회귀시험 소스를 추가했다. 빌드·시험·Pi 실행은 미실행이다.
+
 Gateway 0.2.68은 r18 화면 점검 펌웨어 두 종류의 USB 로그에서 패널 선택값과 revision을 대조한다. 같은 부팅의 Pi 기록에 `displayProfile`을 남긴다. 빌드·회귀시험·실물 화면 확인은 미실행이다. [r18 화면 점검](../pcb/BRING_UP.md#화면만-연결한-두-번째-구동)
 
 Gateway 0.2.67은 펄스 시험에서 저장한 Mobius4 영수증을 장치 저널·Pi 보관본과 오프라인으로 대조한다. 사본의 부모나 자원 이름이 바뀐 경우, 본문이 Pi와 다른 경우의 회귀시험 소스를 추가했다. 빌드·시험·Pi 실행은 미실행이다.
@@ -175,6 +177,29 @@ Gateway 0.2.25에서 `--hardware r18-pcb --include-power`를 거리·재연결·
 wake 모드에서는 BLE를 해제하기 전에 유효 계측값을 최대 `--seconds` 동안 기다린다. wake 판정과 함께 기록을 인정하려면 baseline과 복구 양쪽의 첫 알림 부팅에서 유효 계측값이 있어야 한다. 이후 별도 재부팅에서 온 샘플도 로그에는 남지만 누락된 부팅을 대신하지 못한다. 거리·재연결 시험은 전체 기록에 유효 샘플이 하나 이상 있어야 한다. 부족한 구간은 `power.missingPhases`와 `INSUFFICIENT`로 표시된다.
 
 이 계측은 BLE가 연결된 동안 보드의 3.3V 부하 측을 관측한다. BLE를 해제한 동안의 sleep 소비전류, 배터리 입력 및 충전 전류는 외부 계측으로 기록한다. [전력 측정 지점 설명](../firmware/POWER_MONITOR.md)
+
+### r18 첫 구동의 외부 계측값 연결
+
+[r18 초기 구동 기록](#r18-초기-구동-기록)에 `--print-power-markers`를 추가한다. USB 로그와 일치하는 첫 BLE 세션에서 유효한 INA219 샘플이 새로 기록되면 `R18_POWER_SAMPLE` 줄에 `sequence`와 `readUptimeMs`가 표시된다. 같은 안정 구간에서 읽은 계측기 값에 두 값을 붙이고, 캡처가 끝나면 최종 출력의 SHA-256을 아래 입력에 적는다.
+
+```json
+{
+  "version": 1,
+  "captureSha256": "<Pi 캡처의 SHA-256>",
+  "readings": [
+    {"sequence": 8, "readUptimeMs": 700, "point": "load-3v3", "voltageMv": 3290, "currentUa": null}
+  ]
+}
+```
+
+위 숫자는 입력 형식 예시다. 측정한 전압은 mV, 전류는 µA 정수로 기록하고 읽지 않은 값은 `null`을 쓴다. `load-3v3`은 INA219와 같은 3.3V 부하 측 지점이며 `usb-input`과 `battery-terminal`은 해당 입력 지점이다. 원본 계측 기록은 같은 시험 폴더에 보관한다.
+
+```sh
+bubble-keyring-power-evidence --capture "$PRIVATE_EVIDENCE/r18-bringup.json" \
+  --meter "$PRIVATE_EVIDENCE/r18-meter.json" --output "$PRIVATE_EVIDENCE/r18-power-paired.json"
+```
+
+도구는 USB 부팅 일치, Pi 캡처 해시, 첫 세션의 순번과 계측 uptime을 대조한다. `meterMinusIna219`는 `load-3v3`의 계측기 값에서 INA219 값을 뺀 값이다. USB 입력과 배터리 단자 측정값은 해당 지점으로 기록한다. 연결 시각은 운영자가 대응시킨 샘플 번호를 근거로 하며, 동시 계측과 허용 오차는 실물 시험에서 확인한다.
 
 ### r18 배터리 경보 기록
 

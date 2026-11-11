@@ -16,6 +16,7 @@ bubble-keyring-journal-compare = "bubble_gateway.journal_cli:compare_main"
 bubble-keyring-reconcile = "bubble_gateway.journal_reconcile:main"
 bubble-gateway-state = "bubble_gateway.state_archive:main"
 bubble-keyring-ble-characterize = "bubble_gateway.ble_characterize:main"
+bubble-keyring-power-evidence = "bubble_gateway.power_evidence:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

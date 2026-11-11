@@ -450,10 +450,11 @@ async def characterize(args: argparse.Namespace, *, usb_boot: dict | None = None
         receiving = set()
         initial_generation = None
         baseline_announced = False
+        last_marked_read = -1
         capturing = True
 
         def trace(event: dict) -> None:
-            nonlocal truncated, initial_generation, baseline_announced
+            nonlocal truncated, initial_generation, baseline_announced, last_marked_read
             if not capturing:
                 return
             if len(events) < MAX_EVENTS:
@@ -479,6 +480,11 @@ async def characterize(args: argparse.Namespace, *, usb_boot: dict | None = None
                 reading = event.get("ina219")
                 if reading is not None and reading["status"] == "ok":
                     first_power.set()
+                    if (args.print_power_markers and usb_boot is not None and event["bootId"] == usb_boot["bootId"]
+                            and event["generation"] == initial_generation and not truncated
+                            and reading["readUptimeMs"] > last_marked_read):
+                        last_marked_read = reading["readUptimeMs"]
+                        print(f"R18_POWER_SAMPLE sequence={event['sequence']} readUptimeMs={last_marked_read}", flush=True)
 
         await fleet.start(discard_observation, trace=trace,
                           trace_observation=args.mode == "bringup" or args.verify_button_continuity)
@@ -546,6 +552,7 @@ def main() -> None:
     parser.add_argument("--battery-thresholds", nargs=2, type=int, metavar=("WARN", "RECOVER"),
                         help="battery mode only; firmware percentages (default: 20 25)")
     parser.add_argument("--usb-boot-log", type=Path, help="private USB CDC capture from one r18 bring-up boot")
+    parser.add_argument("--print-power-markers", action="store_true", help="print new INA219 samples from the USB-matched bring-up session")
     parser.add_argument("--database", type=Path, required=True, help="Gateway state path; used only to find its lock")
     parser.add_argument("--output", type=Path, required=True, help="new private JSON file under an existing directory")
     args = parser.parse_args()
@@ -576,6 +583,8 @@ def main() -> None:
     if args.mode == "bringup" and not _r18_bringup({
             "boardRevision": BOARD_REVISIONS[args.hardware], "firmwareRevision": args.firmware_revision}):
         parser.error("bringup mode requires r18-pcb and an observation-only -bringup firmware revision")
+    if args.print_power_markers and (args.mode != "bringup" or args.usb_boot_log is None):
+        parser.error("--print-power-markers requires bringup mode and --usb-boot-log")
     usb_boot = None
     if args.usb_boot_log is not None:
         if args.mode != "bringup" or not args.usb_boot_log.is_file():
