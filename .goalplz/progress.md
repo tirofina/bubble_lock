@@ -1303,3 +1303,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 중
 - 이름 재사용, 전송 전환과 readback, DB 재시작·사전 검사 및 HTTPS 보류를 다루는 회귀시험 소스를 추가했다. 실제 배포의 관측 컨테이너 ID와 Gateway 권한이 필요하다. 빌드·회귀시험·Mobius4/Pi 실물 연동은 미실행이다.
 
 소스 commit `aff5ac29b7798f73bf420453f8a54cf11b83b7a5`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `a2a15bd..aff5ac2`다. goal은 active/progress다.
+
+## 2026-11-11 — 격리 관측 ID를 PC와 Pi 설정에 연결
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 Gateway의 관측 자원 ID를 고정한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 중앙의 CSE 자원 조회와 CORE·웹 경로 계약을 확인했다.
+
+- PC 준비 도구의 `-PinObservationRoute`는 기존 `command-observations-a`의 `ri`를 읽고 격리 프록시에 `gw-a`의 이름 GET과 해당 `ri`의 POST 규칙을 추가하도록 구성했다. 이전 `ri`와 다르면 갱신을 중단한다. 새 Pi 프로필은 `--observation-container-ri`와 선택형 `--pc-api-deployment-id`를 Gateway 환경으로 전달한다. [Pi 명령 세션](../keyring/raspberry-pi-gateway/TESTING.md#pi-명령-세션)
+- ID 전달과 잘못된 ID를 다루는 회귀시험 소스를 추가했다. 빌드·회귀시험·PC 프로비저닝·격리 프록시 갱신·Pi 실행은 미실행이다. `gw-a` 권한과 `gw-b` 교차 차단, Pi→Mobius4 저장 대조가 남아 있다.
+
+소스 commit `a761eaac7945f90dd32bab633be83d920e840a56`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `2569d2e..a761eaa`다. goal은 active/progress다.
