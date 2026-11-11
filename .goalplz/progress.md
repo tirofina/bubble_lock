@@ -1477,3 +1477,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01~R03, R05. 직전 goal turn은 펄�
 - 새 영수증의 오프라인 비교, CSE 부모·이름 교체와 본문 불일치를 다루는 회귀시험 소스를 추가했다. 장치 저널 시험 데이터가 다른 명령으로 중앙 사본을 덮어쓰는 부분도 수정했다. 빌드·시험·정적 분석·Pi 접속·BLE·실물 검증은 미수행이다.
 
 소스 commit `fa6d5abed463794a23c98f6fe0d6fd7fddba9de1`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `09c7904..fa6d5ab`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 ST7789·JD9853 화면 점검 프로필
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R05. 직전 goal turn은 장치 저널과 저장한 Mobius4 영수증의 오프라인 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 중앙 관측 계약의 sensorValues와 기존 CORE Gateway 계약을 대조했다.
+
+- ST7789와 JD9853를 각각 선택하는 r18 관측 전용 프로필을 추가했다. 버튼으로 켜는 백라이트에서 테두리·RGB 막대·패널 이름·크기와 마지막 버튼을 표시한다. BLE 명령·저널·오디오 재생·SD·deep sleep은 비활성화하며, USB 초기 출력과 패널 선택값을 보관한다. [제작 PCB 화면 점검](../keyring/pcb/BRING_UP.md#화면만-연결한-두-번째-구동)
+- Gateway 0.2.68은 USB 패널 값과 펌웨어 revision을 대조하고 같은 부팅의 Pi 보고서에 기록한다. 화면 자체는 육안 확인이 필요하며 구매 JD9853의 초기화·색·크기는 미확인이다. 회귀시험 소스는 추가했으며 빌드·시험·정적 분석·flash·Pi·실물 구동은 미수행이다.
+
+소스 commit `0990c21e31b7e984cd11f9b25b344c5be5f9250c`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1fa3041..0990c21`다. goal은 active/progress다.
