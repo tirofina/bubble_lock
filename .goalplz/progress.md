@@ -1685,3 +1685,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05, R15. 직전 goal turn은 Pi 
 - 중앙 수용 여부와 실물 전달 증거 일치를 별도로 보고한다. 고정된 health ID 및 중앙 수용 이벤트의 `simulation:false`가 모두 확인돼야 실물 전달 증거 일치를 표시한다. 바뀐 health ID, 남은 health 본문 불일치, 모의 수용, 이전 DB의 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·대조 도구 실행·r18·Pi·Mobius4 실물 통합은 미수행이다. [관측 전달 증거 대조](../keyring/raspberry-pi-gateway/TESTING.md#관측-전달-증거-대조)
 
 소스 commit `59f784b1b34d711d414e428f490579695a9b33a1`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `f67bae8..59f784b`다. goal은 active/progress다.
+
+## 2026-11-11 — 원격 수신 확인 뒤 Pi 완료 기록 재시도
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 r18 관측의 Pi 상태 경로와 중앙 모의 표시 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀의 수용·중복 응답 계약을 확인했다.
+
+- Gateway 0.2.89는 원격 수신을 확인한 후 SQLite 완료 기록에 실패하면 해당 전송 작업에서 기록을 재시도한다. 완료 집계는 저장 뒤에 반영한다. 정상 종료 시 한 번 더 기록하고, 저장 전에 종료되면 행은 기존 재시작 및 요청 ID 규칙을 따른다.
+- 중앙 영수증 완료 기록을 재시도하는 동안 Mobius4가 진행하는 경우, 중앙 원격 요청이 같은 프로세스에서 한 번만 발생하는 경우와 종료 시에도 저장할 수 없는 경우를 회귀시험 소스에 추가했다. 빌드·테스트·정적 분석·실제 Pi·Mobius4·중앙 API 실행은 미수행이다. [영수증 대기열](../keyring/raspberry-pi-gateway/RECEIPT_ROUTING.md#중앙-명령-영수증-정산)
+
+소스 commit `e04bbf8c88f8eed42cb84ed7348fae7b71ae3039`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `298ae2c..e04bbf8`이다. goal은 active/progress다.
