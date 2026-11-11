@@ -313,9 +313,28 @@ class StoreTests(unittest.TestCase):
         self.store.close()
         self.store = self.open_store()
         self.assertEqual(self.store.observation_heads(include_button_presses=True), {"kr-test": ("boot-test", 3)})
+        self.assertEqual(self.store.observation_heads(include_device_uptime=True), {"kr-test": ("boot-test", 3, None, None)})
         container = BINDING["observationContainer"]
         self.assertTrue(self.store.observation(container, observation(sequence=4, sensorValues={"buttonPresses": [1, 0]})))
         self.assertEqual(self.store.observation_heads(include_button_presses=True), {"kr-test": ("boot-test", 4, (1, 0))})
+
+    def test_device_uptime_survives_database_reopen_and_resets_with_device_boot(self):
+        container = BINDING["observationContainer"]
+        self.store.observation(container, observation(), central_enabled=True, device_uptime_ms=500)
+        self.store.observation(container, observation(sequence=2), central_enabled=True)
+        self.store.close()
+        self.store = self.open_store()
+        self.assertEqual(self.store.observation_heads(include_device_uptime=True), {"kr-test": ("boot-test", 2, None, 500)})
+        before = self.rows()
+        with self.assertRaisesRegex(ValueError, "uptime regressed"):
+            self.store.observation(container, observation(sequence=3), central_enabled=True, device_uptime_ms=499)
+        self.assertEqual(self.rows(), before)
+
+        with self.store.db:  # Older software advances only the boot and sequence columns.
+            self.store.db.execute("UPDATE observations SET boot_id='boot-new',sequence=0")
+        self.assertEqual(self.store.observation_heads(include_device_uptime=True), {"kr-test": ("boot-new", 0, None, None)})
+        self.assertTrue(self.store.observation(container, observation(bootId="boot-new", sequence=1), device_uptime_ms=30))
+        self.assertEqual(self.store.observation_heads(include_device_uptime=True), {"kr-test": ("boot-new", 1, None, 30)})
 
     def test_central_observation_is_durable_with_native_copy_and_watermark(self):
         container = BINDING["observationContainer"]

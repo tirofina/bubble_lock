@@ -20,7 +20,7 @@ from typing import Any, AsyncIterator, Awaitable, Callable
 
 from bleak import BleakClient, BleakScanner
 from .core_bridge import CORE_SERVICE, CORE_IDENTITY, CORE_OBSERVATION, CORE_COMMAND, CORE_RECEIPT
-from .model import (ObservationHead, button_presses_regressed, iso_time, observation_button_presses,
+from .model import (MAX_UPTIME_MS, ObservationHead, button_presses_regressed, iso_time, observation_button_presses,
                     utc_now, valid_battery_alert)
 
 LOG = logging.getLogger(__name__)
@@ -34,7 +34,6 @@ FRAME_TIMEOUT = 5.0
 GATT_SETUP_TIMEOUT = 30.0
 BLE_DISCONNECT_TIMEOUT = 15.0
 IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,63}\Z")
-MAX_UPTIME_MS = 9007199254740991
 RECEIPT_ANCHOR_MAX_AGE = 60.0
 RECEIPT_CLOCK_STEP_TOLERANCE = 2.0
 ACK_CODES = frozenset({
@@ -164,7 +163,7 @@ class _Peer:
     observation_frames: _Frames = field(default_factory=_Frames)
     observation_timeout: asyncio.Timeout | None = None
     receipt_frames: _Frames = field(default_factory=_Frames)
-    observations: asyncio.Queue = field(default_factory=lambda: asyncio.Queue(maxsize=128))
+    observations: asyncio.Queue[tuple[dict[str, Any], int]] = field(default_factory=lambda: asyncio.Queue(maxsize=128))
     pending: asyncio.Future | None = None
     pending_command: str | None = None
     pending_hash: str | None = None
@@ -196,27 +195,31 @@ class BleFleet:
         self._by_address = {peer.address.casefold(): peer for peer in self._peers.values()}
         self._scanner: Any = None
         self._tasks: list[asyncio.Task] = []
-        self._callback: Callable[[dict[str, Any]], Awaitable[None]] | None = None
+        self._callback: Callable[[dict[str, Any], int], Awaitable[None]] | None = None
         self._trace: Callable[[dict[str, Any]], None] | None = None
         self._trace_observation = False
         self._closed = asyncio.Event()
 
-    async def start(self, observation_callback: Callable[[dict[str, Any]], Awaitable[None]], *,
+    async def start(self, observation_callback: Callable[..., Awaitable[None]], *,
                     trace: Callable[[dict[str, Any]], None] | None = None,
                     trace_observation: bool = False,
+                    pass_device_uptime: bool = False,
                     observation_heads: dict[str, ObservationHead] | None = None) -> None:
         if self._tasks:
             raise RuntimeError("BLE fleet already started")
         self._closed.clear()
-        self._callback = observation_callback
+        if pass_device_uptime:
+            self._callback = observation_callback
+        else:
+            self._callback = lambda observation, _uptime: observation_callback(observation)
         self._trace = trace
         self._trace_observation = trace_observation
         committed = observation_heads or {}
         self._tasks.append(asyncio.create_task(self._scan(), name="ble-scan"))
         for peer in self._peers.values():
             head = committed.get(peer.device_id)
-            peer.observation_watermark = (head[0], head[1], None) if head is not None else None
-            peer.button_presses = head[2] if head is not None and len(head) == 3 else None
+            peer.observation_watermark = (head[0], head[1], head[3] if len(head) == 4 else None) if head is not None else None
+            peer.button_presses = head[2] if head is not None and len(head) >= 3 else None
             self._tasks.append(asyncio.create_task(self._watch(peer), name=f"ble-{peer.device_id}"))
             self._tasks.append(asyncio.create_task(self._deliver(peer), name=f"ble-data-{peer.device_id}"))
 
@@ -465,7 +468,7 @@ class BleFleet:
             "timestampSource": "gateway-received",
         }
         try:
-            peer.observations.put_nowait(normalized)
+            peer.observations.put_nowait((normalized, device_uptime))
         except asyncio.QueueFull:
             peer.dropped_observations += 1
             self._protocol_failure(peer, "observation_backpressure")
@@ -496,11 +499,11 @@ class BleFleet:
         # Keep the current observation in memory until the durable queue accepts
         # it. A full queue disconnects the peer instead of growing unboundedly.
         while not self._closed.is_set():
-            observation = await peer.observations.get()
+            observation, device_uptime = await peer.observations.get()
             while not self._closed.is_set():
                 try:
                     assert self._callback is not None
-                    await self._callback(observation)
+                    await self._callback(observation, device_uptime)
                     break
                 except asyncio.CancelledError:
                     raise

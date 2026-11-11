@@ -13,6 +13,7 @@ from .config import ID
 COMMAND_KEYS = frozenset({"version", "gatewayId", "deviceId", "commandId", "claimId",
                           "desiredState", "issuedAt", "deadline", "grantRevision", "ownershipEpoch"})
 MAX_REVISION = 2147483647
+MAX_UPTIME_MS = 9007199254740991
 
 
 def utc_now() -> datetime:
@@ -106,7 +107,7 @@ def valid_button_presses(presses: Any) -> bool:
             and all(type(value) is int and 0 <= value <= 4294967295 for value in presses))
 
 
-ObservationHead = tuple[str, int] | tuple[str, int, tuple[int, int]]
+ObservationHead = tuple[str, int] | tuple[str, int, tuple[int, int]] | tuple[str, int, tuple[int, int] | None, int | None]
 
 
 def observation_button_presses(sensor_values: dict) -> tuple[int, int] | None:

@@ -136,12 +136,13 @@ class Gateway:
         if self.store.finish(receipt["commandId"], receipt):
             self.counters[f"command_{receipt['status'].lower()}"] += 1
 
-    async def observation(self, raw: dict) -> None:
+    async def observation(self, raw: dict, device_uptime_ms: int | None = None) -> None:
         try:
             payload = validate_observation(raw, self.config.gateway_id, self.config.ble_devices)
             if self.store.observation(self.config.observation_container, payload, self.config.core_bridge_enabled,
                                       core_epochs=self.config.core_telemetry_epochs,
-                                      central_enabled=self.config.central_telemetry_enabled):
+                                      central_enabled=self.config.central_telemetry_enabled,
+                                      device_uptime_ms=device_uptime_ms):
                 self.counters["observations_queued"] += 1
             else:
                 self.counters["observations_duplicate"] += 1
@@ -617,7 +618,8 @@ class Gateway:
                 workers.extend((self._poll_loop, self._dispatch_loop))
             workers.extend((self._outbox_loop, self._health_loop))
             await self.transport.start()
-            await self.ble.start(self.observation, observation_heads=self.store.observation_heads(include_button_presses=True))
+            heads = self.store.observation_heads(include_button_presses=True, include_device_uptime=True)
+            await self.ble.start(self.observation, pass_device_uptime=True, observation_heads=heads)
             tasks = [asyncio.create_task(worker(), name=worker.__name__) for worker in workers]
             if self.config.core_bridge_enabled:
                 tasks.append(asyncio.create_task(self._outbox_loop(core_route="telemetry"), name="core_telemetry_outbox"))

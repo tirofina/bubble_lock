@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Callable
 
-from .model import (ObservationHead, button_presses_regressed, canonical, central_observation_id,
+from .model import (MAX_UPTIME_MS, ObservationHead, button_presses_regressed, canonical, central_observation_id,
                     iso_time, observation_button_presses)
 from .core_bridge import telemetry, measurable, acknowledgement
 from .state_identity import preflight, install
@@ -45,6 +45,10 @@ def _stored_button_presses(row: sqlite3.Row) -> tuple[int, int] | None:
     return confirm, panic
 
 
+def _stored_uptime(row: sqlite3.Row) -> int | None:
+    return row["device_uptime_ms"] if row["device_uptime_boot_id"] == row["boot_id"] else None
+
+
 class Store:
     def __init__(self, path: Path, max_rows: int, max_bytes: int, max_commands: int, binding: dict):
         path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -72,7 +76,9 @@ class Store:
                 device_id TEXT PRIMARY KEY, boot_id TEXT NOT NULL, sequence INTEGER NOT NULL,
                 button_presses_boot_id TEXT,
                 confirm_presses INTEGER CHECK(confirm_presses BETWEEN 0 AND 4294967295),
-                panic_presses INTEGER CHECK(panic_presses BETWEEN 0 AND 4294967295)
+                panic_presses INTEGER CHECK(panic_presses BETWEEN 0 AND 4294967295),
+                device_uptime_boot_id TEXT,
+                device_uptime_ms INTEGER CHECK(device_uptime_ms BETWEEN 0 AND 9007199254740991)
             );
             CREATE TABLE IF NOT EXISTS outbox (
                 rqi TEXT PRIMARY KEY, container TEXT NOT NULL, payload TEXT NOT NULL,
@@ -146,6 +152,11 @@ class Store:
                     if name not in observation_columns:
                         self.db.execute(f"ALTER TABLE observations ADD COLUMN {name} INTEGER "
                                         f"CHECK({name} BETWEEN 0 AND 4294967295)")
+                if "device_uptime_boot_id" not in observation_columns:
+                    self.db.execute("ALTER TABLE observations ADD COLUMN device_uptime_boot_id TEXT")
+                if "device_uptime_ms" not in observation_columns:
+                    self.db.execute("ALTER TABLE observations ADD COLUMN device_uptime_ms INTEGER "
+                                    f"CHECK(device_uptime_ms BETWEEN 0 AND {MAX_UPTIME_MS})")
                 self.db.execute("""
                     CREATE INDEX IF NOT EXISTS commands_pending_central_receipt ON commands(central_receipt_staged)
                     WHERE receipt IS NOT NULL AND central_receipt_staged=0
@@ -321,13 +332,21 @@ class Store:
                 pass  # Still in the independent journal; retry after outbox space opens.
 
     def observation(self, container: str, payload: dict, core_enabled: bool = False, *,
-                    core_epochs: dict[str, int] | None = None, central_enabled: bool = False) -> bool:
+                    core_epochs: dict[str, int] | None = None, central_enabled: bool = False,
+                    device_uptime_ms: int | None = None) -> bool:
+        if device_uptime_ms is not None and (type(device_uptime_ms) is not int or not 0 <= device_uptime_ms <= MAX_UPTIME_MS):
+            raise ValueError("Invalid device observation uptime")
         presses = observation_button_presses(payload["sensorValues"])
         with self.db:
             previous = self.db.execute("SELECT * FROM observations WHERE device_id=?", (payload["deviceId"],)).fetchone()
             if previous is not None and previous["boot_id"] == payload["bootId"]:
                 if payload["sequence"] <= previous["sequence"]:
                     return False
+                previous_uptime = _stored_uptime(previous)
+                if device_uptime_ms is None:
+                    device_uptime_ms = previous_uptime
+                elif previous_uptime is not None and device_uptime_ms < previous_uptime:
+                    raise ValueError("Observation uptime regressed within the same boot")
                 previous_presses = _stored_button_presses(previous)
                 if button_presses_regressed(previous_presses, presses):
                     raise ValueError("Button press counts regressed within the same boot")
@@ -351,21 +370,29 @@ class Store:
                 rqi = self.request_id("central-telemetry", central_observation_id(payload))
                 self._enqueue(rqi, "@central/telemetry", payload)
             presses_boot = payload["bootId"] if presses is not None else None
+            uptime_boot = payload["bootId"] if device_uptime_ms is not None else None
             self.db.execute("""
-                INSERT INTO observations(device_id,boot_id,sequence,button_presses_boot_id,confirm_presses,panic_presses)
-                VALUES(?,?,?,?,?,?)
+                INSERT INTO observations(device_id,boot_id,sequence,button_presses_boot_id,confirm_presses,panic_presses,
+                    device_uptime_boot_id,device_uptime_ms)
+                VALUES(?,?,?,?,?,?,?,?)
                 ON CONFLICT(device_id) DO UPDATE SET boot_id=excluded.boot_id,sequence=excluded.sequence,
                     button_presses_boot_id=excluded.button_presses_boot_id,
-                    confirm_presses=excluded.confirm_presses,panic_presses=excluded.panic_presses
-            """, (payload["deviceId"], payload["bootId"], payload["sequence"], presses_boot, *(presses or (None, None))))
+                    confirm_presses=excluded.confirm_presses,panic_presses=excluded.panic_presses,
+                    device_uptime_boot_id=excluded.device_uptime_boot_id,device_uptime_ms=excluded.device_uptime_ms
+            """, (payload["deviceId"], payload["bootId"], payload["sequence"], presses_boot,
+                  *(presses or (None, None)), uptime_boot, device_uptime_ms))
         return True
 
-    def observation_heads(self, *, include_button_presses: bool = False) -> dict[str, ObservationHead]:
+    def observation_heads(self, *, include_button_presses: bool = False,
+                          include_device_uptime: bool = False) -> dict[str, ObservationHead]:
         heads: dict[str, ObservationHead] = {}
         for row in self.db.execute("SELECT * FROM observations"):
             head = (row["boot_id"], row["sequence"])
             presses = _stored_button_presses(row) if include_button_presses else None
-            heads[row["device_id"]] = (*head, presses) if presses is not None else head
+            if include_device_uptime:
+                heads[row["device_id"]] = (*head, presses, _stored_uptime(row))
+            else:
+                heads[row["device_id"]] = (*head, presses) if presses is not None else head
         return heads
 
     def stage_receipts(self, container: str, core_enabled: bool = False) -> None:

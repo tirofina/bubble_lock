@@ -647,7 +647,7 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
         deliver = AsyncMock()
         with (patch("bubble_gateway.ble.BleakClient", side_effect=self.factory),
               patch.object(self.fleet, "_scan", new_callable=AsyncMock)):
-            await self.fleet.start(deliver, observation_heads={"kr-test": ("boot-1", 6)})
+            await self.fleet.start(deliver, pass_device_uptime=True, observation_heads={"kr-test": ("boot-1", 6)})
             try:
                 await self.ready(1)
                 self.assertEqual(self.peer.observation_watermark, ("boot-1", 6, None))
@@ -656,6 +656,11 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
                 self.notify_observation(self.clients[0], 7, 700)
                 self.assertEqual(self.peer.observation_watermark, ("boot-1", 7, 700))
                 self.assertEqual(self.peer.anchor[:2], ("boot-1", 700))
+                await asyncio.wait_for(self.peer.observations.join(), timeout=1)
+                deliver.assert_awaited_once()
+                payload, uptime = deliver.await_args.args
+                self.assertEqual((payload["sequence"], uptime), (7, 700))
+                self.assertNotIn("uptimeMs", payload)
             finally:
                 await self.fleet.close()
 
@@ -673,6 +678,24 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(self.peer.observation_watermark, ("boot-1", 6, None))
                 self.assertEqual(self.peer.button_presses, (5, 3))
                 self.assertFalse(self.peer.ready.is_set())
+            finally:
+                await self.fleet.close()
+
+    async def test_start_uses_committed_uptime_floor_without_creating_an_anchor(self):
+        self.peer.discovered = object()
+        self.peer.seen.set()
+        deliver = AsyncMock()
+        with (patch("bubble_gateway.ble.BleakClient", side_effect=self.factory),
+              patch.object(self.fleet, "_scan", new_callable=AsyncMock)):
+            await self.fleet.start(deliver, observation_heads={"kr-test": ("boot-1", 6, None, 600)})
+            try:
+                await self.ready(1)
+                self.assertIsNone(self.peer.anchor)
+                self.notify_observation(self.clients[0], 7, 599)
+                deliver.assert_not_awaited()
+                self.assertEqual(self.peer.observation_watermark, ("boot-1", 6, 600))
+                self.assertFalse(self.peer.ready.is_set())
+                self.assertEqual(self.peer.last_error, "invalid_observation")
             finally:
                 await self.fleet.close()
 
@@ -967,7 +990,7 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
             self.watcher = asyncio.create_task(self.fleet._watch(self.peer))
             await self.ready(1)
             client = self.clients[0]
-            first = self.peer.observations.get_nowait()
+            first, _ = self.peer.observations.get_nowait()
             self.assertEqual(first["sequence"], 1)
             notification = json.dumps(client.frame(2)).encode() + b"\n"
             for offset in range(0, len(notification), 20):
@@ -976,7 +999,8 @@ class SessionTests(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(self.peer.ready.is_set(), "READ polluted the LF-framed notification stream")
             self.assertFalse(self.peer.disconnected.is_set())
             self.assertIsNone(self.peer.last_error)
-            self.assertEqual(self.peer.observations.get_nowait()["sequence"], 2)
+            second, _ = self.peer.observations.get_nowait()
+            self.assertEqual(second["sequence"], 2)
             self.assertTrue(self.peer.observations.empty())
             self.assertEqual(self.peer.observation_frames.data, bytearray())
 

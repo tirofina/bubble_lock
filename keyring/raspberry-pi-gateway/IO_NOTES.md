@@ -14,6 +14,7 @@
 - 같은 bootId의 60초 이내 uptime anchor만 acceptedAt/appliedAt으로 환산한다. UTC를 확정할 수 없으면 null과 timestampSource=unavailable을 남긴다. gateway-estimated 값은 BLE 수신 지연을 포함하는 추정값이다.
 - 순간적인 관측 수신 버퍼는 장치별 128개다. durable queue에 전달하지 못한 현재 항목은 재시도한다. 버퍼 초과 시 명시적으로 drop counter를 늘리고 연결을 끊는다. 프로세스가 비정상 종료되기 전 SQLite에 아직 저장되지 않은 BLE 알림은 복구할 수 없다.
 - Gateway 0.2.83은 `buttonPresses`가 있는 관측의 확인·비상 누계를 부팅 ID와 함께 SQLite에 저장한다. 같은 부팅에서 순번이 늘었지만 어느 한 누계가 줄어들면 BLE 세션을 끊고 해당 관측은 대기열에 넣지 않는다. 이전 누계는 BLE 재연결과 Gateway 재시작을 지나 유지된다. 누계가 빠진 관측은 저장할 수 있으며 기존 누계는 보존된다. 새 부팅에서는 새 누계를 받는다.
+- Gateway 0.2.107은 마지막 BLE 기기 업타임을 부팅 ID 및 관측 대기열과 같은 SQLite 트랜잭션으로 저장한다. 재시작 뒤 같은 부팅에서 순번이 증가해도 업타임이 감소한 관측은 거절한다. 새 부팅은 새 기준을 사용하고, 기존 DB에서 업타임을 수집하기 전까지는 빈 값으로 둔다. 저장한 업타임은 관측 순서 검사에 쓰며 영수증 UTC 환산은 해당 BLE 세션에서 새로 받은 관측을 사용한다.
 - Gateway 0.2.53은 확인을 기다리는 일반 상태 보고가 있으면 새 일반 보고를 저장하지 않고 `health_deferred_pending`으로 집계한다. 기존 보고의 본문·요청 ID·재시도 시각은 재시작 뒤에도 이어진다. 이전 버전에서 쌓인 보고는 전송될 때까지 보존한다. 자격 상태 전환은 별도 저널에 기록하고 각 전환 영수증을 대기열에 등록한다.
 - api_url은 HTTPS base URL이다. 뒤에 `/api/v1/gateways/{gatewayId}`가 붙는다. cse_url은 HTTPS origin이며 container에는 `/Mobius/...`의 전체 resource path를 설정한다.
 - HTTP와 MQTT는 같은 CA/client certificate/private key를 사용하고 TLS 1.3 이상을 요구한다. HTTP redirect와 환경 proxy 자동 사용은 꺼져 있다. 인증서 교체는 데몬 재시작으로 적용한다.

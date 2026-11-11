@@ -326,7 +326,8 @@ class BleMockTests(unittest.IsolatedAsyncioTestCase):
         self.fleet._queue_observation(self.peer, frame)
         self.fleet._queue_observation(self.peer, deepcopy(frame))
         self.assertEqual(self.peer.observations.qsize(), 1)
-        result = self.peer.observations.get_nowait()
+        result, uptime = self.peer.observations.get_nowait()
+        self.assertEqual(uptime, 100)
         self.assertIsNone(result["battery"])
         self.assertIsNone(result["rssi"])
 
@@ -339,9 +340,11 @@ class BleMockTests(unittest.IsolatedAsyncioTestCase):
         self.fleet._queue_observation(self.peer, next_frame)
         self.assertEqual(self.peer.observation_watermark, ("boot-test", 1, 100))
         self.assertIsNone(self.peer.anchor)
-        self.assertEqual(self.peer.observations.get_nowait()["sequence"], 1)
+        first, _ = self.peer.observations.get_nowait()
+        self.assertEqual(first["sequence"], 1)
         self.fleet._queue_observation(self.peer, next_frame)
-        self.assertEqual(self.peer.observations.get_nowait()["sequence"], 2)
+        second, _ = self.peer.observations.get_nowait()
+        self.assertEqual(second["sequence"], 2)
 
     async def test_ble_rejects_alert_claim_when_battery_is_unavailable(self):
         frame = dict(version=1, deviceId="kr-test", bootId="boot-test", sequence=1, uptimeMs=100,
