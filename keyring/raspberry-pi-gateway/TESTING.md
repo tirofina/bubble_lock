@@ -519,7 +519,7 @@ r18 모드는 중앙 API 포트 `8789`와 `gw-b` 전용 경로를 사용한다. 
 
 `keyring-0.7.21-sleep`으로 절전 후 명령 경로까지 확인할 때는 [격리 API](../dev/mobius4/README.md#r18-격리-명령-api)를 같은 revision으로 시작하고, Pi `prepare`에 `--firmware-revision keyring-0.7.21-sleep`을 추가해 새 세션을 만든다. 아래 펄스 도구에도 같은 옵션을 넘긴다. 장치 저널 수집은 저장된 Pi 세션의 revision을 사용한다.
 
-깨운 부팅에서 실행했음을 확인하려면 먼저 `gw-b`·`keyring-r18-lab`으로 [wake 보고서](#r18-wake-기록)를 만든다. 도구가 BLE를 닫으면 보드 전원을 유지하고 다시 잠들기 전에 Pi 명령 세션을 시작한다. 펄스 도구에 `--wake-report $r18WakeReport`를 추가한다. 보고서의 부팅 해시와 같은 부팅에서 받은 더 새 OFF 기준 관측이 있어야 `R18_PULSE_READY`가 나온다.
+깨운 부팅에서 실행했음을 확인하려면 먼저 `gw-b`·`keyring-r18-lab`으로 [wake 보고서](#r18-wake-기록)를 만든다. 도구가 BLE를 닫으면 보드 전원을 유지하고 다시 잠들기 전에 Pi 명령 세션을 시작한다. 펄스 도구에 `--wake-report $r18WakeReport`를 추가한다. 보고서와 같은 부팅에서 새로 받은 OFF health의 깨우기 원인과 핀 마스크를 대조한다. 중앙이 그 Mobius4 원본과 같은 해시의 관측을 15초 안에 수용하면 `pulse-wake-observation.json`을 저장한 뒤 `R18_PULSE_READY`를 출력한다. 관측이 모의 입력이거나 원인·핀이 다르면 grant 발급 전에 중단한다. 명령 발급 직전의 health도 같은 깨우기 원인과 핀을 보고해야 한다.
 
 #### r18 단일 펄스 시험
 
@@ -551,7 +551,7 @@ python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_r18_evidence.py
 
 `issuanceInTeamSnapshot`이 `false`면 제공한 상태 사본에 발급 기록이 없다. `centralApplicationVerified`가 `true`면 같은 명령의 적용 영수증과 중앙 실행·정산 기록이 일치한다. `pulse-scope.json`이 있으면 저장된 관측·health·영수증의 부모와 선택한 Pi DB의 관측·영수증 ID를 대조한다. 이전 기록은 `cseContainerPinsCaptured: false`로 표시한다. `postPulseCentralTelemetryVerified`가 `true`면 해당 명령 뒤의 OFF 관측 해시가 중앙 상태 사본의 이벤트와 일치한다. 계측 파일을 지정하지 않으면 `physicalPulseMeasured`는 비워 둔다.
 
-wake 보고서를 사용한 펄스는 오프라인 대조에도 원본을 `--wake-report $r18WakeReport`로 지정한다. 펄스 시작 시 저장한 보고서 SHA-256, 기준 관측의 부팅 및 순번이 일치하면 `postWakeEvidence`를 반환한다. 최초 `APPLIED` Mobius4 영수증과 중앙 정산까지 확인되면 `postWakeApplicationVerified:true`를 반환한다.
+wake 보고서를 사용한 펄스는 오프라인 대조에도 원본을 `--wake-report $r18WakeReport`로 지정한다. 새 펄스 기록은 격리 r18 API에 고정한 팀 소스의 해시 함수로 Mobius4 원본을 다시 해시하고 중앙 수용 이벤트와 비교한다. 같은 부팅·순번·원인·핀이 연결되면 `wakeRelayVerified:true`를 반환한다. 이 기록에 최초 `APPLIED` Mobius4 영수증과 중앙 정산이 일치해야 `postWakeApplicationVerified:true`가 된다. 이전 펄스 기록에는 중앙 wake 관측 증거가 없으므로 `wakeRelayVerified:false`로 남는다.
 
 ##### r18 펄스 계측값 연결
 

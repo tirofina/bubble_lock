@@ -7,12 +7,12 @@ import unittest
 
 from bubble_gateway.model import central_observation_id, payload_hash
 from bubble_gateway.store import Store
-from helpers import BINDING
+from helpers import BINDING, observation
 from pi_led_cycle import content_name, receipt_name, write_new_json
 from r18_pulse_trace import inspect_pulse_trace
 from scoped_r18_evidence import inspect_pulse
 from scoped_feather_pi import R18_LEGACY_COMMAND_FIRMWARE, R18_SLEEP_COMMAND_FIRMWARE
-from scoped_r18_pulse import GATEWAY, PATHS, R18_BOARD, R18_DEVICE
+from scoped_r18_pulse import GATEWAY, PATHS, R18_BOARD, R18_DEVICE, TELEMETRY_EVENT_FIELDS
 
 
 class R18EvidenceTests(unittest.TestCase):
@@ -120,6 +120,36 @@ class R18EvidenceTests(unittest.TestCase):
         result = inspect_pulse(self.output, self.team, wake_report=wake_report)
         self.assertEqual(result["postWakeEvidence"]["baselineSequence"], 1)
         self.assertFalse(result["postWakeApplicationVerified"])
+
+        scope_path = self.output / "pulse-scope.json"
+        scope = json.loads(scope_path.read_text(encoding="utf-8"))
+        scope_path.write_text(json.dumps(dict(scope, wakeRelayRequired=True)), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "differs from the pulse scope"):
+            inspect_pulse(self.output, self.team, wake_report=wake_report, observation_hasher=payload_hash)
+        wake_health = {"detail": "health", "wake": "button", "wakePins": 64}
+        relayed = observation(gatewayId=GATEWAY, deviceId=R18_DEVICE, bootId=self.boot_id,
+                              sequence=1, firmwareRevision=R18_SLEEP_COMMAND_FIRMWARE, state=False,
+                              observedAt=self.start, receivedAt=self.start, sensorValues=dict(wake_health, fault=False))
+        event = {"contractId": "privacy-bubble.integration.v1", "docRevision": "2.0.0", "type": "GATEWAY_TELEMETRY_ACCEPTED",
+                 "eventId": "evt-wake", "gatewayId": GATEWAY, "deviceId": R18_DEVICE,
+                 "observationId": central_observation_id(relayed), "payloadHash": payload_hash(relayed),
+                 "sequence": 2, "observedAt": self.start, "timestamp": self.start, "simulation": False}
+        relay_path = self.output / "pulse-wake-observation.json"
+        write_new_json(relay_path, {"observation": relayed, "cseResource": intent["baseline"]["cseResource"],
+                                   "centralEvent": {**{key: event[key] for key in TELEMETRY_EVENT_FIELDS}, "simulation": False}})
+        intent["wakeObservationId"] = event["observationId"]
+        intent["baseline"]["wakeHealth"] = wake_health
+        path.write_text(json.dumps(intent), encoding="utf-8")
+        pending = inspect_pulse(self.output, self.team, wake_report=wake_report, observation_hasher=payload_hash)
+        self.assertFalse(pending["wakeRelayVerified"])
+        self.team["receipts"].append(event)
+        result = inspect_pulse(self.output, self.team, wake_report=wake_report, observation_hasher=payload_hash)
+        self.assertTrue(result["wakeRelayVerified"])
+        self.assertEqual(result["wakeRelay"]["observationId"], event["observationId"])
+        intent["wakeObservationId"] = "other-observation"
+        path.write_text(json.dumps(intent), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "does not follow its wake relay"):
+            inspect_pulse(self.output, self.team, wake_report=wake_report, observation_hasher=payload_hash)
         wake_report.write_bytes(raw + b"\n")
         with self.assertRaisesRegex(ValueError, "differs from the one selected"):
             inspect_pulse(self.output, self.team, wake_report=wake_report)

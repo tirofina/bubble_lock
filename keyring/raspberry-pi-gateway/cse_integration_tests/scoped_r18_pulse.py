@@ -13,7 +13,7 @@ import uuid
 from bubble_gateway.ble_characterize import WAKE_CASES, boot_id_sha256
 from bubble_gateway.config import ID
 from bubble_gateway.integration_evidence import inspect_integration_command, inspect_integration_observation
-from bubble_gateway.model import iso_time, parse_time, utc_now, validate_command
+from bubble_gateway.model import central_observation_id, iso_time, parse_time, utc_now, validate_command, validate_observation
 from pi_led_cycle import ready_heartbeat, receipt_name, verify_observation_resource, verify_receipt, write_new_json
 from scoped_command_io import PROFILE, hash_observation, scoped_api, scoped_clients, tls_context
 from scoped_feather_evidence import read_json
@@ -74,10 +74,23 @@ def read_pulse_wake_report(path, firmware):
             "sequence": sequence}
 
 
-def check_pulse_wake_baseline(wake, baseline):
+def check_pulse_wake_baseline(wake, baseline, *, values=None):
     if (boot_id_sha256(baseline["bootId"]) != wake["bootIdSha256"]
             or baseline["sequence"] <= wake["sequence"]):
         raise ValueError("Pulse baseline must be a later observation from the recorded wake boot")
+    if values is not None and (values.get("detail") != "health" or type(values.get("wakePins")) is not int
+                               or (values.get("wake"), values["wakePins"]) != WAKE_CASES[wake["case"]]):
+        raise ValueError("Pulse baseline health differs from the recorded wake cause and pins")
+
+
+def wake_relay_observation(wake, observation, resource, firmware, pin):
+    observation = validate_observation(observation, GATEWAY, {R18_DEVICE: ""})
+    if (observation["firmwareRevision"] != firmware or observation["state"] is not False
+            or observation["sensorValues"].get("fault") is not False):
+        raise ValueError("Wake observation differs from the safe scoped r18 firmware state")
+    check_pulse_wake_baseline(wake, observation, values=observation["sensorValues"])
+    verify_observation_resource({**observation, "cseResource": resource}, R18_DEVICE, pin)
+    return observation
 
 
 async def run_pulse(operator_post, cse, central_proof, output, *, pins, observation_hasher, telemetry_proof,
@@ -90,6 +103,7 @@ async def run_pulse(operator_post, cse, central_proof, output, *, pins, observat
     scope_record = {"gatewayId": GATEWAY, "containerPins": pins, "firmwareRevision": firmware, "journalReadinessRequired": True}
     if wake is not None:
         scope_record["wakeReportSha256"] = wake["reportSha256"]
+        scope_record["wakeRelayRequired"] = True
     write_new_json(output / "pulse-scope.json", scope_record)
     stop, trigger = output / "STOP", output / "PULSE"
 
@@ -156,7 +170,7 @@ async def run_pulse(operator_post, cse, central_proof, output, *, pins, observat
         if heartbeat is None:
             return None
         heartbeat["cseResource"] = {key: native[key] for key in ("ri", "pi")}
-        return observation, heartbeat
+        return observation, heartbeat, current
 
     async def post(path, body, expected=201):
         status, result = await operator_post(path, body)
@@ -168,19 +182,37 @@ async def run_pulse(operator_post, cse, central_proof, output, *, pins, observat
         return utc_now() if trigger.is_file() else None
 
     waiting_since = utc_now()
-    baseline, armed = await wait_for(lambda: ready(waiting_since))
+    baseline, armed, current = await wait_for(lambda: ready(waiting_since))
+    wake_observation_id = None
+    wake_relay_sequence = None
     if wake is not None:
-        check_pulse_wake_baseline(wake, baseline)
+        current = wake_relay_observation(wake, current, baseline["cseResource"], firmware, pins["observation"])
+        digest = await asyncio.to_thread(observation_hasher, current)
+        try:
+            async with asyncio.timeout(15):
+                event = await wait_for(lambda: telemetry_proof(dict(current, payloadHash=digest)))
+        except TimeoutError:
+            raise RuntimeError("Central wake observation did not arrive before r18 command readiness") from None
+        if event.get("simulation") is not False or event.get("observationId") != central_observation_id(current):
+            raise ValueError("Central wake observation is not from the physical scoped Gateway")
+        wake_observation_id = event["observationId"]
+        wake_relay_sequence = current["sequence"]
+        write_new_json(output / "pulse-wake-observation.json", {
+            "observation": current, "cseResource": baseline["cseResource"],
+            "centralEvent": {**{key: event[key] for key in TELEMETRY_EVENT_FIELDS}, "simulation": False},
+        })
     boot_id = baseline["bootId"]
     await verify_receipt_route()
     if trigger.exists():
         raise RuntimeError("Create PULSE only after R18_PULSE_READY")
     print("R18_PULSE_READY", flush=True)
     triggered_at = await wait_for(pulse_trigger)
-    _, fresh = await wait_for(lambda: ready(triggered_at, boot_id=boot_id))
+    fresh_observation, fresh, current = await wait_for(lambda: ready(triggered_at, boot_id=boot_id))
     await verify_receipt_route()
     if fresh["gatewayBootId"] != armed["gatewayBootId"] or stop.exists():
         raise RuntimeError("The Pi session changed or stopped before r18 command issuance")
+    if wake is not None:
+        check_pulse_wake_baseline(wake, fresh_observation, values=current["sensorValues"])
 
     scope = ["bubble:command"]
     consent = await post("/v1/consents", {"subjectId": SUBJECT, "purpose": "keyring-r18-pulse-bench",
@@ -198,15 +230,22 @@ async def run_pulse(operator_post, cse, central_proof, output, *, pins, observat
         if (checked[1]["gatewayBootId"] != armed["gatewayBootId"]
                 or checked[0]["cseResource"]["pi"] != baseline["cseResource"]["pi"] or stop.exists()):
             raise RuntimeError("The r18 or Pi session changed or stopped before command issuance")
-        baseline, readiness = checked
+        baseline, readiness, current = checked
         if wake is not None:
-            check_pulse_wake_baseline(wake, baseline)
+            values = current["sensorValues"]
+            check_pulse_wake_baseline(wake, baseline, values=values)
+            if baseline["sequence"] < wake_relay_sequence:
+                raise ValueError("Command baseline precedes the centrally accepted wake observation")
+            baseline["wakeHealth"] = {key: values[key] for key in ("detail", "wake", "wakePins")}
         command_id = f"r18-pulse-{uuid.uuid4().hex}"
         intent = {"deviceId": R18_DEVICE, "commandId": command_id, "grantId": grant_id,
                   "desiredState": {"state": True}, "deadline": iso_time(utc_now() + timedelta(seconds=25))}
         rn = receipt_name(command_id)
-        write_new_json(output / "pulse-intent.json", {"gatewayId": GATEWAY, "request": intent, "cseReceiptName": rn,
-                                                     "baseline": baseline, "commandReadiness": readiness})
+        record = {"gatewayId": GATEWAY, "request": intent, "cseReceiptName": rn,
+                  "baseline": baseline, "commandReadiness": readiness}
+        if wake_observation_id is not None:
+            record["wakeObservationId"] = wake_observation_id
+        write_new_json(output / "pulse-intent.json", record)
         issued = await post(f"/api/v1/gateways/{GATEWAY}/commands", intent)
         command = validate_command(issued, GATEWAY, {R18_DEVICE: ""})
         if (command["commandId"] != command_id or command["desiredState"]["state"] is not True

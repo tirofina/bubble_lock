@@ -36,11 +36,14 @@ class R18PulseTests(unittest.IsolatedAsyncioTestCase):
         self.telemetry_proof = AsyncMock(side_effect=self.central_observation)
 
     async def central_observation(self, observation):
-        self.assertEqual(self.posts[-1], "/v1/grants/revoke")
-        self.assertTrue((self.output / "pulse-result.json").is_file())
+        if "sensorValues" in observation:
+            self.assertEqual(self.posts, [])
+        else:
+            self.assertEqual(self.posts[-1], "/v1/grants/revoke")
+            self.assertTrue((self.output / "pulse-result.json").is_file())
         return {"eventId": "telemetry-a", "observationId": central_observation_id(observation),
                 "payloadHash": observation["payloadHash"], "sequence": 9, "observedAt": observation["observedAt"],
-                "timestamp": iso_time(self.now)}
+                "timestamp": iso_time(self.now), "simulation": False}
 
     async def cse(self, method, path):
         self.assertEqual(method, "GET")
@@ -60,9 +63,10 @@ class R18PulseTests(unittest.IsolatedAsyncioTestCase):
             sequence = 6 if self.issued else 5
             rqi = Store.request_id("observation", f"{R18_DEVICE}:r18-boot:{sequence}")
             native = {"ty": 4, "rn": content_name(rqi), "ri": f"cin-{sequence}", "pi": "cnt-observation",
-                      "con": {"gatewayId": GATEWAY, "deviceId": R18_DEVICE, "bootId": "r18-boot",
+                      "con": {"version": 1, "gatewayId": GATEWAY, "deviceId": R18_DEVICE, "bootId": "r18-boot",
                               "firmwareRevision": self.firmware, "state": False, "sequence": sequence,
                               "observedAt": timestamp, "receivedAt": timestamp,
+                              "battery": None, "rssi": None, "buttonState": "released", "timestampSource": "gateway-received",
                               "sensorValues": {"fault": False, **self.journal}}}
         else:
             command = self.issued
@@ -188,11 +192,28 @@ class R18PulseTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_later_observation_from_the_wake_boot_can_arm_the_pulse(self):
         self.firmware = R18_SLEEP_COMMAND_FIRMWARE
-        wake = {"reportSha256": "a" * 64, "bootIdSha256": hashlib.sha256(b"r18-boot").hexdigest(), "sequence": 4}
+        self.journal.update(wake="button", wakePins=128)
+        wake = {"reportSha256": "a" * 64, "bootIdSha256": hashlib.sha256(b"r18-boot").hexdigest(),
+                "sequence": 4, "case": "panic"}
         await self.exercise(wake=wake)
         self.assertEqual(self.posts.count(self.command_path), 1)
         scope = json.loads((self.output / "pulse-scope.json").read_text(encoding="utf-8"))
+        relayed = json.loads((self.output / "pulse-wake-observation.json").read_text(encoding="utf-8"))
+        intent = json.loads((self.output / "pulse-intent.json").read_text(encoding="utf-8"))
         self.assertEqual(scope["wakeReportSha256"], wake["reportSha256"])
+        self.assertTrue(scope["wakeRelayRequired"])
+        self.assertEqual(intent["wakeObservationId"], relayed["centralEvent"]["observationId"])
+        self.assertEqual(intent["baseline"]["wakeHealth"]["wakePins"], 128)
+
+    async def test_wrong_wake_pins_block_the_pulse_before_grant(self):
+        self.firmware = R18_SLEEP_COMMAND_FIRMWARE
+        self.journal.update(wake="button", wakePins=64)
+        wake = {"reportSha256": "a" * 64, "bootIdSha256": hashlib.sha256(b"r18-boot").hexdigest(),
+                "sequence": 4, "case": "panic"}
+        with self.assertRaisesRegex(ValueError, "recorded wake cause and pins"):
+            await self.exercise(wake=wake)
+        self.telemetry_proof.assert_not_awaited()
+        self.assertEqual(self.posts, [])
 
     async def test_journal_error_after_grant_revokes_without_issuing(self):
         self.fail_journal_after_grant = True

@@ -3,6 +3,7 @@
 import argparse
 import csv
 from datetime import datetime
+from functools import partial
 import json
 from pathlib import Path
 import re
@@ -11,14 +12,16 @@ import sqlite3
 from bubble_gateway.config import ID
 from bubble_gateway.integration_evidence import (inspect_integration_command, inspect_integration_observation,
                                                  match_integration_issuance, require_integration_event)
-from bubble_gateway.model import canonical, iso_time, parse_time, payload_hash
+from bubble_gateway.model import canonical, central_observation_id, iso_time, parse_time, payload_hash
 from pi_led_cycle import receipt_name, verify_observation_resource
 from r18_pulse_trace import inspect_pulse_trace
+from scoped_command_io import hash_observation, scoped_api
 from scoped_feather_evidence import (interrupted_pi_result, read_json, read_optional, read_pi_commands,
                                     validate_interrupted_receipt)
 from scoped_feather_pi import R18_COMMAND_FIRMWARES, R18_LEGACY_COMMAND_FIRMWARE
 from scoped_r18_pulse import (GATEWAY, PATHS, R18_DEVICE, TELEMETRY_EVENT_FIELDS, check_pulse_wake_baseline,
-                             pulse_journal_readiness, read_pulse_wake_report, validate_container_pins)
+                             pulse_journal_readiness, read_pulse_wake_report, validate_container_pins,
+                             wake_relay_observation)
 
 
 def check_receipt(receipt, command, boot_id, firmware):
@@ -66,7 +69,8 @@ def inspect_post_pulse(result, saved_observation, saved_event, command, baseline
     return proof
 
 
-def inspect_pulse(directory, team_state, database=None, *, trace_path=None, trace_metadata=None, wake_report=None):
+def inspect_pulse(directory, team_state, database=None, *, trace_path=None, trace_metadata=None, wake_report=None,
+                  observation_hasher=None):
     if (trace_path is None) != (trace_metadata is None):
         raise ValueError("Pulse trace and metadata must be supplied together")
     issued = team_state.get("gatewayCommands")
@@ -87,6 +91,8 @@ def inspect_pulse(directory, team_state, database=None, *, trace_path=None, trac
     journal_required = False
     firmware = R18_LEGACY_COMMAND_FIRMWARE
     wake_digest = None
+    wake_relay_required = False
+    wake_relay = read_optional(directory / "pulse-wake-observation.json")
     if scope is not None:
         if scope["gatewayId"] != GATEWAY:
             raise ValueError("r18 scope belongs to a different Gateway")
@@ -99,6 +105,12 @@ def inspect_pulse(directory, team_state, database=None, *, trace_path=None, trac
             wake_digest = scope["wakeReportSha256"]
             if not isinstance(wake_digest, str) or re.fullmatch(r"[a-f0-9]{64}", wake_digest) is None:
                 raise ValueError("Invalid scoped r18 wake report hash")
+        wake_relay_required = scope.get("wakeRelayRequired", False)
+        if type(wake_relay_required) is not bool or (wake_relay_required and wake_digest is None):
+            raise ValueError("Invalid scoped r18 wake relay requirement")
+    if (wake_relay is not None and not wake_relay_required
+            or wake_relay_required and intent is not None and wake_relay is None):
+        raise ValueError("Saved wake observation differs from the pulse scope")
     wake = read_pulse_wake_report(wake_report, firmware) if wake_report is not None else None
     if wake is not None and wake["reportSha256"] != wake_digest:
         raise ValueError("Wake report differs from the one selected before the pulse")
@@ -107,7 +119,19 @@ def inspect_pulse(directory, team_state, database=None, *, trace_path=None, trac
               "cseContainerPinsCaptured": pins is not None, "postPulseObservationCaptured": False,
               "postPulseCentralTelemetryVerified": False, "journalReadiness": None, "firmwareRevision": firmware,
               "physicalPulseMeasured": None, "wakeReportSha256": wake_digest,
-              "postWakeEvidence": None, "postWakeApplicationVerified": False}
+              "postWakeEvidence": None, "wakeRelayVerified": False, "postWakeApplicationVerified": False}
+    if wake is not None and wake_relay is not None:
+        if observation_hasher is None:
+            raise ValueError("Wake relay comparison needs the pinned team's observation hash")
+        relayed = wake_relay_observation(wake, wake_relay["observation"], wake_relay["cseResource"],
+                                        firmware, pins["observation"])
+        digest = observation_hasher(relayed)
+        event = inspect_integration_observation(dict(relayed, payloadHash=digest), team_state, allow_pending=True)
+        if event is not None:
+            expected = {**{key: event[key] for key in TELEMETRY_EVENT_FIELDS}, "simulation": False}
+            if event.get("simulation") is not False or canonical(wake_relay["centralEvent"]) != canonical(expected):
+                raise ValueError("Saved wake relay differs from the physical central observation")
+            report.update(wakeRelayVerified=True, wakeRelay=expected)
     if intent is None:
         if trace_path is not None:
             raise ValueError("Pulse trace requires the saved r18 command intent")
@@ -134,7 +158,14 @@ def inspect_pulse(directory, team_state, database=None, *, trace_path=None, trac
     verify_observation_resource(baseline, R18_DEVICE, pins["observation"] if pins is not None else None)
     parse_time(baseline["receivedAt"])
     if wake is not None:
-        check_pulse_wake_baseline(wake, baseline)
+        values = baseline["wakeHealth"] if wake_relay_required else None
+        if wake_relay_required and not isinstance(values, dict):
+            raise ValueError("Saved command baseline has no wake health")
+        check_pulse_wake_baseline(wake, baseline, values=values)
+        if wake_relay_required and (intent.get("wakeObservationId") != central_observation_id(relayed)
+                                    or baseline["sequence"] < relayed["sequence"]
+                                    or parse_time(baseline["receivedAt"]) < parse_time(relayed["receivedAt"])):
+            raise ValueError("Saved command baseline does not follow its wake relay")
         report["postWakeEvidence"] = {**wake, "baselineSequence": baseline["sequence"]}
     journal = baseline.get("journal")
     if journal is not None or journal_required:
@@ -230,6 +261,7 @@ def inspect_pulse(directory, team_state, database=None, *, trace_path=None, trac
         check_receipt(pi_receipt, command, baseline["bootId"], firmware)
     report.update(inspect_post_pulse(result, observation_file, event_file, command, baseline, native_receipt, team_state))
     report["postWakeApplicationVerified"] = (wake is not None and report["centralApplicationVerified"]
+                                             and (not wake_relay_required or report["wakeRelayVerified"])
                                              and native_receipt is not None and native_receipt["ackCode"] == "APPLIED")
     if trace_path is not None:
         if native_receipt is None or native_receipt["status"] != "APPLIED" or native_receipt["ackCode"] != "APPLIED":
@@ -253,8 +285,14 @@ if __name__ == "__main__":
         parser.error("--pulse-trace and --pulse-trace-metadata must be supplied together")
     try:
         trace_metadata = read_json(args.pulse_trace_metadata) if args.pulse_trace_metadata is not None else None
+        observation_hasher = None
+        if args.wake_report is not None and (args.output_directory / "pulse-wake-observation.json").is_file():
+            _, operator_dir = scoped_api("r18")
+            team_utils = operator_dir / "team-source/pc-mobius/integration/src/integration-utils.mjs"
+            observation_hasher = partial(hash_observation, team_utils)
         report = inspect_pulse(args.output_directory, read_json(args.team_state), args.database,
-                               trace_path=args.pulse_trace, trace_metadata=trace_metadata, wake_report=args.wake_report)
+                               trace_path=args.pulse_trace, trace_metadata=trace_metadata, wake_report=args.wake_report,
+                               observation_hasher=observation_hasher)
     except (AttributeError, KeyError, TypeError, OSError, ValueError, RuntimeError, sqlite3.Error, csv.Error) as error:
         parser.exit(1, f"r18 evidence could not be bound ({type(error).__name__}).\n")
     print(json.dumps(report, indent=2))
