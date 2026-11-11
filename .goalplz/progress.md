@@ -1449,3 +1449,13 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R03, R05. 원격 main `bc2a4
 - Gateway 로컬 190개, 격리 벤치 모의 25개, wheel 빌드와 합성 입력 CLI 확인을 통과했다. 첫 로컬 실행에서 기존 Retry-After 모의 설정에 요청 제한 시간이 빠져 실패했고, 모의 설정을 보완한 뒤 전체를 다시 실행했다. Pi·BLE·실물 실행은 미수행이다.
 
 소스 commit `8cf9a32d0d842833c65bc678d5fd45f92ddc2ba5`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `4abb167..8cf9a32`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 격리 명령 시험의 Mobius4 컨테이너 고정
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01~R03, R05. 직전 goal turn은 Feather 화면 시험과 r18 중단 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같으며 중앙 발급·실행 및 CORE 영수증 경계를 확인했다.
+
+- Gateway 0.2.65의 r18 Pi 세션은 관측·영수증 컨테이너 ID 두 개를 요구한다. PC 벤치는 health ID까지 받아 관측·health·영수증의 부모를 대조한다. 영수증 경로 자체도 준비 신호와 명령 발급 전에 조회한다. 새 증거는 `pulse-scope.json`에 ID를 저장하며, 이전 증거는 고정 ID가 없다고 표시한 채 읽는다. [r18 시험 절차](../keyring/raspberry-pi-gateway/TESTING.md#r18-단일-펄스-시험)
+- 격리 Mobius4 bootstrap의 r18 모드가 health 컨테이너 ID를 출력하도록 변경했다. 관측·영수증 ID는 기존 고정 경로 출력에서 인수한다. [격리 서버 준비](../keyring/dev/mobius4/README.md#r18-격리-명령-api)
+- health·영수증 경로 교체, 잘못된 부모 영수증과 Pi SQLite를 다루는 회귀시험 소스를 추가했다. 이번에는 빌드·시험·정적 분석·서버 설정 실행·Pi 접속·BLE·실물 시험을 수행하지 않았다.
+
+소스 commit `41dfc0592ccb49f9c45c5cd61f13e877e842bdd3`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8ea6a6f..41dfc05`다. goal은 active/progress다.
