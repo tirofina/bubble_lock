@@ -46,18 +46,12 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
                               ("commandId", "deviceId", "claimId", "grantRevision", "ownershipEpoch")}
         self.authorization.update(allowed=True, payloadHash=self.digest, expiresAt=self.cmd["deadline"])
         self.gateway.transport = SimpleNamespace(authorize=AsyncMock(return_value=self.authorization),
-<<<<<<< HEAD
-                                                 dispatch_start=AsyncMock(return_value=self.authorization),
-                                                 publish=AsyncMock())
-        self.gateway.ble = SimpleNamespace(execute=AsyncMock(return_value=device_receipt(self.cmd, self.digest)))
-=======
                                                  credential_status=AsyncMock(return_value=dict(
                                                      gatewayId=self.gateway.config.gateway_id,
                                                      status="ACTIVE", credentialRevision="rev-1")),
                                                  publish=AsyncMock(), native_delivery_hold=NativeDeliveryHold)
         self.gateway.ble = SimpleNamespace(command_session=Mock(return_value=1),
                                            execute=AsyncMock(return_value=device_receipt(self.cmd, self.digest)))
->>>>>>> origin/codex/keyring-namho
 
     async def dispatch(self):
         await self.gateway._dispatch_one(self.cmd, self.digest)
@@ -344,21 +338,6 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
         self.gateway.ble.execute.return_value = device_receipt(self.cmd, self.digest, readback={"state": False})
         status, receipt = await self.dispatch()
         self.assertEqual((status, receipt["ackCode"]), ("INDETERMINATE", "READBACK_MISMATCH"))
-
-    async def test_revoke_between_durable_intent_and_dispatch_start_keeps_ble_idle(self):
-        async def revoked(*args):
-            self.assertEqual(len(self.store.interrupted()), 1)
-            return {**self.authorization, "allowed": False, "expiresAt": None}
-        self.gateway.transport.dispatch_start.side_effect = revoked
-        status, receipt = await self.dispatch()
-        self.assertEqual((status, receipt["ackCode"]), ("REJECTED", "NOT_AUTHORIZED"))
-        self.gateway.ble.execute.assert_not_awaited()
-
-    async def test_dispatch_start_response_loss_records_explicit_pre_ble_cancellation(self):
-        self.gateway.transport.dispatch_start.side_effect = ConnectionError("response loss")
-        status, receipt = await self.dispatch()
-        self.assertEqual((status, receipt["ackCode"]), ("REJECTED", "DISPATCH_NOT_SENT"))
-        self.gateway.ble.execute.assert_not_awaited()
 
     async def test_timeout_is_terminal_and_not_replayed(self):
         self.gateway.ble.execute.side_effect = asyncio.TimeoutError

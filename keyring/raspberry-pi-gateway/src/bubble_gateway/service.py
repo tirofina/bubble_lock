@@ -122,11 +122,7 @@ class Gateway:
         try:
             payload = validate_observation(raw, self.config.gateway_id, self.config.ble_devices)
             if self.store.observation(self.config.observation_container, payload, self.config.core_bridge_enabled,
-<<<<<<< HEAD
-                                      getattr(self.config, "central_telemetry_enabled", False)):
-=======
                                       core_epochs=self.config.core_telemetry_epochs):
->>>>>>> origin/codex/keyring-namho
                 self.counters["observations_queued"] += 1
             else:
                 self.counters["observations_duplicate"] += 1
@@ -304,35 +300,6 @@ class Gateway:
             self._finish(command, digest, "REJECTED", fence_error)
             return
         try:
-<<<<<<< HEAD
-            try:
-                dispatch_response = await self.transport.dispatch_start(command, digest)
-                dispatch_deadline = authorization_deadline(command, digest, dispatch_response)
-            except asyncio.CancelledError:
-                raise
-            except (ValueError, PermissionError, TypeError, OverflowError):
-                self._finish(command, digest, "REJECTED", "NOT_AUTHORIZED", "Dispatch-start current claim verification completed before BLE")
-                return
-            except Exception:
-                self._finish(command, digest, "REJECTED", "DISPATCH_NOT_SENT", "Dispatch-start acknowledgement pending; durable local journal confirms BLE call was not entered")
-                return
-            budget_ms = remaining_ms - int((time.monotonic() - started) * 1000)
-            budget_ms = min(budget_ms, int((dispatch_deadline - utc_now()).total_seconds() * 1000) - 250)
-            if budget_ms <= 0:
-                self._finish(command, digest, "REJECTED", "EXPIRED", "Deadline elapsed during durable intent recording; BLE not sent")
-                return
-            raw = await asyncio.wait_for(self.ble.execute(command, budget_ms, digest),
-                                         timeout=min(budget_ms / 1000, self.config.ble_command_timeout))
-            self._validate_device_result(raw, command, digest)
-            code = raw["ackCode"]
-            if code in {"APPLIED", "DUPLICATE"}:
-                if raw["readback"]["state"] != command["desiredState"]["state"] or raw.get("appliedUptimeMs") is None:
-                    self._finish(command, digest, "INDETERMINATE", "READBACK_MISMATCH", "Device did not confirm requested output at application time", raw)
-                else:
-                    self._finish(command, digest, "APPLIED", code, device=raw)
-            elif code in {"INDETERMINATE", "STORAGE_ERROR", "READBACK_MISMATCH"}:
-                self._finish(command, digest, "INDETERMINATE", code, device=raw)
-=======
             require_write_authority()
         except DispatchBlocked as exc:
             self._finish(command, digest, "REJECTED", str(exc), "Authorization changed before BLE transmission")
@@ -352,7 +319,6 @@ class Gateway:
                 self._finish_device_result(command, digest, raw)
             except sqlite3.Error as exc:
                 LOG.warning("SQLite receipt write failed (%s); keeping result for retry", type(exc).__name__)
->>>>>>> origin/codex/keyring-namho
             else:
                 receipt_saved = True
 
@@ -401,10 +367,6 @@ class Gateway:
             # holds the native observation or command-receipt worker.
             epochs = {}
         while not self.stop.is_set():
-<<<<<<< HEAD
-            self.store.stage_receipts(self.config.receipt_container, self.config.core_bridge_enabled, getattr(self.config, "central_receipts_enabled", False))
-            item = self.store.due()
-=======
             if not scoped:
                 self.store.stage_receipts(self.config.receipt_container, self.config.core_bridge_enabled)
                 self.store.stage_credential_receipt()
@@ -413,7 +375,6 @@ class Gateway:
             item = self.store.due(core_epochs=epochs, scoped_only=scoped, prefer_receipts=prefer_receipts,
                                   skip_native=hold.all_native, held_receipt_container=hold.receipt_container,
                                   hold_credential_receipts=hold.credential_receipts)
->>>>>>> origin/codex/keyring-namho
             if item is None:
                 await self._pause(0.5)
                 continue

@@ -66,8 +66,6 @@ class Store:
         try:
             with self.db:
                 self.db.execute("BEGIN IMMEDIATE")
-                if "central_receipt_staged" not in {row[1] for row in self.db.execute("PRAGMA table_info(commands)")}:
-                    self.db.execute("ALTER TABLE commands ADD COLUMN central_receipt_staged INTEGER NOT NULL DEFAULT 0")
                 install(self.db, binding)
         except Exception:
             self.db.close()
@@ -147,9 +145,6 @@ class Store:
         with self.db:
             self._enqueue(self.request_id(kind, identity), container, payload, critical)
 
-<<<<<<< HEAD
-    def observation(self, container: str, payload: dict, core_enabled: bool = False, central_enabled: bool = False) -> bool:
-=======
     def record_credential_status(self, current: dict, health_snapshot: Callable[[], dict]) -> bool:
         """Record an authenticated central status before relying on it locally."""
         with self.db:
@@ -183,20 +178,13 @@ class Store:
 
     def observation(self, container: str, payload: dict, core_enabled: bool = False, *,
                     core_epochs: dict[str, int] | None = None) -> bool:
->>>>>>> origin/codex/keyring-namho
         with self.db:
             previous = self.db.execute("SELECT boot_id,sequence FROM observations WHERE device_id=?", (payload["deviceId"],)).fetchone()
             if previous and previous["boot_id"] == payload["bootId"] and payload["sequence"] <= previous["sequence"]:
                 return False
             identity = f"{payload['deviceId']}:{payload['bootId']}:{payload['sequence']}"
             self._enqueue(self.request_id("observation", identity), container, payload)
-<<<<<<< HEAD
-            if central_enabled:
-                self._enqueue(self.request_id("central-telemetry", identity), "@central/telemetry", payload)
-            if core_enabled and measurable(payload):
-=======
             if core_enabled and (core_epochs is not None or measurable(payload)):
->>>>>>> origin/codex/keyring-namho
                 previous_core = self.db.execute("SELECT wire_sequence FROM core_sequences WHERE device_id=?", (payload["deviceId"],)).fetchone()
                 wire_sequence = previous_core["wire_sequence"] + 1 if previous_core else 0
                 if wire_sequence > 4294967295:
@@ -211,11 +199,6 @@ class Store:
                             (payload["deviceId"], payload["bootId"], payload["sequence"]))
         return True
 
-<<<<<<< HEAD
-    def stage_receipts(self, container: str, core_enabled: bool = False, central_enabled: bool = False) -> None:
-        """Stage native, optional CORE and central receipt routes atomically."""
-        rows = self.db.execute("SELECT command_id,receipt,receipt_delivered,central_receipt_staged FROM commands WHERE receipt IS NOT NULL AND (receipt_delivered=0 OR (?=1 AND central_receipt_staged=0)) LIMIT 128", (int(central_enabled),)).fetchall()
-=======
     def observation_heads(self) -> dict[str, tuple[str, int]]:
         return {row["device_id"]: (row["boot_id"], row["sequence"])
                 for row in self.db.execute("SELECT device_id,boot_id,sequence FROM observations")}
@@ -230,15 +213,12 @@ class Store:
               AND NOT EXISTS (SELECT 1 FROM outbox WHERE outbox.command_id=commands.command_id)
             ORDER BY commands.rowid LIMIT 128
         """).fetchall()
->>>>>>> origin/codex/keyring-namho
         for row in rows:
             try:
                 with self.db:
                     receipt = json.loads(row["receipt"])
-                    created = False
-                    if not row["receipt_delivered"]:
-                        created = self._enqueue(self.request_id("receipt", row["command_id"]), container,
-                                                receipt, True, row["command_id"])
+                    created = self._enqueue(self.request_id("receipt", row["command_id"]), container,
+                                            receipt, True, row["command_id"])
                     # The retained native row (then receipt_delivered after its
                     # confirmation) is the durable staging marker. Recreating a
                     # completed ACK here would bypass the native retry backoff.
@@ -246,9 +226,6 @@ class Store:
                         projected = acknowledgement(receipt)
                         if projected is not None:
                             self._enqueue(self.request_id("core-ack", row["command_id"]), "@core/ack", projected, True)
-                    if central_enabled and not row["central_receipt_staged"]:
-                        self._enqueue(self.request_id("central-receipt", row["command_id"]), "@central/receipt", receipt, True)
-                        self.db.execute("UPDATE commands SET central_receipt_staged=1 WHERE command_id=?", (row["command_id"],))
             except CapacityError:
                 break
 
