@@ -1,4 +1,6 @@
 from contextlib import closing
+import hashlib
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -16,7 +18,7 @@ class ScopedR18ObservationTests(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         self.database = Path(temporary.name) / "pi.sqlite3"
-        self.firmware = "keyring-0.7.15-bringup"
+        self.firmware = "keyring-0.7.18-bringup"
         stamp = "2026-11-11T09:00:02.000Z"
         self.usb = {"bootId": "r18-boot", "logSha256": "a" * 64}
         self.observation = observation(gatewayId=GATEWAY, deviceId=R18_DEVICE, bootId=self.usb["bootId"],
@@ -78,6 +80,51 @@ class ScopedR18ObservationTests(unittest.TestCase):
         self.capture["healthContainerRi"] = "cnt-other"
         with self.assertRaisesRegex(ValueError, "differs from the Pi database binding"):
             self.compare([self.event])
+
+    def test_scoped_comparison_links_first_bringup_image_and_later_ble_sequence(self):
+        header = bytearray(24)
+        header[0], header[1], header[12], header[23] = 0xe9, 1, 9, 1
+        segment = b"\x32\x54\xcd\xab" + bytes(252)
+        body = bytes(header) + bytes(4) + len(segment).to_bytes(4, "little") + segment + bytes(15) + b"\xef"
+        digest = hashlib.sha256(body).digest()
+        image = body + digest
+        self.usb["appSha256"] = digest.hex()
+        binary = self.database.with_name("firmware.bin")
+        binary.write_bytes(image)
+        path = self.database.with_name("bringup.json")
+        image_report = {"fileSha256": hashlib.sha256(image).hexdigest(), "sizeBytes": len(image)}
+        usb_report = {"sameBoot": True, "pinsSafe": True, "logSha256": self.usb["logSha256"],
+                      "appSha256": digest.hex(), "firmwareImage": image_report}
+        sessions = [{"session": 1, "notificationCount": 5, "lastSequence": 4, "commandReady": False},
+                    {"session": 2, "notificationCount": 1, "lastSequence": 6, "commandReady": False}]
+        first_report = {"version": 1, "mode": "bringup", "hardware": "r18-pcb", "status": "RECORDED",
+                        "gatewayId": GATEWAY, "deviceId": R18_DEVICE, "boardRevision": R18_BOARD,
+                        "firmwareRevision": self.firmware, "gattProfile": "core-v1", "sessions": sessions,
+                        "bringup": {"session": 1, "usbBoot": usb_report}}
+
+        def compare():
+            return compare_observation(self.capture, self.usb, self.database, {"receipts": [self.event]}, payload_hash,
+                                       bringup_report=path, firmware_image=binary)
+
+        raw = (json.dumps(first_report) + "\n").encode()
+        path.write_bytes(raw)
+        result = compare()
+        self.assertTrue(result["physicalRelayEvidenceMatched"])
+        self.assertEqual(result["firstBringupEvidence"], {"reportSha256": hashlib.sha256(raw).hexdigest(),
+                         "appSha256": digest.hex(), "firmwareImage": image_report, "lastBleSequence": 6})
+
+        for key, value, error in (("logSha256", "b" * 64, "does not match the scoped USB boot"),
+                                  ("firmwareImage", {"fileSha256": "c" * 64}, "does not match the firmware image")):
+            with self.subTest(field=key):
+                first_report["bringup"]["usbBoot"] = dict(usb_report, **{key: value})
+                path.write_text(json.dumps(first_report), encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, error):
+                    compare()
+        first_report["bringup"]["usbBoot"] = usb_report
+        sessions[1]["lastSequence"] = self.observation["sequence"]
+        path.write_text(json.dumps(first_report), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "does not follow the first bring-up BLE observations"):
+            compare()
 
     def test_pending_health_body_is_compared_with_mobius4(self):
         with closing(Store(self.database, 100, 100000, 20, self.binding)) as store:

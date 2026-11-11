@@ -426,7 +426,7 @@ r18_bringup_firmware=keyring-0.7.18-bringup
 
 ##### 관측 전달 증거 대조
 
-Pi 관측 전용 세션이 실행 중일 때 PC에서 같은 부팅의 USB 로그와 준비한 관측·health ID를 지정한다. PC와 Pi 시계를 맞춘 상태에서 실행한다. `capture`는 시험을 시작한 뒤 들어온 Mobius4 관측과 상태를 HTTPS GET으로 읽는다. 같은 부팅과 펌웨어, 출력 OFF·fault 해제, `commandReady:false`를 확인한 뒤 비공개 JSON을 쓴다.
+제작 PCB의 첫 구동 기록을 연결하려면 `gw-b`, `keyring-r18-lab`, `core-v1`로 만든 [초기 구동 보고서](#r18-초기-구동-기록)와 업로드에 사용한 `firmware.bin`을 확보한다. PCB 전원을 유지한 채 Pi 관측 전용 세션을 시작한다. PC에서 첫 구동 보고서에 사용한 그대로의 USB 로그와 준비한 관측·health ID를 지정한다. PC와 Pi 시계를 맞춘 상태에서 실행한다. `capture`는 시험을 시작한 뒤 들어온 Mobius4 관측과 상태를 HTTPS GET으로 읽는다. 같은 부팅과 펌웨어, 출력 OFF·fault 해제, `commandReady:false`를 확인한 뒤 비공개 JSON을 쓴다.
 
 ```powershell
 $tool = 'keyring/raspberry-pi-gateway/cse_integration_tests/scoped_r18_observation.py'
@@ -439,10 +439,13 @@ Gateway를 정상 종료한 뒤 같은 세션의 SQLite 사본과 격리 r18 API
 
 ```powershell
 python $tool compare --firmware-revision $r18BringupFirmware --usb-boot-log $r18UsbLog `
-  --capture $r18ObservationCapture --database $piDatabaseCopy --team-state $teamStateCopy --require-physical
+  --capture $r18ObservationCapture --database $piDatabaseCopy --team-state $teamStateCopy --require-physical `
+  --bringup-report $r18BringupReport --firmware-image $r18FirmwareBin
 ```
 
 `compare`는 Pi의 같은 부팅에서 관측 순번이 저장됐는지 확인하고, 관측·health 컨테이너를 SQLite에 고정한 자원 ID와 대조한다. 해당 관측이나 health가 Pi 전송 큐에 남아 있으면 본문도 비교한다. 기존 health ID 미고정 세션은 `healthContainerVerified:null`로 보고한다.
+
+`--bringup-report`와 `--firmware-image`는 함께 지정한다. 도구는 첫 구동 보고서가 `RECORDED`인지, 같은 USB 로그와 실행 이미지 해시가 들어 있는지, Mobius4 관측 순번이 첫 구동에서 받은 순번보다 큰지 확인한다. 일치하면 첫 구동 보고서와 펌웨어 파일의 해시를 `firstBringupEvidence`에 남긴다. 이전 펌웨어 또는 관측 전송만 진단할 때는 두 옵션을 생략할 수 있다.
 
 중앙 수용은 고정 팀 소스의 해시 함수로 Mobius4 관측 본문과 대조한다. `physicalRelayEvidenceMatched`는 Pi의 health 고정 ID가 맞고 같은 중앙 수용 이벤트에 `simulation:false`가 기록됐을 때 `true`다. `--require-physical`은 이 값이 `true`여야 성공 코드 0을 반환한다. 모의 이벤트, health ID 미고정 세션, 중앙 이벤트 미도착은 보고서를 출력하고 종료 코드 1을 반환한다. 중앙 수용만 진단할 때는 옵션을 생략하고 `centralTelemetryAccepted`를 확인한다. 최신 중앙 사본으로 같은 기록을 다시 대조할 수 있다.
 

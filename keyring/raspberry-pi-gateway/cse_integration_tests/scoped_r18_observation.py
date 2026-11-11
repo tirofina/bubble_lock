@@ -4,11 +4,12 @@ import argparse
 import asyncio
 from contextlib import closing
 from datetime import timedelta
+import hashlib
 import json
 import os
 from pathlib import Path
 
-from bubble_gateway.ble_characterize import read_usb_boot
+from bubble_gateway.ble_characterize import read_firmware_image, read_usb_boot
 from bubble_gateway.config import ID
 from bubble_gateway.integration_evidence import inspect_integration_observation
 from bubble_gateway.model import canonical, central_observation_id, iso_time, parse_time, utc_now, validate_observation
@@ -129,7 +130,39 @@ def inspect_location_response(response, observation, event, *, web=False):
             "simulation": event["simulation"]}
 
 
-def compare_observation(capture, usb, database, team_state, hasher, *, portal_response=None, web_response=None):
+def bind_bringup_report(path, firmware_image, usb, observation):
+    raw = path.read_bytes()
+    capture = json.loads(raw)
+    expected = {"version": 1, "mode": "bringup", "hardware": "r18-pcb", "status": "RECORDED",
+                "gatewayId": GATEWAY, "deviceId": R18_DEVICE, "boardRevision": R18_BOARD,
+                "firmwareRevision": observation["firmwareRevision"], "gattProfile": "core-v1"}
+    if canonical({key: capture.get(key) for key in expected}) != canonical(expected):
+        raise ValueError("First bring-up report differs from the scoped device, firmware or session profile")
+    bringup = capture["bringup"]
+    recorded_boot = bringup["usbBoot"]
+    if (recorded_boot.get("sameBoot") is not True or recorded_boot.get("pinsSafe") is not True
+            or recorded_boot.get("logSha256") != usb["logSha256"]
+            or recorded_boot.get("appSha256") != usb.get("appSha256")):
+        raise ValueError("First bring-up report does not match the scoped USB boot")
+    image = read_firmware_image(firmware_image, usb)
+    if canonical(recorded_boot.get("firmwareImage")) != canonical(image):
+        raise ValueError("First bring-up report does not match the firmware image file")
+
+    sessions = [session for session in capture["sessions"] if session["notificationCount"] > 0]
+    selected = [session for session in sessions if session["session"] == bringup["session"]]
+    if len(selected) != 1 or selected[0].get("commandReady") is not False:
+        raise ValueError("First bring-up report lacks the selected observation-only BLE session")
+    sequences = [session.get("lastSequence") for session in sessions]
+    if any(type(sequence) is not int or not 0 <= sequence < observation["sequence"] for sequence in sequences):
+        raise ValueError("Scoped observation does not follow the first bring-up BLE observations")
+    return {"reportSha256": hashlib.sha256(raw).hexdigest(), "appSha256": usb["appSha256"],
+            "firmwareImage": image, "lastBleSequence": max(sequences)}
+
+
+def compare_observation(capture, usb, database, team_state, hasher, *, portal_response=None, web_response=None,
+                        bringup_report=None, firmware_image=None):
+    if (bringup_report is None) != (firmware_image is None):
+        raise ValueError("First bring-up report and firmware image must be supplied together")
     if capture["usbLogSha256"] != usb["logSha256"]:
         raise ValueError("USB log differs from the observation capture")
     bound = bound_observation(capture["native"], capture["health"], usb=usb, firmware=capture["firmwareRevision"],
@@ -138,6 +171,8 @@ def compare_observation(capture, usb, database, team_state, hasher, *, portal_re
     if bound is None:
         raise ValueError("CSE observation and health differ from the captured USB boot")
     observation, native_request, health_request = bound
+    bringup_evidence = (bind_bringup_report(bringup_report, firmware_image, usb, observation)
+                        if bringup_report is not None else None)
     observation_id = central_observation_id(observation)
     expected = {"gatewayId": GATEWAY, "originator": "Sscoped-r18-gateway-b", "cseId": "Mobius4",
                 "cseDeploymentId": CSE_DEPLOYMENT, "pcApiDeploymentId": "scoped-command-api-r18",
@@ -183,6 +218,8 @@ def compare_observation(capture, usb, database, team_state, hasher, *, portal_re
         report["portalLocationResponse"] = inspect_location_response(portal_response, observation, event)
     if web_response is not None:
         report["webLocationResponse"] = inspect_location_response(web_response, observation, event, web=True)
+    if bringup_evidence is not None:
+        report["firstBringupEvidence"] = bringup_evidence
     return report
 
 
@@ -218,6 +255,8 @@ def main():
     compare.add_argument("--team-state", required=True, type=Path)
     compare.add_argument("--require-physical", action="store_true",
                          help="require the pinned Pi health container and a non-simulated central event")
+    compare.add_argument("--bringup-report", type=Path, help="first bring-up BLE report from the same USB boot")
+    compare.add_argument("--firmware-image", type=Path, help="firmware.bin used for the first bring-up report")
     compare.add_argument("--portal-response", type=Path, help="saved central portal location response")
     compare.add_argument("--web-response", type=Path, help="saved live dashboard location response")
     args = parser.parse_args()
@@ -243,7 +282,8 @@ def main():
         web_response = read_json(args.web_response) if args.web_response is not None else None
         report = compare_observation(artifact, usb, args.database, read_json(args.team_state),
                                      lambda observation: hash_observation(team_utils, observation),
-                                     portal_response=portal_response, web_response=web_response)
+                                     portal_response=portal_response, web_response=web_response,
+                                     bringup_report=args.bringup_report, firmware_image=args.firmware_image)
         print(json.dumps(report, indent=2))
         raise SystemExit(0 if comparison_passed(report, require_physical=args.require_physical) else 1)
 
