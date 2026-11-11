@@ -15,9 +15,10 @@ import uuid
 from contextlib import closing
 from pathlib import Path
 
-from .config import GatewayConfig, ID, read_env_file
+from .config import GatewayConfig, ID, env_file_values, read_env_file
 from .core_bridge import SCOPED_NULLABLE_TELEMETRY
 from .model import canonical, iso_time
+from .state_cutover import cutover_plan
 from .state_identity import (StateIdentityError, configured_binding, counts, install,
                              legacy_ownership, match, metadata, quarantine_copy, readonly, tables)
 from .store import Store
@@ -225,10 +226,11 @@ def retire_core(config: GatewayConfig, output: Path, *, device: str, epoch: int 
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Cold Gateway state snapshot, identity adoption or retired CORE cleanup")
-    parser.add_argument("operation", choices=("snapshot", "adopt", "retire-core"))
+    parser = argparse.ArgumentParser(description="Cold Gateway state archive, retirement or deployment inventory")
+    parser.add_argument("operation", choices=("snapshot", "adopt", "retire-core", "plan-cutover"))
     parser.add_argument("--env-file", type=Path, required=True)
-    parser.add_argument("--output", type=Path, required=True, help="new private archive directory; parent must exist")
+    parser.add_argument("--target-env-file", type=Path, help="complete candidate configuration for plan-cutover")
+    parser.add_argument("--output", type=Path, help="new private archive directory; parent must exist")
     parser.add_argument("--timeout", type=float, default=120, help="SQLite copy deadline in seconds, 5..3600")
     parser.add_argument("--device-id", help="device whose retired CORE scope is selected")
     parser.add_argument("--retired-epoch", help="older integer epoch or 'unscoped' for legacy CORE telemetry")
@@ -237,8 +239,15 @@ def main() -> None:
         parser.error("this operator command requires POSIX owner-only files and advisory locking")
     if not 5 <= args.timeout <= 3600:
         parser.error("timeout must be between 5 and 3600 seconds")
-    if args.output.exists() or args.output.is_symlink() or not args.output.parent.is_dir():
-        parser.error("output must be a new directory under an existing parent")
+    if args.operation == "plan-cutover":
+        if args.target_env_file is None or args.output is not None:
+            parser.error("plan-cutover requires --target-env-file and reports to stdout")
+    else:
+        if args.target_env_file is not None:
+            parser.error("--target-env-file requires plan-cutover")
+        if (args.output is None or args.output.exists() or args.output.is_symlink()
+                or not args.output.parent.is_dir()):
+            parser.error("output must be a new directory under an existing parent")
     epoch = None
     if args.operation == "retire-core":
         if not args.device_id or not ID.fullmatch(args.device_id) or args.retired_epoch is None:
@@ -254,12 +263,19 @@ def main() -> None:
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s %(message)s")
     try:
         import fcntl
-        read_env_file(args.env_file)
-        config = GatewayConfig.from_env()
+        if args.operation == "plan-cutover":
+            config = GatewayConfig.from_env(env_file_values(args.env_file))
+            target = GatewayConfig.from_env(env_file_values(args.target_env_file))
+        else:
+            read_env_file(args.env_file)
+            config = GatewayConfig.from_env()
         if not config.database.is_file():
             raise StateIdentityError("STATE_DATABASE_MISSING")
         with config.database.with_suffix(".lock").open("a") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            if args.operation == "plan-cutover":
+                print(canonical(cutover_plan(config, target)))
+                return
             if args.operation == "retire-core":
                 path = retire_core(config, args.output, device=args.device_id, epoch=epoch, timeout=args.timeout)
             else:

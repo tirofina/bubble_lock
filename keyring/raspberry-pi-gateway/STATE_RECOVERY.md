@@ -46,6 +46,22 @@ Gateway 0.2.54는 새 DB에서 `PC_API_DEPLOYMENT_ID`를 지정하면 중앙 API
 
 같은 중앙 저장소의 주소만 바뀌면 `PC_API_URL`을 갱신하고 ID를 유지한다. 별도 중앙 저장소에는 새 ID와 새 `GATEWAY_DATABASE`를 지정한다. 이미 ID 없이 만든 DB는 기존 설정으로 전송·보관하며, 새 ID를 넣어 기존 DB의 소유를 바꾸는 경로는 없다. 이 값은 로컬 일관성 확인에 사용한다. 서버의 mTLS·자격 상태·실행 승인은 별도로 확인한다.
 
+### 전환 전 대기열 확인
+
+Gateway 0.2.75의 `plan-cutover`는 현재 SQLite를 읽기 전용으로 열고 두 설정을 비교한다. 기존 데몬을 중지한 유지보수 창에서 원본 DB의 daemon lock으로 보호한다. 두 환경 파일은 각각 완전한 설정이어야 한다. 프로세스의 환경 변수나 다른 파일의 값을 가져오지 않는다.
+
+```sh
+sudo -u bubble-gateway /opt/bubble_lock/keyring/raspberry-pi-gateway/.venv/bin/bubble-gateway-state plan-cutover \
+  --env-file /etc/privacy-bubble/gateway.env \
+  --target-env-file /etc/privacy-bubble/gateway-next.env
+```
+
+- `databaseAction`이 `reuse-existing`이면 설정상 동일한 binding과 기존 DB 경로를 사용한다. URL이나 MQTT 주소가 바뀌면 팀의 CSE·중앙 API·브로커와 실제 저장소의 동일성을 확인한다. `targetMissingDeploymentIds`는 설정에 빠진 배포 ID를 보여준다.
+- `use-new-database`이면 binding이 바뀌고 새 DB 경로가 비어 있다. 기존 DB에 다른 binding을 지정하거나 같은 binding으로 별도 빈 DB를 지정하면 오류가 난다. 새 DB 경로에 파일이나 SQLite WAL·SHM·journal이 있어도 오류가 난다.
+- `outboxByRoute`는 native 관측·health, native 명령 영수증, credential 영수증, CORE telemetry·ACK, 중앙 telemetry·영수증의 저장 행 수다. 표시되지 않는 경로는 0건이다. `journal`에는 수신·dispatch 중 명령, outbox 등록 전 native 영수증, 중앙 등록 표시가 없는 명령 영수증과 미전달 credential 영수증이 포함된다. 각 단계에 같은 영수증이 포함될 수 있다. `sourceCentralReceiptStagingEnabled`로 중앙 등록 경로가 켜져 있었는지 확인한다.
+
+보고서는 집계와 변경된 설정 이름을 stdout에 출력한다. 새 DB를 초기화하거나 기존 큐를 복사·삭제·전송하는 동작은 없다. 배포 전 기존 큐와 dispatch 중 명령을 원래 배포에서 대조하고 필요한 상태를 [격리 snapshot](#수동-snapshot)으로 보관한다. 집계가 비어 있어도 중앙 정산과 새 배포의 실제 신원·권한 확인은 남는다. 팀 저장소와 실제 Pi에서의 전환 시험은 대기 중이다.
+
 ## 수동 snapshot
 
 `bubble-gateway-state snapshot`은 Python [sqlite3 backup API](https://docs.python.org/3.11/library/sqlite3.html#sqlite3.Connection.backup)로 committed WAL을 포함한 일관된 복사본을 만든다. live `.db` 파일만 복사하고 `-wal`을 놓치는 방식이 아니다. source connection은 read-only이며 command/fence/outbox 등 원본 data row를 수정하지 않는다. 새 private 폴더/파일만 만들고 기존 output을 덮어쓰거나 삭제하지 않는다.

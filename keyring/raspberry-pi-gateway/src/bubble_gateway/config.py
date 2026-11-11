@@ -5,6 +5,7 @@ import json
 import os
 import re
 import ssl
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -12,8 +13,9 @@ from urllib.parse import urlsplit
 ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,63}\Z")
 
 
-def read_env_file(path: Path) -> None:
+def env_file_values(path: Path) -> dict[str, str]:
     """Read simple KEY=value files, without shell expansion or evaluation."""
+    values: dict[str, str] = {}
     for number, line in enumerate(path.read_text(encoding="utf-8-sig").splitlines(), 1):
         line = line.strip()
         if not line or line.startswith("#"):
@@ -24,6 +26,12 @@ def read_env_file(path: Path) -> None:
             raise ValueError(f"Invalid environment entry at line {number}")
         if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
             value = value[1:-1]
+        values.setdefault(key, value)
+    return values
+
+
+def read_env_file(path: Path) -> None:
+    for key, value in env_file_values(path).items():
         os.environ.setdefault(key, value)
 
 
@@ -76,9 +84,11 @@ class GatewayConfig:
     commands_enabled: bool = True
 
     @classmethod
-    def from_env(cls) -> "GatewayConfig":
+    def from_env(cls, values: Mapping[str, str] | None = None) -> "GatewayConfig":
+        env = os.environ if values is None else values
+
         def required(name: str) -> str:
-            value = os.getenv(name, "").strip()
+            value = env.get(name, "").strip()
             if not value:
                 raise ValueError(f"{name} must be configured")
             return value
@@ -90,13 +100,13 @@ class GatewayConfig:
             return value
 
         def number(name: str, default: str, minimum: float, maximum: float) -> float:
-            value = float(os.getenv(name, default))
+            value = float(env.get(name, default))
             if not minimum <= value <= maximum:
                 raise ValueError(f"{name} out of range")
             return value
 
         def boolean(name: str, default: str) -> bool:
-            value = os.getenv(name, default).lower()
+            value = env.get(name, default).lower()
             if value not in {"true", "false"}:
                 raise ValueError(f"{name} must be true or false")
             return value == "true"
@@ -137,8 +147,8 @@ class GatewayConfig:
         pair = boolean("BLE_PAIR", "true")
         if not pair:
             raise ValueError("Secure pairing is required; BLE_PAIR=false is not supported")
-        revisions = tuple(v.strip() for v in os.getenv("FIRMWARE_REVISION_ALLOWLIST", "").split(",") if v.strip())
-        board_revision = os.getenv("BLE_BOARD_REVISION", "").strip() or None
+        revisions = tuple(v.strip() for v in env.get("FIRMWARE_REVISION_ALLOWLIST", "").split(",") if v.strip())
+        board_revision = env.get("BLE_BOARD_REVISION", "").strip() or None
         if board_revision is not None and not ID.fullmatch(board_revision):
             raise ValueError("BLE_BOARD_REVISION must be a single safe identifier")
         mqtt_enabled = boolean("MQTT_ENABLED", "true")
@@ -151,18 +161,18 @@ class GatewayConfig:
         if mqtt_enabled and not (core_bridge or m2m_mqtt_enabled):
             raise ValueError("MQTT_ENABLED requires a CORE or oneM2M MQTT route")
         epochs = None
-        if "CORE_TELEMETRY_EPOCHS" in os.environ:
+        if "CORE_TELEMETRY_EPOCHS" in env:
             epochs = json.loads(required("CORE_TELEMETRY_EPOCHS"))
             if (not core_bridge or not isinstance(epochs, dict) or epochs.keys() != devices.keys()
                     or any(type(epoch) is not int or not 0 <= epoch <= 2147483647 for epoch in epochs.values())):
                 raise ValueError("CORE_TELEMETRY_EPOCHS requires CORE bridge and an epoch for every BLE device")
-        profile = os.getenv("BLE_GATT_PROFILE", "core-v1")
+        profile = env.get("BLE_GATT_PROFILE", "core-v1")
         if profile not in {"core-v1", "keyring-v01"}:
             raise ValueError("BLE_GATT_PROFILE must be core-v1 or keyring-v01")
-        deployment = identifier("M2M_CSE_DEPLOYMENT_ID") if "M2M_CSE_DEPLOYMENT_ID" in os.environ else None
-        pc_deployment = identifier("PC_API_DEPLOYMENT_ID") if "PC_API_DEPLOYMENT_ID" in os.environ else None
-        receipt_ri = identifier("M2M_RECEIPT_CONTAINER_RI") if "M2M_RECEIPT_CONTAINER_RI" in os.environ else None
-        observation_ri = identifier("M2M_OBSERVATION_CONTAINER_RI") if "M2M_OBSERVATION_CONTAINER_RI" in os.environ else None
+        deployment = identifier("M2M_CSE_DEPLOYMENT_ID") if "M2M_CSE_DEPLOYMENT_ID" in env else None
+        pc_deployment = identifier("PC_API_DEPLOYMENT_ID") if "PC_API_DEPLOYMENT_ID" in env else None
+        receipt_ri = identifier("M2M_RECEIPT_CONTAINER_RI") if "M2M_RECEIPT_CONTAINER_RI" in env else None
+        observation_ri = identifier("M2M_OBSERVATION_CONTAINER_RI") if "M2M_OBSERVATION_CONTAINER_RI" in env else None
         if receipt_ri is not None and deployment is None:
             raise ValueError("M2M_RECEIPT_CONTAINER_RI requires M2M_CSE_DEPLOYMENT_ID")
         if observation_ri is not None and deployment is None:

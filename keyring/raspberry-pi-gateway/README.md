@@ -10,6 +10,8 @@ Gateway 0.2.14부터 epoch 관측은 일치하는 CSE 적용 영수증을 받아
 
 Gateway 0.2.15의 `bubble-gateway-state retire-core`는 전환 뒤 보류된 이전 epoch 행을 운영자가 보관하고 정리할 때 사용한다. daemon을 중지하고 현재보다 낮은 epoch를 명시하면 격리 스냅샷과 보관 계획을 저장한 뒤 해당 CORE 행만 정리한다. [상태 보관 절차](STATE_RECOVERY.md#종료된-core-epoch-보관)
 
+임시 Mobius4에서 팀 서버로 전환하기 전에 `bubble-gateway-state plan-cutover`로 기존 DB의 대기열과 명령 저널을 확인한다. 현재 환경과 전환 후보 환경을 각각 지정한다. [전환 전 대기열 확인](STATE_RECOVERY.md#전환-전-대기열-확인)
+
 Python 3.11 이상과 Linux BlueZ를 사용하는 KEYRING 현장 daemon이다. BLE 관측을 SQLite outbox에 저장하고 MQTT 또는 HTTPS로 oneM2M contentInstance를 생성한다. 중앙에서 받은 명령은 최신 승인·credential·deadline을 확인한 뒤 BLE로 전달한다.
 
 Pi Zero 2 W의 별도 시험 폴더에 Gateway 0.2.5를 설치했다. 임시 사용자 systemd 서비스로 전체 데몬을 실행해 실제 Feather 관측 27개와 Gateway 상태 16개를 격리 Mobius4에서 확인했다. 재시작 뒤 SQLite에 남은 관측 한 건의 원본 해시도 CSE와 일치했다. 0.2.4에서 수행한 버튼 관측과 PC 모의 GATT 명령 시험은 각각 별도 증거다. 실물 명령과 배포용 systemd 설정 시험이 남아 있다. [Pi 전체 데몬](../evidence/2026-11-10-pi-full-daemon/README.md) · [버튼 관측](../evidence/2026-11-10-pi-feather/README.md) · [명령 통합 시험](../evidence/2026-11-10-central-dispatch/README.md)
