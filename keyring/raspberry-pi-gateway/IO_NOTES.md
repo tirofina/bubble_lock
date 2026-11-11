@@ -10,6 +10,7 @@
 - Gateway 0.2.86은 등록 장치별로 명령을 순서대로 처리한다. 한 장치의 중앙 승인이나 BLE 영수증을 기다리는 동안 다른 장치의 명령을 진행한다. 이전 등록에서 남은 명령도 기존 기한 검사 경로를 거친다.
 - Gateway 0.2.84는 r18 초기 구동 revision과 명령 쓰기 특성이 없는 장치에서 관측만 구독한다. 명령 쓰기 특성이 있으면 영수증 알림 특성과 구독 성공을 확인한 뒤 `commandReady`를 연다. 영수증 특성이 없거나 알림을 지원하지 않으면 관측을 이어가며 health의 `lastError`에 `receipt_characteristic_unavailable`을 기록한다. 구독 요청이 실패하면 연결을 다시 시도한다.
 - commandId와 payloadHash가 일치하는 receipt만 해당 명령을 정산한다. 성공·거절 여부의 최종 해석은 Gateway service가 담당한다. BLE timeout은 성공으로 바꾸지 않는다.
+- Gateway 0.2.87은 수신한 명령 영수증의 최초 수신 시각과 본문을 보존한다. SQLite 기록이 실패하면 해당 장치의 명령 처리에서 저장만 재시도한다. 종료 시 한 번 더 저장을 시도한다. 저장 전에 프로세스가 종료되면 다음 시작에서 남은 실행 의도를 `INDETERMINATE / RESTART_INTERRUPTED`로 정산한다.
 - 같은 bootId의 60초 이내 uptime anchor만 acceptedAt/appliedAt으로 환산한다. UTC를 확정할 수 없으면 null과 timestampSource=unavailable을 남긴다. gateway-estimated 값은 BLE 수신 지연을 포함하는 추정값이다.
 - 순간적인 관측 수신 버퍼는 장치별 128개다. durable queue에 전달하지 못한 현재 항목은 재시도한다. 버퍼 초과 시 명시적으로 drop counter를 늘리고 연결을 끊는다. 프로세스가 비정상 종료되기 전 SQLite에 아직 저장되지 않은 BLE 알림은 복구할 수 없다.
 - Gateway 0.2.83은 `buttonPresses`가 있는 관측의 확인·비상 누계를 부팅 ID와 함께 SQLite에 저장한다. 같은 부팅에서 순번이 늘었지만 어느 한 누계가 줄어들면 BLE 세션을 끊고 해당 관측은 대기열에 넣지 않는다. 이전 누계는 BLE 재연결과 Gateway 재시작을 지나 유지된다. 누계가 빠진 관측은 저장할 수 있으며 기존 누계는 보존된다. 새 부팅에서는 새 누계를 받는다.

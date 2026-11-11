@@ -470,6 +470,64 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((status, receipt["ackCode"]), ("APPLIED", "APPLIED"))
         self.assertEqual(self.store.interrupted(), [])
 
+    async def test_repeated_receipt_write_errors_keep_first_result_after_ble_timeout(self):
+        arrived = iso_time()
+        raw = device_receipt(self.cmd, self.digest, receivedAt=arrived, acceptedAt=arrived, appliedAt=arrived,
+                             timestampSource="gateway-estimated")
+
+        async def execute(*args, on_receipt, **kwargs):
+            on_receipt(raw)
+            self.gateway.clock_anchor += 10
+            raise asyncio.TimeoutError
+
+        self.gateway.ble.execute.side_effect = execute
+        finish = self.store.finish
+        storage_error = sqlite3.OperationalError("synthetic storage error")
+        storage_check = Mock(side_effect=[storage_error, storage_error, None])
+
+        def save_when_ready(command_id, receipt):
+            storage_check()
+            return finish(command_id, receipt)
+
+        with patch.object(self.store, "finish", side_effect=save_when_ready) as writes, \
+                patch("bubble_gateway.service.DEVICE_RECEIPT_RETRY_INTERVAL", 0), \
+                self.assertLogs("bubble_gateway.service", level="WARNING"):
+            status, receipt = await self.dispatch()
+        self.assertEqual((status, receipt["ackCode"], receipt["receivedAt"]), ("APPLIED", "APPLIED", arrived))
+        self.assertEqual((receipt["acceptedAt"], receipt["appliedAt"], receipt["timestampSource"]),
+                         (arrived, arrived, "gateway-estimated"))
+        self.assertEqual([call.args for call in writes.call_args_list], [(self.cmd["commandId"], receipt)] * 3)
+        self.gateway.ble.execute.assert_awaited_once()
+        self.assertEqual(self.gateway.counters, {"command_applied": 1})
+
+    async def test_shutdown_retries_observed_receipt_before_cancelling_worker(self):
+        waiting = asyncio.Event()
+        finish = self.store.finish
+        attempts = 0
+
+        def finish_after_cancel(command_id, receipt):
+            nonlocal attempts
+            attempts += 1
+            if attempts == 2:
+                waiting.set()
+            if attempts <= 2:
+                raise sqlite3.OperationalError("synthetic storage error")
+            return finish(command_id, receipt)
+
+        with patch.object(self.store, "finish", side_effect=finish_after_cancel), \
+                self.assertLogs("bubble_gateway.service", level="WARNING"):
+            task = asyncio.create_task(self.dispatch())
+            try:
+                await asyncio.wait_for(waiting.wait(), timeout=1)
+            finally:
+                task.cancel()
+                with self.assertRaises(asyncio.CancelledError):
+                    await task
+        status, encoded = self.store.db.execute("SELECT status,receipt FROM commands").fetchone()
+        self.assertEqual((status, json.loads(encoded)["ackCode"]), ("APPLIED", "APPLIED"))
+        self.assertEqual(attempts, 3)
+        self.gateway.ble.execute.assert_awaited_once()
+
     async def test_clock_step_after_write_keeps_device_result_without_estimates(self):
         arrived = iso_time()
 

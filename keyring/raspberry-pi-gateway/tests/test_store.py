@@ -249,6 +249,9 @@ class StoreTests(unittest.TestCase):
         with self.assertRaises(CapacityError):
             self.store.observation(BINDING["observationContainer"], observation(), True)
         self.assertEqual(self.store.observation_heads(), {})
+        self.assertEqual(self.store.db.execute("SELECT COUNT(*) FROM core_sequences").fetchone()[0], 0)
+        self.store.enqueue("receipt", "synthetic", BINDING["receiptContainer"], {}, critical=True)
+        self.assertEqual(self.store.counts()[0], 1)
 
     def test_migrates_pending_commands_into_device_workers_without_changing_payloads(self):
         assigned = command(commandId="assigned")
@@ -306,9 +309,6 @@ class StoreTests(unittest.TestCase):
         container = BINDING["observationContainer"]
         self.assertTrue(self.store.observation(container, observation(sequence=4, sensorValues={"buttonPresses": [1, 0]})))
         self.assertEqual(self.store.observation_heads(include_button_presses=True), {"kr-test": ("boot-test", 4, (1, 0))})
-        self.assertEqual(self.store.db.execute("SELECT COUNT(*) FROM core_sequences").fetchone()[0], 0)
-        self.store.enqueue("receipt", "synthetic", BINDING["receiptContainer"], {}, critical=True)
-        self.assertEqual(self.store.counts()[0], 1)
 
     def test_central_observation_is_durable_with_native_copy_and_watermark(self):
         container = BINDING["observationContainer"]
