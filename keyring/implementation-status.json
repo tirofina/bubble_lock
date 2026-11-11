@@ -1929,5 +1929,12 @@
     "regressionsExecuted": false,
     "physicalJournalRecoveryVerified": false,
     "sourceCommit": "10fa65ccb81598b2a22a832a7d3ce59a56cc1967"
+  },
+  "gatewayCentralReceiptExecutionState": {
+    "reference": "raspberry-pi-gateway/RECEIPT_ROUTING.md",
+    "gatewayVersion": "0.2.110",
+    "regressionsExecuted": false,
+    "physicalCentralDeliveryVerified": false,
+    "sourceCommit": "0131163a26adfbd86c8919a7239a263dfe12c162"
   }
 }

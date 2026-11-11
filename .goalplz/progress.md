@@ -1991,3 +1991,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 마지�
 - 불확정·영수증 미기록·마지막 쓰기 미시도를 다루는 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·실제 Pi/장치 저널 및 중앙 재정산 시험은 미수행이다. [복구 대조 절차](../keyring/JOURNAL_RETENTION.md#pi-중단-뒤-장치-완료-기록-찾기)
 
 소스 commit `10fa65ccb81598b2a22a832a7d3ce59a56cc1967`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `d9b982b..10fa65c`이다. goal은 active/progress다.
+
+## 2026-11-11 — 중앙 영수증 응답의 정산 상태 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R03. 직전 goal turn은 Pi 불확정 영수증과 장치 저널 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀 `POST /receipts` 수용·중복 응답을 확인했다.
+
+- Gateway 0.2.110은 중앙의 `executionState`까지 영수증 결과에 대조한 뒤 대기열을 완료한다. 불확정 영수증의 중복 확인은 같은 명령·claim·본문 해시에 대해 중앙이 나중에 정산한 상태도 받을 수 있다. 상태 불일치에는 원래 영수증과 재시도 정보를 보존한다.
+- 적용·취소·불확정 응답, 잘못된 상태 및 불확정 영수증의 중복 수용을 다루는 회귀시험 소스를 반영했다. 빌드·테스트·정적 분석·실제 Pi와 중앙 API 전송 시험은 미수행이다. [영수증 전달 절차](../keyring/raspberry-pi-gateway/RECEIPT_ROUTING.md)
+
+소스 commit `0131163a26adfbd86c8919a7239a263dfe12c162`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `b20467d..0131163`이다. goal은 active/progress다.
