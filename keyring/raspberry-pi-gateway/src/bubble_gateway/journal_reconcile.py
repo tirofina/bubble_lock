@@ -14,7 +14,7 @@ import sys
 
 from .ble import BleProtocolError, _object
 from .config import ID, GatewayConfig, env_file_values, read_env_file
-from .integration_evidence import inspect_integration_command
+from .integration_evidence import inspect_integration_command, inspect_integration_receipt
 from .journal_export import read_archive
 from .model import canonical, iso_time, parse_time, payload_hash, validate_command
 from .state_archive import _file_digest
@@ -207,15 +207,34 @@ async def _check_gateway_only_receipts(transport, config, device_id, rows, pendi
         entry["nativeReceipt"] = {**result, "gatewayReceiptSha256": payload_hash(receipt)}
 
 
+def _check_gateway_only_central(config, device_id, rows, pending, team_state):
+    pending["centralReceiptSource"] = "captured"
+    for entry in pending["commands"]:
+        command_id = entry["commandId"]
+        try:
+            command, receipt = _archived_receipt(config, device_id, command_id, rows[command_id])
+        except (ValueError, KeyError, TypeError, AttributeError, BleProtocolError):
+            entry["centralReceipt"] = {"result": "gateway_binding_mismatch"}
+            continue
+        if receipt is None:
+            entry["centralReceipt"] = {"result": "missing_gateway_receipt"}
+            continue
+        try:
+            entry["centralReceipt"] = inspect_integration_receipt(command, receipt, team_state)
+        except (ValueError, KeyError, TypeError, AttributeError, OverflowError):
+            entry["centralReceipt"] = {"result": "central_receipt_mismatch"}
+
+
 async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive: Path, *,
                     same_boot_command: str | None = None, board_revision: str | None = None,
                     firmware_revision: str | None = None, team_state: dict | None = None,
                     native_receipt: dict | None = None, archive_only: bool = False,
                     check_gateway_only_native: bool = False) -> dict:
-    if (team_state is not None or native_receipt is not None) and same_boot_command is None:
-        raise ValueError("Saved receipt and team state comparison require a same-boot command")
-    if archive_only and (team_state is not None or native_receipt is not None):
-        raise ValueError("Archive-only comparison accepts only the Gateway and device archives")
+    compare_pending_central = archive_only and same_boot_command is None and team_state is not None
+    if native_receipt is not None and (same_boot_command is None or archive_only):
+        raise ValueError("Saved native receipt comparison requires a same-boot command outside archive-only mode")
+    if team_state is not None and not compare_pending_central and (same_boot_command is None or archive_only):
+        raise ValueError("Team state requires a same-boot command or a full-device archive-only comparison")
     if check_gateway_only_native:
         if archive_only or same_boot_command is not None:
             raise ValueError("Gateway-only native checks require a live full-device comparison")
@@ -243,13 +262,14 @@ async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive
         gateway_archive, configured_binding(config), [record["commandId"] for record in records],
         device_id=device_id if selected is None else None,
         include_unstaged_central=config.commands_enabled and config.central_receipts_enabled,
-        include_pending_rows=check_gateway_only_native,
+        include_pending_rows=check_gateway_only_native or compare_pending_central,
     )
     captured = _captured_receipt(native_receipt, same_boot_command, config) if native_receipt is not None else None
     transport = None if archive_only or captured is not None else TransportHub(
         replace(config, mqtt_enabled=False, core_bridge_enabled=False))
     results = []
-    central = {"status": "journal_review_required", "originalApplicationMatched": False} if team_state is not None else None
+    central = ({"status": "journal_review_required", "originalApplicationMatched": False}
+               if team_state is not None and same_boot_command is not None else None)
     try:
         if transport is not None:
             await transport.start()
@@ -296,6 +316,8 @@ async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive
                                        originalApplicationMatched=result["gatewayDelivered"] and receipt["ackCode"] == "APPLIED")
         if check_gateway_only_native:
             await _check_gateway_only_receipts(transport, config, device_id, rows, pending)
+        if compare_pending_central:
+            _check_gateway_only_central(config, device_id, rows, pending, team_state)
     finally:
         if transport is not None:
             await transport.close()
@@ -324,7 +346,8 @@ def main():
                         help="Compare one command from the same device boot as the journal capture")
     parser.add_argument("--board-revision", help="Expected board revision for --same-boot-command")
     parser.add_argument("--firmware-revision", help="Expected firmware revision for --same-boot-command")
-    parser.add_argument("--team-state", type=Path, help="Private scoped integration runtime.json snapshot")
+    parser.add_argument("--team-state", type=Path,
+                        help="Private integration snapshot for a same-boot command or a full archive-only comparison")
     source = parser.add_mutually_exclusive_group()
     source.add_argument("--native-receipt", type=Path, help="Saved pulse-receipt.json for offline same-boot comparison")
     source.add_argument("--archive-only", action="store_true", help="Compare device and Gateway archives without network access")
@@ -334,10 +357,13 @@ def main():
     if args.same_boot_command is not None:
         if not ID.fullmatch(args.same_boot_command) or not args.board_revision or not args.firmware_revision:
             parser.error("--same-boot-command requires a valid command ID, --board-revision and --firmware-revision")
-    elif any(value is not None for value in (args.board_revision, args.firmware_revision, args.team_state, args.native_receipt)):
-        parser.error("Revision options, --team-state and --native-receipt require --same-boot-command")
-    if args.archive_only and args.team_state is not None:
-        parser.error("--archive-only does not take --team-state")
+    elif any(value is not None for value in (args.board_revision, args.firmware_revision, args.native_receipt)):
+        parser.error("Revision options and --native-receipt require --same-boot-command")
+    if args.team_state is not None:
+        if args.archive_only and args.same_boot_command is not None:
+            parser.error("--archive-only with --team-state compares the full device")
+        if not args.archive_only and args.same_boot_command is None:
+            parser.error("--team-state requires --same-boot-command or --archive-only")
     if args.check_gateway_only_native and args.same_boot_command is not None:
         parser.error("--check-gateway-only-native requires a full-device comparison")
     try:

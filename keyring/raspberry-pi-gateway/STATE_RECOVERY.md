@@ -89,6 +89,8 @@ bubble-keyring-reconcile --archive-only --env-file gateway-old.env \
 
 `gatewayOnlyPending.commands`의 `DISPATCHING` 행은 `bleFinalWriteMayHaveStarted`에 미시도 `false`, 전송 가능 `true`, 기록 없음 `null`을 표시한다. `true`인 명령은 기기·CSE·중앙 기록을 대조해 실제 전달 여부를 확인한다. 각 행은 원래 검토 건수에 포함된다.
 
+Gateway 0.2.95에서 위 `--archive-only` 명령에 `--team-state /path/to/runtime.json`을 추가하면 같은 원래 배포에서 보관한 중앙 정산 기록도 읽는다. `gatewayOnlyPending.commands[].centralReceipt`에는 명령과 영수증 본문·해시·claim·소유권 epoch가 팀의 `GATEWAY_RECEIPT_SETTLED` 이벤트와 일치하는지 표시한다. 일치하면 중앙 실행 상태와 이벤트 ID를 출력한다. Pi 영수증, 중앙 명령, 중앙 영수증이 각각 빠진 경우와 기록 불일치도 구분한다. 이 옵션은 네트워크 없이 보관본을 비교하며 검토 대상 건수를 유지한다.
+
 기존 CSE를 읽을 수 있으면 Gateway 0.2.78의 `--check-gateway-only-native`를 사용한다. 원래 배포 환경 파일의 `M2M_RECEIPT_CONTAINER_RI`와 mTLS 설정을 사용하며 프로세스 환경 변수는 가져오지 않는다.
 
 ```sh

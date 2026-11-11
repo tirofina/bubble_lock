@@ -68,6 +68,54 @@ def inspect_integration_observation(observation, team_state, *, allow_pending=Fa
     return telemetry
 
 
+def inspect_integration_receipt(command, receipt, team_state):
+    """Compare central acceptance of a Pi receipt without requiring a device record."""
+    command_id = command["commandId"]
+    record = team_state.get("gatewayCommands", {}).get(command_id)
+    stored = team_state.get("gatewayDeviceReceipts", {}).get(command_id)
+    if record is None and stored is None:
+        return {"result": "missing_central_command"}
+    digest = payload_hash(command)
+    if record is None or canonical(record["command"]) != canonical(command) or record["payloadHash"] != digest:
+        raise ValueError("Central command does not match the Pi command")
+    if stored is None and record.get("lastReceiptHash") is None:
+        return {"result": "missing_central_receipt"}
+    receipt_digest = payload_hash(receipt)
+    if (stored is None or record.get("lastReceiptHash") != receipt_digest
+            or stored.get("receiptHash") != receipt_digest or canonical(stored.get("receipt")) != canonical(receipt)):
+        raise ValueError("Central receipt does not match the Pi receipt")
+
+    status, code = receipt["status"], receipt["ackCode"]
+    if status == "APPLIED":
+        expected_state = "APPLIED_VERIFIED"
+        if (code not in {"APPLIED", "DUPLICATE"}
+                or canonical(record.get("readback")) != canonical(command["desiredState"])
+                or canonical(receipt.get("readback")) != canonical(command["desiredState"])):
+            raise ValueError("Central application readback differs from the command")
+    else:
+        expected_state = "DISPATCH_UNCERTAIN"
+        if status == "REJECTED" and code != "ALREADY_DISPATCHED":
+            expected_state = "SETTLED_CANCELLED"
+            if receipt["appliedAt"] is not None or record.get("settlementReason") != code:
+                raise ValueError("Central cancellation reason differs from the Pi receipt")
+    generation = record.get("desiredGeneration", 0)
+    if record.get("executionState") != expected_state or type(generation) is not int or generation < 0:
+        raise ValueError("Invalid central settlement state or device generation")
+
+    event = require_integration_event(
+        team_state, "GATEWAY_RECEIPT_SETTLED", {"gatewayId": command["gatewayId"], "commandId": command_id},
+        {"ueId": command["deviceId"], "claimId": command["claimId"], "epoch": command["ownershipEpoch"],
+         "desiredGeneration": generation, "payloadHash": digest, "receiptHash": receipt_digest,
+         "executionState": expected_state, "deviceAppliedAt": receipt["appliedAt"]},
+    )
+    central_received = parse_time(stored["receivedAt"])
+    if (not parse_time(command["issuedAt"]) <= parse_time(receipt["receivedAt"]) <= central_received + timedelta(seconds=2)
+            or parse_time(event["timestamp"]) < central_received):
+        raise ValueError("Central receipt chronology does not match the Pi receipt")
+    return {"result": "central_receipt_matched", "executionState": expected_state, "receiptHash": receipt_digest,
+            "settlementEventId": event["eventId"]}
+
+
 def inspect_integration_command(command, receipt, team_state):
     settlement = integration_settlement(command, receipt, team_state)
     if settlement is None:

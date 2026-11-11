@@ -145,3 +145,72 @@ class JournalArchiveReconcileTests(unittest.IsolatedAsyncioTestCase):
         unpinned = GatewayConfig.from_env(values, require_tls_files=False)
         with self.assertRaisesRegex(StateIdentityError, "RECONCILE_RECEIPT_CONTAINER_PIN_REQUIRED"):
             await reconcile(unpinned, root / "device", gateway_archive, check_gateway_only_native=True)
+
+    async def test_archive_only_compares_central_acceptance_for_gateway_only_receipts(self):
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        root = Path(temp.name)
+        current = config(root / "source.sqlite3")
+        current.commands_enabled = True
+        gateway_archive = root / "gateway"
+        team = {"gatewayCommands": {}, "gatewayDeviceReceipts": {}, "receipts": []}
+        cases = (
+            ("cancelled", "REJECTED", "DISPATCH_NOT_SENT", "SETTLED_CANCELLED"),
+            ("uncertain", "INDETERMINATE", "RESTART_INTERRUPTED", "DISPATCH_UNCERTAIN"),
+            ("applied", "APPLIED", "APPLIED", "APPLIED_VERIFIED"),
+            ("wrong-claim", "REJECTED", "DISPATCH_NOT_SENT", "SETTLED_CANCELLED"),
+            ("missing-command", "REJECTED", "DISPATCH_NOT_SENT", None),
+            ("missing-receipt", "REJECTED", "DISPATCH_NOT_SENT", None),
+            ("waiting", None, None, None),
+        )
+        with closing(Store(current.database, 100, 100000, 20, configured_binding(current))) as store:
+            for name, status, code, execution_state in cases:
+                cmd = command(commandId=name)
+                digest = payload_hash(cmd)
+                store.accept(cmd, digest)
+                if status is None:
+                    continue
+                receipt = {key: cmd[key] for key in ("gatewayId", "deviceId", "commandId", "grantRevision", "ownershipEpoch")}
+                readback = cmd["desiredState"] if status == "APPLIED" else None
+                receipt.update(version=1, payloadHash=digest, status=status, ackCode=code, readback=readback,
+                               receivedAt=iso_time(), acceptedAt=None, appliedAt=None)
+                store.finish(name, receipt)
+                if name == "missing-command":
+                    continue
+                record = {"command": cmd, "payloadHash": digest, "desiredGeneration": 1}
+                team["gatewayCommands"][name] = record
+                if execution_state is None:
+                    continue
+                receipt_digest = payload_hash(receipt)
+                record.update(lastReceiptHash=receipt_digest, executionState=execution_state,
+                              readback=readback, settlementReason="EXPIRED" if name == "uncertain" else code)
+                team["gatewayDeviceReceipts"][name] = {"receiptHash": receipt_digest, "receipt": receipt, "receivedAt": iso_time()}
+                team["receipts"].append({
+                    "type": "GATEWAY_RECEIPT_SETTLED", "eventId": f"evt-{name}", "contractId": "privacy-bubble.integration.v1",
+                    "docRevision": "2.0.0", "gatewayId": cmd["gatewayId"], "commandId": name, "ueId": cmd["deviceId"],
+                    "claimId": "different-claim" if name == "wrong-claim" else cmd["claimId"],
+                    "epoch": cmd["ownershipEpoch"], "desiredGeneration": 1, "payloadHash": digest,
+                    "receiptHash": receipt_digest, "executionState": execution_state, "deviceAppliedAt": None,
+                    "timestamp": iso_time(),
+                })
+            with patch("bubble_gateway.state_archive._sync_directory"):
+                archive(current, gateway_archive, adopt=False, timeout=5)
+
+        journal = {"identity": {"deviceId": "kr-test"}, "deviceSnapshot": {"snapshotId": "snapshot"},
+                   "files": [{"sha256": "test-digest"}]}
+        with (patch("bubble_gateway.journal_reconcile.read_archive", return_value=(journal, [])),
+              patch("bubble_gateway.journal_reconcile.TransportHub", side_effect=AssertionError("unexpected network"))):
+            report = await reconcile(current, root / "device", gateway_archive, archive_only=True, team_state=team)
+
+        pending = report["gatewayOnlyPending"]
+        self.assertEqual(pending["centralReceiptSource"], "captured")
+        evidence = {row["commandId"]: row["centralReceipt"] for row in pending["commands"]}
+        for name, _, _, state in cases[:3]:
+            self.assertEqual(evidence[name]["result"], "central_receipt_matched")
+            self.assertEqual(evidence[name]["executionState"], state)
+            self.assertEqual(evidence[name]["settlementEventId"], f"evt-{name}")
+        self.assertEqual(evidence["wrong-claim"]["result"], "central_receipt_mismatch")
+        self.assertEqual(evidence["missing-command"]["result"], "missing_central_command")
+        self.assertEqual(evidence["missing-receipt"]["result"], "missing_central_receipt")
+        self.assertEqual(evidence["waiting"]["result"], "missing_gateway_receipt")
+        self.assertEqual(report["reviewCount"], len(cases))
