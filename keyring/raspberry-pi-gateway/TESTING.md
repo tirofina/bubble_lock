@@ -1,5 +1,7 @@
 # Gateway 로컬 시험
 
+Gateway 0.2.72의 r18 관측 도구는 RSSI가 있는 샘플과 중앙 위치 API·LIVE 웹 응답을 대조한다. 권한 거절, 만료, 다른 RSSI와 출처 혼합을 다루는 회귀시험 소스를 추가했다. 빌드·시험·실제 위치 조회는 미실행이다.
+
 Gateway 0.2.71의 r18 관측 대조 도구는 같은 USB 부팅의 Mobius4 관측·health, Pi SQLite 순번과 중앙 수용 이벤트를 연결한다. 중앙 수용 지연, 본문 해시 불일치와 다른 부팅·컨테이너를 다루는 회귀시험 소스를 추가했다. 빌드·시험·실제 관측 전달은 미실행이다.
 
 Gateway 0.2.70은 r18 첫 구동의 Pi 관측 전용 세션을 제공한다. 기존 명령 영수증 보존, 관측 전송, 명령 목록을 조회하지 않는 사전 확인의 회귀시험 소스를 추가했다. 빌드·시험·Pi 실행은 미실행이다.
@@ -388,6 +390,14 @@ python $tool compare --firmware-revision $r18BringupFirmware --usb-boot-log $r18
 ```
 
 `compare`는 Pi의 같은 부팅에서 관측 순번이 저장됐는지 확인한다. 해당 전송이 아직 큐에 있으면 Pi 본문도 대조한다. 중앙은 고정 팀 소스의 해시 함수로 Mobius4 본문을 계산해 수용 이벤트와 비교한다. 상태 사본에 중앙 이벤트가 아직 없으면 `centralTelemetryAccepted:false`와 종료 코드 1을 출력한다. 최신 중앙 사본으로 같은 기록을 다시 대조할 수 있다.
+
+##### 중앙 위치 API와 웹 응답 대조
+
+위치 화면까지 확인할 때는 새 BLE 연결 직전에 `capture --require-rssi`를 시작한다. Pi의 광고 RSSI 보존 시간 안에 같은 부팅의 관측을 확보하면 `R18_LOCATION_SAMPLE`에 관측 시각이 출력된다. 위치 API와 웹은 최신 관측을 제공하므로 두 응답에서 그 시각의 자료를 확보한다.
+
+현재 격리 r18 명령 API는 위치 조회를 허용하지 않는다. 같은 관측을 받는 팀 포털 배치의 승인된 사용자 세션과 유효한 위치 grant·lease를 사용해 `GET /v1/portal/locations`와 LIVE 웹의 `GET /api/portal/locations`를 확보한다. 응답 사본에는 인증 헤더·쿠키 없이 `path`, 숫자 `status`, UTC 조회 시각 `capturedAt`, JSON `body`를 기록한다.
+
+위 `compare` 명령에 `--portal-response $portalResponseCopy`와 `--web-response $webResponseCopy` 중 확보한 파일을 추가한다. 결과는 수용 이벤트와 기기·Gateway·관측 시각·RSSI·모의 표시가 일치하면 `matched`를 반환한다. 웹 출처는 `live`의 `portal-api`여야 한다. `combined`는 파일 입력도 섞이므로 출처 미확인으로 남긴다. 화면 표시와 별도 앱의 실물 연동은 각각 화면 증거를 남긴다.
 
 #### r18 Pi 명령 세션
 

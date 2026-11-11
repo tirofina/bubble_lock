@@ -7,7 +7,7 @@ from bubble_gateway.model import central_observation_id, payload_hash
 from bubble_gateway.store import Store
 from helpers import BINDING, observation
 from pi_led_cycle import content_name
-from scoped_r18_observation import compare_observation
+from scoped_r18_observation import compare_observation, inspect_location_response
 from scoped_r18_pulse import GATEWAY, PATHS, R18_BOARD, R18_DEVICE
 
 
@@ -37,7 +37,7 @@ class ScopedR18ObservationTests(unittest.TestCase):
         self.event = {"type": "GATEWAY_TELEMETRY_ACCEPTED", "contractId": "privacy-bubble.integration.v1",
                       "docRevision": "2.0.0", "eventId": "telemetry-a", "gatewayId": GATEWAY, "deviceId": R18_DEVICE,
                       "observationId": central_observation_id(self.observation), "payloadHash": payload_hash(self.observation),
-                      "observedAt": stamp, "timestamp": stamp, "sequence": 21}
+                      "observedAt": stamp, "timestamp": stamp, "sequence": 21, "simulation": False}
         binding = dict(BINDING, bindingVersion=3, gatewayId=GATEWAY, originator="Sscoped-r18-gateway-b", cseId="Mobius4",
                        cseDeploymentId="scoped-mobius4", pcApiDeploymentId="scoped-command-api-r18",
                        observationContainer=PATHS["observation"], observationContainerRi="cnt-observation")
@@ -66,3 +66,29 @@ class ScopedR18ObservationTests(unittest.TestCase):
         self.capture["health"]["pi"] = "cnt-other"
         with self.assertRaisesRegex(ValueError, "pinned container"):
             self.compare([self.event])
+
+    def test_location_projection_matches_both_routes_and_checks_scope_and_expiry(self):
+        stamp = self.observation["observedAt"]
+        ble = {"gatewayId": GATEWAY, "observedAt": stamp, "rssiDbm": self.observation["rssi"], "simulation": False}
+        portal = {"path": "/v1/portal/locations", "status": 200, "capturedAt": stamp,
+                  "body": {"deviceIds": [R18_DEVICE], "readExpiresAt": "2026-11-11T09:00:07.000Z",
+                           "observations": [dict(ble, deviceId=R18_DEVICE)]}}
+        web = {"path": "/api/portal/locations", "status": 200, "capturedAt": stamp,
+               "body": {"mode": "live", "source": "portal-api", "readExpiresAt": portal["body"]["readExpiresAt"],
+                        "devices": [{"deviceId": R18_DEVICE, "ble": ble}]}}
+        report = compare_observation(self.capture, self.usb, self.database, {"receipts": [self.event]}, payload_hash,
+                                     portal_response=portal, web_response=web)
+        self.assertEqual(report["portalLocationResponse"]["status"], "matched")
+        self.assertEqual(report["webLocationResponse"]["status"], "matched")
+
+        cases = [(dict(portal, status=403), False, "access-denied"),
+                 (dict(portal, body=dict(portal["body"], deviceIds=[])), False, "device-outside-response-scope"),
+                 (dict(portal, capturedAt=portal["body"]["readExpiresAt"]), False, "expired-at-capture"),
+                 (dict(web, body=dict(web["body"], source="combined")), True, "source-unconfirmed")]
+        for response, is_web, expected in cases:
+            with self.subTest(expected=expected):
+                result = inspect_location_response(response, self.observation, self.event, web=is_web)
+                self.assertEqual(result["status"], expected)
+        ble["rssiDbm"] -= 1
+        self.assertEqual(inspect_location_response(web, self.observation, self.event, web=True)["status"],
+                         "observation-missing")
