@@ -1194,3 +1194,12 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 격리 런처가 `127.0.0.1:8788`에서 `READY`를 반환했다. 로컬 상태에서 `gw-a`의 활성 자격, 운영자 보호자 등록과 시험 장치의 Gateway·가구 연결을 확인했다. 발급 명령과 관측은 각각 0건이다. 빌드·시험·Pi 실행은 미실행이다. [시작 기록과 잠금 파일 해시](../keyring/evidence/2026-11-11-current-central-bench/provisioning.json)
 
 사용한 런처 소스는 원격 역할 브랜치에 반영된 `fbac3d11035c3de3275e858140a7364fb861f362`다. goal은 active/progress다.
+
+## 2026-11-11 — 최신 중앙 API의 Feather 시험 증거 대조
+
+직전 goal turn은 최신 중앙 API를 루프백에 시작하고 등록을 확인한 progress다. DOC-REV 2.0.0과 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 중앙의 `GATEWAY_DISPATCH_STARTED`, `GATEWAY_RECEIPT_SETTLED`, `GATEWAY_TELEMETRY_ACCEPTED` 기록을 읽었다.
+
+- 통합 모드 LED 시험은 Mobius4 원본과 일치하는 중앙 `APPLIED_VERIFIED` 기록을 확인한 뒤 다음 단계로 넘어간다. 증거 도구는 Pi SQLite의 컨테이너 고정 ID와 전송 상태를 대조하고 중앙 실행 시작·정산·관측 이벤트 ID를 출력한다. 운영자 육안 기록은 독립 항목이다. [최신 중앙 API 시험 결과 대조](../keyring/raspberry-pi-gateway/TESTING.md#최신-중앙-api의-시험-결과-대조)
+- 중앙 정산 대기, 잘못된 claim·영수증 해시·관측 시각을 다루는 회귀시험 소스를 추가했다. 빌드·시험·증거 도구 실행·실제 Pi 연동은 미실행이다.
+
+소스 commit `be596de96ce9c61625af052fd3bc13e7717fb6ab`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `62b81c3..be596de`다. goal은 active/progress다.
