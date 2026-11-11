@@ -1936,5 +1936,12 @@
     "regressionsExecuted": false,
     "physicalCentralDeliveryVerified": false,
     "sourceCommit": "0131163a26adfbd86c8919a7239a263dfe12c162"
+  },
+  "gatewayCentralExpiryAdmission": {
+    "reference": "raspberry-pi-gateway/IO_NOTES.md#중앙-관측-전달",
+    "gatewayVersion": "0.2.111",
+    "regressionsExecuted": false,
+    "physicalOutboxPressureVerified": false,
+    "sourceCommit": "8dc07605c6b28112ed07b7561ead8eb09ff8ac0a"
   }
 }

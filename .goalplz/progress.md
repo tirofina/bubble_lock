@@ -2000,3 +2000,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R03. 직전 goal turn은 Pi 불�
 - 적용·취소·불확정 응답, 잘못된 상태 및 불확정 영수증의 중복 수용을 다루는 회귀시험 소스를 반영했다. 빌드·테스트·정적 분석·실제 Pi와 중앙 API 전송 시험은 미수행이다. [영수증 전달 절차](../keyring/raspberry-pi-gateway/RECEIPT_ROUTING.md)
 
 소스 commit `0131163a26adfbd86c8919a7239a263dfe12c162`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `b20467d..0131163`이다. goal은 active/progress다.
+
+## 2026-11-11 — 관측 대기열 압박에서 만료 중앙 복제본 정리
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 중앙 영수증 응답의 정산 상태 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 중앙 관측 보관 계약을 확인했다.
+
+- Gateway 0.2.111은 신뢰 가능한 시계를 기준으로 보관 기간이 지난 관측의 중앙 전송 항목을 새로 등록하지 않는다. SQLite 한도에 걸리면 이전에 등록한 만료 중앙 복제본만 최대 128건 정리하고 동일 관측의 원자적 저장을 한 번 다시 시도한다. Mobius4 관측과 명령 영수증은 각 경로에 남긴다.
+- 중앙 만료 전 도착·만료 복제본으로 인한 저장 압박·기존 영수증 보존을 다루는 회귀시험 소스를 반영했다. 빌드·테스트·정적 분석·실제 Pi 대기열 및 중앙 장애 시험은 미수행이다. [통신 메모](../keyring/raspberry-pi-gateway/IO_NOTES.md#중앙-관측-전달)
+
+소스 commit `8dc07605c6b28112ed07b7561ead8eb09ff8ac0a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `c92e6ce..8dc0760`이다. goal은 active/progress다.
