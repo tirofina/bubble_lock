@@ -1203,3 +1203,12 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 중앙 정산 대기, 잘못된 claim·영수증 해시·관측 시각을 다루는 회귀시험 소스를 추가했다. 빌드·시험·증거 도구 실행·실제 Pi 연동은 미실행이다.
 
 소스 commit `be596de96ce9c61625af052fd3bc13e7717fb6ab`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `62b81c3..be596de`다. goal은 active/progress다.
+
+## 2026-11-11 — Pi 시작 전 격리 중앙 API 확인
+
+직전 goal turn은 최신 중앙 API의 Feather 시험 및 증거 대조 코드를 올린 progress다. DOC-REV 2.0.0과 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 head는 직전과 같다.
+
+- 통합 벤치는 시험 Gateway 인증서에 `bench-capabilities` 조회를 제공한다. Pi의 `preflight`와 `run`은 모드, 고정 팀 커밋, Gateway·장치 ID와 세 기능을 대조한다. 불일치하면 Gateway와 BLE 시작을 중단한다. [Pi 명령 세션](../keyring/raspberry-pi-gateway/TESTING.md#pi-명령-세션)
+- 기존 루프백 리스너의 소유 프로세스와 빈 명령·관측 상태를 확인하고 격리 API를 재시작했다. `127.0.0.1:8788`에서 `READY`와 `dispatch-start`, `receipts`, `telemetry` 목록을 수신했다. Pi의 인증 조회, 회귀시험과 빌드는 미실행이다.
+
+소스 commit `00ee7747efcef1bcdbfe4163b238d138363f65dd`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `d6cae41..00ee774`다. goal은 active/progress다.

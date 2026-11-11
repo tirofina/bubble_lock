@@ -173,15 +173,15 @@
   "firmwareRevision": "keyring-0.7.13",
   "benchFirmwareRevision": "feather-probe-0.2.0",
   "publication": {
-    "sourceCommit": "be596de96ce9c61625af052fd3bc13e7717fb6ab",
+    "sourceCommit": "00ee7747efcef1bcdbfe4163b238d138363f65dd",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "be596de96ce9c61625af052fd3bc13e7717fb6ab",
-    "lastPushedCommit": "be596de96ce9c61625af052fd3bc13e7717fb6ab",
-    "latestCheckpoint": "Wait for central settlement between bench commands and bind current central, Pi and CSE evidence.",
-    "lastPushedCommitBeforeThisCheckpoint": "62b81c39c60fcac8a45c9b0a9435f2be94e9ad2f"
+    "latestLocalSourceCommit": "00ee7747efcef1bcdbfe4163b238d138363f65dd",
+    "lastPushedCommit": "00ee7747efcef1bcdbfe4163b238d138363f65dd",
+    "latestCheckpoint": "Require the expected integration bench revision and capabilities on Pi before starting BLE.",
+    "lastPushedCommitBeforeThisCheckpoint": "d6cae41470065875b2dc8dbc41ba40a641994de1"
   },
   "gatewayRevision": "0.2.47",
   "pendingValidationScope": "Gateway 0.2.47 central telemetry, central receipt replay and database upgrade, central dispatch-start and pinned-receipt restart and replay, visible Feather LED actuation, r18 physical commands and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE MQTT ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
@@ -205,7 +205,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Prepare current central API bench sequencing and read-only evidence correlation under DOC-REV 2.0.0",
+    "executionRequest": "Bind the Pi integration bench to the intended isolated API before starting under DOC-REV 2.0.0",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -214,11 +214,11 @@
     ],
     "latestRemoteCore": "d54a43a",
     "latestRemoteMain": "bc2a45d",
-    "sourceCommit": "be596de96ce9c61625af052fd3bc13e7717fb6ab",
-    "sourceValidation": "Read the current rubric, team heads, and bc2a45d dispatch, settlement and telemetry event schemas. Added the bench settlement wait and evidence comparison with regression source. Build, test execution, evidence tool execution and physical Pi workflow remain pending.",
+    "sourceCommit": "00ee7747efcef1bcdbfe4163b238d138363f65dd",
+    "sourceValidation": "Read the current rubric, team heads and bc2a45d mTLS request handling. Uploaded the authenticated bench capabilities route and Pi startup guard. Restarted the isolated loopback listener and observed READY with all three features. No capability request from Pi, regression execution, build or physical workflow was run.",
     "goalComplete": false,
     "pendingInput": null,
-    "currentDependencyState": "The Feather 0.2.0 and Pi Gateway 0.2.43 command path matched isolated Mobius4 and PostgreSQL on the pinned 715ef58 API, with no visible LED response. The isolated bc2a45d profile started on loopback 8788 with the bench Gateway, household and device registered. The integration-mode bench and evidence tool are available in source. Pi and API workflow integration evidence, central receipt replay, r18 identification and first power-on, physical reconnect, battery, LCD, charger and sensor checks, NVS fault and archive history verification, production CSE and CORE, journal reclaim, and physical power/range/wake evidence remain.",
+    "currentDependencyState": "The Feather 0.2.0 and Pi Gateway 0.2.43 command path matched isolated Mobius4 and PostgreSQL on the pinned 715ef58 API, with no visible LED response. The isolated bc2a45d listener on 8788 restarted with the bench capability manifest. The Pi preflight, integration-mode bench and evidence tool are available in source. Pi and API workflow integration evidence, central receipt replay, r18 identification and first power-on, physical reconnect, battery, LCD, charger and sensor checks, NVS fault and archive history verification, production CSE and CORE, journal reclaim, and physical power/range/wake evidence remain.",
     "historicalBlock": {
       "lastReportedGoalStatus": "blocked",
       "consecutiveBlockedTurns": 3,
@@ -1279,5 +1279,16 @@
     "regressionsExecuted": false,
     "piVerified": false,
     "sourceCommit": "be596de96ce9c61625af052fd3bc13e7717fb6ab"
+  },
+  "centralIntegrationPreflight": {
+    "reference": "raspberry-pi-gateway/TESTING.md#pi-명령-세션",
+    "teamMain": "bc2a45dfcc014b7cdb0a57a03aca2c04ca8eb989",
+    "loopbackPort": 8788,
+    "listenerRestarted": true,
+    "startupStatus": "READY",
+    "advertisedFeatures": ["dispatch-start", "receipts", "telemetry"],
+    "regressionsExecuted": false,
+    "piVerified": false,
+    "sourceCommit": "00ee7747efcef1bcdbfe4163b238d138363f65dd"
   }
 }
