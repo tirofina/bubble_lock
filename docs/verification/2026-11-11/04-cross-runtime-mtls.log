@@ -6,6 +6,6 @@ test_signed_bearer_over_tls_and_gateway_certificate_binding (test_oidc_api.OidcA
 test_node_bff_https_ca_and_enrolled_oidc_token (test_portal_upstream.PortalUpstreamTests.test_node_bff_https_ca_and_enrolled_oidc_token) ... ok
 
 ----------------------------------------------------------------------
-Ran 6 tests in 10.410s
+Ran 6 tests in 9.019s
 
 OK

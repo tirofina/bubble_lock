@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-11T04:05:06.068Z",
+  "generatedAt": "2026-11-11T04:37:21.685Z",
   "node": "v22.19.0",
   "mode": "verify",
   "status": "PASS",
@@ -7,100 +7,100 @@
     {
       "label": "core-tests",
       "exitCode": 0,
-      "durationMs": 7079,
+      "durationMs": 7187,
       "log": "01-core-tests.log",
-      "sha256": "67d1cef70ec987ee0d0371a0af57eb78facf2100f1f8d8065ee78714c2399176"
+      "sha256": "44a56300a21eadc6e3e64a8ed56a7e05b55a9e9bdd5766d206048598940087dd"
     },
     {
       "label": "web-tests",
       "exitCode": 0,
-      "durationMs": 1563,
+      "durationMs": 1406,
       "log": "02-web-tests.log",
-      "sha256": "21485886a71409a225dc1ab5d9fff6c6547eeaf86bfe8846ccf8f3ae6272e35b"
+      "sha256": "60a86cb19602ba1715271dd6fcca0e9674ef9b587580cb7d402f65af0a90dbac"
     },
     {
       "label": "gateway-tests",
       "exitCode": 0,
-      "durationMs": 2856,
+      "durationMs": 4123,
       "log": "03-gateway-tests.log",
-      "sha256": "e7fa40aa7690880cf532078814cf40f529adebcde96c8161ff40fff615492cd4"
+      "sha256": "e28f39994ae488006c04f0638e3eacb9f38ca51f12eb39adf7dd76f9715fb23b"
     },
     {
       "label": "cross-runtime-mtls",
       "exitCode": 0,
-      "durationMs": 10742,
+      "durationMs": 9320,
       "log": "04-cross-runtime-mtls.log",
-      "sha256": "c1f51ed70017437f4182f673936985f245ee21eaf0e5640cca5e67de1318776e"
+      "sha256": "3a14c5a73decde1ccfad9f31ab9712b5462360f8b8b296d748c2603e17bcd2b6"
     },
     {
       "label": "sdt-xsd-closure",
       "exitCode": 0,
-      "durationMs": 177,
+      "durationMs": 153,
       "log": "05-sdt-xsd-closure.log",
       "sha256": "d189d6437680439ad96fbbab52264ff48fa6564b8da5cf79b2ab038242364810"
     },
     {
       "label": "core-contract",
       "exitCode": 0,
-      "durationMs": 562,
+      "durationMs": 552,
       "log": "06-core-contract.log",
       "sha256": "d88b329214a670d570c3de6f6e255193fee2118a639559b071b1cf964defcf20"
     },
     {
       "label": "canonical-sdt-contract",
       "exitCode": 0,
-      "durationMs": 588,
+      "durationMs": 536,
       "log": "07-canonical-sdt-contract.log",
       "sha256": "6334bff684b039e13ef4e361c89addfb5fa71fa35ed0361b3a7b8b970a475f4d"
     },
     {
       "label": "integration-contract",
       "exitCode": 0,
-      "durationMs": 532,
+      "durationMs": 523,
       "log": "08-integration-contract.log",
       "sha256": "0821a6b29809a032270d09f537d3867aafd9346294e057f610cc9fac6d5ebaca"
     },
     {
       "label": "onem2m-dry-run",
       "exitCode": 0,
-      "durationMs": 830,
+      "durationMs": 529,
       "log": "09-onem2m-dry-run.log",
-      "sha256": "509e9f219e0ac2c88b568729ec3704fe4ba679c3b03fc9e427278685ab0dd9da"
+      "sha256": "c2f02ad6c10c14a05162015263365b7b6e2e1cdbf397430d8113e4180a5d2054"
     },
     {
       "label": "integration-demo",
       "exitCode": 0,
-      "durationMs": 1081,
+      "durationMs": 920,
       "log": "10-integration-demo.log",
-      "sha256": "f3ad058609a538f5655da24987e4ed76353606b49d3a84050c087ca12ba6e066"
+      "sha256": "f07db716c23c8f5066ed771ae825381e3b8d9e9bd2ac5e61c0098472f0187f2c"
     },
     {
       "label": "integration-replay",
       "exitCode": 0,
-      "durationMs": 626,
+      "durationMs": 579,
       "log": "11-integration-replay.log",
       "sha256": "5af1ccbcb62836af9da5fca4240c1d446297315d9d1cfa55bc148b3b98e8a0e7"
     },
     {
       "label": "web-contract-types",
       "exitCode": 0,
-      "durationMs": 2790,
+      "durationMs": 2633,
       "log": "12-web-contract-types.log",
       "sha256": "099af85b345e78760c006c9d28215239abb039d7f2d7ec9494c53fd3d9df6b1d"
     },
     {
       "label": "web-build",
       "exitCode": 0,
-      "durationMs": 5537,
+      "durationMs": 5231,
       "log": "13-web-build.log",
-      "sha256": "a06530e6d45d8d5e411e59dded08042364fe7f17a93349e1c6758aa497b6143e"
+      "sha256": "0e6457607587d10e4ae9b7b61cd5b2af113c76c734afd3e25172bc3f10fe0593"
     }
   ],
   "scope": "LOCAL_SOFTWARE_VERIFICATION",
   "counts": {
     "core": 155,
     "web": 69,
-    "gateway": 63,
+    "gateway": 156,
     "actualTlsIntegration": 6,
     "firmwareProfiles": 4,
     "acpActualCse": 828,

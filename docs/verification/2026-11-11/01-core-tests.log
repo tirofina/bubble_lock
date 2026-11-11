@@ -6,934 +6,934 @@ TAP version 13
 # Subtest: Gateway certificates require explicit service scopes before privileged API work
 ok 1 - Gateway certificates require explicit service scopes before privileged API work
   ---
-  duration_ms: 10.8717
+  duration_ms: 11.8424
   type: 'test'
   ...
 # Subtest: MCP execute, resume and replay keep the original run owner
 ok 2 - MCP execute, resume and replay keep the original run owner
   ---
-  duration_ms: 63.9623
+  duration_ms: 91.221
   type: 'test'
   ...
 # Subtest: authorization numeric bounds match the Python closed response schema
 ok 3 - authorization numeric bounds match the Python closed response schema
   ---
-  duration_ms: 3.5291
+  duration_ms: 3.9123
   type: 'test'
   ...
 # Subtest: consent status and policy idempotency stay bound to the current owner and intent
 ok 4 - consent status and policy idempotency stay bound to the current owner and intent
   ---
-  duration_ms: 2.3736
+  duration_ms: 2.715
   type: 'test'
   ...
 # Subtest: oneM2M contract keeps the CORE ownership and release headers
 ok 5 - oneM2M contract keeps the CORE ownership and release headers
   ---
-  duration_ms: 0.8357
+  duration_ms: 0.8719
   type: 'test'
   ...
 # Subtest: oneM2M flow covers resource creation, state update, retrieve, subscription and group
 ok 6 - oneM2M flow covers resource creation, state update, retrieve, subscription and group
   ---
-  duration_ms: 0.2054
+  duration_ms: 0.144
   type: 'test'
   ...
 # Subtest: Raspberry Pi Gateway contract binds BLE, MQTT, HTTPS and oneM2M mapping
 ok 7 - Raspberry Pi Gateway contract binds BLE, MQTT, HTTPS and oneM2M mapping
   ---
-  duration_ms: 0.0827
+  duration_ms: 0.086
   type: 'test'
   ...
 # Subtest: oneM2M fixture uses flexContainer type 28 and group memberIDs with numeric memberType
 ok 8 - oneM2M fixture uses flexContainer type 28 and group memberIDs with numeric memberType
   ---
-  duration_ms: 0.1117
+  duration_ms: 0.108
   type: 'test'
   ...
 # Subtest: PANIC→가구 사건·보호자 알림·현재 정책 승인 요청→중앙 명령 큐
 ok 9 - PANIC→가구 사건·보호자 알림·현재 정책 승인 요청→중앙 명령 큐
   ---
-  duration_ms: 14.2962
+  duration_ms: 14.7182
   type: 'test'
   ...
 # Subtest: 중복·길게 누름·재시작·기존 OPEN 사건은 한 사건과 알림으로 수렴
 ok 10 - 중복·길게 누름·재시작·기존 OPEN 사건은 한 사건과 알림으로 수렴
   ---
-  duration_ms: 2.9501
+  duration_ms: 3.1999
   type: 'test'
   ...
 # Subtest: 회수된 정책·오래된 관측·Gateway 위조 경계를 유지
 ok 11 - 회수된 정책·오래된 관측·Gateway 위조 경계를 유지
   ---
-  duration_ms: 3.0805
+  duration_ms: 3.1425
   type: 'test'
   ...
 # Subtest: F01 participant principal, originator, task, dataset, signature scope are bound
 ok 12 - F01 participant principal, originator, task, dataset, signature scope are bound
   ---
-  duration_ms: 71.174
+  duration_ms: 72.1932
   type: 'test'
   ...
 # Subtest: F02 invalid count, finite/shape, base version, repeated sample and duplicate updates
 ok 13 - F02 invalid count, finite/shape, base version, repeated sample and duplicate updates
   ---
-  duration_ms: 92.2311
+  duration_ms: 125.4066
   type: 'test'
   ...
 # Subtest: F03/F04 consent revoke and stopped membership fence update and aggregation; reselect recovers quorum
 ok 14 - F03/F04 consent revoke and stopped membership fence update and aggregation; reselect recovers quorum
   ---
-  duration_ms: 105.832
+  duration_ms: 199.8101
   type: 'test'
   ...
 # Subtest: F09 numeric sample-weighted FedAvg uses exact model bytes and reproducible training
 ok 15 - F09 numeric sample-weighted FedAvg uses exact model bytes and reproducible training
   ---
-  duration_ms: 40.8103
+  duration_ms: 68.4498
   type: 'test'
   ...
 # Subtest: F10 prepared consent CAS requires a new accepted set and immutable manifest
 ok 16 - F10 prepared consent CAS requires a new accepted set and immutable manifest
   ---
-  duration_ms: 51.1151
+  duration_ms: 66.7069
   type: 'test'
   ...
 # Subtest: F05/F11 revoke after commit supersedes delayed publication, pauses reads, and approves clean retraining
 ok 17 - F05/F11 revoke after commit supersedes delayed publication, pauses reads, and approves clean retraining
   ---
-  duration_ms: 85.403
+  duration_ms: 109.3193
   type: 'test'
   ...
 # Subtest: F06 restart at artifact, commit and publication boundaries preserves one model commit
 ok 18 - F06 restart at artifact, commit and publication boundaries preserves one model commit
   ---
-  duration_ms: 269.0865
+  duration_ms: 250.7807
   type: 'test'
   ...
 # Subtest: F07 coordinator epoch CAS and simultaneous finalize produce one committed model
 ok 19 - F07 coordinator epoch CAS and simultaneous finalize produce one committed model
   ---
-  duration_ms: 40.4515
+  duration_ms: 42.7295
   type: 'test'
   ...
 # Subtest: F08 partial artifact integrity, heartbeat freshness, and referenced/staged artifact GC
 ok 20 - F08 partial artifact integrity, heartbeat freshness, and referenced/staged artifact GC
   ---
-  duration_ms: 32.2634
+  duration_ms: 30.1693
   type: 'test'
   ...
 # Subtest: A13/A14 ten numeric rounds, round-three late join, dropout and persisted coordinator recovery
 ok 21 - A13/A14 ten numeric rounds, round-three late join, dropout and persisted coordinator recovery
   ---
-  duration_ms: 511.4995
+  duration_ms: 514.9643
   type: 'test'
   ...
 # Subtest: ESTIMED transport requires HTTPS host/process/image identity and bounded response
 ok 22 - ESTIMED transport requires HTTPS host/process/image identity and bounded response
   ---
-  duration_ms: 12.0611
+  duration_ms: 14.3595
   type: 'test'
   ...
 # Subtest: FL HTTP routes use verified transport identity and isolate administrative controls
 ok 23 - FL HTTP routes use verified transport identity and isolate administrative controls
   ---
-  duration_ms: 22.4773
+  duration_ms: 23.825
   type: 'test'
   ...
 # Subtest: GatewayBridge publishes oneM2M MQTT primitive and settles response rqi/rsc
 ok 24 - GatewayBridge publishes oneM2M MQTT primitive and settles response rqi/rsc
   ---
-  duration_ms: 3.2655
+  duration_ms: 3.1724
   type: 'test'
   ...
 # Subtest: oneM2M UPDATE settles a response arriving before PUBACK
 ok 25 - oneM2M UPDATE settles a response arriving before PUBACK
   ---
-  duration_ms: 0.4275
+  duration_ms: 0.4547
   type: 'test'
   ...
 # Subtest: oneM2M CREATE success cannot settle an UPDATE and retry stays available
 ok 26 - oneM2M CREATE success cannot settle an UPDATE and retry stays available
   ---
-  duration_ms: 0.3015
+  duration_ms: 0.3047
   type: 'test'
   ...
 # Subtest: oneM2M MQTT To reverses CSE relative, SP relative and absolute HTTP encodings
 ok 27 - oneM2M MQTT To reverses CSE relative, SP relative and absolute HTTP encodings
   ---
-  duration_ms: 0.2764
+  duration_ms: 0.2782
   type: 'test'
   ...
 # Subtest: GatewayBridge awaits MQTT.js async subscription and publish APIs
 ok 28 - GatewayBridge awaits MQTT.js async subscription and publish APIs
   ---
-  duration_ms: 0.5277
+  duration_ms: 0.446
   type: 'test'
   ...
 # Subtest: GatewayBridge maps Raspberry Pi telemetry to oneM2M state and deduplicates sequence
 ok 29 - GatewayBridge maps Raspberry Pi telemetry to oneM2M state and deduplicates sequence
   ---
-  duration_ms: 2.556
+  duration_ms: 2.0074
   type: 'test'
   ...
 # Subtest: GatewayBridge publishes command and settles it with ACK/readback
 ok 30 - GatewayBridge publishes command and settles it with ACK/readback
   ---
-  duration_ms: 2.1066
+  duration_ms: 1.9969
   type: 'test'
   ...
 # Subtest: GatewayBridge keeps a reviewable telemetry event available for retry
 ok 31 - GatewayBridge keeps a reviewable telemetry event available for retry
   ---
-  duration_ms: 0.3548
+  duration_ms: 0.4522
   type: 'test'
   ...
 # Subtest: GatewayBridge preserves the canonical keyring authorization envelope
 ok 32 - GatewayBridge preserves the canonical keyring authorization envelope
   ---
-  duration_ms: 0.7404
+  duration_ms: 0.8904
   type: 'test'
   ...
 # Subtest: GatewayBridge keeps intermediate ACKs pending and validates member identity and readback
 ok 33 - GatewayBridge keeps intermediate ACKs pending and validates member identity and readback
   ---
-  duration_ms: 0.5511
+  duration_ms: 1.3945
   type: 'test'
   ...
 # Subtest: GatewayBridge records a command before an immediate application ACK
 ok 34 - GatewayBridge records a command before an immediate application ACK
   ---
-  duration_ms: 0.248
+  duration_ms: 0.4157
   type: 'test'
   ...
 # Subtest: GatewayBridge normalizes authorized aliases while preserving issuedAt across retries
 ok 35 - GatewayBridge normalizes authorized aliases while preserving issuedAt across retries
   ---
-  duration_ms: 0.2452
+  duration_ms: 0.4034
   type: 'test'
   ...
 # Subtest: GatewayBridge retains the legacy boolean readback representation
 ok 36 - GatewayBridge retains the legacy boolean readback representation
   ---
-  duration_ms: 0.1272
+  duration_ms: 0.2089
   type: 'test'
   ...
 # Subtest: central command survives restart and binds Gateway poll/authorize to exact payload
 ok 37 - central command survives restart and binds Gateway poll/authorize to exact payload
   ---
-  duration_ms: 65.2421
+  duration_ms: 73.6846
   type: 'test'
   ...
 # Subtest: revocation, epoch change, credential rotation and expiry fence Gateway execution
 ok 38 - revocation, epoch change, credential rotation and expiry fence Gateway execution
   ---
-  duration_ms: 101.7102
+  duration_ms: 139.9544
   type: 'test'
   ...
 # Subtest: transport principal, scopes, ownership and subject remain authoritative
 ok 39 - transport principal, scopes, ownership and subject remain authoritative
   ---
-  duration_ms: 18.437
+  duration_ms: 27.088
   type: 'test'
   ...
 # Subtest: all service receipts share one journal and handover epochs survive restart
 ok 40 - all service receipts share one journal and handover epochs survive restart
   ---
-  duration_ms: 109.302
+  duration_ms: 130.8161
   type: 'test'
   ...
 # Subtest: bounded polling eventually delivers every active command while preserving retries
 ok 41 - bounded polling eventually delivers every active command while preserving retries
   ---
-  duration_ms: 64.5395
+  duration_ms: 65.1466
   type: 'test'
   ...
 # Subtest: D01/D02 reserved command expires at five seconds before admission
 ok 42 - D01/D02 reserved command expires at five seconds before admission
   ---
-  duration_ms: 19.9528
+  duration_ms: 22.254
   type: 'test'
   ...
 # Subtest: D05/D07 claim retries preserve deadline and expired admitted lane waits for exact readback
 ok 43 - D05/D07 claim retries preserve deadline and expired admitted lane waits for exact readback
   ---
-  duration_ms: 32.0473
+  duration_ms: 35.2321
   type: 'test'
   ...
 # Subtest: authenticated native receipt settles the canonical claim after revocation and deduplicates across restart
 ok 44 - authenticated native receipt settles the canonical claim after revocation and deduplicates across restart
   ---
-  duration_ms: 35.275
+  duration_ms: 40.6134
   type: 'test'
   ...
 # Subtest: timeout keeps the lane fenced and native rejection or later verified readback settles the exact claim
 ok 45 - timeout keeps the lane fenced and native rejection or later verified readback settles the exact claim
   ---
-  duration_ms: 45.7407
+  duration_ms: 54.0592
   type: 'test'
   ...
 # Subtest: dispatch start rechecks the committed claim and records one durable start timestamp
 ok 46 - dispatch start rechecks the committed claim and records one durable start timestamp
   ---
-  duration_ms: 32.7517
+  duration_ms: 41.2386
   type: 'test'
   ...
 # Subtest: D09 desired generations fence stale work while late receipts preserve the current lane and latest readback
 ok 47 - D09 desired generations fence stale work while late receipts preserve the current lane and latest readback
   ---
-  duration_ms: 66.3774
+  duration_ms: 48.6377
   type: 'test'
   ...
 # Subtest: AE 생성과 실제 CA CSR 서명은 원자 binding·bootstrap 소진·한 번 발급으로 연결된다
 ok 48 - AE 생성과 실제 CA CSR 서명은 원자 binding·bootstrap 소진·한 번 발급으로 연결된다
   ---
-  duration_ms: 653.7298
+  duration_ms: 582.8951
   type: 'test'
   ...
 # Subtest: bootstrap 등록은 인증 주체·인증서·token·원래 CSR intent를 검사한다
 ok 49 - bootstrap 등록은 인증 주체·인증서·token·원래 CSR intent를 검사한다
   ---
-  duration_ms: 375.5026
+  duration_ms: 462.7103
   type: 'test'
   ...
 # Subtest: AE CREATE 응답 손실은 workload GET으로 복구하고 소진 후 issuer 재시작을 이어간다
 ok 50 - AE CREATE 응답 손실은 workload GET으로 복구하고 소진 후 issuer 재시작을 이어간다
   ---
-  duration_ms: 368.3439
+  duration_ms: 424.5719
   type: 'test'
   ...
 # Subtest: LOST는 binding revision·credential·정본 grant·세션 종료를 묶고 재시작 provisioning에도 보존한다
 ok 51 - LOST는 binding revision·credential·정본 grant·세션 종료를 묶고 재시작 provisioning에도 보존한다
   ---
-  duration_ms: 395.2838
+  duration_ms: 383.1988
   type: 'test'
   ...
 # Subtest: 상실 트랜잭션 저장 장애는 함께 롤백하고 세션 종료 장애는 현재 권한 회수 상태로 재개한다
 ok 52 - 상실 트랜잭션 저장 장애는 함께 롤백하고 세션 종료 장애는 현재 권한 회수 상태로 재개한다
   ---
-  duration_ms: 380.6043
+  duration_ms: 356.8248
   type: 'test'
   ...
 # Subtest: 실제 TLS1.3 API는 bootstrap 전용 경로·새 인증서 binding·LOST socket 종료와 상태 polling을 집행한다
 ok 53 - 실제 TLS1.3 API는 bootstrap 전용 경로·새 인증서 binding·LOST socket 종료와 상태 polling을 집행한다
   ---
-  duration_ms: 1109.2683
+  duration_ms: 1149.2686
   type: 'test'
   ...
 # Subtest: GroupDispatcher fans out a command and settles member readback
 ok 54 - GroupDispatcher fans out a command and settles member readback
   ---
-  duration_ms: 4.0552
+  duration_ms: 4.2356
   type: 'test'
   ...
 # Subtest: GroupDispatcher retries the member whose ACK remains pending
 ok 55 - GroupDispatcher retries the member whose ACK remains pending
   ---
-  duration_ms: 1.3237
+  duration_ms: 1.374
   type: 'test'
   ...
 # Subtest: GroupDispatcher forwards issued member claims and keeps retry payloads identical
 ok 56 - GroupDispatcher forwards issued member claims and keeps retry payloads identical
   ---
-  duration_ms: 1.087
+  duration_ms: 1.1156
   type: 'test'
   ...
 # Subtest: GroupDispatcher keeps immediate ACKs while fan-out is publishing
 ok 57 - GroupDispatcher keeps immediate ACKs while fan-out is publishing
   ---
-  duration_ms: 0.6863
+  duration_ms: 0.676
   type: 'test'
   ...
 # Subtest: 한 구성원의 송신 오류 뒤 다음 구성원 전송과 부분 readback을 보존
 ok 58 - 한 구성원의 송신 오류 뒤 다음 구성원 전송과 부분 readback을 보존
   ---
-  duration_ms: 1.7609
+  duration_ms: 1.9465
   type: 'test'
   ...
 # Subtest: 재시작 뒤 확인한 구성원을 보존하고 남은 동일 명령만 동시 재시도
 ok 59 - 재시작 뒤 확인한 구성원을 보존하고 남은 동일 명령만 동시 재시도
   ---
-  duration_ms: 38.2269
+  duration_ms: 43.8189
   type: 'test'
   ...
 # Subtest: 재시도 직전 현재 권한·마감·기기 재바인딩을 검사
 ok 60 - 재시도 직전 현재 권한·마감·기기 재바인딩을 검사
   ---
-  duration_ms: 3.0537
+  duration_ms: 3.0239
   type: 'test'
   ...
 # Subtest: A12: two HTTP CSEs restore distinct AE IDs, ACP, canonical SDT, group and subscriptions
 ok 61 - A12: two HTTP CSEs restore distinct AE IDs, ACP, canonical SDT, group and subscriptions
   ---
-  duration_ms: 150.1295
+  duration_ms: 151.4669
   type: 'test'
   ...
 # Subtest: A11/D07: admitted command blocks cutover until exact claim readback settles
 ok 62 - A11/D07: admitted command blocks cutover until exact claim readback settles
   ---
-  duration_ms: 63.4407
+  duration_ms: 76.7604
   type: 'test'
   ...
 # Subtest: 이전 관측 원문을 암호화하고 CSE CIN의 RI·hash를 확인하여 참조 형태로 복원한다
 ok 63 - 이전 관측 원문을 암호화하고 CSE CIN의 RI·hash를 확인하여 참조 형태로 복원한다
   ---
-  duration_ms: 45.173
+  duration_ms: 61.4203
   type: 'test'
   ...
 # Subtest: source partition and target callback review preserve resumable transition
 ok 64 - source partition and target callback review preserve resumable transition
   ---
-  duration_ms: 1563.9696
+  duration_ms: 1575.5084
   type: 'test'
   ...
 # Subtest: restart and rollback rebuild resources with a new epoch and preserved logical registry
 ok 65 - restart and rollback rebuild resources with a new epoch and preserved logical registry
   ---
-  duration_ms: 98.1683
+  duration_ms: 112.9707
   type: 'test'
   ...
 # Subtest: grant revoke before resumed cutover preserves the source ownership epoch
 ok 66 - grant revoke before resumed cutover preserves the source ownership epoch
   ---
-  duration_ms: 14.7508
+  duration_ms: 14.8933
   type: 'test'
   ...
 # Subtest: Edge 배치 readiness와 현재 grant를 확인하고 source release를 cutover 뒤 실행한다
 ok 67 - Edge 배치 readiness와 현재 grant를 확인하고 source release를 cutover 뒤 실행한다
   ---
-  duration_ms: 24.4475
+  duration_ms: 25.1308
   type: 'test'
   ...
 # Subtest: Edge 배치 직후 grant 회수는 대상 lease를 해제하고 source epoch를 유지한다
 ok 68 - Edge 배치 직후 grant 회수는 대상 lease를 해제하고 source epoch를 유지한다
   ---
-  duration_ms: 12.4546
+  duration_ms: 12.5992
   type: 'test'
   ...
 # Subtest: A11: 30 local HTTP transitions retain all 1000 accepted observations and one CIN per sequence
 ok 69 - A11: 30 local HTTP transitions retain all 1000 accepted observations and one CIN per sequence
   ---
-  duration_ms: 4340.6225
+  duration_ms: 4295.3371
   type: 'test'
   ...
-# {"transitions":30,"acceptedObservations":1000,"lostObservations":0,"duplicateCins":0,"p95Ms":1084,"maximumMs":1242,"simulation":true,"transport":"local-http"}
+# {"transitions":30,"acceptedObservations":1000,"lostObservations":0,"duplicateCins":0,"p95Ms":1040,"maximumMs":1260,"simulation":true,"transport":"local-http"}
 # Subtest: 통합 소스 manifest는 결정적 해시와 공개 입력 경계를 보존한다
 ok 70 - 통합 소스 manifest는 결정적 해시와 공개 입력 경계를 보존한다
   ---
-  duration_ms: 147.7925
+  duration_ms: 119.3405
   type: 'test'
   ...
 # Subtest: OIDC/mTLS principal, consent, grant, revoke lifecycle
 ok 71 - OIDC/mTLS principal, consent, grant, revoke lifecycle
   ---
-  duration_ms: 14.7232
+  duration_ms: 28.6824
   type: 'test'
   ...
 # Subtest: MEC Location/RNIS callback dedup and policy reconciliation
 ok 72 - MEC Location/RNIS callback dedup and policy reconciliation
   ---
-  duration_ms: 17.3775
+  duration_ms: 36.276
   type: 'test'
   ...
 # Subtest: handover epoch, security context, rollback
 ok 73 - handover epoch, security context, rollback
   ---
-  duration_ms: 60.6739
+  duration_ms: 74.6021
   type: 'test'
   ...
 # Subtest: local numeric FL selection, signed updates, artifact fence and recovery
 ok 74 - local numeric FL selection, signed updates, artifact fence and recovery
   ---
-  duration_ms: 72.2107
+  duration_ms: 71.74
   type: 'test'
   ...
 # Subtest: MCP multi-server approval hash, checkpoint, resume, persistent run
 ok 75 - MCP multi-server approval hash, checkpoint, resume, persistent run
   ---
-  duration_ms: 105.5184
+  duration_ms: 134.1139
   type: 'test'
   ...
 # Subtest: integration API exposes contract-shaped routes
 ok 76 - integration API exposes contract-shaped routes
   ---
-  duration_ms: 4.1579
+  duration_ms: 5.2411
   type: 'test'
   ...
 # Subtest: fault fixtures cover duplicate, replay, drain, crash and resume paths
 ok 77 - fault fixtures cover duplicate, replay, drain, crash and resume paths
   ---
-  duration_ms: 2.0183
+  duration_ms: 2.0515
   type: 'test'
   ...
 # Subtest: oneM2M MCP discovery는 실제 HTTP group 응답과 가구별 등록 resource를 대조한다
 ok 78 - oneM2M MCP discovery는 실제 HTTP group 응답과 가구별 등록 resource를 대조한다
   ---
-  duration_ms: 39.8931
+  duration_ms: 42.1059
   type: 'test'
   ...
 # Subtest: MCP applyApprovedPolicy는 기존 canonical Gateway 큐와 소유자 grant에 연결한다
 ok 79 - MCP applyApprovedPolicy는 기존 canonical Gateway 큐와 소유자 grant에 연결한다
   ---
-  duration_ms: 10.7997
+  duration_ms: 13.1168
   type: 'test'
   ...
 # Subtest: W15/A19: 세 실제 HTTP MCP 서버의 initialize·list·call과 명시적 승인 경계를 검증한다
 ok 80 - W15/A19: 세 실제 HTTP MCP 서버의 initialize·list·call과 명시적 승인 경계를 검증한다
   ---
-  duration_ms: 298.6871
+  duration_ms: 366.3021
   type: 'test'
   ...
 # Subtest: W16/A19: 원격 효과 commit 뒤 coordinator 장애와 서버 재시작은 같은 operation을 복구한다
 ok 81 - W16/A19: 원격 효과 commit 뒤 coordinator 장애와 서버 재시작은 같은 operation을 복구한다
   ---
-  duration_ms: 179.4292
+  duration_ms: 216.3258
   type: 'test'
   ...
 # Subtest: A08/A19: 승인 후 grant 회수와 만료는 다음 도구 및 재개를 검사한다
 ok 82 - A08/A19: 승인 후 grant 회수와 만료는 다음 도구 및 재개를 검사한다
   ---
-  duration_ms: 167.3674
+  duration_ms: 203.996
   type: 'test'
   ...
 # Subtest: W15/A19: schema·scope·audience·원래 intent를 고정하고 지시문 주입을 데이터로 격리한다
 ok 83 - W15/A19: schema·scope·audience·원래 intent를 고정하고 지시문 주입을 데이터로 격리한다
   ---
-  duration_ms: 85.6202
+  duration_ms: 104.5084
   type: 'test'
   ...
 # Subtest: W15: timeout과 HTTP origin·token 검증은 검토 상태와 재시도를 유지한다
 ok 84 - W15: timeout과 HTTP origin·token 검증은 검토 상태와 재시도를 유지한다
   ---
-  duration_ms: 283.6627
+  duration_ms: 291.3958
   type: 'test'
   ...
 # Subtest: W16: 동시 worker의 durable lease는 같은 승인 단계의 중복 집행을 조정한다
 ok 85 - W16: 동시 worker의 durable lease는 같은 승인 단계의 중복 집행을 조정한다
   ---
-  duration_ms: 111.0754
+  duration_ms: 132.5959
   type: 'test'
   ...
 # Subtest: MCP client은 JSON과 SSE 응답을 동일 request ID로 결속한다
 ok 86 - MCP client은 JSON과 SSE 응답을 동일 request ID로 결속한다
   ---
-  duration_ms: 1.3689
+  duration_ms: 1.1888
   type: 'test'
   ...
 # Subtest: round03 MCP 2025-11-25와 2025-06-18은 협상한 버전·도구 오류·session 종료를 결속한다
 ok 87 - round03 MCP 2025-11-25와 2025-06-18은 협상한 버전·도구 오류·session 종료를 결속한다
   ---
-  duration_ms: 96.8137
+  duration_ms: 98.4249
   type: 'test'
   ...
 # Subtest: MCP client은 서버가 고른 지원 버전을 후속 HTTP 요청에 사용한다
 ok 88 - MCP client은 서버가 고른 지원 버전을 후속 HTTP 요청에 사용한다
   ---
-  duration_ms: 0.698
+  duration_ms: 0.753
   type: 'test'
   ...
 # Subtest: MEC의 동시 초기화 64개는 완성된 동일 키로 상호 복호화한다
 ok 89 - MEC의 동시 초기화 64개는 완성된 동일 키로 상호 복호화한다
   ---
-  duration_ms: 319.6165
+  duration_ms: 423.1542
   type: 'test'
   ...
 # Subtest: MEC 재시작은 저장된 키와 과거 암호문을 복구한다
 ok 90 - MEC 재시작은 저장된 키와 과거 암호문을 복구한다
   ---
-  duration_ms: 26.684
+  duration_ms: 29.7193
   type: 'test'
   ...
 # Subtest: MEC의 손상된 기존 키는 원본을 보존하고 복구 검토 오류를 반환한다
 ok 91 - MEC의 손상된 기존 키는 원본을 보존하고 복구 검토 오류를 반환한다
   ---
-  duration_ms: 28.3907
+  duration_ms: 35.9337
   type: 'test'
   ...
 # Subtest: 주입된 MEC 비밀 키는 설정된 키로 암호화하고 디스크 키 경로와 분리한다
 ok 92 - 주입된 MEC 비밀 키는 설정된 키로 암호화하고 디스크 키 경로와 분리한다
   ---
-  duration_ms: 1.6112
+  duration_ms: 1.8546
   type: 'test'
   ...
 # Subtest: JSON 배포 manifest는 OpenAPI hash·callback ref·실제 method/path를 검증한다
 ok 93 - JSON 배포 manifest는 OpenAPI hash·callback ref·실제 method/path를 검증한다
   ---
-  duration_ms: 58.0013
+  duration_ms: 79.7615
   type: 'test'
   ...
 # Subtest: R15/R16: Location/RNIS discovery, query and subscription CRUD use real local HTTP
     # Subtest: Location
     ok 1 - Location
       ---
-      duration_ms: 110.8337
+      duration_ms: 127.6182
       type: 'test'
       ...
     # Subtest: RNIS
     ok 2 - RNIS
       ---
-      duration_ms: 48.3992
+      duration_ms: 53.3936
       type: 'test'
       ...
     1..2
 ok 94 - R15/R16: Location/RNIS discovery, query and subscription CRUD use real local HTTP
   ---
-  duration_ms: 160.4093
+  duration_ms: 182.9605
   type: 'test'
   ...
 # Subtest: M01: service, UE and provider identity bind to the opaque route
 ok 95 - M01: service, UE and provider identity bind to the opaque route
   ---
-  duration_ms: 47.7127
+  duration_ms: 51.1685
   type: 'test'
   ...
 # Subtest: M02: old generation, expired route and revoked grant produce minimal receipts
 ok 96 - M02: old generation, expired route and revoked grant produce minimal receipts
   ---
-  duration_ms: 63.1443
+  duration_ms: 96.7578
   type: 'test'
   ...
 # Subtest: M03: concurrent delivery and canonical payload coalescing commit one row/outbox
 ok 97 - M03: concurrent delivery and canonical payload coalescing commit one row/outbox
   ---
-  duration_ms: 66.022
+  duration_ms: 83.822
   type: 'test'
   ...
 # Subtest: M04: older, stale, future and unknown source time preserve watermark
 ok 98 - M04: older, stale, future and unknown source time preserve watermark
   ---
-  duration_ms: 36.5954
+  duration_ms: 43.3422
   type: 'test'
   ...
 # Subtest: M05: revocation commit wins over a queued callback transaction
 ok 99 - M05: revocation commit wins over a queued callback transaction
   ---
-  duration_ms: 30.3157
+  duration_ms: 28.6161
   type: 'test'
   ...
 # Subtest: M06: ciphertext survives restart while current grant gates each decrypt and execution
 ok 100 - M06: ciphertext survives restart while current grant gates each decrypt and execution
   ---
-  duration_ms: 37.0014
+  duration_ms: 39.0613
   type: 'test'
   ...
 # Subtest: M07: POST timeout, late callback and list reconciliation retain one subscription
 ok 101 - M07: POST timeout, late callback and list reconciliation retain one subscription
   ---
-  duration_ms: 305.5715
+  duration_ms: 304.2382
   type: 'test'
   ...
 # Subtest: M08: cancel timeout, restart, late callback and independent new generation
 ok 102 - M08: cancel timeout, restart, late callback and independent new generation
   ---
-  duration_ms: 292.8548
+  duration_ms: 309.3928
   type: 'test'
   ...
 # Subtest: M09: relative links normalize; external links and oversized payloads stay in review
 ok 103 - M09: relative links normalize; external links and oversized payloads stay in review
   ---
-  duration_ms: 27.5629
+  duration_ms: 35.1247
   type: 'test'
   ...
 # Subtest: approved policy owns target edge; coordinate, geofence and health gate handover
 ok 104 - approved policy owns target edge; coordinate, geofence and health gate handover
   ---
-  duration_ms: 50.8607
+  duration_ms: 65.5676
   type: 'test'
   ...
 # Subtest: sequence identity, retry budget and retention are durable
 ok 105 - sequence identity, retry budget and retention are durable
   ---
-  duration_ms: 43.7421
+  duration_ms: 47.853
   type: 'test'
   ...
 # Subtest: 공급자 cleanup 완료 후 24시간에 구독 상세·tombstone을 정리하고 삭제 receipt를 기록한다
 ok 106 - 공급자 cleanup 완료 후 24시간에 구독 상세·tombstone을 정리하고 삭제 receipt를 기록한다
   ---
-  duration_ms: 29.4278
+  duration_ms: 32.2867
   type: 'test'
   ...
 # Subtest: API callback binds transport identity and masks token on authorization error
 ok 107 - API callback binds transport identity and masks token on authorization error
   ---
-  duration_ms: 30.8354
+  duration_ms: 31.9297
   type: 'test'
   ...
 # Subtest: store transaction publishes one snapshot and rolls back failed work
 ok 108 - store transaction publishes one snapshot and rolls back failed work
   ---
-  duration_ms: 0.5803
+  duration_ms: 0.5703
   type: 'test'
   ...
 # Subtest: complete provider inventory confirms missing subscription before fresh generation
 ok 109 - complete provider inventory confirms missing subscription before fresh generation
   ---
-  duration_ms: 35.2687
+  duration_ms: 38.8694
   type: 'test'
   ...
 # Subtest: RNIS and Location source timestamps map to verified observedAt
     # Subtest: Location
     ok 1 - Location
       ---
-      duration_ms: 27.0002
+      duration_ms: 24.6244
       type: 'test'
       ...
     # Subtest: RNIS
     ok 2 - RNIS
       ---
-      duration_ms: 21.1858
+      duration_ms: 29.4154
       type: 'test'
       ...
     1..2
 ok 110 - RNIS and Location source timestamps map to verified observedAt
   ---
-  duration_ms: 48.7683
+  duration_ms: 54.6287
   type: 'test'
   ...
 # Subtest: live ingestion requires deployment schema validation and current consent
 ok 111 - live ingestion requires deployment schema validation and current consent
   ---
-  duration_ms: 29.3073
+  duration_ms: 41.6285
   type: 'test'
   ...
 # Subtest: 자동 zone 이동은 실제 경계 20m와 원본 관측 10초 연속 체류를 사용한다
 ok 112 - 자동 zone 이동은 실제 경계 20m와 원본 관측 10초 연속 체류를 사용한다
   ---
-  duration_ms: 14.4449
+  duration_ms: 17.2795
   type: 'test'
   ...
 # Subtest: zone 밖 관측과 uncertainty가 경계 체류를 초기화하고 같은 event 재시도는 시간을 늘리지 않는다
 ok 113 - zone 밖 관측과 uncertainty가 경계 체류를 초기화하고 같은 event 재시도는 시간을 늘리지 않는다
   ---
-  duration_ms: 9.8507
+  duration_ms: 13.2468
   type: 'test'
   ...
 # Subtest: RNIS 건강 이동은 1초 간격 실패 3회와 최소 체류·이동 후 cooldown을 함께 검사한다
 ok 114 - RNIS 건강 이동은 1초 간격 실패 3회와 최소 체류·이동 후 cooldown을 함께 검사한다
   ---
-  duration_ms: 17.9001
+  duration_ms: 18.98
   type: 'test'
   ...
 # Subtest: 현재 grant 회수·policy revision·오래된 source 시각은 자동 이동보다 먼저 검사한다
 ok 115 - 현재 grant 회수·policy revision·오래된 source 시각은 자동 이동보다 먼저 검사한다
   ---
-  duration_ms: 6.6601
+  duration_ms: 6.2977
   type: 'test'
   ...
 # Subtest: CORE migration defines event, dispatch, receipt and oneM2M binding tables
 ok 116 - CORE migration defines event, dispatch, receipt and oneM2M binding tables
   ---
-  duration_ms: 4.277
+  duration_ms: 1.0284
   type: 'test'
   ...
 # Subtest: INTEGRATION migration defines policy, MEC, handover, FL, MCP and audit tables
 ok 117 - INTEGRATION migration defines policy, MEC, handover, FL, MCP and audit tables
   ---
-  duration_ms: 0.3318
+  duration_ms: 2.6369
   type: 'test'
   ...
 # Subtest: RS256/ES256 access token은 서명과 등록된 subject/scope로 principal을 만든다
 ok 118 - RS256/ES256 access token은 서명과 등록된 subject/scope로 principal을 만든다
   ---
-  duration_ms: 5.2809
+  duration_ms: 11.5704
   type: 'test'
   ...
 # Subtest: 서명 변조·alg 혼동·주입 키·미등록 subject를 차단한다
 ok 119 - 서명 변조·alg 혼동·주입 키·미등록 subject를 차단한다
   ---
-  duration_ms: 3.1996
+  duration_ms: 9.1585
   type: 'test'
   ...
 # Subtest: issuer·audience·만료·nbf·iat와 exp 필수값을 검증한다
 ok 120 - issuer·audience·만료·nbf·iat와 exp 필수값을 검증한다
   ---
-  duration_ms: 4.8389
+  duration_ms: 12.9376
   type: 'test'
   ...
 # Subtest: JWKS URI는 등록된 HTTPS 경로만 조회하고 동시 조회·캐시를 유지한다
 ok 121 - JWKS URI는 등록된 HTTPS 경로만 조회하고 동시 조회·캐시를 유지한다
   ---
-  duration_ms: 17.4955
+  duration_ms: 31.4162
   type: 'test'
   ...
 # Subtest: JWKS 키 중복과 서버 장애는 인증 검증 오류를 반환한다
 ok 122 - JWKS 키 중복과 서버 장애는 인증 검증 오류를 반환한다
   ---
-  duration_ms: 1.2958
+  duration_ms: 2.0208
   type: 'test'
   ...
 # Subtest: 지도는 인증된 Gateway GPS/RSSI와 현재 MEC 좌표·출처·정확도를 연결한다
 ok 123 - 지도는 인증된 Gateway GPS/RSSI와 현재 MEC 좌표·출처·정확도를 연결한다
   ---
-  duration_ms: 33.4653
+  duration_ms: 34.6515
   type: 'test'
   ...
 # Subtest: Gateway 인증·기기 연결·관측 식별자·시간을 검사하고 RSSI 단독 자료를 보존한다
 ok 124 - Gateway 인증·기기 연결·관측 식별자·시간을 검사하고 RSSI 단독 자료를 보존한다
   ---
-  duration_ms: 8.5375
+  duration_ms: 9.4941
   type: 'test'
   ...
 # Subtest: MEC UE mapping은 서버 설정과 등록 device에 결속되고 다른 가구 grant를 분리한다
 ok 125 - MEC UE mapping은 서버 설정과 등록 device에 결속되고 다른 가구 grant를 분리한다
   ---
-  duration_ms: 10.094
+  duration_ms: 11.279
   type: 'test'
   ...
 # Subtest: 위치 grant 회수·consent revision·MEC retention은 조회에 즉시 반영된다
 ok 126 - 위치 grant 회수·consent revision·MEC retention은 조회에 즉시 반영된다
   ---
-  duration_ms: 12.0868
+  duration_ms: 14.2161
   type: 'test'
   ...
 # Subtest: 최신 MEC 자료를 기기별로 선택하고 simulation과 좌표 출처를 보존한다
 ok 127 - 최신 MEC 자료를 기기별로 선택하고 simulation과 좌표 출처를 보존한다
   ---
-  duration_ms: 8.5921
+  duration_ms: 6.69
   type: 'test'
   ...
 # Subtest: Gateway 자격 회수는 기존 관측에도 적용되고 접근 기기 목록은 같은 조회에서 반환된다
 ok 128 - Gateway 자격 회수는 기존 관측에도 적용되고 접근 기기 목록은 같은 조회에서 반환된다
   ---
-  duration_ms: 5.3224
+  duration_ms: 9.4464
   type: 'test'
   ...
 # Subtest: 정밀 위치 원문은 암호화하며 handover·CSE 전송에는 참조와 최소 metadata를 저장한다
 ok 129 - 정밀 위치 원문은 암호화하며 handover·CSE 전송에는 참조와 최소 metadata를 저장한다
   ---
-  duration_ms: 3.7845
+  duration_ms: 4.3142
   type: 'test'
   ...
 # Subtest: 위치 decrypt는 수신자·목적·사건·lease·grant revision을 매 조회에서 검사한다
 ok 130 - 위치 decrypt는 수신자·목적·사건·lease·grant revision을 매 조회에서 검사한다
   ---
-  duration_ms: 9.625
+  duration_ms: 12.1309
   type: 'test'
   ...
 # Subtest: relay UE 결합은 현재 household 승인·거리·시차·RSSI 범위를 충족한 관측만 제공한다
 ok 131 - relay UE 결합은 현재 household 승인·거리·시차·RSSI 범위를 충족한 관측만 제공한다
   ---
-  duration_ms: 5.8295
+  duration_ms: 8.9479
   type: 'test'
   ...
 # Subtest: 위치 승인 HTTP는 guardian과 현재 목적·사건 범위를 검사하고 회수 뒤 좌표를 비운다
 ok 132 - 위치 승인 HTTP는 guardian과 현재 목적·사건 범위를 검사하고 회수 뒤 좌표를 비운다
   ---
-  duration_ms: 5.6518
+  duration_ms: 6.5106
   type: 'test'
   ...
 # Subtest: 포털 조회는 가구 멤버 범위와 보호자/방문자 역할을 보존한다
 ok 133 - 포털 조회는 가구 멤버 범위와 보호자/방문자 역할을 보존한다
   ---
-  duration_ms: 71.1467
+  duration_ms: 68.1386
   type: 'test'
   ...
 # Subtest: 가구 생성과 기기 등록은 등록된 Gateway subject를 확인한다
 ok 134 - 가구 생성과 기기 등록은 등록된 Gateway subject를 확인한다
   ---
-  duration_ms: 33.7638
+  duration_ms: 34.1301
   type: 'test'
   ...
 # Subtest: 동의/권한의 동시 재전송은 원래 intent로 한 번 반영한다
 ok 135 - 동의/권한의 동시 재전송은 원래 intent로 한 번 반영한다
   ---
-  duration_ms: 35.9532
+  duration_ms: 37.4687
   type: 'test'
   ...
 # Subtest: 방문자 요청을 보호자가 승인하면 현재 claim을 가진 명령이 Gateway 큐에 들어간다
 ok 136 - 방문자 요청을 보호자가 승인하면 현재 claim을 가진 명령이 Gateway 큐에 들어간다
   ---
-  duration_ms: 40.0927
+  duration_ms: 47.011
   type: 'test'
   ...
 # Subtest: 권한 만료와 다른 가구 권한은 명령 승인에 반영한다
 ok 137 - 권한 만료와 다른 가구 권한은 명령 승인에 반영한다
   ---
-  duration_ms: 38.8021
+  duration_ms: 62.1842
   type: 'test'
   ...
 # Subtest: 방문자 위치는 현재 가구 위치 권한과 동의·회수·만료에 연결된다
 ok 138 - 방문자 위치는 현재 가구 위치 권한과 동의·회수·만료에 연결된다
   ---
-  duration_ms: 45.5433
+  duration_ms: 52.0783
   type: 'test'
   ...
 # Subtest: 안전 요청과 알림 확인은 본인/가구 권한을 유지하며 재시작 뒤 보존한다
 ok 139 - 안전 요청과 알림 확인은 본인/가구 권한을 유지하며 재시작 뒤 보존한다
   ---
-  duration_ms: 47.2972
+  duration_ms: 44.179
   type: 'test'
   ...
 # Subtest: 일부 큐 등록 뒤 장애는 PARTIAL로 보존하고 동일 commandId로 복구한다
 ok 140 - 일부 큐 등록 뒤 장애는 PARTIAL로 보존하고 동일 commandId로 복구한다
   ---
-  duration_ms: 39.2578
+  duration_ms: 36.0356
   type: 'test'
   ...
 # Subtest: 저장 장애는 동의와 idempotency를 함께 롤백하고 재시작 재전송을 복구한다
 ok 141 - 저장 장애는 동의와 idempotency를 함께 롤백하고 재시작 재전송을 복구한다
   ---
-  duration_ms: 65.6949
+  duration_ms: 47.3385
   type: 'test'
   ...
 # Subtest: ReceiptJournal writes a hash-recorded JSONL receipt
 ok 142 - ReceiptJournal writes a hash-recorded JSONL receipt
   ---
-  duration_ms: 12.6123
+  duration_ms: 11.044
   type: 'test'
   ...
 # Subtest: CORE release manifest maps runtime artifacts and replay commands
 ok 143 - CORE release manifest maps runtime artifacts and replay commands
   ---
-  duration_ms: 0.7777
+  duration_ms: 0.863
   type: 'test'
   ...
 # Subtest: Gateway event schema preserves BLE-to-Mobius payload contract
 ok 144 - Gateway event schema preserves BLE-to-Mobius payload contract
   ---
-  duration_ms: 0.7475
+  duration_ms: 0.7527
   type: 'test'
   ...
 # Subtest: retention expires detailed, abstract, pseudonym and audit rows at independent boundaries
 ok 145 - retention expires detailed, abstract, pseudonym and audit rows at independent boundaries
   ---
-  duration_ms: 7.69
+  duration_ms: 8.337
   type: 'test'
   ...
 # Subtest: expiry survives restart and journal compaction preserves concurrent append and receipt hashes
 ok 146 - expiry survives restart and journal compaction preserves concurrent append and receipt hashes
   ---
-  duration_ms: 26.8067
+  duration_ms: 34.5575
   type: 'test'
   ...
 # Subtest: thirty-day FL provenance expiry pauses serving and minimizes train receipts while preserving immutable model lineage
 ok 147 - thirty-day FL provenance expiry pauses serving and minimizes train receipts while preserving immutable model lineage
   ---
-  duration_ms: 34.3488
+  duration_ms: 64.8005
   type: 'test'
   ...
 # Subtest: SDT 명시적인 세 가지 legacy profile은 boolean과 ACP를 canonical로 보존한다
 ok 148 - SDT 명시적인 세 가지 legacy profile은 boolean과 ACP를 canonical로 보존한다
   ---
-  duration_ms: 2.5675
+  duration_ms: 3.1209
   type: 'test'
   ...
 # Subtest: SDT 버전·envelope·cnd·state 타입 충돌을 검출한다
 ok 149 - SDT 버전·envelope·cnd·state 타입 충돌을 검출한다
   ---
-  duration_ms: 0.6056
+  duration_ms: 0.5514
   type: 'test'
   ...
 # Subtest: HTTP와 MQTT Gateway 모두 canonical SDT profile을 직렬화한다
 ok 150 - HTTP와 MQTT Gateway 모두 canonical SDT profile을 직렬화한다
   ---
-  duration_ms: 2.3883
+  duration_ms: 2.7587
   type: 'test'
   ...
 # Subtest: RBG-03 canonical 계약과 XSD 원본·파생 import closure SHA-256을 대조한다
 ok 151 - RBG-03 canonical 계약과 XSD 원본·파생 import closure SHA-256을 대조한다
   ---
-  duration_ms: 12.5583
+  duration_ms: 12.3477
   type: 'test'
   ...
 1..151
@@ -944,4 +944,4 @@ ok 151 - RBG-03 canonical 계약과 XSD 원본·파생 import closure SHA-256을
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 6490.4834
+# duration_ms 6509.9071

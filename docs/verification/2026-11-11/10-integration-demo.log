@@ -7,12 +7,12 @@
   "docRevision": "2.0.0",
   "owner": "PC-MOBIUS-INTEGRATION",
   "status": "PASS",
-  "consentId": "consent-6017395a-d8fb-45b4-a720-0340ef4ede5d",
-  "grantId": "grant-70e7ebe2-6540-414e-988e-79713769509e",
-  "mecEventId": "mec-demo-grant-70e7ebe2-6540-414e-988e-79713769509e",
+  "consentId": "consent-af9e2523-1936-4c12-bb94-deba310bd190",
+  "grantId": "grant-8a93bc9b-6f33-478a-b3ed-e6f14d459cc1",
+  "mecEventId": "mec-demo-grant-8a93bc9b-6f33-478a-b3ed-e6f14d459cc1",
   "handoverEpoch": 10,
-  "flRoundId": "privacy-risk-grant-70e7ebe2-6540-414e-988e-79713769509e-r1",
+  "flRoundId": "privacy-risk-grant-8a93bc9b-6f33-478a-b3ed-e6f14d459cc1-r1",
   "modelHash": "5c3e1d3bee87fef6946ecf7eb0c2c9b86b8605b76b9585709d57a9517dc4a2a8",
-  "mcpRunId": "mcp-run-d0d9f233-95f1-403e-9973-08ecd96d8af5",
+  "mcpRunId": "mcp-run-c5057de8-654c-4a93-bad0-67de89d9da4b",
   "receiptPath": "C:\\Users\\user\\OneDrive\\문서\\ChatGPT\\모비우스4 보안\\bubble_lock\\pc-mobius\\receipts\\integration-demo.jsonl"
 }

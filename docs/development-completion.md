@@ -141,5 +141,5 @@ npm run api
 
 ## 13. 최종 검증·인계
 
-2026-11-11 `npm run verify` 13단계 PASS: CORE 155개·웹 69개·Gateway 63개·실제 TLS 통합 6개, 합계 293개 시험과 타입·계약·빌드를 완료했다. 펌웨어 4개 프로필과 C++ mock 시험도 PASS다. 실제 CSE 구독 권한 패치에서 ACP 828건·위치 보호 5건이 PASS다. 공유 로그는 [검증 결과](development-verification.json), 추가 실행은 [증거 manifest](verification-evidence/2026-11-11/manifest.json)에 연결한다. 키 파일 동시 초기화는 완성된 32바이트 키의 원자 게시로 수정했고 64개 동시 초기화·상호 복호화 회귀시험을 통과했다. 구독 패치 적용은 [CSE 보안 문서](../pc-mobius/integration/CSE_SECURITY.md)를 따른다. 나머지 항목은 사용자 지시에 따라 [후속 TODO](remaining-todo.md)로 정리했다.
+2026-11-11 `npm run verify` 13단계 PASS: CORE 155개·웹 69개·Gateway 156개·실제 TLS 통합 6개, 합계 386개 시험과 타입·계약·빌드를 완료했다. 펌웨어 4개 프로필과 C++ mock 시험도 PASS다. 실제 CSE 구독 권한 패치에서 ACP 828건·위치 보호 5건이 PASS다. 공유 로그는 [검증 결과](development-verification.json), 추가 실행은 [증거 manifest](verification-evidence/2026-11-11/manifest.json)에 연결한다. 키 파일 동시 초기화는 완성된 32바이트 키의 원자 게시로 수정했고 64개 동시 초기화·상호 복호화 회귀시험을 통과했다. 구독 패치 적용은 [CSE 보안 문서](../pc-mobius/integration/CSE_SECURITY.md)를 따른다. 나머지 항목은 사용자 지시에 따라 [후속 TODO](remaining-todo.md)로 정리했다.
 

@@ -6,415 +6,415 @@ TAP version 13
 # Subtest: BFF 조회는 같은 origin 세션을 사용하고 외부 CSE 조회는 별도 인증 경계를 유지
 ok 1 - BFF 조회는 같은 origin 세션을 사용하고 외부 CSE 조회는 별도 인증 경계를 유지
   ---
-  duration_ms: 23.6783
+  duration_ms: 20.8765
   type: 'test'
   ...
 # Subtest: 인증 거부 응답은 위치 화면의 좌표 폐기에 사용할 상태 코드를 유지
 ok 2 - 인증 거부 응답은 위치 화면의 좌표 폐기에 사용할 상태 코드를 유지
   ---
-  duration_ms: 1.1203
+  duration_ms: 1.0632
   type: 'test'
   ...
 # Subtest: validates default events when exact CORE fixtures are wrapped
 ok 3 - validates default events when exact CORE fixtures are wrapped
   ---
-  duration_ms: 16.5777
+  duration_ms: 21.3533
   type: 'test'
   ...
 # Subtest: rejects malformed fixtures when event schema boundaries are crossed
 ok 4 - rejects malformed fixtures when event schema boundaries are crossed
   ---
-  duration_ms: 0.5578
+  duration_ms: 0.8302
   type: 'test'
   ...
 # Subtest: preserves exact receipt fields and hashes when adapting a CORE JSONL journal
 ok 5 - preserves exact receipt fields and hashes when adapting a CORE JSONL journal
   ---
-  duration_ms: 2.7771
+  duration_ms: 3.0178
   type: 'test'
   ...
 # Subtest: uses receipt timestamp and null revision when journal metadata is absent
 ok 6 - uses receipt timestamp and null revision when journal metadata is absent
   ---
-  duration_ms: 0.2874
+  duration_ms: 0.2687
   type: 'test'
   ...
 # Subtest: rejects inconsistent identities when ACK payload and receipt disagree
 ok 7 - rejects inconsistent identities when ACK payload and receipt disagree
   ---
-  duration_ms: 2.2779
+  duration_ms: 2.0136
   type: 'test'
   ...
 # Subtest: reports the actual line when a journal record is malformed
 ok 8 - reports the actual line when a journal record is malformed
   ---
-  duration_ms: 0.2076
+  duration_ms: 0.1961
   type: 'test'
   ...
 # Subtest: does not add acceptance when an explicit receipt file is supplied
 ok 9 - does not add acceptance when an explicit receipt file is supplied
   ---
-  duration_ms: 2.5062
+  duration_ms: 2.7192
   type: 'test'
   ...
 # Subtest: replays actual merged INTEGRATION policy MEC handover FL and MCP journals
 ok 10 - replays actual merged INTEGRATION policy MEC handover FL and MCP journals
   ---
-  duration_ms: 133.8391
+  duration_ms: 123.9179
   type: 'test'
   ...
 # Subtest: mixed journals preserve CORE commands and validate INTEGRATION envelope fields
 ok 11 - mixed journals preserve CORE commands and validate INTEGRATION envelope fields
   ---
-  duration_ms: 2.3601
+  duration_ms: 2.7912
   type: 'test'
   ...
 # Subtest: renders canonical keyring commands telemetry extensions and nested readback receipts
 ok 12 - renders canonical keyring commands telemetry extensions and nested readback receipts
   ---
-  duration_ms: 4.4622
+  duration_ms: 4.1519
   type: 'test'
   ...
 # Subtest: demo fixture preserves measurement timestamps across polling snapshots
 ok 13 - demo fixture preserves measurement timestamps across polling snapshots
   ---
-  duration_ms: 9.595
+  duration_ms: 9.1508
   type: 'test'
   ...
 # Subtest: location file tails complete JSONL records while preserving earlier devices
 ok 14 - location file tails complete JSONL records while preserving earlier devices
   ---
-  duration_ms: 16.6179
+  duration_ms: 14.3428
   type: 'test'
   ...
 # Subtest: file truncate and replacement reset the previous journal snapshot
 ok 15 - file truncate and replacement reset the previous journal snapshot
   ---
-  duration_ms: 11.9839
+  duration_ms: 11.614
   type: 'test'
   ...
 # Subtest: same-prefix same-size rewrites replace stale values at the tail
 ok 16 - same-prefix same-size rewrites replace stale values at the tail
   ---
-  duration_ms: 7.6055
+  duration_ms: 8.4666
   type: 'test'
   ...
 # Subtest: invalid and oversized rows are bounded and later valid observations remain readable
 ok 17 - invalid and oversized rows are bounded and later valid observations remain readable
   ---
-  duration_ms: 5.1763
+  duration_ms: 5.0956
   type: 'test'
   ...
 # Subtest: configured file errors remain explicit and omit filesystem paths
 ok 18 - configured file errors remain explicit and omit filesystem paths
   ---
-  duration_ms: 6.4457
+  duration_ms: 6.3356
   type: 'test'
   ...
 # Subtest: concurrent polling shares one cursor and reloads gateway coordinates
 ok 19 - concurrent polling shares one cursor and reloads gateway coordinates
   ---
-  duration_ms: 12.9034
+  duration_ms: 12.5877
   type: 'test'
   ...
 # Subtest: active device memory is bounded while retaining the newest observations
 ok 20 - active device memory is bounded while retaining the newest observations
   ---
-  duration_ms: 144.8944
+  duration_ms: 154.7087
   type: 'test'
   ...
 # Subtest: location HTTP endpoint returns a validated explicit demo snapshot
 ok 21 - location HTTP endpoint returns a validated explicit demo snapshot
   ---
-  duration_ms: 256.43
+  duration_ms: 226.1373
   type: 'test'
   ...
 # Subtest: location HTTP polling reflects appended GPS RSSI and updated gateway settings
 ok 22 - location HTTP polling reflects appended GPS RSSI and updated gateway settings
   ---
-  duration_ms: 20.0158
+  duration_ms: 21.5694
   type: 'test'
   ...
 # Subtest: configured missing location file returns explicit 503 and recovers after file creation
 ok 23 - configured missing location file returns explicit 503 and recovers after file creation
   ---
-  duration_ms: 12.3626
+  duration_ms: 12.6669
   type: 'test'
   ...
 # Subtest: location HTTP endpoint preserves GET-only policy
 ok 24 - location HTTP endpoint preserves GET-only policy
   ---
-  duration_ms: 12.2092
+  duration_ms: 10.0434
   type: 'test'
   ...
 # Subtest: MEC 위치와 CORE/Gateway BLE 관측은 각각 최신값을 유지한다
 ok 25 - MEC 위치와 CORE/Gateway BLE 관측은 각각 최신값을 유지한다
   ---
-  duration_ms: 1.2051
+  duration_ms: 1.0711
   type: 'test'
   ...
 # Subtest: BLE-only 키링은 수신기 중심의 원을 제공하고 좌표 필드는 대기로 유지한다
 ok 26 - BLE-only 키링은 수신기 중심의 원을 제공하고 좌표 필드는 대기로 유지한다
   ---
-  duration_ms: 0.407
+  duration_ms: 0.6199
   type: 'test'
   ...
 # Subtest: 수신 세기와 교정값을 반영하고 매우 약한 신호의 지도 반경은 상한을 표시한다
 ok 27 - 수신 세기와 교정값을 반영하고 매우 약한 신호의 지도 반경은 상한을 표시한다
   ---
-  duration_ms: 0.1299
+  duration_ms: 0.2217
   type: 'test'
   ...
 # Subtest: 입력 좌표·시각·RSSI·교정값 경계를 검증한다
 ok 28 - 입력 좌표·시각·RSSI·교정값 경계를 검증한다
   ---
-  duration_ms: 0.3901
+  duration_ms: 0.6081
   type: 'test'
   ...
 # Subtest: 센서 GPS 좌표를 읽고 모의 출처를 수집 경로 전체에 보존한다
 ok 29 - 센서 GPS 좌표를 읽고 모의 출처를 수집 경로 전체에 보존한다
   ---
-  duration_ms: 0.1544
+  duration_ms: 0.2193
   type: 'test'
   ...
 # Subtest: 최근 이벤트 100개 표시 범위를 넘어도 키링별 좌표는 누적 상태에 남는다
 ok 30 - 최근 이벤트 100개 표시 범위를 넘어도 키링별 좌표는 누적 상태에 남는다
   ---
-  duration_ms: 1.154
+  duration_ms: 1.7728
   type: 'test'
   ...
 # Subtest: 관측 시각으로 현재·오래된 기록·시계 앞섬을 판정한다
 ok 31 - 관측 시각으로 현재·오래된 기록·시계 앞섬을 판정한다
   ---
-  duration_ms: 0.1359
+  duration_ms: 0.2015
   type: 'test'
   ...
 # Subtest: 미래 시각 관측을 격리하고 기존 미래 상태에서 정상 시각으로 회복한다
 ok 32 - 미래 시각 관측을 격리하고 기존 미래 상태에서 정상 시각으로 회복한다
   ---
-  duration_ms: 0.104
+  duration_ms: 0.1554
   type: 'test'
   ...
 # Subtest: 데모는 3개 키링·2개 직접 좌표·3개 BLE 관측과 원본 시각을 제공한다
 ok 33 - 데모는 3개 키링·2개 직접 좌표·3개 BLE 관측과 원본 시각을 제공한다
   ---
-  duration_ms: 0.9345
+  duration_ms: 0.8619
   type: 'test'
   ...
 # Subtest: 통합 journal adapter가 만든 위치 receipt는 공통 reducer로 연결된다
 ok 34 - 통합 journal adapter가 만든 위치 receipt는 공통 reducer로 연결된다
   ---
-  duration_ms: 5.8461
+  duration_ms: 7.5059
   type: 'test'
   ...
 # Subtest: 지도 공급자 전환은 각 공급자의 출처와 확대 한도를 함께 유지한다
 ok 35 - 지도 공급자 전환은 각 공급자의 출처와 확대 한도를 함께 유지한다
   ---
-  duration_ms: 1.7907
+  duration_ms: 1.2399
   type: 'test'
   ...
 # Subtest: 지정된 안전 구역은 위경도·반경·경계 순서를 검증한 뒤 지도에 표시한다
 ok 36 - 지정된 안전 구역은 위경도·반경·경계 순서를 검증한 뒤 지도에 표시한다
   ---
-  duration_ms: 0.3279
+  duration_ms: 0.4996
   type: 'test'
   ...
 # Subtest: PKCE code callback은 HttpOnly 세션과 등록 principal을 생성하고 토큰을 서버에 보관한다
 ok 37 - PKCE code callback은 HttpOnly 세션과 등록 principal을 생성하고 토큰을 서버에 보관한다
   ---
-  duration_ms: 55.8477
+  duration_ms: 49.8948
   type: 'test'
   ...
 # Subtest: state·nonce·ID token audience와 access token subject 오류를 검증한다
 ok 38 - state·nonce·ID token audience와 access token subject 오류를 검증한다
   ---
-  duration_ms: 41.1531
+  duration_ms: 38.2375
   type: 'test'
   ...
 # Subtest: 동시 API 요청은 refresh token을 한 번 교환하고 교체된 토큰을 이어 사용한다
 ok 39 - 동시 API 요청은 refresh token을 한 번 교환하고 교체된 토큰을 이어 사용한다
   ---
-  duration_ms: 17.9352
+  duration_ms: 14.3161
   type: 'test'
   ...
 # Subtest: 세션은 동일 origin 로그아웃과 TTL을 적용하고 foreign subject 갱신을 종료한다
 ok 40 - 세션은 동일 origin 로그아웃과 TTL을 적용하고 foreign subject 갱신을 종료한다
   ---
-  duration_ms: 15.325
+  duration_ms: 14.7674
   type: 'test'
   ...
 # Subtest: discovery origin·PKCE support·redirect와 제한된 로그인 저장소를 검증한다
 ok 41 - discovery origin·PKCE support·redirect와 제한된 로그인 저장소를 검증한다
   ---
-  duration_ms: 6.2958
+  duration_ms: 6.9466
   type: 'test'
   ...
 # Subtest: 운영 HTTPS 세션 쿠키는 __Host Secure 속성을 적용한다
 ok 42 - 운영 HTTPS 세션 쿠키는 __Host Secure 속성을 적용한다
   ---
-  duration_ms: 1.7784
+  duration_ms: 1.8485
   type: 'test'
   ...
 # Subtest: 사용자 포털의 실제 응답은 snapshot과 canonical command 계약을 함께 만족한다
 ok 43 - 사용자 포털의 실제 응답은 snapshot과 canonical command 계약을 함께 만족한다
   ---
-  duration_ms: 344.2972
+  duration_ms: 305.9522
   type: 'test'
   ...
 # Subtest: 포털 HTTP: 동의→위치권한→방문자 위치→회수 경로
 ok 44 - 포털 HTTP: 동의→위치권한→방문자 위치→회수 경로
   ---
-  duration_ms: 337.4545
+  duration_ms: 295.75
   type: 'test'
   ...
 # Subtest: 포털 HTTP: 방문자 요청을 보호자가 승인하고 같은 재전송을 복구
 ok 45 - 포털 HTTP: 방문자 요청을 보호자가 승인하고 같은 재전송을 복구
   ---
-  duration_ms: 47.8037
+  duration_ms: 42.0096
   type: 'test'
   ...
 # Subtest: 포털 HTTP: 출처·역할·JSON·본문 경계와 principal 위조
 ok 46 - 포털 HTTP: 출처·역할·JSON·본문 경계와 principal 위조
   ---
-  duration_ms: 28.0447
+  duration_ms: 24.9156
   type: 'test'
   ...
 # Subtest: 체험 사용자 위치는 실측 JSONL과 실제 수신기 좌표에서 격리
 ok 47 - 체험 사용자 위치는 실측 JSONL과 실제 수신기 좌표에서 격리
   ---
-  duration_ms: 11.1736
+  duration_ms: 9.6243
   type: 'test'
   ...
 # Subtest: 실계정 BFF는 서버 세션의 토큰·위치 범위·운영 scope를 적용
 ok 48 - 실계정 BFF는 서버 세션의 토큰·위치 범위·운영 scope를 적용
   ---
-  duration_ms: 8.3461
+  duration_ms: 7.9797
   type: 'test'
   ...
 # Subtest: LIVE 위치 HTTP: 중앙 BLE와 등록 anchor를 연결하고 가구 밖 수신기를 분리
 ok 49 - LIVE 위치 HTTP: 중앙 BLE와 등록 anchor를 연결하고 가구 밖 수신기를 분리
   ---
-  duration_ms: 5.9447
+  duration_ms: 6.151
   type: 'test'
   ...
 # Subtest: LIVE 위치 HTTP: JSONL·중앙 GPS/BLE를 각각의 최신 관측 시각으로 병합
 ok 50 - LIVE 위치 HTTP: JSONL·중앙 GPS/BLE를 각각의 최신 관측 시각으로 병합
   ---
-  duration_ms: 6.3832
+  duration_ms: 5.8324
   type: 'test'
   ...
 # Subtest: LIVE 위치 HTTP: 현재 grant 회수와 조회 중 회수는 로컬·중앙·anchor를 함께 비운다
 ok 51 - LIVE 위치 HTTP: 현재 grant 회수와 조회 중 회수는 로컬·중앙·anchor를 함께 비운다
   ---
-  duration_ms: 10.4547
+  duration_ms: 9.3333
   type: 'test'
   ...
 # Subtest: LIVE 위치 HTTP: 중앙 오류·권한 응답 결손 시 좌표 응답을 오류로 전환
 ok 52 - LIVE 위치 HTTP: 중앙 오류·권한 응답 결손 시 좌표 응답을 오류로 전환
   ---
-  duration_ms: 14.2814
+  duration_ms: 15.7708
   type: 'test'
   ...
 # Subtest: LIVE 위치 HTTP: JSONL 24시간 보관 경계와 응답 lease 만료를 적용
 ok 53 - LIVE 위치 HTTP: JSONL 24시간 보관 경계와 응답 lease 만료를 적용
   ---
-  duration_ms: 10.3514
+  duration_ms: 8.4201
   type: 'test'
   ...
 # Subtest: resumes strictly after Last-Event-ID and keeps finite replay open
 ok 54 - resumes strictly after Last-Event-ID and keeps finite replay open
   ---
-  duration_ms: 260.7953
+  duration_ms: 215.3155
   type: 'test'
   ...
 # Subtest: resumes strictly after the query cursor on manual EventSource reconnect
 ok 55 - resumes strictly after the query cursor on manual EventSource reconnect
   ---
-  duration_ms: 8.6752
+  duration_ms: 7.6931
   type: 'test'
   ...
 # Subtest: prefers native Last-Event-ID over the stale reconnect query
 ok 56 - prefers native Last-Event-ID over the stale reconnect query
   ---
-  duration_ms: 7.0997
+  duration_ms: 6.4727
   type: 'test'
   ...
 # Subtest: keeps an exhausted resume cursor open without replaying duplicates
 ok 57 - keeps an exhausted resume cursor open without replaying duplicates
   ---
-  duration_ms: 7.9487
+  duration_ms: 6.6352
   type: 'test'
   ...
 # Subtest: returns explicit cursor errors instead of accepting malformed or future IDs
 ok 58 - returns explicit cursor errors instead of accepting malformed or future IDs
   ---
-  duration_ms: 19.056
+  duration_ms: 16.8004
   type: 'test'
   ...
 # Subtest: serves simulated resources audit search and source metadata over HTTP
 ok 59 - serves simulated resources audit search and source metadata over HTTP
   ---
-  duration_ms: 12.3786
+  duration_ms: 11.9891
   type: 'test'
   ...
 # Subtest: calculates stage durations when explicit acceptance and member ACKs exist
 ok 60 - calculates stage durations when explicit acceptance and member ACKs exist
   ---
-  duration_ms: 21.5302
+  duration_ms: 17.9339
   type: 'test'
   ...
 # Subtest: keeps stages pending when only a readback verification receipt exists
 ok 61 - keeps stages pending when only a readback verification receipt exists
   ---
-  duration_ms: 2.4568
+  duration_ms: 1.562
   type: 'test'
   ...
 # Subtest: never invents acceptance when dispatch is the only command evidence
 ok 62 - never invents acceptance when dispatch is the only command evidence
   ---
-  duration_ms: 3.4484
+  duration_ms: 1.3259
   type: 'test'
   ...
 # Subtest: reports member partial failure when one member awaits retry
 ok 63 - reports member partial failure when one member awaits retry
   ---
-  duration_ms: 3.5264
+  duration_ms: 2.2187
   type: 'test'
   ...
 # Subtest: reports failure when the only observed member explicitly requests retry
 ok 64 - reports failure when the only observed member explicitly requests retry
   ---
-  duration_ms: 3.5809
+  duration_ms: 1.6187
   type: 'test'
   ...
 # Subtest: does not manufacture stage timestamps when only a settled group summary exists
 ok 65 - does not manufacture stage timestamps when only a settled group summary exists
   ---
-  duration_ms: 2.7248
+  duration_ms: 1.7333
   type: 'test'
   ...
 # Subtest: ignores duplicate and out-of-order stream events without regressing state
 ok 66 - ignores duplicate and out-of-order stream events without regressing state
   ---
-  duration_ms: 1.7741
+  duration_ms: 1.5493
   type: 'test'
   ...
 # Subtest: keeps negative or absent time differences unknown
 ok 67 - keeps negative or absent time differences unknown
   ---
-  duration_ms: 0.1369
+  duration_ms: 0.1298
   type: 'test'
   ...
 # Subtest: 중앙 발급 멤버 명령 ID를 그룹에 연결: summaryFirst=true
 ok 68 - 중앙 발급 멤버 명령 ID를 그룹에 연결: summaryFirst=true
   ---
-  duration_ms: 2.1155
+  duration_ms: 2.8294
   type: 'test'
   ...
 # Subtest: 중앙 발급 멤버 명령 ID를 그룹에 연결: summaryFirst=false
 ok 69 - 중앙 발급 멤버 명령 ID를 그룹에 연결: summaryFirst=false
   ---
-  duration_ms: 1.6772
+  duration_ms: 1.5543
   type: 'test'
   ...
 1..69
@@ -425,4 +425,4 @@ ok 69 - 중앙 발급 멤버 명령 ID를 그룹에 연결: summaryFirst=false
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 963.5609
+# duration_ms 871.3578

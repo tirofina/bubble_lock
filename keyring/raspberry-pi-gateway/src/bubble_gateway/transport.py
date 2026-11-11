@@ -461,6 +461,14 @@ class TransportHub:
                                    credential_receipt=credential_receipt)
 
     async def publish(self, rqi: str, container: str, payload: dict[str, Any]) -> dict[str, Any] | None:
+        if container in {"@central/telemetry", "@central/receipt"}:
+            route = "/telemetry" if container == "@central/telemetry" else "/receipts"
+            result = await self._api("POST", route, payload, rqi)
+            if result.get("status") not in {"ACCEPTED", "DUPLICATE"}:
+                raise RemoteResponseError("central API rejected payload")
+            if container == "@central/telemetry" and result.get("deviceId") != payload.get("deviceId"):
+                raise RemoteResponseError("central API device identity mismatch")
+            return result
         if container.startswith("@core/"):
             return await self._publish_core(container, payload)
         if not isinstance(rqi, str) or not 1 <= len(rqi) <= 128:
@@ -640,6 +648,13 @@ class TransportHub:
                 ("commandId", "deviceId", "claimId", "grantRevision", "ownershipEpoch")}
         body["payloadHash"] = payload_hash
         return await self._api("POST", "/authorize", body, command_dict["commandId"])
+
+    async def dispatch_start(self, command_dict: dict[str, Any], payload_hash: str) -> dict[str, Any]:
+        """Commit the dispatch-start fence immediately before the BLE write."""
+        body = {key: command_dict[key] for key in
+                ("commandId", "deviceId", "claimId", "grantRevision", "ownershipEpoch")}
+        body["payloadHash"] = payload_hash
+        return await self._api("POST", "/dispatch-start", body, command_dict["commandId"])
 
     async def credential_status(self) -> dict[str, Any]:
         return await self._api("GET", "/credentials/status")

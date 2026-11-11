@@ -36,7 +36,8 @@ class Store:
                 command_id TEXT PRIMARY KEY, payload_hash TEXT NOT NULL,
                 payload TEXT NOT NULL, status TEXT NOT NULL,
                 received_at TEXT NOT NULL, receipt TEXT,
-                receipt_delivered INTEGER NOT NULL DEFAULT 0
+                receipt_delivered INTEGER NOT NULL DEFAULT 0,
+                central_receipt_staged INTEGER NOT NULL DEFAULT 0
             );
             CREATE TABLE IF NOT EXISTS fences (
                 device_id TEXT PRIMARY KEY, epoch INTEGER NOT NULL, revision INTEGER NOT NULL
@@ -63,6 +64,9 @@ class Store:
                 payload TEXT NOT NULL, delivered_at TEXT
             );
         """)
+        columns = {row["name"] for row in self.db.execute("PRAGMA table_info(commands)")}
+        if "central_receipt_staged" not in columns:
+            self.db.execute("ALTER TABLE commands ADD COLUMN central_receipt_staged INTEGER NOT NULL DEFAULT 0")
         try:
             with self.db:
                 self.db.execute("BEGIN IMMEDIATE")
@@ -177,7 +181,7 @@ class Store:
                 pass  # Still in the independent journal; retry after outbox space opens.
 
     def observation(self, container: str, payload: dict, core_enabled: bool = False, *,
-                    core_epochs: dict[str, int] | None = None) -> bool:
+                    central_enabled: bool = False, core_epochs: dict[str, int] | None = None) -> bool:
         with self.db:
             previous = self.db.execute("SELECT boot_id,sequence FROM observations WHERE device_id=?", (payload["deviceId"],)).fetchone()
             if previous and previous["boot_id"] == payload["bootId"] and payload["sequence"] <= previous["sequence"]:
@@ -195,6 +199,8 @@ class Store:
                 self._enqueue(self.request_id("core-telemetry", identity), "@core/telemetry", projection)
                 self.db.execute("INSERT INTO core_sequences(device_id,wire_sequence) VALUES(?,?) ON CONFLICT(device_id) DO UPDATE SET wire_sequence=excluded.wire_sequence",
                                 (payload["deviceId"], wire_sequence))
+            if central_enabled:
+                self._enqueue(self.request_id("central-telemetry", identity), "@central/telemetry", payload)
             self.db.execute("INSERT INTO observations(device_id,boot_id,sequence) VALUES(?,?,?) ON CONFLICT(device_id) DO UPDATE SET boot_id=excluded.boot_id,sequence=excluded.sequence",
                             (payload["deviceId"], payload["bootId"], payload["sequence"]))
         return True
@@ -203,22 +209,28 @@ class Store:
         return {row["device_id"]: (row["boot_id"], row["sequence"])
                 for row in self.db.execute("SELECT device_id,boot_id,sequence FROM observations")}
 
-    def stage_receipts(self, container: str, core_enabled: bool = False) -> None:
+    def stage_receipts(self, container: str, core_enabled: bool = False, central_enabled: bool = False) -> None:
         """Choose both routes atomically on first staging, not on every retry."""
         # Already staged native receipts can remain undelivered during backoff.
         # They must not consume slots in the batch of receipts that still need staging.
         rows = self.db.execute("""
-            SELECT command_id,receipt FROM commands
+            SELECT command_id,receipt,receipt_delivered FROM commands
             WHERE receipt IS NOT NULL AND receipt_delivered=0
               AND NOT EXISTS (SELECT 1 FROM outbox WHERE outbox.command_id=commands.command_id)
             ORDER BY commands.rowid LIMIT 128
         """).fetchall()
+        if central_enabled:
+            extra = self.db.execute("SELECT command_id,receipt,receipt_delivered FROM commands WHERE receipt IS NOT NULL AND central_receipt_staged=0 ORDER BY rowid LIMIT 128").fetchall()
+            seen = {row["command_id"] for row in rows}
+            rows.extend(row for row in extra if row["command_id"] not in seen)
         for row in rows:
             try:
                 with self.db:
                     receipt = json.loads(row["receipt"])
-                    created = self._enqueue(self.request_id("receipt", row["command_id"]), container,
-                                            receipt, True, row["command_id"])
+                    created = False
+                    if not row["receipt_delivered"]:
+                        created = self._enqueue(self.request_id("receipt", row["command_id"]), container,
+                                                receipt, True, row["command_id"])
                     # The retained native row (then receipt_delivered after its
                     # confirmation) is the durable staging marker. Recreating a
                     # completed ACK here would bypass the native retry backoff.
@@ -226,6 +238,9 @@ class Store:
                         projected = acknowledgement(receipt)
                         if projected is not None:
                             self._enqueue(self.request_id("core-ack", row["command_id"]), "@core/ack", projected, True)
+                    if central_enabled and not self.db.execute("SELECT central_receipt_staged FROM commands WHERE command_id=?", (row["command_id"],)).fetchone()[0]:
+                        self._enqueue(self.request_id("central-receipt", row["command_id"]), "@central/receipt", receipt, True)
+                        self.db.execute("UPDATE commands SET central_receipt_staged=1 WHERE command_id=?", (row["command_id"],))
             except CapacityError:
                 break
 
