@@ -173,18 +173,18 @@
   "firmwareRevision": "keyring-0.7.14",
   "benchFirmwareRevision": "feather-probe-0.2.1",
   "publication": {
-    "sourceCommit": "cf9b7e48d65729a471174b47e8a9857d3166edd7",
+    "sourceCommit": "c21acb88e623cc5d71b382136095281a62b36103",
     "remoteBranch": "codex/keyring-namho",
     "sourcePushStatus": "succeeded",
     "draftPullRequest": "not-created-connector-403",
     "remoteAccess": "git-reconnected-with-explicit-user-approval",
-    "latestLocalSourceCommit": "cf9b7e48d65729a471174b47e8a9857d3166edd7",
-    "lastPushedCommit": "cf9b7e48d65729a471174b47e8a9857d3166edd7",
-    "latestCheckpoint": "Compare r18 bring-up observations across USB, Pi SQLite, Mobius4 and the central acceptance event.",
-    "lastPushedCommitBeforeThisCheckpoint": "1fc43605fd2435b865a0ba4b9f68ab32e8dc9c25"
+    "latestLocalSourceCommit": "c21acb88e623cc5d71b382136095281a62b36103",
+    "lastPushedCommit": "c21acb88e623cc5d71b382136095281a62b36103",
+    "latestCheckpoint": "Match the r18 BLE observation to authorized central and LIVE web location responses.",
+    "lastPushedCommitBeforeThisCheckpoint": "36c9bd92fdb66c4d44df4ed5ec7c6bf93e9a889c"
   },
-  "gatewayRevision": "0.2.71",
-  "pendingValidationScope": "Gateway 0.2.71 actual r18 observation relay evidence, Gateway 0.2.70 r18 observation-only Pi relay and central acceptance, Gateway 0.2.69 r18 INA219 and external meter pairing, r18 ST7789/JD9853 observation-only builds, physical LCD checks and Gateway 0.2.68 USB/BLE profile evidence, Gateway 0.2.67 offline native receipt comparison with actual Pi and device archives, Gateway 0.2.66 post-pulse OFF telemetry acceptance on the actual r18 bench, Gateway 0.2.65 scoped r18 container pins, Gateway 0.2.64 interrupted r18 evidence with actual artifacts, Gateway 0.2.63 r18 Pi evidence export and journal capture, operator-triggered scoped r18 pulse bench and physical pulse measurement, Gateway 0.2.62 r18 Pi preflight, actual BLE board pin and Mobius4 publication, Gateway 0.2.61 r18 command reconciliation with the latest central API snapshot, Gateway 0.2.59 initial and final r18 sensor capture and r18 0.7.15-bringup USB replay, Gateway 0.2.57 HTTPS Retry-After restart and SQLite schema upgrade, central Retry-After outbox hold, pinned Mobius4 observation delivery, central API datastore binding and deployment transition, health snapshot admission during CSE outages, independent central receipt staging and delivery, central telemetry retention and independent delivery, central receipt replay and database upgrade, central dispatch-start and pinned-receipt restart and replay, Feather 0.2.1 flash and visible ST7789 command state, r18 physical commands and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE MQTT ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
+  "gatewayRevision": "0.2.72",
+  "pendingValidationScope": "Gateway 0.2.72 r18 authorized central portal and LIVE dashboard response evidence, Gateway 0.2.71 actual r18 observation relay evidence, Gateway 0.2.70 r18 observation-only Pi relay and central acceptance, Gateway 0.2.69 r18 INA219 and external meter pairing, r18 ST7789/JD9853 observation-only builds, physical LCD checks and Gateway 0.2.68 USB/BLE profile evidence, Gateway 0.2.67 offline native receipt comparison with actual Pi and device archives, Gateway 0.2.66 post-pulse OFF telemetry acceptance on the actual r18 bench, Gateway 0.2.65 scoped r18 container pins, Gateway 0.2.64 interrupted r18 evidence with actual artifacts, Gateway 0.2.63 r18 Pi evidence export and journal capture, operator-triggered scoped r18 pulse bench and physical pulse measurement, Gateway 0.2.62 r18 Pi preflight, actual BLE board pin and Mobius4 publication, Gateway 0.2.61 r18 command reconciliation with the latest central API snapshot, Gateway 0.2.59 initial and final r18 sensor capture and r18 0.7.15-bringup USB replay, Gateway 0.2.57 HTTPS Retry-After restart and SQLite schema upgrade, central Retry-After outbox hold, pinned Mobius4 observation delivery, central API datastore binding and deployment transition, health snapshot admission during CSE outages, independent central receipt staging and delivery, central telemetry retention and independent delivery, central receipt replay and database upgrade, central dispatch-start and pinned-receipt restart and replay, Feather 0.2.1 flash and visible ST7789 command state, r18 physical commands and production systemd deployment, production PKI/principal/AE/ACP/grants, CORE MQTT ACK settlement, production keyring PCB, app/web, power/range/video and release acceptance remain.",
   "lastCompletionAudit": {
     "historical": true,
     "supersededBy": "2026-11-10 benchCheckpoint for current execution and verification state",
@@ -205,7 +205,7 @@
     "currentGoalTurnClassification": "progress",
     "currentConsecutiveBlockedAuditTurns": 0,
     "previousAuthorizationGateResolved": true,
-    "executionRequest": "Bind the r18 observation-only relay evidence under DOC-REV 2.0.0",
+    "executionRequest": "Bind the r18 BLE observation to the team portal and LIVE web response under DOC-REV 2.0.0",
     "remainingCompletionDependencies": [
       "central deployment, settlement, recovery activation and epoch-bound CORE telemetry ingress",
       "purchased JD9853 module initialization",
@@ -214,8 +214,8 @@
     ],
     "latestRemoteCore": "d54a43a",
     "latestRemoteMain": "bc2a45d",
-    "sourceCommit": "cf9b7e48d65729a471174b47e8a9857d3166edd7",
-    "sourceValidation": "Regression source covers central acceptance and pending state, content hash mismatch and boot and resource identity. Build, static analysis, tests, Pi access and actual telemetry delivery were not executed.",
+    "sourceCommit": "c21acb88e623cc5d71b382136095281a62b36103",
+    "sourceValidation": "Regression source covers both location projections, a changed RSSI, denied or expired reads, device scope and mixed provenance. Build, static analysis, tests and actual location responses were not executed.",
     "goalComplete": false,
     "pendingInput": null,
     "currentDependencyState": "The Feather 0.2.0 and Pi Gateway 0.2.43 command path matched isolated Mobius4 and PostgreSQL on the pinned 715ef58 API. The operator saw no LED change during either command. Feather 0.2.1 mirrors the command GPIO readback on the ST7789. The latest Pi integration workflow and LCD response still need hardware evidence, as do r18 first power-on, physical reconnect, battery, LCD, charger, sensor, NVS fault, power, range and wake. Production CSE, CORE and release acceptance remain.",
@@ -1530,5 +1530,14 @@
     "piVerified": false,
     "centralAcceptanceVerified": false,
     "sourceCommit": "cf9b7e48d65729a471174b47e8a9857d3166edd7"
+  },
+  "r18LocationResponseEvidence": {
+    "reference": "raspberry-pi-gateway/TESTING.md#중앙-위치-api와-웹-응답-대조",
+    "gatewayVersion": "0.2.72",
+    "regressionsExecuted": false,
+    "centralPortalVerified": false,
+    "webResponseVerified": false,
+    "nativeAppVerified": false,
+    "sourceCommit": "c21acb88e623cc5d71b382136095281a62b36103"
   }
 }

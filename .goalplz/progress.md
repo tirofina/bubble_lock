@@ -1513,3 +1513,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 관측 �
 - 중앙 수용 지연, 본문 해시 불일치, 다른 부팅·부모 컨테이너를 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·Pi 접속·BLE·실제 관측 전달과 중앙 수용 검증은 미수행이다.
 
 소스 commit `cf9b7e48d65729a471174b47e8a9857d3166edd7`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1fc4360..cf9b7e4`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 BLE 관측과 팀 위치 조회 응답 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 USB·Pi·Mobius4·중앙 텔레메트리 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 위치 BFF 구현은 통합 main에 있고 원격에서 별도 앱 브랜치는 확인되지 않았다.
+
+- Gateway 0.2.72의 r18 캡처에 RSSI 필수 선택을 추가했다. 중앙 위치 API와 LIVE 웹 BFF의 저장 응답에서 같은 기기·Gateway·시각·RSSI·모의 표시를 대조한다. 접근 범위, 조회 만료와 웹 출처를 확인하며 현 격리 명령 API와 별도로 승인된 팀 포털 배치가 필요하다. [중앙 위치 API와 웹 응답 대조](../keyring/raspberry-pi-gateway/TESTING.md#중앙-위치-api와-웹-응답-대조)
+- 권한 거절·만료·다른 RSSI·혼합 출처를 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·Pi 접속·실제 포털 조회·웹 렌더링·별도 앱은 미확인이다.
+
+소스 commit `c21acb88e623cc5d71b382136095281a62b36103`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `36c9bd9..c21acb8`다. goal은 active/progress다.
