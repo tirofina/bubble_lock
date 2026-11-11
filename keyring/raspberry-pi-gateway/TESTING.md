@@ -1,5 +1,9 @@
 # Gateway 로컬 시험
 
+Gateway 0.2.64는 r18 명령 발급 응답이 끊겼을 때 저장된 명령 ID로 [시험 증거를 대조](#중단된-r18-펄스-시험-대조)한다. 회귀시험은 응답 유실, 중앙 상태 사본에 없는 발급, 변조된 요청, CSE와 중앙 영수증 불일치를 다룬다.
+
+Gateway 로컬 시험 190개, 격리 벤치 모의 시험 25개와 wheel 빌드가 통과했다. 합성 입력으로 r18 CLI의 발급 복구와 요청 해시 불일치 거부를 확인했다. Pi·BLE·실물 시험은 이번 변경에서 미실행이다.
+
 Gateway 0.2.63의 회귀시험 소스는 Pi 세션의 환경 파일 내보내기, 기존 파일 보존, r18 저널 캡처의 시험 잠금과 장치 설정 전달을 다룬다. 빌드·시험·Pi 실행은 미실행이다.
 
 r18 단일 펄스 벤치의 회귀시험 소스는 준비 신호 이후 한 건 발급, 같은 부팅의 후속 OFF 관측, 응답 유실 뒤 grant 회수와 중단 신호를 다룬다. 빌드·시험·실제 명령 발급은 미실행이다.
@@ -228,7 +232,7 @@ $env:PYTHONPATH = Join-Path $PWD 'keyring/raspberry-pi-gateway/src'
 python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_led_cycle.py --output $bench
 ```
 
-Feather 화면에 명령 상태를 표시하는 `feather-probe-0.2.1`을 쓰려면 Pi의 `scoped_feather_pi.py prepare`와 PC의 `scoped_feather_led_cycle.py`에 모두 `--firmware-revision feather-probe-0.2.1`을 지정한다. 시작 시 `CMD OFF`를 확인한다. `LED_ON_RECORDED`와 `LED_OFF_RECORDED`가 각각 나온 뒤, 다음 명령을 보내거나 Pi 시험을 끝내기 전에 눈으로 본 화면을 기록한다. 기본 옵션은 기존 `feather-probe-0.2.0` 절차에 맞춰져 있다.
+보드에서 LED 변화를 볼 수 없었던 Feather는 1.54인치 화면으로 확인한다. `feather-probe-0.2.1`을 올린 뒤 Pi의 `scoped_feather_pi.py prepare`와 PC의 `scoped_feather_led_cycle.py`에 모두 `--firmware-revision feather-probe-0.2.1`을 지정한다. 시작 시 `CMD OFF`를 확인한다. `LED_ON_RECORDED`와 `LED_OFF_RECORDED`가 각각 나온 뒤, 다음 명령을 보내거나 Pi 시험을 끝내기 전에 눈으로 본 화면을 기록한다. 기본 옵션은 기존 `feather-probe-0.2.0` 절차에 맞춰져 있다.
 
 `LED_ON_READY`, `LED_OFF_READY`가 각각 출력된 뒤에만 `$bench`에 해당 이름의 `LED_ON`, `LED_OFF` 파일을 만든다. 각 단계는 같은 부팅 세션의 명령 전 관측을 읽고, 팀 API에서 60초 grant를 받은 뒤 25초 기한의 명령을 발급한다. 실제 LED를 눈으로 확인한 결과는 따로 기록한다. 도구는 Mobius4 원본 영수증과 명령 후 관측을 확인하고 단계별 grant 회수 응답을 로컬에 저장한다.
 
@@ -338,6 +342,18 @@ python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_r18_pulse.py --
 `R18_PULSE_READY`가 나오면 실제 시험을 시작할 때 다른 터미널에서 같은 폴더에 빈 `PULSE` 파일을 만든다. 도구는 같은 부팅에서 출력 OFF·fault 없음·Pi 명령 준비를 다시 읽고 기한이 있는 명령 한 건을 발급한다. `STOP` 파일이 감지되면 발급 전에는 멈추고, grant가 생성됐으면 회수를 시도한다.
 
 발급 전에 `pulse-intent.json`을 저장한다. `R18_PULSE_RECORDED`는 장치 ACK의 적용 당시 ON, 중앙 실행 시작·정산, 같은 부팅의 더 새 OFF 관측과 grant 회수가 확인된 경우에 출력된다. 응답이 끊기면 `pulse-intent.json`의 command ID로 원래 명령을 조회한다. 시험 도구는 그 명령을 자동으로 다시 발급하지 않는다. 펄스 길이와 종료 시점은 계측기로 기록하고 같은 command ID로 [장치 저널 대조](../JOURNAL_RETENTION.md#r18-실물-명령-한-건-대조)에 연결한다.
+
+#### 중단된 r18 펄스 시험 대조
+
+PC 시험 폴더와 격리 r18 API의 `runtime.json` 사본을 준비한다. Pi SQLite 사본을 확보했으면 `--database`에 지정한다. 도구는 로컬 사본을 읽어 기존 명령의 발급·실행·정산을 조회한다.
+
+```powershell
+python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_r18_evidence.py `
+  --output-directory $privatePulseEvidence --team-state $teamStateCopy `
+  --database $piDatabaseCopy
+```
+
+`issuanceInTeamSnapshot`이 `false`면 제공한 상태 사본에 발급 기록이 없다. `centralApplicationVerified`가 `true`면 같은 명령의 적용 영수증과 중앙 실행·정산 기록이 일치한다. `cseReceiptCaptured`와 `piCommandState`에서 원본 CSE 영수증의 저장 여부와 Pi 저널 상태를 각각 확인한다. `physicalPulseMeasured`는 비워 두며 펄스 길이와 종료 시점은 계측 기록에 남긴다.
 
 #### r18 Pi 시험 증거 보관
 

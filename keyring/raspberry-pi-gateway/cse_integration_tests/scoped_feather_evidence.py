@@ -8,7 +8,8 @@ import re
 import sqlite3
 
 from bubble_gateway.config import ID
-from bubble_gateway.integration_evidence import COMMAND_BINDING, inspect_integration_command, require_integration_event
+from bubble_gateway.integration_evidence import (COMMAND_BINDING, inspect_integration_command,
+                                                 match_integration_issuance, require_integration_event)
 from bubble_gateway.model import canonical, central_observation_id, iso_time, parse_time, payload_hash, validate_command
 from bubble_gateway.state_identity import metadata, readonly
 from pi_led_cycle import DEVICE, FIRMWARE, STEPS, receipt_name, verify_database, verify_step
@@ -230,23 +231,40 @@ def read_optional(path):
     return value
 
 
-def read_pi_commands(database):
+def read_pi_commands(database, *, gateway_id=GATEWAY, originator="Sscoped-feather-gateway-a", receipt_container=ROUTE,
+                     deployment_ids=(None, "scoped-mobius4"), command_id=None, receipt_parent=None):
     with closing(readonly(database)) as db:
         db.execute("BEGIN")
         record = metadata(db)
         binding = record["binding"] if record else {}
-        if (binding.get("gatewayId") != GATEWAY or binding.get("cseId") != "Mobius4"
-                or binding.get("originator") != "Sscoped-feather-gateway-a" or binding.get("receiptContainer") != ROUTE
-                or binding.get("cseDeploymentId") not in (None, "scoped-mobius4")):
-            raise ValueError("Pi database does not belong to the scoped Feather session")
+        if (binding.get("gatewayId") != gateway_id or binding.get("cseId") != "Mobius4"
+                or binding.get("originator") != originator or binding.get("receiptContainer") != receipt_container
+                or binding.get("cseDeploymentId") not in deployment_ids
+                or (receipt_parent is not None and binding.get("receiptContainerRi") not in (None, receipt_parent))):
+            raise ValueError("Pi database does not belong to the scoped session")
         rows = db.execute("""
             SELECT command_id,payload_hash,payload,status,receipt,receipt_delivered,
                    EXISTS (SELECT 1 FROM outbox WHERE outbox.command_id=commands.command_id) AS native_queued
-            FROM commands LIMIT 3
-        """).fetchall()
+            FROM commands WHERE (? IS NULL OR command_id=?) LIMIT 3
+        """, (command_id, command_id)).fetchall()
         if len(rows) > len(STEPS):
             raise ValueError("Pi database contains extra commands")
         return {row["command_id"]: dict(row) for row in rows}
+
+
+def validate_interrupted_receipt(receipt, command, status):
+    fields = ("gatewayId", "deviceId", "commandId", "grantRevision", "ownershipEpoch")
+    expected = {key: command[key] for key in fields}
+    expected.update(version=1, payloadHash=payload_hash(command), status=status)
+    if (status not in {"APPLIED", "REJECTED", "TIMEOUT", "INDETERMINATE"}
+            or canonical({key: receipt.get(key) for key in expected}) != canonical(expected)
+            or not re.fullmatch(r"[A-Z][A-Z0-9_]{0,63}", receipt["ackCode"])):
+        raise ValueError("Pi receipt does not bind the issued command")
+    successful_ack = receipt["ackCode"] in {"APPLIED", "DUPLICATE"}
+    if (successful_ack != (status == "APPLIED")
+            or (successful_ack and canonical(receipt["readback"]) != canonical(command["desiredState"]))):
+        raise ValueError("Pi receipt has a contradictory application result")
+    parse_time(receipt["receivedAt"])
 
 
 def interrupted_pi_result(row, command):
@@ -260,18 +278,7 @@ def interrupted_pi_result(row, command):
             raise ValueError("Pi command has an inconsistent pending state")
         return {"piCommandState": status}, None
     receipt = json.loads(row["receipt"])
-    fields = ("gatewayId", "deviceId", "commandId", "grantRevision", "ownershipEpoch")
-    expected = {key: command[key] for key in fields}
-    expected.update(version=1, payloadHash=digest, status=status)
-    if (status not in {"APPLIED", "REJECTED", "TIMEOUT", "INDETERMINATE"}
-            or canonical({key: receipt.get(key) for key in expected}) != canonical(expected)
-            or not re.fullmatch(r"[A-Z][A-Z0-9_]{0,63}", receipt["ackCode"])):
-        raise ValueError("Pi receipt does not bind the issued command")
-    successful_ack = receipt["ackCode"] in {"APPLIED", "DUPLICATE"}
-    if (successful_ack != (status == "APPLIED")
-            or (successful_ack and canonical(receipt["readback"]) != canonical(command["desiredState"]))):
-        raise ValueError("Pi receipt has a contradictory application result")
-    parse_time(receipt["receivedAt"])
+    validate_interrupted_receipt(receipt, command, status)
     return {"piCommandState": status, "piAckCode": receipt["ackCode"], "piReceiptSha256": payload_hash(receipt),
             "piReceiptDelivered": bool(row["receipt_delivered"]), "piReceiptQueued": bool(row["native_queued"])}, receipt
 
@@ -319,13 +326,7 @@ def inspect_interrupted_bench(directory, team_state, database=None):
                 raise ValueError("Team snapshot is missing an issuance referenced by bench or Pi evidence")
             continue
         issued_record = issued[command_id]
-        command = validate_command(issued_record["command"], GATEWAY, {DEVICE: ""})
-        expected_intent = {**request, "gatewayId": GATEWAY, "deadline": deadline}
-        if (command["commandId"] != command_id or command["desiredState"]["state"] is not state
-                or command["deadline"] != deadline or issued_record["grantId"] != grant_id
-                or issued_record["payloadHash"] != payload_hash(command)
-                or issued_record["intentHash"] != payload_hash(expected_intent)):
-            raise ValueError("Team issuance does not match the bench intent")
+        command = match_integration_issuance(request, issued_record, GATEWAY, DEVICE, state)
         if issued_file is not None and (canonical(issued_file["command"]) != canonical(command)
                                         or issued_file["cseReceiptName"] != intent["cseReceiptName"]):
             raise ValueError("Captured issuance differs from the team snapshot")

@@ -3,9 +3,21 @@
 from datetime import timedelta
 
 from .config import ID
-from .model import canonical, parse_time, payload_hash
+from .model import canonical, iso_time, parse_time, payload_hash, validate_command
 
 COMMAND_BINDING = ("gatewayId", "deviceId", "commandId", "claimId", "grantRevision", "ownershipEpoch")
+
+
+def match_integration_issuance(request, issued_record, gateway_id, device_id, desired_state):
+    deadline = iso_time(parse_time(request["deadline"]))
+    command = validate_command(issued_record["command"], gateway_id, {device_id: ""})
+    expected_intent = {**request, "gatewayId": gateway_id, "deadline": deadline}
+    if (command["commandId"] != request["commandId"] or command["desiredState"]["state"] is not desired_state
+            or command["deadline"] != deadline or issued_record["grantId"] != request["grantId"]
+            or issued_record["payloadHash"] != payload_hash(command)
+            or issued_record["intentHash"] != payload_hash(expected_intent)):
+        raise ValueError("Team issuance does not match the bench intent")
+    return command
 
 
 def integration_settlement(command, receipt, team_state):

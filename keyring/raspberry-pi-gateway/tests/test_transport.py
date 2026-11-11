@@ -87,6 +87,7 @@ class HttpRetryAfterTests(unittest.IsolatedAsyncioTestCase):
     async def test_team_api_delay_leaves_the_distinct_cse_origin_available(self):
         cfg = config()
         cfg.api_url, cfg.cse_url = "https://api.invalid", "https://cse.invalid"
+        cfg.request_timeout = 1
         hub = TransportHub(cfg)
         hosts = []
 
