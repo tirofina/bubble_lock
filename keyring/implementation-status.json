@@ -1871,5 +1871,12 @@
     "regressionsExecuted": false,
     "physicalButtonIncidentVerified": false,
     "sourceCommit": "3da95d8d58a6ccebad50eb9a4bd34fce5b6fd14e"
+  },
+  "r18ButtonIncidentEvidence": {
+    "reference": "raspberry-pi-gateway/TESTING.md#r18-버튼-사건-시험",
+    "firmwareRevision": "keyring-0.7.21",
+    "regressionsExecuted": false,
+    "physicalButtonIncidentVerified": false,
+    "sourceCommit": "6c46cb3b3d335d06ada928347d831f21ef206a3e"
   }
 }

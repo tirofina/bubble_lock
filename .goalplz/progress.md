@@ -1919,3 +1919,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R15. 직전 사용자 응답은 F
 - Gateway 0.2.103, Pi 시험 도구, 격리 API 설정에 0.7.21 계열을 연결했다. 이전 revision은 해당 시험과 기록에서 계속 선택할 수 있다. 알림 조각 전송 중 전이, 큐 만석 및 재구독을 다루는 호스트 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·API 재시작·플래시·r18 버튼 및 중앙 사건 실물 시험은 미수행이다. [실물 시험 절차](../keyring/raspberry-pi-gateway/TESTING.md#r18-초기-구동-기록)
 
 소스 commit `3da95d8d58a6ccebad50eb9a4bd34fce5b6fd14e`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8a93e58..3da95d8`이다. goal은 active/progress다.
+
+## 2026-11-11 — r18 버튼 전이와 중앙 안전 사건 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R15. 직전 goal turn은 r18 BLE 전이 순서 보존을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 조회했다. Pi의 중앙 텔레메트리 SQLite 대기열은 장치별 첫 관측의 재시도 순서를 유지한다. 팀 main은 관측 후 30초까지 비상 사건을 처리하고, 관측 수용과 사건 영수증을 각각 기록한다.
+
+- 0.7.21 bring-up 전용 도구가 Pi의 완료 요청 ID로 격리 Mobius4 원본을 읽는다. 같은 부팅의 버튼 누름·해제 5단계와 누계, Pi SQLite·완료 로그, 중앙 수용 순번, 동일 비상 관측 ID의 `DEVICE_PANIC_RECONCILED`와 안전 사건을 대조한다. 새 사건 생성과 열린 사건 재사용을 보고서에 기록한다.
+- 회귀시험 소스는 관측만 수용된 경우, 수용 순번이 뒤바뀐 경우, 모의 비상 사건을 거절하는 경로를 다룬다. 빌드·테스트·정적 분석·실제 Pi·Mobius4 조회·r18 버튼 시험은 미수행이다. [시험 절차](../keyring/raspberry-pi-gateway/TESTING.md#r18-버튼-사건-시험)
+
+소스 commit `6c46cb3b3d335d06ada928347d831f21ef206a3e`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `82513ab..6c46cb3`이다. goal은 active/progress다.
