@@ -1402,3 +1402,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R03, R05. 직전 goal turn�
 - 회귀시험 소스를 추가했다. 격리 명령 발급 프로필의 r18 등록, 빌드·회귀시험·CSE 조회·r18/Pi 실물 명령과 물리 계측은 미실행이다.
 
 소스 commit `b9cbb06ba84f63bd17a5f413a12bb4ea87ef9a1d`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `2a9edb8..b9cbb06`이다. goal은 active/progress다.
+
+## 2026-11-11 — r18 격리 중앙 API·Mobius4·Pi 등록 프로필
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R03, R10. 직전 goal turn은 최신 중앙 API 상태와 r18 명령의 대조를 추가한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 중앙 등록의 인증서·장치·시험 주체 결속과 CORE 관측 경로를 확인했다.
+
+- 격리 API의 `r18` 프로필은 `8789`, 별도 상태 디렉터리, `gw-b` 인증서와 `keyring-r18-lab`을 사용한다. Mobius4 준비 스크립트는 B 전용 관측·상태 컨테이너와 관측 ID를 준비할 수 있다. [r18 격리 명령 API](../keyring/dev/mobius4/README.md#r18-격리-명령-api)
+- Pi Gateway `0.2.62`와 시험 프로필은 중앙 기능 응답의 Gateway·장치·보드·펌웨어를 확인하고 BLE identity에서도 지정한 보드 revision을 확인한다. 명령 펌웨어 `keyring-0.7.14`만 허용한다. 회귀시험 소스를 추가했다. 실제 배치·키 발급·CSE 권한 확인·빌드·시험·Pi 및 r18 실물 실행은 미실행이다. [Pi r18 명령 세션](../keyring/raspberry-pi-gateway/TESTING.md#r18-pi-명령-세션)
+
+소스 commit `2fec0b4164361e1641af109083f2babb2934c92c`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `a3ec3cd..2fec0b4`다. goal은 active/progress다.
