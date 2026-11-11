@@ -1648,3 +1648,13 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R10, R11. 직전 goal turn은 명령 �
 - SQLite는 기존 대기 명령의 저장 payload에서 조회용 device ID를 채운다. 명령 본문·해시·영수증은 그대로 보존한다. 느린 승인과 별도 장치 처리, 같은 장치 순서, 이전 DB 대기 행을 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·Pi 접속·실물 명령·운영 DB 업그레이드는 미수행이다. [BLE 통신 메모](../keyring/raspberry-pi-gateway/IO_NOTES.md)
 
 소스 commit `dc18ac12a1da621fb11b37a1651323ad0f93837a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `75dfee3..dc18ac1`다. goal은 active/progress다.
+
+## 2026-11-11 — 수신한 장치 영수증의 SQLite 저장 재시도
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R10, R11. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀의 영수증 정산 계약을 확인했다.
+
+- Feather의 ON/OFF에서 LED 육안 변화가 없었다. 기존 실물 기록에는 GPIO 읽기값, Pi 영수증, Mobius4 및 중앙 정산이 각각 남아 있다. 1.54인치 ST7789에서 Feather 0.2.1의 `CMD ON`과 `CMD OFF`를 확인하는 실물 단계가 남았다. [Feather 시험 기록](../keyring/evidence/2026-11-11-feather-visual/receipt.json)
+- Gateway 0.2.87은 BLE에서 받은 영수증을 최초 수신 시각과 함께 보존하고 SQLite 저장만 재시도한다. 정상 종료 시 마지막 저장을 시도한다. 영수증이 저장되기 전에 프로세스가 종료되면 재시작 시 `INDETERMINATE / RESTART_INTERRUPTED`로 기록한다. [BLE 통신 메모](../keyring/raspberry-pi-gateway/IO_NOTES.md)
+- 연속 SQLite 실패와 BLE 응답 타임아웃, 저장 대기 중 취소를 회귀시험으로 다뤘다. 첫 전체 실행의 기존 관측 마이그레이션 테스트 실패를 변경 전 HEAD에서도 재현했다. 잘못 옮겨진 세 줄을 원래 용량 테스트로 되돌린 뒤 Gateway 단위 테스트 224개와 Python wheel 빌드가 통과했다. Pi 배포와 Feather 재플래시·실물 확인은 미수행이다.
+
+소스 commit `3f5b5a068140a120210b22ea6fcc378fcd129171`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8df2ff2..3f5b5a0`이다. goal은 active/progress다.
