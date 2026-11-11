@@ -158,7 +158,7 @@ Gateway0.2.0은 DB를 configured Gateway/Originator/CSE 자원 identity에 연�
 
 oneM2M은 같은 `rqi`의 CREATE 성공 응답을 받아야 전송 완료 처리한다. MQTT PUBACK은 완료 근거가 아니다. HTTPS fallback도 동일한 contentInstance 이름을 쓰며, 이름 충돌은 기존 payload가 일치할 때만 완료로 처리한다.
 
-Gateway 0.2.26은 HTTPS 429/503의 `Retry-After` 초 단위와 HTTP 날짜를 처리한다. 유효한 시간이 남아 있으면 같은 HTTPS origin의 새 요청을 보류한다. outbox 행은 서버 대기 시간과 기존 backoff 중 긴 값을 SQLite에 저장해 재시작 뒤에도 그 시각까지 보존한다. origin 전체의 대기 시간은 현재 프로세스에서 관리한다. 중앙 API가 대기 중이면 기존 승인·자격·명령 기한 검사에 따라 실행을 보류한다. 0.2.36의 자격 전환 영수증은 MQTT가 연결돼도 HTTPS 저장 확인이 필요하므로 CSE 보류 동안 선택 대상에서 제외한다.
+Gateway는 HTTPS 429/503의 `Retry-After` 초 단위와 HTTP 날짜를 처리한다. 유효한 시간이 남아 있으면 같은 HTTPS origin의 새 요청을 보류한다. 개별 outbox 행은 서버 대기 시간과 기존 backoff 중 긴 값을 SQLite에 저장한다. 0.2.57은 서버 주소와 포트별 대기 종료를 Linux 부팅 ID와 단조 시계 값으로 보관한다. 같은 부팅에서 데몬을 재시작하면 남은 시간을 이어받고, Pi를 재부팅하면 이전 부팅의 서버별 대기는 정리한다. 중앙 API가 대기 중이면 기존 승인·자격·명령 기한 검사에 따라 실행을 보류한다. 자격 전환 영수증은 MQTT가 연결돼도 HTTPS 저장 확인이 필요하므로 CSE 보류 동안 선택 대상에서 제외한다.
 
 Gateway 0.2.31은 CSE가 재시도를 보류한 동안 HTTPS가 필요한 항목을 대기열 선택에서 건너뛴다. 아직 보내지 않은 항목의 재시도 횟수와 시각을 그대로 유지한다. oneM2M MQTT가 준비돼 있으면 고정 컨테이너 영수증처럼 HTTPS 사전 조회가 필요한 경로만 보류한다. CORE MQTT 항목은 별도 경로로 선택할 수 있다. 이 변경의 시험과 배포는 미실행이다.
 

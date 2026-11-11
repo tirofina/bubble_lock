@@ -9,11 +9,13 @@ import json
 import logging
 import math
 import re
+import sqlite3
 import uuid
 from datetime import timezone
 from email.utils import parsedate_to_datetime
+from pathlib import Path
 from time import monotonic
-from typing import Any, NamedTuple
+from typing import TYPE_CHECKING, Any, NamedTuple
 from urllib.parse import quote, urlsplit
 
 import httpx
@@ -21,6 +23,9 @@ import paho.mqtt.client as mqtt
 from .config import ID, tls_context
 from .core_bridge import command as core_command
 from .model import authorization_deadline, central_observation_id, parse_time, payload_hash, utc_now
+
+if TYPE_CHECKING:
+    from .store import Store
 
 LOG = logging.getLogger(__name__)
 MAX_BODY = 256 * 1024
@@ -119,9 +124,18 @@ def _https_base(value: str, *, origin_only: bool = False) -> str:
     return value.rstrip("/")
 
 
-def _https_origin(url: str) -> tuple[str | None, int]:
+def _https_origin(url: str) -> tuple[str, int]:
     endpoint = urlsplit(url)
+    if endpoint.hostname is None:
+        raise ValueError("HTTPS origin requires a host")
     return endpoint.hostname, endpoint.port or 443
+
+
+def _system_boot_id() -> str | None:
+    try:
+        return str(uuid.UUID(Path("/proc/sys/kernel/random/boot_id").read_text(encoding="ascii").strip()))
+    except (OSError, ValueError):
+        return None
 
 
 def _resource_path(path: str) -> str:
@@ -148,7 +162,7 @@ def _mqtt_to(http_path: str) -> str:
 
 
 class TransportHub:
-    def __init__(self, config: Any):
+    def __init__(self, config: Any, *, retry_store: Store | None = None):
         self.config = config
         self._api_url = _https_base(config.api_url)
         self._cse_url = _https_base(config.cse_url, origin_only=True)
@@ -163,7 +177,13 @@ class TransportHub:
         self._core_root = f"privacy-bubble/gateway/{config.gateway_id}"
         self._commands: asyncio.Queue = asyncio.Queue(maxsize=128)
         self._http: httpx.AsyncClient | None = None
-        self._http_retry_until: dict[tuple[str | None, int], tuple[float, int]] = {}
+        self._http_retry_until: dict[tuple[str, int], tuple[float, int]] = {}
+        self._retry_store = retry_store
+        self._retry_boot_id = _system_boot_id() if retry_store is not None else None
+        if retry_store is not None and self._retry_boot_id is not None:
+            saved = retry_store.restore_http_retry_windows(self._retry_boot_id, monotonic())
+            self._http_retry_until = {origin: saved[origin] for origin in {self._api_origin, self._cse_origin}
+                                      if origin in saved}
         self._mqtt: mqtt.Client | None = None
         self._loop: asyncio.AbstractEventLoop | None = None
         self._ready = asyncio.Event()
@@ -317,7 +337,7 @@ class TransportHub:
         except asyncio.QueueFull:
             LOG.error("CORE command ingress full; command was not durably accepted or executed")
 
-    def _http_deferral(self, origin: tuple[str | None, int]) -> HttpRetryDeferred | None:
+    def _http_deferral(self, origin: tuple[str, int]) -> HttpRetryDeferred | None:
         hold = self._http_retry_until.get(origin)
         if hold is not None:
             remaining = hold[0] - monotonic()
@@ -346,6 +366,11 @@ class TransportHub:
                     if now + retry_after >= retry_until:
                         retry_until, retry_status = now + retry_after, response.status_code
                         self._http_retry_until[origin] = (retry_until, retry_status)
+                        if retry_after > 0 and self._retry_store is not None and self._retry_boot_id is not None:
+                            try:
+                                self._retry_store.save_http_retry_window(origin, self._retry_boot_id, retry_until, retry_status)
+                            except sqlite3.Error:
+                                LOG.warning("HTTPS retry window could not be saved; current process still honors it")
                     raise HttpRetryDeferred(retry_status, retry_until - now)
             raw = bytearray()
             async for chunk in response.aiter_bytes():

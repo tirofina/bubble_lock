@@ -1,6 +1,9 @@
 import asyncio
+from contextlib import closing
 import hashlib
 import json
+from pathlib import Path
+import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from email.utils import format_datetime
@@ -11,9 +14,10 @@ import httpx
 
 from bubble_gateway.core_bridge import telemetry
 from bubble_gateway.model import iso_time, payload_hash, utc_now
+from bubble_gateway.store import Store
 from bubble_gateway.transport import (MAX_RETRY_AFTER_SECONDS, HttpRetryDeferred, NativeDeliveryHold, ReceiptParentMismatch,
                                       RemoteResponseError, TransportHub, _mqtt_to, _retry_after)
-from helpers import command, config, observation
+from helpers import BINDING, command, config, observation
 
 
 class HttpRetryAfterTests(unittest.IsolatedAsyncioTestCase):
@@ -106,6 +110,52 @@ class HttpRetryAfterTests(unittest.IsolatedAsyncioTestCase):
                 self.assertFalse(hub.central_delivery_held())
                 self.assertEqual(await hub.credential_status(), {"status": "ACTIVE"})
         self.assertEqual(hosts, ["api.invalid", "cse.invalid", "api.invalid"])
+
+    async def test_origin_hold_survives_daemon_restart_only_in_the_same_system_boot(self):
+        cfg = config()
+        cfg.api_url, cfg.cse_url = "https://peer.invalid:8443", "https://peer.invalid"
+        cfg.request_timeout = 1
+        requests = []
+
+        def respond(request):
+            requests.append(request.url.port)
+            if request.url.port is None:
+                return httpx.Response(201, headers={"X-M2M-RI": request.headers["X-M2M-RI"], "X-M2M-RSC": "2001"})
+            if requests == [8443]:
+                return httpx.Response(503, headers={"Retry-After": "30"})
+            return httpx.Response(200, json={"status": "ACTIVE"})
+
+        with (
+            tempfile.TemporaryDirectory() as folder,
+            patch("bubble_gateway.transport._system_boot_id", return_value="boot-one") as boot,
+            patch("bubble_gateway.transport.monotonic", return_value=100.0) as clock,
+        ):
+            database = Path(folder) / "gateway.sqlite3"
+            async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+                with closing(Store(database, 100, 100000, 20, BINDING)) as store:
+                    hub = TransportHub(cfg, retry_store=store)
+                    hub._http = client
+                    with self.assertRaises(HttpRetryDeferred):
+                        await hub.credential_status()
+
+                clock.return_value = 112.0
+                with closing(Store(database, 100, 100000, 20, BINDING)) as store:
+                    restarted = TransportHub(cfg, retry_store=store)
+                    restarted._http = client
+                    with self.assertRaises(HttpRetryDeferred) as deferred:
+                        await restarted.credential_status()
+                    self.assertEqual((deferred.exception.status_code, deferred.exception.retry_after), (503, 18))
+                    await restarted.publish("native-request", "/test/observations", {"synthetic": True})
+                    clock.return_value = 130.0
+                    self.assertFalse(restarted.central_delivery_held())
+
+                boot.return_value = "boot-two"
+                clock.return_value = 5.0
+                with closing(Store(database, 100, 100000, 20, BINDING)) as store:
+                    rebooted = TransportHub(cfg, retry_store=store)
+                    rebooted._http = client
+                    self.assertEqual(await rebooted.credential_status(), {"status": "ACTIVE"})
+        self.assertEqual(requests, [8443, None, 8443])
 
 
 class TransportMockTests(unittest.IsolatedAsyncioTestCase):

@@ -14,7 +14,7 @@ from .model import canonical, iso_time, payload_hash
 from .config import ID
 
 BASE_TABLES = ("commands", "fences", "observations", "outbox", "core_sequences")
-DATA_TABLES = (*BASE_TABLES, "credential_receipts")
+DATA_TABLES = (*BASE_TABLES, "credential_receipts", "http_retry_windows")
 META = "gateway_state"
 BINDING_KEYS = {"bindingVersion", "gatewayId", "originator", "cseId", "rvi",
                 "observationContainer", "receiptContainer", "healthContainer"}
@@ -180,6 +180,8 @@ def legacy_ownership(db: sqlite3.Connection, expected: dict) -> None:
         raise StateIdentityError("STATE_INCOMPLETE_SCHEMA")
     if "credential_receipts" in names and db.execute("SELECT 1 FROM credential_receipts LIMIT 1").fetchone():
         raise StateIdentityError("STATE_UNBOUND_CREDENTIAL_RECEIPTS")
+    if "http_retry_windows" in names and db.execute("SELECT 1 FROM http_retry_windows LIMIT 1").fetchone():
+        raise StateIdentityError("STATE_UNBOUND_HTTP_RETRY_WINDOWS")
     for name in ("fences", "observations", "core_sequences"):
         if name in names:
             for row in db.execute(f"SELECT device_id FROM {name}"):

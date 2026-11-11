@@ -38,7 +38,7 @@ class Gateway:
         from .state_identity import configured_binding
         self.store = Store(config.database, config.max_outbox_rows, config.max_outbox_bytes,
                            config.max_commands, configured_binding(config))
-        self.transport = TransportHub(config)
+        self.transport = TransportHub(config, retry_store=self.store)
         self.ble = BleFleet(config)
         self.stop = asyncio.Event()
         self.boot_id = str(uuid.uuid4())

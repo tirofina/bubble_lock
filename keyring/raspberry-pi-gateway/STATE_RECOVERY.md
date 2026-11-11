@@ -12,6 +12,8 @@ Gateway 0.2.35는 기존 binding과 기본 테이블을 확인한 뒤 `credentia
 
 Gateway 0.2.46은 기존 binding 확인 뒤 `commands`에 중앙 영수증 등록 표시를 추가한다. 보관본은 이 표시와 아직 전송 중인 중앙 outbox 행을 함께 보존한다. 새 중앙 배포에는 새 Gateway DB 경로를 사용한다. [중앙 명령 영수증 정산](RECEIPT_ROUTING.md#중앙-명령-영수증-정산)
 
+Gateway 0.2.57은 기존 DB에 `http_retry_windows` 테이블을 추가한다. SQLite 보관본에 이 테이블도 포함된다. 대기는 같은 Linux 부팅의 동일한 HTTPS 호스트와 포트에 적용한다. 0.2.56 이하의 스키마 검사는 이 테이블이 추가된 DB를 거절한다.
+
 이 binding은 **로컬 설정·파일 일관성**이다. 중앙 신원 인증·grant·lease·attestation이나 rollback 방지 checkpoint가 아니다. mTLS·credential status·실행 직전 authorize·장치 NVS journal은 계속 필요하다. 동일한 CSE ID를 다른 서버에서 재사용하면 이 metadata만으로 같은 실제 서버라고 확인할 수 없다.
 
 endpoint URL·broker 주소·인증서 경로는 binding에 넣지 않아 주소/credential 교체는 설정으로 가능하다. Gateway principal/CSE 자원 경로를 바꾸는 경우에는 이전 state를 그대로 새 정체성에 연결하지 않는다. 새로운 realm에는 새 DB 경로를 사용하고 이전 파일·fence·미정산 자료를 보존한다. 테스트 서버의 데이터·credential을 운영 환경에 자동 이관하지 않는다.

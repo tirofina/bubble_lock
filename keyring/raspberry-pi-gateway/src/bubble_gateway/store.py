@@ -65,6 +65,12 @@ class Store:
                 sequence INTEGER PRIMARY KEY, rqi TEXT NOT NULL UNIQUE,
                 payload TEXT NOT NULL, delivered_at TEXT
             );
+            CREATE TABLE IF NOT EXISTS http_retry_windows (
+                host TEXT NOT NULL, port INTEGER NOT NULL,
+                system_boot_id TEXT NOT NULL, deadline REAL NOT NULL CHECK(deadline > 0),
+                status INTEGER NOT NULL CHECK(status IN (429, 503)),
+                PRIMARY KEY(host, port)
+            );
         """)
         try:
             with self.db:
@@ -85,6 +91,23 @@ class Store:
     @staticmethod
     def request_id(kind: str, identity: str) -> str:
         return "kr-" + hashlib.sha256(f"{kind}:{identity}".encode("utf-8")).hexdigest()[:48]
+
+    def restore_http_retry_windows(self, system_boot_id: str, now: float) -> dict[tuple[str, int], tuple[float, int]]:
+        with self.db:
+            self.db.execute("DELETE FROM http_retry_windows WHERE system_boot_id<>? OR deadline<=?",
+                            (system_boot_id, now))
+            rows = self.db.execute("SELECT host,port,deadline,status FROM http_retry_windows").fetchall()
+        return {(row["host"], row["port"]): (row["deadline"], row["status"]) for row in rows}
+
+    def save_http_retry_window(self, origin: tuple[str, int], system_boot_id: str, deadline: float, status: int) -> None:
+        with self.db:
+            self.db.execute("""
+                INSERT INTO http_retry_windows(host,port,system_boot_id,deadline,status) VALUES(?,?,?,?,?)
+                ON CONFLICT(host,port) DO UPDATE SET system_boot_id=excluded.system_boot_id,
+                    deadline=excluded.deadline,status=excluded.status
+                WHERE http_retry_windows.system_boot_id<>excluded.system_boot_id
+                   OR http_retry_windows.deadline<=excluded.deadline
+            """, (*origin, system_boot_id, deadline, status))
 
     def accept(self, command: dict, digest: str) -> str:
         """Never replace a journal entry for an existing commandId."""
