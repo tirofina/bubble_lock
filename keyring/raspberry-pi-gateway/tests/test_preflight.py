@@ -5,11 +5,15 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from contextlib import closing
 from unittest.mock import AsyncMock, patch
 
 import httpx
 
 from bubble_gateway.__main__ import main
+from bubble_gateway.config import GatewayConfig
+from bubble_gateway.state_identity import configured_binding
+from bubble_gateway.store import Store
 from tls_fixture import TestPki
 
 
@@ -115,6 +119,26 @@ class PreflightTests(unittest.TestCase):
     def test_command_route_reports_existing_active_commands(self):
         self.assertEqual(len(self.check_route(commands=[{"commandId": "existing"}],
                                               expected_error="command list is not empty")), 3)
+
+    def test_preflight_rejects_a_changed_pc_deployment_before_remote_requests(self):
+        self.env["PC_API_DEPLOYMENT_ID"] = "original-central"
+        with patch.dict(os.environ, self.env, clear=True):
+            config = GatewayConfig.from_env()
+        with closing(Store(config.database, 100, 100000, 20, configured_binding(config))):
+            pass
+
+        self.env["PC_API_DEPLOYMENT_ID"] = "new-central"
+        for flag in ("--check-config", "--check-command-route"):
+            with (self.subTest(flag=flag), patch.dict(os.environ, self.env, clear=True),
+                  patch.object(sys, "argv", ["bubble-gateway", flag]),
+                  patch("bubble_gateway.__main__.logging.basicConfig"),
+                  patch("bubble_gateway.__main__.check_command_route", new_callable=AsyncMock) as route,
+                  self.assertLogs("bubble_gateway.__main__", level="ERROR") as logs,
+                  self.assertRaises(SystemExit) as raised):
+                main()
+            self.assertEqual(raised.exception.code, 1)
+            self.assertIn("STATE_PC_API_DEPLOYMENT_MISMATCH", logs.output[-1])
+            route.assert_not_awaited()
 
     def test_wrong_private_key_is_reported_before_database_creation(self):
         self.env["TLS_KEY_FILE"] = str(self.pki.path("rogue-client", "key"))

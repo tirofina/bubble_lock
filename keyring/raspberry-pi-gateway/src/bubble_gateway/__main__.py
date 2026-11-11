@@ -12,7 +12,7 @@ from pathlib import Path
 
 from .config import DeploymentConfigError, GatewayConfig, check_state_directory, read_env_file, tls_context
 from .model import iso_time, validate_credential_status
-from .state_identity import StateIdentityError
+from .state_identity import StateIdentityError, configured_binding, preflight
 
 
 async def serve(config: GatewayConfig) -> None:
@@ -71,6 +71,8 @@ def main() -> None:
             read_env_file(args.env_file)
         config = GatewayConfig.from_env()
         check_state_directory(config.database)
+        if args.check_config or args.check_command_route:
+            preflight(config.database, configured_binding(config))
         if args.check_config:
             try:
                 tls_context(config)

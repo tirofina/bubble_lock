@@ -179,6 +179,37 @@ class StoreTests(unittest.TestCase):
             self.open_store(bindingVersion=2, cseDeploymentId="scoped-mobius4")
         self.assertEqual(metadata(self.store.db)["binding"], BINDING)
 
+    def test_pc_api_deployment_binding_blocks_replay_and_is_preserved_in_archive(self):
+        database = self.path.with_name("central.sqlite3")
+        cfg = config(database)
+        cfg.pc_api_deployment_id = "central-bench"
+        cfg.api_url = "https://old-address.invalid"
+        binding = configured_binding(cfg)
+        self.assertEqual(binding, dict(BINDING, bindingVersion=3, pcApiDeploymentId="central-bench"))
+        payload = observation()
+        with closing(Store(database, 100, 100000, 20, binding)) as store:
+            store.observation(cfg.observation_container, payload, central_enabled=True)
+
+        cfg.api_url = "https://new-address.invalid"
+        with closing(Store(database, 100, 100000, 20, configured_binding(cfg))) as store:
+            self.assertEqual(store.due_central_telemetry()["payload"], payload)
+        output = Path(self.temp.name) / "central-archive"
+        with patch("bubble_gateway.state_archive._sync_directory"):
+            manifest_path = archive(cfg, output, adopt=False, timeout=5)
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual(manifest["binding"], binding)
+        with closing(readonly(output / "gateway.sqlite3")) as db:
+            self.assertEqual(metadata(db)["binding"], binding)
+            self.assertEqual(metadata(db)["recovery_state"], "QUARANTINED")
+
+        for deployment in ("other-central", None):
+            cfg.pc_api_deployment_id = deployment
+            with self.subTest(deployment=deployment), self.assertRaisesRegex(
+                    StateIdentityError, "STATE_PC_API_DEPLOYMENT_MISMATCH"):
+                Store(database, 100, 100000, 20, configured_binding(cfg))
+        with self.assertRaisesRegex(StateIdentityError, "STATE_PC_API_DEPLOYMENT_MISMATCH"):
+            self.open_store(bindingVersion=3, pcApiDeploymentId="central-bench")
+
     def test_duplicate_conflict_and_interrupted_intent_survive_restart(self):
         cmd, digest = self.populate()
         self.assertEqual(self.store.accept(cmd, digest), "DUPLICATE")
@@ -380,6 +411,11 @@ class StoreTests(unittest.TestCase):
         deployment.cse_deployment_id = "unproven"
         refused_output = Path(self.temp.name) / "refused"
         with self.assertRaisesRegex(StateIdentityError, "STATE_CSE_DEPLOYMENT_UNBOUND"):
+            archive(deployment, refused_output, adopt=True, timeout=5)
+        self.assertFalse(refused_output.exists())
+        deployment.cse_deployment_id = None
+        deployment.pc_api_deployment_id = "unproven-central"
+        with self.assertRaisesRegex(StateIdentityError, "STATE_PC_API_DEPLOYMENT_UNBOUND"):
             archive(deployment, refused_output, adopt=True, timeout=5)
         self.assertFalse(refused_output.exists())
         manifest_path = self.archive(adopt=True)

@@ -15,7 +15,7 @@ DEVICES = {"kr-test": "00:00:00:00:00:01"}
 def config(database=None):
     return SimpleNamespace(
         database=database, gateway_id="gw-test", originator="Ctest", cse_id="test-cse", rvi="3",
-        cse_deployment_id=None, receipt_container_ri=None, pc_dispatch_start_required=False,
+        cse_deployment_id=None, receipt_container_ri=None, pc_api_deployment_id=None, pc_dispatch_start_required=False,
         central_receipts_enabled=False, central_telemetry_enabled=False, central_telemetry_retention_seconds=86400,
         observation_container=BINDING["observationContainer"],
         receipt_container=BINDING["receiptContainer"], health_container=BINDING["healthContainer"],

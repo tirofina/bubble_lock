@@ -63,6 +63,7 @@ class Gateway:
             "cseDeploymentId": self.config.cse_deployment_id,
             "receiptContainerRi": self.config.receipt_container_ri,
             "apiUrl": self.config.api_url, "pcDispatchStartRequired": self.config.pc_dispatch_start_required,
+            "pcApiDeploymentId": self.config.pc_api_deployment_id,
             "centralReceiptsEnabled": self.config.central_receipts_enabled,
             "centralTelemetryEnabled": self.config.central_telemetry_enabled,
             "centralTelemetryRetentionSeconds": self.config.central_telemetry_retention_seconds,

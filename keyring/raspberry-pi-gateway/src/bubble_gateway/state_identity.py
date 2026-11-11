@@ -18,6 +18,7 @@ DATA_TABLES = (*BASE_TABLES, "credential_receipts")
 META = "gateway_state"
 BINDING_KEYS = {"bindingVersion", "gatewayId", "originator", "cseId", "rvi",
                 "observationContainer", "receiptContainer", "healthContainer"}
+DEPLOYMENT_KEYS = {"cseDeploymentId", "receiptContainerRi", "pcApiDeploymentId"}
 
 
 class StateIdentityError(RuntimeError):
@@ -36,6 +37,8 @@ def configured_binding(config: Any) -> dict[str, Any]:
         binding.update(bindingVersion=2, cseDeploymentId=config.cse_deployment_id)
     if config.receipt_container_ri is not None:
         binding["receiptContainerRi"] = config.receipt_container_ri
+    if config.pc_api_deployment_id is not None:
+        binding.update(bindingVersion=3, pcApiDeploymentId=config.pc_api_deployment_id)
     return binding
 
 
@@ -44,18 +47,16 @@ def _valid_binding(binding: Any) -> bool:
         return False
     if any(not isinstance(binding.get(key), str) or not binding[key] for key in BINDING_KEYS - {"bindingVersion"}):
         return False
-    if binding["bindingVersion"] == 1:
-        return binding.keys() == BINDING_KEYS
-    deployment = binding.get("cseDeploymentId")
-    v2_keys = BINDING_KEYS | {"cseDeploymentId"}
-    if (binding["bindingVersion"] != 2 or not isinstance(deployment, str)
-            or ID.fullmatch(deployment) is None):
+    if binding.keys() - BINDING_KEYS - DEPLOYMENT_KEYS:
         return False
-    if "receiptContainerRi" not in binding:
-        return binding.keys() == v2_keys
-    receipt_ri = binding["receiptContainerRi"]
-    return (binding.keys() == (v2_keys | {"receiptContainerRi"})
-            and isinstance(receipt_ri, str) and ID.fullmatch(receipt_ri) is not None)
+    present = binding.keys() & DEPLOYMENT_KEYS
+    if any(not isinstance(binding[key], str) or ID.fullmatch(binding[key]) is None for key in present):
+        return False
+    if "receiptContainerRi" in present and "cseDeploymentId" not in present:
+        return False
+    if "pcApiDeploymentId" in present:
+        return binding["bindingVersion"] == 3
+    return binding["bindingVersion"] == (2 if "cseDeploymentId" in present else 1)
 
 
 def readonly(path: Path) -> sqlite3.Connection:
@@ -105,6 +106,8 @@ def match(record: dict, expected: dict, *, require_live: bool = True) -> None:
         raise StateIdentityError("STATE_CSE_DEPLOYMENT_MISMATCH")
     if record["binding"].get("receiptContainerRi") != expected.get("receiptContainerRi"):
         raise StateIdentityError("STATE_RECEIPT_CONTAINER_MISMATCH")
+    if record["binding"].get("pcApiDeploymentId") != expected.get("pcApiDeploymentId"):
+        raise StateIdentityError("STATE_PC_API_DEPLOYMENT_MISMATCH")
     if canonical(record["binding"]) != canonical(expected):
         raise StateIdentityError("STATE_IDENTITY_MISMATCH")
     if require_live and record["recovery_state"] != "LIVE":
@@ -112,10 +115,11 @@ def match(record: dict, expected: dict, *, require_live: bool = True) -> None:
 
 
 def preflight(path: Path, expected: dict) -> None:
-    """Caller holds the daemon's lifetime lock. Refuse before RW/WAL/schema setup."""
+    """Inspect a read-only snapshot before RW/WAL/schema setup."""
     if not path.exists():
         return
     with closing(readonly(path)) as db:
+        db.execute("BEGIN")
         names = tables(db)
         record = metadata(db, names)
         if record is not None:
@@ -159,6 +163,8 @@ def quarantine_copy(db: sqlite3.Connection, expected: dict, archive_id: str) -> 
 
 def legacy_ownership(db: sqlite3.Connection, expected: dict) -> None:
     """Check retained records before explicit adoption; not CSE authentication."""
+    if "pcApiDeploymentId" in expected:
+        raise StateIdentityError("STATE_PC_API_DEPLOYMENT_UNBOUND")
     if expected["bindingVersion"] != 1:
         raise StateIdentityError("STATE_CSE_DEPLOYMENT_UNBOUND")
     names = tables(db)

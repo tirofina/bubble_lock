@@ -32,6 +32,12 @@ Gateway 0.2.23의 선택 설정 `M2M_RECEIPT_CONTAINER_RI`에는 CSE 관리자�
 
 설정 전 Gateway 자격에 이름 경로 GET, 자원 ID로 contentInstance CREATE, 원래 이름 경로의 자식 GET을 허용한다. 격리 벤치에서는 [컨테이너 권한 준비](../dev/mobius4/README.md#명령-영수증-정산-준비)를 완료한 뒤 새 세션에 해당 Gateway의 ID를 지정한다.
 
+## 중앙 API 배포 전환
+
+Gateway 0.2.54는 새 DB에서 `PC_API_DEPLOYMENT_ID`를 지정하면 중앙 API 저장소의 운영자 배정 ID를 binding v3에 기록한다. 동일한 Mobius4를 쓰는 경우에도 중앙 저장소 ID가 달라지거나 설정에서 빠지면 `STATE_PC_API_DEPLOYMENT_MISMATCH`로 중단한다. `--check-config`와 `--check-command-route`는 기존 DB의 binding을 읽기 전용으로 먼저 검사한다. 명령·관측 재전송은 데몬 시작 때 같은 검사를 통과해야 한다.
+
+같은 중앙 저장소의 주소만 바뀌면 `PC_API_URL`을 갱신하고 ID를 유지한다. 별도 중앙 저장소에는 새 ID와 새 `GATEWAY_DATABASE`를 지정한다. 이미 ID 없이 만든 DB는 기존 설정으로 전송·보관하며, 새 ID를 넣어 기존 DB의 소유를 바꾸는 경로는 없다. 이 값은 로컬 일관성 확인에 사용한다. 서버의 mTLS·자격 상태·실행 승인은 별도로 확인한다.
+
 ## 수동 snapshot
 
 `bubble-gateway-state snapshot`은 Python [sqlite3 backup API](https://docs.python.org/3.11/library/sqlite3.html#sqlite3.Connection.backup)로 committed WAL을 포함한 일관된 복사본을 만든다. live `.db` 파일만 복사하고 `-wal`을 놓치는 방식이 아니다. source connection은 read-only이며 command/fence/outbox 등 원본 data row를 수정하지 않는다. 새 private 폴더/파일만 만들고 기존 output을 덮어쓰거나 삭제하지 않는다.

@@ -70,6 +70,7 @@ class GatewayConfig:
     central_receipts_enabled: bool = False
     central_telemetry_enabled: bool = False
     central_telemetry_retention_seconds: float = 86400
+    pc_api_deployment_id: str | None = None
 
     @classmethod
     def from_env(cls) -> "GatewayConfig":
@@ -153,6 +154,7 @@ class GatewayConfig:
         if profile not in {"core-v1", "keyring-v01"}:
             raise ValueError("BLE_GATT_PROFILE must be core-v1 or keyring-v01")
         deployment = identifier("M2M_CSE_DEPLOYMENT_ID") if "M2M_CSE_DEPLOYMENT_ID" in os.environ else None
+        pc_deployment = identifier("PC_API_DEPLOYMENT_ID") if "PC_API_DEPLOYMENT_ID" in os.environ else None
         receipt_ri = identifier("M2M_RECEIPT_CONTAINER_RI") if "M2M_RECEIPT_CONTAINER_RI" in os.environ else None
         if receipt_ri is not None and deployment is None:
             raise ValueError("M2M_RECEIPT_CONTAINER_RI requires M2M_CSE_DEPLOYMENT_ID")
@@ -187,6 +189,7 @@ class GatewayConfig:
             central_receipts_enabled=boolean("CENTRAL_RECEIPTS_ENABLED", "false"),
             central_telemetry_enabled=boolean("CENTRAL_TELEMETRY_ENABLED", "false"),
             central_telemetry_retention_seconds=number("CENTRAL_TELEMETRY_RETENTION_SECONDS", "86400", 1, 86400),
+            pc_api_deployment_id=pc_deployment,
         )
 
 

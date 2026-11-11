@@ -67,6 +67,7 @@ sudoedit /etc/privacy-bubble/gateway.env
 | `M2M_CSE_URL` | `https://host:port` 형태의 origin. `/Mobius`는 넣지 않음 |
 | `M2M_*_CONTAINER` | `/Mobius/{AE}/observations`처럼 전체 oneM2M resource path |
 | `PC_API_URL` | HTTPS base URL. 코드가 `/api/v1/gateways/{GATEWAY_ID}`를 덧붙임. `/api/v1`을 중복 입력하지 않음 |
+| `PC_API_DEPLOYMENT_ID` | 새 DB를 중앙 API 저장소에 연결하는 선택 설정. 같은 저장소의 주소를 바꾸면 ID를 유지하고, 새 저장소에는 새 ID와 DB 경로를 지정함. [중앙 API 배포 전환](STATE_RECOVERY.md#중앙-api-배포-전환) |
 | `PC_DISPATCH_START_REQUIRED` | `true`일 때 BLE 쓰기 전 중앙 `POST /dispatch-start` 승인을 요구함. 기존 고정 벤치 프로필의 기본값은 `false`. [명령 기한](BLE_SESSIONS.md#승인-기한과-gatt-전송) |
 | `CENTRAL_RECEIPTS_ENABLED` | `true`일 때 중앙 `POST /receipts`에 명령 영수증을 보냄. 기본값은 `false`. 같은 중앙 배포에서 기존 DB로 활성화하면 이전 영수증도 전송 대기열에 추가함. [중앙 영수증 정산](RECEIPT_ROUTING.md#중앙-명령-영수증-정산) |
 | `CENTRAL_TELEMETRY_ENABLED` | `true`일 때 새 BLE 관측을 중앙 `POST /telemetry`에도 보냄. 기본값은 `false`. 중앙 배포의 Gateway·장치·가구 등록이 필요함. [중앙 관측 전달](IO_NOTES.md#중앙-관측-전달) |
