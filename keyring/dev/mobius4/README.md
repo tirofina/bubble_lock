@@ -250,7 +250,9 @@ npm --prefix "$tool/.local/scoped/command-api-r18/team-source/pc-mobius" ci --om
 & "$tool/prepare-scoped-command-receipts.ps1" -PinR18ObservationRoute
 ```
 
-Pi loopback에 기존 CSE 포트와 API `8789`를 전달한다. Pi에서는 Gateway B 인증서와 고정 ID를 넣어 [r18 Pi 명령 세션](../../raspberry-pi-gateway/TESTING.md#r18-pi-명령-세션)을 준비한다. 작업자가 시작하는 명령 한 건은 [r18 단일 펄스 시험](../../raspberry-pi-gateway/TESTING.md#r18-단일-펄스-시험)을 따른다. 중앙 상태 사본은 `command-api-r18/runtime.json`에서 확보한다. 이 프로필의 실제 준비·실행·명령 발급은 미실행이다.
+Pi loopback에 기존 CSE 포트와 API `8789`를 전달한다. Pi에서는 Gateway B 인증서와 고정 ID를 넣어 [r18 Pi 명령 세션](../../raspberry-pi-gateway/TESTING.md#r18-pi-명령-세션)을 준비한다. 작업자가 시작하는 명령 한 건은 [r18 단일 펄스 시험](../../raspberry-pi-gateway/TESTING.md#r18-단일-펄스-시험)을 따른다. 중앙 상태 사본은 `command-api-r18/runtime.json`에서 확보한다.
+
+2026-11-11에 PC의 `8789`를 시작하고 Gateway B 인증서로 기능 응답, `ACTIVE` 자격과 대기 명령 0건을 확인했다. 동일한 팀 잠금 파일의 의존성 63개를 pnpm 오프라인 캐시에서 설치했다. 격리 Mobius4에서 B의 관측·영수증 ID를 읽었고 Feather·r18의 교차 조회는 각각 403이었다. Pi 접속과 실물 명령은 미실행이다. [실행 기록](../../evidence/2026-11-11-scoped-r18-enrollment/provisioning.json)
 
 ### 격리 소유권 전환
 

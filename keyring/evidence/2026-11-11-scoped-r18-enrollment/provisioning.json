@@ -1,0 +1,46 @@
+{
+  "role": "KEYRING",
+  "documentRevision": "2.0.0",
+  "recordedAt": "2026-11-11T09:20:22.751Z",
+  "scope": "Windows PC loopback r18 command API and disposable scoped Mobius4 preparation",
+  "enrollmentSourceCommit": "2fec0b4164361e1641af109083f2babb2934c92c",
+  "teamRevision": "bc2a45dfcc014b7cdb0a57a03aca2c04ca8eb989",
+  "dependencies": {
+    "manager": "pnpm",
+    "version": "11.25.0",
+    "offline": true,
+    "reusedPackages": 63,
+    "downloadedPackages": 0,
+    "lifecycleScriptsEnabled": false
+  },
+  "api": {
+    "endpoint": "https://127.0.0.1:8789",
+    "mode": "r18",
+    "gatewayId": "gw-b",
+    "deviceId": "keyring-r18-lab",
+    "boardRevision": "r18-hand-solder",
+    "firmwareRevision": "keyring-0.7.14",
+    "readyViaGatewayMtls": true,
+    "credentialStatus": "ACTIVE",
+    "activeCommands": 0
+  },
+  "mobius4": {
+    "endpoint": "https://127.0.0.1:8760",
+    "observationContainer": "command-observations-b",
+    "observationContainerRi": "a8o9yh7miw",
+    "observationPinMatched": true,
+    "receiptContainer": "command-receipts-b",
+    "receiptContainerRi": "z1n8p2u8z7",
+    "healthContainer": "command-health-b",
+    "healthContainerRi": "d6tq49gt37",
+    "healthContainerCheckedAs": "scoped-core",
+    "gatewayAToBObservationReadHttpStatus": 403,
+    "gatewayBToAReceiptReadHttpStatus": 403,
+    "nginxConfigCheckPassed": true,
+    "tlsContainerRestarted": false,
+    "featherIntegrationApiStillReady": true
+  },
+  "piConnected": false,
+  "deviceCommandIssued": false,
+  "physicalPulseMeasured": false
+}
