@@ -1775,3 +1775,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R11. 직전 goal turn은 Mob
 - Mobius4 대기 중 CORE ACK와 기본 텔레메트리 전송, 명령 비활성 모드, native 우선순위와 중복 ACK 회귀시험 소스를 보강했다. 빌드·테스트·정적 분석·실제 Pi·Mobius4·MQTT 브로커 검증은 미수행이다. [영수증과 CORE ACK의 대기열](../keyring/raspberry-pi-gateway/RECEIPT_ROUTING.md)
 
 소스 commit `4a51cc2d262e86c1f6d35535a21f7c63d8094bcd`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `01f86df..4a51cc2`다. goal은 active/progress다.
+
+## 2026-11-11 — 중단된 Feather 화면 시험 기록 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05, R15. 직전 goal turn은 Mobius4·CORE MQTT 전송 작업 분리를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`의 tip과 명령 발급 계약을 확인했다.
+
+- 0.2.0의 ON/OFF 시험에서 운영자는 두 단계 모두 보드 LED 변화를 보지 못했다. 당시 Pi·Mobius4 GPIO readback과 중앙 정산 결과는 기존 기록에 있다. [실물 시험 기록](../keyring/evidence/2026-11-11-feather-visual/receipt.json)
+- Feather 0.2.1 화면 시험이 중단되면 검증 도구가 남아 있는 화면 기록을 명령 ID·GPIO readback·grant 회수에 결합한다. OFF 발급 뒤의 ON 화면 기록은 거부하고 한 단계만 있으면 전체 화면 일치 여부를 비워 둔다. 회귀시험 소스와 절차를 추가했다. 빌드·테스트·정적 분석·장비 업로드·실제 화면 확인은 미수행이다. [중단 복구 절차](../keyring/raspberry-pi-gateway/TESTING.md#기존-scoped-mobius4에서-feather-led-시험)
+
+소스 commit `90b30183bbbba82ddc067319e712b8301bcbd49f`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `5d3266d..90b3018`이다. goal은 active/progress다.

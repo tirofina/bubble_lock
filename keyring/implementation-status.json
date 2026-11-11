@@ -1746,5 +1746,12 @@
     "regressionsExecuted": false,
     "piVerified": false,
     "sourceCommit": "4a51cc2d262e86c1f6d35535a21f7c63d8094bcd"
+  },
+  "scopedFeatherInterruptedDisplayEvidence": {
+    "reference": "raspberry-pi-gateway/TESTING.md#기존-scoped-mobius4에서-feather-led-시험",
+    "firmwareRevision": "feather-probe-0.2.1",
+    "regressionsExecuted": false,
+    "physicalDisplayVerified": false,
+    "sourceCommit": "90b30183bbbba82ddc067319e712b8301bcbd49f"
   }
 }
