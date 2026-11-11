@@ -57,7 +57,8 @@ def _gateway_only_pending(db: sqlite3.Connection, device_id: str, command_ids: l
 
 
 def _read_gateway_archive(directory: Path, expected: dict, command_ids: list[str], *,
-                          device_id: str | None, include_unstaged_central: bool) -> tuple[str, dict, dict | None]:
+                          device_id: str | None, include_unstaged_central: bool,
+                          include_pending_rows: bool) -> tuple[str, dict, dict | None]:
     with (directory / "manifest.json").open("rb") as stream:
         manifest = _object(stream.read(8193), 8192)
     archive_id = manifest.get("archiveId")
@@ -86,37 +87,47 @@ def _read_gateway_archive(directory: Path, expected: dict, command_ids: list[str
                 or identity["archive_id"] != archive_id):
             raise StateIdentityError("RECONCILE_ARCHIVE_IDENTITY")
         match(identity, expected, require_live=False)
+        pending = None if device_id is None else _gateway_only_pending(db, device_id, command_ids, include_unstaged_central)
+        if include_pending_rows and pending is not None:
+            command_ids = command_ids + [entry["commandId"] for entry in pending["commands"]]
         rows = {}
         for command_id in command_ids:
             row = db.execute("SELECT payload,payload_hash,status,receipt,receipt_delivered FROM commands "
                              "WHERE command_id=?", (command_id,)).fetchone()
             if row is not None:
                 rows[command_id] = dict(row)
-        pending = None if device_id is None else _gateway_only_pending(db, device_id, command_ids, include_unstaged_central)
     verify_file()
     return archive_id, rows, pending
 
 
-def _bound_receipt(config, device_id, record, row):
+def _archived_receipt(config, device_id, command_id, row):
     if type(row["receipt_delivered"]) is not int or row["receipt_delivered"] not in (0, 1):
         raise ValueError("invalid archived delivery state")
     raw = _object(row["payload"].encode("utf-8"), 4096)
     command = validate_command(raw, config.gateway_id, config.ble_devices)
     fields = ("commandId", "grantRevision", "ownershipEpoch")
-    if (command["deviceId"] != device_id or any(command[key] != record[key] for key in fields)
-            or payload_hash(command) != record["payloadHash"] or row["payload_hash"] != record["payloadHash"]
-            or command["desiredState"]["state"] is not record["desiredState"]):
-        raise ValueError("device record differs from archived command")
+    if (command["deviceId"] != device_id or command["commandId"] != command_id
+            or payload_hash(command) != row["payload_hash"]):
+        raise ValueError("archived command identity mismatch")
     if row["receipt"] is None:
         return command, None
     receipt = _object(row["receipt"].encode("utf-8"), 8192)
     expected = {key: command[key] for key in (*fields, "gatewayId", "deviceId")}
-    expected.update(version=1, payloadHash=record["payloadHash"], status=row["status"])
+    expected.update(version=1, payloadHash=row["payload_hash"], status=row["status"])
     if (canonical({key: receipt.get(key) for key in expected}) != canonical(expected)
             or receipt.get("status") not in {"APPLIED", "REJECTED", "TIMEOUT", "INDETERMINATE"}
             or not isinstance(receipt.get("ackCode"), str)):
         raise ValueError("archived receipt differs from command identity")
     parse_time(receipt["receivedAt"])
+    return command, receipt
+
+
+def _bound_receipt(config, device_id, record, row):
+    command, receipt = _archived_receipt(config, device_id, record["commandId"], row)
+    if (any(command[key] != record[key] for key in ("grantRevision", "ownershipEpoch"))
+            or row["payload_hash"] != record["payloadHash"]
+            or command["desiredState"]["state"] is not record["desiredState"]):
+        raise ValueError("device record differs from archived command")
     return command, receipt
 
 
@@ -147,14 +158,64 @@ def _captured_receipt(artifact, command_id, config):
     return {**resource, "con": receipt}
 
 
+async def _native_receipt_evidence(transport, config, command_id, receipt, *, captured=None):
+    cin = captured
+    if transport is not None:
+        try:
+            cin = await transport.read_content_instance(Store.request_id("receipt", command_id), config.receipt_container)
+        except RemoteResponseError as exc:
+            if (exc.status_code, exc.rsc) != (404, 4004):
+                raise
+            return {"result": "missing_cse_receipt"}
+    content = cin["con"]
+    evidence = {"cseReceiptSha256": payload_hash(content)}
+    resource_id, created = cin.get("ri"), cin.get("ct")
+    try:
+        if (type(cin.get("ty")) is not int or cin["ty"] != 4
+                or not isinstance(resource_id, str) or ID.fullmatch(resource_id) is None
+                or not isinstance(created, str) or re.fullmatch(r"[0-9]{8}T[0-9]{6}", created) is None):
+            raise ValueError("invalid native receipt identity")
+        stored_at = iso_time(datetime.strptime(created, "%Y%m%dT%H%M%S").replace(tzinfo=timezone.utc))
+    except ValueError:
+        return {**evidence, "result": "cse_receipt_identity_invalid"}
+    return {**evidence, "nativeResourceId": resource_id, "nativeStoredAt": stored_at,
+            "result": "cse_receipt_matched" if canonical(content) == canonical(receipt) else "cse_receipt_mismatch"}
+
+
+async def _check_gateway_only_receipts(transport, config, device_id, rows, pending):
+    candidates = []
+    for entry in pending["commands"]:
+        command_id = entry["commandId"]
+        try:
+            _, receipt = _archived_receipt(config, device_id, command_id, rows[command_id])
+        except (ValueError, KeyError, TypeError, AttributeError, BleProtocolError):
+            entry["nativeReceipt"] = {"result": "gateway_binding_mismatch"}
+            continue
+        if receipt is None:
+            entry["nativeReceipt"] = {"result": "missing_gateway_receipt"}
+        else:
+            candidates.append((entry, receipt))
+    if candidates:
+        await transport.verify_receipt_route()
+    for entry, receipt in candidates:
+        result = await _native_receipt_evidence(transport, config, entry["commandId"], receipt)
+        entry["nativeReceipt"] = {**result, "gatewayReceiptSha256": payload_hash(receipt)}
+
+
 async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive: Path, *,
                     same_boot_command: str | None = None, board_revision: str | None = None,
                     firmware_revision: str | None = None, team_state: dict | None = None,
-                    native_receipt: dict | None = None, archive_only: bool = False) -> dict:
+                    native_receipt: dict | None = None, archive_only: bool = False,
+                    check_gateway_only_native: bool = False) -> dict:
     if (team_state is not None or native_receipt is not None) and same_boot_command is None:
         raise ValueError("Saved receipt and team state comparison require a same-boot command")
     if archive_only and (team_state is not None or native_receipt is not None):
         raise ValueError("Archive-only comparison accepts only the Gateway and device archives")
+    if check_gateway_only_native:
+        if archive_only or same_boot_command is not None:
+            raise ValueError("Gateway-only native checks require a live full-device comparison")
+        if config.receipt_container_ri is None:
+            raise StateIdentityError("RECONCILE_RECEIPT_CONTAINER_PIN_REQUIRED")
     journal, records = read_archive(device_archive)
     identity = journal["identity"]
     device_id = identity["deviceId"]
@@ -177,6 +238,7 @@ async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive
         gateway_archive, configured_binding(config), [record["commandId"] for record in records],
         device_id=device_id if selected is None else None,
         include_unstaged_central=config.commands_enabled and config.central_receipts_enabled,
+        include_pending_rows=check_gateway_only_native,
     )
     captured = _captured_receipt(native_receipt, same_boot_command, config) if native_receipt is not None else None
     transport = None if archive_only or captured is not None else TransportHub(
@@ -212,32 +274,8 @@ async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive
                 result["deviceComparison"] = _compared_result(
                     record, receipt, expected_firmware=firmware_revision if selected is not None else None)
                 continue
-            cin = captured
-            if transport is not None:
-                try:
-                    cin = await transport.read_content_instance(
-                        Store.request_id("receipt", command_id), config.receipt_container)
-                except RemoteResponseError as exc:
-                    if (exc.status_code, exc.rsc) != (404, 4004):
-                        raise
-                    result["result"] = "missing_cse_receipt"
-                    continue
-            content = cin["con"]
-            result["cseReceiptSha256"] = payload_hash(content)
-            resource_id, created = cin.get("ri"), cin.get("ct")
-            try:
-                if (type(cin.get("ty")) is not int or cin["ty"] != 4
-                        or not isinstance(resource_id, str) or ID.fullmatch(resource_id) is None
-                        or not isinstance(created, str) or re.fullmatch(r"[0-9]{8}T[0-9]{6}", created) is None):
-                    raise ValueError("invalid native receipt identity")
-                stored_at = iso_time(datetime.strptime(created, "%Y%m%dT%H%M%S").replace(tzinfo=timezone.utc))
-            except ValueError:
-                result["result"] = "cse_receipt_identity_invalid"
-                continue
-            result.update(nativeResourceId=resource_id, nativeStoredAt=stored_at)
-            if canonical(content) != canonical(receipt):
-                result["result"] = "cse_receipt_mismatch"
-            else:
+            result.update(await _native_receipt_evidence(transport, config, command_id, receipt, captured=captured))
+            if result["result"] == "cse_receipt_matched":
                 result["result"] = _compared_result(
                     record, receipt, expected_firmware=firmware_revision if selected is not None else None)
             if central is not None and result["result"] == "matched_applied":
@@ -251,6 +289,8 @@ async def reconcile(config: GatewayConfig, device_archive: Path, gateway_archive
                     else:
                         central.update(proof, status="settlement_matched",
                                        originalApplicationMatched=result["gatewayDelivered"] and receipt["ackCode"] == "APPLIED")
+        if check_gateway_only_native:
+            await _check_gateway_only_receipts(transport, config, device_id, rows, pending)
     finally:
         if transport is not None:
             await transport.close()
@@ -283,6 +323,8 @@ def main():
     source = parser.add_mutually_exclusive_group()
     source.add_argument("--native-receipt", type=Path, help="Saved pulse-receipt.json for offline same-boot comparison")
     source.add_argument("--archive-only", action="store_true", help="Compare device and Gateway archives without network access")
+    source.add_argument("--check-gateway-only-native", action="store_true",
+                        help="Read CSE receipts for pending commands absent from the device archive")
     args = parser.parse_args()
     if args.same_boot_command is not None:
         if not ID.fullmatch(args.same_boot_command) or not args.board_revision or not args.firmware_revision:
@@ -291,9 +333,11 @@ def main():
         parser.error("Revision options, --team-state and --native-receipt require --same-boot-command")
     if args.archive_only and args.team_state is not None:
         parser.error("--archive-only does not take --team-state")
+    if args.check_gateway_only_native and args.same_boot_command is not None:
+        parser.error("--check-gateway-only-native requires a full-device comparison")
     try:
-        if args.archive_only:
-            config = GatewayConfig.from_env(env_file_values(args.env_file), require_tls_files=False)
+        if args.archive_only or args.check_gateway_only_native:
+            config = GatewayConfig.from_env(env_file_values(args.env_file), require_tls_files=not args.archive_only)
         else:
             read_env_file(args.env_file)
             config = GatewayConfig.from_env()
@@ -310,7 +354,7 @@ def main():
         report = asyncio.run(reconcile(config, args.device_archive, args.gateway_archive,
                                        same_boot_command=args.same_boot_command, board_revision=args.board_revision,
                                        firmware_revision=args.firmware_revision, team_state=state, native_receipt=captured,
-                                       archive_only=args.archive_only))
+                                       archive_only=args.archive_only, check_gateway_only_native=args.check_gateway_only_native))
         if state is not None:
             report["integrationStateSha256"] = hashlib.sha256(raw).hexdigest()
         if captured is not None:

@@ -76,6 +76,15 @@ bubble-keyring-reconcile --archive-only --env-file gateway-old.env \
 
 원래 환경 파일의 TLS 경로 선언은 유지할 수 있으며 보관본 비교에는 실제 인증서와 개인키가 필요 없다. `deviceComparison`은 키링 기록과 Pi 영수증의 대조 결과다. 이 모드에서 Mobius4 영수증은 `nativeReceiptSource: not-checked`로 남는다. `gatewayOnlyPending`은 키링 저널에 없는 해당 기기의 수신·dispatch 중 명령과 미전달 native·중앙 영수증을 보여준다. `count`에는 전체 건수, `commands`에는 최대 128개 명령 ID·payload hash·로컬 상태가 들어가며 전체 건수가 `reviewCount`에 포함된다. 이 결과만으로 명령이 장치에 전달됐는지나 중앙에서 정산됐는지 판정할 수 없다. 출력은 기기 명령 식별자를 포함하므로 원본 보관본과 함께 보관한다.
 
+기존 CSE를 읽을 수 있으면 Gateway 0.2.78의 `--check-gateway-only-native`를 사용한다. 원래 배포 환경 파일의 `M2M_RECEIPT_CONTAINER_RI`와 mTLS 설정을 사용하며 프로세스 환경 변수는 가져오지 않는다.
+
+```sh
+bubble-keyring-reconcile --check-gateway-only-native --env-file gateway-old.env \
+  --gateway-archive /path/to/gateway-archive --device-archive /path/to/device-archive
+```
+
+격리 SQLite의 로컬 명령·영수증을 확인하고 기존 CSE 컨테이너 ID를 검증한 뒤 원래 요청 ID로 각 `contentInstance`를 조회한다. `gatewayOnlyPending.commands[].nativeReceipt`에 일치, 본문 불일치, 로컬 또는 CSE 영수증 누락을 기록한다. 읽어온 원본 ID와 시각은 본문 해시와 함께 남긴다. 일치한 행도 `reviewCount`에 남으며 기존 Pi 전달 상태와 중앙 정산은 이 명령에서 변경하지 않는다.
+
 ## 수동 snapshot
 
 `bubble-gateway-state snapshot`은 Python [sqlite3 backup API](https://docs.python.org/3.11/library/sqlite3.html#sqlite3.Connection.backup)로 committed WAL을 포함한 일관된 복사본을 만든다. live `.db` 파일만 복사하고 `-wal`을 놓치는 방식이 아니다. source connection은 read-only이며 command/fence/outbox 등 원본 data row를 수정하지 않는다. 새 private 폴더/파일만 만들고 기존 output을 덮어쓰거나 삭제하지 않는다.
