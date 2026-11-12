@@ -19,14 +19,32 @@ class PowerEvidenceTests(unittest.TestCase):
         self.meter = {"version": 1, "captureSha256": self.capture_sha, "readings": [self.reading]}
 
     def test_compares_only_load_side_readings(self):
+        self.capture["bringup"]["assemblyEvidence"] = {"recordSha256": "d" * 64, "boardTag": "r18-01"}
         self.meter["readings"] += [dict(self.reading, point="usb-input", voltageMv=5000),
                                    dict(self.reading, point="battery-terminal", voltageMv=3800, currentUa=None)]
         report = pair_measurements(self.capture, self.capture_sha, self.meter)
         self.assertEqual(report["captureStatus"], "INSUFFICIENT")
+        self.assertEqual(report["assemblyRecordSha256"], "d" * 64)
+        self.assertNotIn("r18-01", str(report))
         self.assertEqual(report["readings"][0]["meterMinusIna219"], {"voltageMv": -10, "currentUa": 1000})
         for reading in report["readings"][1:]:
             self.assertNotIn("meterMinusIna219", reading)
             self.assertNotIn("ina219", reading)
+
+    def test_repeated_notifications_cannot_supply_two_readings_at_one_sample_and_point(self):
+        event = self.capture["events"][0]
+        replay = dict(event, sequence=9, atMs=500, ina219=dict(event["ina219"]))
+        self.capture["events"].insert(1, replay)
+        self.meter["readings"].append(dict(self.reading, sequence=9))
+        with self.assertRaisesRegex(ValueError, "Duplicate meter reading"):
+            pair_measurements(self.capture, self.capture_sha, self.meter)
+
+        self.meter["readings"][1]["point"] = "usb-input"
+        self.assertEqual(len(pair_measurements(self.capture, self.capture_sha, self.meter)["readings"]), 2)
+
+        replay["ina219"].update(currentUa=30000, loadPowerUw=99000, shuntVoltageUv=3000)
+        with self.assertRaisesRegex(ValueError, "Conflicting INA219 readings"):
+            pair_measurements(self.capture, self.capture_sha, self.meter)
 
     def test_requires_exact_capture_and_sample_in_first_session(self):
         for reading in (dict(self.reading, sequence=12), dict(self.reading, readUptimeMs=699)):

@@ -244,7 +244,7 @@ bubble-keyring-power-evidence --capture "$PRIVATE_EVIDENCE/r18-bringup.json" \
   --meter "$PRIVATE_EVIDENCE/r18-meter.json" --output "$PRIVATE_EVIDENCE/r18-power-paired.json"
 ```
 
-도구는 USB 부팅 일치, Pi 캡처 해시, 첫 세션의 순번과 계측 uptime을 대조한다. `meterMinusIna219`는 `load-3v3`의 계측기 값에서 INA219 값을 뺀 값이다. USB 입력과 배터리 단자 측정값은 해당 지점으로 기록한다. 연결 시각은 운영자가 대응시킨 샘플 번호를 근거로 하며, 동시 계측과 허용 오차는 실물 시험에서 확인한다.
+도구는 USB 부팅 일치, Pi 캡처 해시, 첫 세션의 순번과 계측 uptime을 대조한다. Gateway 0.2.118은 동일 INA219 샘플이 여러 BLE 알림에 실려도 같은 측정 지점의 입력을 한 건만 받는다. 같은 샘플 시각에 서로 다른 INA219 값이 있으면 해당 실측 대조를 중단한다. 첫 구동에 조립 기록을 연결했다면 전력 보고서에도 `assemblyRecordSha256`을 남긴다. `meterMinusIna219`는 `load-3v3`의 계측기 값에서 INA219 값을 뺀 값이다. USB 입력과 배터리 단자 측정값은 해당 지점으로 기록한다. 연결 시각은 작업자가 대응시킨 샘플 번호를 근거로 하며, 동시 계측과 허용 오차는 실물 시험에서 확인한다.
 
 ### r18 배터리 경보 기록
 

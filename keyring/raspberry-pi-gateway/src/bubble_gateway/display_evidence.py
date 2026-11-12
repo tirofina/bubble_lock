@@ -10,7 +10,7 @@ from .assembly_evidence import file_fingerprint
 from .ble import BleProtocolError
 from .ble_characterize import BRINGUP_BUTTON_STATES, DISPLAY_TEST_PROFILES, bringup_buttons, bringup_display_result
 from .model import canonical, valid_button_presses
-from .power_evidence import CAPTURE_LIMIT, SHA256, read_json
+from .power_evidence import CAPTURE_LIMIT, SHA256, captured_assembly_sha, read_json
 
 OBSERVATION_LIMIT = 8192
 OBSERVATION_FIELDS = {"button", "releaseSequence", "panelLabel", "screenText", "borderVisible",
@@ -102,10 +102,7 @@ def pair_display(capture: dict, capture_sha: str, notes: dict, media: tuple[dict
         evidence_status = "MISMATCH"
     elif status == "MATCHED" and capture_status == "RECORDED" and button_frames_matched:
         evidence_status = "MATCHED"
-    assembly = bringup.get("assemblyEvidence", {})
-    assembly_sha = assembly.get("recordSha256") if isinstance(assembly, dict) else None
-    if "assemblyEvidence" in bringup and (not isinstance(assembly_sha, str) or not SHA256.fullmatch(assembly_sha)):
-        raise ValueError("Invalid assembly reference in the bring-up capture")
+    assembly_sha = captured_assembly_sha(bringup)
     return {"version": 1, "observationSource": "operator", "operatorObservationStatus": status,
             "displayEvidenceStatus": evidence_status, "softwareStatus": display["softwareStatus"],
             "healthSequence": display["healthSequence"],
