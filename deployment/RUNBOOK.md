@@ -1,8 +1,8 @@
 # 단일 서버 운영
 
-대상은 `gunp4ng-labtop`의 Ubuntu 24.04 x86_64, Docker 29.1/Compose 2.40이다. 이 문서는 승인 후 실행할 명령을 제공한다. 이번 실행은 데스크톱 WSL의 별도 Compose 프로젝트에서만 수행한다. 대상 노트북에 SSH·배포·서비스 변경을 하지 않는다.
+대상은 `gunp4ng-labtop`의 Ubuntu 24.04 x86_64, Docker 29.1/Compose 2.40이다. 2026-11-13 노트북에서 loopback 배포와 로컬 점검을 마쳤지만, 아래 CAA 제한으로 공개 발급이 실패해 loopback으로 되돌렸다. 공개 재시도에는 도메인 정책 변경이 필요하다.
 
-운영 도메인은 `bubblelock.iptime.org`다. 공유기의 80/443/8883은 이미 `192.168.0.3`으로 전달된다. 실제 도메인 접속·인증서 발급·노트북 실행은 리드 승인 후 수행한다. 로컬 QA에서는 `PUBLIC_DOMAIN=`으로 비워 `bubble.localhost`만 사용한다.
+운영 도메인은 `bubblelock.iptime.org`다. 공유기의 80/443/8883은 이미 `192.168.0.3`으로 전달된다. 로컬 QA에서는 `PUBLIC_DOMAIN=`으로 비워 `bubble.localhost`만 사용한다. 노트북 설정은 도메인을 유지하되 `BIND_ADDRESS=127.0.0.1`로 외부 노출을 막고 있다.
 
 | 외부 TCP 포트 | 서비스 | 용도 |
 |---|---|---|
@@ -74,12 +74,17 @@ MQTT·Gateway 인증서 수동 회전 순서: 현재 `RUN_TMP/pki`와 CA 개인�
 
 ```sh
 docker compose -f deployment/compose.yaml --profile tools run --rm certbot certonly \
-  --webroot -w /var/www/acme -d "$PUBLIC_DOMAIN" --email "$ACME_EMAIL" --agree-tos --no-eff-email
+  --webroot -w /var/www/acme -d "$PUBLIC_DOMAIN" \
+  --register-unsafely-without-email --agree-tos --no-eff-email --non-interactive
 ```
 
 발급된 `acme-certs` named volume의 `live/<domain>/fullchain.pem`, `privkey.pem`을 제어된 init 컨테이너로 `proxy-config/public.pem`, `public.key`에 복사하고 uid 101, mode 600을 유지한다. 프록시를 재시작한다. 12시간마다 `certbot renew`를 실행하고 성공 후 같은 복사·재시작을 수행한다. 만료 14일 전부터 경보를 발생시킨다. MQTT 인증서도 같은 도메인 SAN을 사용하거나 별도 사설 CA를 Pi에 신뢰시킨다. MQTT CA 교체는 새 CA를 먼저 Pi trust bundle에 추가 → 서버·클라이언트 인증서 교체 → 재접속·ACL 시험 → 이전 CA 제거 순서다.
 
 첫 발급 후 `docker compose -f deployment/compose.yaml --profile tools run --rm cert-install`과 `docker compose -f deployment/compose.yaml restart proxy`를 실행한다. 자동 갱신은 서비스 계정의 cron에 `0 */12 * * * cd <저장소> && set -a && . deployment/.env && set +a && sh deployment/renew-certificates.sh >> <보호된 로그> 2>&1`로 등록한다. 발급 실패는 기존 인증서를 유지하며 cron 실패·만료 경보를 운영 알림에 연결한다. 초기화 스크립트를 다시 실행하면 로컬 인증서를 복사하므로 실제 인증서 사용 후에는 `cert-install`을 다시 실행한다.
+
+2026-11-13 현재 `bubblelock.iptime.org`의 부모 `iptime.org` CAA는 지정된 Let's Encrypt 계정 두 개의 DNS-01만 허용한다. 위 명령의 새 계정·HTTP-01은 CA가 `CAA record for iptime.org prevents issuance`로 거절했다. 이 제한이 바뀌거나 CAA를 관리할 수 있는 다른 도메인을 받기 전에는 같은 명령을 재시도하지 말고 loopback 바인딩과 기존 방화벽 규칙을 유지한다. 인증서를 발급하지 못했으므로 자동 갱신 cron도 등록하지 않았다.
+
+현재 `renew-certificates.sh`는 갱신이 실패하면 0이 아닌 상태로 종료하고 cron 로그에 오류가 남지만, **즉시 경보를 보내지는 않는다**. `monitor.mjs`의 만료 경보는 MQTT 서버와 Gateway 인증서만 검사하며 공개 HTTPS 인증서 만료나 갱신 실패는 검사하지 않는다. 외부 알림 수신기도 연결되지 않았다. 따라서 공개 인증서 만료 대비를 `monitor.mjs` 경보만으로 충족했다고 판단하지 않는다. 공개 재배포 전에 공개 인증서 만료·갱신 실패를 검사해 경보가 실제로 발생하는지 시험하고, 알림 수신 경로를 연결해야 한다.
 
 `RUN_TMP`, 백업, `.env`는 소유자만 읽는 0700/0600으로 관리하고 Git에 넣지 않는다. 서버에서는 전용 서비스 계정과 암호화된 오프라인 백업을 사용한다. DB 암호는 SQL `ALTER ROLE`과 env 파일을 함께 바꾸고 해당 컨테이너만 재생성한다. BFF client secret은 Keycloak에서 새 값 발급 후 `portal.json` 교체·web-config 초기화·웹 재시작으로 반영한다. JWT signing key는 새 RSA 키를 활성화한 뒤 기존 access token 수명과 JWKS 캐시 5분 이상을 기다리고 이전 키를 비활성화한다. 공유 MEC 암호키는 기존 암호문 복구에 필요하므로 DB와 함께 보존하고 데이터 재암호화 없이 삭제하지 않는다.
 
