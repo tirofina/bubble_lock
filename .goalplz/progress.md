@@ -2037,3 +2037,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 원격 main `bc2a45d`, CORE 
 - 장치별 설정을 제외하고 기본·ST7789·JD9853 compile profile과 두 LCD의 첫 구동 profile을 빌드했다. JD9853 첫 구동 빌드는 도구 재연결 시 중단된 뒤 재실행에서 통과했다. 호스트 회귀 18개, Gateway 기본 255개 및 격리 모의 55개가 통과했다. Gateway 기본 시험에선 이전 BLE 예산 만료 테스트 두 건의 예상 예외를 현재 `BleCommandNotSent` 계약에 맞췄다. 실제 Pi 배포, 장비 업로드, 패널 표시와 레일 전압 확인은 미수행이다.
 
 소스 commit `3be21df8eb3fe94da4ec7c304a8ddc147fe577a8`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `965f890..3be21df`다. goal은 active/progress다.
+
+## 2026-11-12 — 비상 버튼 해제와 LCD 실물 기록 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 LCD 출력 제어와 로컬 결과를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f` 및 Gateway 관측·웹 증거 계약을 확인했다. 계약 변경은 없었다.
+
+- Gateway 0.2.115는 같은 세션의 마지막 비상 버튼 해제를 포함하거나 그 뒤에 수신한 BLE health에서 확인·비상 그리기 누계를 대조한다. 화면 증거 도구는 저장된 이벤트를 다시 읽고 Pi 상태와 작업자 관찰값을 함께 판정한다. 화면 전원 오류는 `MISMATCH`, 버튼을 뗀 뒤의 상태가 없으면 `INSUFFICIENT`다. [화면 기록](../keyring/raspberry-pi-gateway/TESTING.md#r18-화면-관찰-기록-연결)
+- 해제 전 health, 해제와 함께 도착한 health, GPIO 오류, 수집 중단 사례의 회귀시험 소스를 추가했다. 빌드·시험·Pi 배포·실물 촬영·PCB 검증은 미수행이다.
+
+소스 commit `5a0e645d85b6e1960ac88bc8df5aa51862ac7bd9`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `a603dca..5a0e645`다. goal은 active/progress다.

@@ -1978,5 +1978,13 @@
     "physicalDisplayVerified": false,
     "physicalRailVerified": false,
     "sourceCommit": "3be21df8eb3fe94da4ec7c304a8ddc147fe577a8"
+  },
+  "r18DisplayReleaseEvidence": {
+    "reference": "raspberry-pi-gateway/TESTING.md#r18-화면-관찰-기록-연결",
+    "gatewayVersion": "0.2.115",
+    "buildExecuted": false,
+    "regressionsExecuted": false,
+    "physicalDisplayVerified": false,
+    "sourceCommit": "5a0e645d85b6e1960ac88bc8df5aa51862ac7bd9"
   }
 }
