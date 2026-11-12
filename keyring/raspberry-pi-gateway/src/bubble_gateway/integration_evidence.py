@@ -69,6 +69,28 @@ def inspect_integration_observation(observation, team_state, *, allow_pending=Fa
     return telemetry
 
 
+def _receipt_settlement_event(command, receipt, digest, generation, team_state):
+    return require_integration_event(
+        team_state, "GATEWAY_RECEIPT_SETTLED",
+        {"gatewayId": command["gatewayId"], "commandId": command["commandId"], "receiptHash": payload_hash(receipt)},
+        {"ueId": command["deviceId"], "claimId": command["claimId"], "epoch": command["ownershipEpoch"],
+         "desiredGeneration": generation, "payloadHash": digest,
+         "executionState": central_receipt_execution_state(receipt), "deviceAppliedAt": receipt["appliedAt"]},
+    )
+
+
+def _check_settled_receipt(command, receipt, record):
+    state = central_receipt_execution_state(receipt)
+    if record.get("executionState") != state:
+        raise ValueError("Invalid central settlement state")
+    if state == "APPLIED_VERIFIED":
+        if (canonical(record.get("readback")) != canonical(command["desiredState"])
+                or canonical(receipt.get("readback")) != canonical(command["desiredState"])):
+            raise ValueError("Central application readback differs from the command")
+    elif state == "SETTLED_CANCELLED" and record.get("settlementReason") != receipt["ackCode"]:
+        raise ValueError("Central cancellation reason differs from the Pi receipt")
+
+
 def inspect_integration_receipt(command, receipt, team_state):
     """Compare central acceptance of a Pi receipt without requiring a device record."""
     command_id = command["commandId"]
@@ -81,34 +103,62 @@ def inspect_integration_receipt(command, receipt, team_state):
         raise ValueError("Central command does not match the Pi command")
     if stored is None and record.get("lastReceiptHash") is None:
         return {"result": "missing_central_receipt"}
+    if stored is None:
+        raise ValueError("Missing central receipt body")
+    current_receipt = stored["receipt"]
+    current_digest = payload_hash(current_receipt)
+    if stored.get("receiptHash") != current_digest or record.get("lastReceiptHash") != current_digest:
+        raise ValueError("Central receipt hash differs from the saved body")
+
     receipt_digest = payload_hash(receipt)
-    if (stored is None or record.get("lastReceiptHash") != receipt_digest
-            or stored.get("receiptHash") != receipt_digest or canonical(stored.get("receipt")) != canonical(receipt)):
-        raise ValueError("Central receipt does not match the Pi receipt")
-
     expected_state = central_receipt_execution_state(receipt)
-    if expected_state == "APPLIED_VERIFIED":
-        if (canonical(record.get("readback")) != canonical(command["desiredState"])
-                or canonical(receipt.get("readback")) != canonical(command["desiredState"])):
-            raise ValueError("Central application readback differs from the command")
-    elif expected_state == "SETTLED_CANCELLED" and record.get("settlementReason") != receipt["ackCode"]:
-        raise ValueError("Central cancellation reason differs from the Pi receipt")
     generation = record.get("desiredGeneration", 0)
-    if record.get("executionState") != expected_state or type(generation) is not int or generation < 0:
-        raise ValueError("Invalid central settlement state or device generation")
-
-    event = require_integration_event(
-        team_state, "GATEWAY_RECEIPT_SETTLED", {"gatewayId": command["gatewayId"], "commandId": command_id},
-        {"ueId": command["deviceId"], "claimId": command["claimId"], "epoch": command["ownershipEpoch"],
-         "desiredGeneration": generation, "payloadHash": digest, "receiptHash": receipt_digest,
-         "executionState": expected_state, "deviceAppliedAt": receipt["appliedAt"]},
-    )
+    if type(generation) is not int or generation < 0:
+        raise ValueError("Invalid central device generation")
+    event = _receipt_settlement_event(command, receipt, digest, generation, team_state)
+    issued = parse_time(command["issuedAt"])
+    received = parse_time(receipt["receivedAt"])
+    event_at = parse_time(event["timestamp"])
     central_received = parse_time(stored["receivedAt"])
-    if (not parse_time(command["issuedAt"]) <= parse_time(receipt["receivedAt"]) <= central_received + timedelta(seconds=2)
-            or parse_time(event["timestamp"]) < central_received):
+    skew = timedelta(seconds=2)
+    if not issued <= received <= event_at + skew:
         raise ValueError("Central receipt chronology does not match the Pi receipt")
-    return {"result": "central_receipt_matched", "executionState": expected_state, "receiptHash": receipt_digest,
-            "settlementEventId": event["eventId"]}
+    evidence = {"result": "central_receipt_matched", "executionState": expected_state, "receiptHash": receipt_digest,
+                "settlementEventId": event["eventId"]}
+    current_state = record.get("executionState")
+    if receipt_digest == current_digest:
+        if canonical(current_receipt) != canonical(receipt) or not received <= central_received + skew or event_at < central_received:
+            raise ValueError("Central receipt chronology or body differs from the Pi receipt")
+        if current_state == expected_state:
+            _check_settled_receipt(command, receipt, record)
+            return evidence
+        if expected_state != "DISPATCH_UNCERTAIN" or current_state != "APPLIED_VERIFIED":
+            raise ValueError("Invalid central settlement transition")
+        if canonical(record.get("readback")) != canonical(command["desiredState"]):
+            raise ValueError("Central application readback differs from the command")
+        settled = require_integration_event(
+            team_state, "DISPATCH_READBACK_SETTLED",
+            {"ueId": command["deviceId"], "commandId": command_id,
+             "claimId": command["claimId"], "epoch": command["ownershipEpoch"]},
+            {"readback": command["desiredState"]},
+        )
+        if not event_at <= parse_time(record["settledAt"]) <= parse_time(settled["timestamp"]):
+            raise ValueError("Central readback settlement precedes the original receipt")
+        return {**evidence, "currentExecutionState": current_state, "currentSettlementEventId": settled["eventId"]}
+
+    if expected_state != "DISPATCH_UNCERTAIN" or current_state not in ("APPLIED_VERIFIED", "SETTLED_CANCELLED"):
+        raise ValueError("Central receipt does not match the Pi receipt")
+    binding = {key: command[key] for key in COMMAND_BINDING if key != "claimId"}
+    binding.update(payloadHash=digest, version=1)
+    if canonical({key: current_receipt.get(key) for key in binding}) != canonical(binding):
+        raise ValueError("New central receipt differs from the issued command")
+    _check_settled_receipt(command, current_receipt, record)
+    settled = _receipt_settlement_event(command, current_receipt, digest, generation, team_state)
+    if (not event_at <= central_received <= parse_time(settled["timestamp"])
+            or not issued <= parse_time(current_receipt["receivedAt"]) <= central_received + skew):
+        raise ValueError("New central settlement chronology is inconsistent")
+    return {**evidence, "currentExecutionState": current_state, "currentSettlementEventId": settled["eventId"],
+            "currentReceiptHash": current_digest}
 
 
 def inspect_integration_command(command, receipt, team_state):
@@ -126,8 +176,9 @@ def inspect_integration_command(command, receipt, team_state):
     started_event = require_integration_event(team_state, "GATEWAY_DISPATCH_STARTED", identity, start_fields)
     settled_fields = {"ueId": command["deviceId"], "epoch": command["ownershipEpoch"], "claimId": command["claimId"],
                       "payloadHash": record["payloadHash"], "desiredGeneration": generation,
-                      "executionState": "APPLIED_VERIFIED", "receiptHash": stored["receiptHash"]}
-    settled_event = require_integration_event(team_state, "GATEWAY_RECEIPT_SETTLED", identity, settled_fields)
+                      "executionState": "APPLIED_VERIFIED"}
+    settled_event = require_integration_event(
+        team_state, "GATEWAY_RECEIPT_SETTLED", {**identity, "receiptHash": stored["receiptHash"]}, settled_fields)
 
     issued_at, deadline = map(parse_time, (command["issuedAt"], command["deadline"]))
     claimed_at, started_at, expires_at, settled_at = map(parse_time, (

@@ -110,7 +110,7 @@ bubble-keyring-reconcile --archive-only --env-file gateway-old.env \
   --firmware-revision "$FIRMWARE_REVISION" --team-state /path/to/runtime.json
 ```
 
-중앙 보관본이 있으면 기존 Pi 영수증의 해시·claim·epoch와 중앙 `GATEWAY_RECEIPT_SETTLED` 기록을 대조한다. 중앙이 불확정 영수증을 받았다면 `DISPATCH_UNCERTAIN`을 보고한다. 보고서는 검토 대상으로 유지되며 네트워크 요청, 명령 재실행 및 기존 영수증 변경 없이 읽기 전용으로 생성한다.
+중앙 보관본이 있으면 Pi 영수증의 해시·claim·epoch와 중앙 `GATEWAY_RECEIPT_SETTLED` 기록을 대조한다. 중앙이 불확정 영수증을 받았다면 해당 수용 기록의 `DISPATCH_UNCERTAIN`을 보고한다. Gateway 0.2.116은 후속 영수증이나 중앙 readback 정산도 확인해 `currentExecutionState`와 `currentSettlementEventId`를 함께 표시한다. 후속 영수증이 보관돼 있으면 그 해시도 남긴다. 기존 수용과 후속 정산의 결속이나 시각이 맞지 않으면 불일치로 기록한다. 보고서는 검토 대상으로 유지되며 네트워크 요청, 명령 재실행 및 기존 영수증 변경 없이 읽기 전용으로 생성한다.
 
 ### r18 실물 명령 한 건 대조
 

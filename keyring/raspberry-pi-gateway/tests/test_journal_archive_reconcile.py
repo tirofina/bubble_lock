@@ -2,10 +2,12 @@ import json
 import tempfile
 import unittest
 from contextlib import closing
+from copy import deepcopy
 from pathlib import Path
 from unittest.mock import AsyncMock, Mock, patch
 
 from bubble_gateway.config import GatewayConfig
+from bubble_gateway.integration_evidence import inspect_integration_command, inspect_integration_receipt
 from bubble_gateway.journal_reconcile import reconcile
 from bubble_gateway.model import iso_time, payload_hash
 from bubble_gateway.state_archive import archive
@@ -16,6 +18,66 @@ from helpers import BINDING, DEVICES, command, config
 
 
 class JournalArchiveReconcileTests(unittest.IsolatedAsyncioTestCase):
+    def test_central_receipt_history_separates_initial_uncertainty_from_later_readback(self):
+        def at(second):
+            return f"2026-11-12T00:00:{second:02d}.000Z"
+
+        cmd = command(issuedAt=at(0), deadline=at(10))
+        digest = payload_hash(cmd)
+        binding = {key: cmd[key] for key in ("commandId", "gatewayId", "deviceId", "grantRevision", "ownershipEpoch")}
+        uncertain = dict(binding, version=1, payloadHash=digest, status="INDETERMINATE",
+                         ackCode="RESTART_INTERRUPTED", receivedAt=at(3), acceptedAt=None, appliedAt=None, readback=None)
+        applied = dict(uncertain, status="APPLIED", ackCode="APPLIED", receivedAt=at(5),
+                       readback=cmd["desiredState"], bootId="boot-test", firmwareRevision="keyring-0.7.25")
+        initial_hash, applied_hash = map(payload_hash, (uncertain, applied))
+        envelope = {"contractId": "privacy-bubble.integration.v1", "docRevision": "2.0.0"}
+        initial = dict(envelope, type="GATEWAY_RECEIPT_SETTLED", eventId="evt-initial", timestamp=at(4),
+                       gatewayId=cmd["gatewayId"], commandId=cmd["commandId"], ueId=cmd["deviceId"],
+                       claimId=cmd["claimId"], epoch=cmd["ownershipEpoch"], desiredGeneration=1,
+                       payloadHash=digest, receiptHash=initial_hash, executionState="DISPATCH_UNCERTAIN",
+                       deviceAppliedAt=None)
+        final = dict(initial, eventId="evt-final", timestamp=at(6), receiptHash=applied_hash,
+                     executionState="APPLIED_VERIFIED")
+        start = dict(envelope, **binding, type="GATEWAY_DISPATCH_STARTED", eventId="evt-start", timestamp=at(2),
+                     claimId=cmd["claimId"], payloadHash=digest, desiredGeneration=1, executionState="IN_FLIGHT",
+                     dispatchStartedAt=at(2), claimCommittedAt=at(1))
+        record = {"command": cmd, "payloadHash": digest, "lastReceiptHash": applied_hash, "desiredGeneration": 1,
+                  "executionState": "APPLIED_VERIFIED", "readback": cmd["desiredState"], "claimCommittedAt": at(1),
+                  "dispatchStartedAt": at(2), "claimExpiresAt": at(8), "settledAt": at(6)}
+        state = {"gatewayCommands": {cmd["commandId"]: record},
+                 "gatewayDeviceReceipts": {cmd["commandId"]: {"receipt": applied, "receiptHash": applied_hash,
+                                                             "receivedAt": at(6)}},
+                 "receipts": [start, initial, final]}
+        history = inspect_integration_receipt(cmd, uncertain, state)
+        self.assertEqual(history, {"result": "central_receipt_matched", "executionState": "DISPATCH_UNCERTAIN",
+                                   "receiptHash": initial_hash, "settlementEventId": "evt-initial",
+                                   "currentExecutionState": "APPLIED_VERIFIED", "currentSettlementEventId": "evt-final",
+                                   "currentReceiptHash": applied_hash})
+        self.assertEqual(inspect_integration_receipt(cmd, applied, state)["settlementEventId"], "evt-final")
+        self.assertEqual(inspect_integration_command(cmd, applied, state),
+                         {"dispatchEventId": "evt-start", "settlementEventId": "evt-final"})
+
+        for invalid in (dict(initial, claimId="wrong-claim"), dict(initial, timestamp=at(7))):
+            modified = {**state, "receipts": [start, invalid, final]}
+            with self.assertRaises(ValueError):
+                inspect_integration_receipt(cmd, uncertain, modified)
+        modified = {**state, "receipts": [start, initial, initial, final]}
+        with self.assertRaises(ValueError):
+            inspect_integration_receipt(cmd, uncertain, modified)
+
+        handover = deepcopy(state)
+        handover["gatewayCommands"][cmd["commandId"]]["lastReceiptHash"] = initial_hash
+        handover["gatewayDeviceReceipts"][cmd["commandId"]] = {
+            "receipt": uncertain, "receiptHash": initial_hash, "receivedAt": at(4),
+        }
+        handover["receipts"][-1] = dict(envelope, type="DISPATCH_READBACK_SETTLED", eventId="evt-handover",
+                                        timestamp=at(6), commandId=cmd["commandId"], ueId=cmd["deviceId"],
+                                        claimId=cmd["claimId"], epoch=cmd["ownershipEpoch"], readback=cmd["desiredState"])
+        self.assertEqual(inspect_integration_receipt(cmd, uncertain, handover)["currentSettlementEventId"], "evt-handover")
+        handover["receipts"].pop()
+        with self.assertRaises(ValueError):
+            inspect_integration_receipt(cmd, uncertain, handover)
+
     async def test_completed_device_record_explains_uncertain_gateway_receipt_offline(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
