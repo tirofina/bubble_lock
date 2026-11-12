@@ -2027,3 +2027,13 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 r18 두 
 - Gateway 0.2.113과 Pi 시험 도구에 두 revision을 추가했다. 회귀시험 소스는 새 USB 프로필과 크기 오류를 다룬다. 빌드·테스트·정적 분석·플래시·패널 화면 확인은 미수행이다. [LCD 설정](../keyring/firmware/PERIPHERALS.md)
 
 소스 commit `873fc6a1d19cda79189d082b6f8fc129ec423243`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8dd1dbc..873fc6a`이다. goal은 active/progress다.
+
+## 2026-11-11~12 — r18 LCD 전원 제어 GPIO 확인
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 관측 계약을 확인했다.
+
+- Feather 0.2.0의 기존 ON/OFF 시험에서 사용자는 LED 변화를 보지 못했다. GPIO와 영수증 증거는 기존 시험 기록에 남아 있다. Feather 0.2.1의 1.54인치 화면에서 `CMD ON`과 `CMD OFF`를 확인하는 실물 단계가 남았다. [Feather 시험 기록](../keyring/evidence/2026-11-11-feather-visual/receipt.json)
+- r18 0.7.25는 AUX_EN과 LCD_BL 읽기값이 맞을 때 화면 그리기와 첫 구동 누계를 진행한다. 출력 오류는 `power_output_error`로 보고하고 백라이트 분리를 확인한 뒤 모터에 공유 레일을 넘긴다. Gateway 0.2.114는 `geometry_error`와 `power_output_error`를 화면 불일치로 판정한다. [주변장치 설명](../keyring/firmware/PERIPHERALS.md)
+- 장치별 설정을 제외하고 기본·ST7789·JD9853 compile profile과 두 LCD의 첫 구동 profile을 빌드했다. JD9853 첫 구동 빌드는 도구 재연결 시 중단된 뒤 재실행에서 통과했다. 호스트 회귀 18개, Gateway 기본 255개 및 격리 모의 55개가 통과했다. Gateway 기본 시험에선 이전 BLE 예산 만료 테스트 두 건의 예상 예외를 현재 `BleCommandNotSent` 계약에 맞췄다. 실제 Pi 배포, 장비 업로드, 패널 표시와 레일 전압 확인은 미수행이다.
+
+소스 commit `3be21df8eb3fe94da4ec7c304a8ddc147fe577a8`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `965f890..3be21df`다. goal은 active/progress다.

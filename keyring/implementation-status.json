@@ -4,10 +4,10 @@
   "document": "PROJECT_IMPLEMENTATION_RUBRIC_PLAN.md",
   "documentRevision": "2.0.0",
   "contractRevision": "0.1.0-candidate",
-  "date": "2026-11-11",
+  "date": "2026-11-12",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Pi Gateway 0.2.43 and Feather 0.2.0 produced two APPLIED GPIO command receipts with matching Pi SQLite, pinned Mobius4, authenticated callback and isolated PostgreSQL settlement. The operator saw no LED change. The Feather 0.2.1 screen and r18 0.7.14 fault behavior still need on-device evidence. Gateway 0.2.47 passed local tests and still needs physical Pi integration verification.",
+  "verificationStatus": "Pi Gateway 0.2.43 and Feather 0.2.0 produced two APPLIED GPIO command receipts with matching Pi SQLite, pinned Mobius4, authenticated callback and isolated PostgreSQL settlement. The operator saw no LED change. Gateway 0.2.114 passed the local mock suites. The Feather 0.2.1 screen and r18 0.7.25 panel and shared rail behavior still need on-device evidence.",
   "rubricIds": [
     "R01",
     "R02",
@@ -1960,5 +1960,23 @@
     "regressionsExecuted": false,
     "physicalPatternVerified": false,
     "sourceCommit": "873fc6a1d19cda79189d082b6f8fc129ec423243"
+  },
+  "r18DisplayPowerReadback": {
+    "reference": "firmware/PERIPHERALS.md",
+    "firmwareRevision": "keyring-0.7.25",
+    "gatewayVersion": "0.2.114",
+    "firmwareBuildProfilesPassed": [
+      "keyring_compile_minimal",
+      "keyring_compile_st7789",
+      "keyring_compile_jd9853",
+      "keyring_r18_bringup_st7789",
+      "keyring_r18_bringup_jd9853"
+    ],
+    "hostRegressionsPassed": 18,
+    "gatewayUnitTestsPassed": 255,
+    "scopedMockTestsPassed": 55,
+    "physicalDisplayVerified": false,
+    "physicalRailVerified": false,
+    "sourceCommit": "3be21df8eb3fe94da4ec7c304a8ddc147fe577a8"
   }
 }
