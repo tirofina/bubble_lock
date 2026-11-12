@@ -2055,3 +2055,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R03, R10, R12. 직전 goal turn은 LCD
 - 동일 명령의 연속 수용, handover readback, 중복 또는 잘못된 결속·시각의 회귀시험 소스를 추가했다. 빌드·시험·Pi 배포·실제 정산 보관본 대조는 미수행이다.
 
 소스 commit `8a70abe2609ed3c42b540d7ac0471d77bdea2313`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8d04c0a..8a70abe`다. goal은 active/progress다.
+
+## 2026-11-12 — r18 조립 기록과 첫 구동 증거 연결
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R05. 직전 goal turn은 중앙 영수증 이력 대조를 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f` 및 관측·웹 증거 계약을 확인했다.
+
+- Gateway 0.2.117은 첫 구동에서 보드 식별표·조립 기록·USB 펌웨어를 확인하고 USB와 BLE가 같은 부팅이면 조립 기록 해시를 남긴다. LCD 관찰 보고서가 해당 해시를 이어받고 Mobius4 전송 대조에서는 첫 구동에 연결한 기록과 다시 제공한 기록이 일치하는지 확인한다. 기존 첫 구동 보고서는 연결 확인 여부를 false로 남긴다. [첫 구동 기록](../keyring/raspberry-pi-gateway/TESTING.md#r18-초기-구동-기록)
+- 같은 부팅, 다른 부팅, 조립 기록 교체, 기존 보고서와 LCD 해시 전달 사례를 다루는 회귀시험 소스를 반영했다. 빌드·시험·Pi 실행과 실제 조립·패널 확인은 미수행이다.
+
+소스 commit `74e15fe9e830953682e3924c9e2f5b71805783f2`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `b5b0405..74e15fe`다. goal은 active/progress다.

@@ -1993,5 +1993,12 @@
     "regressionsExecuted": false,
     "liveCentralArchiveVerified": false,
     "sourceCommit": "8a70abe2609ed3c42b540d7ac0471d77bdea2313"
+  },
+  "r18AssemblyFirstBootEvidence": {
+    "reference": "pcb/BRING_UP.md#실물-조립-기록",
+    "gatewayVersion": "0.2.117",
+    "regressionsExecuted": false,
+    "physicalAssemblyVerified": false,
+    "sourceCommit": "74e15fe9e830953682e3924c9e2f5b71805783f2"
   }
 }
