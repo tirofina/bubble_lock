@@ -2000,5 +2000,12 @@
     "regressionsExecuted": false,
     "physicalAssemblyVerified": false,
     "sourceCommit": "74e15fe9e830953682e3924c9e2f5b71805783f2"
+  },
+  "r18AssemblyPowerEvidence": {
+    "reference": "raspberry-pi-gateway/TESTING.md#r18-첫-구동의-외부-계측값-연결",
+    "gatewayVersion": "0.2.118",
+    "regressionsExecuted": false,
+    "physicalMeasurementsVerified": false,
+    "sourceCommit": "8788250dab55780c7bbbb457fc639f3dd2aa16a8"
   }
 }

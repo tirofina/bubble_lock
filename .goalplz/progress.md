@@ -2064,3 +2064,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R05. 직전 goal turn은 중
 - 같은 부팅, 다른 부팅, 조립 기록 교체, 기존 보고서와 LCD 해시 전달 사례를 다루는 회귀시험 소스를 반영했다. 빌드·시험·Pi 실행과 실제 조립·패널 확인은 미수행이다.
 
 소스 commit `74e15fe9e830953682e3924c9e2f5b71805783f2`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `b5b0405..74e15fe`다. goal은 active/progress다.
+
+## 2026-11-12 — 조립 기록과 r18 전력 실측 샘플 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 조립 기록을 첫 구동과 LCD·Mobius4 증거에 연결한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 중앙 관측·웹 증거 계약을 확인했다.
+
+- Gateway 0.2.118의 전력 보고서는 조립 기록을 연결한 첫 구동의 해시를 이어받는다. 반복 BLE 알림에 포함된 같은 INA219 샘플과 측정 지점은 한 번만 받는다. 같은 샘플 시각의 INA219 값이 상충하면 대조를 중단한다. [외부 계측값 연결](../keyring/raspberry-pi-gateway/TESTING.md#r18-첫-구동의-외부-계측값-연결)
+- 조립 해시, 반복 알림, 측정 지점 구분 및 상충 샘플 회귀시험 소스를 반영했다. 빌드·시험·Pi 실행과 실제 계측기 및 INA219 비교는 미수행이다.
+
+소스 commit `8788250dab55780c7bbbb457fc639f3dd2aa16a8`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `d753720..8788250`다. goal은 active/progress다.
