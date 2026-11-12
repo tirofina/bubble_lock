@@ -26,7 +26,8 @@ client.on('message', async (topic, bytes) => {
       || typeof primitive.rqi !== 'string' || primitive.rqi.length > 128
       || !config.identities.includes(originator) || primitive.fr !== originator
       || typeof primitive.to !== 'string' || !/^\/Mobius(?:\/|$)/.test(primitive.to)
-      || primitive.to.includes('..') || /[?#\r\n]/.test(primitive.to)
+      || primitive.to.includes('..') || /[?#\r\n]|%2f|%5c/i.test(primitive.to)
+      || new URL(primitive.to, config.endpoint).pathname !== primitive.to
       || ![1, 2, 3, 4, 5].includes(primitive.op)) throw new TypeError('Enrolled topic and primitive identity required');
     const methods = { 1: 'POST', 2: 'GET', 3: 'PUT', 4: 'DELETE', 5: 'POST' };
     const response = await fetch(new URL(primitive.to, config.endpoint), {

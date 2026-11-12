@@ -41,6 +41,8 @@ try {
   assert.equal(typeof read.pc['cod:binSh'].state, 'boolean');
   const forged = await exchange({ op: 2, fr: 'forged-admin', to: path, rqi: `mqtt-forged-${Date.now()}`, rvi: '4' });
   assert.equal(forged.rsc, 4103);
+  const escaped = await exchange({ op: 2, fr: 'gateway-1', to: `/Mobius/%2e%2e${path}`, rqi: `mqtt-escaped-${Date.now()}`, rvi: '4' });
+  assert.equal(escaped.rsc, 4103);
   // Mosquitto accepts subscription filters but applies its read ACL when delivering.
   // MQTT5 publish authorization returns an explicit negative PUBACK.
   await assert.rejects(client.publishAsync('/oneM2M/req/other-gateway/bubble-cse/json', JSON.stringify({ op: 2, fr: 'other-gateway', to: path, rqi: 'foreign-topic', rvi: '4' }), { qos: 1 }));
