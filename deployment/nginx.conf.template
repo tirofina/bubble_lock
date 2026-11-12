@@ -17,6 +17,7 @@ http {
   scgi_temp_path /tmp/scgi;
   limit_req_zone $binary_remote_addr zone=api:10m rate=20r/s;
   limit_req_zone $binary_remote_addr zone=login:1m rate=5r/s;
+  limit_conn_zone $binary_remote_addr zone=event_clients:1m;
   limit_req_status 429;
   server_tokens off;
   resolver 127.0.0.11 valid=5s ipv6=off;
@@ -39,8 +40,7 @@ http {
     add_header X-Frame-Options DENY always;
     add_header Referrer-Policy strict-origin-when-cross-origin always;
     add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
-    # Existing browser Ajv.compile generates validators with new Function.
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: @MAP_ORIGINS@; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: @MAP_ORIGINS@; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'" always;
     client_max_body_size 64k;
     proxy_http_version 1.1;
     proxy_set_header Host $http_host;
@@ -87,6 +87,20 @@ http {
     location /onem2m { return 403; }
     location ~ "^/identity/(admin|management|realms/master)(/|;|$)" { return 403; }
     location /identity/ {
+      # Keycloak's login theme uses inline import maps and session scripts.
+      # Declaring CSP here disables inheritance of every server add_header.
+      proxy_hide_header Strict-Transport-Security;
+      proxy_hide_header X-Content-Type-Options;
+      proxy_hide_header X-Frame-Options;
+      proxy_hide_header Referrer-Policy;
+      proxy_hide_header Permissions-Policy;
+      proxy_hide_header Content-Security-Policy;
+      add_header Strict-Transport-Security "max-age=31536000" always;
+      add_header X-Content-Type-Options nosniff always;
+      add_header X-Frame-Options DENY always;
+      add_header Referrer-Policy strict-origin-when-cross-origin always;
+      add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+      add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'" always;
       limit_req zone=login burst=30 nodelay;
       set $identity http://keycloak:8080;
       proxy_pass $identity;
@@ -102,6 +116,8 @@ http {
       proxy_pass $bff;
     }
     location /events {
+      limit_conn event_clients 4;
+      limit_conn_status 429;
       limit_req zone=api burst=40 nodelay;
       set $bff http://web:4174;
       proxy_pass $bff;

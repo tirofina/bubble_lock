@@ -1,7 +1,6 @@
-import { Ajv2020 } from 'ajv/dist/2020.js';
-import addFormats from 'ajv-formats';
-import schema from '../contracts/dashboard-event.schema.json' with { type: 'json' };
-import type { CoreReceipt, DashboardEvent, IntegrationReceipt, JournalReceipt } from './types.ts';
+import type { ErrorObject } from 'ajv';
+import { eventValidator, receiptValidator, integrationValidator } from './validators.generated.mjs';
+import type { CoreReceipt, DashboardEvent, JournalReceipt } from './types.ts';
 
 export class ContractError extends Error {
   readonly details: string;
@@ -12,15 +11,9 @@ export class ContractError extends Error {
   }
 }
 
-const ajv = new Ajv2020({ allErrors: true, strict: true });
-addFormats(ajv);
-const eventValidator = ajv.compile<DashboardEvent>(schema);
-const receiptValidator = ajv.compile<CoreReceipt>({
-  $ref: `${schema.$id}#/$defs/coreReceipt`,
-});
-const integrationValidator = ajv.compile<IntegrationReceipt>({
-  $ref: `${schema.$id}#/$defs/integrationReceipt`,
-});
+function errorsText(errors: readonly ErrorObject[] | null | undefined): string {
+  return errors?.map((error) => `data${error.instancePath} ${error.message}`).join(', ') || 'No errors';
+}
 
 function checkReceiptIdentity(receipt: CoreReceipt): void {
   const payload = receipt.payload;
@@ -60,7 +53,7 @@ function checkReceiptIdentity(receipt: CoreReceipt): void {
 
 export function parseCoreReceipt(value: unknown): CoreReceipt {
   if (!receiptValidator(value)) {
-    throw new ContractError(ajv.errorsText(receiptValidator.errors));
+    throw new ContractError(errorsText(receiptValidator.errors));
   }
   checkReceiptIdentity(value);
   return value;
@@ -68,7 +61,7 @@ export function parseCoreReceipt(value: unknown): CoreReceipt {
 
 export function parseJournalReceipt(value: unknown): JournalReceipt {
   if (typeof value === 'object' && value !== null && 'contractId' in value && value.contractId === 'privacy-bubble.integration.v1') {
-    if (!integrationValidator(value)) throw new ContractError(ajv.errorsText(integrationValidator.errors));
+    if (!integrationValidator(value)) throw new ContractError(errorsText(integrationValidator.errors));
     return value;
   }
   return parseCoreReceipt(value);
@@ -77,7 +70,7 @@ export function parseJournalReceipt(value: unknown): JournalReceipt {
 /** Throws ContractError. Unknown properties and malformed nested receipts fail closed. */
 export function parseDashboardEvent(value: unknown): DashboardEvent {
   if (!eventValidator(value)) {
-    throw new ContractError(ajv.errorsText(eventValidator.errors));
+    throw new ContractError(errorsText(eventValidator.errors));
   }
   if (value.receipt !== null && value.type !== 'integration.receipt') checkReceiptIdentity(value.receipt);
   return value;
