@@ -2046,3 +2046,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 LCD 출�
 - 해제 전 health, 해제와 함께 도착한 health, GPIO 오류, 수집 중단 사례의 회귀시험 소스를 추가했다. 빌드·시험·Pi 배포·실물 촬영·PCB 검증은 미수행이다.
 
 소스 commit `5a0e645d85b6e1960ac88bc8df5aa51862ac7bd9`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `a603dca..5a0e645`다. goal은 active/progress다.
+
+## 2026-11-12 — 최초 불확정 영수증과 후속 중앙 정산 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R03, R10, R12. 직전 goal turn은 LCD와 버튼 해제 증거 대조를 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`의 현재 head와 중앙 Gateway receipt·handover readback 계약을 확인했다.
+
+- Gateway 0.2.116의 읽기 전용 비교는 중앙 정산 이벤트를 Gateway·명령·영수증 해시로 선택한다. 최초 불확정 영수증 뒤 다른 영수증 또는 readback 정산이 확정되면 원래 수용과 현재 상태를 함께 남긴다. 명령 본문·claim·epoch·시각 또는 정확한 이벤트 결속이 맞아야 해당 정산을 표시한다. [보관본 대조](../keyring/JOURNAL_RETENTION.md#pi-중단-뒤-장치-완료-기록-찾기)
+- 동일 명령의 연속 수용, handover readback, 중복 또는 잘못된 결속·시각의 회귀시험 소스를 추가했다. 빌드·시험·Pi 배포·실제 정산 보관본 대조는 미수행이다.
+
+소스 commit `8a70abe2609ed3c42b540d7ac0471d77bdea2313`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8d04c0a..8a70abe`다. goal은 active/progress다.

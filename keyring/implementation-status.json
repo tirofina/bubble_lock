@@ -1986,5 +1986,12 @@
     "regressionsExecuted": false,
     "physicalDisplayVerified": false,
     "sourceCommit": "5a0e645d85b6e1960ac88bc8df5aa51862ac7bd9"
+  },
+  "gatewayCentralReceiptHistory": {
+    "reference": "JOURNAL_RETENTION.md#pi-중단-뒤-장치-완료-기록-찾기",
+    "gatewayVersion": "0.2.116",
+    "regressionsExecuted": false,
+    "liveCentralArchiveVerified": false,
+    "sourceCommit": "8a70abe2609ed3c42b540d7ac0471d77bdea2313"
   }
 }
