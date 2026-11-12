@@ -2021,5 +2021,12 @@
     "regressionsExecuted": false,
     "liveServerCutoverVerified": false,
     "sourceCommit": "b0ca19f1a7f1de08759c70acf99f168368b3050d"
+  },
+  "gatewayCseRoutePreflight": {
+    "reference": "raspberry-pi-gateway/STATE_RECOVERY.md#새-배포-db에-core-순번-이어받기",
+    "gatewayVersion": "0.2.121",
+    "regressionsExecuted": false,
+    "liveCseRoutesVerified": false,
+    "sourceCommit": "525f81bad1faf61f2760b9da00631e22c4da9c05"
   }
 }

@@ -2091,3 +2091,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 영수�
 - 같은 Gateway ID와 변경된 ID에서 보류 확인, 새 DB 순번 초기화, 새 관측 순번과 원본 상태 보존을 다루는 POSIX CLI 시험 소스를 반영했다. 빌드·시험·Pi 실행·새 서버 전환은 미수행이다.
 
 소스 commit `b0ca19f1a7f1de08759c70acf99f168368b3050d`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `04b96ae..b0ca19f`다. goal은 active/progress다.
+
+## 2026-11-12 — Mobius 컨테이너 독립 사전 점검
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 Gateway 교체 시 CORE 장치 순번을 보존한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f` 및 중앙 Gateway API와 웹 관측 계약을 확인했다.
+
+- Gateway 0.2.121의 `--check-cse-routes`는 기존 DB binding을 읽기 전용으로 검사하고 활성 CSE 경로의 고정 ID를 HTTPS GET으로 대조한다. 관측·health는 항상 검사하며 명령을 켠 경우 영수증도 검사한다. 중앙 API와 MQTT에는 연결하지 않는다. [서버 전환 점검](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#새-배포-db에-core-순번-이어받기)
+- 관측 전용과 명령 설정, 고정 ID 누락·불일치, 이전 DB binding 충돌을 다루는 회귀시험 소스를 반영했다. 빌드·시험·실제 CSE 및 Pi 전환 점검은 미수행이다.
+
+소스 commit `525f81bad1faf61f2760b9da00631e22c4da9c05`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1dcaef4..525f81b`다. goal은 active/progress다.
