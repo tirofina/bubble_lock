@@ -13,6 +13,11 @@
   최종 archive의 SHA-256과 반복 적용 결과.
 - 원본·패치 소스와 의존성 lockfile 및 canonical binarySwitch registry를 포함한다.
   `node_modules`와 운영 비밀 설정은 포함하지 않는다.
+- `artifacts/dependencies/package{,-lock}.json`은 npm이 생성한 운영 의존성
+  메타데이터다. 빌더는 원본 package 파일의 SHA-256을 확인한 뒤 두 파일만
+  교체하고 `npm ci`로 설치한다. 빌드할 때 버전을 다시 해석하거나 audit fix를
+  실행하지 않는다. manifest의 `dependencyPatch`, `dependencyPatcherSHA256`,
+  `repeatedDependencies`로 변경과 반복 적용을 확인한다.
 
 저장소 루트에서 실행한다. `RUN_TMP`와 cache 경로는 실행별 소유 디렉터리로 지정한다.
 
@@ -21,6 +26,8 @@ export RUN_TMP="$(mktemp -d /tmp/bubble-cse.XXXXXX)"
 export TMPDIR="$RUN_TMP" TMP="$RUN_TMP" TEMP="$RUN_TMP"
 export XDG_CACHE_HOME="$RUN_TMP/cache" npm_config_cache="$RUN_TMP/npm"
 export BUN_INSTALL_CACHE_DIR="$RUN_TMP/bun"
+export NODE_COMPILE_CACHE="$RUN_TMP/node-cache"
+export BUN_RUNTIME_TRANSPILER_CACHE_PATH="$RUN_TMP/bun-transpiler"
 node pc-mobius/scripts/build-mobius-artifact.mjs
 docker build -f deployment/cse/Dockerfile \
   -t bubblelock/mobius4:4.25.0-bubble-subscription-v1 .
@@ -29,6 +36,27 @@ docker build -f deployment/cse/Dockerfile \
 소스 재생성은 인터넷 다운로드와 npm registry를 사용한다. 원본 archive checksum이
 다르면 패치 전에 중단한다. Docker build도 포함된 lockfile로 `npm ci`를 사용한다.
 실행 대상 서비스는 로컬 CSE·DB뿐이다.
+
+2026-11-12 의존성 보수:
+
+- 원본 압축 파일을 풀고 `npm ci --omit=dev --ignore-scripts` 후
+  `npm audit --omit=dev --json`으로 25건(critical 1, high 17, moderate 7)을 재현했다.
+- 먼저 호환 범위 안에서 `npm audit fix --package-lock-only --omit=dev --ignore-scripts`를
+  적용했다. 남은 항목은 `fast-xml-parser` 5.12.0, `joi` 18.3.2,
+  `sequelize` 6.37.8로 올리고, 기존 `brace-expansion` override를 1.1.21로
+  올렸으며 `uuid` 11.1.1 override를 추가했다. Joi의 기존 요청·리소스 schema를
+  그대로 사용하며 호환성을 직접 시험한다. 원본 Mobius JavaScript와 기존 보안
+  패치 실행기는 변경하지 않는다.
+- 새 릴리스와 이미지의 audit 결과 및 직접 시험 증거는
+  `/home/gunp4ng/working/bubblelock-sechard-20261112/evidence/cse-*`에 기록한다.
+  압축 해제 릴리스와 새 Docker 이미지 모두 audit 0건이다. 직접 패치 시험 3건,
+  기존·신규 Joi schema 비교 15건, upstream XML/설정 시험 66건이 통과했다.
+  Node 24.22.3 이미지에서도 upstream 직접 시험 66건이 통과했다.
+  timestamp가 붙은 specialization 백업은 패키징에서 제외하며, 독립 빌드 두 번의
+  압축 파일·manifest가 같은 SHA-256으로 재현됐다. JavaScript 153개와 기존
+  보안 패치 실행기의 바이트가 유지됐다.
+  기존 아래 ACP·위치·이미지 결과는 이전 산출물의 기록이다. 새 의존성에 대한
+  ACP 828건·위치·TLS·그룹 통합 시험은 리드의 별도 실행 대상이다.
 
 ## 실행 계약
 

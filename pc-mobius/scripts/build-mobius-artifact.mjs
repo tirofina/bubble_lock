@@ -6,6 +6,7 @@ import { promisify } from 'node:util';
 import { execFile } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { applyMobiusSecurity } from './apply-mobius-security.mjs';
+import { applyMobiusDependencies } from './apply-mobius-dependencies.mjs';
 
 const execute = promisify(execFile);
 const root = fileURLToPath(new URL('../..', import.meta.url));
@@ -28,16 +29,22 @@ assert.equal(JSON.parse(await readFile(join(preparedSource, 'package.json'))).ve
 const securityPatch = await applyMobiusSecurity(preparedSource);
 const repeated = await applyMobiusSecurity(preparedSource);
 assert.ok(repeated.files.every((file) => file.status === 'ALREADY_APPLIED'));
+const dependencyPatch = await applyMobiusDependencies(preparedSource);
+const repeatedDependencies = await applyMobiusDependencies(preparedSource);
+assert.ok(repeatedDependencies.files.every((file) => file.status === 'ALREADY_APPLIED'));
 await execute('npm', ['ci', '--omit=dev', '--ignore-scripts', '--no-audit', '--no-fund'], { cwd: preparedSource, env: process.env });
 await execute(process.execPath, [join(root, 'pc-mobius/scripts/prepare-specialization.mjs'), '--mobius-root', preparedSource]);
 const filename = `mobius4-${pin.revision}-bubble-subscription-v1.tar.gz`;
 const artifact = join(output, filename);
-await execute('tar', ['--sort=name', '--mtime=@0', '--owner=0', '--group=0', '--numeric-owner', '--exclude=node_modules', '-I', 'gzip -n', '-cf', artifact, '-C', preparedSource, '.']);
+// prepare-specialization creates a timestamped operator backup; it is not release input.
+await execute('tar', ['--sort=name', '--mtime=@0', '--owner=0', '--group=0', '--numeric-owner', '--exclude=node_modules', '--exclude=./config/specializations.json.bak-*', '-I', 'gzip -n', '-cf', artifact, '-C', preparedSource, '.']);
 const manifest = {
   ...pin, securityPatch, artifact: filename, artifactSHA256: sha256(await readFile(artifact)),
   lockSHA256: sha256(await readFile(join(preparedSource, 'package-lock.json'))),
   patcherSHA256: sha256(await readFile(join(root, 'pc-mobius/scripts/apply-mobius-security.mjs'))),
   repeatedApplication: repeated,
+  dependencyPatch, repeatedDependencies,
+  dependencyPatcherSHA256: sha256(await readFile(join(root, 'pc-mobius/scripts/apply-mobius-dependencies.mjs'))),
 };
 await writeFile(join(output, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
 console.log(JSON.stringify({ status: 'PACKAGED', artifact, ...manifest }, null, 2));

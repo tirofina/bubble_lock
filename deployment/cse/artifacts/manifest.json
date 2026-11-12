@@ -28,8 +28,8 @@
     ]
   },
   "artifact": "mobius4-e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8-bubble-subscription-v1.tar.gz",
-  "artifactSHA256": "7118c23ac70da3c947e4c12df4c5b2c56577cc5bff1f97a8551fc0fb09ff7721",
-  "lockSHA256": "100e29c3b4feecc3fcd95f4af5b214180305326a5890651b165ec63fea72aea6",
+  "artifactSHA256": "195c4f52f520bfb4cecc0ffcc859f5f2d32ae795cc568ac5b8b3f213966eba7e",
+  "lockSHA256": "3000582f544a8bec07c2e28acea6b73efb4ea1f35da6e7bc68160ea97ff7231c",
   "patcherSHA256": "9dfa3c0a6fd708b412909e9e57a091fc373ad1f59e521ba744b69ea7cf89bae0",
   "repeatedApplication": {
     "patch": "BUBBLE_SUBSCRIPTION_SECURITY_V1",
@@ -50,5 +50,40 @@
         "sha256": "f222306d4c4e3e438830d4a2735a328bc0f7b62c8115676201ca7426cd2ceff8"
       }
     ]
-  }
+  },
+  "dependencyPatch": {
+    "patch": "BUBBLE_DEPENDENCIES_V1",
+    "files": [
+      {
+        "file": "package.json",
+        "status": "APPLIED",
+        "beforeSHA256": "4becf0cd79cf85f3d79c4f5b3475555b2c716b2c554260c2749a7e8a51f55a5a",
+        "sha256": "a436885310e90f67a6a887cb6f8f112ddd3a2635aae2406e680b3a339a9a7b03"
+      },
+      {
+        "file": "package-lock.json",
+        "status": "APPLIED",
+        "beforeSHA256": "100e29c3b4feecc3fcd95f4af5b214180305326a5890651b165ec63fea72aea6",
+        "sha256": "3000582f544a8bec07c2e28acea6b73efb4ea1f35da6e7bc68160ea97ff7231c"
+      }
+    ]
+  },
+  "repeatedDependencies": {
+    "patch": "BUBBLE_DEPENDENCIES_V1",
+    "files": [
+      {
+        "file": "package.json",
+        "status": "ALREADY_APPLIED",
+        "beforeSHA256": "4becf0cd79cf85f3d79c4f5b3475555b2c716b2c554260c2749a7e8a51f55a5a",
+        "sha256": "a436885310e90f67a6a887cb6f8f112ddd3a2635aae2406e680b3a339a9a7b03"
+      },
+      {
+        "file": "package-lock.json",
+        "status": "ALREADY_APPLIED",
+        "beforeSHA256": "100e29c3b4feecc3fcd95f4af5b214180305326a5890651b165ec63fea72aea6",
+        "sha256": "3000582f544a8bec07c2e28acea6b73efb4ea1f35da6e7bc68160ea97ff7231c"
+      }
+    ]
+  },
+  "dependencyPatcherSHA256": "ac068ff42f8bd8b10b012bfb911571d3f9f85d04c0b6c4f9a791bc7789d16dfa"
 }
