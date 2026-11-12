@@ -112,6 +112,14 @@ try {
     desiredState: { state: true }, reason: 'actual CSE partial/retry/restart', idempotencyKey: 'request' });
   const approvalInput = { requestId: requested.requestId, grantId: grant.grantId, idempotencyKey: 'approval' };
   await call('visitor', '/v1/portal/commands/approve', approvalInput, 403);
+  const issue = runtime.gatewayControl.issue.bind(runtime.gatewayControl);
+  runtime.gatewayControl.issue = async (input) => {
+    if (input.deviceId === 'keyring-B') throw new Error('simulated member B issue failure');
+    return issue(input);
+  };
+  await call('guardian', '/v1/portal/commands/approve', approvalInput, 403);
+  assert.deepEqual((await call('gateway1', '/api/v1/gateways/pi-01/commands')).commands, []);
+  runtime.gatewayControl.issue = issue;
   const approval = await call('guardian', '/v1/portal/commands/approve', approvalInput);
   const partial = await call('guardian', '/v1/portal/commands/group', { requestId: requested.requestId });
   assert.deepEqual(partial.members.map((member) => member.status), ['DISPATCHED', 'RETRY_PENDING']);
@@ -168,7 +176,8 @@ try {
     providerPath: provider.path, partial, csePartial, afterAck, retried, recovered, publications,
     canonicalCommands: approval.commands, simulatedDeviceJournal: Object.fromEntries(deviceJournal), restartCount: 2, checks: ['partial permission 2004/4103', 'failed member hidden from poll',
       'CSE response never substitutes device ACK', 'native ACK/readback settlement', 'restart before retry and after settlement',
-      'original claim/deadline/revision/epoch/payload', 'forged receipt rejection', 'duplicate receipt after restart', 'unselected member untouched'] };
+      'original claim/deadline/revision/epoch/payload', 'forged receipt rejection', 'duplicate receipt after restart', 'unselected member untouched',
+      'partial canonical issue failure blocks Gateway poll until CSE publication'] };
   await writeFile(join(evidencePath, 'actual-cse-group.json'), `${JSON.stringify(result, null, 2)}\n`);
   await writeFile(join(evidencePath, 'http-trace.json'), `${JSON.stringify(trace, null, 2)}\n`);
   console.log(JSON.stringify({ status: result.status, evidencePath, cseMemberRsc: publications.map((entry) => entry.rsc), settledMembers: recovered.appliedCount }));

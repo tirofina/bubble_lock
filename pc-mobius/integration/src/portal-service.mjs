@@ -241,7 +241,9 @@ export class PortalService {
         for (const deviceId of current.deviceIds) {
           const device = this.store.get('portalDevices', deviceId);
           const commandId = `portal-${approvalHash({ requestId: current.requestId, deviceId }).slice(0,32)}`;
-          commands.push(await this.gatewayControl.issue({ principal, gatewayId: device.gatewayId, deviceId, commandId, grantId: input.grantId, desiredState: current.desiredState, deadline }));
+          const command = await this.gatewayControl.issue({ principal, gatewayId: device.gatewayId, deviceId, commandId, grantId: input.grantId, desiredState: current.desiredState, deadline });
+          if (this.groupRuntime) await this.store.put('gatewayCommands', commandId, { ...this.store.get('gatewayCommands', commandId), groupRequestId: current.requestId });
+          commands.push(command);
         }
       } catch (error) {
         if (commands.length > 0) {
@@ -251,10 +253,6 @@ export class PortalService {
         throw error;
       }
       const result = { ...current, status: 'QUEUED', approvedBy: principal.principalId, approvedAt: this.clock(), grantId: input.grantId, approvalHash: approvalHash({ requestId: current.requestId, principalId: principal.principalId, grantId: input.grantId, commands }), commands };
-      if (this.groupRuntime) for (const command of commands) {
-        const record = this.store.get('gatewayCommands', command.commandId);
-        await this.store.put('gatewayCommands', command.commandId, { ...record, groupRequestId: current.requestId });
-      }
       await this.store.put('portalCommandRequests', current.requestId, result);
       await this.event(principal, current.householdId, 'COMMAND_APPROVED_QUEUED', '명령이 승인되어 Gateway 전달을 기다리고 있습니다.', { requestId: current.requestId, approvalHash: result.approvalHash });
       return result;

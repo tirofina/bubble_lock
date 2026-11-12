@@ -135,6 +135,21 @@ test('failed durable approval never publishes a CSE side effect', async (t) => {
   assert.equal((await f.api('guardian', 'commands/approve', f.approval)).status, 200);
 });
 
+test('partial approval keeps already issued members out of Gateway polling until CSE publication', async (t) => {
+  const f = await fixture(t);
+  const issue = f.runtime.gatewayControl.issue.bind(f.runtime.gatewayControl);
+  f.runtime.gatewayControl.issue = async (input) => {
+    if (input.deviceId === 'keyring-B') throw new Error('second member unavailable');
+    return issue(input);
+  };
+  assert.equal((await f.api('guardian', 'commands/approve', f.approval)).status, 403);
+  const peer = { principalId: 'gateway-demo', mtlsFingerprint: 'DEMO-ONLY-NO-TRANSPORT' };
+  assert.deepEqual(f.runtime.gatewayControl.poll('pi-01', peer).commands, []);
+  f.runtime.gatewayControl.issue = issue;
+  assert.equal((await f.api('guardian', 'commands/approve', f.approval)).status, 200);
+  assert.deepEqual(f.runtime.gatewayControl.poll('pi-01', peer).commands.map((command) => command.deviceId), ['keyring-A']);
+});
+
 test('revoked grant blocks failed member retry and concurrent approval replay sends once', async (t) => {
   const f = await fixture(t);
   const responses = await Promise.all([f.api('guardian', 'commands/approve', f.approval), f.api('guardian', 'commands/approve', f.approval)]);

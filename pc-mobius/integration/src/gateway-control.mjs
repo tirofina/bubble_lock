@@ -101,7 +101,7 @@ export class GatewayControl {
     const intentHash = approvalHash(intent);
     const prior = this.store.get('gatewayCommands', commandId);
     if (prior) {
-      if (prior.intentHash !== intentHash || !this.active(prior, gateway)) throw new Error('Command identity requires the original active intent');
+      if (prior.intentHash !== intentHash || !this.active(prior, gateway, { publication: true })) throw new Error('Command identity requires the original active intent');
       return prior.command;
     }
     const command = { version: 1, gatewayId, deviceId, commandId, claimId: id('claim'), desiredState,

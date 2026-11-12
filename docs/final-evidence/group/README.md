@@ -41,3 +41,21 @@ RUN_TMP=/tmp/bubble-group-PaNYVd node pc-mobius/scripts/run-group-product-real.m
 LSP는 freshness timeout으로 새 진단을 제공하지 못했다. 위 구문 검사와 실행 회귀를 사용했다. 루트가 전달한 변경 전 전체 `npm run verify` 13단계 baseline은 PASS이며, 이 그룹 작업은 해당 전체 검증을 중복 실행하지 않았다. 그룹 시험은 JSON 영속 저장소로 수행했고 PostgreSQL 그룹 다중 프로세스 동시성은 별도 검증하지 않았다.
 
 설정과 API·복구 절차는 [그룹 제품 경로](../../../pc-mobius/integration/GROUP_PRODUCT.md)를 따른다.
+
+## 부분 승인 실패 추가 회귀
+
+root 검토에서 두 번째 canonical 명령 발급이 실패하면 첫 명령에 `groupRequestId`가 아직 없어 CSE 게시 전 Gateway poll로 반환되는 결함을 재현했다. `partial-approval-red.log`에 실패 응답을 보존했다. 표지를 개별 발급과 같은 승인 트랜잭션에서 저장하고, 원래 명령의 승인 재전송은 현재 정책을 검사하면서 CSE 게시 대기를 허용하도록 수정했다. poll과 authorize의 게시 입장 제한은 유지한다.
+
+`node --test pc-mobius/test/group-product.test.mjs pc-mobius/test/group-dispatcher.test.mjs pc-mobius/test/portal.test.mjs pc-mobius/test/gateway-control.test.mjs`는 34/34 PASS다. `partial-approval-green.log`가 원본이다.
+
+실제 배포 CSE의 내부 HTTP 주소에 root 소유 loopback 중계를 두고 다음 명령을 실행했다. originator는 로컬 비밀 설정에서 읽고 공개 로그에 쓰지 않았다.
+
+```sh
+node pc-mobius/scripts/run-group-product-real.mjs \
+  --endpoint=http://127.0.0.1:40773 --originator="$CSE_ADMIN" \
+  --evidence=docs/final-evidence/group/partial-approval
+```
+
+exit 0, 실제 TLS API에서 두 번째 발급 실패 403 뒤 Gateway poll은 200/`commands:[]`, 같은 승인 재시도는 200이었다. 실제 CSE 응답은 2004/4103/2004, 최종 두 멤버 SETTLED이며 두 번 재시작 뒤 중복 영수증도 보존했다. 추가 원문은 `partial-approval/{actual-cse-group.json,http-trace.json}`와 `partial-approval-surface.log`다.
+
+러너의 시험 PKI·서버·상태는 종료 시 정리했다. 중계는 `stop(true)` 후 같은 loopback 주소의 연결이 `ECONNREFUSED`임을 확인했다. 배포 대상 노트북에는 접속하지 않았고 새 Docker 포트 공개도 하지 않았다.
