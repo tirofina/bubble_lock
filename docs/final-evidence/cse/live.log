@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "cases": 828,
+  "passed": 828,
+  "failed": 0,
+  "review": []
+}
+
+{
+  "status": "PASS",
+  "transport": "actual-mobius4-http",
+  "checks": 5,
+  "observationSource": "simulated-gps-ble-fixture"
+}
+
+{"status":"PASS","caseCount":828,"patch":"BUBBLE_SUBSCRIPTION_SECURITY_V1","cseVersion":"4.25.0"}
+{"status":"CSE_AVAILABLE","configPath":"/tmp/bubble-cse-st01a1cf42/1794478918429_331b82/cse-edges.json","endpoints":["http://127.0.0.1:39777","http://127.0.0.1:44185"]}
