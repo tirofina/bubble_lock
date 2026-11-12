@@ -2,14 +2,14 @@
 
 원본은 기존 `keyring/dev/mobius4/upstream.json`의 commit
 `e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8`이다. 이 소스의 실제 버전은
-4.25.0이다. `CSE_SECURITY.md`의 4.24.5는 과거 시험 버전이다. 기존 저장소의
-고정 commit을 재사용해 같은 소스를 배포하며, 새 버전의 세 패치 문맥 일치,
-반복 적용, 실제 CSE 두 개의 ACP 828건과 위치 5건을 확인했다.
+4.25.0이다. `CSE_SECURITY.md`에 기록된 4.24.5는 과거 시험 버전이다. 기존 저장소의
+고정 commit을 재사용해 같은 소스를 배포하며, 새 버전의 패치 문맥 일치,
+반복 적용과 실제 CSE 회귀를 확인했다.
 
 ## 산출물과 빌드
 
-- `artifacts/mobius4-e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8-bubble-subscription-v1.tar.gz`
-- `artifacts/manifest.json`: 원본 archive, lockfile, 패치 실행기, 변경 전후 세 파일,
+- `artifacts/mobius4-e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8-bubble-subscription-v2.tar.gz`
+- `artifacts/manifest.json`: 원본 archive, lockfile, 패치 실행기, 변경 전후 다섯 파일,
   최종 archive의 SHA-256과 반복 적용 결과.
 - 원본·패치 소스와 의존성 lockfile 및 canonical binarySwitch registry를 포함한다.
   `node_modules`와 운영 비밀 설정은 포함하지 않는다.
@@ -30,7 +30,7 @@ export NODE_COMPILE_CACHE="$RUN_TMP/node-cache"
 export BUN_RUNTIME_TRANSPILER_CACHE_PATH="$RUN_TMP/bun-transpiler"
 node pc-mobius/scripts/build-mobius-artifact.mjs
 docker build -f deployment/cse/Dockerfile \
-  -t bubblelock/mobius4:4.25.0-bubble-subscription-v1 .
+  -t bubblelock/mobius4:4.25.0-bubble-subscription-v2 .
 ```
 
 소스 재생성은 인터넷 다운로드와 npm registry를 사용한다. 원본 archive checksum이
@@ -70,6 +70,7 @@ docker build -f deployment/cse/Dockerfile \
 | `CSE_BASE_RN` | `Mobius`: base 경로 `/Mobius` |
 | `CSE_POA` | 내부 서비스 주소 `http://cse:7599` |
 | `CSE_ADMIN` | 지속 보존할 관리자 originator; 요청 `X-M2M-Origin` 값 |
+| `NOTIFICATION_ALLOWED_ORIGINS` | 알림 송신을 허용할 정확한 origin(`scheme://host:port`)의 쉼표 구분 목록. 비우면 URL 알림을 모두 거부한다. 직접 URL 구독 생성·갱신은 거절하고 기존 구독도 송신 시 차단한다. |
 | `HTTP_PORT` | `7599` |
 | `MQTT_ENABLED` | 현재 배포·검증은 `false` |
 | `NODE_OPTIONS` | `--max-old-space-size=192` |
@@ -107,7 +108,13 @@ node pc-mobius/scripts/run-acp-isolated.mjs
 `CSE_HOLD=1`은 PASS 후 연결 파일 위치를 출력하고 SIGTERM/SIGINT까지 CSE를 유지한다.
 그룹 QA가 같은 CSE를 재사용할 때만 사용한다.
 
-2026-11-12 결과:
+2026-11-12 V2 데스크톱 격리 감사 결과:
+
+- 새 산출물 SHA-256 `7b57d9a314a544cfb4a244b26e62ccf1e598e5a8ef2bf7545053a11f03e8721f`과 이미지 안의 다섯 패치 파일 해시가 manifest와 일치한다.
+- 실제 두 CSE에서 ACP **830/830**(기존 828건과 알림 목적지 거부 2건), 위치 **5/5**, 허용된 직접 URL callback handover, `/fopt` 그룹 **2004/4103/2004**와 TLS 1.3 mTLS 시험을 통과했다. `NOTIFICATION_ALLOWED_ORIGINS`를 비운 배포는 임의 URL 구독 생성과 기존 구독의 외부 송신을 거부한다.
+- 이 결과는 데스크톱 격리 시험이다. 노트북에는 다시 배포하지 않았다.
+
+아래는 이전 V1 산출물의 기록이다:
 
 - 실제 두 CSE HTTP ACP 828/828, 위치 5/5 PASS. 위치 센서 입력은 모의 GPS/BLE다.
 - 실제 Docker image health HTTP 200 / RSC 2000.

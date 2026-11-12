@@ -29,17 +29,18 @@ const children = []; const secrets = [connection.password]; const edges = []; co
 await mkdir(evidenceDirectory, { recursive: true });
 function sanitized(value) { let text = String(value); for (const secret of secrets) if (secret) text = text.replaceAll(secret, '[secret]'); return text; }
 async function freePort() { const probe = createServer(); probe.listen(0, '127.0.0.1'); await once(probe, 'listening'); const port = probe.address().port; await new Promise((done) => probe.close(done)); return port; }
-async function execute(script, args = []) {
-  const child = spawn(process.execPath, [join(root, 'pc-mobius/scripts', script), ...args], { cwd: root, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
+async function execute(script, args = [], extraEnv = {}) {
+  const child = spawn(process.execPath, [join(root, 'pc-mobius/scripts', script), ...args], { cwd: root, env: { ...process.env, ...extraEnv }, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
   let output = ''; child.stdout.on('data', (chunk) => { output += chunk; }); child.stderr.on('data', (chunk) => { output += chunk; });
   const [status] = await once(child, 'exit'); console.log(sanitized(output)); if (status !== 0) throw new Error(`${script} 검증 상태 ${status}`);
 }
 try {
+  const sinkPort = await freePort();
   for (const label of ['a', 'b']) {
     const database = `bubble_acp_${runId}_${label}`; await pool.query(`CREATE DATABASE "${database}"`); databases.push(database);
     const db = new pg.Client({ ...credentials, database }); await db.connect(); await db.query('CREATE EXTENSION IF NOT EXISTS postgis'); await db.end();
     const port = await freePort(); const admin = `S${randomBytes(11).toString('hex')}`; secrets.push(admin); const edgeId = `acp-${label}`;
-    const config = { http: { port }, https: { enabled: false }, db: { host: connection.host, port: connection.port, user: connection.user, pw: connection.password, name: database }, cse: { admin, cse_id: `/${edgeId}`, csebase_rn: 'Mobius', cse_type: 1, subscription_verification: true, poa: [`http://127.0.0.1:${port}`] }, mqtt: { enabled: false }, logging: { level: 'error', file: { enabled: false } }, security: { rateLimit: { enabled: false } } };
+    const config = { http: { port }, https: { enabled: false }, db: { host: connection.host, port: connection.port, user: connection.user, pw: connection.password, name: database }, cse: { admin, cse_id: `/${edgeId}`, csebase_rn: 'Mobius', cse_type: 1, subscription_verification: true, notification_allowed_origins: [`http://127.0.0.1:${sinkPort}`], poa: [`http://127.0.0.1:${port}`] }, mqtt: { enabled: false }, logging: { level: 'error', file: { enabled: false } }, security: { rateLimit: { enabled: false } } };
     let diagnostic = ''; const child = spawn(process.execPath, ['--require', preload, 'mobius4.js'], { cwd: source, env: { ...process.env, NODE_ENV: 'production', NODE_CONFIG: JSON.stringify(config) }, stdio: ['ignore', 'pipe', 'pipe', 'ipc'], windowsHide: true }); children.push(child);
     child.stdout.on('data', (chunk) => { diagnostic = (diagnostic + chunk).slice(-64000); }); child.stderr.on('data', (chunk) => { diagnostic = (diagnostic + chunk).slice(-64000); });
     child.once('exit', () => { writeFile(join(evidenceDirectory, `cse-${label}.log`), sanitized(diagnostic)).catch((error) => console.error(error)); });
@@ -47,7 +48,7 @@ try {
     edges.push({ edgeId, endpoint: `http://127.0.0.1:${port}`, cseId: `/${edgeId}`, cseBase: '/Mobius', originator: admin, simulation: false, timeoutMs: 5000 });
   }
   const configPath = join(directory, 'cse-edges.json'); await writeFile(configPath, JSON.stringify(edges), { mode: 0o600 });
-  await execute('run-acp-real.mjs', [`--config=${configPath}`]);
+  await execute('run-acp-real.mjs', [`--config=${configPath}`], { ACP_SINK_PORT: String(sinkPort) });
   await execute('run-location-privacy-real.mjs', [`--config=${configPath}`]);
   const receiptPath = join(root, 'pc-mobius/receipts/acp-real-cse.json');
   const evidence = JSON.parse(await readFile(receiptPath, 'utf8'));

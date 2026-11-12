@@ -15,7 +15,7 @@ const configPath=configArg??JSON.parse(await readFile(join(root,'.local/handover
 const configurations=JSON.parse(await readFile(resolve(configPath),'utf8'));assert.equal(configurations.length,2);
 const run=randomBytes(5).toString('hex');const results=[];const notifications=[];
 const receiver=createServer(async(req,res)=>{try{const chunks=[];for await(const chunk of req)chunks.push(chunk);notifications.push({path:req.url,body:JSON.parse(Buffer.concat(chunks).toString()),origin:req.headers['x-m2m-origin']});res.writeHead(200,{'X-M2M-RSC':'2000','X-M2M-RI':req.headers['x-m2m-ri']??''});res.end();}catch{res.writeHead(400);res.end();}});
-receiver.listen(0,'127.0.0.1');await once(receiver,'listening');const sinkUrl=`http://127.0.0.1:${receiver.address().port}`;
+receiver.listen(Number(process.env.ACP_SINK_PORT??0),'127.0.0.1');await once(receiver,'listening');const sinkUrl=`http://127.0.0.1:${receiver.address().port}`;
 async function request(config,originator,method,path,payload,ty){
   const rqi=`acp-${randomBytes(6).toString('hex')}`;const response=await fetch(`${config.endpoint}${path}`,{method,redirect:'error',headers:{Accept:'application/json','X-M2M-Origin':originator,'X-M2M-RI':rqi,'X-M2M-RVI':'4',...(payload?{'content-type':`application/json${ty?`;ty=${ty}`:''}`}:{})},...(payload?{body:JSON.stringify(payload)}:{}),signal:AbortSignal.timeout(5000)});
   const text=await response.text();const body=text?JSON.parse(text):null;assert.equal(response.headers.get('X-M2M-RI'),rqi);return {rsc:Number(response.headers.get('X-M2M-RSC')),httpStatus:response.status,rqi,body};
@@ -67,6 +67,7 @@ try{
     }
     const relayResource=resources.find((resource)=>resource.name==='observation');
     check(provider,'relay:CREATE-only:SUBSCRIBE',await request(config,roles.relay.id,'POST',relayResource.path,{'m2m:sub':{rn:'unreadable-events',nu:[sinkUrl],enc:{net:[1]},nct:1}},23),4103);
+    check(provider,'mecIPE:RETRIEVE:SUBSCRIBE-foreign-url',await request(config,roles.mecIPE.id,'POST',desired.path,{'m2m:sub':{rn:'foreign-url',nu:['http://127.0.0.1:1/audit-ssrf'],enc:{net:[1]},nct:1}},23),4000);
     if(subscribed.rsc===2001){
       const matches=(label)=>notifications.filter((entry)=>{
         const signal=entry.body?.['m2m:sgn'];

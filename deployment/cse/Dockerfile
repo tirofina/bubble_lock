@@ -1,6 +1,6 @@
 FROM node:24.22.3-bookworm-slim AS build
 WORKDIR /app
-COPY deployment/cse/artifacts/mobius4-*-bubble-subscription-v1.tar.gz /tmp/mobius.tar.gz
+COPY deployment/cse/artifacts/mobius4-*-bubble-subscription-v2.tar.gz /tmp/mobius.tar.gz
 RUN tar xzf /tmp/mobius.tar.gz -C /app \
     && npm ci --omit=dev --ignore-scripts --no-audit --no-fund \
     && rm /tmp/mobius.tar.gz

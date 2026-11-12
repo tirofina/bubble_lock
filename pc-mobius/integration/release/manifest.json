@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "role": "PC-MOBIUS-INTEGRATION",
   "docRevision": "2.0.0",
-  "generatedAt": "2026-11-11T04:07:59.480Z",
+  "generatedAt": "2026-11-12T15:01:48.983Z",
   "commands": [
     "npm run integration:validate",
     "npm run integration",
@@ -117,8 +117,8 @@
     },
     {
       "path": "../contracts/keyring/ble-observation.schema.json",
-      "bytes": 1747,
-      "sha256": "7d4aea4948960377ccbe6a99ffccb086d3519c71c8543146ad649db19b1bff9d"
+      "bytes": 2509,
+      "sha256": "af194bab627123f373db16204d1b8d1710a4ac094ff508729e3e97c725e8fba0"
     },
     {
       "path": "../contracts/keyring/ble-receipt.schema.json",
@@ -131,9 +131,19 @@
       "sha256": "ac606582f1da6d44f91a41fb38fc4187a845e1b81dcda8c0e248919daec6ca67"
     },
     {
+      "path": "../contracts/keyring/core-telemetry-receipt.schema.json",
+      "bytes": 1200,
+      "sha256": "3d70f0f4546d29d0b53d231520cad0da8208b7365e03119897cc0c4321be969d"
+    },
+    {
       "path": "../contracts/keyring/credential-status.schema.json",
       "bytes": 804,
       "sha256": "b854a5c83138cacdabd569614a16d1ccb6c11647b1270ecf6e92ce0fee69fda0"
+    },
+    {
+      "path": "../contracts/keyring/gateway-core-retirement.schema.json",
+      "bytes": 1334,
+      "sha256": "cd5c2becb5d46661a3e509715fd297570f7e486b97c0fbc6f7703981eebf55e6"
     },
     {
       "path": "../contracts/keyring/gateway-state-adoption.schema.json",
@@ -142,18 +152,18 @@
     },
     {
       "path": "../contracts/keyring/gateway-state-archive.schema.json",
-      "bytes": 4037,
-      "sha256": "1f37d252972206e4620fd3e242efc87ad70f4aa8cc414838b593309b2ac362ca"
+      "bytes": 4628,
+      "sha256": "6de5e99d8dab9c990a1b91190d6638a530a07f37cbf8ab73c333fb544dca1a8a"
     },
     {
       "path": "../contracts/keyring/gateway-state-binding.schema.json",
-      "bytes": 1205,
-      "sha256": "4c3e2adbdef7b057860d0e2c4b2f58a56f715abec83d85dfa06de285e7be63e8"
+      "bytes": 1656,
+      "sha256": "d588ffbb1a31d0373c0cf631aa21ba1c18ab1606f803f8a3b233f46ff1350ded"
     },
     {
       "path": "../contracts/keyring/health.schema.json",
-      "bytes": 2454,
-      "sha256": "5c3cbf8631ca0945319b2dd511a617c04a3ce4627a5665fbf188a6ac0b285747"
+      "bytes": 3572,
+      "sha256": "99f624b32fc41ee8d3dcb3297bfb5b0da6854b8c3ff7af64c84354b3bc5a6353"
     },
     {
       "path": "../contracts/keyring/ina219-reading.schema.json",
@@ -172,8 +182,8 @@
     },
     {
       "path": "../contracts/keyring/observation.schema.json",
-      "bytes": 2502,
-      "sha256": "133da902720553bfb4a1f544a06d79155f1730a8ac27bc8a984cff06218eab54"
+      "bytes": 3264,
+      "sha256": "ac6d2da91e0e4f7c442fa621c3232a9668c5118be30018c6a64c160a22550a42"
     },
     {
       "path": "../contracts/keyring/receipt.schema.json",
@@ -181,9 +191,29 @@
       "sha256": "ec1a6f76926f26a31137f256af5d26a06346c7ecb9a48af9a830477cb5854f8a"
     },
     {
+      "path": "../contracts/keyring/scoped-nullable-telemetry.schema.json",
+      "bytes": 1496,
+      "sha256": "977557927cfcaa19bb8dbb2aed09a01a64041afbb4c54fd35a63152817b3b882"
+    },
+    {
       "path": "config/edge-agent.example.json",
       "bytes": 1200,
       "sha256": "5873baf38f98154626bbd64c4a551944062b8f50dc6d9f9e27a3de2b5b079456"
+    },
+    {
+      "path": "config/external/edge.example.json",
+      "bytes": 2787,
+      "sha256": "fce1cdc97631ef69eb2b77a6685e12ebc4935ec7656516c85bc099f8ba46eceb"
+    },
+    {
+      "path": "config/external/fl.example.json",
+      "bytes": 3234,
+      "sha256": "8199f9ad42aa7b34589677014bedfed1060426222eba5b583cafad07b6615145"
+    },
+    {
+      "path": "config/external/mec.example.json",
+      "bytes": 2777,
+      "sha256": "2c661e9ee2498fc8ca135da765c542abfba6dbd7f9b47722e9f5f6a740fc357f"
     },
     {
       "path": "config/fl-worker.example.json",
@@ -207,8 +237,8 @@
     },
     {
       "path": "config/mobius4-test.env.example",
-      "bytes": 487,
-      "sha256": "eb073e632d6507cc238789c02e8f9453cc6150b8074e70199ac9a2c3160a16ce"
+      "bytes": 474,
+      "sha256": "b5a961732498655edded03075f8c8eaff152184e246b352ec000c8d859cc1dc2"
     },
     {
       "path": "config/postgres.example.json",
@@ -252,8 +282,8 @@
     },
     {
       "path": "contracts/oneM2M-test-contract.v2.json",
-      "bytes": 5394,
-      "sha256": "758158ca91e30a4e69e4895e8aab82de4a1c0f01d42d3580dea9eb1bba8a3c6a"
+      "bytes": 5187,
+      "sha256": "1048142eeb4e54736c686a18ba54567595bceb93161328cd4edc82a540598c1e"
     },
     {
       "path": "contracts/portal-contract.v1.json",
@@ -272,13 +302,13 @@
     },
     {
       "path": "db/migrations/001_core_receipts.sql",
-      "bytes": 4411,
-      "sha256": "7a0c07e41890539eee3fa4cb2633b688efcf280f24c788dee245bc8d84a97b9c"
+      "bytes": 4322,
+      "sha256": "6d96c1c4a330e7c643a4212c6bb71554fee76f533c8d62a7452b9270e11664e4"
     },
     {
       "path": "db/migrations/002_integration.sql",
-      "bytes": 2520,
-      "sha256": "325e954df6662f751dfa8b7aa745c8005805c7f4c1be8fffa3bc6b4f52824c7a"
+      "bytes": 2430,
+      "sha256": "7dff53da5b9c94806986c4fd3c219df1ed7779218e5a5eb68fab4151574d9009"
     },
     {
       "path": "db/migrations/003_runtime_transactions.sql",
@@ -292,8 +322,8 @@
     },
     {
       "path": "integration/src/api-gateway.mjs",
-      "bytes": 14106,
-      "sha256": "bfbf8753fb6643d6f2ecf0515c6b17a8b78dc6e367f169e7dd2ccf99739f815c"
+      "bytes": 14330,
+      "sha256": "7d8a5a0444435116dc044d8ce376d6087432354bdb777b83479c4a9b6d1580ae"
     },
     {
       "path": "integration/src/api-server.mjs",
@@ -317,8 +347,8 @@
     },
     {
       "path": "integration/src/fl-coordinator.mjs",
-      "bytes": 32903,
-      "sha256": "3ed0b4d191c4fe343a9bf8d873dfe7e6e784200993fd54cdacea32af7fc8d939"
+      "bytes": 32902,
+      "sha256": "7cadcc057ca40e4cc8e4c86eace010ef002a960ada9d27b9132676818b392912"
     },
     {
       "path": "integration/src/fl-numerics.mjs",
@@ -337,8 +367,8 @@
     },
     {
       "path": "integration/src/gateway-control.mjs",
-      "bytes": 18471,
-      "sha256": "d5da9dd67d87bdbcf4a3b05ae6187fd6be7f02ac371701cddb6abaec4df5b671"
+      "bytes": 18633,
+      "sha256": "7440bf1032b535dd119d373453ddb194cd41019d04a14837bffe5114828bfa26"
     },
     {
       "path": "integration/src/gateway-credential-issuer.mjs",
@@ -356,6 +386,11 @@
       "sha256": "df6378f113f2caf8dc7dafb9a8228da2b41c3f1d21b85f4b835256de0deba4c5"
     },
     {
+      "path": "integration/src/group-runtime.mjs",
+      "bytes": 7474,
+      "sha256": "41cc8c34a6c8c546a80049018fd6d074fcf452684db8b28054c308dd819ae8d3"
+    },
+    {
       "path": "integration/src/handover-coordinator.mjs",
       "bytes": 31000,
       "sha256": "61dc1203199680f4263b5153d45f614e36789ad135bd85f349c4bd74a6fa59c3"
@@ -367,8 +402,8 @@
     },
     {
       "path": "integration/src/integration-runtime.mjs",
-      "bytes": 7501,
-      "sha256": "9ada0e9fcf4037d5f5548eeb03bc1ba451c7af4bae8099a452aae277e12f9b13"
+      "bytes": 7818,
+      "sha256": "52fa85bc0107859ae3064d4c6b2051d2105c3dc42dba15b625a9b60bea2cc0cb"
     },
     {
       "path": "integration/src/integration-store.mjs",
@@ -457,8 +492,8 @@
     },
     {
       "path": "integration/src/portal-service.mjs",
-      "bytes": 20663,
-      "sha256": "3539ed9ce80d72c7951662dfc57e07fab25416f48cb988a1a03b069ceb60cc66"
+      "bytes": 21819,
+      "sha256": "1cb2de1a47a7c8694e14a5c0f9aa86ae7dadfff3aa52a4d977a1d1fcc9967fcc"
     },
     {
       "path": "integration/src/postgres-integration-store.mjs",
@@ -481,14 +516,29 @@
       "sha256": "de19544c81978d963d20f251caacec7123d892818b733b93a106b3843f4e0913"
     },
     {
+      "path": "scripts/apply-mobius-dependencies.mjs",
+      "bytes": 1589,
+      "sha256": "ac068ff42f8bd8b10b012bfb911571d3f9f85d04c0b6c4f9a791bc7789d16dfa"
+    },
+    {
+      "path": "scripts/apply-mobius-dependencies.test.mjs",
+      "bytes": 1984,
+      "sha256": "db4ac06dba2a9fad98e058779aca45c01457439704813c7673b295c8b45a925f"
+    },
+    {
       "path": "scripts/apply-mobius-security.mjs",
-      "bytes": 4898,
-      "sha256": "9dfa3c0a6fd708b412909e9e57a091fc373ad1f59e521ba744b69ea7cf89bae0"
+      "bytes": 9431,
+      "sha256": "f5be26ab0c34760f6dd5b2502c0887c89fe6a73263aeeb8798e9ebb2fb6c0a89"
     },
     {
       "path": "scripts/build-integration-evidence.mjs",
       "bytes": 4564,
       "sha256": "6c0127fbc333e49ee0eda238e2bf7d5339c2e89eddff81a8518d9fff94ecf4af"
+    },
+    {
+      "path": "scripts/build-mobius-artifact.mjs",
+      "bytes": 3444,
+      "sha256": "9342eaeef7eaf9b04e434aa30536633c9570a1916462e6b9cd008a3f261da12a"
     },
     {
       "path": "scripts/build-release-manifest.mjs",
@@ -501,6 +551,26 @@
       "sha256": "815fe38a8b17b8650d64d649adfdd172ad9f851eb4794a5402853ccef041a445"
     },
     {
+      "path": "scripts/external-config.mjs",
+      "bytes": 6368,
+      "sha256": "fb48b3213213879c5d250d866783aa811ccccc4e63c38b3387da8fd9005e8a45"
+    },
+    {
+      "path": "scripts/external-edge-callback.mjs",
+      "bytes": 1662,
+      "sha256": "fa00c145a61b1465cc05172cbcfb474e0de5dccd180dd61fbe57202e5883c82f"
+    },
+    {
+      "path": "scripts/external-fl.mjs",
+      "bytes": 6474,
+      "sha256": "da14bc0038bf6191ea03c287a72e00baf406702c6e1796c6da3e01d7a89aced6"
+    },
+    {
+      "path": "scripts/external-scenarios.mjs",
+      "bytes": 6332,
+      "sha256": "1115a108b5a1b5710f0bb10e3647013feef613abff8081f1ec317d423ae46476"
+    },
+    {
       "path": "scripts/migrate-integration-state.mjs",
       "bytes": 1849,
       "sha256": "f84879f0fe5dfcdd31b35d267c088b903286b225e30c709fb117e8b3df875c28"
@@ -509,6 +579,11 @@
       "path": "scripts/postgres-worker.mjs",
       "bytes": 3685,
       "sha256": "79c366e5b6ead1fd86338f5dbb67b85177160a7e350709cb43bd917f0c4c926c"
+    },
+    {
+      "path": "scripts/prepare-external-fl-workers.mjs",
+      "bytes": 2530,
+      "sha256": "46bcda3179afad66496062aea56805ac6b8ed8890874f79d443fba7446172461"
     },
     {
       "path": "scripts/prepare-specialization.mjs",
@@ -527,13 +602,13 @@
     },
     {
       "path": "scripts/run-acp-isolated.mjs",
-      "bytes": 6047,
-      "sha256": "debe8c9226136321305d7c72cab7bdc3f21a4dab723630e9285c66966b755f58"
+      "bytes": 7652,
+      "sha256": "6200abbd0dd55fa327f6c6a4e5d0136cf1849fb2e6c575cd8f9825ca0f459e18"
     },
     {
       "path": "scripts/run-acp-real.mjs",
-      "bytes": 10047,
-      "sha256": "5430a90b8fb38f114dbe5a09fafd1935fe88ea25332500eb34448df5b504654e"
+      "bytes": 10295,
+      "sha256": "5a491f6517ba6dbc5b3dae4dcb26fa4c0b2027fdbc2782b46c8927402ce7b63d"
     },
     {
       "path": "scripts/run-bridge.mjs",
@@ -551,6 +626,16 @@
       "sha256": "7e31a6a564eacade3c2fb0e96f7df9ef6e8cd19587536eff2844be0e92f66c41"
     },
     {
+      "path": "scripts/run-external-rehearsal.mjs",
+      "bytes": 4338,
+      "sha256": "818cc1cac314962e59749b3a809fc9f06561762a04a545d8a45ecf4171b4a16c"
+    },
+    {
+      "path": "scripts/run-external-services.mjs",
+      "bytes": 3884,
+      "sha256": "3e8f94a597dfbba4d6a575f10f98ef706caa1797e0288b7c0f07b9d3af0daacc"
+    },
+    {
       "path": "scripts/run-fl-cse-verification.mjs",
       "bytes": 3716,
       "sha256": "28a72e0cef9797eb7c20024936bdb8e4a0f961e1567598af5e0f5eb45772e4ef"
@@ -566,9 +651,14 @@
       "sha256": "ddc32c3fd75c0225847676bcd20cbd78a798ec9ce14278325f6f1683333c848f"
     },
     {
+      "path": "scripts/run-group-product-real.mjs",
+      "bytes": 14660,
+      "sha256": "f44f7326e1e59e010a04ac5eb3333dd6148c3a28214b5bfee6fbfab0fe040838"
+    },
+    {
       "path": "scripts/run-handover-real.mjs",
-      "bytes": 12609,
-      "sha256": "748eb7c5c25ebab0ebb9743c20c58eff4d1affe1d5458e2486c12f49c7ac85c6"
+      "bytes": 12720,
+      "sha256": "a0910b376eaf276b471b49344be9406872c8341e50717c70e2515ce6325f0d53"
     },
     {
       "path": "scripts/run-integration-api.mjs",
@@ -612,8 +702,8 @@
     },
     {
       "path": "scripts/start-mobius4-test.ps1",
-      "bytes": 1115,
-      "sha256": "9b4d95040e7f7233a9f4590d91745ac1e83babf25958fcb869217eaedc9f84d4"
+      "bytes": 1080,
+      "sha256": "3f15ef1eafa74c28742afde1411c4347465a88efa67eabff9b6c766dfc5c2a47"
     },
     {
       "path": "scripts/validate-contract.mjs",
@@ -627,8 +717,8 @@
     },
     {
       "path": "scripts/verify-postgres.mjs",
-      "bytes": 20666,
-      "sha256": "e315637e3dc18a67e6e3b71f1fbc02d1046088c2b05a388f11088e0afa447127"
+      "bytes": 20496,
+      "sha256": "666eac11db6d6f100ff9ca737549810188ff59985c03024fa0b501490b9f33a0"
     },
     {
       "path": "src/gateway-bridge.mjs",
@@ -637,8 +727,8 @@
     },
     {
       "path": "src/group-dispatcher.mjs",
-      "bytes": 7086,
-      "sha256": "6d0a41a770e15a3b242874158e616bdbdfc21d1d47351dedaf32e89dfd4df43e"
+      "bytes": 8883,
+      "sha256": "a164fef13750ef719152f3a5f3ef112ccb37663365fb0a8bd76e4e4cf5b89c94"
     },
     {
       "path": "src/receipt-journal.mjs",
@@ -664,6 +754,31 @@
       "path": "test/device-incidents.test.mjs",
       "bytes": 4654,
       "sha256": "2998e28ace8a265c881c12538997f7d28a85cc9e8522d8b67604e167b6463c26"
+    },
+    {
+      "path": "test/external-edge-callback.test.mjs",
+      "bytes": 3364,
+      "sha256": "d24c2eeaa478ae294899cccbca1100315944eb229fab41c77369109fbd3c7eeb"
+    },
+    {
+      "path": "test/external-fl.test.mjs",
+      "bytes": 3961,
+      "sha256": "460bf7cb7921bf61b4c203bce6c08122659d46d89012913e315032a55aad9b81"
+    },
+    {
+      "path": "test/external-runner.test.mjs",
+      "bytes": 3695,
+      "sha256": "af51d7e541c6a0a49a75b789fbdcd4796c21a8660cefb4d27ed09a12ffafef99"
+    },
+    {
+      "path": "test/external-scenarios.test.mjs",
+      "bytes": 5205,
+      "sha256": "626a2b3356933bd87cc3a6413414970b5663780aed40351ffcd180b00deb8fa1"
+    },
+    {
+      "path": "test/external-worker-config.test.mjs",
+      "bytes": 3008,
+      "sha256": "24154103b98015923fe8f5270b7c89aefab39d9aecf769b38aaadb3c31562f4e"
     },
     {
       "path": "test/fl-coordinator.test.mjs",
@@ -694,6 +809,11 @@
       "path": "test/group-dispatcher.test.mjs",
       "bytes": 7829,
       "sha256": "a202da66649254b4f0c50ad411ede0f7bf9faf83b4431db0580281c04f95ce06"
+    },
+    {
+      "path": "test/group-product.test.mjs",
+      "bytes": 10244,
+      "sha256": "b3c5d601e4b01111e109dc8265262eb60a0cbfff3851700a6c26700090d896ca"
     },
     {
       "path": "test/handover-http.test.mjs",
@@ -781,5 +901,5 @@
       "sha256": "e0de1bf0f956ae8274906dddac9a6d9b7db58db335de06d48a92553f3d2fddab"
     }
   ],
-  "sourceDigest": "7ab2e4be26bcb92887998ccfba4017a91c7c9c74f453cef5ad9501d457421f13"
+  "sourceDigest": "a7b817045926a24307541ba36900aa4e6c78d035bf7c6be64623443d91d85e5d"
 }

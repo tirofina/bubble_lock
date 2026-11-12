@@ -1,8 +1,9 @@
 # Mobius4 구독 권한 패치
 
-패치 ID: `BUBBLE_SUBSCRIPTION_SECURITY_V1` · 대상 검증: Mobius4 4.24.5.
+패치 ID: `BUBBLE_SUBSCRIPTION_SECURITY_V2` · 대상 검증: Mobius4 4.25.0.
 
 구독 생성은 대상 자원의 RETRIEVE 권한으로 검사한다. 알림 전송은 생성자의 현재 RETRIEVE, 수신 AE에 대한 생성자·hosting CSE의 NOTIFY 권한을 다시 검사한다. 삭제 알림은 삭제 직전 자원 문맥과 현재 ACP를 함께 사용한다.
+V2는 직접 URL·AE pointOfAccess·삭제 알림·구독 검증을 통한 외부 송신을 `cse.notification_allowed_origins`로 제한한다. 기본값은 빈 목록(송신 거부)이고 HTTP 리다이렉트도 따라가지 않는다. 배포에서는 `NOTIFICATION_ALLOWED_ORIGINS` 환경변수로 허용 origin만 지정한다.
 
 ```powershell
 node pc-mobius/scripts/apply-mobius-security.mjs --mobius-root=<Mobius4경로>

@@ -188,7 +188,7 @@ services:
   cse:
     <<: *runtime
     build: {context: "..", dockerfile: deployment/cse/Dockerfile}
-    image: bubblelock/mobius4:4.25.0-bubble-subscription-v1
+    image: bubblelock/mobius4:4.25.0-bubble-subscription-v2
     user: "1000:1000"
     mem_limit: 384m
     env_file: ${RUN_TMP:-../.local/deployment}/cse.env
@@ -202,6 +202,7 @@ services:
       CSE_ID: /bubble-cse
       CSE_BASE_RN: Mobius
       CSE_POA: http://cse:7599
+      NOTIFICATION_ALLOWED_ORIGINS: ""
       HTTP_PORT: "7599"
       MQTT_ENABLED: "false"
       HTTPS_ENABLED: "true"

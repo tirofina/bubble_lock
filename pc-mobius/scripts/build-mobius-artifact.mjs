@@ -34,7 +34,7 @@ const repeatedDependencies = await applyMobiusDependencies(preparedSource);
 assert.ok(repeatedDependencies.files.every((file) => file.status === 'ALREADY_APPLIED'));
 await execute('npm', ['ci', '--omit=dev', '--ignore-scripts', '--no-audit', '--no-fund'], { cwd: preparedSource, env: process.env });
 await execute(process.execPath, [join(root, 'pc-mobius/scripts/prepare-specialization.mjs'), '--mobius-root', preparedSource]);
-const filename = `mobius4-${pin.revision}-bubble-subscription-v1.tar.gz`;
+const filename = `mobius4-${pin.revision}-bubble-subscription-v2.tar.gz`;
 const artifact = join(output, filename);
 // prepare-specialization creates a timestamped operator backup; it is not release input.
 await execute('tar', ['--sort=name', '--mtime=@0', '--owner=0', '--group=0', '--numeric-owner', '--exclude=node_modules', '--exclude=./config/specializations.json.bak-*', '-I', 'gzip -n', '-cf', artifact, '-C', preparedSource, '.']);
