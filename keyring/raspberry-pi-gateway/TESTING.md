@@ -95,7 +95,7 @@ bubble-keyring-ble-characterize --mode bringup --hardware r18-pcb \
 
 Gateway 0.2.99의 `--firmware-image`에 업로드에 사용한 서명 없는 ESP32-S3 앱 `firmware.bin`을 지정한다. 파일 끝의 SHA-256을 다시 계산하고 0.7.18·0.7.21~0.7.25 USB 로그의 `appSha256`과 대조한다. 해시 불일치나 실행 이미지 해시를 읽지 못한 경우 BLE 수집 시작 전에 종료한다. 파일 전체의 SHA-256과 크기는 `bringup.usbBoot.firmwareImage`에 남고 `sameBoot`는 USB와 BLE 부팅의 일치 여부를 나타낸다. 이전 펌웨어 기록은 `--firmware-image`를 생략해 수집한다. 바이너리는 비공개로 보관한다. [Espressif 앱 이미지 형식](https://docs.espressif.com/projects/esptool/en/latest/esp32s3/advanced-topics/firmware-image-format.html)
 
-0.7.16~0.7.18 및 0.7.21~0.7.25 ST7789·JD9853 프로필은 마지막 `health` 프레임의 화면 상태와 `displayDrawnPresses`도 확인한다. 각 패턴을 확인할 시간을 두고 버튼을 순서대로 누르고 떼며, 비상 버튼을 뗀 뒤에도 `health`가 한 번 더 전송될 때까지 기록한다. 화면 작업자·버스·화면 크기 오류, GPIO 출력 오류(`power_output_error`) 또는 다른 프로필은 `MISMATCH`다. 현재 시험의 버튼 누계와 대조할 그리기 기록이 없으면 `INSUFFICIENT`다. 실제 화면의 테두리·색·글자는 별도 사진이나 영상에 남긴다.
+0.7.16~0.7.18 및 0.7.21~0.7.25 ST7789·JD9853 프로필은 마지막 `health` 프레임의 화면 상태와 `displayDrawnPresses`도 확인한다. 각 패턴을 확인할 시간을 두고 버튼을 순서대로 누르고 뗀다. Gateway 0.2.115는 비상 버튼 해제를 포함하거나 그 뒤에 도착한 `health`에서 시험의 그리기 누계를 확인한다. 화면 작업자·버스·화면 크기 오류, GPIO 출력 오류(`power_output_error`) 또는 다른 프로필은 `MISMATCH`다. 버튼 해제 이후 대조할 그리기 기록이 없으면 `INSUFFICIENT`다. 실제 화면의 테두리·색·글자는 별도 사진이나 영상에 남긴다.
 
 0.7.21 이상에서 짧은 버튼 입력은 [r18 버튼 사건 시험](#r18-버튼-사건-시험)에서 Pi와 중앙을 함께 대조한다.
 
@@ -121,7 +121,7 @@ bubble-keyring-display-evidence --capture r18-bringup.json --observations lcd-ob
   --confirm-media confirm.jpg --panic-media panic.jpg --output lcd-evidence.json
 ```
 
-한 영상을 사용하면 두 인자에 같은 파일을 지정하고 각 장면의 영상 시작 기준 시각을 `mediaOffsetMs`에 밀리초로 넣는다. 결과에는 USB·Pi·관찰 기록·미디어의 해시와 `operatorObservationStatus`, `buttonFramesMatched`가 들어간다. 도구는 작업자가 기입한 값과 BLE 순번을 대조한다. 영상 프레임이나 패널의 실제 해상도는 별도로 확인한다. 원본 사진과 영상은 비공개로 보관한다.
+한 영상을 사용하면 두 인자에 같은 파일을 지정하고 각 장면의 영상 시작 기준 시각을 `mediaOffsetMs`에 밀리초로 넣는다. 결과에는 USB·Pi·관찰 기록·미디어의 해시와 `operatorObservationStatus`, `buttonFramesMatched`, `healthSequence`가 들어간다. `displayEvidenceStatus=MATCHED`는 작업자 기록이 일치하고 Pi 기록이 `RECORDED`이며 같은 세션의 비상 버튼 해제부터 유효한 화면 상태·그리기 누계가 확보된 경우에만 나온다. Pi나 작업자 기록에 불일치가 있으면 `MISMATCH`다. 수집 중단이나 화면 상태·관찰값 누락은 `INSUFFICIENT`다. 저장된 Pi 보고서도 BLE 이벤트를 다시 읽어 판정한다. 영상 프레임과 패널의 실제 해상도는 별도로 확인하고 원본 사진과 영상은 비공개로 보관한다.
 
 Gateway 0.2.36의 자격 전환 영수증 회귀시험 소스는 MQTT·HTTPS 생성 후 조회, 중복, 인스턴스·부모·본문 불일치, 조회 시간 초과, HTTPS 보류 중 일반 heartbeat의 독립 전송을 다룬다. 격리 Mobius4 시험 소스는 두 전송 경로에서 실제 저장 조회가 발생하는지 확인한다. 이번 빌드·시험·Pi 배포·CSE 연결은 미실행이다.
 

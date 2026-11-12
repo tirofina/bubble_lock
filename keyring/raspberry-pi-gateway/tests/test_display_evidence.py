@@ -13,6 +13,7 @@ class DisplayEvidenceTests(unittest.TestCase):
                       ("released", [2, 1]), ("confirm", [3, 1]), ("released", [3, 1]),
                       ("panic", [3, 2]), ("released", [3, 2]),
                   ], start=20)]
+        events[-1].update(detail="health", displayStatus="st7789_unverified", displayDrawnPresses=[3, 2])
         self.capture = {
             "version": 1, "mode": "bringup", "hardware": "r18-pcb", "boardRevision": "r18-hand-solder",
             "firmwareRevision": "keyring-0.7.17-st7789-bringup", "status": "RECORDED", "durationMs": 3000,
@@ -32,6 +33,7 @@ class DisplayEvidenceTests(unittest.TestCase):
         self.capture["bringup"]["displayTest"]["buttonFramesMatched"] = False
         report = pair_display(self.capture, self.capture_sha, self.notes, self.media)
         self.assertEqual(report["operatorObservationStatus"], "MATCHED")
+        self.assertEqual(report["displayEvidenceStatus"], "INSUFFICIENT")
         self.assertFalse(report["buttonFramesMatched"])
         self.assertEqual([row["pressSequence"] for row in report["observations"]], [21, 23])
         self.assertEqual([row["releaseAtMs"] for row in report["observations"]], [2200, 2400])
@@ -43,6 +45,7 @@ class DisplayEvidenceTests(unittest.TestCase):
         panic["screenText"] = "CONFIRM"
         report = pair_display(self.capture, self.capture_sha, self.notes, self.media)
         self.assertEqual(report["operatorObservationStatus"], "MISMATCH")
+        self.assertEqual(report["displayEvidenceStatus"], "MISMATCH")
         self.assertEqual(report["observations"][1]["mismatches"], ["screenText"])
 
     def test_requires_same_capture_boot_and_a_release_in_the_selected_session(self):
@@ -69,3 +72,24 @@ class DisplayEvidenceTests(unittest.TestCase):
         confirm["mediaOffsetMs"], panic["mediaOffsetMs"] = 400, 500
         report = pair_display(self.capture, self.capture_sha, self.notes, media)
         self.assertEqual(report["operatorObservationStatus"], "MATCHED")
+        self.assertEqual(report["displayEvidenceStatus"], "MATCHED")
+
+    def test_evidence_rechecks_saved_health_at_or_after_the_final_release(self):
+        press, release = self.capture["events"][-2:]
+        self.capture["firmwareRevision"] = "keyring-0.7.25-st7789-bringup"
+        press.update({key: release.pop(key) for key in ("detail", "displayStatus", "displayDrawnPresses")})
+        report = pair_display(self.capture, self.capture_sha, self.notes, self.media)
+        self.assertEqual(report["operatorObservationStatus"], "MATCHED")
+        self.assertEqual(report["displayEvidenceStatus"], "INSUFFICIENT")
+        self.assertEqual(report["healthSequence"], 23)
+        self.assertFalse(report["buttonFramesMatched"])
+
+        release.update(detail="health", displayStatus="power_output_error", displayDrawnPresses=[3, 2])
+        report = pair_display(self.capture, self.capture_sha, self.notes, self.media)
+        self.assertEqual(report["displayEvidenceStatus"], "MISMATCH")
+        self.assertEqual(report["softwareStatus"], "power_output_error")
+
+        release["displayStatus"] = "st7789_unverified"
+        self.capture["status"] = "TRUNCATED"
+        report = pair_display(self.capture, self.capture_sha, self.notes, self.media)
+        self.assertEqual(report["displayEvidenceStatus"], "INSUFFICIENT")

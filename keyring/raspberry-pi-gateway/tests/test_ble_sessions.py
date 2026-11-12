@@ -316,6 +316,23 @@ class BringupCaptureTests(unittest.TestCase):
                     self.assertEqual(report["bringup"]["displayTest"]["expectedPresses"], [3, 2])
                     self.assertEqual(report["bringup"]["displayTest"]["buttonFramesMatched"], expected == "RECORDED")
 
+    def test_display_health_must_include_or_follow_the_panic_release(self):
+        firmware = "keyring-0.7.25-st7789-bringup"
+        events = self.events()
+        released = events[-1]["observation"]["sensorValues"]
+        pressed = events[-2]["observation"]["sensorValues"]
+        pressed.update(detail=released.pop("detail"), power=released.pop("power"),
+                       display="st7789_unverified", displayDrawnPresses=[3, 2])
+        report = self.report(events, firmware_revision=firmware)
+        self.assertEqual(report["status"], "INSUFFICIENT")
+        self.assertIn("displayButtonFrames", report["bringup"]["missing"])
+        self.assertFalse(report["bringup"]["displayTest"]["buttonFramesMatched"])
+
+        released.update(detail="health", power="disabled", display="st7789_unverified", displayDrawnPresses=[3, 2])
+        report = self.report(events, firmware_revision=firmware)
+        self.assertEqual(report["status"], "RECORDED")
+        self.assertTrue(report["bringup"]["displayTest"]["buttonFramesMatched"])
+
     def test_usb_boot_match_is_required_when_supplied_and_raw_identity_is_private(self):
         initial_status = dict(self.ready_sensor_status, accelStatus="unavailable")
         raw = self.usb_log().replace(b"accel=ok", b"accel=unavailable")

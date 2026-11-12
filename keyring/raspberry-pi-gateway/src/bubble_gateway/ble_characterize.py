@@ -278,6 +278,22 @@ def bringup_buttons(rows: list[dict]) -> tuple[list[int], bool]:
     return [row["sequence"] for row in markers], regressed
 
 
+def bringup_display_result(rows: list[dict], buttons: list[int], panel: str) -> tuple[dict, bool]:
+    health_rows = [row for row in rows if row.get("detail") == "health"]
+    latest = health_rows[-1] if health_rows else {}
+    expected_status = f"{panel}_unverified"
+    expected_presses = None
+    if len(buttons) == len(BRINGUP_BUTTON_STATES):
+        counts = {row["sequence"]: row["buttonPresses"] for row in rows if row["sequence"] in buttons}
+        expected_presses = [counts[buttons[1]][0], counts[buttons[3]][1]]
+    drawn = latest.get("displayDrawnPresses")
+    matched = (expected_presses is not None and valid_button_presses(drawn) and drawn == expected_presses
+               and latest["sequence"] >= buttons[4] and latest.get("displayStatus") == expected_status)
+    mismatch = any(row.get("displayStatus") not in (None, "starting", expected_status) for row in health_rows)
+    return {"profile": panel, "healthSequence": latest.get("sequence"), "softwareStatus": latest.get("displayStatus"),
+            "expectedPresses": expected_presses, "drawnPresses": drawn, "buttonFramesMatched": matched}, mismatch
+
+
 def bringup_result(sessions: list[dict], rows: list[dict], *, expected_display: str | None = None) -> dict:
     first = next((session for session in sessions if session["notificationCount"]), None)
     session_id = first["session"] if first else None
@@ -320,24 +336,14 @@ def bringup_result(sessions: list[dict], rows: list[dict], *, expected_display: 
               "powerSequence": power, "healthSequence": health, "latestSensor": latest_sensor, "latestPower": latest_power,
               "missing": missing, "mismatches": mismatches}
     if expected_display is not None:
-        health_rows = [row for row in selected if row.get("detail") == "health"]
-        latest = health_rows[-1] if health_rows else {}
-        expected_status = f"{expected_display}_unverified"
-        expected_presses = None
-        if len(buttons) == len(BRINGUP_BUTTON_STATES):
-            press_counts = {row["sequence"]: row["buttonPresses"] for row in selected if row["sequence"] in buttons}
-            expected_presses = [press_counts[buttons[1]][0], press_counts[buttons[3]][1]]
-        matched = (expected_presses is not None and latest.get("displayDrawnPresses") == expected_presses
-                   and latest["sequence"] >= buttons[3] and latest.get("displayStatus") == expected_status)
-        if latest.get("displayStatus") != expected_status:
+        display, mismatch = bringup_display_result(selected, buttons, expected_display)
+        if display["softwareStatus"] != f"{expected_display}_unverified":
             missing.append("displayHealth")
-        if not matched:
+        if not display["buttonFramesMatched"]:
             missing.append("displayButtonFrames")
-        if any(row.get("displayStatus") not in (None, "starting", expected_status) for row in health_rows):
+        if mismatch:
             mismatches.append("displayHealth")
-        report["displayTest"] = {"profile": expected_display, "healthSequence": latest.get("sequence"),
-                                 "softwareStatus": latest.get("displayStatus"), "expectedPresses": expected_presses,
-                                 "drawnPresses": latest.get("displayDrawnPresses"), "buttonFramesMatched": matched}
+        report["displayTest"] = display
     return report
 
 

@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 
 from .ble import BleProtocolError
-from .ble_characterize import BRINGUP_BUTTON_STATES, DISPLAY_TEST_PROFILES, bringup_buttons
+from .ble_characterize import BRINGUP_BUTTON_STATES, DISPLAY_TEST_PROFILES, bringup_buttons, bringup_display_result
 from .model import canonical, valid_button_presses
 from .power_evidence import CAPTURE_LIMIT, SHA256, read_json
 
@@ -65,6 +65,11 @@ def pair_display(capture: dict, capture_sha: str, notes: dict, media: tuple[dict
     display_test = bringup["displayTest"]
     if display_test.get("profile") != panel or type(display_test.get("buttonFramesMatched")) is not bool:
         raise ValueError("Capture lacks the selected firmware display test result")
+    display, software_mismatch = bringup_display_result(rows, markers, panel)
+    button_frames_matched = display_test["buttonFramesMatched"] and display["buttonFramesMatched"]
+    capture_status = capture["status"]
+    if capture_status not in ("RECORDED", "MISMATCH", "INSUFFICIENT", "TRUNCATED"):
+        raise ValueError("Invalid bring-up capture status")
     events = {row["sequence"]: row for row in rows}
     paired = []
     for index, (button, seen, fingerprint) in enumerate(zip(("confirm", "panic"), observations, media)):
@@ -103,9 +108,16 @@ def pair_display(capture: dict, capture_sha: str, notes: dict, media: tuple[dict
         status = "MISMATCH"
     elif any(row["missing"] for row in paired):
         status = "INSUFFICIENT"
+    evidence_status = "INSUFFICIENT"
+    if status == "MISMATCH" or capture_status == "MISMATCH" or software_mismatch:
+        evidence_status = "MISMATCH"
+    elif status == "MATCHED" and capture_status == "RECORDED" and button_frames_matched:
+        evidence_status = "MATCHED"
     return {"version": 1, "observationSource": "operator", "operatorObservationStatus": status,
+            "displayEvidenceStatus": evidence_status, "softwareStatus": display["softwareStatus"],
+            "healthSequence": display["healthSequence"],
             "captureSha256": capture_sha, "usbLogSha256": usb_sha, "session": session,
-            "captureStatus": capture["status"], "buttonFramesMatched": display_test["buttonFramesMatched"],
+            "captureStatus": capture_status, "buttonFramesMatched": button_frames_matched,
             "boardRevision": capture["boardRevision"], "firmwareRevision": firmware, "displayProfile": panel,
             "observations": paired}
 
@@ -128,7 +140,7 @@ def main() -> None:
         os.umask(0o077)
         with args.output.open("xb") as stream:
             stream.write(content)
-        print(f"Operator LCD observation {report['operatorObservationStatus']}. SHA-256 {hashlib.sha256(content).hexdigest()}")
+        print(f"LCD evidence {report['displayEvidenceStatus']}. SHA-256 {hashlib.sha256(content).hexdigest()}")
     except (OSError, ValueError, KeyError, TypeError, AttributeError, BleProtocolError) as error:
         parser.exit(1, f"Display evidence comparison stopped ({type(error).__name__}).\n")
 
