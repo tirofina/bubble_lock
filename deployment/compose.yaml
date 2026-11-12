@@ -21,7 +21,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 30
-    networks: [backend]
+    networks: [postgres]
   keycloak:
     <<: *runtime
     image: ${KEYCLOAK_IMAGE:-quay.io/keycloak/keycloak:26.8.2}
@@ -43,7 +43,7 @@ services:
       - identity-config:/opt/keycloak/data/import:ro
     depends_on:
       postgres: {condition: service_healthy}
-    networks: [backend]
+    networks: [identity, postgres]
   api:
     <<: *runtime
     build:
@@ -75,7 +75,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 30
-    networks: [backend]
+    networks: [app, postgres, onem2m]
   web:
     <<: *runtime
     image: bubblelock-app:local
@@ -100,7 +100,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 30
-    networks: [backend]
+    networks: [app]
   proxy:
     <<: *runtime
     image: ${PROXY_IMAGE:-nginx:1.30.6-alpine}
@@ -123,8 +123,10 @@ services:
       - acme-web:/var/www/acme:ro
     tmpfs: ["/tmp:uid=101,gid=101"]
     networks:
-      backend:
+      app:
         aliases: ["${PUBLIC_DOMAIN:-bubble.localhost}"]
+      identity:
+      onem2m:
       ingress:
   static:
     image: bubblelock-app:local
@@ -139,7 +141,7 @@ services:
         source: web-static
         target: /srv
         volume: {nocopy: true}
-    networks: [backend]
+    network_mode: none
   mqtt:
     <<: *runtime
     image: ${MOSQUITTO_IMAGE:-eclipse-mosquitto:2.0.22}
@@ -155,7 +157,7 @@ services:
       - mqtt-config:/run/mqtt:ro
       - mqtt-data:/mosquitto/data
       - mqtt-log:/mosquitto/log
-    networks: [backend, ingress]
+    networks: [mqtt, ingress]
   mqtt-bridge:
     <<: *runtime
     image: bubblelock-app:local
@@ -168,7 +170,7 @@ services:
     depends_on:
       mqtt: {condition: service_started}
       cse: {condition: service_healthy}
-    networks: [backend]
+    networks: [mqtt, cse-bridge]
   cse-db:
     <<: *runtime
     image: postgis/postgis:17-3.5
@@ -182,7 +184,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 30
-    networks: [backend]
+    networks: [cse-db]
   cse:
     <<: *runtime
     build: {context: "..", dockerfile: deployment/cse/Dockerfile}
@@ -217,7 +219,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 30
-    networks: [backend]
+    networks: [onem2m, cse-bridge, cse-db, cse-provision]
   init:
     image: ${MOSQUITTO_IMAGE:-eclipse-mosquitto:2.0.22}
     profiles: [tools]
@@ -238,7 +240,7 @@ services:
       - cse-data:/init/cse
       - cse-db:/init/cse-db
       - cse-config:/init/cse-config
-    networks: [backend]
+    network_mode: none
   db-init:
     image: ${POSTGRES_IMAGE:-postgres:17.6-alpine}
     profiles: [tools]
@@ -252,7 +254,7 @@ services:
     command: ['export PGPASSWORD="$$POSTGRES_PASSWORD"; psql -v ON_ERROR_STOP=1 -h postgres -U bubble -d bubble -c "CREATE SCHEMA IF NOT EXISTS keycloak AUTHORIZATION bubble"']
     depends_on:
       postgres: {condition: service_healthy}
-    networks: [backend]
+    networks: [postgres]
   provision:
     image: bubblelock-app:local
     profiles: [tools]
@@ -267,7 +269,7 @@ services:
     volumes: ["api-config:/run/bubble:ro"]
     depends_on:
       cse: {condition: service_healthy}
-    networks: [backend]
+    networks: [cse-provision]
   certbot:
     image: certbot/certbot:v5.1.0
     profiles: [tools]
@@ -284,9 +286,16 @@ services:
     entrypoint: ["sh", "-c"]
     command: ['set -eu; cp "/certs/live/$$PUBLIC_DOMAIN/fullchain.pem" /proxy/public.pem; cp "/certs/live/$$PUBLIC_DOMAIN/privkey.pem" /proxy/public.key; chown 101:101 /proxy/public.pem /proxy/public.key; chmod 600 /proxy/public.pem /proxy/public.key']
     volumes: ["acme-certs:/certs:ro", "proxy-config:/proxy"]
-    networks: [backend]
+    network_mode: none
 networks:
-  backend: {internal: true}
+  app: {internal: true}
+  identity: {internal: true}
+  postgres: {internal: true}
+  onem2m: {internal: true}
+  mqtt: {internal: true}
+  cse-bridge: {internal: true}
+  cse-db: {internal: true}
+  cse-provision: {internal: true}
   ingress:
 volumes:
   postgres:
