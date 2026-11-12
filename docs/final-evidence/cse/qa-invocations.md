@@ -103,3 +103,47 @@ set -o pipefail
 로컬 `.codex/skills`, `.claude/skills`에서 찾지 못했다. JEV 없이 실제 CSE 회귀를 수행했다.
 Biome와 Dockerfile LSP는 설치되어 있지 않아 진단을 얻지 못했고, Node 구문 검사와 실제 실행을 사용했다.
 원본 npm 의존성의 deprecation 경고는 유지했다.
+
+## 그룹 QA 완료 후 정리
+
+그룹 lane이 `$RUN_TMP/group-qa.done`에 완료 신호를 기록했다.
+runner `/proc/1977781/cmdline`과 cwd가 이번 실행임을 확인한 후 종료했다.
+
+```sh
+kill -TERM 1977781
+```
+
+runner exit 0. `cleanup.json`: CSE PID 1977818·1977915 모두 exit 0,
+두 시험 DB 삭제 후 조회 `remainingDatabases: []`.
+
+```sh
+set -o pipefail
+{ printf "QA stop isolated PostGIS\n"
+  docker rm -fv bubble-cse-st01a1cf42-db
+  printf "QA remaining owned containers\n"
+  docker ps -a --filter name=bubble-cse-st01a1cf42 --format "{{.Names}} {{.Status}}"
+  printf "QA owned processes readback\n"
+  for pid in 1977781 1977818 1977915; do
+    if test -d "/proc/$pid"; then printf "PROCESS_REMAINS %s\n" "$pid"; exit 1
+    else printf "PROCESS_GONE %s\n" "$pid"; fi
+  done
+  printf "QA remove owned scratch\n"
+  rm -rf "$RUN_TMP"
+  if test -e "$RUN_TMP"; then exit 1; else printf "RUN_TMP_GONE\n"; fi
+} 2>&1 | tee docs/final-evidence/cse/cleanup-readback.log
+```
+
+위치 runner가 별도로 만든 `.local/location-privacy/231a0135e2`의 생성 시각
+`2026-11-12T10:22:03.033Z`와 실행 ID를 확인하고 해당 상태·키만 삭제했다.
+
+```sh
+set -o pipefail
+{ printf "QA remove owned location state created 2026-11-12T10:22:03.033Z\n"
+  rm -rf .local/location-privacy/231a0135e2
+  if test -e .local/location-privacy/231a0135e2; then exit 1
+  else printf "LOCATION_TMP_GONE\n"; fi
+} 2>&1 | tee -a docs/final-evidence/cse/cleanup-readback.log
+```
+
+소유 컨테이너 조회는 빈 결과, 세 PID 부재, RUN_TMP 및 위치 임시 경로 부재를 확인했다.
+배포 산출물과 이미지 및 durable 로그는 보존했다.
