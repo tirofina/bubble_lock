@@ -26,7 +26,7 @@ assert.equal(JSON.parse(session.body).authenticated, false);
 const portal = await call('/api/portal/snapshot');
 assert.equal(portal.status, 401);
 const denied = {};
-for (const path of ['/identity/admin/', '/identity/management/', '/Mobius', '/v1/portal/snapshot', '/admin', '/metrics']) {
+for (const path of ['/identity/admin/', '/identity/admin;x/master/console/', '/identity/management/', '/identity/realms/master/.well-known/openid-configuration', '/Mobius', '/v1/portal/snapshot', '/admin', '/metrics']) {
   denied[path] = (await call(path)).status;
   assert.equal(denied[path], 403);
 }

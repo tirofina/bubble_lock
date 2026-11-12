@@ -55,6 +55,11 @@ http {
     location ~ ^/api/v1/gateways/@GATEWAY_ID@/ {
       if ($gateway_authorized = 0) { return 403; }
       limit_req zone=api burst=40 nodelay;
+      proxy_set_header Host $http_host;
+      proxy_set_header X-Forwarded-Proto https;
+      proxy_set_header X-Forwarded-Host $http_host;
+      proxy_set_header X-Forwarded-Port @HTTPS_PORT@;
+      proxy_set_header X-Forwarded-For $remote_addr;
       proxy_set_header X-Forwarded-Client-Cert "";
       proxy_set_header X-SSL-CERT "";
       proxy_ssl_certificate /run/proxy/gateway.pem;
@@ -67,6 +72,11 @@ http {
     location ~ ^/onem2m/Mobius/bubble-household-1/@GATEWAY_ID@/(observations|receipts|health)(/.*)?$ {
       if ($gateway_authorized = 0) { return 403; }
       limit_req zone=api burst=40 nodelay;
+      proxy_set_header Host $http_host;
+      proxy_set_header X-Forwarded-Proto https;
+      proxy_set_header X-Forwarded-Host $http_host;
+      proxy_set_header X-Forwarded-Port @HTTPS_PORT@;
+      proxy_set_header X-Forwarded-For $remote_addr;
       proxy_set_header X-M2M-Origin @GATEWAY_ID@;
       proxy_set_header Authorization "";
       proxy_ssl_name cse;
@@ -75,7 +85,7 @@ http {
       proxy_pass $cse;
     }
     location /onem2m { return 403; }
-    location ~ ^/identity/(admin|management)(/|$) { return 403; }
+    location ~ "^/identity/(admin|management|realms/master)(/|;|$)" { return 403; }
     location /identity/ {
       limit_req zone=login burst=30 nodelay;
       set $identity http://keycloak:8080;
