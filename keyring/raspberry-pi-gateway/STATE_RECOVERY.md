@@ -89,7 +89,7 @@ sudo -u bubble-gateway /opt/bubble_lock/keyring/raspberry-pi-gateway/.venv/bin/b
 
 이 명령은 양쪽 데몬 잠금을 확인하고 새 binding의 DB에 유지할 장치별 마지막 할당 순번만 기록한다. 다음 관측은 그 순번에 1을 더해 전송된다. 후보 설정에서 CORE가 꺼져 있어도 나중에 켤 때를 위해 순번을 보존한다. 새 설정과 같은 범위에 원본 CORE 관측이 대기 중이거나 활성 후보 장치의 순번을 소진했으면 중단한다. 대기열·명령·영수증·권한 기록은 원래 배포 DB에 남는다.
 
-새 DB를 준비한 뒤에는 대상 환경으로 `--check-config`와 `--check-command-route`를 수행한다. 새 Gateway가 관측을 전송하기 시작하면 같은 CORE 범위로 이전 Gateway를 다시 시작하기 전에 팀과 현재 순번 및 소유권을 대조한다. 새 DB 준비는 전환 전 로컬 작업이며 서비스나 서버에 연결하지 않는다.
+새 DB 준비는 전환 전 로컬 작업이다. 준비한 뒤 대상 환경으로 `--check-config`를 수행한다. Gateway 0.2.121의 `--check-cse-routes`는 같은 DB binding을 먼저 확인하고, 대상 CSE의 관측·health와 명령이 활성화된 경우의 영수증 컨테이너를 HTTPS GET으로 대조한다. 중앙 API가 준비되면 `--check-command-route`로 중앙 자격과 활성 명령도 확인한다. CSE 점검의 성공은 설정한 컨테이너를 조회했다는 뜻이다. MQTT 전달과 CREATE 권한은 별도 통합시험에서 확인한다. 새 Gateway가 관측을 전송하기 시작하면 같은 CORE 범위로 이전 Gateway를 다시 시작하기 전에 팀과 현재 순번 및 소유권을 대조한다.
 
 ### 기존 배포의 명령과 키링 저널 대조
 

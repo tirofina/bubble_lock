@@ -64,9 +64,10 @@ class PreflightTests(unittest.TestCase):
 
     def check_route(self, *, credential_status="ACTIVE", commands=None, observed_parent="cnt-pinned",
                     observed_observation_parent="cnt-observation", observed_health_parent="cnt-health",
-                    expected_error=None):
-        self.env.update(M2M_CSE_DEPLOYMENT_ID="scoped-mobius4", M2M_RECEIPT_CONTAINER_RI="cnt-pinned",
-                        MQTT_ENABLED="true", MQTT_HOST="broker.invalid")
+                    expected_error=None, cse_only=False):
+        self.env.update(M2M_CSE_DEPLOYMENT_ID="scoped-mobius4", MQTT_ENABLED="true", MQTT_HOST="broker.invalid")
+        if not cse_only:
+            self.env["M2M_RECEIPT_CONTAINER_RI"] = "cnt-pinned"
         endpoints = []
 
         def exchange(method, url, *, headers, body=None):
@@ -85,6 +86,7 @@ class PreflightTests(unittest.TestCase):
                 return 200, httpx.Headers({"X-M2M-RI": headers["X-M2M-RI"], "X-M2M-RSC": "2000"}), {
                     "m2m:cnt": {"ty": 3, "ri": observed_health_parent},
                 }
+            self.assertFalse(cse_only, "CSE-only preflight attempted a central request")
             if url.endswith("/credentials/status"):
                 return 200, httpx.Headers(), {
                     "gatewayId": "gw-test", "credentialRevision": "rev-1", "status": credential_status,
@@ -92,8 +94,9 @@ class PreflightTests(unittest.TestCase):
             self.assertTrue(url.endswith("/commands?limit=16"))
             return 200, httpx.Headers(), {"commands": commands or []}
 
+        flag = "--check-cse-routes" if cse_only else "--check-command-route"
         with (patch.dict(os.environ, self.env, clear=True),
-              patch.object(sys, "argv", ["bubble-gateway", "--check-command-route"]),
+              patch.object(sys, "argv", ["bubble-gateway", flag]),
               patch("bubble_gateway.__main__.logging.basicConfig"),
               patch("bubble_gateway.__main__.serve", new_callable=AsyncMock) as daemon,
               patch("bubble_gateway.transport.mqtt.Client") as mqtt_client,
@@ -108,12 +111,19 @@ class PreflightTests(unittest.TestCase):
             else:
                 main()
                 report = json.loads(output.call_args.args[0])
-                self.assertEqual((report["receiptContainerRi"], report["credentialStatus"]), ("cnt-pinned", "ACTIVE"))
-                if self.env.get("COMMANDS_ENABLED") == "false":
-                    self.assertIs(report["commandsEnabled"], False)
+                if cse_only:
+                    enabled = self.env.get("COMMANDS_ENABLED") != "false"
+                    self.assertIs(report["commandsEnabled"], enabled)
+                    self.assertEqual(report.get("receiptContainerRi"), "cnt-pinned" if enabled else None)
+                    self.assertNotIn("credentialStatus", report)
                     self.assertNotIn("activeCommands", report)
                 else:
-                    self.assertEqual(report["activeCommands"], 0)
+                    self.assertEqual((report["receiptContainerRi"], report["credentialStatus"]), ("cnt-pinned", "ACTIVE"))
+                    if self.env.get("COMMANDS_ENABLED") == "false":
+                        self.assertIs(report["commandsEnabled"], False)
+                        self.assertNotIn("activeCommands", report)
+                    else:
+                        self.assertEqual(report["activeCommands"], 0)
                 if "M2M_OBSERVATION_CONTAINER_RI" in self.env:
                     self.assertEqual(report["observationContainerRi"], self.env["M2M_OBSERVATION_CONTAINER_RI"])
                 if "M2M_HEALTH_CONTAINER_RI" in self.env:
@@ -169,6 +179,22 @@ class PreflightTests(unittest.TestCase):
             "https://example.invalid/api/v1/gateways/gw-test/credentials/status",
         ])
 
+    def test_cse_only_preflight_reads_all_active_native_routes_without_central_access(self):
+        self.env.update(COMMANDS_ENABLED="false", M2M_OBSERVATION_CONTAINER_RI="cnt-observation",
+                        M2M_HEALTH_CONTAINER_RI="cnt-health")
+        self.assertEqual(self.check_route(cse_only=True), [
+            "https://example.invalid/test/obs", "https://example.invalid/test/health",
+        ])
+        self.env.update(COMMANDS_ENABLED="true", M2M_RECEIPT_CONTAINER_RI="cnt-pinned")
+        self.assertEqual(self.check_route(cse_only=True), [
+            "https://example.invalid/test/receipts", "https://example.invalid/test/obs",
+            "https://example.invalid/test/health",
+        ])
+        self.assertEqual(len(self.check_route(cse_only=True, observed_health_parent="cnt-replaced",
+                                              expected_error="CSE health parent lookup failed")), 3)
+        del self.env["M2M_HEALTH_CONTAINER_RI"]
+        self.assertEqual(self.check_route(cse_only=True, expected_error="M2M_HEALTH_CONTAINER_RI"), [])
+
     def test_preflight_rejects_a_changed_pc_deployment_before_remote_requests(self):
         self.env["PC_API_DEPLOYMENT_ID"] = "original-central"
         with patch.dict(os.environ, self.env, clear=True):
@@ -177,7 +203,7 @@ class PreflightTests(unittest.TestCase):
             pass
 
         self.env["PC_API_DEPLOYMENT_ID"] = "new-central"
-        for flag in ("--check-config", "--check-command-route"):
+        for flag in ("--check-config", "--check-command-route", "--check-cse-routes"):
             with (self.subTest(flag=flag), patch.dict(os.environ, self.env, clear=True),
                   patch.object(sys, "argv", ["bubble-gateway", flag]),
                   patch("bubble_gateway.__main__.logging.basicConfig"),

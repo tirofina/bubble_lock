@@ -24,34 +24,39 @@ async def serve(config: GatewayConfig) -> None:
     await gateway.run()
 
 
-async def check_command_route(config: GatewayConfig) -> dict:
+async def check_command_route(config: GatewayConfig, *, check_central: bool = True) -> dict:
     import httpx
     from .transport import RemoteResponseError, TransportHub
 
-    if config.receipt_container_ri is None:
+    check_receipts = check_central or config.commands_enabled
+    if check_receipts and config.receipt_container_ri is None:
         raise DeploymentConfigError("M2M_RECEIPT_CONTAINER_RI is required for this check")
-    if not config.commands_enabled and config.observation_container_ri is None:
-        raise DeploymentConfigError("M2M_OBSERVATION_CONTAINER_RI is required for observation-only preflight")
+    if (not check_central or not config.commands_enabled) and config.observation_container_ri is None:
+        raise DeploymentConfigError("M2M_OBSERVATION_CONTAINER_RI is required for this check")
+    if not check_central and config.health_container_ri is None:
+        raise DeploymentConfigError("M2M_HEALTH_CONTAINER_RI is required for this check")
     hub = TransportHub(replace(config, mqtt_enabled=False, m2m_mqtt_enabled=False, core_bridge_enabled=False))
     stage = "mTLS initialization"
     try:
         await hub.start()
-        stage = "CSE receipt parent lookup"
-        pin = await hub.verify_receipt_route()
-        observation_pin = None
+        report = {"gatewayId": config.gateway_id}
+        if check_receipts:
+            stage = "CSE receipt parent lookup"
+            report["receiptContainerRi"] = await hub.verify_receipt_route()
         if config.observation_container_ri is not None:
             stage = "CSE observation parent lookup"
-            observation_pin = await hub.verify_observation_route()
-        health_pin = None
+            report["observationContainerRi"] = await hub.verify_observation_route()
         if config.health_container_ri is not None:
             stage = "CSE health parent lookup"
-            health_pin = await hub.verify_health_route()
+            report["healthContainerRi"] = await hub.verify_health_route()
+        if not check_central:
+            report.update(commandsEnabled=config.commands_enabled, checkedAt=iso_time())
+            return report
         stage = "central credential status"
         credential = validate_credential_status(await hub.credential_status(), config.gateway_id)
         if credential["status"] != "ACTIVE":
             raise DeploymentConfigError("Central Gateway credential is not ACTIVE")
-        report = {"gatewayId": config.gateway_id, "checkedAt": iso_time(), "receiptContainerRi": pin,
-                  "credentialStatus": "ACTIVE"}
+        report["credentialStatus"] = "ACTIVE"
         if config.commands_enabled:
             stage = "central command list"
             if await hub.poll_commands():
@@ -59,10 +64,7 @@ async def check_command_route(config: GatewayConfig) -> dict:
             report["activeCommands"] = 0
         else:
             report["commandsEnabled"] = False
-        if observation_pin is not None:
-            report["observationContainerRi"] = observation_pin
-        if health_pin is not None:
-            report["healthContainerRi"] = health_pin
+        report["checkedAt"] = iso_time()
         return report
     except DeploymentConfigError:
         raise
@@ -78,6 +80,7 @@ def main() -> None:
     checks = parser.add_mutually_exclusive_group()
     checks.add_argument("--check-config", action="store_true", help="Check local config and TLS files without starting the Gateway")
     checks.add_argument("--check-command-route", action="store_true", help="Check the pinned CSE and central API with HTTPS GET")
+    checks.add_argument("--check-cse-routes", action="store_true", help="Check active pinned Mobius containers with HTTPS GET")
     parser.add_argument("--log-level", choices=("DEBUG", "INFO", "WARNING", "ERROR"), default="INFO")
     args = parser.parse_args()
     os.umask(0o077)
@@ -90,7 +93,7 @@ def main() -> None:
             read_env_file(args.env_file)
         config = GatewayConfig.from_env()
         check_state_directory(config.database)
-        if args.check_config or args.check_command_route:
+        if args.check_config or args.check_command_route or args.check_cse_routes:
             preflight(config.database, configured_binding(config))
         if args.check_config:
             try:
@@ -99,8 +102,8 @@ def main() -> None:
                 raise DeploymentConfigError(f"TLS file check failed ({type(exc).__name__})") from None
             logging.getLogger(__name__).info("Gateway configuration check passed")
             return
-        if args.check_command_route:
-            report = asyncio.run(check_command_route(config))
+        if args.check_command_route or args.check_cse_routes:
+            report = asyncio.run(check_command_route(config, check_central=args.check_command_route))
             print(json.dumps(report, separators=(",", ":")))
             return
         import fcntl

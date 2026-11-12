@@ -126,6 +126,8 @@ sudo -u bubble-gateway env STATE_DIRECTORY=/var/lib/privacy-bubble-gateway \
 
 컨테이너 ID를 설정한 명령 Gateway는 같은 환경 파일에서 `--check-command-route`로 CSE 영수증 컨테이너와 중앙 자격, 활성 명령 목록을 HTTPS GET으로 확인할 수 있다. [격리 Pi 사용 절차](TESTING.md#pi-명령-세션)
 
+Gateway 0.2.121의 `bubble-gateway --env-file gateway.env --check-cse-routes`는 새 Mobius의 관측·health 컨테이너 ID를 HTTPS GET으로 대조한다. 명령이 활성화된 설정은 영수증 컨테이너 ID도 요구한다. 중앙 API가 준비되기 전에 Pi에 넣을 CSE 설정을 먼저 확인할 수 있다. [서버 전환 절차](STATE_RECOVERY.md#새-배포-db에-core-순번-이어받기)
+
 foreground 실행 명령은 다음과 같다. 같은 데이터베이스를 사용하는 프로세스는 하나만 허용한다. systemd 서비스가 이미 실행 중이면 중복으로 실행하지 않는다.
 
 ```sh
