@@ -42,9 +42,8 @@ def _source_schema(db, current: GatewayConfig) -> set[str]:
     return names
 
 
-def _core_sequence_state(db, current: GatewayConfig, target: GatewayConfig) -> tuple[dict[str, int], int]:
-    if current.gateway_id != target.gateway_id:
-        return {}, 0
+def _core_sequence_state(db, target: GatewayConfig) -> tuple[dict[str, int], int]:
+    # CORE v1 deduplicates deviceId:sequence across Gateway identities.
     seeds = {device: sequence for device, sequence in db.execute("SELECT device_id,wire_sequence FROM core_sequences")
              if device in target.ble_devices}
     if any(type(sequence) is not int or not 0 <= sequence <= 4294967295 for sequence in seeds.values()):
@@ -69,7 +68,7 @@ def core_sequence_seeds(current: GatewayConfig, target: GatewayConfig) -> dict[s
     with closing(readonly(current.database)) as db:
         db.execute("BEGIN")
         _source_schema(db, current)
-        seeds, pending = _core_sequence_state(db, current, target)
+        seeds, pending = _core_sequence_state(db, target)
         if pending:
             raise StateIdentityError("STATE_CUTOVER_CORE_SCOPE_PENDING")
         if target.core_bridge_enabled and any(sequence == 4294967295 for sequence in seeds.values()):
@@ -102,7 +101,7 @@ def cutover_plan(current: GatewayConfig, target: GatewayConfig) -> dict:
         names = _source_schema(db, current)
         sequence_continuity = None
         if action == "use-new-database":
-            seeds, pending = _core_sequence_state(db, current, target)
+            seeds, pending = _core_sequence_state(db, target)
             sequence_continuity = {"deviceCount": len(seeds), "pendingForTargetScope": pending,
                                    "exhaustedDeviceCount": sum(value == 4294967295 for value in seeds.values())}
 

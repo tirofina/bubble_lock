@@ -79,7 +79,7 @@ CORE 브리지를 끈 데몬은 기존 CORE telemetry와 ACK를 SQLite에 남기
 
 #### 새 배포 DB에 CORE 순번 이어받기
 
-`plan-cutover`가 `use-new-database`를 보고하고 같은 Gateway ID에서 CORE 순번을 이어갈 장치가 있으면, 원본 Gateway를 중지한 유지보수 창에서 새 DB를 준비한다. 기존 배포에서 새 CORE 범위와 겹치는 전송을 먼저 확인한다. 새 DB의 상위 디렉터리는 Gateway 계정이 쓸 수 있어야 한다.
+`plan-cutover`가 `use-new-database`를 보고하고 후보 설정에도 등록된 키링의 CORE 순번이 있으면, 원본 Gateway를 중지한 유지보수 창에서 새 DB를 준비한다. Gateway 0.2.120은 Gateway ID가 바뀌는 경우에도 같은 키링의 순번을 이어받는다. CORE v1의 중복 기준은 `deviceId:sequence`다. 기존 배포에서 새 CORE 범위와 겹치는 전송을 먼저 확인한다. 새 DB의 상위 디렉터리는 Gateway 계정이 쓸 수 있어야 한다.
 
 ```sh
 sudo -u bubble-gateway /opt/bubble_lock/keyring/raspberry-pi-gateway/.venv/bin/bubble-gateway-state prepare-cutover \

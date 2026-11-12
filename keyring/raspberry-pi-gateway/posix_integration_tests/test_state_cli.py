@@ -79,9 +79,15 @@ class PosixStateTests(unittest.TestCase):
         print("POSIX_FACT " + json.dumps({"test": self._testMethodName, **values}, sort_keys=True), flush=True)
 
     def test_prepare_cutover_carries_core_counter_without_transferring_source_rows(self):
+        self.check_core_cutover("gw-test")
+
+    def test_prepare_cutover_carries_device_counter_across_gateway_id_change(self):
+        self.check_core_cutover("gw-next")
+
+    def check_core_cutover(self, target_gateway):
         self.populate()
         target_path, target_env = self.root / "target.sqlite3", self.root / "target.env"
-        values = dict(self.values, GATEWAY_DATABASE=str(target_path), M2M_CSE_DEPLOYMENT_ID="target-cse",
+        values = dict(self.values, GATEWAY_ID=target_gateway, GATEWAY_DATABASE=str(target_path), M2M_CSE_DEPLOYMENT_ID="target-cse",
                       MQTT_ENABLED="true", MQTT_HOST="broker.invalid", M2M_MQTT_ENABLED="false", CORE_BRIDGE_ENABLED="true")
         target_env.write_text("".join(f"{key}={value}\n" for key, value in values.items()), encoding="utf-8")
         selection = ("--target-env-file", str(target_env))
@@ -104,14 +110,17 @@ class PosixStateTests(unittest.TestCase):
         with closing(readonly(target_path)) as db:
             binding = metadata(db)["binding"]
             self.assertEqual(binding["cseDeploymentId"], "target-cse")
+            self.assertEqual(binding["gatewayId"], target_gateway)
             self.assertEqual(self.rows(db), {name: [("kr-test", 0)] if name == "core_sequences" else [] for name in DATA_TABLES})
         again = self.cli(operation="prepare-cutover", selection=selection)
         self.assertIn("STATE_CUTOVER_TARGET_PATH_IN_USE", again.stderr)
         target_config = config(target_path)
         target_config.cse_deployment_id = "target-cse"
+        target_config.gateway_id = target_gateway
         self.assertEqual(binding, configured_binding(target_config))
         with closing(Store(target_path, 100, 5000000, 20, binding)) as store:
-            store.observation(BINDING["observationContainer"], observation(sequence=2), core_enabled=True)
+            store.observation(BINDING["observationContainer"], observation(gatewayId=target_gateway, sequence=2),
+                              core_enabled=True)
             payload = store.db.execute("SELECT payload FROM outbox WHERE container='@core/telemetry'").fetchone()[0]
             self.assertEqual(json.loads(payload)["sequence"], 1)
         self.assertEqual(self.rows(), before)
