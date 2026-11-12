@@ -138,7 +138,7 @@ def inspect_location_response(response, observation, event, *, web=False):
             "simulation": event["simulation"]}
 
 
-def bind_bringup_report(path, firmware_image, usb, observation):
+def bind_bringup_report(path, firmware_image, usb, observation, *, assembly=None):
     raw = path.read_bytes()
     capture = json.loads(raw)
     expected = {"version": 1, "mode": "bringup", "hardware": "r18-pcb", "status": "RECORDED",
@@ -163,8 +163,13 @@ def bind_bringup_report(path, firmware_image, usb, observation):
     sequences = [session.get("lastSequence") for session in sessions]
     if any(type(sequence) is not int or not 0 <= sequence < observation["sequence"] for sequence in sequences):
         raise ValueError("Scoped observation does not follow the first bring-up BLE observations")
-    return {"reportSha256": hashlib.sha256(raw).hexdigest(), "appSha256": usb["appSha256"],
-            "firmwareImage": image, "lastBleSequence": max(sequences)}
+    evidence = {"reportSha256": hashlib.sha256(raw).hexdigest(), "appSha256": usb["appSha256"],
+                "firmwareImage": image, "lastBleSequence": max(sequences)}
+    if assembly is not None and "assemblyEvidence" in bringup:
+        if canonical(bringup["assemblyEvidence"]) != canonical(assembly):
+            raise ValueError("Assembly record differs from the first bring-up report")
+        evidence["assemblyRecordSha256"] = assembly["recordSha256"]
+    return evidence
 
 
 def bind_native_confirmation(path, rqi, observation, gateway_boot):
@@ -195,7 +200,7 @@ def bind_native_confirmation(path, rqi, observation, gateway_boot):
 
 
 def compare_observation(capture, usb, database, team_state, hasher, *, portal_response=None, web_response=None,
-                        bringup_report=None, firmware_image=None, pi_log=None):
+                        bringup_report=None, firmware_image=None, pi_log=None, assembly=None):
     if (bringup_report is None) != (firmware_image is None):
         raise ValueError("First bring-up report and firmware image must be supplied together")
     if capture["usbLogSha256"] != usb["logSha256"]:
@@ -206,7 +211,7 @@ def compare_observation(capture, usb, database, team_state, hasher, *, portal_re
     if bound is None:
         raise ValueError("CSE observation and health differ from the captured USB boot")
     observation, native_request, health_request = bound
-    bringup_evidence = (bind_bringup_report(bringup_report, firmware_image, usb, observation)
+    bringup_evidence = (bind_bringup_report(bringup_report, firmware_image, usb, observation, assembly=assembly)
                         if bringup_report is not None else None)
     observation_id = central_observation_id(observation)
     expected = {"gatewayId": GATEWAY, "originator": "Sscoped-r18-gateway-b", "cseId": "Mobius4",
@@ -271,7 +276,8 @@ def comparison_passed(report, *, require_physical):
 
 
 def compare_transport_transition(mqtt_capture, fallback_capture, usb, database, team_state, hasher, *, pi_log,
-                                 bringup_report=None, firmware_image=None, portal_response=None, web_response=None):
+                                 bringup_report=None, firmware_image=None, portal_response=None, web_response=None,
+                                 assembly=None):
     if pi_log is None:
         raise ValueError("Transport transition comparison requires the Pi Gateway log")
     binding = ("teamRevision", "firmwareRevision", "usbLogSha256", "observationContainerRi", "healthContainerRi")
@@ -282,7 +288,7 @@ def compare_transport_transition(mqtt_capture, fallback_capture, usb, database, 
         raise ValueError("Fallback capture must start after the MQTT capture")
     before = compare_observation(mqtt_capture, usb, database, team_state, hasher, pi_log=pi_log,
                                  bringup_report=bringup_report, firmware_image=firmware_image,
-                                 portal_response=portal_response, web_response=web_response)
+                                 portal_response=portal_response, web_response=web_response, assembly=assembly)
     after = compare_observation(fallback_capture, usb, database, team_state, hasher, pi_log=pi_log)
     first, second = before["nativeDelivery"], after["nativeDelivery"]
     if first["logSha256"] != second["logSha256"]:
@@ -358,8 +364,10 @@ def main():
         def hasher(observation):
             return hash_observation(team_utils, observation)
 
+        assembly = (assembly_reference(args.assembly_record, args.assembly_board_tag, R18_BOARD, usb.get("displayProfile"))
+                    if args.assembly_record is not None else None)
         options = dict(portal_response=portal_response, web_response=web_response, bringup_report=args.bringup_report,
-                       firmware_image=args.firmware_image, pi_log=args.pi_log)
+                       firmware_image=args.firmware_image, pi_log=args.pi_log, assembly=assembly)
         if args.fallback_capture is not None:
             report = compare_transport_transition(artifact, read_json(args.fallback_capture), usb, args.database,
                                                   team_state, hasher, **options)
@@ -367,9 +375,10 @@ def main():
         else:
             report = compare_observation(artifact, usb, args.database, team_state, hasher, **options)
             passed = comparison_passed(report, require_physical=args.require_physical)
-        if args.assembly_record is not None:
-            report["assemblyEvidence"] = assembly_reference(args.assembly_record, args.assembly_board_tag,
-                                                            R18_BOARD, usb.get("displayProfile"))
+        if assembly is not None:
+            first = report["mqtt"] if args.fallback_capture is not None else report
+            matched = first["firstBringupEvidence"].get("assemblyRecordSha256") == assembly["recordSha256"]
+            report["assemblyEvidence"] = {**assembly, "firstCaptureMatched": matched}
         print(json.dumps(report, indent=2))
         raise SystemExit(0 if passed else 1)
 

@@ -2,12 +2,12 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import os
 from pathlib import Path
 
 from .ble import BleProtocolError
 from .config import ID
-from .display_evidence import media_fingerprint
 from .model import canonical, iso_time
 from .power_evidence import METER_LIMIT, SHA256, read_json
 
@@ -20,6 +20,18 @@ DESIGN_FILES = (
     "working_data/BOM_by_reference.csv", "external_parts/Connector_pinout.csv",
 )
 NOTE_FIELDS = {"version", "boardTag", "assemblyRevision", "revisionSource", "population", "lcdModel"}
+
+
+def file_fingerprint(path: Path) -> dict:
+    if not path.is_file():
+        raise ValueError("Expected a local evidence file")
+    with path.open("rb") as stream:
+        before = os.fstat(stream.fileno())
+        digest = hashlib.file_digest(stream, "sha256").hexdigest()
+        after = os.fstat(stream.fileno())
+    if not before.st_size or (before.st_size, before.st_mtime_ns) != (after.st_size, after.st_mtime_ns):
+        raise ValueError("Evidence file is empty or changed during capture")
+    return {"bytes": before.st_size, "sha256": digest}
 
 
 def validate_notes(notes: dict) -> None:
@@ -56,9 +68,9 @@ def record_assembly(inventory_path: Path, notes_path: Path, front: Path, back: P
             entries[name] = {key: entry[key] for key in ("bytes", "sha256")}
     for name in DESIGN_FILES:
         expected = entries.get(name)
-        if not _valid_fingerprint(expected) or media_fingerprint(inventory_path.parent / name) != expected:
+        if not _valid_fingerprint(expected) or file_fingerprint(inventory_path.parent / name) != expected:
             raise ValueError(f"r18 source inventory does not match {name}")
-    photos = {"front": media_fingerprint(front), "back": media_fingerprint(back)}
+    photos = {"front": file_fingerprint(front), "back": file_fingerprint(back)}
     if photos["front"]["sha256"] == photos["back"]["sha256"]:
         raise ValueError("Supply separate views of the front and back of the tagged board")
     return {"version": 1, "recordedAt": iso_time(), "boardRevision": BOARD_REVISION, "observationSource": "operator",

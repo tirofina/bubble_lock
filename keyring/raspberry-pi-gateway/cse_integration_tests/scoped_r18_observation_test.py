@@ -102,9 +102,9 @@ class ScopedR18ObservationTests(unittest.TestCase):
                         "firmwareRevision": self.firmware, "gattProfile": "core-v1", "sessions": sessions,
                         "bringup": {"session": 1, "usbBoot": usb_report}}
 
-        def compare():
+        def compare(assembly=None):
             return compare_observation(self.capture, self.usb, self.database, {"receipts": [self.event]}, payload_hash,
-                                       bringup_report=path, firmware_image=binary)
+                                       bringup_report=path, firmware_image=binary, assembly=assembly)
 
         raw = (json.dumps(first_report) + "\n").encode()
         path.write_bytes(raw)
@@ -112,6 +112,13 @@ class ScopedR18ObservationTests(unittest.TestCase):
         self.assertTrue(result["physicalRelayEvidenceMatched"])
         self.assertEqual(result["firstBringupEvidence"], {"reportSha256": hashlib.sha256(raw).hexdigest(),
                          "appSha256": digest.hex(), "firmwareImage": image_report, "lastBleSequence": 6})
+        assembly = {"recordSha256": "d" * 64, "boardTag": "r18-01"}
+        self.assertNotIn("assemblyRecordSha256", compare(assembly)["firstBringupEvidence"])
+        first_report["bringup"]["assemblyEvidence"] = assembly
+        path.write_text(json.dumps(first_report), encoding="utf-8")
+        self.assertEqual(compare(assembly)["firstBringupEvidence"]["assemblyRecordSha256"], assembly["recordSha256"])
+        with self.assertRaisesRegex(ValueError, "Assembly record differs"):
+            compare(dict(assembly, recordSha256="e" * 64))
 
         for key, value, error in (("logSha256", "b" * 64, "does not match the scoped USB boot"),
                                   ("firmwareImage", {"fileSha256": "c" * 64}, "does not match the firmware image")):

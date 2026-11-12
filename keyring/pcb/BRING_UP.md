@@ -32,7 +32,7 @@ bubble-keyring-assembly-evidence --inventory keyring/pcb/r18/source-inventory.js
   --notes $r18AssemblyNotes --front $r18FrontPhoto --back $r18BackPhoto --output $r18AssemblyRecord
 ```
 
-Gateway 0.2.105의 도구는 프로젝트·회로도·PCB·reference별 BOM·커넥터 표의 실제 바이트를 인계 목록과 대조하고, 사진 두 장과 입력 기록의 SHA-256을 남긴다. 사진에 붙인 식별표와 조립 상태는 작업자가 확인한다. 조립 기록과 사진은 Git 밖에 보관한다. 같은 보드를 시험할 때 식별표를 다시 읽어 [Pi 관측 대조](../raspberry-pi-gateway/TESTING.md#관측-전달-증거-대조)에 연결한다.
+Gateway 0.2.105의 도구는 프로젝트·회로도·PCB·reference별 BOM·커넥터 표의 실제 바이트를 인계 목록과 대조하고, 사진 두 장과 입력 기록의 SHA-256을 남긴다. 사진에 붙인 식별표와 조립 상태는 작업자가 확인한다. 조립 기록과 사진은 Git 밖에 보관한다. Gateway 0.2.117부터 첫 구동을 수집할 때 식별표를 다시 읽고, 같은 조립 기록을 Pi에 지정한다. 이후 LCD 기록과 Mobius4 전송 보고서에 해당 해시를 이어서 연결할 수 있다. [Pi 초기 구동 기록](../raspberry-pi-gateway/TESTING.md#r18-초기-구동-기록)
 
 ## 관측 펌웨어 올리기
 

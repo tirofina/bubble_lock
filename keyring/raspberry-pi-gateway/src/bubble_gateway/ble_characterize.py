@@ -12,7 +12,8 @@ import time
 from pathlib import Path
 from types import SimpleNamespace
 
-from .ble import BleFleet, _r18_bringup
+from .assembly_evidence import assembly_reference
+from .ble import BleFleet, BleProtocolError, _r18_bringup
 from .config import ID
 from .model import canonical, iso_time, valid_button_presses
 
@@ -409,7 +410,7 @@ def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mo
               release_ms: int | None = None, include_power: bool = False,
               battery_thresholds: tuple[int, int] = BATTERY_THRESHOLDS,
               verify_button_continuity: bool = False, usb_boot: dict | None = None,
-              firmware_revision: str | None = None) -> dict:
+              firmware_revision: str | None = None, assembly: dict | None = None) -> dict:
     sessions = {}
     boots = {}
     rows = []
@@ -489,6 +490,8 @@ def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mo
         if "firmwareImage" in usb_boot:
             bringup["usbBoot"]["firmwareImage"] = usb_boot["firmwareImage"]
         bringup["usbBoot"].update(sameBoot=same_boot, pinsSafe=pins_safe)
+        if same_boot is True and assembly is not None:
+            bringup["assemblyEvidence"] = assembly
         if same_boot is None:
             bringup["missing"].append("usbBootMatch")
         elif not same_boot:
@@ -526,7 +529,7 @@ def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mo
     return report
 
 
-async def characterize(args: argparse.Namespace, *, usb_boot: dict | None = None) -> dict:
+async def characterize(args: argparse.Namespace, *, usb_boot: dict | None = None, assembly: dict | None = None) -> dict:
     board = BOARD_REVISIONS[args.hardware]
     config = SimpleNamespace(
         gateway_id=args.gateway_id, ble_devices={args.device_id: args.address},
@@ -622,7 +625,7 @@ async def characterize(args: argparse.Namespace, *, usb_boot: dict | None = None
                           release_ms=release_ms, include_power=args.include_power,
                           battery_thresholds=tuple(args.battery_thresholds or BATTERY_THRESHOLDS),
                           verify_button_continuity=args.verify_button_continuity, usb_boot=usb_boot,
-                          firmware_revision=args.firmware_revision)}
+                          firmware_revision=args.firmware_revision, assembly=assembly)}
     if args.mode == "wake":
         report["wake"].update(operatorIdleSeconds=args.idle_seconds, releaseAtMs=release_ms)
     if args.mode == "battery":
@@ -650,6 +653,8 @@ def main() -> None:
                         help="battery mode only; firmware percentages (default: 20 25)")
     parser.add_argument("--usb-boot-log", type=Path, help="private USB CDC capture from one r18 bring-up boot")
     parser.add_argument("--firmware-image", type=Path, help="local r18 firmware.bin to match against the USB app digest")
+    parser.add_argument("--assembly-record", type=Path, help="private r18 intake record for the PCB under test")
+    parser.add_argument("--assembly-board-tag", help="board tag read again at the start of this capture")
     parser.add_argument("--print-power-markers", action="store_true", help="print new INA219 samples from the USB-matched bring-up session")
     parser.add_argument("--database", type=Path, required=True, help="Gateway state path; used only to find its lock")
     parser.add_argument("--output", type=Path, required=True, help="new private JSON file under an existing directory")
@@ -685,6 +690,9 @@ def main() -> None:
         parser.error("--print-power-markers requires bringup mode and --usb-boot-log")
     if args.firmware_image is not None and (args.mode != "bringup" or args.usb_boot_log is None):
         parser.error("--firmware-image requires bringup mode and --usb-boot-log")
+    if args.assembly_record is not None or args.assembly_board_tag is not None:
+        if not (args.assembly_record and args.assembly_board_tag and args.firmware_image):
+            parser.error("assembly evidence requires both assembly options and the bring-up USB log and firmware image")
     usb_boot = None
     if args.usb_boot_log is not None:
         if args.mode != "bringup" or not args.usb_boot_log.is_file():
@@ -702,6 +710,13 @@ def main() -> None:
             parser.error(str(exc))
         except OSError:
             parser.error("could not read the firmware image file")
+    assembly = None
+    if args.assembly_record is not None:
+        try:
+            assembly = assembly_reference(args.assembly_record, args.assembly_board_tag, BOARD_REVISIONS[args.hardware],
+                                          usb_boot.get("displayProfile"))
+        except (OSError, ValueError, KeyError, TypeError, AttributeError, BleProtocolError):
+            parser.error("assembly record does not match the board tag, r18 revision or USB display profile")
     lock_path = args.database.with_suffix(".lock")
     if (args.output.exists() or args.output.is_symlink() or not args.output.parent.is_dir()
             or args.output.resolve() in {args.database.resolve(), lock_path.resolve()}):
@@ -721,7 +736,7 @@ def main() -> None:
             else:
                 print("BLE capture started. For reconnect mode, wait for observations, interrupt the link and restore it.",
                       flush=True)
-            report = asyncio.run(characterize(args, usb_boot=usb_boot))
+            report = asyncio.run(characterize(args, usb_boot=usb_boot, assembly=assembly))
         content = (canonical(report) + "\n").encode("utf-8")
         with args.output.open("xb") as handle:
             handle.write(content)

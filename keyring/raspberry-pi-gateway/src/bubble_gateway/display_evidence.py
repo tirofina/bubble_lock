@@ -6,6 +6,7 @@ import hashlib
 import os
 from pathlib import Path
 
+from .assembly_evidence import file_fingerprint
 from .ble import BleProtocolError
 from .ble_characterize import BRINGUP_BUTTON_STATES, DISPLAY_TEST_PROFILES, bringup_buttons, bringup_display_result
 from .model import canonical, valid_button_presses
@@ -14,18 +15,6 @@ from .power_evidence import CAPTURE_LIMIT, SHA256, read_json
 OBSERVATION_LIMIT = 8192
 OBSERVATION_FIELDS = {"button", "releaseSequence", "panelLabel", "screenText", "borderVisible",
                       "colorOrder", "displaySize", "mediaOffsetMs"}
-
-
-def media_fingerprint(path: Path) -> dict:
-    if not path.is_file():
-        raise ValueError("Expected a local media file")
-    with path.open("rb") as stream:
-        before = os.fstat(stream.fileno())
-        digest = hashlib.file_digest(stream, "sha256").hexdigest()
-        after = os.fstat(stream.fileno())
-    if not before.st_size or (before.st_size, before.st_mtime_ns) != (after.st_size, after.st_mtime_ns):
-        raise ValueError("Media is empty or changed during capture")
-    return {"bytes": before.st_size, "sha256": digest}
 
 
 def pair_display(capture: dict, capture_sha: str, notes: dict, media: tuple[dict, dict]) -> dict:
@@ -113,13 +102,17 @@ def pair_display(capture: dict, capture_sha: str, notes: dict, media: tuple[dict
         evidence_status = "MISMATCH"
     elif status == "MATCHED" and capture_status == "RECORDED" and button_frames_matched:
         evidence_status = "MATCHED"
+    assembly = bringup.get("assemblyEvidence", {})
+    assembly_sha = assembly.get("recordSha256") if isinstance(assembly, dict) else None
+    if "assemblyEvidence" in bringup and (not isinstance(assembly_sha, str) or not SHA256.fullmatch(assembly_sha)):
+        raise ValueError("Invalid assembly reference in the bring-up capture")
     return {"version": 1, "observationSource": "operator", "operatorObservationStatus": status,
             "displayEvidenceStatus": evidence_status, "softwareStatus": display["softwareStatus"],
             "healthSequence": display["healthSequence"],
             "captureSha256": capture_sha, "usbLogSha256": usb_sha, "session": session,
             "captureStatus": capture_status, "buttonFramesMatched": button_frames_matched,
             "boardRevision": capture["boardRevision"], "firmwareRevision": firmware, "displayProfile": panel,
-            "observations": paired}
+            "observations": paired, **({"assemblyRecordSha256": assembly_sha} if assembly_sha is not None else {})}
 
 
 def main() -> None:
@@ -133,7 +126,7 @@ def main() -> None:
     try:
         capture, capture_sha = read_json(args.capture, CAPTURE_LIMIT)
         notes, notes_sha = read_json(args.observations, OBSERVATION_LIMIT)
-        media = (media_fingerprint(args.confirm_media), media_fingerprint(args.panic_media))
+        media = (file_fingerprint(args.confirm_media), file_fingerprint(args.panic_media))
         report = pair_display(capture, capture_sha, notes, media)
         report["operatorFileSha256"] = notes_sha
         content = (canonical(report) + "\n").encode("utf-8")

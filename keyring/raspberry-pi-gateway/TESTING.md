@@ -95,6 +95,8 @@ bubble-keyring-ble-characterize --mode bringup --hardware r18-pcb \
 
 Gateway 0.2.99의 `--firmware-image`에 업로드에 사용한 서명 없는 ESP32-S3 앱 `firmware.bin`을 지정한다. 파일 끝의 SHA-256을 다시 계산하고 0.7.18·0.7.21~0.7.25 USB 로그의 `appSha256`과 대조한다. 해시 불일치나 실행 이미지 해시를 읽지 못한 경우 BLE 수집 시작 전에 종료한다. 파일 전체의 SHA-256과 크기는 `bringup.usbBoot.firmwareImage`에 남고 `sameBoot`는 USB와 BLE 부팅의 일치 여부를 나타낸다. 이전 펌웨어 기록은 `--firmware-image`를 생략해 수집한다. 바이너리는 비공개로 보관한다. [Espressif 앱 이미지 형식](https://docs.espressif.com/projects/esptool/en/latest/esp32s3/advanced-topics/firmware-image-format.html)
 
+Gateway 0.2.117에서 실물 조립 기록을 연결하려면 위 명령에 `--assembly-record "$PRIVATE_EVIDENCE/r18-assembly.json" --assembly-board-tag "$OBSERVED_BOARD_TAG"`를 추가한다. 식별표는 시험 직전에 보드에서 읽는다. 도구는 기록의 보드 revision과 식별표를 확인하고, 조립 기록과 USB 로그에 LCD 모델이 있으면 두 값도 대조한다. USB와 BLE가 같은 부팅일 때 `bringup.assemblyEvidence`에 조립 기록 해시와 작업자 확인 정보를 남긴다. LCD 관찰 보고서에는 연결된 조립 기록 해시가 `assemblyRecordSha256`으로 이어진다.
+
 0.7.16~0.7.18 및 0.7.21~0.7.25 ST7789·JD9853 프로필은 마지막 `health` 프레임의 화면 상태와 `displayDrawnPresses`도 확인한다. 각 패턴을 확인할 시간을 두고 버튼을 순서대로 누르고 뗀다. Gateway 0.2.115는 비상 버튼 해제를 포함하거나 그 뒤에 도착한 `health`에서 시험의 그리기 누계를 확인한다. 화면 작업자·버스·화면 크기 오류, GPIO 출력 오류(`power_output_error`) 또는 다른 프로필은 `MISMATCH`다. 버튼 해제 이후 대조할 그리기 기록이 없으면 `INSUFFICIENT`다. 실제 화면의 테두리·색·글자는 별도 사진이나 영상에 남긴다.
 
 0.7.21 이상에서 짧은 버튼 입력은 [r18 버튼 사건 시험](#r18-버튼-사건-시험)에서 Pi와 중앙을 함께 대조한다.
@@ -477,7 +479,7 @@ python $tool compare --firmware-revision $r18BringupFirmware --usb-boot-log $r18
 
 `--bringup-report`와 `--firmware-image`는 함께 지정한다. 도구는 첫 구동 보고서가 `RECORDED`인지, 같은 USB 로그와 실행 이미지 해시가 들어 있는지, Mobius4 관측 순번이 첫 구동에서 받은 순번보다 큰지 확인한다. 일치하면 첫 구동 보고서와 펌웨어 파일의 해시를 `firstBringupEvidence`에 남긴다. 이전 펌웨어 또는 관측 전송만 진단할 때는 두 옵션을 생략할 수 있다.
 
-같은 보드의 [실물 조립 기록](../pcb/BRING_UP.md#실물-조립-기록)이 있으면 `compare`에 `--assembly-record $r18AssemblyRecord --assembly-board-tag $observedBoardTag`를 함께 지정한다. `$observedBoardTag`는 첫 구동 때 보드에서 다시 확인한 값이다. 일치하면 보고서의 `assemblyEvidence`에 조립 revision, 기록 해시와 작업자가 확인한 연결 근거를 남긴다. 조립 기록에 적힌 LCD 모델과 USB 부팅의 패널 프로필이 모두 알려져 있으면 두 값도 대조한다.
+같은 보드의 [실물 조립 기록](../pcb/BRING_UP.md#실물-조립-기록)이 있으면 `compare`에 `--assembly-record $r18AssemblyRecord --assembly-board-tag $observedBoardTag`를 함께 지정한다. 첫 구동에 같은 기록이 있으면 해시와 작업자 확인 정보를 대조하고 `assemblyEvidence.firstCaptureMatched=true`로 남긴다. 다른 기록이면 비교를 중단한다. 조립 기록 연결 전에 저장한 첫 구동 보고서는 `firstCaptureMatched=false`로 남긴다. 조립 기록에 적힌 LCD 모델과 USB 부팅의 패널 프로필이 모두 알려져 있으면 두 값도 대조한다.
 
 `--pi-log`는 Gateway 0.2.100 이후의 완료 로그에서 같은 요청 ID와 관측 본문 해시를 찾아 `nativeDelivery`에 연결한다. 0.2.101부터는 완료 로그와 health의 Gateway 부팅 ID도 대조한다. `mqtt`는 MQTT 응답으로, `https`는 HTTPS 전용 설정에서, `https-fallback`은 MQTT가 설정돼 있었지만 HTTPS CREATE 요청 응답으로 완료된 경로다. `created:false`이면 CSE에 있던 동일 자원을 확인한 결과다. 처음 생성한 경로를 이 값으로 판정할 수 없다. SQLite에 관측이 아직 대기 중이거나 로그의 경로가 충돌하면 대조가 실패한다. 기존 세션의 로그가 없으면 옵션을 생략한다.
 

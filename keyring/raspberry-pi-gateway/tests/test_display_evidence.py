@@ -70,9 +70,12 @@ class DisplayEvidenceTests(unittest.TestCase):
             with self.subTest(first=first, second=second), self.assertRaisesRegex(ValueError, "increasing video offsets"):
                 pair_display(self.capture, self.capture_sha, self.notes, media)
         confirm["mediaOffsetMs"], panic["mediaOffsetMs"] = 400, 500
+        self.capture["bringup"]["assemblyEvidence"] = {"recordSha256": "e" * 64, "boardTag": "r18-01"}
         report = pair_display(self.capture, self.capture_sha, self.notes, media)
         self.assertEqual(report["operatorObservationStatus"], "MATCHED")
         self.assertEqual(report["displayEvidenceStatus"], "MATCHED")
+        self.assertEqual(report["assemblyRecordSha256"], "e" * 64)
+        self.assertNotIn("r18-01", str(report))
 
     def test_evidence_rechecks_saved_health_at_or_after_the_final_release(self):
         press, release = self.capture["events"][-2:]

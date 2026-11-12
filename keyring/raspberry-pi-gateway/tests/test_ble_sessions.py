@@ -192,9 +192,10 @@ class BringupCaptureTests(unittest.TestCase):
             add("notification", generation, sequence=sequence, observation=observation, **energy)
         return events
 
-    def report(self, events, *, usb_boot=None, firmware_revision=None):
+    def report(self, events, *, usb_boot=None, firmware_revision=None, assembly=None):
         return summarize(events, 0, len(events) * 1_000_000, board=self.board, mode="bringup",
-                         truncated=False, dropped=0, usb_boot=usb_boot, firmware_revision=firmware_revision)
+                         truncated=False, dropped=0, usb_boot=usb_boot, firmware_revision=firmware_revision,
+                         assembly=assembly)
 
     def usb_log(self):
         line = (f"KEYRING bringup: board={self.board} firmware={self.firmware} boot={self.boot} "
@@ -339,15 +340,18 @@ class BringupCaptureTests(unittest.TestCase):
         usb = {"bootId": self.boot, "logSha256": hashlib.sha256(raw).hexdigest(),
                "motorActive": False, "auxEnabled": False, "mainFault": False, "sensorStatus": initial_status}
         events = [dict(row, bootId=self.boot) for row in self.events()]
-        report = self.report(events, usb_boot=usb)
+        assembly = {"recordSha256": "a" * 64, "boardTag": "r18-01"}
+        report = self.report(events, usb_boot=usb, assembly=assembly)
         self.assertEqual(report["status"], "RECORDED")
         self.assertTrue(report["bringup"]["usbBoot"]["sameBoot"])
+        self.assertEqual(report["bringup"]["assemblyEvidence"], assembly)
         self.assertEqual(report["bringup"]["usbBoot"]["sensorStatus"], initial_status)
         self.assertEqual(report["bringup"]["latestSensor"]["accelStatus"], "ok")
         self.assertNotIn(self.boot, json.dumps(report))
-        report = self.report(self.events(), usb_boot=dict(usb, auxEnabled=True))
+        report = self.report(self.events(), usb_boot=dict(usb, auxEnabled=True), assembly=assembly)
         self.assertEqual(report["status"], "MISMATCH")
         self.assertEqual(report["bringup"]["mismatches"], ["usbBootMismatch", "usbPinsUnsafe"])
+        self.assertNotIn("assemblyEvidence", report["bringup"])
         report = self.report(events[:1], usb_boot=usb)
         self.assertEqual(report["status"], "INSUFFICIENT")
         self.assertIn("usbBootMatch", report["bringup"]["missing"])
