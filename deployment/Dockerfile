@@ -1,4 +1,4 @@
-ARG NODE_IMAGE=node:22.22.0-bookworm-slim
+ARG NODE_IMAGE=node:22.23.5-bookworm-slim
 FROM ${NODE_IMAGE} AS build
 WORKDIR /app
 COPY pc-mobius/package*.json pc-mobius/

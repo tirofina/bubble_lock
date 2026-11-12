@@ -24,7 +24,7 @@ services:
     networks: [backend]
   keycloak:
     <<: *runtime
-    image: ${KEYCLOAK_IMAGE:-quay.io/keycloak/keycloak:26.5.2}
+    image: ${KEYCLOAK_IMAGE:-quay.io/keycloak/keycloak:26.8.2}
     command: ["start", "--import-realm"]
     user: "1000:1000"
     mem_limit: 768m
@@ -50,7 +50,7 @@ services:
       context: ..
       dockerfile: deployment/Dockerfile
       args:
-        NODE_IMAGE: ${NODE_IMAGE:-node:22.22.0-bookworm-slim}
+        NODE_IMAGE: ${NODE_IMAGE:-node:22.23.5-bookworm-slim}
         VITE_MAP_TILE_URL: ${VITE_MAP_TILE_URL:-}
         VITE_MAP_ATTRIBUTION: ${VITE_MAP_ATTRIBUTION:-}
         VITE_STADIA_MAPS_KEY: ${VITE_STADIA_MAPS_KEY:-}
@@ -103,7 +103,7 @@ services:
     networks: [backend]
   proxy:
     <<: *runtime
-    image: ${PROXY_IMAGE:-nginx:1.28-alpine}
+    image: ${PROXY_IMAGE:-nginx:1.30.6-alpine}
     entrypoint: ["nginx"]
     command: ["-c", "/run/proxy/nginx.conf", "-g", "daemon off;"]
     user: "101:101"
