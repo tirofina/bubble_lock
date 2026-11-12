@@ -1,4 +1,4 @@
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createCipheriv, createDecipheriv, createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
 export interface OidcPrincipal {
@@ -10,7 +10,9 @@ export interface OidcSessionConfig {
   issuer: string; clientId: string; audience: string; redirectUri: string; principals: OidcEnrollment[];
   scopes?: string[]; clientSecret?: string; discoveryUrl?: string; trustedEndpointOrigins?: string[];
   allowLoopbackHttp?: boolean; sessionTtlSec?: number; idleTtlSec?: number; loginTtlSec?: number;
-  maxSessions?: number; maxPendingLogins?: number; clock?: () => number; fetchImpl?: typeof fetch;
+  maxSessions?: number; clock?: () => number; fetchImpl?: typeof fetch;
+  /** @deprecated Login starts are stateless; this former pending-store limit is ignored. */
+  maxPendingLogins?: number;
 }
 export interface OidcIdentity { principal: OidcPrincipal; accessToken: string; expiresAt: string }
 export interface OidcSessionManager {
@@ -44,11 +46,12 @@ function json(response: ServerResponse, status: number, body: unknown) {
   response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'Pragma': 'no-cache', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' });
   response.end(JSON.stringify(body));
 }
-function cookie(request: IncomingMessage, name: string): string | null {
+const maxLoginCookieLength = 3800;
+function cookie(request: IncomingMessage, name: string, maxLength = 43): string | null {
   const values = String(request.headers.cookie ?? '').split(';').map((part) => part.trim()).filter((part) => part.startsWith(`${name}=`));
   if (values.length !== 1) return null;
   const value = values[0]!.slice(name.length + 1);
-  return /^[A-Za-z0-9_-]{43}$/.test(value) ? value : null;
+  return value.length >= 43 && value.length <= maxLength && /^[A-Za-z0-9_-]+$/.test(value) ? value : null;
 }
 
 /** OIDC 토큰은 서버 메모리에 보관하고 브라우저에는 무작위 세션 ID를 전달합니다. */
@@ -112,17 +115,20 @@ export async function createOidcSessionManager(config: OidcSessionConfig): Promi
   const idleTtl = bounded(config.idleTtlSec, 1800, 30, 86400) * 1000;
   const loginTtl = bounded(config.loginTtlSec, 300, 30, 600) * 1000;
   const maxSessions = bounded(config.maxSessions, 1024, 1, 10000);
-  const maxPending = bounded(config.maxPendingLogins, 256, 1, 10000);
+  // Each manager has its own process-local key; restarting invalidates outstanding logins.
+  const loginKey = randomBytes(32);
   const sessionCookie = secure ? '__Host-bubble_session' : 'bubble_session_dev';
   const loginCookie = secure ? '__Host-bubble_login' : 'bubble_login_dev';
   const cookies = (name: string, value: string, seconds: number) => `${name}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${Math.max(0, Math.floor(seconds))}${secure ? '; Secure' : ''}`;
   const sessions = new Map<string, Session>();
-  const logins = new Map<string, Login>();
+  // Only authenticated callbacks enter this bounded replay cache, never login starts.
+  // Evicted entries still rely on the IdP's mandatory single-use authorization codes.
+  const usedLogins = new Map<string, number>();
   const refreshing = new Map<string, Promise<Session | null>>();
   let closed = false;
   const prune = () => {
     const now = clock();
-    for (const [id, entry] of logins) if (entry.expiresAt <= now) logins.delete(id);
+    for (const [state, expiresAt] of usedLogins) if (expiresAt <= now) usedLogins.delete(state);
     for (const [id, entry] of sessions) if (entry.expiresAt <= now || entry.idleExpiresAt <= now) sessions.delete(id);
   };
   const exchange = async (fields: Record<string, string>) => {
@@ -197,7 +203,7 @@ export async function createOidcSessionManager(config: OidcSessionConfig): Promi
   };
   return {
     authenticate, assertMutationOrigin,
-    close() { closed = true; logins.clear(); sessions.clear(); refreshing.clear(); },
+    close() { closed = true; loginKey.fill(0); usedLogins.clear(); sessions.clear(); refreshing.clear(); },
     async handle(request, response) {
       const url = new URL(request.url ?? '/', callback.origin);
       if (!['/api/auth/login', '/api/auth/callback', '/api/auth/session', '/api/auth/logout'].includes(url.pathname)) return false;
@@ -210,28 +216,44 @@ export async function createOidcSessionManager(config: OidcSessionConfig): Promi
           return true;
         }
         if (url.pathname === '/api/auth/login' && request.method === 'GET') {
-          if (sessions.size >= maxSessions || logins.size >= maxPending) { json(response, 503, { mode: 'live', message: '진행 중인 로그인 처리가 완료된 뒤 다시 연결하세요.' }); return true; }
+          if (sessions.size >= maxSessions) { json(response, 503, { mode: 'live', message: '진행 중인 로그인 처리가 완료된 뒤 다시 연결하세요.' }); return true; }
           const returnTo = url.searchParams.get('returnTo') ?? '/';
           if (!returnTo.startsWith('/') || returnTo.startsWith('//') || returnTo.includes('\\') || returnTo.length > 2048 || new URL(returnTo, callback.origin).origin !== callback.origin) throw new Error('로그인 후 이동 경로를 확인하세요.');
-          const id = random(); const login = { state: random(), nonce: random(), verifier: random(), returnTo, expiresAt: clock() + loginTtl };
-          const previous = cookie(request, loginCookie);
-          if (previous) logins.delete(previous);
-          logins.set(id, login);
+          const login: Login = { state: random(), nonce: random(), verifier: random(), returnTo, expiresAt: clock() + loginTtl };
+          const iv = randomBytes(12);
+          const cipher = createCipheriv('aes-256-gcm', loginKey, iv, { authTagLength: 16 });
+          const encrypted = Buffer.concat([cipher.update(JSON.stringify(login), 'utf8'), cipher.final()]);
+          const sealed = Buffer.concat([iv, cipher.getAuthTag(), encrypted]).toString('base64url');
+          if (sealed.length > maxLoginCookieLength) throw new Error('로그인 쿠키 크기를 확인하세요.');
           const authorize = new URL(authorizationEndpoint);
           for (const [name, value] of Object.entries({ client_id: config.clientId, redirect_uri: config.redirectUri, response_type: 'code', scope: scopes.join(' '), state: login.state, nonce: login.nonce, code_challenge: createHash('sha256').update(login.verifier).digest('base64url'), code_challenge_method: 'S256' })) authorize.searchParams.set(name, value);
-          response.writeHead(302, { Location: authorize.href, 'Set-Cookie': cookies(loginCookie, id, loginTtl / 1000), 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
+          response.writeHead(302, { Location: authorize.href, 'Set-Cookie': cookies(loginCookie, sealed, loginTtl / 1000), 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
           response.end(); return true;
         }
         if (url.pathname === '/api/auth/callback' && request.method === 'GET') {
-          const id = cookie(request, loginCookie); const login = id ? logins.get(id) : undefined;
-          if (id) logins.delete(id);
           response.setHeader('Set-Cookie', cookies(loginCookie, '', 0));
+          const sealed = cookie(request, loginCookie, maxLoginCookieLength);
+          if (!sealed) throw new Error('로그인 쿠키를 확인하세요.');
+          const envelope = Buffer.from(sealed, 'base64url');
+          const decipher = createDecipheriv('aes-256-gcm', loginKey, envelope.subarray(0, 12), { authTagLength: 16 });
+          decipher.setAuthTag(envelope.subarray(12, 28));
+          const payload: unknown = JSON.parse(Buffer.concat([decipher.update(envelope.subarray(28)), decipher.final()]).toString('utf8'));
+          if (!object(payload)) throw new Error('로그인 쿠키 내용을 확인하세요.');
+          const { state: loginState, nonce, verifier, returnTo, expiresAt } = payload;
+          if (typeof loginState !== 'string' || typeof nonce !== 'string' || typeof verifier !== 'string' || typeof returnTo !== 'string'
+            || typeof expiresAt !== 'number' || !Number.isSafeInteger(expiresAt) || expiresAt <= clock()) throw new Error('로그인 쿠키 유효기간과 내용을 확인하세요.');
+          const login: Login = { state: loginState, nonce, verifier, returnTo, expiresAt };
           const state = url.searchParams.get('state'); const code = url.searchParams.get('code');
-          if (!login || !state || !equal(state, login.state) || !code || code.length > 4096 || url.searchParams.getAll('state').length !== 1 || url.searchParams.getAll('code').length !== 1 || url.searchParams.has('error')
+          if (usedLogins.has(login.state) || !state || !equal(state, login.state) || !code || code.length > 4096 || url.searchParams.getAll('state').length !== 1 || url.searchParams.getAll('code').length !== 1 || url.searchParams.has('error')
             || (url.searchParams.has('iss') && url.searchParams.get('iss') !== config.issuer)) throw new Error('로그인 state와 code를 확인하세요.');
           const tokens = await exchange({ grant_type: 'authorization_code', code, redirect_uri: config.redirectUri, code_verifier: login.verifier });
           const verified = await verifyTokens(tokens, login.nonce);
-          if (closed || sessions.size >= maxSessions) throw new Error('로그인 세션을 확인하세요.');
+          if (closed || sessions.size >= maxSessions || usedLogins.has(login.state) || login.expiresAt <= clock()) throw new Error('로그인 세션을 확인하세요.');
+          usedLogins.set(login.state, login.expiresAt);
+          if (usedLogins.size > maxSessions) {
+            const oldest = usedLogins.keys().next();
+            if (!oldest.done) usedLogins.delete(oldest.value);
+          }
           const previous = cookie(request, sessionCookie);
           if (previous) sessions.delete(previous);
           const sessionId = random();
@@ -242,9 +264,8 @@ export async function createOidcSessionManager(config: OidcSessionConfig): Promi
         }
         if (url.pathname === '/api/auth/logout' && request.method === 'POST') {
           assertMutationOrigin(request);
-          const id = cookie(request, sessionCookie); const loginId = cookie(request, loginCookie);
+          const id = cookie(request, sessionCookie);
           if (id) sessions.delete(id);
-          if (loginId) logins.delete(loginId);
           response.setHeader('Set-Cookie', [cookies(sessionCookie, '', 0), cookies(loginCookie, '', 0)]);
           json(response, 200, { mode: 'live', authenticated: false, loginUrl: '/api/auth/login' }); return true;
         }

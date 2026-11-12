@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { createHash, generateKeyPairSync, sign } from 'node:crypto';
+import { createHash, generateKeyPairSync, randomUUID, sign } from 'node:crypto';
 import { once } from 'node:events';
 import { createServer } from 'node:http';
 import type { IncomingMessage } from 'node:http';
@@ -21,7 +21,8 @@ function requestCookie(value: string): IncomingMessage { return { headers: { coo
 
 async function fixture(t: TestContext, options: Partial<OidcSessionConfig> = {}) {
   let now = Date.parse('2026-11-10T00:00:00.000Z');
-  let currentNonce = ''; let challenge = ''; let tokenCalls = 0; let refreshCalls = 0;
+  let currentNonce = ''; let tokenCalls = 0; let refreshCalls = 0;
+  const grants = new Map<string, { nonce: string; challenge: string }>();
   let idChanges: Record<string, unknown> = {}; let accessChanges: Record<string, unknown> = {};
   let tokenFailure = false; let refreshSubject: string | null = null;
   let manager: OidcSessionManager;
@@ -44,9 +45,13 @@ async function fixture(t: TestContext, options: Partial<OidcSessionConfig> = {})
     const refresh = fields.get('grant_type') === 'refresh_token';
     if (refresh) { refreshCalls += 1; assert.equal(fields.get('refresh_token'), `refresh-${refreshCalls}`); }
     else {
-      assert.equal(fields.get('code'), 'authorization-code');
+      const code = fields.get('code') ?? '';
+      const grant = grants.get(code);
+      if (!grant) return Response.json({ error: 'invalid_grant' }, { status: 400 });
+      grants.delete(code);
+      currentNonce = grant.nonce;
       assert.equal(fields.get('redirect_uri'), `${origin}/api/auth/callback`);
-      assert.equal(createHash('sha256').update(fields.get('code_verifier')!).digest('base64url'), challenge);
+      assert.equal(createHash('sha256').update(fields.get('code_verifier')!).digest('base64url'), grant.challenge);
     }
     const sub = refresh ? refreshSubject ?? 'guardian-sub' : 'guardian-sub';
     const access = signed({ iss: issuer, aud: audience, sub, iat: now / 1000, exp: now / 1000 + 120, scope: 'portal:read incident:write injected:scope', ...accessChanges });
@@ -60,16 +65,19 @@ async function fixture(t: TestContext, options: Partial<OidcSessionConfig> = {})
     const response = await fetch(`${origin}/api/auth/login?returnTo=${encodeURIComponent(returnTo)}`, { redirect: 'manual' });
     assert.equal(response.status, 302);
     const authorization = new URL(response.headers.get('location')!);
-    currentNonce = authorization.searchParams.get('nonce')!;
-    challenge = authorization.searchParams.get('code_challenge')!;
+    const nonce = authorization.searchParams.get('nonce');
+    const challenge = authorization.searchParams.get('code_challenge');
+    assert.ok(nonce && challenge);
+    const code = randomUUID();
+    grants.set(code, { nonce, challenge });
     assert.equal(authorization.searchParams.get('code_challenge_method'), 'S256');
     assert.equal(authorization.searchParams.get('response_type'), 'code');
     assert.ok(authorization.searchParams.get('scope')!.split(' ').includes('openid'));
-    return { authorization, cookie: response.headers.getSetCookie()[0]!.split(';')[0]!, response };
+    return { authorization, code, cookie: response.headers.getSetCookie()[0]!.split(';')[0]!, response };
   };
   const finish = async (login: Awaited<ReturnType<typeof begin>>, changes: Record<string, string> = {}) => {
     const url = new URL(`${origin}/api/auth/callback`);
-    url.search = new URLSearchParams({ state: login.authorization.searchParams.get('state')!, code: 'authorization-code', ...changes }).toString();
+    url.search = new URLSearchParams({ state: login.authorization.searchParams.get('state')!, code: login.code, ...changes }).toString();
     return fetch(url, { headers: { Cookie: login.cookie }, redirect: 'manual' });
   };
   const login = async () => {
@@ -142,18 +150,128 @@ test('세션은 동일 origin 로그아웃과 TTL을 적용하고 foreign subjec
   assert.equal(await f.manager.authenticate(requestCookie(third.cookie)), null);
 });
 
-test('discovery origin·PKCE support·redirect와 제한된 로그인 저장소를 검증한다', async (t) => {
+test('discovery origin·PKCE support·redirect와 무상태 로그인 만료를 검증한다', async (t) => {
   const f = await fixture(t, { maxPendingLogins: 1 });
   const invalidReturn = await fetch(`${f.origin}/api/auth/login?returnTo=https://foreign.test`, { redirect: 'manual' });
   assert.equal(invalidReturn.status, 403);
   const pending = await f.begin();
-  assert.equal((await fetch(`${f.origin}/api/auth/login`, { redirect: 'manual' })).status, 503);
+  // Legacy pending capacity no longer limits unauthenticated login starts.
+  assert.equal((await fetch(`${f.origin}/api/auth/login`, { redirect: 'manual' })).status, 302);
   f.advance(301000); assert.equal((await f.finish(pending)).status, 403);
   await assert.rejects(createOidcSessionManager({ ...f.config, allowLoopbackHttp: false }), /HTTPS/);
   f.metadata.token_endpoint = 'https://foreign.test/token';
   await assert.rejects(createOidcSessionManager(f.config), /origin/);
   f.metadata.token_endpoint = `${issuer}/token`; f.metadata.code_challenge_methods_supported = ['plain'];
   await assert.rejects(createOidcSessionManager(f.config), /PKCE/);
+});
+
+test('256 unauthenticated starts cannot starve a new login or consume session capacity', async (t) => {
+  const f = await fixture(t, { maxSessions: 2 });
+  const existing = await f.login();
+  for (let index = 0; index < 256; index += 1) {
+    const start = await fetch(`${f.origin}/api/auth/login`, { redirect: 'manual' });
+    assert.equal(start.status, 302, `unauthenticated start ${index + 1}`);
+  }
+  const legitimate = await f.login();
+  assert.ok(await f.manager.authenticate(requestCookie(existing.cookie)));
+  assert.ok(await f.manager.authenticate(requestCookie(legitimate.cookie)));
+  assert.equal(f.tokenCalls(), 2);
+  assert.equal((await fetch(`${f.origin}/api/auth/login`, { redirect: 'manual' })).status, 503);
+  await fetch(`${f.origin}/api/auth/logout`, { method: 'POST', headers: { Cookie: existing.cookie, Origin: f.origin } });
+  await f.login();
+});
+
+test('a login issued before a start flood retains its state nonce PKCE and returnTo', async (t) => {
+  const f = await fixture(t);
+  const legitimate = await f.begin('/family?tab=devices');
+  for (let index = 0; index < 300; index += 1) {
+    assert.equal((await fetch(`${f.origin}/api/auth/login`, { redirect: 'manual' })).status, 302);
+  }
+  const response = await f.finish(legitimate);
+  assert.equal(response.status, 303);
+  assert.equal(response.headers.get('location'), '/family?tab=devices');
+});
+
+test('malformed duplicate tampered and oversized login cookies fail before token exchange and are cleared', async (t) => {
+  const f = await fixture(t);
+  const login = await f.begin();
+  const separator = login.cookie.indexOf('=');
+  const name = login.cookie.slice(0, separator + 1);
+  const value = login.cookie.slice(separator + 1);
+  const bytes = Buffer.from(value, 'base64url');
+  const corruptions = [0, 12, bytes.length - 1].map((index) => {
+    const changed = Buffer.from(bytes);
+    changed[index] = (changed[index] ?? 0) ^ 1;
+    return name + changed.toString('base64url');
+  });
+  for (const invalid of ['', login.cookie + '; ' + login.cookie, name + '!', name + 'A'.repeat(3801), name + value.slice(0, -8), ...corruptions]) {
+    const response = await f.finish({ ...login, cookie: invalid });
+    assert.equal(response.status, 403);
+    assert.match(response.headers.getSetCookie().join(' '), /bubble_login_dev=;.*Max-Age=0/);
+    assert.equal(f.tokenCalls(), 0);
+  }
+  assert.equal((await f.finish(login)).status, 303);
+});
+
+test('login cookies are opaque bounded and expire at the exact TTL boundary', async (t) => {
+  const f = await fixture(t, { loginTtlSec: 30 });
+  const returnTo = '/' + 'a'.repeat(2047);
+  const login = await f.begin(returnTo);
+  assert.ok(Buffer.byteLength(login.response.headers.getSetCookie().join(' ')) < 4096);
+  const decoded = Buffer.from(login.cookie.slice(login.cookie.indexOf('=') + 1), 'base64url').toString('utf8');
+  assert.equal(decoded.includes(returnTo), false);
+  assert.equal(decoded.includes(login.authorization.searchParams.get('state')!), false);
+  assert.equal(decoded.includes(login.authorization.searchParams.get('nonce')!), false);
+  f.advance(30000);
+  const expired = await f.finish(login);
+  assert.equal(expired.status, 403);
+  assert.match(expired.headers.getSetCookie().join(' '), /Max-Age=0/);
+  assert.equal(f.tokenCalls(), 0);
+  const oversized = await fetch(`${f.origin}/api/auth/login?returnTo=${encodeURIComponent('/' + '한'.repeat(1100))}`, { redirect: 'manual' });
+  assert.equal(oversized.status, 403);
+  assert.equal(oversized.headers.getSetCookie().length, 0);
+});
+
+test('callback state code issuer and error validation clears the login cookie', async (t) => {
+  const f = await fixture(t);
+  for (const changes of [{ state: '' }, { code: '' }, { iss: 'https://foreign.test' }, { error: 'access_denied' }]) {
+    const response = await f.finish(await f.begin(), changes);
+    assert.equal(response.status, 403);
+    assert.match(response.headers.getSetCookie().join(' '), /Max-Age=0/);
+  }
+  const login = await f.begin();
+  for (const duplicate of ['state', 'code']) {
+    const query = new URLSearchParams({ state: login.authorization.searchParams.get('state')!, code: login.code });
+    query.append(duplicate, query.get(duplicate)!);
+    const response = await fetch(`${f.origin}/api/auth/callback?${query}`, { headers: { Cookie: login.cookie }, redirect: 'manual' });
+    assert.equal(response.status, 403);
+    assert.match(response.headers.getSetCookie().join(' '), /Max-Age=0/);
+  }
+  assert.equal(f.tokenCalls(), 0);
+});
+
+test('concurrent and logged-out callback replay cannot create another session', async (t) => {
+  const f = await fixture(t, { maxSessions: 1 });
+  const pending = await f.begin();
+  const results = await Promise.all([f.finish(pending), f.finish(pending)]);
+  assert.deepEqual(results.map((response) => response.status).sort(), [303, 403]);
+  const successful = results.find((response) => response.status === 303);
+  assert.ok(successful);
+  const cookie = successful.headers.getSetCookie().find((value) => value.startsWith('bubble_session_dev='));
+  assert.ok(cookie);
+  await fetch(`${f.origin}/api/auth/logout`, { method: 'POST', headers: { Cookie: cookie.split(';')[0]!, Origin: f.origin } });
+  assert.equal((await f.finish(pending)).status, 403);
+  const next = await f.login();
+  await fetch(`${f.origin}/api/auth/logout`, { method: 'POST', headers: { Cookie: next.cookie, Origin: f.origin } });
+  // Even after a bounded replay cache evicts an entry, the IdP code is single-use.
+  assert.equal((await f.finish(pending)).status, 403);
+  assert.equal((await (await fetch(`${f.origin}/api/auth/session`)).json()).authenticated, false);
+});
+
+test('a cookie from another manager cannot authorize a callback', async (t) => {
+  const first = await fixture(t); const second = await fixture(t);
+  assert.equal((await second.finish(await first.begin())).status, 403);
+  assert.equal(second.tokenCalls(), 0);
 });
 
 test('운영 HTTPS 세션 쿠키는 __Host Secure 속성을 적용한다', async (t) => {

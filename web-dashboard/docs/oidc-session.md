@@ -36,7 +36,7 @@ Discovery는 고정한 HTTPS issuer URL에서 가져오며 issuer 값을 대조�
 
 ID token은 `clientId` audience, 서명, issuer, exp, iat, nonce, sub, azp와 제공된 at_hash를 검사한다. access token은 별도 API `audience`, 서명, issuer, exp, nbf와 서버에 등록한 subject를 확인한다. 실제 principal scope는 token scope와 등록 scope의 교집합이다. JWT 서명 검증에는 `pc-mobius/integration/src/oidc-verifier.mjs`의 RS256/ES256 검증기를 사용한다.
 
-운영 cookie는 `__Host-bubble_session`, `__Host-bubble_login` 이름과 `Path=/; HttpOnly; SameSite=Lax; Secure` 속성을 사용한다. cookie에는 256-bit 무작위 ID를 넣고 access/refresh token은 서버 메모리에 보관한다. 세션은 기본 8시간 절대 만료, 30분 유휴 만료, 로그인 대기는 5분으로 제한하며 session 최대 1024개, 로그인 대기 최대 256개를 보관한다. 프로세스를 재시작하면 새 로그인으로 연결한다. 여러 서버 인스턴스를 사용하는 배포는 동일 session store 또는 세션 라우팅을 연결한다.
+운영 cookie는 `__Host-bubble_session`, `__Host-bubble_login` 이름과 `Path=/; HttpOnly; SameSite=Lax; Secure` 속성을 사용한다. 세션 cookie에는 256-bit 무작위 ID를 넣고 access/refresh token은 서버 메모리에 보관한다. 로그인 cookie에는 state·nonce·PKCE verifier·만료 시각·복귀 경로를 프로세스별 무작위 키로 AES-256-GCM 암호화하여 넣으며 서버에 인증 전 대기 슬롯을 만들지 않는다. 세션은 기본 8시간 절대 만료, 30분 유휴 만료, 로그인 cookie는 5분으로 제한하고 서버 세션은 최대 1024개다. callback에서는 cookie를 지우고 IdP의 일회용 code와 짧은 재사용 기록으로 중복 로그인을 거절한다. 프로세스를 재시작하면 새 로그인으로 연결한다. 여러 서버 인스턴스를 사용하는 배포는 동일 session store 또는 세션 라우팅을 연결한다.
 
 access token 만료 30초 전부터 refresh token을 교환한다. 같은 세션의 동시 요청은 하나의 refresh 작업을 공유하고 새 refresh token이 반환되면 교체한다. 갱신 시 subject 일치를 다시 검사하며 token 검증 오류가 발생하면 해당 세션을 종료한다. 로그아웃은 이 앱의 서버 세션과 cookie를 종료하며 IdP SSO 세션은 IdP의 별도 세션 정책을 따른다.
 
