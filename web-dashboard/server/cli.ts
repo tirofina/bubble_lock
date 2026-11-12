@@ -10,6 +10,10 @@ const receiptFile = process.env['RECEIPT_FILE'];
 const locationFile = process.env['LOCATION_FILE'];
 const gatewayLocationsFile = process.env['GATEWAY_LOCATIONS_FILE'];
 const locationSimulation = process.env['LOCATION_SIMULATION'];
+const maxEventStreams = process.env['SSE_MAX_STREAMS'];
+if (maxEventStreams !== undefined && !/^[1-9]\d{0,3}$/.test(maxEventStreams)) {
+  throw new TypeError('SSE_MAX_STREAMS must be an integer from 1 through 1024');
+}
 const portalConfigFile=process.env['PORTAL_CONFIG_FILE'];
 let portal:PortalOptions|undefined;
 if(portalConfigFile){
@@ -27,6 +31,7 @@ const service = await startReplayServer({
   ...(locationFile === undefined ? {} : { locationFile }),
   ...(gatewayLocationsFile === undefined ? {} : { gatewayLocationsFile }),
   locationSimulation: locationSimulation !== 'false',
+  ...(maxEventStreams === undefined ? {} : { maxEventStreams: Number(maxEventStreams) }),
   portalStatePath:process.env['PORTAL_DEMO_STATE']??fileURLToPath(new URL('../../.local/portal-demo/state.json',import.meta.url)),
   ...(portal?{portal}:{}),
 });

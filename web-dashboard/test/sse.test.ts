@@ -114,3 +114,51 @@ test('serves simulated resources audit search and source metadata over HTTP', { 
   assert.equal(responses[2].source, 'fixture-replay');
   assert.equal(responses[2].roleScopeIsAuthorization, false);
 });
+
+test('caps event streams across servers and releases a disconnected slot', { timeout: 5000 }, async (t) => {
+  const first = await startReplayServer({ port: 0, maxEventStreams: 2 });
+  const second = await startReplayServer({ port: 0, maxEventStreams: 2 });
+  t.after(first.close);
+  t.after(second.close);
+  const released = new Promise<void>((resolve) => {
+    first.server.once('request', (_request, response) => response.once('close', resolve));
+  });
+  const one = await subscribe(t, `${first.url}/events?lastSequence=17`);
+  const two = await subscribe(t, `${second.url}/events?lastSequence=18`);
+  assert.equal(one.response.statusCode, 200);
+  assert.equal(two.response.statusCode, 200);
+  for (const [cursor, status] of [['bad', 400], ['19', 409], ['18', 503]] as const) {
+    const response = await fetch(`${second.url}/events?lastSequence=${cursor}`);
+    assert.equal(response.status, status);
+    if (status === 503) assert.deepEqual(await response.json(), { error: 'event_stream_limit' });
+    else await response.arrayBuffer();
+  }
+  one.response.destroy();
+  await released;
+  const replacement = await subscribe(t, `${second.url}/events?lastSequence=17`);
+  assert.equal(replacement.response.statusCode, 200);
+  assert.deepEqual(replacement.events.map((event) => event.sequence), [18]);
+});
+
+test('defaults to 64 simultaneous event streams', { timeout: 10000 }, async (t) => {
+  const service = await startReplayServer({ port: 0 });
+  t.after(service.close);
+  for (let index = 0; index < 64; index += 1) {
+    const stream = await subscribe(t, `${service.url}/events?lastSequence=18`);
+    assert.equal(stream.response.statusCode, 200);
+  }
+  const overflow = await fetch(`${service.url}/events`, { signal: AbortSignal.timeout(4000) });
+  assert.equal(overflow.status, 503);
+  await overflow.arrayBuffer();
+});
+
+test('rejects event stream limits outside the integer range 1 through 1024', async () => {
+  for (const maxEventStreams of [0, -1, 1.5, NaN, Infinity, 1025]) {
+    await assert.rejects(async () => {
+      const service = await startReplayServer({ port: 0, maxEventStreams });
+      await service.close();
+    }, /maxEventStreams/);
+  }
+  const service = await startReplayServer({ port: 0, maxEventStreams: 1024 });
+  await service.close();
+});

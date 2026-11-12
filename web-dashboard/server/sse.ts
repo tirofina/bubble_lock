@@ -1,6 +1,7 @@
 import { once } from 'node:events';
 import { createServer } from 'node:http';
 import type { Server, ServerResponse } from 'node:http';
+import { isIP } from 'node:net';
 import resources from '../fixtures/resources.json' with { type: 'json' };
 import audit from '../fixtures/audit.json' with { type: 'json' };
 import { ContractError } from '../shared/validation.ts';
@@ -12,6 +13,8 @@ import type { LocationFeed } from './location-feed.ts';
 import { readFile } from 'node:fs/promises';
 import { createPortalHandler } from './portal.ts';
 import type { PortalHandler, PortalOptions } from './portal.ts';
+
+let activeEventStreams = 0;
 
 export function parseResumeSequence(value: string | undefined | null): number {
   if (value === undefined || value === null) return 0;
@@ -26,7 +29,10 @@ function json(response: ServerResponse, status: number, body: unknown): void {
   response.end(JSON.stringify(body));
 }
 
-export function createReplayServer(replay: ReplaySnapshot, locationFeed?: LocationFeed, portal?:PortalHandler): Server {
+export function createReplayServer(replay: ReplaySnapshot, locationFeed?: LocationFeed, portal?:PortalHandler, maxEventStreams = 64): Server {
+  if (!Number.isSafeInteger(maxEventStreams) || maxEventStreams < 1 || maxEventStreams > 1024) {
+    throw new ContractError('maxEventStreams must be an integer from 1 through 1024');
+  }
   return createServer(async (request, response) => {
     try {
     const url = new URL(request.url ?? '/', 'http://127.0.0.1');
@@ -94,6 +100,12 @@ export function createReplayServer(replay: ReplaySnapshot, locationFeed?: Locati
       json(response, 409, { error: 'resync_required', lastSequence: replay.lastSequence });
       return;
     }
+    if (activeEventStreams >= maxEventStreams) {
+      json(response, 503, { error: 'event_stream_limit' });
+      return;
+    }
+    activeEventStreams += 1;
+    response.once('close', () => { activeEventStreams -= 1; });
     response.writeHead(200, {
       'Content-Type': 'text/event-stream; charset=utf-8',
       'Cache-Control': 'no-cache, no-transform',
@@ -122,10 +134,16 @@ export interface StartReplayOptions {
   readonly locationSimulation?: boolean;
   readonly portalStatePath?: string;
   readonly portal?: PortalOptions;
+  readonly maxEventStreams?: number;
 }
 
 /** Loopback is the default; deployments explicitly choose their private bind address. */
 export async function startReplayServer(options: StartReplayOptions = {}) {
+  const host = options.host ?? '127.0.0.1';
+  const loopback = host === 'localhost' || host === '::1' || (isIP(host) === 4 && host.startsWith('127.'));
+  if (!options.portal?.auth && options.locationFile !== undefined && options.locationSimulation === false && !loopback) {
+    throw new ContractError('Measured demo locations require a loopback bind');
+  }
   const replay = await loadReplay(options.receiptFile);
   const locationFeed = await loadLocationFeed({
     emptyLive:Boolean(options.portal?.auth),
@@ -134,9 +152,9 @@ export async function startReplayServer(options: StartReplayOptions = {}) {
     ...(options.locationSimulation === undefined ? {} : { simulation: options.locationSimulation }),
   });
   const portal=await createPortalHandler(locationFeed,{...options.portal,...(options.portalStatePath===undefined?{}:{statePath:options.portalStatePath})});
-  const server = createReplayServer(replay, locationFeed, portal);
+  const server = createReplayServer(replay, locationFeed, portal, options.maxEventStreams);
   const listening = once(server, 'listening');
-  server.listen(options.port ?? 4174, options.host ?? '127.0.0.1');
+  server.listen(options.port ?? 4174, host);
   await listening;
   const address = server.address();
   if (address === null || typeof address === 'string') throw new ContractError('Expected a TCP loopback server');
