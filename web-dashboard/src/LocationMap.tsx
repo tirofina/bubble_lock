@@ -85,6 +85,8 @@ export function LocationMap({ refresh, variant = 'operator', geofences = emptyGe
       customUrl: import.meta.env['VITE_MAP_TILE_URL'] || '',
       customAttribution: import.meta.env['VITE_MAP_ATTRIBUTION'] || '',
       stadiaKey: import.meta.env['VITE_STADIA_MAPS_KEY'] || '',
+      stadiaDomain: import.meta.env['VITE_STADIA_MAPS_DOMAIN'] || '',
+      hostname: window.location.hostname,
     });
     setTileError(false);
     instance.setMaxZoom(source.maxZoom);
@@ -187,7 +189,7 @@ export function LocationMap({ refresh, variant = 'operator', geofences = emptyGe
       <div className="map-frame">
         <div ref={container} className="location-canvas" role="region" aria-label="키링 위치 지도" />
         <div className="map-style-switch" role="group" aria-label="지도 배경 선택"><MapIcon name="layers" />
-          <button type="button" aria-pressed={tileStyle === 'light'} onClick={() => setTileStyle('light')}>{import.meta.env['VITE_MAP_TILE_URL'] ? '기본 지도' : '밝은 지도'}</button>
+          <button type="button" aria-pressed={tileStyle === 'light'} onClick={() => setTileStyle('light')}>기본 지도</button>
           <button type="button" aria-pressed={tileStyle === 'street'} onClick={() => setTileStyle('street')}>일반 지도</button>
         </div>
         <div className="map-corner-note"><span className="map-live-dot" />4초마다 위치 갱신</div>
@@ -237,7 +239,7 @@ export function LocationMap({ refresh, variant = 'operator', geofences = emptyGe
         <p>추정 거리 = 10 ^ ((1 m 기준 RSSI − 현재 RSSI) / (10 × 경로 손실 계수)). 수신기 교정값과 관측 환경이 반경에 반영됩니다.</p>
         {selectedProximity && <p>선택 수신기: 1 m 기준 {selectedProximity.referenceRssiDbm} dBm · 경로 손실 계수 {selectedProximity.pathLossExponent}</p>}
         {!!feed.snapshot?.rejectedRecords && <p>형식 확인 대상 {feed.snapshot.rejectedRecords}건 · 유효 관측을 표시하고 있습니다.</p>}
-        <p>밝은 지도: Stadia Maps Alidade Smooth · 일반 지도: OpenStreetMap. 키링 식별자와 관측 값은 로컬 서버에서 처리합니다.</p>
+        <p>기본 지도는 공급자 설정에 따라 표시하며, 키·등록 도메인이 없으면 OpenStreetMap을 사용합니다. 지도 하단에서 공급자 출처를 확인할 수 있습니다. 키링 식별자와 관측 값은 로컬 서버에서 처리합니다.</p>
       </div>
     </details>}
   </div>;

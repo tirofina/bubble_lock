@@ -1,0 +1,98 @@
+✔ 지도 공급자 전환은 각 공급자의 출처와 확대 한도를 함께 유지한다 (1.027974ms)
+✖ 키와 등록 도메인이 없으면 키 없는 일반 지도를 사용한다 (1.008117ms)
+✔ 등록 도메인이 현재 호스트와 일치하면 API 키 없이 Stadia를 사용한다 (0.10785ms)
+✖ 등록 도메인은 정확한 호스트에만 적용하고 불일치하면 일반 지도를 사용한다 (0.228709ms)
+✖ API 키는 도메인 설정보다 우선하고 앞뒤 공백을 제거한 뒤 인코딩한다 (0.166684ms)
+✔ 로컬 타일 설정은 키와 도메인보다 우선하며 공급자 키를 전달하지 않는다 (0.091545ms)
+✔ 지정된 안전 구역은 위경도·반경·경계 순서를 검증한 뒤 지도에 표시한다 (0.184579ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 4
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 43.16223
+
+✖ failing tests:
+
+test at test/map-presentation.test.ts:19:1
+✖ 키와 등록 도메인이 없으면 키 없는 일반 지도를 사용한다 (1.008117ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    {
+  +   attribution: '&copy; <a href="https://stadiamaps.com/attribution/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  +   maxZoom: 20,
+  +   url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png'
+  -   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  -   maxZoom: 19,
+  -   url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+    }
+  
+      at TestContext.<anonymous> (file:///home/gunp4ng/working/bubblelock-final-20261112/repo/web-dashboard/test/map-presentation.test.ts:21:10)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png', attribution: '&copy; <a href="https://stadiamaps.com/attribution/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom: 20 },
+    expected: { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', maxZoom: 19 },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/map-presentation.test.ts:32:1
+✖ 등록 도메인은 정확한 호스트에만 적용하고 불일치하면 일반 지도를 사용한다 (0.228709ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    {
+  +   attribution: '&copy; <a href="https://stadiamaps.com/attribution/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  +   maxZoom: 20,
+  +   url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png'
+  -   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  -   maxZoom: 19,
+  -   url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+    }
+  
+      at TestContext.<anonymous> (file:///home/gunp4ng/working/bubblelock-final-20261112/repo/web-dashboard/test/map-presentation.test.ts:34:12)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png', attribution: '&copy; <a href="https://stadiamaps.com/attribution/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>', maxZoom: 20 },
+    expected: { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', maxZoom: 19 },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at test/map-presentation.test.ts:41:1
+✖ API 키는 도메인 설정보다 우선하고 앞뒤 공백을 제거한 뒤 인코딩한다 (0.166684ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png?api_key=%20a%2Bb%2Fc%3F%20'
+  - 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png?api_key=a%2Bb%2Fc%3F'
+  
+      at TestContext.<anonymous> (file:///home/gunp4ng/working/bubblelock-final-20261112/repo/web-dashboard/test/map-presentation.test.ts:43:10)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png?api_key=%20a%2Bb%2Fc%3F%20',
+    expected: 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png?api_key=a%2Bb%2Fc%3F',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
