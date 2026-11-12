@@ -1,0 +1,119 @@
+{
+  "version": 1,
+  "date": "2026-11-12",
+  "role": "KEYRING",
+  "owner": "남호",
+  "docRevision": "2.0.0",
+  "branch": "codex/keyring-namho",
+  "sourceCommit": "27a2313dc6969778f4f43fb77c24f7be70e49f70",
+  "revisions": {
+    "gateway": "0.2.122",
+    "r18": "0.7.25",
+    "r18FirmwareCommit": "3be21df8eb3fe94da4ec7c304a8ddc147fe577a8",
+    "featherObservation": "0.1.1",
+    "featherCommand": "0.2.1",
+    "featherSketchCommit": "5e6598fc1931e4fc642b82d6d6e0cbf1ef941806"
+  },
+  "status": "local-verified",
+  "builds": {
+    "r18": {
+      "profiles": [
+        "keyring_compile_minimal",
+        "keyring_compile_st7789",
+        "keyring_compile_jd9853",
+        "keyring_r18_bringup_st7789",
+        "keyring_r18_bringup_jd9853"
+      ],
+      "deviceProvisioningIncluded": false
+    },
+    "feather": {
+      "profiles": [
+        "observation",
+        "command"
+      ],
+      "deviceProvisioningIncluded": false
+    },
+    "gatewayWheel": {
+      "name": "wheel/privacy_bubble_gateway-0.2.122-py3-none-any.whl",
+      "bytes": 97856,
+      "sha256": "4121deb396e3a8a67b19b3e7375c3bdd899fa564fe34efb1f47963b376b3cbaa",
+      "sourceModulesMatched": true
+    }
+  },
+  "tests": {
+    "gatewaySource": 263,
+    "gatewayInstalledSameSuite": 263,
+    "scopedMocks": 55,
+    "wslPosix": 13,
+    "r18HostScenarios": 18,
+    "featherHostScenarios": 4
+  },
+  "localLogs": [
+    {
+      "name": "firmware.log",
+      "bytes": 5728,
+      "sha256": "22071f980883dbcfd26646244e90a87a5fcb4fc469ac6ddb5497c51b090d82c4"
+    },
+    {
+      "name": "bringup.log",
+      "bytes": 3943,
+      "sha256": "819d04d85f37086bdbae0a816f333afc429937f85606be11cde1b54e21e083c0"
+    },
+    {
+      "name": "host.log",
+      "bytes": 1335,
+      "sha256": "fe31d428ed8ad7b22b7bfc0d5f4f5f9b74256ede23177bb97c34fa445ea7f789"
+    },
+    {
+      "name": "feather-host.log",
+      "bytes": 310,
+      "sha256": "69584108d16c6a2af63ab449300278e5c223d9f3d8b6e676a5deb10af2e13544"
+    },
+    {
+      "name": "gateway.log",
+      "bytes": 4208,
+      "sha256": "5b732a27605c1fe6946be3023cf85237165c1e3c88f501c9a445793d21fb72fd"
+    },
+    {
+      "name": "installed.log",
+      "bytes": 4920,
+      "sha256": "3dec3a7b398f012b95d0f39d89c9affe7926ae798d8c90da450863f4cea15df6"
+    },
+    {
+      "name": "scoped.log",
+      "bytes": 672,
+      "sha256": "edefc10df0ba6e40bdf0ce0a12f6041ece75258aa665a5371e0e9e2084563318"
+    },
+    {
+      "name": "posix.log",
+      "bytes": 2336,
+      "sha256": "da28288b8b1c0f4a46584b6b29b7df74f7bc2edd1e06eff01899c164ef462da1"
+    },
+    {
+      "name": "wheel.log",
+      "bytes": 811,
+      "sha256": "47bad9a2366f7a68b7146bc800dce47f70c027911eca02effdfb05ceb861cc13"
+    },
+    {
+      "name": "feather-observation.log",
+      "bytes": 210,
+      "sha256": "ff5d92041c0f35693113af30fb57eec8e7d4d00f850761d4cafa0f23e658246b"
+    },
+    {
+      "name": "feather-command.log",
+      "bytes": 210,
+      "sha256": "2af5277d30aba09dfc2858a85b1f7fc360644d132bce766fe72bdf1932024291"
+    }
+  ],
+  "deferredUntilPcbAssembly": [
+    "r18 board power-on, sensors, LCD and external measurements",
+    "physical BLE range and reconnect",
+    "Feather command LCD observation",
+    "Pi-to-Mobius device receipt and central settlement",
+    "deployment cutover, production credentials, application, web and release evidence"
+  ],
+  "hardwareFlashed": false,
+  "hardwareTested": false,
+  "productionServicesChanged": false,
+  "releaseSha": null
+}

@@ -7,7 +7,7 @@
   "date": "2026-11-12",
   "branch": "codex/keyring-namho",
   "status": "implementation-in-progress",
-  "verificationStatus": "Pi Gateway 0.2.43 and Feather 0.2.0 produced two APPLIED GPIO command receipts with matching Pi SQLite, pinned Mobius4, authenticated callback and isolated PostgreSQL settlement. The operator saw no LED change. Gateway 0.2.114 passed the local mock suites. The Feather 0.2.1 screen and r18 0.7.25 panel and shared rail behavior still need on-device evidence.",
+  "verificationStatus": "Gateway 0.2.122 source and installed wheel passed the local suite. ESP32-S3 r18 0.7.25 compile and host checks passed. Earlier Pi Gateway 0.2.43 and Feather 0.2.0 GPIO command receipts matched the isolated Mobius4 and central settlement; the operator saw no LED change. Physical r18 acceptance, the Feather 0.2.1 command display and server cutover are deferred until PCB assembly.",
   "rubricIds": [
     "R01",
     "R02",
@@ -2028,5 +2028,20 @@
     "regressionsExecuted": false,
     "liveCseRoutesVerified": false,
     "sourceCommit": "525f81bad1faf61f2760b9da00631e22c4da9c05"
+  },
+  "gatewaySeparatePcApiTls": {
+    "reference": "raspberry-pi-gateway/README.md",
+    "gatewayVersion": "0.2.122",
+    "regressionsExecuted": false,
+    "liveSplitTlsVerified": false,
+    "sourceCommit": "27a2313dc6969778f4f43fb77c24f7be70e49f70"
+  },
+  "localHandoff": {
+    "reference": "evidence/2026-11-12-local-handoff/README.md",
+    "sourceCommit": "27a2313dc6969778f4f43fb77c24f7be70e49f70",
+    "gatewayVersion": "0.2.122",
+    "r18FirmwareVersion": "0.7.25",
+    "status": "local-verified",
+    "remainingWork": "deferred-until-pcb-assembly"
   }
 }

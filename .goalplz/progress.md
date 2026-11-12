@@ -2100,3 +2100,22 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 Gateway 
 - 관측 전용과 명령 설정, 고정 ID 누락·불일치, 이전 DB binding 충돌을 다루는 회귀시험 소스를 반영했다. 빌드·시험·실제 CSE 및 Pi 전환 점검은 미수행이다.
 
 소스 commit `525f81bad1faf61f2760b9da00631e22c4da9c05`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1dcaef4..525f81b`다. goal은 active/progress다.
+
+## 2026-11-12 — 중앙 API와 Mobius TLS 자격 분리
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 Mobius 컨테이너를 독립 점검할 수 있게 한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 Gateway mTLS 등록 및 웹 관측 계약을 확인했다.
+
+- Gateway 0.2.122는 중앙 API용 CA·인증서·키를 별도로 지정하면 전용 HTTPS 연결을 사용한다. Mobius HTTPS·MQTT는 기존 TLS 설정을 사용하며, 중앙 전용 설정을 생략하면 기존 공유 방식으로 동작한다. CSE 전용 사전 점검은 중앙 TLS 연결을 준비하지 않는다. [설정 예시](../keyring/raspberry-pi-gateway/.env.example)
+- 서로 다른 CA와 클라이언트 인증서의 loopback 교차 확인, 일부 설정 누락, 키 불일치, CSE 독립 점검의 회귀시험 소스를 반영했다. 빌드·시험·실제 Pi와 두 서버 연결 및 인증서 전환은 미수행이다.
+
+소스 commit `27a2313dc6969778f4f43fb77c24f7be70e49f70`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `cdd1a5d..27a2313`다. goal은 active/progress다.
+
+## 2026-11-12 — 로컬 개발 기준 확정과 조립 이후 인계
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0. 사용자 지시에 따라 현재 개발과 로컬 검증 결과를 정리했다. 기준 소스는 원격에 반영된 `27a2313dc6969778f4f43fb77c24f7be70e49f70`이다.
+
+- r18 0.7.25 펌웨어 5개 프로필과 Feather 관측 0.1.1·명령 0.2.1 프로필 2개를 로컬 빌드했다. r18 호스트 18개와 Feather 호스트 4개 시나리오가 통과했다.
+- Gateway 0.2.122 소스의 기본 263건과 격리 모의 55건이 통과했다. 빌드한 wheel의 모듈이 소스와 일치하며, 설치한 wheel로도 기본 263건이 통과했다. Ubuntu WSL의 전용 파일시스템에서 POSIX 13건이 통과했다. [로컬 검증 결과와 로그 해시](../keyring/evidence/2026-11-12-local-handoff/README.md)
+- 제작 PCB 조립 이후 실물 전원·센서·LCD·BLE·명령 및 실제 Pi·Mobius4·중앙 정산, 서버 전환, 앱·웹 연동과 제출 증거를 확인한다. 이번에는 플래시·실물 시험·운영 변경을 수행하지 않았다.
+
+사용자 지시에 따라 남은 목표는 PCB 조립 이후까지 보류한다.

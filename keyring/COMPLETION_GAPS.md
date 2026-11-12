@@ -1,12 +1,14 @@
 # KEYRING 완료 조건과 남은 증거
 
-ROLE KEYRING / 남호 · DOC-REV 2.0.0 · 2026-11-11.
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · 2026-11-12.
+
+2026-11-12 개발·로컬 검증 기준은 Gateway 0.2.122와 r18 0.7.25다. 현장 전원·BLE·LCD·명령과 운영 전환 등 남은 수용 항목은 제작 PCB 조립 이후로 이월했다. [로컬 검증 결과와 인계](evidence/2026-11-12-local-handoff/README.md)
 
 Feather 0.2.0과 Pi Gateway 0.2.43의 격리 시험에서 두 명령의 ACK, GPIO readback, 후속 관측, Mobius4와 중앙 정산이 일치했다. 운영자는 LED 점등 변화를 보지 못했다. Feather 0.2.1의 화면은 GPIO 상태를 `CMD ON` 또는 `CMD OFF`로 표시하도록 구현했고 로컬 빌드를 마쳤다. 새 화면의 실물 검증과 제작 PCB 수용은 남아 있다. [격리 시험 기록](evidence/2026-11-11-feather-visual/receipt.json) · [화면 기록 절차](raspberry-pi-gateway/TESTING.md#실물-명령-증거-대조)
 
 Gateway 0.2.5는 Pi 임시 사용자 systemd에서 실제 Feather 관측 27개와 상태 16개를 격리 Mobius4에 저장했다. 재시작 전 대기 관측 한 건의 payload도 CSE에서 일치했다. 기본 63개와 모의 GATT 명령 통합 2개는 앞선 별도 시험 결과다. 실제 명령·물리 출력, 배포용 systemd, CORE/앱/웹 정산은 남아 있다. [Pi 전체 데몬](evidence/2026-11-10-pi-full-daemon/README.md) · [중앙 명령 시험](evidence/2026-11-10-central-dispatch/README.md)
 
-최신 루트 계획서의 담당 산출물·7개 완료 자료·첫 통합 조건을 ESP32-S3 firmware0.7.0, Feather 벤치0.1.1, Gateway0.2.4의 소스와 실행 evidence에 대조했다. 2026-11-10 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 화면·Feather·버튼 두 개와 실물 Pi의 BLE 연결, 버튼 입력·화면 유지, 90초간45개 관측 수신을 확인하고 `686f7b4`로 업로드했다. 실물 관측의 Pi→격리 Mobius4 저장·readback도 확보했으며 제작 PCB·전체 daemon·중앙 명령과 앱/웹·release는 미완료다.
+2026-11-10에 루트 계획서의 담당 산출물·7개 완료 자료·첫 통합 조건을 ESP32-S3 firmware0.7.0, Feather 벤치0.1.1, Gateway0.2.4의 당시 소스와 실행 evidence에 대조했다. 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 화면·Feather·버튼 두 개와 실물 Pi의 BLE 연결, 버튼 입력·화면 유지, 90초간45개 관측 수신을 확인하고 `686f7b4`로 업로드했다. 실물 관측의 Pi→격리 Mobius4 저장·readback도 확보했다.
 
 최신 [Pi→CSE 실물 관측 증거](evidence/2026-11-10-pi-cse/)는 HTTPS 경로의5개씩3회 저장·readback 일치, CSE 중단 중 pending5개 보존 후 복구·전달5개, 정상 MQTT 전달5개·HTTPS fallback0개, broker 중단 후 MQTT0개·HTTPS fallback15개를 포함한다. 총35개 관측의 CSE readback이 일치했다. 이번 CSE 시험 관측은 모두 `released`이며 버튼 `confirm/panic`·화면·90초 연속 수신은 [Pi·Feather 증거](evidence/2026-11-10-pi-feather/README.md)에 별도로 남겼다. 시험은 새 관측 container·시험 인증서·새 Pi SQLite를 사용하며, 전체 Gateway daemon과 명령 실행 loop는 시작하지 않았다.
 
