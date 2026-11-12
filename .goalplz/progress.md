@@ -2082,3 +2082,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 PCB
 - 전송 전 쓰기 오류, 중앙 HTTPS 보류 시각을 기록할 때의 오류, 재시작 뒤 기존 본문·요청 ID·보류 시각을 읽는 회귀시험 소스를 반영했다. 빌드·시험·실제 Pi·Mobius4 및 중앙 장애 재시작 확인은 미수행이다.
 
 소스 commit `33b6bb0035f85428f4cbc801a8ae8734e9dbf704`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8b0e7aa..33b6bb0`다. goal은 active/progress다.
+
+## 2026-11-12 — Gateway ID 교체 시 CORE 장치 순번 보존
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 영수증 재시도 SQLite 쓰기 복구를 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 CORE의 `deviceId:sequence` 중복 계약 및 웹 표시 계약을 확인했다.
+
+- Gateway 0.2.120의 전환 도구는 Gateway ID를 바꿀 때도 후보에 등록된 키링의 마지막 CORE 할당 순번을 보존한다. 후보 범위와 겹치는 원본 CORE 관측이 대기 중이면 새 DB 준비를 중단한다. 이전 명령·영수증·대기열과 권한 상태는 원본 DB에 남는다. [새 배포 DB 준비](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#새-배포-db에-core-순번-이어받기)
+- 같은 Gateway ID와 변경된 ID에서 보류 확인, 새 DB 순번 초기화, 새 관측 순번과 원본 상태 보존을 다루는 POSIX CLI 시험 소스를 반영했다. 빌드·시험·Pi 실행·새 서버 전환은 미수행이다.
+
+소스 commit `b0ca19f1a7f1de08759c70acf99f168368b3050d`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `04b96ae..b0ca19f`다. goal은 active/progress다.

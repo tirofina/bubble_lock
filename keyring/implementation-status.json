@@ -2014,5 +2014,12 @@
     "regressionsExecuted": false,
     "livePiRestartVerified": false,
     "sourceCommit": "33b6bb0035f85428f4cbc801a8ae8734e9dbf704"
+  },
+  "gatewayCutoverDeviceSequence": {
+    "reference": "raspberry-pi-gateway/STATE_RECOVERY.md#새-배포-db에-core-순번-이어받기",
+    "gatewayVersion": "0.2.120",
+    "regressionsExecuted": false,
+    "liveServerCutoverVerified": false,
+    "sourceCommit": "b0ca19f1a7f1de08759c70acf99f168368b3050d"
   }
 }
