@@ -1,0 +1,55 @@
+{
+  "mode": "EXTERNAL",
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8787,
+    "tls": { "ca": "${PKI_DIR}/ca.pem", "cert": "${PKI_DIR}/server.pem", "key": "${PKI_DIR}/server.key" },
+    "principals": [
+      { "principalId": "sandbox-location", "mtlsFingerprint": "${MEC_LOCATION_FINGERPRINT}", "scopes": ["mec:callback"] },
+      { "principalId": "sandbox-rnis", "mtlsFingerprint": "${MEC_RNIS_FINGERPRINT}", "scopes": ["mec:callback"] }
+    ]
+  },
+  "core": {
+    "mec": {
+      "callbackBaseUrl": "${MEC_CALLBACK_BASE_URL}",
+      "encryptionKey": "${BUBBLE_MEC_ENCRYPTION_KEY}",
+      "Location": {
+        "platformRoot": "${MEC_PLATFORM_ROOT}",
+        "allowedEndpoints": ["${MEC_LOCATION_ENDPOINT}"],
+        "providerId": "sandbox-location",
+        "providerFingerprint": "${MEC_LOCATION_FINGERPRINT}",
+        "simulation": false,
+        "headers": { "authorization": "Bearer ${MEC_ACCESS_TOKEN}" },
+        "tls": { "ca": "${PKI_DIR}/provider-ca.pem", "cert": "${PKI_DIR}/controller.pem", "key": "${PKI_DIR}/controller.key" },
+        "capabilities": { "update": true, "list": true, "listComplete": false, "verifiedSourceTime": true, "endpointVersion": "location/v2" },
+        "deploymentSchema": {
+          "file": "location-openapi.json",
+          "sha256": "${MEC_LOCATION_OPENAPI_SHA256}",
+          "callbackPointer": "${MEC_LOCATION_CALLBACK_POINTER}",
+          "operations": { "query": "${LOCATION_QUERY_OP}", "create": "${LOCATION_CREATE_OP}", "read": "${LOCATION_READ_OP}", "update": "${LOCATION_UPDATE_OP}", "delete": "${LOCATION_DELETE_OP}", "list": "${LOCATION_LIST_OP}" }
+        }
+      },
+      "RNIS": {
+        "platformRoot": "${MEC_PLATFORM_ROOT}",
+        "allowedEndpoints": ["${MEC_RNIS_ENDPOINT}"],
+        "providerId": "sandbox-rnis",
+        "providerFingerprint": "${MEC_RNIS_FINGERPRINT}",
+        "simulation": false,
+        "headers": { "authorization": "Bearer ${MEC_ACCESS_TOKEN}" },
+        "tls": { "ca": "${PKI_DIR}/provider-ca.pem", "cert": "${PKI_DIR}/controller.pem", "key": "${PKI_DIR}/controller.key" },
+        "capabilities": { "update": true, "list": true, "listComplete": false, "verifiedSourceTime": true, "endpointVersion": "rni/v2" },
+        "deploymentSchema": {
+          "file": "rnis-openapi.json",
+          "sha256": "${MEC_RNIS_OPENAPI_SHA256}",
+          "callbackPointer": "${MEC_RNIS_CALLBACK_POINTER}",
+          "operations": { "query": "${RNIS_QUERY_OP}", "create": "${RNIS_CREATE_OP}", "read": "${RNIS_READ_OP}", "update": "${RNIS_UPDATE_OP}", "delete": "${RNIS_DELETE_OP}", "list": "${RNIS_LIST_OP}" }
+        }
+      }
+    }
+  },
+  "scenario": {
+    "ueId": "${MEC_UE_ID}",
+    "callbackTimeoutMs": 120000,
+    "geofence": { "type": "circle", "lat": 37.5, "lon": 127, "radiusM": 100 }
+  }
+}

@@ -1,0 +1,82 @@
+TAP version 13
+# Subtest: F01 participant principal, originator, task, dataset, signature scope are bound
+ok 1 - F01 participant principal, originator, task, dataset, signature scope are bound
+  ---
+  duration_ms: 71.931712
+  type: 'test'
+  ...
+# Subtest: F02 invalid count, finite/shape, base version, repeated sample and duplicate updates
+ok 2 - F02 invalid count, finite/shape, base version, repeated sample and duplicate updates
+  ---
+  duration_ms: 73.729511
+  type: 'test'
+  ...
+# Subtest: F03/F04 consent revoke and stopped membership fence update and aggregation; reselect recovers quorum
+ok 3 - F03/F04 consent revoke and stopped membership fence update and aggregation; reselect recovers quorum
+  ---
+  duration_ms: 106.049647
+  type: 'test'
+  ...
+# Subtest: F09 numeric sample-weighted FedAvg uses exact model bytes and reproducible training
+ok 4 - F09 numeric sample-weighted FedAvg uses exact model bytes and reproducible training
+  ---
+  duration_ms: 45.326149
+  type: 'test'
+  ...
+# Subtest: F10 prepared consent CAS requires a new accepted set and immutable manifest
+ok 5 - F10 prepared consent CAS requires a new accepted set and immutable manifest
+  ---
+  duration_ms: 70.859054
+  type: 'test'
+  ...
+# Subtest: F05/F11 revoke after commit supersedes delayed publication, pauses reads, and approves clean retraining
+ok 6 - F05/F11 revoke after commit supersedes delayed publication, pauses reads, and approves clean retraining
+  ---
+  duration_ms: 100.781619
+  type: 'test'
+  ...
+# Subtest: F06 restart at artifact, commit and publication boundaries preserves one model commit
+ok 7 - F06 restart at artifact, commit and publication boundaries preserves one model commit
+  ---
+  duration_ms: 334.423461
+  type: 'test'
+  ...
+# Subtest: F07 coordinator epoch CAS and simultaneous finalize produce one committed model
+ok 8 - F07 coordinator epoch CAS and simultaneous finalize produce one committed model
+  ---
+  duration_ms: 60.753084
+  type: 'test'
+  ...
+# Subtest: F08 partial artifact integrity, heartbeat freshness, and referenced/staged artifact GC
+ok 9 - F08 partial artifact integrity, heartbeat freshness, and referenced/staged artifact GC
+  ---
+  duration_ms: 52.205834
+  type: 'test'
+  ...
+# Subtest: A13/A14 ten numeric rounds, round-three late join, dropout and persisted coordinator recovery
+ok 10 - A13/A14 ten numeric rounds, round-three late join, dropout and persisted coordinator recovery
+  ---
+  duration_ms: 634.586194
+  type: 'test'
+  ...
+# Subtest: ESTIMED transport requires HTTPS host/process/image identity and bounded response
+ok 11 - ESTIMED transport requires HTTPS host/process/image identity and bounded response
+  ---
+  duration_ms: 11.080199
+  type: 'test'
+  ...
+# Subtest: FL HTTP routes use verified transport identity and isolate administrative controls
+ok 12 - FL HTTP routes use verified transport identity and isolate administrative controls
+  ---
+  duration_ms: 40.659115
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1641.416471

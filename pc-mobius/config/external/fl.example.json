@@ -1,0 +1,60 @@
+{
+  "mode": "EXTERNAL",
+  "server": {
+    "host": "0.0.0.0", "port": 8787,
+    "tls": { "ca": "${PKI_DIR}/ca.pem", "cert": "${PKI_DIR}/server.pem", "key": "${PKI_DIR}/server.key" }
+  },
+  "core": {
+    "fl": {
+      "mode": "ESTIMED",
+      "publication": {
+        "endpoint": "${FL_CSE_ENDPOINT}", "originator": "${FL_CSE_ORIGINATOR}", "cseBase": "/Mobius", "aeName": "external-rehearsal-fl",
+        "tls": { "ca": "${PKI_DIR}/cse-ca.pem", "cert": "${PKI_DIR}/controller.pem", "key": "${PKI_DIR}/controller.key" }
+      }
+    }
+  },
+  "scenario": {
+    "taskPrefix": "external-mobility",
+    "dropoutVmId": "vm-2",
+    "workerSetup": {
+      "coordinatorEndpoint": "${FL_COORDINATOR_ENDPOINT}", "coordinatorFingerprint": "${FL_COORDINATOR_FINGERPRINT}",
+      "pkiRoot": "${FL_WORKER_PKI_DIR}", "keyRoot": "${FL_WORKER_KEY_DIR}", "stateRoot": "${FL_WORKER_STATE_DIR}"
+    },
+    "workers": [
+      {
+        "vmId": "vm-1", "hostId": "${FL_HOST_1}", "endpoint": "${FL_ENDPOINT_1}", "processId": "${FL_PID_1}", "imageDigest": "${FL_DIGEST_1}",
+        "tls": { "ca": "${PKI_DIR}/ca.pem", "cert": "${PKI_DIR}/controller.pem", "key": "${PKI_DIR}/controller.key" },
+        "participants": [
+          {
+            "participantId": "client-1", "publicKeyFile": "keys/client-1.pub.pem",
+            "principal": { "principalId": "fl:client-1", "originator": "CFL-client-1", "mtlsFingerprint": "${FL_PARTICIPANT_1_FINGERPRINT}" },
+            "dataset": { "datasetId": "mobility-client-1", "seed": 101, "clientIndex": 0, "version": 1 }
+          },
+          {
+            "participantId": "client-4", "lateJoin": true, "publicKeyFile": "keys/client-4.pub.pem",
+            "principal": { "principalId": "fl:client-4", "originator": "CFL-client-4", "mtlsFingerprint": "${FL_PARTICIPANT_4_FINGERPRINT}" },
+            "dataset": { "datasetId": "mobility-client-4", "seed": 404, "clientIndex": 3, "version": 1 }
+          }
+        ]
+      },
+      {
+        "vmId": "vm-2", "hostId": "${FL_HOST_2}", "endpoint": "${FL_ENDPOINT_2}", "processId": "${FL_PID_2}", "imageDigest": "${FL_DIGEST_2}",
+        "tls": { "ca": "${PKI_DIR}/ca.pem", "cert": "${PKI_DIR}/controller.pem", "key": "${PKI_DIR}/controller.key" },
+        "participants": [{
+          "participantId": "client-2", "publicKeyFile": "keys/client-2.pub.pem",
+          "principal": { "principalId": "fl:client-2", "originator": "CFL-client-2", "mtlsFingerprint": "${FL_PARTICIPANT_2_FINGERPRINT}" },
+          "dataset": { "datasetId": "mobility-client-2", "seed": 202, "clientIndex": 1, "version": 1 }
+        }]
+      },
+      {
+        "vmId": "vm-3", "hostId": "${FL_HOST_3}", "endpoint": "${FL_ENDPOINT_3}", "processId": "${FL_PID_3}", "imageDigest": "${FL_DIGEST_3}",
+        "tls": { "ca": "${PKI_DIR}/ca.pem", "cert": "${PKI_DIR}/controller.pem", "key": "${PKI_DIR}/controller.key" },
+        "participants": [{
+          "participantId": "client-3", "publicKeyFile": "keys/client-3.pub.pem",
+          "principal": { "principalId": "fl:client-3", "originator": "CFL-client-3", "mtlsFingerprint": "${FL_PARTICIPANT_3_FINGERPRINT}" },
+          "dataset": { "datasetId": "mobility-client-3", "seed": 303, "clientIndex": 2, "version": 1 }
+        }]
+      }
+    ]
+  }
+}

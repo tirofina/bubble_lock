@@ -1,0 +1,23 @@
+{
+  "branch": "feature/final-integration",
+  "generatedAt": "2026-11-12T10:35:17Z",
+  "scope": "external-service runners, examples and focused tests",
+  "files": [
+    {"path":"pc-mobius/scripts/external-config.mjs","sha256":"fb48b3213213879c5d250d866783aa811ccccc4e63c38b3387da8fd9005e8a45"},
+    {"path":"pc-mobius/scripts/run-external-services.mjs","sha256":"3e8f94a597dfbba4d6a575f10f98ef706caa1797e0288b7c0f07b9d3af0daacc"},
+    {"path":"pc-mobius/scripts/external-scenarios.mjs","sha256":"1115a108b5a1b5710f0bb10e3647013feef613abff8081f1ec317d423ae46476"},
+    {"path":"pc-mobius/scripts/external-fl.mjs","sha256":"da14bc0038bf6191ea03c287a72e00baf406702c6e1796c6da3e01d7a89aced6"},
+    {"path":"pc-mobius/scripts/external-edge-callback.mjs","sha256":"fa00c145a61b1465cc05172cbcfb474e0de5dccd180dd61fbe57202e5883c82f"},
+    {"path":"pc-mobius/scripts/run-external-rehearsal.mjs","sha256":"818cc1cac314962e59749b3a809fc9f06561762a04a545d8a45ecf4171b4a16c"},
+    {"path":"pc-mobius/scripts/prepare-external-fl-workers.mjs","sha256":"46bcda3179afad66496062aea56805ac6b8ed8890874f79d443fba7446172461"},
+    {"path":"pc-mobius/test/external-runner.test.mjs","sha256":"af51d7e541c6a0a49a75b789fbdcd4796c21a8660cefb4d27ed09a12ffafef99"},
+    {"path":"pc-mobius/test/external-scenarios.test.mjs","sha256":"626a2b3356933bd87cc3a6413414970b5663780aed40351ffcd180b00deb8fa1"},
+    {"path":"pc-mobius/test/external-fl.test.mjs","sha256":"460bf7cb7921bf61b4c203bce6c08122659d46d89012913e315032a55aad9b81"},
+    {"path":"pc-mobius/test/external-edge-callback.test.mjs","sha256":"d24c2eeaa478ae294899cccbca1100315944eb229fab41c77369109fbd3c7eeb"},
+    {"path":"pc-mobius/test/external-worker-config.test.mjs","sha256":"24154103b98015923fe8f5270b7c89aefab39d9aecf769b38aaadb3c31562f4e"},
+    {"path":"pc-mobius/test/helpers/external-mocks.mjs","sha256":"587c9ff326bc8c50ae144bc13c4edd696b93ada753d0ace0345eed10d4efe141"},
+    {"path":"pc-mobius/config/external/mec.example.json","sha256":"2c661e9ee2498fc8ca135da765c542abfba6dbd7f9b47722e9f5f6a740fc357f"},
+    {"path":"pc-mobius/config/external/edge.example.json","sha256":"fce1cdc97631ef69eb2b77a6685e12ebc4935ec7656516c85bc099f8ba46eceb"},
+    {"path":"pc-mobius/config/external/fl.example.json","sha256":"8199f9ad42aa7b34589677014bedfed1060426222eba5b583cafad07b6615145"}
+  ]
+}
