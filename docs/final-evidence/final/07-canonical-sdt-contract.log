@@ -1,0 +1,17 @@
+
+> privacy-bubble-pc-mobius-core@0.1.0 validate
+> node scripts/validate-contract.mjs contracts/oneM2M-test-contract.v2.json
+
+{
+  "contractId": "privacy-bubble.oneM2M.test",
+  "contractVersion": "2.0.0",
+  "docRevision": "2.0.0",
+  "owner": "PC-MOBIUS-CORE",
+  "stepCount": 8,
+  "mqttTopics": [
+    "/oneM2M/req/{originator}/{cseId}/json",
+    "/oneM2M/resp/{originator}/{cseId}/json",
+    "privacy-bubble/notify"
+  ],
+  "status": "PASS"
+}

@@ -1,0 +1,15 @@
+
+> bubblelock-web-dashboard@0.1.0 build
+> tsc --noEmit && vite build
+
+vite v7.3.7 building client environment for production...
+transforming...
+✓ 244 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                         0.41 kB │ gzip:   0.28 kB
+dist/assets/LocationMap-vuxvUX3U.css   25.87 kB │ gzip:   9.05 kB
+dist/assets/index-DHRLY1NI.css         29.40 kB │ gzip:   7.07 kB
+dist/assets/LocationMap-D0wE63cH.js   169.44 kB │ gzip:  50.63 kB
+dist/assets/index-DXdXx2lh.js         464.16 kB │ gzip: 140.43 kB
+✓ built in 1.05s

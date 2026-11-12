@@ -2,6 +2,8 @@
 
 실행자는 각 칸에 UTC 시각·장치 ID·소스 커밋·결과 파일을 기록한다. 이번 소프트웨어 통합의 로컬 모의 결과와 아래 실물 결과를 구분한다. 현장 작업 전 전체 항목은 **테스트 대기**다.
 
+배포 기본 도메인은 `PUBLIC_DOMAIN=bubblelock.iptime.org`다. 웹·API·OIDC는 `https://bubblelock.iptime.org`, Pi MQTT TLS는 `bubblelock.iptime.org:8883`을 사용한다. 공유기 TCP 80·443·8883은 노트북으로 포워딩됐다. 실제 노트북 배포와 Let’s Encrypt HTTP-01 인증서 발급·자동 갱신 활성화는 리드 승인 후 [배포 runbook](../deployment/RUNBOOK.md)에 따라 수행한다. 승인 전 시험은 로컬 자체 인증서를 사용한다.
+
 ## 최신 배포본 전달
 
 - [ ] 통합 담당자가 전달한 `feature/final-integration` 배포본과 커밋을 받는다. push 전이므로 원격 main을 최신 통합본으로 간주하지 않는다.
