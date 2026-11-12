@@ -1,0 +1,117 @@
+ Image nginx:1.28-alpine Pulling 
+ e914c6e98e37 Pulling fs layer 
+ 0151c82f84a9 Pulling fs layer 
+ 589002ba0eae Pulling fs layer 
+ d631a49fb4f7 Pulling fs layer 
+ 44fa0a5a779f Pulling fs layer 
+ 98104829f3fe Pulling fs layer 
+ 8f7c784e2471 Pulling fs layer 
+ 1d9cbdb003be Pulling fs layer 
+ e914c6e98e37 Download complete 
+ 589002ba0eae Downloading [=============>                                     ]  1.049MB/3.862MB
+ 589002ba0eae Downloading [===========================>                       ]  2.097MB/3.862MB
+ 0151c82f84a9 Downloading [==>                                                ]  1.049MB/20.25MB
+ 589002ba0eae Download complete 
+ d631a49fb4f7 Download complete 
+ 44fa0a5a779f Download complete 
+ 8f7c784e2471 Download complete 
+ 589002ba0eae Extracting 1 s
+ 98104829f3fe Downloading [==================================================>]  1.398kB/1.398kB
+ 0151c82f84a9 Downloading [==>                                                ]  1.049MB/20.25MB
+ 589002ba0eae Extracting 1 s
+ 0151c82f84a9 Downloading [=====>                                             ]  2.097MB/20.25MB
+ 98104829f3fe Download complete 
+ 1d9cbdb003be Downloading [============================>                      ]  1.049MB/1.834MB
+ 589002ba0eae Extracting 1 s
+ 1d9cbdb003be Downloading [==================================================>]  1.834MB/1.834MB
+ 0151c82f84a9 Downloading [=======>                                           ]  3.146MB/20.25MB
+ 589002ba0eae Extracting 1 s
+ 1d9cbdb003be Downloading [==================================================>]  1.834MB/1.834MB
+ 0151c82f84a9 Downloading [==========>                                        ]  4.194MB/20.25MB
+ 589002ba0eae Extracting 1 s
+ 1d9cbdb003be Downloading [==================================================>]  1.834MB/1.834MB
+ 0151c82f84a9 Downloading [============>                                      ]  5.243MB/20.25MB
+ 589002ba0eae Extracting 1 s
+ 1d9cbdb003be Downloading [==================================================>]  1.834MB/1.834MB
+ 0151c82f84a9 Downloading [============>                                      ]  5.243MB/20.25MB
+ 589002ba0eae Extracting 1 s
+ 1d9cbdb003be Downloading [==================================================>]  1.834MB/1.834MB
+ 0151c82f84a9 Downloading [===============>                                   ]  6.291MB/20.25MB
+ 589002ba0eae Extracting 1 s
+ 1d9cbdb003be Downloading [==================================================>]  1.834MB/1.834MB
+ 0151c82f84a9 Downloading [====================>                              ]  8.389MB/20.25MB
+ 589002ba0eae Extracting 1 s
+ 1d9cbdb003be Downloading [==================================================>]  1.834MB/1.834MB
+ 0151c82f84a9 Downloading [=======================>                           ]  9.437MB/20.25MB
+ 1d9cbdb003be Download complete 
+ 0151c82f84a9 Downloading [=========================>                         ]  10.49MB/20.25MB
+ 589002ba0eae Pull complete 
+ 1d9cbdb003be Pull complete 
+ 0151c82f84a9 Downloading [============================>                      ]  11.53MB/20.25MB
+ e914c6e98e37 Pull complete 
+ d631a49fb4f7 Pull complete 
+ 44fa0a5a779f Pull complete 
+ 8f7c784e2471 Pull complete 
+ 98104829f3fe Pull complete 
+ 0151c82f84a9 Downloading [===============================>                   ]  12.58MB/20.25MB
+ 0151c82f84a9 Downloading [=================================>                 ]  13.63MB/20.25MB
+ f2baa5b25d86 Download complete 
+ 0151c82f84a9 Downloading [======================================>            ]  15.73MB/20.25MB
+ 0151c82f84a9 Downloading [=========================================>         ]  16.78MB/20.25MB
+ 0151c82f84a9 Downloading [============================================>      ]  17.83MB/20.25MB
+ 0151c82f84a9 Downloading [==============================================>    ]  18.87MB/20.25MB
+ 0151c82f84a9 Download complete 
+ 0151c82f84a9 Extracting 1 s
+ 0151c82f84a9 Extracting 1 s
+ 0151c82f84a9 Pull complete 
+ 8654f8d1249e Download complete 
+ Image nginx:1.28-alpine Pulled 
+time="2026-11-12T19:33:47+09:00" level=warning msg="No services to build"
+ Network bubblelock-secure_ingress Creating 
+ Network bubblelock-secure_ingress Created 
+ Volume bubblelock-secure_acme-web Creating 
+ Volume bubblelock-secure_acme-web Created 
+ Container bubblelock-secure-static-1 Creating 
+ Container bubblelock-secure-proxy-1 Creating 
+ Container bubblelock-secure-cse-db-1 Running 
+ Container bubblelock-secure-mqtt-1 Creating 
+ Container bubblelock-secure-cse-1 Creating 
+ Container bubblelock-secure-postgres-1 Running 
+ Container bubblelock-secure-api-1 Creating 
+ Container bubblelock-secure-keycloak-1 Creating 
+ Container bubblelock-secure-static-1 Created 
+ Container bubblelock-secure-keycloak-1 Created 
+ Container bubblelock-secure-proxy-1 Created 
+ Container bubblelock-secure-mqtt-1 Created 
+ Container bubblelock-secure-api-1 Created 
+ Container bubblelock-secure-web-1 Creating 
+ Container bubblelock-secure-cse-1 Created 
+ Container bubblelock-secure-mqtt-bridge-1 Creating 
+ Container bubblelock-secure-web-1 Created 
+ Container bubblelock-secure-mqtt-bridge-1 Created 
+ Container bubblelock-secure-cse-db-1 Waiting 
+ Container bubblelock-secure-postgres-1 Waiting 
+ Container bubblelock-secure-postgres-1 Waiting 
+ Container bubblelock-secure-proxy-1 Starting 
+ Container bubblelock-secure-mqtt-1 Starting 
+ Container bubblelock-secure-static-1 Starting 
+ Container bubblelock-secure-static-1 Started 
+ Container bubblelock-secure-mqtt-1 Started 
+ Container bubblelock-secure-proxy-1 Started 
+ Container bubblelock-secure-cse-db-1 Healthy 
+ Container bubblelock-secure-cse-1 Starting 
+ Container bubblelock-secure-postgres-1 Healthy 
+ Container bubblelock-secure-postgres-1 Healthy 
+ Container bubblelock-secure-api-1 Starting 
+ Container bubblelock-secure-keycloak-1 Starting 
+ Container bubblelock-secure-keycloak-1 Started 
+ Container bubblelock-secure-api-1 Started 
+ Container bubblelock-secure-api-1 Waiting 
+ Container bubblelock-secure-cse-1 Started 
+ Container bubblelock-secure-cse-1 Waiting 
+ Container bubblelock-secure-api-1 Healthy 
+ Container bubblelock-secure-web-1 Starting 
+ Container bubblelock-secure-cse-1 Healthy 
+ Container bubblelock-secure-mqtt-bridge-1 Starting 
+ Container bubblelock-secure-web-1 Started 
+ Container bubblelock-secure-mqtt-bridge-1 Started 

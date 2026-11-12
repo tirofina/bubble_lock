@@ -1,0 +1,82 @@
+- link "본문으로 건너뛰기" [ref=e1]
+- complementary:
+  - link "BubbleLock PRIVACY, CONNECTED" [ref=e2]
+  - text: "나의 프라이버시"
+  - navigation "사용자 대시보드 메뉴" [ref=e3]:
+    - link "내 대시보드" [ref=e4]
+    - link "키링 위치" [ref=e5]
+    - link "가족과 키링" [ref=e6]
+    - link "동의와 권한" [ref=e7]
+    - link "알림과 요청" [ref=e8]
+  - text: "관측 기반 상태 확인 위치 · 동의 · 실행 기록"
+  - link "시작 화면으로" [ref=e9]
+- banner:
+  - text: "사용자 대시보드 키링 위치"
+  - button "guardian-1 · 로그아웃" [ref=e10]
+- main:
+  - text: "MY BUBBLE"
+  - heading "키링 위치" [level=1]
+  - button "사용자 상태 새로고침" [ref=e11]
+  - text: "연결된 계정 가족의 동의와 현재 권한을 기준으로 요청을 처리합니다.키링 위치 3 개 키링 모의 위치"
+  - button "전체 위치" [ref=e12]
+  - button "위치 새로고침" [ref=e13]
+  - region "키링 위치 지도" [ref=e14]:
+    - button "키링 A · MEC 위치" [ref=e21]: "1 키링 A"
+    - button "키링 B · GPS 위치" [ref=e22]: "2"
+    - button "키링 C · BLE · BLE 수신기 기준" [ref=e23]: "3"
+    - text: "30 m"
+    - button "지도 확대" [ref=e24]
+    - button "지도 축소" [ref=e25]
+    - link "Leaflet" [ref=e26]
+    - text: "©"
+    - link "OpenStreetMap" [ref=e27]
+    - text: "contributors"
+  - group "지도 배경 선택":
+    - button "기본 지도" [ref=e28]
+    - button "일반 지도" [ref=e29]
+  - text: "4초마다 위치 갱신 GPS · MEC 위치 BLE 추정 범위 수신기 기준"
+  - button "BLE 원 숨기기" [ref=e30]
+  - complementary "키링 위치 정보":
+    - heading "연결된 키링" [level=3]
+    - text: "3"
+    - button "1 키링 A 위치 서비스로 확인-59" [ref=e31]
+    - button "2 키링 B GPS로 확인한 위치-75" [ref=e32]
+    - button "3 키링 C · BLE 수신기 주변에서 감지-87" [ref=e33]
+    - article "선택한 키링 위치 상세" [ref=e34]:
+      - text: "선택한 키링"
+      - heading "키링 A" [level=3]
+      - text: "모의 기록 BLE 수신-59 dBm 강한 수신 · 모의 추정 반경 1.0 m 모의 수신기 기준 위치 기준 위치 서비스로 확인 · 모의 수신기 서울광장 수신기 · 모의 최근 관측 2026-11-10  17:10:02.000  KST"
+      - generic "+좌표와 관측 자세히 보기" [ref=e36]
+  - text: "핀은 GPS·위치 서비스 좌표, 점선 원은 BLE 수신기 중심의 추정 범위입니다. 옅은 실선 원은 위치 정확도를 나타냅니다."
+  - form:
+    - heading "위치 공유 승인" [level=2]
+    - text: "도움 요청의 목적에 맞춰 조회 대상과 기간을 선택하세요."
+    - label:
+      - text: "위치 조회 동의"
+      - combobox "위치 조회 동의" [ref=e37]:
+        - option "권한 선택" (selected)
+    - paragraph:
+      - link "동의와 권한" [ref=e38]
+      - text: "에서 위치 조회를 승인하세요."
+    - label:
+      - text: "관련 도움 요청"
+      - combobox "관련 도움 요청" [ref=e39]:
+        - option "요청 선택" (selected)
+    - label:
+      - text: "위치를 볼 사람"
+      - combobox "위치를 볼 사람" [ref=e40]:
+        - option "대상 선택" (selected)
+    - text: "공유할 키링"
+    - label:
+      - text: "조회 기간"
+      - combobox "조회 기간" [ref=e41]:
+        - option "1분" value="60"
+        - option "3분" (selected) value="180"
+        - option "5분" value="300"
+    - button "위치 공유 승인" [ref=e42] [disabled]
+    - link "도움 요청 만들기" [ref=e43]
+  - heading "위치 공유 기록" [level=2]
+  - text: "승인한 위치 공유 내역이 여기에 표시됩니다.조회 기간과 도움 요청 상태, 현재 동의 범위를 함께 확인합니다."
+- contentinfo: "BubbleLock · Privacy Bubble Keyring 관측별 출처와 시각을 함께 확인하세요."
+AFTER_LOGIN_URL https://bubble.localhost:19443/
+{"status":"DEPLOYED_BROWSER_RENDER_PASS","network":{"localTileResponses":24,"externalDenied":0},"viewports":[{"label":"desktop","viewport":1440,"documentWidth":1425},{"label":"mobile","viewport":390,"documentWidth":390}]}

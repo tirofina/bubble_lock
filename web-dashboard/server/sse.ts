@@ -115,6 +115,7 @@ export function createReplayServer(replay: ReplaySnapshot, locationFeed?: Locati
 
 export interface StartReplayOptions {
   readonly port?: number;
+  readonly host?: string;
   readonly receiptFile?: string;
   readonly locationFile?: string;
   readonly gatewayLocationsFile?: string;
@@ -123,7 +124,7 @@ export interface StartReplayOptions {
   readonly portal?: PortalOptions;
 }
 
-/** Loopback is deliberately fixed; port 0 is supported for integration tests. */
+/** Loopback is the default; deployments explicitly choose their private bind address. */
 export async function startReplayServer(options: StartReplayOptions = {}) {
   const replay = await loadReplay(options.receiptFile);
   const locationFeed = await loadLocationFeed({
@@ -135,7 +136,7 @@ export async function startReplayServer(options: StartReplayOptions = {}) {
   const portal=await createPortalHandler(locationFeed,{...options.portal,...(options.portalStatePath===undefined?{}:{statePath:options.portalStatePath})});
   const server = createReplayServer(replay, locationFeed, portal);
   const listening = once(server, 'listening');
-  server.listen(options.port ?? 4174, '127.0.0.1');
+  server.listen(options.port ?? 4174, options.host ?? '127.0.0.1');
   await listening;
   const address = server.address();
   if (address === null || typeof address === 'string') throw new ContractError('Expected a TCP loopback server');

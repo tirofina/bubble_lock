@@ -1,0 +1,30 @@
+✖ port 443 realm issuer callback and Keycloak hostname share the canonical origin (638.191814ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 668.370917
+
+✖ failing tests:
+
+test at deployment/test/configure.test.mjs:9:1
+✖ port 443 realm issuer callback and Keycloak hostname share the canonical origin (638.191814ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'https://deployment.example.invalid:443/identity/realms/bubble'
+  - 'https://deployment.example.invalid/identity/realms/bubble'
+  
+      at TestContext.<anonymous> (file:///home/gunp4ng/working/bubblelock-final-20261112/repo/deployment/test/configure.test.mjs:18:10)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'https://deployment.example.invalid:443/identity/realms/bubble',
+    expected: 'https://deployment.example.invalid/identity/realms/bubble',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

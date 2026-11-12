@@ -1,0 +1,307 @@
+name: ${COMPOSE_PROJECT_NAME:-bubblelock-deploy}
+x-runtime: &runtime
+  restart: unless-stopped
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: ["ALL"]
+  logging:
+    driver: json-file
+    options: {max-size: "10m", max-file: "3"}
+services:
+  postgres:
+    <<: *runtime
+    image: ${POSTGRES_IMAGE:-postgres:17.6-alpine}
+    user: "70:70"
+    mem_limit: 512m
+    env_file: ${RUN_TMP:-../.local/deployment}/postgres.env
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    tmpfs: ["/var/run/postgresql:uid=70,gid=70"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bubble -d bubble"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    networks: [backend]
+  keycloak:
+    <<: *runtime
+    image: ${KEYCLOAK_IMAGE:-quay.io/keycloak/keycloak:26.5.2}
+    command: ["start", "--import-realm"]
+    user: "1000:1000"
+    mem_limit: 768m
+    env_file: ${RUN_TMP:-../.local/deployment}/keycloak.env
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/bubble
+      KC_DB_USERNAME: bubble
+      KC_DB_SCHEMA: keycloak
+      KC_HTTP_ENABLED: "true"
+      KC_HTTP_RELATIVE_PATH: /identity
+      KC_PROXY_HEADERS: xforwarded
+      KC_HEALTH_ENABLED: "true"
+      JAVA_OPTS_KC_HEAP: -Xms128m -Xmx384m
+    volumes:
+      - identity-config:/opt/keycloak/data/import:ro
+    depends_on:
+      postgres: {condition: service_healthy}
+    networks: [backend]
+  api:
+    <<: *runtime
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+      args:
+        NODE_IMAGE: ${NODE_IMAGE:-node:22.22.0-bookworm-slim}
+        VITE_MAP_TILE_URL: ${VITE_MAP_TILE_URL:-}
+        VITE_MAP_ATTRIBUTION: ${VITE_MAP_ATTRIBUTION:-}
+        VITE_STADIA_MAPS_KEY: ${VITE_STADIA_MAPS_KEY:-}
+        VITE_STADIA_MAPS_DOMAIN: ${VITE_STADIA_MAPS_DOMAIN:-}
+    image: bubblelock-app:local
+    user: "1000:1000"
+    read_only: true
+    mem_limit: 512m
+    env_file: ${RUN_TMP:-../.local/deployment}/app.env
+    environment:
+      NODE_EXTRA_CA_CERTS: /run/bubble/pki/ca.pem
+      PRIVACY_BUBBLE_API_CONFIG: /run/bubble/api.json
+      NODE_OPTIONS: --max-old-space-size=256
+    volumes:
+      - api-config:/run/bubble:ro
+      - receipts:/var/lib/bubble
+    tmpfs: ["/tmp:uid=1000,gid=1000"]
+    depends_on:
+      postgres: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('https').get('https://api:8787/healthz',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    networks: [backend]
+  web:
+    <<: *runtime
+    image: bubblelock-app:local
+    command: ["node", "web-dashboard/server/cli.ts"]
+    user: "1000:1000"
+    read_only: true
+    mem_limit: 256m
+    environment:
+      NODE_EXTRA_CA_CERTS: /run/bubble/pki/ca.pem
+      PORTAL_CONFIG_FILE: /run/bubble/portal.json
+      BFF_HOST: 0.0.0.0
+      LOCATION_SIMULATION: "false"
+      NODE_OPTIONS: --max-old-space-size=128
+    volumes:
+      - web-config:/run/bubble:ro
+    tmpfs: ["/tmp:uid=1000,gid=1000"]
+    depends_on:
+      api: {condition: service_healthy}
+      proxy: {condition: service_started}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4174/api/auth/session').then(r=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    networks: [backend]
+  proxy:
+    <<: *runtime
+    image: ${PROXY_IMAGE:-nginx:1.28-alpine}
+    entrypoint: ["nginx"]
+    command: ["-c", "/run/proxy/nginx.conf", "-g", "daemon off;"]
+    user: "101:101"
+    read_only: true
+    mem_limit: 128m
+    # Exact external port contract: TCP80 HTTP-01/redirect, TCP443 HTTPS.
+    ports:
+      - ${BIND_ADDRESS:-127.0.0.1}:${HTTP_PORT:-80}:80
+      - ${BIND_ADDRESS:-127.0.0.1}:${HTTPS_PORT:-443}:${HTTPS_PORT:-443}
+    volumes:
+      - proxy-config:/run/proxy:ro
+      - type: volume
+        source: web-static
+        target: /srv
+        read_only: true
+        volume: {nocopy: true}
+      - acme-web:/var/www/acme:ro
+    tmpfs: ["/tmp:uid=101,gid=101"]
+    networks:
+      backend:
+        aliases: ["${PUBLIC_DOMAIN:-bubble.localhost}"]
+      ingress:
+  static:
+    image: bubblelock-app:local
+    command: ["sh", "-c", "cp -r /app/web-dashboard/dist/. /srv/"]
+    user: "1000:1000"
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 64m
+    volumes:
+      - type: volume
+        source: web-static
+        target: /srv
+        volume: {nocopy: true}
+    networks: [backend]
+  mqtt:
+    <<: *runtime
+    image: ${MOSQUITTO_IMAGE:-eclipse-mosquitto:2.0.22}
+    entrypoint: ["mosquitto"]
+    command: ["-c", "/run/mqtt/mosquitto.conf"]
+    user: "1883:1883"
+    read_only: true
+    mem_limit: 128m
+    # Only TCP8883 is published; private MQTT1883 has no host mapping.
+    ports:
+      - ${BIND_ADDRESS:-127.0.0.1}:${MQTT_PORT:-8883}:8883
+    volumes:
+      - mqtt-config:/run/mqtt:ro
+      - mqtt-data:/mosquitto/data
+      - mqtt-log:/mosquitto/log
+    networks: [backend, ingress]
+  mqtt-bridge:
+    <<: *runtime
+    image: bubblelock-app:local
+    command: ["node", "deployment/mqtt-bridge.mjs"]
+    user: "1000:1000"
+    read_only: true
+    mem_limit: 128m
+    environment: {NODE_EXTRA_CA_CERTS: /run/bridge/ca.pem}
+    volumes: ["bridge-config:/run/bridge:ro"]
+    depends_on:
+      mqtt: {condition: service_started}
+      cse: {condition: service_healthy}
+    networks: [backend]
+  cse-db:
+    <<: *runtime
+    image: postgis/postgis:17-3.5
+    user: "999:999"
+    mem_limit: 512m
+    env_file: ${RUN_TMP:-../.local/deployment}/cse-db.env
+    volumes: ["cse-db:/var/lib/postgresql/data"]
+    tmpfs: ["/var/run/postgresql:uid=999,gid=999"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mobius -d mobius"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    networks: [backend]
+  cse:
+    <<: *runtime
+    build: {context: "..", dockerfile: deployment/cse/Dockerfile}
+    image: bubblelock/mobius4:4.25.0-bubble-subscription-v1
+    user: "1000:1000"
+    mem_limit: 384m
+    env_file: ${RUN_TMP:-../.local/deployment}/cse.env
+    environment:
+      DB_HOST: cse-db
+      DB_PORT: "5432"
+      DB_USER: mobius
+      DB_NAME: mobius
+      DB_POOL_MAX: "5"
+      CSE_TYPE: "1"
+      CSE_ID: /bubble-cse
+      CSE_BASE_RN: Mobius
+      CSE_POA: http://cse:7599
+      HTTP_PORT: "7599"
+      MQTT_ENABLED: "false"
+      HTTPS_ENABLED: "true"
+      HTTPS_PORT: "8443"
+      HTTPS_KEY: /run/cse/server.key
+      HTTPS_CERT: /run/cse/server.pem
+      HTTPS_CHAIN: /run/cse/ca.pem
+      NODE_OPTIONS: --max-old-space-size=192
+      LOG_LEVEL: error
+    volumes: ["cse-data:/var/lib/mobius4", "cse-config:/run/cse:ro"]
+    depends_on:
+      cse-db: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:7599/Mobius',{headers:{'X-M2M-Origin':process.env.CSE_ADMIN,'X-M2M-RI':'health','X-M2M-RVI':'4'}}).then(r=>process.exit(r.status===200&&r.headers.get('x-m2m-rsc')==='2000'?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    networks: [backend]
+  init:
+    image: ${MOSQUITTO_IMAGE:-eclipse-mosquitto:2.0.22}
+    profiles: [tools]
+    entrypoint: ["sh", "-c", "exec tail -f /dev/null"]
+    user: "0:0"
+    mem_limit: 64m
+    volumes:
+      - api-config:/init/api
+      - web-config:/init/web
+      - identity-config:/init/identity
+      - proxy-config:/init/proxy
+      - mqtt-config:/init/mqtt
+      - receipts:/init/receipts
+      - web-static:/init/static
+      - mqtt-data:/init/mqtt-data
+      - postgres:/init/postgres
+      - bridge-config:/init/bridge
+      - cse-data:/init/cse
+      - cse-db:/init/cse-db
+      - cse-config:/init/cse-config
+    networks: [backend]
+  db-init:
+    image: ${POSTGRES_IMAGE:-postgres:17.6-alpine}
+    profiles: [tools]
+    user: "70:70"
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 64m
+    env_file: ${RUN_TMP:-../.local/deployment}/postgres.env
+    entrypoint: ["sh", "-c"]
+    command: ['export PGPASSWORD="$$POSTGRES_PASSWORD"; psql -v ON_ERROR_STOP=1 -h postgres -U bubble -d bubble -c "CREATE SCHEMA IF NOT EXISTS keycloak AUTHORIZATION bubble"']
+    depends_on:
+      postgres: {condition: service_healthy}
+    networks: [backend]
+  provision:
+    image: bubblelock-app:local
+    profiles: [tools]
+    command: ["node", "deployment/provision-cse.mjs"]
+    user: "1000:1000"
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 128m
+    env_file: ${RUN_TMP:-../.local/deployment}/cse.env
+    environment: {NODE_EXTRA_CA_CERTS: /run/bubble/pki/ca.pem}
+    volumes: ["api-config:/run/bubble:ro"]
+    depends_on:
+      cse: {condition: service_healthy}
+    networks: [backend]
+  certbot:
+    image: certbot/certbot:v5.1.0
+    profiles: [tools]
+    mem_limit: 256m
+    volumes:
+      - acme-web:/var/www/acme
+      - acme-certs:/etc/letsencrypt
+    networks: [ingress]
+  cert-install:
+    image: ${MOSQUITTO_IMAGE:-eclipse-mosquitto:2.0.22}
+    profiles: [tools]
+    mem_limit: 64m
+    environment: {PUBLIC_DOMAIN: "${PUBLIC_DOMAIN:-bubblelock.iptime.org}"}
+    entrypoint: ["sh", "-c"]
+    command: ['set -eu; cp "/certs/live/$$PUBLIC_DOMAIN/fullchain.pem" /proxy/public.pem; cp "/certs/live/$$PUBLIC_DOMAIN/privkey.pem" /proxy/public.key; chown 101:101 /proxy/public.pem /proxy/public.key; chmod 600 /proxy/public.pem /proxy/public.key']
+    volumes: ["acme-certs:/certs:ro", "proxy-config:/proxy"]
+    networks: [backend]
+networks:
+  backend: {internal: true}
+  ingress:
+volumes:
+  postgres:
+  receipts:
+  web-static:
+  api-config:
+  web-config:
+  identity-config:
+  proxy-config:
+  mqtt-config:
+  mqtt-data:
+  mqtt-log:
+  acme-web:
+  acme-certs:
+  bridge-config:
+  cse-db:
+  cse-data:
+  cse-config:

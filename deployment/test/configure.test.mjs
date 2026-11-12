@@ -1,0 +1,24 @@
+import assert from 'node:assert/strict';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import test from 'node:test';
+const exec = promisify(execFile);
+test('port 443 realm issuer callback and Keycloak hostname share the canonical origin', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'bubble-config443-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  await exec(process.execPath, ['deployment/configure.mjs'], { env: { ...process.env, RUN_TMP: directory, PUBLIC_DOMAIN: 'deployment.example.invalid', HTTPS_PORT: '443' } });
+  const api = JSON.parse(await readFile(join(directory, 'api.json'), 'utf8'));
+  const portal = JSON.parse(await readFile(join(directory, 'portal.json'), 'utf8'));
+  const realm = JSON.parse(await readFile(join(directory, 'realm.json'), 'utf8'));
+  const keycloak = await readFile(join(directory, 'keycloak.env'), 'utf8');
+  const issuer = 'https://deployment.example.invalid/identity/realms/bubble';
+  assert.equal(api.oidc.issuer, issuer);
+  assert.equal(portal.oidc.issuer, issuer);
+  assert.equal(portal.oidc.redirectUri, 'https://deployment.example.invalid/api/auth/callback');
+  assert.deepEqual(realm.clients[0].redirectUris, [portal.oidc.redirectUri]);
+  assert.match(keycloak, /^KC_HOSTNAME=https:\/\/deployment\.example\.invalid\/identity$/m);
+  assert.ok(realm.clients[0].protocolMappers.some((mapper) => mapper.protocolMapper === 'oidc-sub-mapper'));
+});

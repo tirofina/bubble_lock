@@ -1,0 +1,8 @@
+user gateway-1
+topic write /oneM2M/req/gateway-1/+/json
+topic read /oneM2M/resp/gateway-1/+/json
+topic read /oneM2M/req/+/gateway-1/json
+topic write /oneM2M/resp/+/gateway-1/json
+
+user cse
+topic readwrite /oneM2M/#

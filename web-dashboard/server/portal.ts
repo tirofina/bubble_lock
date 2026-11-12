@@ -16,7 +16,7 @@ export interface PortalHandler {
   handleAuth(request:IncomingMessage,response:ServerResponse):Promise<boolean>;
   authorizeOperator(request:IncomingMessage,response:ServerResponse):Promise<boolean>;
 }
-const actions=new Set(['households','devices','consents','grants','consents/revoke','grants/revoke','incidents','incidents/resolve','commands/request','commands/approve','notifications/read','location-leases','location-leases/revoke','relay-associations']);
+const actions=new Set(['households','devices','consents','grants','consents/revoke','grants/revoke','incidents','incidents/resolve','commands/request','commands/approve','commands/group','commands/retry','notifications/read','location-leases','location-leases/revoke','relay-associations']);
 function json(response:ServerResponse,status:number,body:unknown) {
   response.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});response.end(JSON.stringify(body));
 }

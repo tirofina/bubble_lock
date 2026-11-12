@@ -22,6 +22,7 @@ if (locationSimulation !== undefined && !['true', 'false'].includes(locationSimu
   throw new TypeError('LOCATION_SIMULATION 값은 true 또는 false로 지정하세요.');
 }
 const service = await startReplayServer({
+  host: process.env['BFF_HOST'] ?? '127.0.0.1',
   ...(receiptFile === undefined ? {} : { receiptFile }),
   ...(locationFile === undefined ? {} : { locationFile }),
   ...(gatewayLocationsFile === undefined ? {} : { gatewayLocationsFile }),

@@ -1,0 +1,107 @@
+worker_processes auto;
+pid /tmp/nginx.pid;
+error_log /dev/stderr warn;
+events { worker_connections 1024; }
+http {
+  include /etc/nginx/mime.types;
+  log_format safe '$remote_addr $request_method $uri $status';
+  access_log /dev/stdout safe;
+  map "$ssl_client_verify:$ssl_client_fingerprint" $gateway_authorized {
+    default 0;
+    ~*^SUCCESS:@GATEWAY_FINGERPRINT@$ 1;
+  }
+  client_body_temp_path /tmp/client;
+  proxy_temp_path /tmp/proxy;
+  fastcgi_temp_path /tmp/fastcgi;
+  uwsgi_temp_path /tmp/uwsgi;
+  scgi_temp_path /tmp/scgi;
+  limit_req_zone $binary_remote_addr zone=api:10m rate=20r/s;
+  limit_req_zone $binary_remote_addr zone=login:1m rate=5r/s;
+  limit_req_status 429;
+  server_tokens off;
+  resolver 127.0.0.11 valid=5s ipv6=off;
+  server {
+    listen 80;
+    server_name @HOST@;
+    location /.well-known/acme-challenge/ { root /var/www/acme; }
+    location / { return 308 @PUBLIC_ORIGIN@$request_uri; }
+  }
+  server {
+    listen @HTTPS_PORT@ ssl;
+    server_name @HOST@;
+    ssl_certificate /run/proxy/public.pem;
+    ssl_certificate_key /run/proxy/public.key;
+    ssl_protocols TLSv1.3;
+    ssl_client_certificate /run/proxy/ca.pem;
+    ssl_verify_client optional;
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options DENY always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+    # Existing browser Ajv.compile generates validators with new Function.
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: @MAP_ORIGINS@; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'" always;
+    client_max_body_size 64k;
+    proxy_http_version 1.1;
+    proxy_set_header Host $http_host;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_set_header X-Forwarded-Host $http_host;
+    proxy_set_header X-Forwarded-Port @HTTPS_PORT@;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_ssl_trusted_certificate /run/proxy/ca.pem;
+    proxy_ssl_verify on;
+    proxy_ssl_server_name on;
+    proxy_ssl_protocols TLSv1.3;
+    location ~ ^/api/v1/gateways/@GATEWAY_ID@/ {
+      if ($gateway_authorized = 0) { return 403; }
+      limit_req zone=api burst=40 nodelay;
+      proxy_set_header X-Forwarded-Client-Cert "";
+      proxy_set_header X-SSL-CERT "";
+      proxy_ssl_certificate /run/proxy/gateway.pem;
+      proxy_ssl_certificate_key /run/proxy/gateway.key;
+      proxy_ssl_name api;
+      set $api https://api:8787;
+      proxy_pass $api;
+    }
+    location ~ ^/api/v1/ { return 403; }
+    location ~ ^/onem2m/Mobius/bubble-household-1/@GATEWAY_ID@/(observations|receipts|health)(/.*)?$ {
+      if ($gateway_authorized = 0) { return 403; }
+      limit_req zone=api burst=40 nodelay;
+      proxy_set_header X-M2M-Origin @GATEWAY_ID@;
+      proxy_set_header Authorization "";
+      proxy_ssl_name cse;
+      set $cse https://cse:8443;
+      rewrite ^/onem2m(/.*)$ $1 break;
+      proxy_pass $cse;
+    }
+    location /onem2m { return 403; }
+    location ~ ^/identity/(admin|management)(/|$) { return 403; }
+    location /identity/ {
+      limit_req zone=login burst=30 nodelay;
+      set $identity http://keycloak:8080;
+      proxy_pass $identity;
+    }
+    location /healthz {
+      set $api https://api:8787;
+      proxy_ssl_name api;
+      proxy_pass $api;
+    }
+    location /api/ {
+      limit_req zone=api burst=40 nodelay;
+      set $bff http://web:4174;
+      proxy_pass $bff;
+    }
+    location /events {
+      limit_req zone=api burst=40 nodelay;
+      set $bff http://web:4174;
+      proxy_pass $bff;
+      proxy_buffering off;
+      proxy_read_timeout 1h;
+    }
+    location ~ ^/(Mobius|v1|admin|metrics)(/|$) { return 403; }
+    location / {
+      root /srv;
+      try_files $uri /index.html;
+    }
+  }
+}

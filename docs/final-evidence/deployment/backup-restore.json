@@ -1,0 +1,18 @@
+{
+  "status": "BACKUP_RESTORE_PASS",
+  "destination": "/home/gunp4ng/working/bubblelock-final-20261112/repo/.local/backups/2026-11-12T10-44-37.211Z",
+  "records": [
+    {
+      "service": "postgres",
+      "bytes": 245230,
+      "restoredTables": 98,
+      "restore": "PASS"
+    },
+    {
+      "service": "cse-db",
+      "bytes": 43815,
+      "restoredTables": 58,
+      "restore": "PASS"
+    }
+  ]
+}

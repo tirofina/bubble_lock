@@ -1,0 +1,273 @@
+{
+  "status": "POSTGRES_BROWSER_GROUP_PASS",
+  "requestId": "request-230471d3c50755b81ef26f26",
+  "approval": {
+    "reason": "Real CSE PostgreSQL deployment QA",
+    "status": "QUEUED",
+    "commands": [
+      {
+        "version": 1,
+        "gatewayId": "gateway-1",
+        "deviceId": "keyring-A",
+        "commandId": "portal-f41326f2386055c203adb724652838dc",
+        "claimId": "claim-20a0c11b-93bf-4ff2-b496-e22a95f76198",
+        "desiredState": {
+          "state": true
+        },
+        "issuedAt": "2026-11-12T10:43:39.363Z",
+        "deadline": "2026-11-12T10:48:39.349Z",
+        "grantRevision": 1,
+        "ownershipEpoch": 0
+      },
+      {
+        "version": 1,
+        "gatewayId": "gateway-1",
+        "deviceId": "keyring-B",
+        "commandId": "portal-2556e1fcb5faf648a3b139107fd2f272",
+        "claimId": "claim-68d1df99-1ded-4617-8ee8-e88b62638bd5",
+        "desiredState": {
+          "state": true
+        },
+        "issuedAt": "2026-11-12T10:43:39.363Z",
+        "deadline": "2026-11-12T10:48:39.349Z",
+        "grantRevision": 1,
+        "ownershipEpoch": 0
+      }
+    ],
+    "deviceIds": [
+      "keyring-A",
+      "keyring-B"
+    ],
+    "expiresAt": "2026-11-12T10:48:39.349Z",
+    "requestId": "request-230471d3c50755b81ef26f26",
+    "householdId": "household-1",
+    "requestedAt": "2026-11-12T10:43:39.349Z",
+    "requestedBy": "guardian-1",
+    "desiredState": {
+      "state": true
+    },
+    "approvedBy": "guardian-1",
+    "approvedAt": "2026-11-12T10:43:39.363Z",
+    "grantId": "grant-c105909b-f6bb-441b-92d9-936c62e6f867",
+    "approvalHash": "8d8330fa6bbbaa4b810c4d3c2ed68e22f715e328d0dc365d4189f087ad839870"
+  },
+  "group": {
+    "contractId": "privacy-bubble.group-dispatch",
+    "groupId": "household-1",
+    "commandId": "request-230471d3c50755b81ef26f26",
+    "state": true,
+    "status": "IN_FLIGHT",
+    "attempts": 1,
+    "memberCount": 2,
+    "appliedCount": 0,
+    "members": [
+      {
+        "memberId": "keyring-A",
+        "memberCommandId": "portal-f41326f2386055c203adb724652838dc",
+        "deviceId": "keyring-A",
+        "gatewayId": "gateway-1",
+        "status": "DISPATCHED",
+        "attempts": 1
+      },
+      {
+        "memberId": "keyring-B",
+        "memberCommandId": "portal-2556e1fcb5faf648a3b139107fd2f272",
+        "deviceId": "keyring-B",
+        "gatewayId": "gateway-1",
+        "status": "DISPATCHED",
+        "attempts": 1
+      }
+    ],
+    "timestamp": "2026-11-12T10:43:39.452Z"
+  },
+  "trace": [
+    {
+      "action": "devices",
+      "status": 200,
+      "result": {
+        "mode": "live",
+        "result": {
+          "deviceId": "keyring-A",
+          "householdId": "household-1",
+          "gatewayId": "gateway-1",
+          "label": "Mock device A",
+          "registeredAt": "2026-11-12T10:43:39.263Z"
+        }
+      }
+    },
+    {
+      "action": "devices",
+      "status": 200,
+      "result": {
+        "mode": "live",
+        "result": {
+          "deviceId": "keyring-B",
+          "householdId": "household-1",
+          "gatewayId": "gateway-1",
+          "label": "Mock device B",
+          "registeredAt": "2026-11-12T10:43:39.310Z"
+        }
+      }
+    },
+    {
+      "action": "consents",
+      "status": 200,
+      "result": {
+        "mode": "live",
+        "result": {
+          "consentId": "consent-f036b1a3-a55d-448b-b070-9a5f1dc8cda4",
+          "subjectId": "household-1",
+          "purpose": "PostgreSQL real CSE deployment acceptance",
+          "scopes": [
+            "bubble:command"
+          ],
+          "principalId": "guardian-1",
+          "revision": 1,
+          "status": "ACTIVE",
+          "createdAt": "2026-11-12T10:43:39.324Z",
+          "expiresAt": "2026-11-12T10:58:39.324Z",
+          "consentHash": "9a4eb8054a3900701ba62177afa25e60c987840e82d2d68ee188b5b9f8027328"
+        }
+      }
+    },
+    {
+      "action": "grants",
+      "status": 200,
+      "result": {
+        "mode": "live",
+        "result": {
+          "grantId": "grant-c105909b-f6bb-441b-92d9-936c62e6f867",
+          "consentId": "consent-f036b1a3-a55d-448b-b070-9a5f1dc8cda4",
+          "subjectId": "household-1",
+          "principalId": "guardian-1",
+          "purpose": "privacy-bubble-command",
+          "scopes": [
+            "bubble:command"
+          ],
+          "revision": 1,
+          "status": "ACTIVE",
+          "createdAt": "2026-11-12T10:43:39.337Z",
+          "expiresAt": "2026-11-12T10:58:39.324Z",
+          "approvalHash": "e254811127083b10f6d8aae6ad43a140852602ef414b4df693d8e6dfa8cc6aa8"
+        }
+      }
+    },
+    {
+      "action": "commands/request",
+      "status": 200,
+      "result": {
+        "mode": "live",
+        "result": {
+          "requestId": "request-230471d3c50755b81ef26f26",
+          "householdId": "household-1",
+          "deviceIds": [
+            "keyring-A",
+            "keyring-B"
+          ],
+          "desiredState": {
+            "state": true
+          },
+          "reason": "Real CSE PostgreSQL deployment QA",
+          "requestedBy": "guardian-1",
+          "requestedAt": "2026-11-12T10:43:39.349Z",
+          "expiresAt": "2026-11-12T10:48:39.349Z",
+          "status": "PENDING",
+          "commands": []
+        }
+      }
+    },
+    {
+      "action": "commands/approve",
+      "status": 200,
+      "result": {
+        "mode": "live",
+        "result": {
+          "reason": "Real CSE PostgreSQL deployment QA",
+          "status": "QUEUED",
+          "commands": [
+            {
+              "version": 1,
+              "gatewayId": "gateway-1",
+              "deviceId": "keyring-A",
+              "commandId": "portal-f41326f2386055c203adb724652838dc",
+              "claimId": "claim-20a0c11b-93bf-4ff2-b496-e22a95f76198",
+              "desiredState": {
+                "state": true
+              },
+              "issuedAt": "2026-11-12T10:43:39.363Z",
+              "deadline": "2026-11-12T10:48:39.349Z",
+              "grantRevision": 1,
+              "ownershipEpoch": 0
+            },
+            {
+              "version": 1,
+              "gatewayId": "gateway-1",
+              "deviceId": "keyring-B",
+              "commandId": "portal-2556e1fcb5faf648a3b139107fd2f272",
+              "claimId": "claim-68d1df99-1ded-4617-8ee8-e88b62638bd5",
+              "desiredState": {
+                "state": true
+              },
+              "issuedAt": "2026-11-12T10:43:39.363Z",
+              "deadline": "2026-11-12T10:48:39.349Z",
+              "grantRevision": 1,
+              "ownershipEpoch": 0
+            }
+          ],
+          "deviceIds": [
+            "keyring-A",
+            "keyring-B"
+          ],
+          "expiresAt": "2026-11-12T10:48:39.349Z",
+          "requestId": "request-230471d3c50755b81ef26f26",
+          "householdId": "household-1",
+          "requestedAt": "2026-11-12T10:43:39.349Z",
+          "requestedBy": "guardian-1",
+          "desiredState": {
+            "state": true
+          },
+          "approvedBy": "guardian-1",
+          "approvedAt": "2026-11-12T10:43:39.363Z",
+          "grantId": "grant-c105909b-f6bb-441b-92d9-936c62e6f867",
+          "approvalHash": "8d8330fa6bbbaa4b810c4d3c2ed68e22f715e328d0dc365d4189f087ad839870"
+        }
+      }
+    },
+    {
+      "action": "commands/group",
+      "status": 200,
+      "result": {
+        "mode": "live",
+        "result": {
+          "contractId": "privacy-bubble.group-dispatch",
+          "groupId": "household-1",
+          "commandId": "request-230471d3c50755b81ef26f26",
+          "state": true,
+          "status": "IN_FLIGHT",
+          "attempts": 1,
+          "memberCount": 2,
+          "appliedCount": 0,
+          "members": [
+            {
+              "memberId": "keyring-A",
+              "memberCommandId": "portal-f41326f2386055c203adb724652838dc",
+              "deviceId": "keyring-A",
+              "gatewayId": "gateway-1",
+              "status": "DISPATCHED",
+              "attempts": 1
+            },
+            {
+              "memberId": "keyring-B",
+              "memberCommandId": "portal-2556e1fcb5faf648a3b139107fd2f272",
+              "deviceId": "keyring-B",
+              "gatewayId": "gateway-1",
+              "status": "DISPATCHED",
+              "attempts": 1
+            }
+          ],
+          "timestamp": "2026-11-12T10:43:39.452Z"
+        }
+      }
+    }
+  ]
+}

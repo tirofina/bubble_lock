@@ -1,0 +1,31 @@
+{
+  "status": "DEPLOYED_BROWSER_RENDER_PASS",
+  "results": [
+    {
+      "label": "desktop",
+      "width": 1440,
+      "height": 1000,
+      "title": "BubbleLock · 사용자 대시보드",
+      "text": "본문으로 건너뛰기\nBubbleLock\nPRIVACY, CONNECTED\n나의 프라이버시\n내 대시보드\n키링 위치\n가족과 키링\n동의와 권한\n알림과 요청\n관측 기반 상태 확인\n위치 · 동의 · 실행 기록\n시작 화면으로\n사용자 대시보드\n키링 위치\nguardian-1 · 로그아웃\n\nMY BUBBLE\n\n키링 위치\n연결된 계정\n가족의 동의와 현재 권한을 기준으로 요청을 처리합니다.\n키링 위치\n3개 키링\n모의 위치\n전체 위치\n1\n키링 A\n2\n3\n30 m\n+\n−\n Leaflet | © OpenStreetMap contributors\n기본 지도\n일반 지도\n4초마다 위치 갱신\nGPS · MEC 위치\nBLE 추정 범위\n수신기 기준\nBLE 원 숨기기\n연결된 키링\n3\n1\n키링 A\n위치 서비스로 확인\n-59\n2\n키링 B\nGPS로 확인한 위치\n-75\n3\n키링 C · BLE\n수신기 주변에서 감지\n-87\n선택한 키링\n키링 A\n모의 기록\nBLE 수신\n-59dBm\n강한 수신 · 모의\n추정 반경\n1.0 m\n모의 수신기 기준\n위치 기준\n위치 서비스로 확인 · 모의\n수신기\n서울광장 수신기 · 모의\n최근 관측\n2026-11-10 17:10:02.000 KST\n좌표와 관측 자세히 보기\n\n핀은 GPS·위치 서비스 좌표, 점선 원은 BLE 수신기 중심의 추정 범위입니다. 옅은 실선 원은 위치 정확도를 나타냅니다.\n\n위치 공유 승인\n\n도움 요청의 목적에 맞춰 조회 대상과 기간을 선택하세요.\n\n위치 조회 동의\n권한 선택\n\n동의와 권한에서 위치 조회를 승인하세요.\n\n관련 도움 요청\n요청 선택\n위치를 볼 사람\n대상 선택\n공유할 키링\n조회 기간\n1분\n3분\n5분\n위치 공유 승인\n도움 요청 만들기\n위치 공유 기록\n\n승인한 위치 공유 내역이 여기에 표시됩니다.\n\n조회 기간과 도움 요청 상태, 현재 동의 범위를 함께 확인합니다.\n\nBubbleLock · Privacy Bubble Keyring\n관측별 출처와 시각을 함께 확인하세요.",
+      "viewport": 1440,
+      "documentWidth": 1425,
+      "map": true
+    },
+    {
+      "label": "mobile",
+      "width": 390,
+      "height": 844,
+      "title": "BubbleLock · 사용자 대시보드",
+      "text": "본문으로 건너뛰기\nBubbleLock\nPRIVACY, CONNECTED\n내 대시보드\n키링 위치\n가족과 키링\n동의와 권한\n알림과 요청\n사용자 대시보드\n키링 위치\nguardian-1 · 로그아웃\n\nMY BUBBLE\n\n키링 위치\n연결된 계정\n가족의 동의와 현재 권한을 기준으로 요청을 처리합니다.\n키링 위치\n3개 키링\n모의 위치\n전체 위치\n1\n키링 A\n2\n3\n30 m\n+\n−\n Leaflet | © OpenStreetMap contributors\n기본 지도\n일반 지도\n4초마다 위치 갱신\nGPS · MEC 위치\nBLE 추정 범위\n수신기 기준\nBLE 원 숨기기\n연결된 키링\n3\n1\n키링 A\n위치 서비스로 확인\n-59\n2\n키링 B\nGPS로 확인한 위치\n-75\n3\n키링 C · BLE\n수신기 주변에서 감지\n-87\n선택한 키링\n키링 A\n모의 기록\nBLE 수신\n-59dBm\n강한 수신 · 모의\n추정 반경\n1.0 m\n모의 수신기 기준\n위치 기준\n위치 서비스로 확인 · 모의\n수신기\n서울광장 수신기 · 모의\n최근 관측\n2026-11-10 17:10:02.000 KST\n좌표와 관측 자세히 보기\n\n핀은 GPS·위치 서비스 좌표, 점선 원은 BLE 수신기 중심의 추정 범위입니다. 옅은 실선 원은 위치 정확도를 나타냅니다.\n\n위치 공유 승인\n\n도움 요청의 목적에 맞춰 조회 대상과 기간을 선택하세요.\n\n위치 조회 동의\n권한 선택\n\n동의와 권한에서 위치 조회를 승인하세요.\n\n관련 도움 요청\n요청 선택\n위치를 볼 사람\n대상 선택\n공유할 키링\n조회 기간\n1분\n3분\n5분\n위치 공유 승인\n도움 요청 만들기\n위치 공유 기록\n\n승인한 위치 공유 내역이 여기에 표시됩니다.\n\n조회 기간과 도움 요청 상태, 현재 동의 범위를 함께 확인합니다.\n\nBubbleLock · Privacy Bubble Keyring\n관측별 출처와 시각을 함께 확인하세요.",
+      "viewport": 390,
+      "documentWidth": 390,
+      "map": true
+    }
+  ],
+  "network": {
+    "localTileResponses": 24,
+    "externalDenied": 0
+  },
+  "fixture": "existing location-demo, browser locations endpoint only",
+  "authentication": "actual self-hosted Keycloak guardian"
+}

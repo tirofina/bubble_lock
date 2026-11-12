@@ -1,0 +1,2 @@
+{"status":"MQTT_CSE_PASS","tls":"TLSv1.3","actualCseRsc":2000,"readbackState":true,"forgedOriginatorRsc":4103,"foreignTopicPublish":"DENIED"}
+{"status":"MQTT_ANONYMOUS_DENIED"}
