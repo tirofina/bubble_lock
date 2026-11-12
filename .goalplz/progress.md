@@ -2073,3 +2073,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 조립 �
 - 조립 해시, 반복 알림, 측정 지점 구분 및 상충 샘플 회귀시험 소스를 반영했다. 빌드·시험·Pi 실행과 실제 계측기 및 INA219 비교는 미수행이다.
 
 소스 commit `8788250dab55780c7bbbb457fc639f3dd2aa16a8`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `d753720..8788250`다. goal은 active/progress다.
+
+## 2026-11-12 — 영수증 전송 전후 SQLite 쓰기 복구
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 PCB 조립 기록과 전력 실측 샘플 대조를 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 중앙 영수증 및 웹 ACK 계약을 확인했다.
+
+- Gateway 0.2.119는 고정 Mobius4 영수증의 첫 전송 표시와 원격 전송 실패 뒤 재시도 시각을 SQLite에 쓰다가 실패하면 해당 전송 작업에서 로컬 쓰기를 재시도한다. 처음 전송하기 전에 표시가 커밋돼야 하며, 서버의 Retry-After는 로컬 쓰기 대기 중에도 경과한다. [영수증 재시도](../keyring/raspberry-pi-gateway/RECEIPT_ROUTING.md)
+- 전송 전 쓰기 오류, 중앙 HTTPS 보류 시각을 기록할 때의 오류, 재시작 뒤 기존 본문·요청 ID·보류 시각을 읽는 회귀시험 소스를 반영했다. 빌드·시험·실제 Pi·Mobius4 및 중앙 장애 재시작 확인은 미수행이다.
+
+소스 commit `33b6bb0035f85428f4cbc801a8ae8734e9dbf704`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8b0e7aa..33b6bb0`다. goal은 active/progress다.

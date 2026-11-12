@@ -2007,5 +2007,12 @@
     "regressionsExecuted": false,
     "physicalMeasurementsVerified": false,
     "sourceCommit": "8788250dab55780c7bbbb457fc639f3dd2aa16a8"
+  },
+  "gatewayOutboxRetryWriteRecovery": {
+    "reference": "raspberry-pi-gateway/RECEIPT_ROUTING.md",
+    "gatewayVersion": "0.2.119",
+    "regressionsExecuted": false,
+    "livePiRestartVerified": false,
+    "sourceCommit": "33b6bb0035f85428f4cbc801a8ae8734e9dbf704"
   }
 }
