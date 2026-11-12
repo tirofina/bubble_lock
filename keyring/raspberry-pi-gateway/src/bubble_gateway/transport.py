@@ -10,6 +10,7 @@ import logging
 import math
 import re
 import sqlite3
+import ssl
 import uuid
 from datetime import timezone
 from email.utils import parsedate_to_datetime
@@ -184,6 +185,8 @@ class TransportHub:
         self._core_root = f"privacy-bubble/gateway/{config.gateway_id}"
         self._commands: asyncio.Queue = asyncio.Queue(maxsize=128)
         self._http: httpx.AsyncClient | None = None
+        self._pc_http: httpx.AsyncClient | None = None
+        self._pc_api_enabled = True
         self._http_retry_until: dict[tuple[str, int], tuple[float, int]] = {}
         self._retry_store = retry_store
         self._retry_boot_id = _system_boot_id() if retry_store is not None else None
@@ -199,15 +202,18 @@ class TransportHub:
         self._subscribe_mid: int | None = None
         self._closing = False
 
-    async def start(self) -> None:
+    async def start(self, *, enable_pc_api: bool = True) -> None:
         if self._http is not None:
             raise RuntimeError("transport already started")
         self._closing = False
+        self._pc_api_enabled = enable_pc_api
         self._loop = asyncio.get_running_loop()
         context = tls_context(self.config)
-        self._http = httpx.AsyncClient(verify=context, follow_redirects=False, trust_env=False,
-                                      timeout=httpx.Timeout(self.config.request_timeout),
-                                      limits=httpx.Limits(max_connections=8, max_keepalive_connections=4))
+        pc_context = (tls_context(self.config, pc_api=True)
+                      if enable_pc_api and getattr(self.config, "pc_api_tls_files", None) is not None else None)
+        self._http = self._http_client(context)
+        if pc_context is not None:
+            self._pc_http = self._http_client(pc_context)
         if not self.config.mqtt_enabled:
             return
         client_id = (f"pb-gateway-{self.config.gateway_id}" if self.config.core_bridge_enabled
@@ -230,6 +236,11 @@ class TransportHub:
         await asyncio.to_thread(client.connect_async, self.config.mqtt_host,
                                 self.config.mqtt_port, self.config.mqtt_keepalive)
         await asyncio.to_thread(client.loop_start)
+
+    def _http_client(self, context: ssl.SSLContext) -> httpx.AsyncClient:
+        return httpx.AsyncClient(verify=context, follow_redirects=False, trust_env=False,
+                                 timeout=httpx.Timeout(self.config.request_timeout),
+                                 limits=httpx.Limits(max_connections=8, max_keepalive_connections=4))
 
     def _schedule(self, callback: Any, *args: Any) -> None:
         loop = self._loop
@@ -359,8 +370,10 @@ class TransportHub:
         return None
 
     async def _http_json(self, method: str, url: str, *, headers: dict[str, str],
-                         body: dict[str, Any] | None = None) -> tuple[int, httpx.Headers, dict[str, Any]]:
-        if self._http is None:
+                         body: dict[str, Any] | None = None,
+                         client: httpx.AsyncClient | None = None) -> tuple[int, httpx.Headers, dict[str, Any]]:
+        client = self._http if client is None else client
+        if client is None:
             raise RuntimeError("transport is not started")
         origin = _https_origin(url)
         deferred = self._http_deferral(origin)
@@ -369,7 +382,7 @@ class TransportHub:
         encoded = _json(body) if body is not None else None
         if encoded is not None and len(encoded) > MAX_BODY:
             raise ValueError("outgoing payload exceeds size limit")
-        async with asyncio.timeout(self.config.request_timeout), self._http.stream(
+        async with asyncio.timeout(self.config.request_timeout), client.stream(
                 method, url, headers=headers, content=encoded) as response:
             if response.status_code in {429, 503}:
                 retry_after = _retry_after(response.headers.get("Retry-After"))
@@ -686,14 +699,21 @@ class TransportHub:
 
     async def _api(self, method: str, suffix: str, body: dict[str, Any] | None = None,
                    correlation_id: str | None = None, *, idempotency_key: str | None = None) -> dict[str, Any]:
+        if not self._pc_api_enabled:
+            raise RuntimeError("PC API transport is disabled")
         request_id = str(uuid.uuid4())
         headers = {"Accept": "application/json", "Content-Type": "application/json",
                    "X-Request-ID": request_id, "X-Correlation-ID": correlation_id or request_id,
                    "Cache-Control": "no-store"}
         if idempotency_key is not None:
             headers["Idempotency-Key"] = idempotency_key
+        options = {}
+        if getattr(self.config, "pc_api_tls_files", None) is not None:
+            if self._pc_http is None:
+                raise RuntimeError("PC API TLS transport is not started")
+            options["client"] = self._pc_http
         status, _, document = await self._http_json(
-            method, self._api_url + self._gateway_path + suffix, headers=headers, body=body)
+            method, self._api_url + self._gateway_path + suffix, headers=headers, body=body, **options)
         if status != 200:
             raise RemoteResponseError("PC API request rejected", status_code=status)
         return document
@@ -778,6 +798,11 @@ class TransportHub:
             await asyncio.to_thread(self._mqtt.disconnect)
             await asyncio.to_thread(self._mqtt.loop_stop)
             self._mqtt = None
-        if self._http is not None:
-            await self._http.aclose()
-            self._http = None
+        cse_http, pc_http = self._http, self._pc_http
+        self._http = self._pc_http = None
+        try:
+            if cse_http is not None:
+                await cse_http.aclose()
+        finally:
+            if pc_http is not None:
+                await pc_http.aclose()

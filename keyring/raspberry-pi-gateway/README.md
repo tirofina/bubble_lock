@@ -128,6 +128,8 @@ sudo -u bubble-gateway env STATE_DIRECTORY=/var/lib/privacy-bubble-gateway \
 
 Gateway 0.2.121의 `bubble-gateway --env-file gateway.env --check-cse-routes`는 새 Mobius의 관측·health 컨테이너 ID를 HTTPS GET으로 대조한다. 명령이 활성화된 설정은 영수증 컨테이너 ID도 요구한다. 중앙 API가 준비되기 전에 Pi에 넣을 CSE 설정을 먼저 확인할 수 있다. [서버 전환 절차](STATE_RECOVERY.md#새-배포-db에-core-순번-이어받기)
 
+Gateway 0.2.122에서 중앙 API의 PKI가 다르면 `PC_API_TLS_CA_FILE`, `PC_API_TLS_CERT_FILE`, `PC_API_TLS_KEY_FILE`을 함께 지정한다. 이 파일은 중앙 API의 HTTPS 연결에 사용한다. Mobius HTTPS와 MQTT는 `TLS_CA_FILE`, `TLS_CERT_FILE`, `TLS_KEY_FILE`을 사용한다. 중앙 전용 설정을 생략하면 세 경로가 기존 TLS 파일을 공유한다. 두 HTTPS 연결 모두 TLS 1.3과 호스트 이름 검증을 적용하며 `--check-config`에서 구성한 인증서와 키를 읽어 확인할 수 있다. [설정 예시](.env.example)
+
 foreground 실행 명령은 다음과 같다. 같은 데이터베이스를 사용하는 프로세스는 하나만 허용한다. systemd 서비스가 이미 실행 중이면 중복으로 실행하지 않는다.
 
 ```sh

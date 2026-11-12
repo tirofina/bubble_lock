@@ -38,7 +38,7 @@ async def check_command_route(config: GatewayConfig, *, check_central: bool = Tr
     hub = TransportHub(replace(config, mqtt_enabled=False, m2m_mqtt_enabled=False, core_bridge_enabled=False))
     stage = "mTLS initialization"
     try:
-        await hub.start()
+        await hub.start(enable_pc_api=check_central)
         report = {"gatewayId": config.gateway_id}
         if check_receipts:
             stage = "CSE receipt parent lookup"
@@ -98,6 +98,8 @@ def main() -> None:
         if args.check_config:
             try:
                 tls_context(config)
+                if config.pc_api_tls_files is not None:
+                    tls_context(config, pc_api=True)
             except OSError as exc:
                 raise DeploymentConfigError(f"TLS file check failed ({type(exc).__name__})") from None
             logging.getLogger(__name__).info("Gateway configuration check passed")

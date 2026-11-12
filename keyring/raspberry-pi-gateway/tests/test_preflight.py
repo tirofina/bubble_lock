@@ -181,7 +181,10 @@ class PreflightTests(unittest.TestCase):
 
     def test_cse_only_preflight_reads_all_active_native_routes_without_central_access(self):
         self.env.update(COMMANDS_ENABLED="false", M2M_OBSERVATION_CONTAINER_RI="cnt-observation",
-                        M2M_HEALTH_CONTAINER_RI="cnt-health")
+                        M2M_HEALTH_CONTAINER_RI="cnt-health",
+                        PC_API_TLS_CA_FILE=str(self.pki.path("trusted")),
+                        PC_API_TLS_CERT_FILE=str(self.pki.path("client")),
+                        PC_API_TLS_KEY_FILE=str(self.pki.path("rogue-client", "key")))
         self.assertEqual(self.check_route(cse_only=True), [
             "https://example.invalid/test/obs", "https://example.invalid/test/health",
         ])
@@ -217,6 +220,14 @@ class PreflightTests(unittest.TestCase):
 
     def test_wrong_private_key_is_reported_before_database_creation(self):
         self.env["TLS_KEY_FILE"] = str(self.pki.path("rogue-client", "key"))
+        self.invoke(expected_error="TLS file check failed (SSLError)")
+
+    def test_optional_pc_api_tls_settings_require_a_complete_keypair(self):
+        self.env["PC_API_TLS_CA_FILE"] = str(self.pki.path("trusted"))
+        with self.assertRaisesRegex(ValueError, "must be set together"):
+            GatewayConfig.from_env(self.env)
+        self.env.update(PC_API_TLS_CERT_FILE=str(self.pki.path("client")),
+                        PC_API_TLS_KEY_FILE=str(self.pki.path("rogue-client", "key")))
         self.invoke(expected_error="TLS file check failed (SSLError)")
 
     def test_database_and_lock_must_stay_under_systemd_state_directory(self):

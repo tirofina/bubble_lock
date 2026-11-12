@@ -101,6 +101,7 @@ class GatewayConfig:
     health_container_ri: str | None = None
     ble_observation_timeout: float = 30.0
     native_observation_trace: bool = False
+    pc_api_tls_files: tuple[Path, Path, Path] | None = None
 
     @classmethod
     def from_env(cls, values: Mapping[str, str] | None = None, *, require_tls_files: bool = True) -> "GatewayConfig":
@@ -143,6 +144,14 @@ class GatewayConfig:
             if not path.is_absolute() or (require_tls_files and not path.is_file()):
                 raise ValueError(f"{name} must name an existing absolute file")
             return path
+
+        pc_tls_names = ("PC_API_TLS_CA_FILE", "PC_API_TLS_CERT_FILE", "PC_API_TLS_KEY_FILE")
+        pc_tls = None
+        if any(name in env for name in pc_tls_names):
+            if not all(name in env for name in pc_tls_names):
+                raise ValueError("PC_API_TLS_CA_FILE, PC_API_TLS_CERT_FILE and PC_API_TLS_KEY_FILE must be set together")
+            ca_name, cert_name, key_name = pc_tls_names
+            pc_tls = (secret_file(ca_name), secret_file(cert_name), secret_file(key_name))
 
         def container(name: str) -> str:
             value = required(name)
@@ -244,13 +253,16 @@ class GatewayConfig:
             ble_board_revision=board_revision,
             commands_enabled=commands_enabled,
             native_observation_trace=boolean("NATIVE_OBSERVATION_TRACE", "false"),
+            pc_api_tls_files=pc_tls,
         )
 
 
-def tls_context(config: GatewayConfig) -> ssl.SSLContext:
-    context = ssl.create_default_context(cafile=str(config.ca_file))
+def tls_context(config: GatewayConfig, *, pc_api: bool = False) -> ssl.SSLContext:
+    files = getattr(config, "pc_api_tls_files", None) if pc_api else None
+    ca, cert, key = files if files is not None else (config.ca_file, config.cert_file, config.key_file)
+    context = ssl.create_default_context(cafile=str(ca))
     context.minimum_version = ssl.TLSVersion.TLSv1_3
-    context.load_cert_chain(str(config.cert_file), str(config.key_file))
+    context.load_cert_chain(str(cert), str(key))
     return context
 
 
