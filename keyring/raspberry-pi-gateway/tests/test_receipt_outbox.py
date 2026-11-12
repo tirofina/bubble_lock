@@ -13,7 +13,7 @@ from unittest.mock import AsyncMock, Mock, patch
 from bubble_gateway.model import iso_time, payload_hash, utc_now
 from bubble_gateway.service import Gateway
 from bubble_gateway.store import Store
-from bubble_gateway.transport import NativeConfirmation, NativeDeliveryHold, RemoteResponseError
+from bubble_gateway.transport import HttpRetryDeferred, NativeConfirmation, NativeDeliveryHold, RemoteResponseError
 from helpers import BINDING, command, config, observation
 
 
@@ -170,9 +170,22 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
 
         gateway.transport = SimpleNamespace(publish=AsyncMock(side_effect=interrupted_publish),
                                              native_delivery_hold=NativeDeliveryHold)
-        with self.assertRaises(asyncio.CancelledError):
+        mark_attempt = self.store.mark_receipt_attempt
+
+        def persist_attempt(rqi):
+            self.assertEqual(self.store.due()["attempts"], 0)
+            gateway.transport.publish.assert_not_awaited()
+            if gateway.counters["outbox_attempt_write_retries"] == 0:
+                raise sqlite3.OperationalError("synthetic attempt write error")
+            mark_attempt(rqi)
+
+        with (patch.object(self.store, "mark_receipt_attempt", side_effect=persist_attempt),
+              patch("bubble_gateway.service.OUTBOX_STATE_WRITE_RETRY_INTERVAL", 0),
+              self.assertLogs("bubble_gateway.service", level="WARNING"),
+              self.assertRaises(asyncio.CancelledError)):
             async with asyncio.timeout(1):
                 await gateway._outbox_loop()
+        self.assertEqual(gateway.counters["outbox_attempt_write_retries"], 1)
         args = (self.native_rqi, BINDING["receiptContainer"], self.receipt)
         gateway.transport.publish.assert_awaited_once_with(*args)
         self.assertEqual(self.native_delivered(), 0)
@@ -396,7 +409,7 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
                 gateway.stop.set()
 
         with (patch.object(self.store, "delivered", side_effect=commit),
-              patch("bubble_gateway.service.OUTBOX_CONFIRMATION_RETRY_INTERVAL", 0),
+              patch("bubble_gateway.service.OUTBOX_STATE_WRITE_RETRY_INTERVAL", 0),
               self.assertLogs("bubble_gateway.service", level="WARNING")):
             async with asyncio.timeout(1), asyncio.TaskGroup() as workers:
                 workers.create_task(gateway._outbox_loop(central_route="receipt"))
@@ -412,6 +425,43 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         self.assertGreaterEqual(gateway.counters["outbox_confirmation_write_retries"], 1)
         self.assertEqual(gateway.counters["central_receipts_confirmed"], 1)
         self.assertEqual(gateway.counters["publish_retries"], 0)
+
+    async def test_failed_central_send_persists_retry_after_a_local_write_failure(self):
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.config.central_receipts_enabled = True
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+        gateway.transport = SimpleNamespace(
+            central_delivery_held=Mock(return_value=False),
+            publish=AsyncMock(side_effect=HttpRetryDeferred(503, 30)),
+        )
+        original_retry = self.store.retry
+
+        def persist_retry(rqi, attempts, *, minimum_delay):
+            self.assertGreater(minimum_delay, 28)
+            if gateway.counters["outbox_retry_write_retries"] == 0:
+                raise sqlite3.OperationalError("synthetic retry write error")
+            original_retry(rqi, attempts, minimum_delay=minimum_delay)
+            gateway.stop.set()
+
+        with (patch.object(self.store, "retry", side_effect=persist_retry),
+              patch("bubble_gateway.service.OUTBOX_STATE_WRITE_RETRY_INTERVAL", 0),
+              self.assertLogs("bubble_gateway.service", level="WARNING")):
+            async with asyncio.timeout(1):
+                await gateway._outbox_loop(central_route="receipt")
+
+        rqi = self.store.request_id("central-receipt", self.cmd["commandId"])
+        gateway.transport.publish.assert_awaited_once_with(rqi, "@central/receipt", self.receipt,
+                                                         expected_claim_id=self.cmd["claimId"])
+        self.assertEqual(gateway.counters["outbox_retry_write_retries"], 1)
+        self.assertEqual(gateway.counters["publish_retries"], 1)
+        self.store.close()
+        self.store = self.open_store()
+        self.assertIsNone(self.store.due_central_receipt())
+        row = self.store.db.execute("SELECT payload,attempts,next_attempt FROM outbox WHERE rqi=?", (rqi,)).fetchone()
+        self.assertEqual(json.loads(row["payload"]), self.receipt)
+        self.assertEqual(row["attempts"], 1)
+        self.assertGreater(row["next_attempt"], utc_now().timestamp() + 27)
 
     async def test_shutdown_retries_confirmation_and_preserves_row_when_storage_is_unavailable(self):
         gateway = Gateway.__new__(Gateway)

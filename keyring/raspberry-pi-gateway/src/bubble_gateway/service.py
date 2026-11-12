@@ -10,7 +10,7 @@ import uuid
 from collections import Counter
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Literal
+from typing import Callable, Literal
 
 from .ble import BleCommandNotSent, BleFleet
 from .config import GatewayConfig, ID, configured_container_pins
@@ -22,7 +22,7 @@ from .transport import COMMAND_BATCH, HttpRetryDeferred, NativeConfirmation, Tra
 LOG = logging.getLogger(__name__)
 RECEIPT_BURST = 4
 DEVICE_RECEIPT_RETRY_INTERVAL = 1.0
-OUTBOX_CONFIRMATION_RETRY_INTERVAL = 1.0
+OUTBOX_STATE_WRITE_RETRY_INTERVAL = 1.0
 CENTRAL_TELEMETRY_CLOCK_MARGIN = 2
 CENTRAL_TELEMETRY_EXPIRY_INTERVAL = 5.0
 CENTRAL_TELEMETRY_EXPIRY_BATCH = 128
@@ -493,23 +493,22 @@ class Gateway:
             cursor = batch[-1]["rowid"] if len(batch) == batch_size and batch[-1]["rowid"] < through else 0
             await self._pause(1)
 
-    async def _commit_outbox_confirmation(self, rqi: str) -> None:
-        # The remote result is already confirmed. Keep it in this worker until
-        # the local completion is durable, without selecting the row for another send.
+    async def _write_outbox_state(self, write: Callable[[], None], kind: str) -> None:
+        # Keep this row in its route worker until the local write is durable.
         while True:
             try:
-                self.store.delivered(rqi)
+                write()
                 return
             except sqlite3.Error as exc:
-                self.counters["outbox_confirmation_write_retries"] += 1
-                LOG.warning("SQLite outbox confirmation write failed (%s); retrying locally", type(exc).__name__)
+                self.counters[f"outbox_{kind}_write_retries"] += 1
+                LOG.warning("SQLite outbox %s write failed (%s); retrying locally", kind, type(exc).__name__)
             try:
-                await asyncio.sleep(OUTBOX_CONFIRMATION_RETRY_INTERVAL)
+                await asyncio.sleep(OUTBOX_STATE_WRITE_RETRY_INTERVAL)
             except asyncio.CancelledError:
                 try:
-                    self.store.delivered(rqi)
+                    write()
                 except sqlite3.Error as exc:
-                    LOG.warning("SQLite outbox confirmation remains pending at shutdown (%s)", type(exc).__name__)
+                    LOG.warning("SQLite outbox %s write remains pending at shutdown (%s)", kind, type(exc).__name__)
                 raise
 
     async def _outbox_loop(self, *, core_route: Literal["ack", "telemetry"] | None = None,
@@ -560,7 +559,9 @@ class Gateway:
                 if item["attempts"]:
                     delivery_options["confirm_existing"] = True
                 else:
-                    self.store.mark_receipt_attempt(item["rqi"])
+                    await self._write_outbox_state(lambda: self.store.mark_receipt_attempt(item["rqi"]), "attempt")
+                    if self.stop.is_set():
+                        return
             try:
                 cutoff = self._central_telemetry_cutoff() if central_route == "telemetry" else None
                 if cutoff is not None and parse_time(item["payload"]["observedAt"]) < cutoff:
@@ -574,11 +575,15 @@ class Gateway:
                 raise
             except Exception as exc:
                 self.counters["publish_retries"] += 1
-                minimum_delay = exc.retry_after if isinstance(exc, HttpRetryDeferred) else 0.0
-                self.store.retry(item["rqi"], item["attempts"], minimum_delay=minimum_delay)
                 LOG.warning("Gateway delivery deferred (%s)", type(exc).__name__)
+                retry_at = time.monotonic() + exc.retry_after if isinstance(exc, HttpRetryDeferred) else 0.0
+                await self._write_outbox_state(
+                    lambda: self.store.retry(item["rqi"], item["attempts"],
+                                             minimum_delay=max(0.0, retry_at - time.monotonic())),
+                    "retry",
+                )
             else:
-                await self._commit_outbox_confirmation(item["rqi"])
+                await self._write_outbox_state(lambda: self.store.delivered(item["rqi"]), "confirmation")
                 self.counters["published"] += 1
                 if (getattr(self.config, "native_observation_trace", False)
                         and isinstance(confirmation, NativeConfirmation) and item.get("native_observation_device_id")):
