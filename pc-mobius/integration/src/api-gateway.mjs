@@ -5,8 +5,8 @@ function jsonResponse(status, body) {
 }
 
 export class IntegrationApiGateway {
-  constructor({ policyService, mecIngress, mecSubscriptions, handoverCoordinator, flCoordinator, mcpOrchestrator, gatewayControl, gatewayRegistration, portalService, portalLocations, clock = () => new Date().toISOString() } = {}) {
-    Object.assign(this, { policyService, mecIngress, mecSubscriptions, handoverCoordinator, flCoordinator, mcpOrchestrator, gatewayControl, gatewayRegistration, portalService, portalLocations, clock });
+  constructor({ policyService, mecIngress, mecSubscriptions, handoverCoordinator, flCoordinator, mcpOrchestrator, gatewayControl, gatewayRegistration, portalService, portalLocations, groupRuntime, clock = () => new Date().toISOString() } = {}) {
+    Object.assign(this, { policyService, mecIngress, mecSubscriptions, handoverCoordinator, flCoordinator, mcpOrchestrator, gatewayControl, gatewayRegistration, portalService, portalLocations, groupRuntime, clock });
   }
 
   principalFrom(request) {
@@ -23,7 +23,8 @@ export class IntegrationApiGateway {
     const store = this.policyService?.store;
     if (store?.kind === 'postgres') {
       const path = new URL(request.path ?? '/', 'http://localhost').pathname;
-      const phased = /^\/v1\/(mcp|mec|fl|handover|gateway-registrations|gateway-lifecycle)(\/|$)/.test(path) || path.startsWith('/callbacks/');
+      const phased = /^\/v1\/(mcp|mec|fl|handover|gateway-registrations|gateway-lifecycle)(\/|$)/.test(path) || path.startsWith('/callbacks/')
+        || /^\/v1\/portal\/commands\/(approve|retry|group)$/.test(path);
       try {
         if (phased) { await store.refresh(); return await this.handleRequest(request); }
         return await store.transaction(`api:${request.method ?? 'GET'}:${path}`, () => this.handleRequest(request));
@@ -74,7 +75,11 @@ export class IntegrationApiGateway {
       if (gatewayRoute && this.gatewayControl) {
         const gatewayId = decodeURIComponent(gatewayRoute[1]);
         const action = gatewayRoute[2];
-        if (method === 'POST' && action === 'receipts') return jsonResponse(200, await this.gatewayControl.receiveReceipt(gatewayId, principal, request.body));
+        if (method === 'POST' && action === 'receipts') {
+          const result = await this.gatewayControl.receiveReceipt(gatewayId, principal, request.body);
+          await this.groupRuntime?.receiveReceipt(result.commandId);
+          return jsonResponse(200, result);
+        }
         if (method === 'POST' && action === 'dispatch-start') return jsonResponse(200, await this.gatewayControl.dispatchStart(gatewayId, principal, request.body));
         if (method === 'POST' && action === 'telemetry' && this.portalLocations) return jsonResponse(200, await this.portalLocations.ingestGateway({ gatewayId, principal, observation: request.body }));
         if (method === 'GET' && action === 'credentials/status') return jsonResponse(200, this.gatewayControl.credentialStatus(gatewayId, principal));

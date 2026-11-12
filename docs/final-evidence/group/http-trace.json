@@ -1,0 +1,575 @@
+[
+  {
+    "identity": "guardian",
+    "path": "/v1/portal/devices",
+    "status": 200,
+    "body": {
+      "deviceId": "keyring-A",
+      "householdId": "group-home",
+      "gatewayId": "pi-01",
+      "label": "keyring-A",
+      "registeredAt": "2026-11-12T10:28:28.944Z"
+    }
+  },
+  {
+    "identity": "guardian",
+    "path": "/v1/portal/devices",
+    "status": 200,
+    "body": {
+      "deviceId": "keyring-B",
+      "householdId": "group-home",
+      "gatewayId": "pi-02",
+      "label": "keyring-B",
+      "registeredAt": "2026-11-12T10:28:28.952Z"
+    }
+  },
+  {
+    "identity": "guardian",
+    "path": "/v1/portal/devices",
+    "status": 200,
+    "body": {
+      "deviceId": "keyring-C",
+      "householdId": "group-home",
+      "gatewayId": "pi-01",
+      "label": "keyring-C",
+      "registeredAt": "2026-11-12T10:28:28.957Z"
+    }
+  },
+  {
+    "identity": "guardian",
+    "path": "/v1/portal/consents",
+    "status": 200,
+    "body": {
+      "consentId": "consent-b445adbd-d61a-4185-b3a2-3740181296ba",
+      "subjectId": "group-home",
+      "purpose": "actual CSE group",
+      "scopes": [
+        "bubble:command"
+      ],
+      "principalId": "group-guardian",
+      "revision": 1,
+      "status": "ACTIVE",
+      "createdAt": "2026-11-12T10:28:28.963Z",
+      "expiresAt": "2026-11-12T10:43:28.963Z",
+      "consentHash": "3bec6d3672d95f29fbe21ff1a76e7e0e92b96c050586e97bb1a9c0a55f861144"
+    }
+  },
+  {
+    "identity": "guardian",
+    "path": "/v1/portal/grants",
+    "status": 200,
+    "body": {
+      "grantId": "grant-5424d768-632a-4d85-b023-19953a20ab78",
+      "consentId": "consent-b445adbd-d61a-4185-b3a2-3740181296ba",
+      "subjectId": "group-home",
+      "principalId": "group-guardian",
+      "purpose": "privacy-bubble-command",
+      "scopes": [
+        "bubble:command"
+      ],
+      "revision": 1,
+      "status": "ACTIVE",
+      "createdAt": "2026-11-12T10:28:28.970Z",
+      "expiresAt": "2026-11-12T10:43:28.963Z",
+      "approvalHash": "39945d5667b94cb719d8e684e6fe5b7028e721ba737a96d1f475bd3fbd8cec93"
+    }
+  },
+  {
+    "identity": "visitor",
+    "path": "/v1/portal/commands/request",
+    "status": 200,
+    "body": {
+      "requestId": "request-085f757852113ee02224a60d",
+      "householdId": "group-home",
+      "deviceIds": [
+        "keyring-A",
+        "keyring-B"
+      ],
+      "desiredState": {
+        "state": true
+      },
+      "reason": "actual CSE partial/retry/restart",
+      "requestedBy": "group-visitor",
+      "requestedAt": "2026-11-12T10:28:28.976Z",
+      "expiresAt": "2026-11-12T10:33:28.976Z",
+      "status": "PENDING",
+      "commands": []
+    }
+  },
+  {
+    "identity": "visitor",
+    "path": "/v1/portal/commands/approve",
+    "status": 403,
+    "body": {
+      "contractId": "privacy-bubble.integration.v1",
+      "docRevision": "2.0.0",
+      "eventId": "evt-1018d1fb-62ee-4266-b488-04b1c16ed580",
+      "timestamp": "2026-11-12T10:28:28.983Z",
+      "type": "API_REVIEW",
+      "method": "POST",
+      "path": "/v1/portal/commands/approve",
+      "error": "Scope bubble:command requires an active grant"
+    }
+  },
+  {
+    "identity": "guardian",
+    "path": "/v1/portal/commands/approve",
+    "status": 200,
+    "body": {
+      "requestId": "request-085f757852113ee02224a60d",
+      "householdId": "group-home",
+      "deviceIds": [
+        "keyring-A",
+        "keyring-B"
+      ],
+      "desiredState": {
+        "state": true
+      },
+      "reason": "actual CSE partial/retry/restart",
+      "requestedBy": "group-visitor",
+      "requestedAt": "2026-11-12T10:28:28.976Z",
+      "expiresAt": "2026-11-12T10:33:28.976Z",
+      "status": "QUEUED",
+      "commands": [
+        {
+          "version": 1,
+          "gatewayId": "pi-01",
+          "deviceId": "keyring-A",
+          "commandId": "portal-af44f6334ef24d46a93a495148205314",
+          "claimId": "claim-9e3265a8-ca5b-4265-8834-10bced9fe45e",
+          "desiredState": {
+            "state": true
+          },
+          "issuedAt": "2026-11-12T10:28:28.986Z",
+          "deadline": "2026-11-12T10:33:28.976Z",
+          "grantRevision": 1,
+          "ownershipEpoch": 3
+        },
+        {
+          "version": 1,
+          "gatewayId": "pi-02",
+          "deviceId": "keyring-B",
+          "commandId": "portal-7dc5ebd96fe86127c222afc2fe01a9e1",
+          "claimId": "claim-136b60cd-0050-49c2-b029-4901959332fa",
+          "desiredState": {
+            "state": true
+          },
+          "issuedAt": "2026-11-12T10:28:28.986Z",
+          "deadline": "2026-11-12T10:33:28.976Z",
+          "grantRevision": 1,
+          "ownershipEpoch": 3
+        }
+      ],
+      "approvedBy": "group-guardian",
+      "approvedAt": "2026-11-12T10:28:28.986Z",
+      "grantId": "grant-5424d768-632a-4d85-b023-19953a20ab78",
+      "approvalHash": "8d7ca61043e4c0e9cc9ee9781dc0b8393ad42f04deed5e2baed48651a9014c98"
+    }
+  },
+  {
+    "identity": "guardian",
+    "path": "/v1/portal/commands/group",
+    "status": 200,
+    "body": {
+      "contractId": "privacy-bubble.group-dispatch",
+      "groupId": "group-home",
+      "commandId": "request-085f757852113ee02224a60d",
+      "state": true,
+      "status": "IN_FLIGHT",
+      "attempts": 1,
+      "memberCount": 2,
+      "appliedCount": 0,
+      "members": [
+        {
+          "memberId": "keyring-A",
+          "memberCommandId": "portal-af44f6334ef24d46a93a495148205314",
+          "deviceId": "keyring-A",
+          "gatewayId": "pi-01",
+          "status": "DISPATCHED",
+          "attempts": 1
+        },
+        {
+          "memberId": "keyring-B",
+          "memberCommandId": "portal-7dc5ebd96fe86127c222afc2fe01a9e1",
+          "deviceId": "keyring-B",
+          "gatewayId": "pi-02",
+          "status": "RETRY_PENDING",
+          "attempts": 1,
+          "error": "CSE member response 4103"
+        }
+      ],
+      "timestamp": "2026-11-12T10:28:29.048Z"
+    }
+  },
+  {
+    "identity": "gateway2",
+    "path": "/api/v1/gateways/pi-02/commands",
+    "status": 200,
+    "body": {
+      "commands": []
+    }
+  },
+  {
+    "identity": "gateway1",
+    "path": "/api/v1/gateways/pi-01/commands",
+    "status": 200,
+    "body": {
+      "commands": [
+        {
+          "version": 1,
+          "gatewayId": "pi-01",
+          "deviceId": "keyring-A",
+          "commandId": "portal-af44f6334ef24d46a93a495148205314",
+          "claimId": "claim-9e3265a8-ca5b-4265-8834-10bced9fe45e",
+          "desiredState": {
+            "state": true
+          },
+          "issuedAt": "2026-11-12T10:28:28.986Z",
+          "deadline": "2026-11-12T10:33:28.976Z",
+          "grantRevision": 1,
+          "ownershipEpoch": 3
+        }
+      ]
+    }
+  },
+  {
+    "identity": "gateway1",
+    "path": "/api/v1/gateways/pi-01/authorize",
+    "status": 200,
+    "body": {
+      "allowed": true,
+      "commandId": "portal-af44f6334ef24d46a93a495148205314",
+      "deviceId": "keyring-A",
+      "claimId": "claim-9e3265a8-ca5b-4265-8834-10bced9fe45e",
+      "grantRevision": 1,
+      "ownershipEpoch": 3,
+      "payloadHash": "1abd2026d271e855a68e6ff3b104b636613bb96bc0af5d0b503ddff78ca09e60",
+      "expiresAt": "2026-11-12T10:28:33.986Z"
+    }
+  },
+  {
+    "identity": "gateway1",
+    "path": "/api/v1/gateways/pi-01/dispatch-start",
+    "status": 200,
+    "body": {
+      "allowed": true,
+      "commandId": "portal-af44f6334ef24d46a93a495148205314",
+      "deviceId": "keyring-A",
+      "claimId": "claim-9e3265a8-ca5b-4265-8834-10bced9fe45e",
+      "grantRevision": 1,
+      "ownershipEpoch": 3,
+      "payloadHash": "1abd2026d271e855a68e6ff3b104b636613bb96bc0af5d0b503ddff78ca09e60",
+      "expiresAt": "2026-11-12T10:28:33.986Z"
+    }
+  },
+  {
+    "identity": "gateway1",
+    "path": "/api/v1/gateways/pi-01/receipts",
+    "status": 403,
+    "body": {
+      "contractId": "privacy-bubble.integration.v1",
+      "docRevision": "2.0.0",
+      "eventId": "evt-181a6a23-a79f-4ef2-9cd1-57a596e17638",
+      "timestamp": "2026-11-12T10:28:29.083Z",
+      "type": "API_REVIEW",
+      "method": "POST",
+      "path": "/api/v1/gateways/pi-01/receipts",
+      "error": "GATEWAY_RECEIPT_BINDING"
+    }
+  },
+  {
+    "identity": "gateway1",
+    "path": "/api/v1/gateways/pi-01/receipts",
+    "status": 200,
+    "body": {
+      "status": "ACCEPTED",
+      "commandId": "portal-af44f6334ef24d46a93a495148205314",
+      "claimId": "claim-9e3265a8-ca5b-4265-8834-10bced9fe45e",
+      "receiptHash": "49fcf4e9ffea1b8e764b77195f1af7ee8ed51d4e6e44e47be436ed063d27fa2a",
+      "executionState": "APPLIED_VERIFIED"
+    }
+  },
+  {
+    "identity": "guardian",
+    "path": "/v1/portal/commands/group",
+    "status": 200,
+    "body": {
+      "contractId": "privacy-bubble.group-dispatch",
+      "groupId": "group-home",
+      "commandId": "request-085f757852113ee02224a60d",
+      "state": true,
+      "status": "IN_FLIGHT",
+      "attempts": 1,
+      "memberCount": 2,
+      "appliedCount": 1,
+      "members": [
+        {
+          "memberId": "keyring-A",
+          "memberCommandId": "portal-af44f6334ef24d46a93a495148205314",
+          "deviceId": "keyring-A",
+          "gatewayId": "pi-01",
+          "status": "READBACK_VERIFIED",
+          "attempts": 1,
+          "ackTimestamp": "2026-11-12T10:28:29.085Z"
+        },
+        {
+          "memberId": "keyring-B",
+          "memberCommandId": "portal-7dc5ebd96fe86127c222afc2fe01a9e1",
+          "deviceId": "keyring-B",
+          "gatewayId": "pi-02",
+          "status": "RETRY_PENDING",
+          "attempts": 1,
+          "error": "CSE member response 4103"
+        }
+      ],
+      "timestamp": "2026-11-12T10:28:29.097Z"
+    }
+  },
+  {
+    "identity": "guardian",
+    "path": "/v1/portal/commands/group",
+    "status": 200,
+    "body": {
+      "contractId": "privacy-bubble.group-dispatch",
+      "groupId": "group-home",
+      "commandId": "request-085f757852113ee02224a60d",
+      "state": true,
+      "status": "IN_FLIGHT",
+      "attempts": 1,
+      "memberCount": 2,
+      "appliedCount": 1,
+      "members": [
+        {
+          "memberId": "keyring-A",
+          "memberCommandId": "portal-af44f6334ef24d46a93a495148205314",
+          "deviceId": "keyring-A",
+          "gatewayId": "pi-01",
+          "status": "READBACK_VERIFIED",
+          "attempts": 1,
+          "ackTimestamp": "2026-11-12T10:28:29.085Z"
+        },
+        {
+          "memberId": "keyring-B",
+          "memberCommandId": "portal-7dc5ebd96fe86127c222afc2fe01a9e1",
+          "deviceId": "keyring-B",
+          "gatewayId": "pi-02",
+          "status": "RETRY_PENDING",
+          "attempts": 1,
+          "error": "CSE member response 4103"
+        }
+      ],
+      "timestamp": "2026-11-12T10:28:29.109Z"
+    }
+  },
+  {
+    "identity": "guardian",
+    "path": "/v1/portal/commands/retry",
+    "status": 200,
+    "body": {
+      "contractId": "privacy-bubble.group-dispatch",
+      "groupId": "group-home",
+      "commandId": "request-085f757852113ee02224a60d",
+      "state": true,
+      "status": "IN_FLIGHT",
+      "attempts": 2,
+      "memberCount": 2,
+      "appliedCount": 1,
+      "members": [
+        {
+          "memberId": "keyring-A",
+          "memberCommandId": "portal-af44f6334ef24d46a93a495148205314",
+          "deviceId": "keyring-A",
+          "gatewayId": "pi-01",
+          "status": "READBACK_VERIFIED",
+          "attempts": 1,
+          "ackTimestamp": "2026-11-12T10:28:29.085Z"
+        },
+        {
+          "memberId": "keyring-B",
+          "memberCommandId": "portal-7dc5ebd96fe86127c222afc2fe01a9e1",
+          "deviceId": "keyring-B",
+          "gatewayId": "pi-02",
+          "status": "DISPATCHED",
+          "attempts": 2
+        }
+      ],
+      "timestamp": "2026-11-12T10:28:29.149Z"
+    }
+  },
+  {
+    "identity": "gateway2",
+    "path": "/api/v1/gateways/pi-02/commands",
+    "status": 200,
+    "body": {
+      "commands": [
+        {
+          "version": 1,
+          "gatewayId": "pi-02",
+          "deviceId": "keyring-B",
+          "commandId": "portal-7dc5ebd96fe86127c222afc2fe01a9e1",
+          "claimId": "claim-136b60cd-0050-49c2-b029-4901959332fa",
+          "desiredState": {
+            "state": true
+          },
+          "issuedAt": "2026-11-12T10:28:28.986Z",
+          "deadline": "2026-11-12T10:33:28.976Z",
+          "grantRevision": 1,
+          "ownershipEpoch": 3
+        }
+      ]
+    }
+  },
+  {
+    "identity": "gateway2",
+    "path": "/api/v1/gateways/pi-02/authorize",
+    "status": 200,
+    "body": {
+      "allowed": true,
+      "commandId": "portal-7dc5ebd96fe86127c222afc2fe01a9e1",
+      "deviceId": "keyring-B",
+      "claimId": "claim-136b60cd-0050-49c2-b029-4901959332fa",
+      "grantRevision": 1,
+      "ownershipEpoch": 3,
+      "payloadHash": "956f1c26f8f47e91ec96d4b8f34a8d5af1e1cddef3774db20b0dd63005ceb2c4",
+      "expiresAt": "2026-11-12T10:28:33.986Z"
+    }
+  },
+  {
+    "identity": "gateway2",
+    "path": "/api/v1/gateways/pi-02/dispatch-start",
+    "status": 200,
+    "body": {
+      "allowed": true,
+      "commandId": "portal-7dc5ebd96fe86127c222afc2fe01a9e1",
+      "deviceId": "keyring-B",
+      "claimId": "claim-136b60cd-0050-49c2-b029-4901959332fa",
+      "grantRevision": 1,
+      "ownershipEpoch": 3,
+      "payloadHash": "956f1c26f8f47e91ec96d4b8f34a8d5af1e1cddef3774db20b0dd63005ceb2c4",
+      "expiresAt": "2026-11-12T10:28:33.986Z"
+    }
+  },
+  {
+    "identity": "gateway2",
+    "path": "/api/v1/gateways/pi-02/receipts",
+    "status": 403,
+    "body": {
+      "contractId": "privacy-bubble.integration.v1",
+      "docRevision": "2.0.0",
+      "eventId": "evt-650f54ac-5993-4179-9da2-4355bc879e4e",
+      "timestamp": "2026-11-12T10:28:29.168Z",
+      "type": "API_REVIEW",
+      "method": "POST",
+      "path": "/api/v1/gateways/pi-02/receipts",
+      "error": "GATEWAY_RECEIPT_BINDING"
+    }
+  },
+  {
+    "identity": "gateway2",
+    "path": "/api/v1/gateways/pi-02/receipts",
+    "status": 200,
+    "body": {
+      "status": "ACCEPTED",
+      "commandId": "portal-7dc5ebd96fe86127c222afc2fe01a9e1",
+      "claimId": "claim-136b60cd-0050-49c2-b029-4901959332fa",
+      "receiptHash": "171eee40193abda8c34ea01faa9b03ab42e15f3fd3a153c1b5ca4cb14cadb5b4",
+      "executionState": "APPLIED_VERIFIED"
+    }
+  },
+  {
+    "identity": "guardian",
+    "path": "/v1/portal/commands/group",
+    "status": 200,
+    "body": {
+      "contractId": "privacy-bubble.group-dispatch",
+      "groupId": "group-home",
+      "commandId": "request-085f757852113ee02224a60d",
+      "state": true,
+      "status": "SETTLED",
+      "attempts": 2,
+      "memberCount": 2,
+      "appliedCount": 2,
+      "members": [
+        {
+          "memberId": "keyring-A",
+          "memberCommandId": "portal-af44f6334ef24d46a93a495148205314",
+          "deviceId": "keyring-A",
+          "gatewayId": "pi-01",
+          "status": "READBACK_VERIFIED",
+          "attempts": 1,
+          "ackTimestamp": "2026-11-12T10:28:29.085Z"
+        },
+        {
+          "memberId": "keyring-B",
+          "memberCommandId": "portal-7dc5ebd96fe86127c222afc2fe01a9e1",
+          "deviceId": "keyring-B",
+          "gatewayId": "pi-02",
+          "status": "READBACK_VERIFIED",
+          "attempts": 2,
+          "ackTimestamp": "2026-11-12T10:28:29.170Z"
+        }
+      ],
+      "timestamp": "2026-11-12T10:28:29.179Z"
+    }
+  },
+  {
+    "identity": "guardian",
+    "path": "/v1/portal/commands/group",
+    "status": 200,
+    "body": {
+      "contractId": "privacy-bubble.group-dispatch",
+      "groupId": "group-home",
+      "commandId": "request-085f757852113ee02224a60d",
+      "state": true,
+      "status": "SETTLED",
+      "attempts": 2,
+      "memberCount": 2,
+      "appliedCount": 2,
+      "members": [
+        {
+          "memberId": "keyring-A",
+          "memberCommandId": "portal-af44f6334ef24d46a93a495148205314",
+          "deviceId": "keyring-A",
+          "gatewayId": "pi-01",
+          "status": "READBACK_VERIFIED",
+          "attempts": 1,
+          "ackTimestamp": "2026-11-12T10:28:29.085Z"
+        },
+        {
+          "memberId": "keyring-B",
+          "memberCommandId": "portal-7dc5ebd96fe86127c222afc2fe01a9e1",
+          "deviceId": "keyring-B",
+          "gatewayId": "pi-02",
+          "status": "READBACK_VERIFIED",
+          "attempts": 2,
+          "ackTimestamp": "2026-11-12T10:28:29.170Z"
+        }
+      ],
+      "timestamp": "2026-11-12T10:28:29.190Z"
+    }
+  },
+  {
+    "identity": "gateway1",
+    "path": "/api/v1/gateways/pi-01/receipts",
+    "status": 200,
+    "body": {
+      "status": "DUPLICATE",
+      "commandId": "portal-af44f6334ef24d46a93a495148205314",
+      "claimId": "claim-9e3265a8-ca5b-4265-8834-10bced9fe45e",
+      "receiptHash": "49fcf4e9ffea1b8e764b77195f1af7ee8ed51d4e6e44e47be436ed063d27fa2a",
+      "executionState": "APPLIED_VERIFIED"
+    }
+  },
+  {
+    "identity": "gateway2",
+    "path": "/api/v1/gateways/pi-02/receipts",
+    "status": 200,
+    "body": {
+      "status": "DUPLICATE",
+      "commandId": "portal-7dc5ebd96fe86127c222afc2fe01a9e1",
+      "claimId": "claim-136b60cd-0050-49c2-b029-4901959332fa",
+      "receiptHash": "171eee40193abda8c34ea01faa9b03ab42e15f3fd3a153c1b5ca4cb14cadb5b4",
+      "executionState": "APPLIED_VERIFIED"
+    }
+  }
+]

@@ -58,14 +58,15 @@ export class GatewayControl {
     return Math.max(this.handoverCoordinator.status(deviceId)?.epoch ?? 0, gateway.ownershipEpoch);
   }
 
-  active(record, gateway) {
+  active(record, gateway, { publication = false } = {}) {
     const { command, grantId } = record;
     const decision = this.policyService.evaluateGrant(grantId, { scope: 'bubble:command' });
     const consent = decision.grant && this.store.get('consents', decision.grant.consentId);
     const now = Date.parse(this.clock());
     const handover = this.handoverCoordinator.status(command.deviceId);
     const ready = !handover || ['ACTIVE', 'ROLLED_BACK'].includes(handover.state);
-    return ready && gateway.status === 'ACTIVE' && decision.allowed && consent?.status === 'ACTIVE'
+    return ready && (!record.groupRequestId || publication || record.groupCsePublished === true)
+      && gateway.status === 'ACTIVE' && decision.allowed && consent?.status === 'ACTIVE'
       && !['SETTLED_CANCELLED', 'APPLIED_VERIFIED'].includes(record.executionState)
       && Date.parse(consent.expiresAt) > now && consent.revision === command.grantRevision
       && decision.grant.revision === command.grantRevision
@@ -149,7 +150,7 @@ export class GatewayControl {
       if (allowed) {
         record.executionState = record.dispatchStartedAt ? 'IN_FLIGHT' : 'DISPATCH_CLAIMED'; record.claimCommittedAt ??= now; record.claimExpiresAt ??= claimDeadline;
         await this.store.put('dispatchOutbox', `${body.commandId}:${body.deviceId}`, { commandId: body.commandId, memberLogicalId: body.deviceId, claimId: body.claimId, payloadHash: body.payloadHash, desiredGeneration: record.desiredGeneration ?? 0, deadline: record.claimExpiresAt, state: record.dispatchStartedAt ? 'IN_FLIGHT' : 'PENDING', claimCommittedAt: record.claimCommittedAt, ...(record.dispatchStartedAt ? { dispatchStartedAt: record.dispatchStartedAt } : {}) });
-      } else if (!['SETTLED_CANCELLED', 'APPLIED_VERIFIED'].includes(record.executionState) && (!this.active(record, gateway) || Date.parse(claimDeadline) <= Date.parse(now))) {
+      } else if (!['SETTLED_CANCELLED', 'APPLIED_VERIFIED'].includes(record.executionState) && (!this.active(record, gateway, { publication: true }) || Date.parse(claimDeadline) <= Date.parse(now))) {
         record.executionState = record.claimCommittedAt ? 'DISPATCH_UNCERTAIN' : 'SETTLED_CANCELLED';
         record.settlementReason = Date.parse(claimDeadline) <= Date.parse(now) ? 'EXPIRED' : 'CURRENT_POLICY';
         if (!record.claimCommittedAt) record.settledAt = now;

@@ -18,6 +18,7 @@ import { RetentionService } from './retention-service.mjs';
 import { GatewayRegistrationService } from './gateway-registration.mjs';
 import { GatewayRegistrationCse } from './gateway-registration-cse.mjs';
 import { GatewayCredentialIssuer } from './gateway-credential-issuer.mjs';
+import { GroupRuntime } from './group-runtime.mjs';
 
 export async function createIntegrationRuntime({ statePath = null, receiptPath = null, database = null, mqttClient = null, fetchImpl = globalThis.fetch, clock = () => new Date().toISOString(), core = {} } = {}) {
   const receiptJournal = receiptPath ? new ReceiptJournal(receiptPath, { clock }) : null;
@@ -49,6 +50,8 @@ export async function createIntegrationRuntime({ statePath = null, receiptPath =
     terminateSessions:core.registration?.terminateSessions});
   for(const bootstrap of core.registration?.bootstraps ?? []) await gatewayRegistration.provisionBootstrap(bootstrap);
   const portalService = new PortalService({ store, policyService, gatewayControl, clock });
+  const groupRuntime = core.group ? new GroupRuntime({ store, gatewayControl, clock, fetchImpl, ...core.group }) : null;
+  if (groupRuntime) { await groupRuntime.ready; portalService.groupRuntime = groupRuntime; }
   const locationPrivacy = new LocationPrivacyService({store,policyService,portalService,cipher:mecSubscriptions.cipher,clock});
   portalService.locationPrivacy=locationPrivacy;
   handoverCoordinator.observationCipher=mecSubscriptions.cipher;
@@ -58,7 +61,7 @@ export async function createIntegrationRuntime({ statePath = null, receiptPath =
   portalLocations.start();
   const retention = new RetentionService({ store, clock, receiptJournal, ...(core.retention ?? {}) });
   if (core.retention?.autoPrune !== false) retention.start();
-  const api = new IntegrationApiGateway({ policyService, mecIngress, mecSubscriptions, handoverCoordinator, flCoordinator, mcpOrchestrator, gatewayControl, gatewayRegistration, portalService, portalLocations, clock });
+  const api = new IntegrationApiGateway({ policyService, mecIngress, mecSubscriptions, handoverCoordinator, flCoordinator, mcpOrchestrator, gatewayControl, gatewayRegistration, portalService, portalLocations, groupRuntime, clock });
   let gatewayBridge = null;
   if (mqttClient) {
     gatewayBridge = new GatewayBridge({ mqttClient, fetchImpl, receiptJournal, clock, ...core });
@@ -75,6 +78,6 @@ export async function createIntegrationRuntime({ statePath = null, receiptPath =
     mecTimer = setInterval(() => mecIngress.drainOutbox().then(() => mecIngress.prune()).catch(() => {}), 1000);
     mecTimer.unref?.();
   }
-  const close = async () => { mecSubscriptions.stop(); portalLocations.close(); retention.close(); clearInterval(mecTimer); await mcpOrchestrator.close(); await store.close(); };
-  return { store, receiptJournal, policyService, mecIngress, mecSubscriptions, reconciler, handoverCoordinator, flCoordinator, mcpOrchestrator, gatewayControl, gatewayRegistration, portalService, portalLocations, locationPrivacy,deviceIncidents, retention, api, gatewayBridge, close };
+  const close = async () => { groupRuntime?.close(); mecSubscriptions.stop(); portalLocations.close(); retention.close(); clearInterval(mecTimer); await mcpOrchestrator.close(); await store.close(); };
+  return { store, receiptJournal, policyService, mecIngress, mecSubscriptions, reconciler, handoverCoordinator, flCoordinator, mcpOrchestrator, gatewayControl, gatewayRegistration, portalService, portalLocations, locationPrivacy,deviceIncidents, retention, api, gatewayBridge, groupRuntime, close };
 }

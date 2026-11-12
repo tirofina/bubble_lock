@@ -2,7 +2,7 @@ import { IntegrationStore } from '../integration/src/integration-store.mjs';
 const ACK_STATES=new Set(['RECEIVED','FORWARDED','APPLIED','READBACK_VERIFIED','RETRY_PENDING']);
 
 export class GroupDispatcher {
-  constructor({ bridge, members, clock = () => new Date().toISOString(), maxRetries = 2, statePath = null, authorizeCommand = null }) {
+  constructor({ bridge, members, clock = () => new Date().toISOString(), maxRetries = 2, statePath = null, store = null, authorizeCommand = null }) {
     if (!bridge || typeof bridge.sendCommand !== 'function') throw new Error('GroupDispatcher requires a GatewayBridge');
     if (typeof bridge.onAck !== 'function') throw new Error('GroupDispatcher requires GatewayBridge ACK events');
     this.bridge = bridge;
@@ -10,7 +10,7 @@ export class GroupDispatcher {
     this.clock = clock;
     this.maxRetries = maxRetries;
     this.groups = new Map();
-    this.store=new IntegrationStore(statePath);
+    this.store=store ?? new IntegrationStore(statePath);
     this.authorizeCommand=authorizeCommand;
     this.retryLocks=new Map();
     this.ready=this.store.init().then(()=>{
@@ -25,8 +25,9 @@ export class GroupDispatcher {
   async dispatch({ groupId, state, commandId, deadline, epoch, claimId, grantRevision, issuedAt, memberCommands = null }) {
     await this.ready;
     if(typeof state!=='boolean'||typeof commandId!=='string'||!commandId)throw Error('Group 상태와 명령 식별자를 확인하세요.');
-    const groupMembers = [...this.members.entries()].filter(([, member]) => member.groupId === groupId || member.groups?.includes(groupId));
+    const groupMembers = [...this.members.entries()].filter(([memberId, member]) => (member.groupId === groupId || member.groups?.includes(groupId)) && (!memberCommands || Object.hasOwn(memberCommands, memberId)));
     if (groupMembers.length === 0) throw new Error(`Group ${groupId} has no registered members`);
+    if (memberCommands && groupMembers.length !== Object.keys(memberCommands).length) throw new Error('Every canonical member requires a registered group binding');
     if (this.groups.has(commandId)) throw new Error('Group commandId is already registered; use retryPending');
     const entry = { groupId, commandId, state, deadline, epoch, attempts: 1, status: 'DISPATCHING', createdAt: this.clock(), members: new Map() };
     // Prepare all member identities before publishing, including immediate ACKs.
@@ -48,7 +49,7 @@ export class GroupDispatcher {
     }
     this.groups.set(commandId, entry);
     await this.persist(entry);
-    for (const member of entry.members.values()) await this.sendMember(entry,member);
+    await this.sendMembers(entry, [...entry.members.values()]);
     this.refreshStatus(entry);
     await this.persist(entry);
     return this.summary(commandId);
@@ -60,14 +61,61 @@ export class GroupDispatcher {
     delete member.error;
     await this.persist(entry);
     try {
-      const binding=this.members.get(member.memberId);
-      if(!binding||binding.deviceId!==member.deviceId||binding.gatewayId!==member.gatewayId||(binding.groupId!==entry.groupId&&!binding.groups?.includes(entry.groupId)))throw Error('현재 그룹 구성원 연결을 확인하세요.');
-      const deadline=member.command.deadline??entry.deadline;
-      if(typeof deadline!=='string'||!Number.isFinite(Date.parse(deadline))||Date.parse(deadline)<=Date.parse(this.clock()))throw Error('명령 유효기간이 종료되었습니다.');
-      if(this.authorizeCommand){const decision=await this.authorizeCommand(structuredClone(member.command));if(decision!==true&&decision?.allowed!==true)throw Error('현재 명령 실행 권한을 확인하세요.');}
+      await this.authorizeMember(entry, member);
       await this.bridge.sendCommand(member.command);
     } catch (error) {
       if(member.status!=='READBACK_VERIFIED'){member.status = 'RETRY_PENDING';member.error = error.message;}
+    }
+    await this.persist(entry);
+  }
+
+  async authorizeMember(entry, member) {
+    const binding = this.members.get(member.memberId);
+    if (!binding || binding.deviceId !== member.deviceId || binding.gatewayId !== member.gatewayId || (binding.groupId !== entry.groupId && !binding.groups?.includes(entry.groupId))) throw Error('현재 그룹 구성원 연결을 확인하세요.');
+    const deadline = member.command.deadline ?? entry.deadline;
+    if (typeof deadline !== 'string' || !Number.isFinite(Date.parse(deadline)) || Date.parse(deadline) <= Date.parse(this.clock())) throw Error('명령 유효기간이 종료되었습니다.');
+    if (this.authorizeCommand) {
+      const decision = await this.authorizeCommand(structuredClone(member.command));
+      if (decision !== true && decision?.allowed !== true) throw Error('현재 명령 실행 권한을 확인하세요.');
+    }
+  }
+
+  async sendMembers(entry, members) {
+    if (!this.bridge.sendCommands) {
+      for (const member of members) await this.sendMember(entry, member);
+      return;
+    }
+    const admitted = [];
+    for (const member of members) {
+      member.attempts += 1;
+      delete member.error;
+      try {
+        await this.authorizeMember(entry, member);
+        member.status = 'DISPATCHED';
+        admitted.push(member);
+      } catch (error) {
+        if (!(error instanceof Error)) throw error;
+        member.status = 'RETRY_PENDING';
+        member.error = error.message;
+      }
+    }
+    await this.persist(entry);
+    if (!admitted.length) return;
+    try {
+      const results = await this.bridge.sendCommands(admitted.map((member) => structuredClone(member.command)), entry.commandId);
+      for (const member of admitted) {
+        const result = results.find((item) => item.commandId === member.memberCommandId);
+        if (!result?.published && member.status !== 'READBACK_VERIFIED') {
+          member.status = 'RETRY_PENDING';
+          member.error = result?.error ?? 'CSE member publication receipt required';
+        }
+      }
+    } catch (error) {
+      if (!(error instanceof Error)) throw error;
+      for (const member of admitted) if (member.status !== 'READBACK_VERIFIED') {
+        member.status = 'RETRY_PENDING';
+        member.error = error.message;
+      }
     }
     await this.persist(entry);
   }
@@ -103,9 +151,7 @@ export class GroupDispatcher {
     const entry = this.groups.get(commandId);
     if (!entry) throw new Error(`Group command ${commandId} is not registered`);
     if (entry.attempts >= this.maxRetries + 1) return this.summary(commandId);
-    for (const member of entry.members.values()) {
-      if (member.status !== 'READBACK_VERIFIED'&&member.attempts<this.maxRetries+1) await this.sendMember(entry,member);
-    }
+    await this.sendMembers(entry, [...entry.members.values()].filter((member) => member.status !== 'READBACK_VERIFIED' && member.attempts < this.maxRetries + 1));
     entry.attempts += 1;
     this.refreshStatus(entry);
     await this.persist(entry);

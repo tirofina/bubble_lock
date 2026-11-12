@@ -224,16 +224,17 @@ export class PortalService {
     });
   }
 
-  approveCommand(principal, input) {
+  async approveCommand(principal, input) {
     this.policyService.authorize(principal, 'bubble:command');
     const request = this.store.get('portalCommandRequests', identifier(input.requestId));
     this.household(principal, request?.householdId, true);
-    return this.mutate(principal, 'command.approve', input, async () => {
+    const approved = await this.mutate(principal, 'command.approve', input, async () => {
       const current = this.store.get('portalCommandRequests', input.requestId);
       if (!['PENDING', 'PARTIAL'].includes(current.status)) throw new Error('승인 대기 중인 요청을 선택하세요.');
       const decision = this.policyService.evaluateGrant(input.grantId, { scope: 'bubble:command' });
       if (!decision.allowed || decision.grant.principalId !== principal.principalId || decision.grant.subjectId !== current.householdId) throw new Error('현재 가구의 유효한 명령 승인 권한을 확인하세요.');
       if (Date.parse(current.expiresAt) <= Date.parse(this.clock())) throw new Error('새 명령 요청으로 유효기간을 갱신하세요.');
+      this.groupRuntime?.validateRequest(current);
       const deadline = new Date(Math.min(Date.parse(current.expiresAt), Date.parse(decision.grant.expiresAt))).toISOString();
       const commands = [];
       try {
@@ -250,10 +251,25 @@ export class PortalService {
         throw error;
       }
       const result = { ...current, status: 'QUEUED', approvedBy: principal.principalId, approvedAt: this.clock(), grantId: input.grantId, approvalHash: approvalHash({ requestId: current.requestId, principalId: principal.principalId, grantId: input.grantId, commands }), commands };
+      if (this.groupRuntime) for (const command of commands) {
+        const record = this.store.get('gatewayCommands', command.commandId);
+        await this.store.put('gatewayCommands', command.commandId, { ...record, groupRequestId: current.requestId });
+      }
       await this.store.put('portalCommandRequests', current.requestId, result);
       await this.event(principal, current.householdId, 'COMMAND_APPROVED_QUEUED', '명령이 승인되어 Gateway 전달을 기다리고 있습니다.', { requestId: current.requestId, approvalHash: result.approvalHash });
       return result;
     });
+    // Approval and canonical commands must be durable before any CSE side effect.
+    if (this.groupRuntime) await this.groupRuntime.dispatch(approved);
+    return approved;
+  }
+
+  async commandGroup(principal, input, retry = false) {
+    const request = this.store.get('portalCommandRequests', identifier(input.requestId));
+    this.household(principal, request?.householdId, retry);
+    if (retry) this.policyService.authorize(principal, 'bubble:command');
+    if (!this.groupRuntime) throw new Error('CSE group runtime configuration required');
+    return retry ? this.groupRuntime.dispatch(request, true) : this.groupRuntime.reconcile(request.requestId);
   }
 
   readNotification(principal, input) {
@@ -279,6 +295,9 @@ export class PortalService {
       'consents/revoke': 'revokeConsent', 'grants/revoke': 'revokeGrant', incidents: 'createIncident', 'incidents/resolve': 'resolveIncident',
       'commands/request': 'requestCommand', 'commands/approve': 'approveCommand', 'notifications/read': 'readNotification',
     };
+    if (method === 'POST' && ['/v1/portal/commands/group', '/v1/portal/commands/retry'].includes(path)) {
+      return { status: 200, body: await this.commandGroup(principal, body, path.endsWith('/retry')) };
+    }
     const actionKey = path.replace(/^\/v1\/portal\//, '');
     const action = Object.hasOwn(actions, actionKey) ? actions[actionKey] : null;
     if (method !== 'POST' || !action) return { status: 404, body: { error: 'portal_route_required' } };
