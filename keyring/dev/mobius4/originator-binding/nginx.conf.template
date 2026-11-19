@@ -1,0 +1,72 @@
+# Per-certificate originator binding for the keyring dev CSE (DOC-REV 2.0.0, R10).
+#
+# Sibling of ../nginx.conf.template. The bench profile keeps the original file; this template is
+# mounted only through ../compose.originator-binding.yaml. It is a template for the Pi path and was
+# not executed on the development PC (nginx is not installed there). The executed reference is the
+# Node front pc-mobius/src/originator-binding-proxy.mjs, which additionally matches SAN URIs and
+# pins the certificate SHA-256 fingerprint.
+#
+# The include is generated from a binding table (one client certificate CN -> exactly one AE
+# originator) into the gitignored .local directory:
+#   node pc-mobius/scripts/build-originator-binding-configs.mjs \
+#     --table=keyring/dev/mobius4/.local/originator-binding/bindings.json \
+#     --out=keyring/dev/mobius4/.local/originator-binding --receiver=/Mobius4 --mount-point=
+# Start from originator-binding/bindings.example.json. After the switch the Gateway sets
+# M2M_ORIGINATOR to its bound AE originator (or omits X-M2M-Origin); the CSE admin value is no
+# longer injected by this proxy.
+
+map $ssl_client_s_dn $bound_originator {
+    default "";
+    include /etc/nginx/keyring-originator-binding/originator-map.conf;
+}
+
+# "<supplied>|<bound>": an absent header passes (the bound value is injected below), an equal value
+# passes, anything else is a mismatch. Repeated headers are joined with ", " and never match.
+map "$http_x_m2m_origin|$bound_originator" $originator_mismatch {
+    default 1;
+    "~^\|.+$" 0;
+    "~^([^|,\s]+)\|\1$" 0;
+}
+
+map "$bound_originator:$originator_mismatch" $originator_code {
+    default "ORIGINATOR_MISMATCH";
+    "~^:" "ORIGINATOR_BINDING_NOT_FOUND";
+}
+
+server {
+    listen 8759 ssl;
+    server_name localhost;
+    ssl_protocols TLSv1.3;
+    ssl_certificate /etc/nginx/keyring-tls/server.pem;
+    ssl_certificate_key /etc/nginx/keyring-tls/server.key;
+    ssl_client_certificate /etc/nginx/keyring-tls/ca.pem;
+    ssl_verify_client on;
+    ssl_verify_depth 2;
+    client_max_body_size 256k;
+    access_log off;
+    error_page 403 = @originator_denied;
+
+    location /api/ {
+        default_type application/json;
+        return 503 '{"error":"INTEGRATION_API_NOT_CONFIGURED","allowed":false}';
+    }
+    location / {
+        if ($bound_originator = "") { return 403; }
+        if ($originator_mismatch) { return 403; }
+        proxy_pass http://mobius4:7599;
+        # The only originator the CSE sees is the one bound to the verified client certificate.
+        proxy_set_header X-M2M-Origin $bound_originator;
+        proxy_set_header X-SSL-Client-S-DN "";
+        proxy_set_header X-Forwarded-Client-Cert "";
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_connect_timeout 5s;
+        proxy_read_timeout 15s;
+    }
+    location @originator_denied {
+        default_type application/json;
+        add_header X-M2M-RSC 4103 always;
+        add_header X-M2M-RI $http_x_m2m_ri always;
+        return 403 '{"m2m:dbg":"originator binding front rejected the request: $originator_code","pb:originatorBinding":{"code":"$originator_code","rsc":4103,"httpStatus":403}}';
+    }
+}

@@ -21,7 +21,9 @@
     "integration:evidence": "node scripts/build-integration-evidence.mjs",
     "integration:replay": "node scripts/replay-integration.mjs",
     "mcp:servers": "node scripts/run-mcp-servers.mjs",
-    "mcp:verify": "node scripts/run-mcp-verification.mjs"
+    "mcp:verify": "node scripts/run-mcp-verification.mjs",
+    "acp:mtls": "node scripts/run-acp-mtls-real.mjs",
+    "originator-binding:configs": "node scripts/build-originator-binding-configs.mjs"
   },
   "dependencies": {
     "ajv": "^8.20.0",

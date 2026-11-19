@@ -230,3 +230,7 @@ docker compose --project-name privacy-bubble-keyring-scoped --profile receipt-re
 ```
 
 [격리 프로필 준비 기록](../../evidence/2026-11-10-core-scoped-stack/README.md) · [영수증 ACL·소비자 배치 기록](../../evidence/2026-11-10-core-scoped-receipt-rollout/README.md)
+
+## 인증서별 originator 바인딩 (선택)
+
+기본 TLS proxy는 모든 client 인증서를 CSE 관리자 originator로 보낸다. `compose.originator-binding.yaml` override를 함께 지정하면 `originator-binding/nginx.conf.template`이 적용되어 인증서 CN 하나가 AE originator 하나로 매핑되고, 다른 `X-M2M-Origin`은 403과 `X-M2M-RSC: 4103`으로 거부된다. 매핑 include는 `bindings.example.json`을 복사한 `.local/originator-binding/bindings.json`에서 `node pc-mobius/scripts/build-originator-binding-configs.mjs`로 생성한다. 전환 후 Gateway의 `M2M_ORIGINATOR`는 바인딩된 AE originator로 바꾼다. 실제 CSE 실측은 Node 프런트로 수행했다. [R10 작업 기록](../../../docs/rubric-work/R10.md)
