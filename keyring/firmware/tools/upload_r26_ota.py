@@ -26,6 +26,7 @@ def main() -> int:
         parser.error("Unable to load the installed espota.py")
     espota = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(espota)
+    espota.TIMEOUT = 10
     return espota.serve(address, "0.0.0.0", 3232, secrets.randbelow(10000) + 40000,
                         matches[0], str(args.image), espota.FLASH)
 
