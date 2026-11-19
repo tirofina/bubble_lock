@@ -9,7 +9,9 @@ type Role='guardian'|'visitor'|'operator';
 interface ApiResult { status:number;body:unknown }
 interface DemoRuntime {runtime:{api:{handle(request:{method:string;path:string;principal:unknown;body?:unknown}):Promise<ApiResult>}};principals:Record<Role,unknown>}
 interface DemoModule {createPortalDemo(options:{statePath?:string}):Promise<DemoRuntime>}
-export interface PortalOptions {statePath?:string;auth?:OidcSessionManager;upstream?:PortalUpstream}
+/** Live oneM2M bridge: guardian AE view merged into the snapshot, approved commands published to the CSE. */
+export interface PortalCseBridge {overlaySnapshot(snapshot:unknown):unknown;publishApproved(result:unknown):Promise<unknown>}
+export interface PortalOptions {statePath?:string;auth?:OidcSessionManager;upstream?:PortalUpstream;cse?:PortalCseBridge}
 export interface PortalHandler {
   readonly mode:'live'|'demo';
   handle(request:IncomingMessage,response:ServerResponse,url:URL):Promise<void>;
@@ -81,7 +83,7 @@ export async function createPortalHandler(locationFeed:LocationFeed,options:Port
       if(request.method==='GET'&&(action==='snapshot'||action==='locations')) {
         const result=await api('GET',action==='snapshot'?'/v1/portal/snapshot':'/v1/portal/location-access',identity?'guardian':roleOf(url.searchParams.get('role')));
         if(result.status!==200){json(response,result.status,{message:'사용자 범위를 확인해 주세요.'});return;}
-        if(action==='snapshot'){json(response,200,{mode,snapshot:result.body});return;}
+        if(action==='snapshot'){json(response,200,{mode,snapshot:options.cse?options.cse.overlaySnapshot(result.body):result.body});return;}
         const allowed=deviceScope(result.body);
         if(!allowed){json(response,502,{message:'현재 기기 접근 범위를 확인하세요.'});return;}
         const locations=await locationFeed.readSnapshot();
@@ -125,6 +127,11 @@ export async function createPortalHandler(locationFeed:LocationFeed,options:Port
       void discardRole;void discardPrincipal;
       const result=await api('POST',`/v1/portal/${action}`,role,payload);
       if(result.status>=400){json(response,result.status,{message:record(result.body)&&typeof result.body['error']==='string'?result.body['error']:'입력값과 현재 권한을 확인해 주세요.'});return;}
+      if(action==='commands/approve'&&options.cse){
+        let cse:unknown;
+        try{cse=await options.cse.publishApproved(result.body);}catch(error){json(response,502,{message:'승인은 저장했지만 CSE 명령 게시를 확인해야 해요.',detail:error instanceof Error?error.message:'CSE'});return;}
+        json(response,result.status,{mode,result:result.body,cse});return;
+      }
       json(response,result.status,{mode,result:result.body});
     }catch{if(!response.headersSent)json(response,400,{message:'입력값과 요청 형식을 확인해 주세요.'});}
   }};

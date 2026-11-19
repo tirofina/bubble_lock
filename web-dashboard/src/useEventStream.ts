@@ -52,7 +52,7 @@ export function useEventStream() {
       try {
         const { value } = await getJson('/api/source', controller.signal);
         if (disposed) return;
-        if (!isRecord(value) || value['simulation'] !== true ||
+        if (!isRecord(value) || typeof value['simulation'] !== 'boolean' ||
           !Number.isSafeInteger(value['lastSequence']) || typeof value['lastSequence'] !== 'number') {
           throw new ReadError('기록 서버의 정보 형식이 예상과 달라요.');
         }

@@ -58,11 +58,11 @@ export function EventDetails({ events }: { readonly events: readonly DashboardEv
         <dt>자원 주소 (URI)</dt><dd><code>{latest.resourceUri}</code></dd>
         <dt>현재 버전 (revision)</dt><dd>{latest.currentRevision ?? '서버가 버전 정보를 보내지 않았어요. 기록 번호(sequence)와는 따로 관리해요.'}</dd>
         <dt>역할 범위</dt><dd>{latest.roleScope.join(', ')} (화면 표시용 정보이고 권한 판단에는 쓰지 않아요)</dd>
-        <dt>출처</dt><dd>{latest.source}, 모의 재생</dd>
+        <dt>출처</dt><dd>{latest.source}, {latest.source === 'onem2m-cse-live' ? 'oneM2M CSE 실시간 알림' : '모의 재생'}</dd>
       </dl>
       <ol className="audit-list" aria-label="최근 받은 기록">
         {events.map((event) => <li key={event.sequence}>
-          <span><span className="mono muted">#{event.sequence}</span> {eventTitle(event)}</span><Badge tone="warning">모의</Badge>
+          <span><span className="mono muted">#{event.sequence}</span> {eventTitle(event)}</span><Badge tone={event.simulation ? 'warning' : 'info'}>{event.simulation ? '모의' : '실측'}</Badge>
           <span className="audit-meta"><Timestamp at={event.receivedAt} />, <code>{event.type}</code>, {event.resourceUri}</span>
         </li>)}
       </ol>

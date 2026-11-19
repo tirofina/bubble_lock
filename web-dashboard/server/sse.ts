@@ -6,7 +6,9 @@ import audit from '../fixtures/audit.json' with { type: 'json' };
 import { ContractError } from '../shared/validation.ts';
 import { integrationAudit } from '../shared/integration.ts';
 import { loadReplay } from './replay.ts';
-import type { ReplaySnapshot } from './replay.ts';
+import type { DashboardEvent, SourceMode } from '../shared/types.ts';
+import { startCseLiveSource } from './cse-live.ts';
+import type { CseLiveConfig, CseLiveSource } from './cse-live.ts';
 import { loadLocationFeed } from './location-feed.ts';
 import type { LocationFeed } from './location-feed.ts';
 import { readFile } from 'node:fs/promises';
@@ -26,7 +28,23 @@ function json(response: ServerResponse, status: number, body: unknown): void {
   response.end(JSON.stringify(body));
 }
 
-export function createReplayServer(replay: ReplaySnapshot, locationFeed?: LocationFeed, portal?:PortalHandler): Server {
+/**
+ * Event source behind /events. A replay snapshot is finite; a live feed (oneM2M CSE) also
+ * pushes new events and can re-read the CSE (la/ RETRIEVE) when a client reconnects.
+ */
+export interface EventFeed {
+  readonly source: SourceMode;
+  readonly simulation: boolean;
+  readonly events: readonly DashboardEvent[];
+  readonly lastSequence: number;
+  subscribe?(listener: (event: DashboardEvent) => void): () => void;
+  resync?(reason: string): Promise<unknown>;
+  describe?(): Record<string, unknown>;
+}
+
+const RESYNC_WAIT_MS = 3000;
+
+export function createReplayServer(replay: EventFeed, locationFeed?: LocationFeed, portal?:PortalHandler): Server {
   return createServer(async (request, response) => {
     try {
     const url = new URL(request.url ?? '/', 'http://127.0.0.1');
@@ -54,10 +72,11 @@ export function createReplayServer(replay: ReplaySnapshot, locationFeed?: Locati
       case '/api/source':
         json(response, 200, {
           source: replay.source,
-          simulation: true,
+          simulation: replay.simulation,
           lastSequence: replay.lastSequence,
           authentication: 'none-loopback-mock',
           roleScopeIsAuthorization: false,
+          ...(replay.describe ? { live: replay.describe() } : {}),
         });
         return;
       case '/api/resources':
@@ -90,6 +109,10 @@ export function createReplayServer(replay: ReplaySnapshot, locationFeed?: Locati
       json(response, 400, { error: 'invalid_cursor', message: error.message });
       return;
     }
+    // A reconnecting client may have missed CSE notifications too: re-read the CSE first.
+    if (replay.resync && (cursor > 0 || request.headers['last-event-id'] !== undefined)) {
+      await Promise.race([replay.resync('sse-reconnect').catch(() => undefined), new Promise((resolve) => setTimeout(resolve, RESYNC_WAIT_MS).unref())]);
+    }
     if (cursor > replay.lastSequence) {
       json(response, 409, { error: 'resync_required', lastSequence: replay.lastSequence });
       return;
@@ -101,14 +124,24 @@ export function createReplayServer(replay: ReplaySnapshot, locationFeed?: Locati
       'X-Accel-Buffering': 'no',
     });
     response.write('retry: 3000\n: connected\n\n');
-    for (const event of replay.events) {
-      if (event.sequence > cursor) response.write(`id: ${event.sequence}\ndata: ${JSON.stringify(event)}\n\n`);
-    }
-    // A comment marks finite replay completion without closing EventSource.
+    let written = cursor;
+    const write = (event: DashboardEvent) => {
+      if (event.sequence <= written || response.destroyed) return;
+      written = event.sequence;
+      response.write(`id: ${event.sequence}\ndata: ${JSON.stringify(event)}\n\n`);
+    };
+    // Live feeds: listen before the backlog so nothing appended meanwhile is lost.
+    const pendingLive: DashboardEvent[] = [];
+    let backlogDone = false;
+    const unsubscribe = replay.subscribe?.((event) => { if (backlogDone) write(event); else pendingLive.push(event); });
+    for (const event of replay.events) write(event);
+    backlogDone = true;
+    for (const event of pendingLive) write(event);
+    // A comment marks backlog completion without closing EventSource.
     response.write(': replay-complete\n\n');
     const heartbeat = setInterval(() => response.write(': heartbeat\n\n'), 15_000);
     heartbeat.unref();
-    response.on('close', () => clearInterval(heartbeat));
+    response.on('close', () => { clearInterval(heartbeat); unsubscribe?.(); });
     }catch{if(!response.headersSent)json(response,503,{message:'대시보드 연결 상태를 확인하세요.'});else response.end();}
   });
 }
@@ -121,18 +154,21 @@ export interface StartReplayOptions {
   readonly locationSimulation?: boolean;
   readonly portalStatePath?: string;
   readonly portal?: PortalOptions;
+  /** Live oneM2M CSE source. Omitted means the existing fixture or journal replay. */
+  readonly cseLive?: CseLiveConfig;
 }
 
 /** Loopback is deliberately fixed; port 0 is supported for integration tests. */
 export async function startReplayServer(options: StartReplayOptions = {}) {
-  const replay = await loadReplay(options.receiptFile);
+  const live: CseLiveSource | null = options.cseLive ? await startCseLiveSource(options.cseLive) : null;
+  const replay: EventFeed = live ?? await loadReplay(options.receiptFile);
   const locationFeed = await loadLocationFeed({
     emptyLive:Boolean(options.portal?.auth),
     ...(options.locationFile === undefined ? {} : { locationFile: options.locationFile }),
     ...(options.gatewayLocationsFile === undefined ? {} : { gatewayLocationsFile: options.gatewayLocationsFile }),
     ...(options.locationSimulation === undefined ? {} : { simulation: options.locationSimulation }),
   });
-  const portal=await createPortalHandler(locationFeed,{...options.portal,...(options.portalStatePath===undefined?{}:{statePath:options.portalStatePath})});
+  const portal=await createPortalHandler(locationFeed,{...options.portal,...(options.portalStatePath===undefined?{}:{statePath:options.portalStatePath}),...(live?{cse:{overlaySnapshot:(snapshot:unknown)=>live.guardianOverlay?.apply(snapshot)??snapshot,publishApproved:(result:unknown)=>live.publishApproved(result)}}:{})});
   const server = createReplayServer(replay, locationFeed, portal);
   const listening = once(server, 'listening');
   server.listen(options.port ?? 4174, '127.0.0.1');
@@ -144,6 +180,7 @@ export async function startReplayServer(options: StartReplayOptions = {}) {
     server.closeAllConnections();
     server.close();
     await closed;
+    await live?.close();
   };
-  return { server, replay, url: `http://127.0.0.1:${address.port}`, close };
+  return { server, replay, live, url: `http://127.0.0.1:${address.port}`, close };
 }

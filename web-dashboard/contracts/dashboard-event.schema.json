@@ -69,7 +69,8 @@
       "enum": [
         "fixture-replay",
         "core-journal-replay",
-        "integration-journal-replay"
+        "integration-journal-replay",
+        "onem2m-cse-live"
       ]
     },
     "receipt": {
@@ -112,14 +113,43 @@
           },
           "receipt": {
             "type": "null"
-          },
-          "simulation": {
-            "const": true
-          },
-          "source": {
-            "const": "fixture-replay"
           }
-        }
+        },
+        "oneOf": [
+          {
+            "properties": {
+              "simulation": {
+                "const": true
+              },
+              "source": {
+                "const": "fixture-replay"
+              },
+              "acceptance": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "const": "SIMULATED API acceptance; not a CORE receipt"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "properties": {
+              "source": {
+                "const": "onem2m-cse-live"
+              },
+              "acceptance": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "const": "oneM2M CSE contentInstance creationTime"
+                  }
+                }
+              }
+            }
+          }
+        ]
       },
       "else": {
         "if": {
@@ -330,7 +360,10 @@
           "$ref": "#/$defs/dateTime"
         },
         "label": {
-          "const": "SIMULATED API acceptance; not a CORE receipt"
+          "enum": [
+            "SIMULATED API acceptance; not a CORE receipt",
+            "oneM2M CSE contentInstance creationTime"
+          ]
         }
       }
     },

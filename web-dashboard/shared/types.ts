@@ -1,5 +1,5 @@
 /** Stream sequence is global within one immutable replay, never device sequence. */
-export type SourceMode = 'fixture-replay' | 'core-journal-replay' | 'integration-journal-replay';
+export type SourceMode = 'fixture-replay' | 'core-journal-replay' | 'integration-journal-replay' | 'onem2m-cse-live';
 export type AckState = 'RECEIVED' | 'FORWARDED' | 'APPLIED' | 'READBACK_VERIFIED' | 'RETRY_PENDING';
 export type ReceiptStatus = 'DISPATCHED' | 'ACK_RECORDED' | 'APPLIED' | 'MQTT_DISPATCHED' | 'REVIEW' | 'DUPLICATE' | 'IN_FLIGHT' | 'DISPATCHING' | 'SETTLED';
 
@@ -106,8 +106,11 @@ export interface ApiAcceptance {
   readonly commandId: string;
   readonly groupId: string;
   readonly acceptedAt: string;
-  readonly label: 'SIMULATED API acceptance; not a CORE receipt';
+  readonly label: AcceptanceLabel;
 }
+
+/** Fixture acceptance is simulated API data; live acceptance is the CSE creationTime of the command contentInstance. */
+export type AcceptanceLabel = 'SIMULATED API acceptance; not a CORE receipt' | 'oneM2M CSE contentInstance creationTime';
 
 /** INTEGRATION records retain their original data and journal hashes. */
 export interface IntegrationReceipt {

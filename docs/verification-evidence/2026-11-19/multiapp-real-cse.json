@@ -1,0 +1,737 @@
+{
+  "receiptId": "multiapp-real-cse",
+  "contractId": "privacy-bubble.r03-multiapp.v1",
+  "docRevision": "2.0.0",
+  "rubricIds": [
+    "R03"
+  ],
+  "status": "PASS",
+  "generatedAt": "2026-11-19T12:04:10.136Z",
+  "simulation": true,
+  "simulationScope": {
+    "keyrings": "emulated (2, in-process firmware model)",
+    "gateway": "emulated Pi Gateway process (Node) using bubble_gateway.model through the Python bridge",
+    "ble": "emulated GATT write with 35-70 ms latency",
+    "cse": "real",
+    "applications": "real processes"
+  },
+  "transport": "actual-mobius4-loopback-http",
+  "cseVersion": "4.24.5",
+  "cseRevision": "3da4d8523694b5077e348ab1c9e769fb3a30df24",
+  "cseId": "/multiapp-cse",
+  "postgres": "PostgreSQL 17.6 on x86_64-windows, compiled by msvc-19.44.35213, 64-bit",
+  "registrySHA256": "b3780469f8ff962de7c0bdb04e2f8247e122d72f98a1f478b5ddae30ff799eac",
+  "hostCount": 1,
+  "hostDescription": "single Windows PC, loopback only",
+  "physicalHardware": false,
+  "processes": {
+    "mobius4": 1,
+    "gatewayEmulator": 1,
+    "automationAe": 1,
+    "webDashboardServer": 1,
+    "runner": 1
+  },
+  "gatewayModel": "bubble_gateway.model (Python)",
+  "applications": [
+    {
+      "app": "gateway (emulated)",
+      "aeId": "Cpbgwdfdf9f",
+      "rn": "pb-gateway-pi-01",
+      "writes": 12,
+      "subscriptions": 2,
+      "notifications": {
+        "received": 5,
+        "rejected": 0,
+        "verification": 0,
+        "deletion": 0
+      }
+    },
+    {
+      "app": "operator dashboard",
+      "aeId": "Cpbopdfdf9f",
+      "rn": "pb-operator-dashboard",
+      "process": "web-dashboard/server/cli.ts",
+      "subscriptions": 11
+    },
+    {
+      "app": "guardian portal",
+      "aeId": "Cpbgddfdf9f",
+      "rn": "pb-guardian-portal",
+      "process": "web-dashboard/server/cli.ts (separate AE)",
+      "subscriptions": 7
+    },
+    {
+      "app": "automation",
+      "aeId": "Cpbaudfdf9f",
+      "rn": "pb-automation",
+      "process": "pc-mobius/multiapp/automation-ae.mjs",
+      "subscriptions": 4,
+      "incidents": 2
+    }
+  ],
+  "oneM2MServiceFunctions": {
+    "subscriptionNotification": "enc.net=[3], enc.chty=[4], nct=1 per container; nu = subscriber AE-ID resolved through AE poa",
+    "attributeCriteria": "guardian transient subscription on cod:binSh with enc.atr=[state], nct=2 (modified attributes)",
+    "groupFanout": "transient <group> mt=3 et=deadline, one fopt CREATE → 2 command containers",
+    "discovery": {
+      "byLabel": 2,
+      "bySdtCnd": 2
+    },
+    "latestRetrieval": "la/ RETRIEVE on startup and SSE reconnect; createdAfter (cra) discovery for gaps",
+    "containerLimits": {
+      "observationMni": 100,
+      "commandMni": 20,
+      "commandMia": 900
+    },
+    "expiration": "command cin, command group and confirm subscription et = command deadline; incident cin et = +1 h",
+    "accessControl": "per-stream ACPs; creator (cr) attribute checked by every consumer"
+  },
+  "acpChecks": [
+    {
+      "name": "guardian RETRIEVE raw observation",
+      "originator": "guardian",
+      "method": "GET",
+      "rsc": 4103,
+      "expected": 4103,
+      "status": "PASS"
+    },
+    {
+      "name": "automation RETRIEVE command",
+      "originator": "automation",
+      "method": "GET",
+      "rsc": 4103,
+      "expected": 4103,
+      "status": "PASS"
+    },
+    {
+      "name": "automation SUBSCRIBE observation",
+      "originator": "automation",
+      "method": "POST",
+      "rsc": 4103,
+      "expected": 4103,
+      "status": "PASS"
+    },
+    {
+      "name": "operator UPDATE switch",
+      "originator": "operator",
+      "method": "PUT",
+      "rsc": 4103,
+      "expected": 4103,
+      "status": "PASS"
+    },
+    {
+      "name": "operator DELETE button container",
+      "originator": "operator",
+      "method": "DELETE",
+      "rsc": 4103,
+      "expected": 4103,
+      "status": "PASS"
+    },
+    {
+      "name": "guardian RETRIEVE button la",
+      "originator": "guardian",
+      "method": "GET",
+      "rsc": 4004,
+      "expected": [
+        2000,
+        4004
+      ],
+      "status": "PASS"
+    },
+    {
+      "name": "operator RETRIEVE observation la",
+      "originator": "operator",
+      "method": "GET",
+      "rsc": 2000,
+      "expected": 2000,
+      "status": "PASS"
+    }
+  ],
+  "checks": [
+    {
+      "id": "C01",
+      "name": "dashboard source is onem2m-cse-live with two subscriber AEs",
+      "live": {
+        "operator": "Cpbopdfdf9f",
+        "guardian": "Cpbgddfdf9f"
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "C02",
+      "name": "operator 5x2 + incidents, guardian 3x2 + incidents subscriptions",
+      "subscriptions": 18,
+      "denied": [],
+      "status": "PASS"
+    },
+    {
+      "id": "C03",
+      "name": "keyring discovery by label and binarySwitch cnd",
+      "byLabel": [
+        "/Mobius/pb-gateway-pi-01/keyring-A",
+        "/Mobius/pb-gateway-pi-01/keyring-B"
+      ],
+      "bySdt": [
+        "/Mobius/pb-gateway-pi-01/keyring-A/switch",
+        "/Mobius/pb-gateway-pi-01/keyring-B/switch"
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "C04",
+      "name": "Gateway observation writes reach the operator SSE stream",
+      "writes": [
+        {
+          "container": "/Mobius/pb-gateway-pi-01/keyring-A/observation",
+          "ri": "n0ayvhzj7l",
+          "modelCheck": "bubble_gateway.model (Python)"
+        },
+        {
+          "container": "/Mobius/pb-gateway-pi-01/keyring-B/observation",
+          "ri": "g88pp91dcg",
+          "modelCheck": "bubble_gateway.model (Python)"
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "C05",
+      "name": "ACP least-privilege probes",
+      "probes": 7,
+      "status": "PASS"
+    },
+    {
+      "id": "C06",
+      "name": "one button write fans out to operator, guardian and automation AEs",
+      "buttonResource": "rz2p6641u0",
+      "status": "PASS"
+    },
+    {
+      "id": "C07",
+      "name": "automation incident fans out to operator and guardian without app-to-app calls",
+      "incidentId": "incident-a310a3145d416aaa6b3d",
+      "incidentEt": "20261119T130311",
+      "status": "PASS"
+    },
+    {
+      "id": "C08",
+      "name": "guardian approval published by one group fopt CREATE to both command containers",
+      "httpStatus": 200,
+      "publication": {
+        "groupPath": "/Mobius/pb-guardian-portal/cmd-ef429f898dc9e97c",
+        "groupEt": "20261119T120351",
+        "memberResults": [
+          {
+            "member": "Mobius/pb-gateway-pi-01/keyring-A/command",
+            "rsc": 2001,
+            "ri": "c7orkxvayj",
+            "ct": "20261119T120312"
+          },
+          {
+            "member": "Mobius/pb-gateway-pi-01/keyring-B/command",
+            "rsc": 2001,
+            "ri": "tji9g991v8",
+            "ct": "20261119T120312"
+          }
+        ]
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "C09",
+      "name": "claim, grantRevision, ownershipEpoch, deadline and payloadHash preserved Gateway to ACK",
+      "perDevice": [
+        {
+          "deviceId": "keyring-A",
+          "preserved": {
+            "gatewayClaimId": true,
+            "gatewayPayloadHash": true,
+            "gatewayGrantRevision": true,
+            "gatewayOwnershipEpoch": true,
+            "gatewayDeadline": true,
+            "ackPayloadHash": true,
+            "ackGrantRevision": true,
+            "ackOwnershipEpoch": true,
+            "dispatchClaimId": true
+          }
+        },
+        {
+          "deviceId": "keyring-B",
+          "preserved": {
+            "gatewayClaimId": true,
+            "gatewayPayloadHash": true,
+            "gatewayGrantRevision": true,
+            "gatewayOwnershipEpoch": true,
+            "gatewayDeadline": true,
+            "ackPayloadHash": true,
+            "ackGrantRevision": true,
+            "ackOwnershipEpoch": true,
+            "dispatchClaimId": true
+          }
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "C10",
+      "name": "dashboard timeline shows accepted, sent, applied and verified for both keyrings",
+      "status": "PASS"
+    },
+    {
+      "id": "C11",
+      "name": "switch readback equals desired state on both keyrings",
+      "status": "PASS"
+    },
+    {
+      "id": "C12",
+      "name": "guardian transient switch subscriptions (atr=state, nct=2, et=deadline) confirm both keyrings",
+      "confirmations": 2,
+      "operatorReadback": [
+        true,
+        true
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "C19",
+      "name": "guardian portal request shows CONFIRMED_BY_CSE from the guardian AE receipt subscriptions",
+      "requestId": "request-8cc05fa770e6b1ef429f898d",
+      "centralStatus": "QUEUED",
+      "status": "PASS"
+    },
+    {
+      "id": "C13",
+      "name": "forged command by operator AE rejected (UNAUTHORIZED_WRITER), keyring state unchanged",
+      "forgedCreateRsc": 2001,
+      "ackCode": "UNAUTHORIZED_WRITER",
+      "keyringBState": true,
+      "dashboardReview": "unexpected-creator:Cpbopdfdf9f",
+      "status": "PASS"
+    },
+    {
+      "id": "C14",
+      "name": "low-battery reading raises a MAINTENANCE incident visible to the guardian",
+      "incidentId": "incident-6063ba324ee09d0c00d4",
+      "status": "PASS"
+    },
+    {
+      "id": "C15",
+      "name": "missed notification recovered by la/ RETRIEVE on SSE reconnect",
+      "missedBeforeReconnect": false,
+      "recoveredSequence": 15,
+      "reconnectToRecoveredMs": 56,
+      "resyncs": [
+        {
+          "reason": "sse-reconnect",
+          "at": "2026-11-19T12:03:13.795Z",
+          "containers": 11,
+          "recovered": 1,
+          "durationMs": 54
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "id": "C16",
+      "name": "telemetry and command containers carry mni / mia limits",
+      "observation": {
+        "mni": 100,
+        "cni": 2
+      },
+      "command": {
+        "mni": 20,
+        "mia": 900,
+        "cni": 1
+      },
+      "status": "PASS"
+    },
+    {
+      "id": "C17",
+      "name": "transient group, command cin and confirm subscription carry et = command deadline",
+      "groupEt": "20261119T120351",
+      "cinEt": "20261119T120351",
+      "expected": "20261119T120351",
+      "status": "PASS"
+    },
+    {
+      "id": "C18",
+      "name": "expired command replay rejected at the Gateway (EXPIRED) with keyring state unchanged",
+      "replayMembers": [
+        {
+          "member": "Mobius/pb-gateway-pi-01/keyring-A/command",
+          "rsc": 2001
+        },
+        {
+          "member": "Mobius/pb-gateway-pi-01/keyring-B/command",
+          "rsc": 2001
+        }
+      ],
+      "rejections": 2,
+      "status": "PASS"
+    }
+  ],
+  "steps": [
+    {
+      "name": "real Mobius4 started",
+      "at": "2026-11-19T12:03:10.503Z",
+      "ms": 1795089790504,
+      "cseVersion": "4.24.5",
+      "endpoint": "loopback"
+    },
+    {
+      "name": "emulated Gateway registered and provisioned keyring resources",
+      "at": "2026-11-19T12:03:10.989Z",
+      "ms": 1795089790989,
+      "modelImplementation": "bubble_gateway.model (Python)",
+      "acps": [
+        "acp-root",
+        "acp-observation",
+        "acp-events",
+        "acp-command",
+        "acp-receipt",
+        "acp-switch"
+      ]
+    },
+    {
+      "name": "automation AE registered, incidents container and subscriptions created",
+      "at": "2026-11-19T12:03:11.166Z",
+      "ms": 1795089791166,
+      "deviceIds": [
+        "keyring-A",
+        "keyring-B"
+      ],
+      "subscriptions": [
+        "/Mobius/pb-gateway-pi-01/keyring-A/button/sub-automation",
+        "/Mobius/pb-gateway-pi-01/keyring-B/button/sub-automation",
+        "/Mobius/pb-gateway-pi-01/keyring-A/battery/sub-automation",
+        "/Mobius/pb-gateway-pi-01/keyring-B/battery/sub-automation"
+      ]
+    },
+    {
+      "name": "web-dashboard server registered operator and guardian AEs",
+      "at": "2026-11-19T12:03:11.854Z",
+      "ms": 1795089791854,
+      "source": "onem2m-cse-live",
+      "subscriptions": 18,
+      "keyrings": [
+        "keyring-A",
+        "keyring-B"
+      ]
+    },
+    {
+      "name": "keyring-A panic button press (emulated)",
+      "at": "2026-11-19T12:03:11.939Z",
+      "ms": 1795089791939
+    },
+    {
+      "name": "guardian approves the command request",
+      "at": "2026-11-19T12:03:11.989Z",
+      "ms": 1795089791989,
+      "requestId": "request-8cc05fa770e6b1ef429f898d"
+    },
+    {
+      "name": "waiting for command deadline to check transient expiry",
+      "at": "2026-11-19T12:03:13.805Z",
+      "ms": 1795089793805,
+      "waitMs": 40683
+    },
+    {
+      "name": "post-deadline observation of transient resources",
+      "at": "2026-11-19T12:03:54.592Z",
+      "observed": {
+        "groupRetrieveRsc": 2000,
+        "commandRetrieveRsc": 2000,
+        "confirmRetrieveRsc": 2000,
+        "replayFanoutRsc": 2000
+      }
+    }
+  ],
+  "commands": [
+    {
+      "deviceId": "keyring-A",
+      "commandId": "portal-9f7d8e54c286ab08f4c8cbcb7218df9a",
+      "claimId": "claim-819d77ce-b257-48d9-8397-25e3896e7c0f",
+      "grantRevision": 1,
+      "ownershipEpoch": 0,
+      "deadline": "2026-11-19T12:03:51.988Z",
+      "payloadHash": "89dcf23cf3929beb36dbe8f1d1cc68614f96a31e8c21b83b77c77a5934f2e03e",
+      "preserved": {
+        "gatewayClaimId": true,
+        "gatewayPayloadHash": true,
+        "gatewayGrantRevision": true,
+        "gatewayOwnershipEpoch": true,
+        "gatewayDeadline": true,
+        "ackPayloadHash": true,
+        "ackGrantRevision": true,
+        "ackOwnershipEpoch": true,
+        "dispatchClaimId": true
+      },
+      "dashboardStages": {
+        "accepted": "2026-11-19T12:03:12.000Z",
+        "sent": "2026-11-19T12:03:12.061Z",
+        "applied": "2026-11-19T12:03:12.129Z",
+        "verified": "2026-11-19T12:03:12.134Z",
+        "summary": {
+          "status": "verified",
+          "memberCount": 1,
+          "ackCount": 1,
+          "verifiedCount": 1,
+          "retryPendingCount": 0,
+          "acceptedToSentMs": 61,
+          "sentToAppliedMs": 68,
+          "appliedToVerifiedMs": 5
+        }
+      },
+      "gateway": {
+        "creator": "Cpbgddfdf9f",
+        "modelCheck": "bubble_gateway.model (Python)",
+        "notifiedAt": "2026-11-19T12:03:12.061Z",
+        "dispatchedAt": "2026-11-19T12:03:12.061Z",
+        "deviceAcceptedAt": "2026-11-19T12:03:12.070Z",
+        "deviceAppliedAt": "2026-11-19T12:03:12.129Z",
+        "readbackReceivedAt": "2026-11-19T12:03:12.134Z",
+        "receiptConfirmedAt": "2026-11-19T12:03:12.143Z",
+        "switchConfirmedAt": "2026-11-19T12:03:12.149Z",
+        "switchState": true
+      },
+      "dashboardAckArrivedAt": "2026-11-19T12:03:12.140Z",
+      "durationsMs": {
+        "approveRequestToGatewayNotified": 72,
+        "gatewayNotifiedToDispatchRecord": 0,
+        "dispatchToDeviceApplied": 68,
+        "deviceAppliedToReceiptCreateStart": 5,
+        "receiptCreateStartToDashboardAck": 6,
+        "receiptCreateRoundTrip": 4,
+        "approveRequestToDashboardVerified": 151
+      }
+    },
+    {
+      "deviceId": "keyring-B",
+      "commandId": "portal-cdee2d95faff66e15cdcd410830166a1",
+      "claimId": "claim-16234c49-91cc-42b1-8fe2-0ce174e2486b",
+      "grantRevision": 1,
+      "ownershipEpoch": 0,
+      "deadline": "2026-11-19T12:03:51.988Z",
+      "payloadHash": "a8a50151d029624cc0796c203c39e92c6b4476ff4c409a7de731f306b66d1498",
+      "preserved": {
+        "gatewayClaimId": true,
+        "gatewayPayloadHash": true,
+        "gatewayGrantRevision": true,
+        "gatewayOwnershipEpoch": true,
+        "gatewayDeadline": true,
+        "ackPayloadHash": true,
+        "ackGrantRevision": true,
+        "ackOwnershipEpoch": true,
+        "dispatchClaimId": true
+      },
+      "dashboardStages": {
+        "accepted": "2026-11-19T12:03:12.000Z",
+        "sent": "2026-11-19T12:03:12.055Z",
+        "applied": "2026-11-19T12:03:12.113Z",
+        "verified": "2026-11-19T12:03:12.118Z",
+        "summary": {
+          "status": "verified",
+          "memberCount": 1,
+          "ackCount": 1,
+          "verifiedCount": 1,
+          "retryPendingCount": 0,
+          "acceptedToSentMs": 55,
+          "sentToAppliedMs": 58,
+          "appliedToVerifiedMs": 5
+        }
+      },
+      "gateway": {
+        "creator": "Cpbgddfdf9f",
+        "modelCheck": "bubble_gateway.model (Python)",
+        "notifiedAt": "2026-11-19T12:03:12.054Z",
+        "dispatchedAt": "2026-11-19T12:03:12.055Z",
+        "deviceAcceptedAt": "2026-11-19T12:03:12.066Z",
+        "deviceAppliedAt": "2026-11-19T12:03:12.113Z",
+        "readbackReceivedAt": "2026-11-19T12:03:12.118Z",
+        "receiptConfirmedAt": "2026-11-19T12:03:12.127Z",
+        "switchConfirmedAt": "2026-11-19T12:03:12.138Z",
+        "switchState": true
+      },
+      "dashboardAckArrivedAt": "2026-11-19T12:03:12.124Z",
+      "durationsMs": {
+        "approveRequestToGatewayNotified": 65,
+        "gatewayNotifiedToDispatchRecord": 1,
+        "dispatchToDeviceApplied": 58,
+        "deviceAppliedToReceiptCreateStart": 6,
+        "receiptCreateStartToDashboardAck": 5,
+        "receiptCreateRoundTrip": 4,
+        "approveRequestToDashboardVerified": 135
+      }
+    }
+  ],
+  "timingsMs": {
+    "buttonWriteWithReadbackMs": 7,
+    "buttonCreateRoundTrip": 4,
+    "buttonCreateStartToOperatorSse": 10,
+    "buttonCreateStartToAutomationNotified": 12,
+    "buttonCreateStartToGuardianNotified": 11,
+    "automationNotifiedToIncidentWritten": 4,
+    "incidentWrittenToOperatorSse": 1,
+    "incidentWrittenToGuardianNotified": 2,
+    "approveHttpRoundTrip": 69,
+    "buttonToGuardianIncidentVisible": 41,
+    "approveRequestToBothVerifiedAtDashboard": 151,
+    "automatedPathTotal": 192
+  },
+  "incidents": {
+    "safety": {
+      "incidentId": "incident-a310a3145d416aaa6b3d",
+      "kind": "SAFETY",
+      "et": "20261119T130311"
+    },
+    "maintenance": {
+      "incidentId": "incident-6063ba324ee09d0c00d4",
+      "kind": "MAINTENANCE"
+    }
+  },
+  "negative": {
+    "forgedCommand": {
+      "createRsc": 2001,
+      "gatewayAckCode": "UNAUTHORIZED_WRITER",
+      "keyringBState": true,
+      "dashboardReview": "unexpected-creator:Cpbopdfdf9f"
+    }
+  },
+  "resync": {
+    "missedResource": "12lnhtn0lv",
+    "missedBeforeReconnect": false,
+    "recoveredSequence": 15,
+    "recoveredByResyncTotal": 1,
+    "lastResync": {
+      "reason": "sse-reconnect",
+      "at": "2026-11-19T12:03:13.795Z",
+      "containers": 11,
+      "recovered": 1,
+      "durationMs": 54
+    }
+  },
+  "transient": {
+    "commandDeadline": "2026-11-19T12:03:51.988Z",
+    "group": {
+      "path": "/Mobius/pb-guardian-portal/cmd-ef429f898dc9e97c",
+      "et": "20261119T120351",
+      "beforeRsc": 2000,
+      "afterDeadlineRetrieveRsc": 2000
+    },
+    "commandCin": {
+      "et": "20261119T120351",
+      "ri": "c7orkxvayj",
+      "afterDeadlineRetrieveRsc": 2000
+    },
+    "expiredReplay": {
+      "fanoutRsc": 2000,
+      "members": [
+        {
+          "member": "Mobius/pb-gateway-pi-01/keyring-A/command",
+          "rsc": 2001
+        },
+        {
+          "member": "Mobius/pb-gateway-pi-01/keyring-B/command",
+          "rsc": 2001
+        }
+      ],
+      "gatewayAckCodes": [
+        {
+          "deviceId": "keyring-A",
+          "ackCode": "EXPIRED"
+        },
+        {
+          "deviceId": "keyring-B",
+          "ackCode": "EXPIRED"
+        }
+      ],
+      "switchStatesAfter": [
+        true,
+        true
+      ]
+    },
+    "confirmSubscription": {
+      "path": "/Mobius/pb-gateway-pi-01/keyring-A/switch/confirm-ef429f898dc9e97c",
+      "et": "20261119T120351",
+      "afterRsc": 2000
+    },
+    "incident": {
+      "et": "20261119T130311"
+    }
+  },
+  "dashboard": {
+    "source": "onem2m-cse-live",
+    "simulation": true,
+    "lastSequence": 19,
+    "notifications": 31,
+    "unmatchedNotifications": 0,
+    "guardian": {
+      "incidents": 2,
+      "notifications": 8
+    },
+    "eventTypes": {
+      "gateway.telemetry": 5,
+      "command.accepted": 4,
+      "receipt.review": 4,
+      "integration.receipt": 2,
+      "command.dispatched": 2,
+      "command.ack": 2
+    }
+  },
+  "automation": {
+    "notifications": {
+      "received": 2,
+      "rejected": 0,
+      "verification": 0,
+      "deletion": 0
+    },
+    "decisions": 2
+  },
+  "screenshot": {
+    "browser": "Chrome/157.0.8103.79",
+    "sseEventsAtCapture": 5,
+    "captured": [
+      {
+        "name": "operator-commands-1440-light",
+        "hash": "#/operator/commands",
+        "width": 1440,
+        "height": 1224,
+        "path": "web-dashboard/evidence/2026-11-19-live-cse/operator-commands-1440-light.png",
+        "sha256": "8b661b46fcc6dba50a8ba27df1dfeb74ee4b3f758b597641561547c9ef1bdc3e"
+      },
+      {
+        "name": "operator-overview-1440-light",
+        "hash": "#/operator/overview",
+        "width": 1440,
+        "height": 1616,
+        "path": "web-dashboard/evidence/2026-11-19-live-cse/operator-overview-1440-light.png",
+        "sha256": "6564ed6ccac03c4b3ac65c030a0dfed52b718be5390f024e69838c9aa514115c"
+      },
+      {
+        "name": "user-activity-390-light",
+        "hash": "#/user/activity",
+        "width": 390,
+        "height": 4000,
+        "path": "web-dashboard/evidence/2026-11-19-live-cse/user-activity-390-light.png",
+        "sha256": "65d365f40cee1a0123fed668eda72298a315b4c4b7e56d0b13b5b5975009a4f0"
+      }
+    ]
+  },
+  "limitations": [
+    "keyrings and the Pi Gateway are emulated; physical BLE, radio range and power are covered by keyring/evidence receipts",
+    "single host loopback HTTP without TLS; the MQTT and HTTPS mTLS bindings are covered by other receipts",
+    "oneM2M creationTime has 1 s resolution, so the dashboard accepted stage is truncated to the second",
+    "Mobius4 4.24.5 requires CREATE on the parent to create a <subscription>; subscriber AEs hold C+R+DISC and every consumer checks the cr attribute",
+    "the guardian approval is issued by the in-process portal demo runtime (central claim, grantRevision, ownershipEpoch); central settlement of the native receipt stays on the existing central API path"
+  ],
+  "sources": {
+    "pc-mobius/scripts/run-multiapp-real.mjs": "ea41f0a38202edb94ac8dd1fa89adc0d299cf0a144b4ac3d93313c1737338721",
+    "pc-mobius/multiapp/gateway-emulator.mjs": "f9606f07e66c4e36073e13a8f546c35b63beaf2238dab915bb732109b69baaa8",
+    "pc-mobius/multiapp/automation-ae.mjs": "b0b04e46c8cccc982b813dd3a4095d6dba1e91876fb6509e508473c440e6d226",
+    "pc-mobius/multiapp/topology.mjs": "685c4ef1fc51b1e80eaa9475f72fe8fc595addcc80a9e1a5f1f05b634189f801",
+    "pc-mobius/multiapp/onem2m-http.mjs": "975a0aa9f0340d1e042533ae8d18535ada3e592c206eb10c27f4cc8d597fe3c3",
+    "pc-mobius/multiapp/gateway_model_bridge.py": "000b38531e75ff0e2be4f633f1440394adc622084d70c1382a40c855b85f61c3",
+    "web-dashboard/server/cse-live.ts": "812282b26e497ca60688d1ea78ee258c51e3493dfaadf0646000d6a62cdbfb80",
+    "web-dashboard/shared/cse-notification.ts": "7ca51308eb0d94475a314dec5a035d60f0c63d14a587620a245e6d60567d656b"
+  }
+}
