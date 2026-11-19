@@ -11,6 +11,9 @@
 #if KEYRING_DISPLAY_PROFILE
 #include <Arduino_GFX_Library.h>
 #include "jd9853_display.h"
+#if defined(KEYRING_R26_FRONT)
+#include "r26_display.h"
+#endif
 #endif
 #if KEYRING_ENABLE_SD_LOG
 #include <SD.h>
@@ -30,11 +33,13 @@ Arduino_ST7789 display(&displayBus, board::LcdReset, KEYRING_LCD_ROTATION, true,
 #else
 KeyringJD9853 display(&displayBus);
 #endif
+#if !defined(KEYRING_R26_FRONT)
 constexpr uint16_t Black = 0x0000, White = 0xffff, Red = 0xf800;
 #if KEYRING_R18_BRINGUP_DISPLAY
 constexpr uint16_t Green = 0x07e0, Blue = 0x001f;
 #else
 constexpr uint16_t Cyan = 0x07ff;
+#endif
 #endif
 #endif
 #if KEYRING_ENABLE_SD_LOG
@@ -149,7 +154,9 @@ void Peripherals::run() {
 #endif
 #if KEYRING_DISPLAY_PROFILE
   const bool screenStarted = display.begin(KEYRING_LCD_SPI_HZ);
-#if KEYRING_R18_BRINGUP_DISPLAY
+#if defined(KEYRING_R26_FRONT)
+  const bool screenUsable = screenStarted && display.width() == 240 && display.height() == 240;
+#elif KEYRING_R18_BRINGUP_DISPLAY
   // The fixed test pattern needs room for the panel label and all button text.
   const bool screenUsable = screenStarted && display.width() >= 144 && display.height() >= 120;
 #else
@@ -207,6 +214,9 @@ void Peripherals::run() {
 }
 void Peripherals::draw(const KeyringScreen &screen, bool fullDraw) {
 #if KEYRING_DISPLAY_PROFILE
+#if defined(KEYRING_R26_FRONT)
+  drawR26Display(display, screen, fullDraw);
+#else
   if (fullDraw) display.fillScreen(Black);
 #if KEYRING_R18_BRINGUP_DISPLAY
   if (fullDraw) {
@@ -225,12 +235,6 @@ void Peripherals::draw(const KeyringScreen &screen, bool fullDraw) {
   }
   display.setCursor(12, 97);
   display.print(screen.panic ? "PANIC" : screen.confirm ? "CONFIRM" : "READY");
-  if (auxRail::displayVisible()) {
-    portENTER_CRITICAL(&mux);
-    if (screen.panic) drawnPanicPress = screen.panicPress;
-    else if (screen.confirm) drawnConfirmPress = screen.confirmPress;
-    portEXIT_CRITICAL(&mux);
-  }
 #else
   display.setTextColor(Cyan); display.setCursor(8, 8); display.print("PRIVACY BUBBLE");
   display.setTextColor(White); display.setCursor(8, 38);
@@ -254,6 +258,15 @@ void Peripherals::draw(const KeyringScreen &screen, bool fullDraw) {
       currentTime - screen.supplyReadAt <= static_cast<uint64_t>(KEYRING_POWER_SAMPLE_MS) * 2 + 100;
   if (freshSupply) { display.print(screen.supplyCurrentMa, 1); display.print(" mA"); }
   else display.print("--");
+#endif
+#endif
+#if KEYRING_R18_BRINGUP_DISPLAY
+  if (auxRail::displayVisible()) {
+    portENTER_CRITICAL(&mux);
+    if (screen.panic) drawnPanicPress = screen.panicPress;
+    else if (screen.confirm) drawnConfirmPress = screen.confirmPress;
+    portEXIT_CRITICAL(&mux);
+  }
 #endif
 #else
   (void)screen;

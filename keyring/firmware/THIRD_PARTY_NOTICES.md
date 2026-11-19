@@ -32,3 +32,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## r26 LCD 글자 이미지
+
+r26 UI에는 The Barlow Project Authors의 Barlow Semi Condensed 글꼴을 화면 크기로 렌더링한 글자 이미지가 들어간다. 생성 스크립트는 `tools/make_r26_text_masks.py`다. [원본 글꼴과 SIL Open Font License 1.1](https://github.com/google/fonts/tree/5bd87dfc525c8a0d1d8529d3684716e00c3fc59a/ofl/barlowsemicondensed)

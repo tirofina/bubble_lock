@@ -47,7 +47,7 @@ namespace {
 #if KEYRING_R18_BRINGUP
 #if KEYRING_R18_BRINGUP_DISPLAY == 1
 #if defined(KEYRING_R26_FRONT)
-constexpr char FirmwareRevision[] = "keyring-0.7.26-r26-st7789-bringup";
+constexpr char FirmwareRevision[] = "keyring-0.7.27-r26-st7789-bringup";
 #else
 constexpr char FirmwareRevision[] = "keyring-0.7.25-st7789-bringup";
 #endif
