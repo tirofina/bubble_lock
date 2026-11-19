@@ -160,6 +160,7 @@ void Peripherals::run() {
   else if (!screenUsable) status = "geometry_error";
   portENTER_CRITICAL(&mux);
   displayReady = screenUsable;
+  if (board::FrontAssembly && screenUsable) displayRequested = true;
   // A write-only panel has no identification/readback path on this connector.
   displayState = status;
   portEXIT_CRITICAL(&mux);
@@ -180,15 +181,18 @@ void Peripherals::run() {
 #endif
   setIo(false);
   uint64_t nextDraw = 0;
+  bool firstDraw = true;
   for (;;) {
     ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(100));
     const uint64_t now = nowMs();
     KeyringScreen screen;
     bool requestDisplay = false;
-    if (displayReady && takeScreen(screen, now >= nextDraw && auxRail::displayVisible(), requestDisplay)) {
+    const bool periodicDraw = !board::FrontAssembly && now >= nextDraw && auxRail::displayVisible();
+    if (displayReady && takeScreen(screen, periodicDraw, requestDisplay)) {
       if (requestDisplay) auxRail::displayFor(KEYRING_LCD_SHOW_MS);
       if (auxRail::displayVisible() && setIo(true)) {
-        draw(screen);
+        draw(screen, !board::FrontAssembly || firstDraw);
+        firstDraw = false;
         setIo(false);
         nextDraw = nowMs() + 1000;
       }
@@ -201,20 +205,24 @@ void Peripherals::run() {
     }
   }
 }
-void Peripherals::draw(const KeyringScreen &screen) {
+void Peripherals::draw(const KeyringScreen &screen, bool fullDraw) {
 #if KEYRING_DISPLAY_PROFILE
-  display.fillScreen(Black);
+  if (fullDraw) display.fillScreen(Black);
 #if KEYRING_R18_BRINGUP_DISPLAY
-  const int16_t width = display.width(), height = display.height();
-  display.drawRect(0, 0, width, height, White);
-  const int16_t barWidth = (width - 24) / 3;
-  display.fillRect(12, 61, barWidth, 25, Red);
-  display.fillRect(12 + barWidth, 61, barWidth, 25, Green);
-  display.fillRect(12 + 2 * barWidth, 61, barWidth, 25, Blue);
-  display.setTextColor(White); display.setCursor(12, 12);
-  display.print(KEYRING_DISPLAY_PROFILE == 1 ? "ST7789 LCD" : "JD9853 LCD");
-  display.setCursor(12, 36);
-  display.print(width); display.print('x'); display.print(height);
+  if (fullDraw) {
+    const int16_t width = display.width(), height = display.height();
+    display.drawRect(0, 0, width, height, White);
+    const int16_t barWidth = (width - 24) / 3;
+    display.fillRect(12, 61, barWidth, 25, Red);
+    display.fillRect(12 + barWidth, 61, barWidth, 25, Green);
+    display.fillRect(12 + 2 * barWidth, 61, barWidth, 25, Blue);
+    display.setTextColor(White); display.setCursor(12, 12);
+    display.print(KEYRING_DISPLAY_PROFILE == 1 ? "ST7789 LCD" : "JD9853 LCD");
+    display.setCursor(12, 36);
+    display.print(width); display.print('x'); display.print(height);
+  } else {
+    display.fillRect(12, 97, 84, 16, Black);
+  }
   display.setCursor(12, 97);
   display.print(screen.panic ? "PANIC" : screen.confirm ? "CONFIRM" : "READY");
   if (auxRail::displayVisible()) {

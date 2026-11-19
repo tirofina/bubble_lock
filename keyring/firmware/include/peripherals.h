@@ -39,7 +39,7 @@ private:
   struct LogLine { uint16_t length; char bytes[1024]; };
   static void entry(void *context);
   void run();
-  void draw(const KeyringScreen &screen);
+  void draw(const KeyringScreen &screen, bool fullDraw);
   bool takeScreen(KeyringScreen &screen, bool due, bool &requestDisplay);
   void append(const LogLine &line);
   bool setIo(bool active);

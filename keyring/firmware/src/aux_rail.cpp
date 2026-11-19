@@ -91,7 +91,8 @@ bool auxRail::displayFor(uint32_t durationMs) {
   portENTER_CRITICAL(&mux);
   const uint64_t now = nowMs();
   displayDriveFault = !timerReady;
-  displayUntil = timerReady && healthy() ? now + durationMs : 0;
+  const uint64_t deadline = board::FrontAssembly ? UINT64_MAX : now + durationMs;
+  displayUntil = timerReady && healthy() ? deadline : 0;
   apply(now);
   const bool result = displayUntil != 0;
   portEXIT_CRITICAL(&mux);
