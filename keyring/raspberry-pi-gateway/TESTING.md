@@ -1,5 +1,7 @@
 # Gateway 로컬 시험
 
+Gateway 0.2.44는 Windows Python 3.12 소스 트리에서 기본 suite 167개를 통과했다. 새 시험 11개는 크기 기준 HTTPS 선택, 브로커 세션 끊김, 새 세션 probe, 응답 시간 초과 뒤 probe 복귀, probe 간격 두 배 증가, 설정 범위를 다룬다. 실제 CSE와 브로커를 쓰는 전송 행렬은 `node pc-mobius/scripts/run-protocol-matrix-real.mjs`로 실행한다. 전체 daemon과 모의 GATT 키링 24대를 Mobius4 4.24.5, aedes 1.2.0 브로커, 중앙 API에 연결한다. [실행 기록](../../docs/rubric-work/R02.md)
+
 Gateway 0.2.43은 Windows Python 3.11에서 wheel을 빌드하고 해당 설치본으로 기본 suite 153개를 통과했다. 모의 GATT가 마지막 쓰기 응답을 보류하는 동안 별도 SQLite 연결에서 커밋된 영수증을 읽었다. 이후 작업 취소로 결과가 덮이지 않는 경우와 일시적인 SQLite 저장 오류를 재시도하는 경우도 확인했다. Pi·BlueZ에서 이 버전을 실행하는 시험은 남아 있다.
 
 Gateway 0.2.42의 회귀시험 소스는 일치 영수증 이후 연결 종료·GATT 응답 오류·내부 타임아웃, 이른 영수증과 기한 이후 영수증의 차단, 외부 취소 전파, SQLite 최종 상태를 다룬다. 이번 빌드·시험·Pi 확인은 미실행이다.

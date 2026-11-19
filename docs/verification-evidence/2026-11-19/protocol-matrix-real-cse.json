@@ -1,0 +1,1106 @@
+{
+  "status": "PASS",
+  "rubric": "R02",
+  "documentRevision": "2.0.0",
+  "generatedAt": "2026-11-19T12:13:51.119Z",
+  "runId": "1795090210814_c49d3d",
+  "gitHead": "1850bff562eb89d6fbcf9be8b4b4e0ac08616e88",
+  "sourceSha256LfNormalized": {
+    "keyring/raspberry-pi-gateway/src/bubble_gateway/transport.py": "c57305493f119805334ecd1f5dcad925abeb331fc1259f90cecf138eabc1c67c",
+    "keyring/raspberry-pi-gateway/src/bubble_gateway/config.py": "ed5ea5dd96905bbe201e6107e24c69b15a4f20d3101ab0998fda070cc4977981",
+    "keyring/raspberry-pi-gateway/src/bubble_gateway/service.py": "14bab30da218e31a4779ecd672cee6a12bd90570fe217d3c7462075473ad4245",
+    "keyring/raspberry-pi-gateway/src/bubble_gateway/ble.py": "53b145d74a0a67019ad9afca4b7e30827b56b4dad842f4ca9a642b032e3be67d",
+    "keyring/raspberry-pi-gateway/cse_integration_tests/protocol_matrix_daemon.py": "15c0bd2c4eff03a6e83654aa249219e5f3bd6847a158bd358b038224ed525bd3",
+    "pc-mobius/scripts/run-protocol-matrix-real.mjs": "1bb3a0f6074d66568a9d75280e84b1737e8857e1421fe7313153ef3005edb4c8",
+    "pc-mobius/scripts/protocol-matrix/broker.mjs": "44cd04413124bb2dd026e963c0a56b6fe0cf1e27472b50956a88349434cddf54",
+    "pc-mobius/scripts/protocol-matrix/edge.mjs": "7588122115599794898b34f18a3e787bab932235e52d10ba129f9cc54dcfd2ec"
+  },
+  "simulation": {
+    "device": true,
+    "gatewayDaemon": false,
+    "cse": false,
+    "broker": false,
+    "centralApi": false,
+    "apps": false,
+    "note": "Keyrings are emulated at the Bleak GATT client boundary; every other process is the real program on one host over loopback TLS."
+  },
+  "hostCount": 1,
+  "host": {
+    "platform": "Windows_NT 10.0.22631",
+    "arch": "x64",
+    "node": "v22.19.0",
+    "python": "Python 3.12.2"
+  },
+  "transport": {
+    "device": "BLE GATT (emulated peer, product BleFleet parser)",
+    "gatewayToCse": "oneM2M MQTT binding over TLS 1.3 (default) + oneM2M HTTP binding over TLS 1.3 (condition-based)",
+    "brokerToCse": "MQTT 3.1.1 plain TCP on loopback (Mobius4 dials tcp:// only)",
+    "gatewayToCentral": "HTTPS REST mTLS",
+    "cseToApp": "oneM2M HTTP notification over TLS 1.3",
+    "appToCse": "oneM2M HTTP retrieve over TLS 1.3 mTLS"
+  },
+  "cseVersion": "4.24.5",
+  "cseSourceRevision": "3da4d8523694b5077e348ab1c9e769fb3a30df24",
+  "postgres": "PostgreSQL 17.6 on x86_64-windows",
+  "broker": {
+    "implementation": "aedes",
+    "version": "1.2.0",
+    "integrity": "sha512-fCgK7TzmP2zGYS2iI/RE1tjHAIIqq5MjeOx3bicd89aTWTac+wiaywwIWhQQK6CXS+ml7ssGz8NntKYL5jPaZA==",
+    "protocol": "MQTT 3.1.1",
+    "persistence": "in-memory (session state lost on restart)",
+    "listeners": {
+      "gateway": "TLS 1.3 + client certificate, CN topic ACL",
+      "cse": "plain TCP 127.0.0.1"
+    },
+    "topics": {
+      "request": "/oneM2M/req/Cpbgw97c02e51/Mobius4/json",
+      "response": "/oneM2M/resp/Cpbgw97c02e51/Mobius4/json"
+    },
+    "qos": {
+      "gatewayPublish": 1,
+      "gatewayResponseSubscription": 1,
+      "cseSubscription": 0,
+      "cseResponsePublish": 0
+    }
+  },
+  "gateway": {
+    "version": "0.2.44",
+    "daemon": "bubble_gateway.service.Gateway.run (credential, poll, dispatch, outbox, health workers)",
+    "originator": "registered AE-ID bound to the client certificate (not the CSE admin)",
+    "devices": 24,
+    "config": {
+      "MQTT_MAX_PAYLOAD_BYTES": "4096",
+      "MQTT_PROBE_INTERVAL_SECONDS": "5",
+      "REQUEST_TIMEOUT": "3",
+      "MQTT_KEEPALIVE": "60",
+      "HEARTBEAT_INTERVAL": "15",
+      "POLL_INTERVAL": "2",
+      "CREDENTIAL_CHECK_INTERVAL": "15"
+    },
+    "finalRouteCounters": {
+      "mqtt_probe": 8,
+      "mqtt_probe_ok": 4,
+      "native_https_large": 11,
+      "native_mqtt": 328,
+      "native_https_mqtt_down": 65,
+      "native_https_mqtt_unconfirmed": 146,
+      "mqtt_probe_timeout": 4,
+      "native_mqtt_timeout": 1,
+      "native_https_fallback_timeout": 1
+    },
+    "finalCounters": {
+      "observations_queued": 533,
+      "credential_changes": 1,
+      "published": 550
+    }
+  },
+  "identity": {
+    "keyType": "ECDSA P-256",
+    "provisioning": [
+      {
+        "label": "gateway AE",
+        "originator": "gateway-ae",
+        "method": "POST",
+        "path": "/Mobius",
+        "status": 201,
+        "rsc": 2001,
+        "rqiMatches": true
+      },
+      {
+        "label": "app AE",
+        "originator": "app-ae",
+        "method": "POST",
+        "path": "/Mobius",
+        "status": 201,
+        "rsc": 2001,
+        "rqiMatches": true
+      },
+      {
+        "label": "data ACP",
+        "originator": "gateway-ae",
+        "method": "POST",
+        "path": "/Mobius/pb-gw-matrix",
+        "status": 201,
+        "rsc": 2001,
+        "rqiMatches": true
+      },
+      {
+        "label": "observations container",
+        "originator": "gateway-ae",
+        "method": "POST",
+        "path": "/Mobius/pb-gw-matrix",
+        "status": 201,
+        "rsc": 2001,
+        "rqiMatches": true
+      },
+      {
+        "label": "receipts container",
+        "originator": "gateway-ae",
+        "method": "POST",
+        "path": "/Mobius/pb-gw-matrix",
+        "status": 201,
+        "rsc": 2001,
+        "rqiMatches": true
+      },
+      {
+        "label": "health container",
+        "originator": "gateway-ae",
+        "method": "POST",
+        "path": "/Mobius/pb-gw-matrix",
+        "status": 201,
+        "rsc": 2001,
+        "rqiMatches": true
+      },
+      {
+        "label": "app create denied by ACP",
+        "originator": "app-ae",
+        "status": 403,
+        "rsc": 4103
+      },
+      {
+        "label": "app certificate using gateway originator",
+        "status": 403,
+        "rsc": 4103
+      },
+      {
+        "label": "app subscription",
+        "originator": "app-ae",
+        "status": 403,
+        "rsc": 4103
+      },
+      {
+        "label": "subscription by owner",
+        "originator": "gateway-ae",
+        "method": "POST",
+        "path": "/Mobius/pb-gw-matrix/observations",
+        "status": 201,
+        "rsc": 2001,
+        "rqiMatches": true
+      }
+    ],
+    "subscriptionOwner": "gateway-ae",
+    "tls": {
+      "mqtt": {
+        "in": 1264,
+        "out": 1345,
+        "protocol": "TLSv1.3",
+        "cipher": "TLS_AES_256_GCM_SHA384",
+        "cn": "pb-gw-matrix"
+      },
+      "cseHttps": {
+        "in": 1616,
+        "out": 1347,
+        "protocol": "TLSv1.3",
+        "cipher": "TLS_AES_256_GCM_SHA384",
+        "cn": "pb-gw-matrix"
+      },
+      "appHttps": {
+        "in": 1614,
+        "out": 1346,
+        "protocol": "TLSv1.3",
+        "cipher": "TLS_AES_256_GCM_SHA384",
+        "cn": "pb-app-matrix"
+      },
+      "appPush": {
+        "in": 1498,
+        "out": 835,
+        "protocol": "TLSv1.3",
+        "cipher": "TLS_AES_256_GCM_SHA384",
+        "cn": null
+      }
+    }
+  },
+  "perProtocol": {
+    "mqtt": {
+      "observations": 303,
+      "gatewayPublishRttMs": {
+        "n": 303,
+        "p50": 3.061,
+        "p95": 4.843,
+        "max": 13.629,
+        "mean": 3.413
+      },
+      "outboxQueueMs": {
+        "n": 303,
+        "p50": 222.745,
+        "p95": 426.632,
+        "max": 489.453,
+        "mean": 220.892
+      },
+      "bleEmitToCseNotificationMs": {
+        "n": 303,
+        "p50": 222.373,
+        "p95": 426.77,
+        "max": 494.19,
+        "mean": 222.57
+      },
+      "mqttPublishPacketBytes": {
+        "n": 303,
+        "p50": 701,
+        "p95": 701,
+        "max": 701,
+        "mean": 700.601
+      },
+      "mqttResponsePacketBytes": {
+        "n": 303,
+        "p50": 766,
+        "p95": 766,
+        "max": 766,
+        "mean": 765.353
+      },
+      "mqttPrimitiveJsonBytes": {
+        "n": 303,
+        "p50": 656,
+        "p95": 656,
+        "max": 656,
+        "mean": 655.601
+      },
+      "httpsRequestWireBytes": {
+        "n": 0
+      },
+      "httpsResponseWireBytes": {
+        "n": 0
+      },
+      "httpsFirstRequestOnNewConnection": 0,
+      "gatewayPayloadBytes": {
+        "n": 303,
+        "p50": 382,
+        "p95": 382,
+        "max": 382,
+        "mean": 381.601
+      }
+    },
+    "https_mqtt_down": {
+      "observations": 61,
+      "gatewayPublishRttMs": {
+        "n": 61,
+        "p50": 4.898,
+        "p95": 7.829,
+        "max": 10.262,
+        "mean": 5.311
+      },
+      "outboxQueueMs": {
+        "n": 61,
+        "p50": 214.782,
+        "p95": 405.627,
+        "max": 411.507,
+        "mean": 220.966
+      },
+      "bleEmitToCseNotificationMs": {
+        "n": 61,
+        "p50": 218.488,
+        "p95": 410.389,
+        "max": 419.953,
+        "mean": 225.512
+      },
+      "mqttPublishPacketBytes": {
+        "n": 0
+      },
+      "mqttResponsePacketBytes": {
+        "n": 0
+      },
+      "mqttPrimitiveJsonBytes": {
+        "n": 0
+      },
+      "httpsRequestWireBytes": {
+        "n": 55,
+        "p50": 924,
+        "p95": 924,
+        "max": 925,
+        "mean": 924.018
+      },
+      "httpsResponseWireBytes": {
+        "n": 55,
+        "p50": 1024,
+        "p95": 1024,
+        "max": 1025,
+        "mean": 1024.018
+      },
+      "httpsFirstRequestOnNewConnection": 6,
+      "gatewayPayloadBytes": {
+        "n": 61,
+        "p50": 381,
+        "p95": 382,
+        "max": 382,
+        "mean": 381.098
+      }
+    },
+    "https_mqtt_unconfirmed": {
+      "observations": 144,
+      "gatewayPublishRttMs": {
+        "n": 144,
+        "p50": 4.867,
+        "p95": 6.024,
+        "max": 14.234,
+        "mean": 4.965
+      },
+      "outboxQueueMs": {
+        "n": 144,
+        "p50": 226.011,
+        "p95": 1764.489,
+        "max": 3128.815,
+        "mean": 374.74
+      },
+      "bleEmitToCseNotificationMs": {
+        "n": 144,
+        "p50": 226.901,
+        "p95": 1765.288,
+        "max": 3129.481,
+        "mean": 376.628
+      },
+      "mqttPublishPacketBytes": {
+        "n": 0
+      },
+      "mqttResponsePacketBytes": {
+        "n": 0
+      },
+      "mqttPrimitiveJsonBytes": {
+        "n": 0
+      },
+      "httpsRequestWireBytes": {
+        "n": 144,
+        "p50": 925,
+        "p95": 925,
+        "max": 925,
+        "mean": 924.722
+      },
+      "httpsResponseWireBytes": {
+        "n": 144,
+        "p50": 1025,
+        "p95": 1025,
+        "max": 1025,
+        "mean": 1024.722
+      },
+      "httpsFirstRequestOnNewConnection": 0,
+      "gatewayPayloadBytes": {
+        "n": 144,
+        "p50": 382,
+        "p95": 382,
+        "max": 382,
+        "mean": 381.722
+      }
+    },
+    "https_fallback_timeout": {
+      "observations": 1,
+      "gatewayPublishRttMs": {
+        "n": 1,
+        "p50": 3000.122,
+        "p95": 3000.122,
+        "max": 3000.122,
+        "mean": 3000.122
+      },
+      "outboxQueueMs": {
+        "n": 1,
+        "p50": 336.787,
+        "p95": 336.787,
+        "max": 336.787,
+        "mean": 336.787
+      },
+      "bleEmitToCseNotificationMs": {
+        "n": 1,
+        "p50": 3333.432,
+        "p95": 3333.432,
+        "max": 3333.432,
+        "mean": 3333.432
+      },
+      "mqttPublishPacketBytes": {
+        "n": 1,
+        "p50": 701,
+        "p95": 701,
+        "max": 701,
+        "mean": 701
+      },
+      "mqttResponsePacketBytes": {
+        "n": 0
+      },
+      "mqttPrimitiveJsonBytes": {
+        "n": 1,
+        "p50": 656,
+        "p95": 656,
+        "max": 656,
+        "mean": 656
+      },
+      "httpsRequestWireBytes": {
+        "n": 0
+      },
+      "httpsResponseWireBytes": {
+        "n": 0
+      },
+      "httpsFirstRequestOnNewConnection": 1,
+      "gatewayPayloadBytes": {
+        "n": 1,
+        "p50": 382,
+        "p95": 382,
+        "max": 382,
+        "mean": 382
+      }
+    }
+  },
+  "sessionSetup": {
+    "method": "raw TCP bytes both directions; MQTT counts bytes before the first PUBLISH (TLS handshake, CONNECT/CONNACK, SUBSCRIBE/SUBACK); HTTPS counts handshake plus the first observation exchange minus the median steady observation exchange (connections that opened with an observation POST)",
+    "mqttSessions": 3,
+    "mqttSetupBytes": {
+      "n": 3,
+      "p50": 4259,
+      "p95": 4260,
+      "max": 4260,
+      "mean": 4254
+    },
+    "httpsConnectionsOpened": 17,
+    "httpsConnectionsOpenedByObservation": 7,
+    "httpsSetupBytes": {
+      "n": 7,
+      "p50": 4079,
+      "p95": 4079,
+      "max": 4079,
+      "mean": 4078.571
+    },
+    "httpsSteadyObservationExchangeBytes": 1950
+  },
+  "phases": [
+    {
+      "name": "warmup",
+      "durationS": 0.84,
+      "observations": 0,
+      "routes": {},
+      "marks": {},
+      "wire": {
+        "mqttTls": {
+          "connections": 0,
+          "bytesIn": 17328,
+          "bytesOut": 19860,
+          "handshakeIn": 0,
+          "handshakeOut": 0
+        },
+        "cseHttps": {
+          "connections": 1,
+          "handshakes": 1,
+          "bytesIn": 19402,
+          "bytesOut": 27111,
+          "handshakeIn": 1280,
+          "handshakeOut": 1361
+        },
+        "centralApi": {
+          "connections": 0,
+          "handshakes": 0,
+          "bytesIn": 3338,
+          "bytesOut": 6189,
+          "handshakeIn": 0,
+          "handshakeOut": 0
+        },
+        "appNotify": {
+          "connections": 1,
+          "handshakes": 1,
+          "bytesIn": 26100,
+          "bytesOut": 6065,
+          "handshakeIn": 1498,
+          "handshakeOut": 835
+        },
+        "appRest": {
+          "connections": 0,
+          "handshakes": 0,
+          "bytesIn": 222,
+          "bytesOut": 399,
+          "handshakeIn": 0,
+          "handshakeOut": 0
+        }
+      },
+      "perObservationWireBytes": null
+    },
+    {
+      "name": "mqtt-steady",
+      "durationS": 14.42,
+      "observations": 72,
+      "routes": {
+        "mqtt": 72
+      },
+      "marks": {},
+      "wire": {
+        "mqttTls": {
+          "connections": 0,
+          "bytesIn": 51984,
+          "bytesOut": 58464,
+          "handshakeIn": 0,
+          "handshakeOut": 0
+        },
+        "cseHttps": {
+          "connections": 1,
+          "handshakes": 1,
+          "bytesIn": 7430,
+          "bytesOut": 9079,
+          "handshakeIn": 1279,
+          "handshakeOut": 1360
+        },
+        "centralApi": {
+          "connections": 0,
+          "handshakes": 0,
+          "bytesIn": 3105,
+          "bytesOut": 2201,
+          "handshakeIn": 0,
+          "handshakeOut": 0
+        },
+        "appNotify": {
+          "connections": 0,
+          "handshakes": 0,
+          "bytesIn": 77040,
+          "bytesOut": 13968,
+          "handshakeIn": 0,
+          "handshakeOut": 0
+        },
+        "appRest": {
+          "connections": 0,
+          "handshakes": 0,
+          "bytesIn": 3330,
+          "bytesOut": 14790,
+          "handshakeIn": 0,
+          "handshakeOut": 0
+        }
+      },
+      "perObservationWireBytes": {
+        "mqttTlsBytes": 1534,
+        "cseHttpsBytes": 229.3
+      }
+    },
+    {
+      "name": "broker-restart-stream",
+      "durationS": 40.02,
+      "observations": 200,
+      "routes": {
+        "mqtt": 105,
+        "https_mqtt_down": 55,
+        "https_mqtt_unconfirmed": 40
+      },
+      "marks": {
+        "brokerStop": 1795090234611.263,
+        "brokerStart": 1795090244615.0125
+      },
+      "wire": {
+        "mqttTls": {
+          "connections": 1,
+          "bytesIn": 77669,
+          "bytesOut": 88663,
+          "handshakeIn": 1280,
+          "handshakeOut": 1345
+        },
+        "cseHttps": {
+          "connections": 2,
+          "handshakes": 2,
+          "bytesIn": 102763,
+          "bytesOut": 115585,
+          "handshakeIn": 2561,
+          "handshakeOut": 2723
+        },
+        "centralApi": {
+          "connections": 1,
+          "handshakes": 0,
+          "bytesIn": 9817,
+          "bytesOut": 8810,
+          "handshakeIn": 0,
+          "handshakeOut": 0
+        },
+        "appNotify": {
+          "connections": 0,
+          "handshakes": 0,
+          "bytesIn": 214253,
+          "bytesOut": 38800,
+          "handshakeIn": 0,
+          "handshakeOut": 0
+        },
+        "appRest": {
+          "connections": 0,
+          "handshakes": 0,
+          "bytesIn": 8880,
+          "bytesOut": 39491,
+          "handshakeIn": 0,
+          "handshakeOut": 0
+        }
+      },
+      "perObservationWireBytes": {
+        "mqttTlsBytes": 831.7,
+        "cseHttpsBytes": 1091.7
+      }
+    },
+    {
+      "name": "outage-sparse-https",
+      "durationS": 60.03,
+      "observations": 6,
+      "routes": {
+        "https_mqtt_down": 6
+      },
+      "marks": {
+        "brokerStop": 1795090269627.7534,
+        "brokerStart": 1795090306661.0142,
+        "gatewayConfirmed": 1795090329635.2188
+      },
+      "wire": {
+        "mqttTls": {
+          "connections": 1,
+          "bytesIn": 2001,
+          "bytesOut": 3273,
+          "handshakeIn": 1280,
+          "handshakeOut": 1346
+        },
+        "cseHttps": {
+          "connections": 6,
+          "handshakes": 6,
+          "bytesIn": 38190,
+          "bytesOut": 48473,
+          "handshakeIn": 7679,
+          "handshakeOut": 8165
+        },
+        "centralApi": {
+          "connections": 2,
+          "handshakes": 0,
+          "bytesIn": 15757,
+          "bytesOut": 14940,
+          "handshakeIn": 0,
+          "handshakeOut": 0
+        },
+        "appNotify": {
+          "connections": 5,
+          "handshakes": 5,
+          "bytesIn": 10092,
+          "bytesOut": 2513,
+          "handshakeIn": 9020,
+          "handshakeOut": 1205
+        },
+        "appRest": {
+          "connections": 0,
+          "handshakes": 0,
+          "bytesIn": 13098,
+          "bytesOut": 58292,
+          "handshakeIn": 0,
+          "handshakeOut": 0
+        }
+      },
+      "perObservationWireBytes": {
+        "mqttTlsBytes": 879,
+        "cseHttpsBytes": 14443.8
+      }
+    },
+    {
+      "name": "mqtt-sparse",
+      "durationS": 37.04,
+      "observations": 6,
+      "routes": {
+        "mqtt": 6
+      },
+      "marks": {},
+      "wire": {
+        "mqttTls": {
+          "connections": 0,
+          "bytesIn": 4338,
+          "bytesOut": 4884,
+          "handshakeIn": 0,
+          "handshakeOut": 0
+        },
+        "cseHttps": {
+          "connections": 3,
+          "handshakes": 3,
+          "bytesIn": 22565,
+          "bytesOut": 27489,
+          "handshakeIn": 3842,
+          "handshakeOut": 4083
+        },
+        "centralApi": {
+          "connections": 2,
+          "handshakes": 0,
+          "bytesIn": 11099,
+          "bytesOut": 11666,
+          "handshakeIn": 0,
+          "handshakeOut": 0
+        },
+        "appNotify": {
+          "connections": 6,
+          "handshakes": 6,
+          "bytesIn": 10824,
+          "bytesOut": 2754,
+          "handshakeIn": 10824,
+          "handshakeOut": 1446
+        },
+        "appRest": {
+          "connections": 0,
+          "handshakes": 0,
+          "bytesIn": 8214,
+          "bytesOut": 36556,
+          "handshakeIn": 0,
+          "handshakeOut": 0
+        }
+      },
+      "perObservationWireBytes": {
+        "mqttTlsBytes": 1537,
+        "cseHttpsBytes": 8342.3
+      }
+    },
+    {
+      "name": "cse-mqtt-blackhole",
+      "durationS": 45.02,
+      "observations": 225,
+      "routes": {
+        "mqtt": 120,
+        "https_fallback_timeout": 1,
+        "https_mqtt_unconfirmed": 104
+      },
+      "marks": {
+        "blackholeOn": 1795090369693.148,
+        "blackholeOff": 1795090384693.6997
+      },
+      "wire": {
+        "mqttTls": {
+          "connections": 0,
+          "bytesIn": 87903,
+          "bytesOut": 98172,
+          "handshakeIn": 0,
+          "handshakeOut": 0
+        },
+        "cseHttps": {
+          "connections": 2,
+          "handshakes": 2,
+          "bytesIn": 118583,
+          "bytesOut": 132491,
+          "handshakeIn": 2559,
+          "handshakeOut": 2722
+        },
+        "centralApi": {
+          "connections": 1,
+          "handshakes": 0,
+          "bytesIn": 10984,
+          "bytesOut": 9670,
+          "handshakeIn": 0,
+          "handshakeOut": 0
+        },
+        "appNotify": {
+          "connections": 1,
+          "handshakes": 1,
+          "bytesIn": 241932,
+          "bytesOut": 43891,
+          "handshakeIn": 1804,
+          "handshakeOut": 241
+        },
+        "appRest": {
+          "connections": 0,
+          "handshakes": 0,
+          "bytesIn": 9990,
+          "bytesOut": 44460,
+          "handshakeIn": 0,
+          "handshakeOut": 0
+        }
+      },
+      "perObservationWireBytes": {
+        "mqttTlsBytes": 827,
+        "cseHttpsBytes": 1115.9
+      }
+    },
+    {
+      "name": "large-bundle-window",
+      "durationS": 16.02,
+      "observations": 0,
+      "routes": {},
+      "marks": {},
+      "wire": {
+        "mqttTls": {
+          "connections": 0,
+          "bytesIn": 0,
+          "bytesOut": 0,
+          "handshakeIn": 0,
+          "handshakeOut": 0
+        },
+        "cseHttps": {
+          "connections": 1,
+          "handshakes": 1,
+          "bytesIn": 7581,
+          "bytesOut": 9231,
+          "handshakeIn": 1280,
+          "handshakeOut": 1361
+        },
+        "centralApi": {
+          "connections": 1,
+          "handshakes": 0,
+          "bytesIn": 4773,
+          "bytesOut": 5267,
+          "handshakeIn": 0,
+          "handshakeOut": 0
+        },
+        "appNotify": {
+          "connections": 0,
+          "handshakes": 0,
+          "bytesIn": 0,
+          "bytesOut": 24,
+          "handshakeIn": 0,
+          "handshakeOut": 0
+        },
+        "appRest": {
+          "connections": 0,
+          "handshakes": 0,
+          "bytesIn": 3552,
+          "bytesOut": 15808,
+          "handshakeIn": 0,
+          "handshakeOut": 0
+        }
+      },
+      "perObservationWireBytes": null
+    }
+  ],
+  "conditions": {
+    "brokerRestartStream": {
+      "brokerDownS": 10,
+      "gatewayDetectsDisconnectMs": 1.1,
+      "firstHttpsDeliveryAfterStopMs": 405.2,
+      "gatewayMqttConnectAfterRestartMs": 1009.2,
+      "gatewaySubscribeAfterRestartMs": 1009.4,
+      "cseMqttSubscribeAfterRestartMs": 4639.3,
+      "gatewaySessionReadyAfterRestartMs": 1011.1,
+      "gatewayMqttConfirmedByProbeAfterRestartMs": 9014.9,
+      "probesSentUntilConfirmed": 2,
+      "probeTimesAfterRestartMs": [
+        1010.1,
+        9012.1
+      ],
+      "firstMqttDeliveryAfterRestartMs": 9388.8,
+      "emitted": 200,
+      "delivered": 200,
+      "lost": 0,
+      "readbackMissing": 0,
+      "duplicateNotifications": 0,
+      "fallbackTimeouts": 0,
+      "fallbackDisconnects": 0,
+      "retriedObservations": 0,
+      "routes": {
+        "mqtt": 105,
+        "https_mqtt_down": 55,
+        "https_mqtt_unconfirmed": 40
+      }
+    },
+    "brokerOutageSparse": {
+      "brokerDownS": 37.03,
+      "gatewayDetectsDisconnectMs": 1.7,
+      "firstHttpsDeliveryAfterStopMs": 1380,
+      "gatewayMqttConnectAfterRestartMs": 1984.9,
+      "gatewaySubscribeAfterRestartMs": 1985,
+      "cseMqttSubscribeAfterRestartMs": 22274.8,
+      "gatewaySessionReadyAfterRestartMs": 1987.1,
+      "gatewayMqttConfirmedByProbeAfterRestartMs": 22974.2,
+      "probesSentUntilConfirmed": 3,
+      "probeTimesAfterRestartMs": [
+        1985.5,
+        9965.1,
+        22968.9
+      ],
+      "firstMqttDeliveryAfterRestartMs": null,
+      "emitted": 6,
+      "delivered": 6,
+      "lost": 0,
+      "readbackMissing": 0,
+      "duplicateNotifications": 0,
+      "fallbackTimeouts": 0,
+      "fallbackDisconnects": 0,
+      "retriedObservations": 0,
+      "routes": {
+        "https_mqtt_down": 6
+      }
+    },
+    "cseMqttBlackhole": {
+      "blackholeS": 15,
+      "probeIntervalS": 5,
+      "requestTimeoutS": 3,
+      "firstTimeoutAfterOnMs": 318.2,
+      "unconfirmedAfterOnMs": 3312,
+      "probesSentUntilConfirmed": 2,
+      "probeTimesAfterOnMs": [
+        8308.6,
+        21309
+      ],
+      "mqttConfirmedAfterOffMs": 6314,
+      "firstMqttDeliveryAfterOffMs": 6410.2,
+      "observationsThatWaitedForTimeout": 1,
+      "observationsSentHttpsWhileUnconfirmed": 104,
+      "brokerDroppedForwards": 2,
+      "emitted": 225,
+      "lost": 0,
+      "routes": {
+        "mqtt": 120,
+        "https_fallback_timeout": 1,
+        "https_mqtt_unconfirmed": 104
+      },
+      "httpsPublishRttWhileUnconfirmedMs": {
+        "n": 104,
+        "p50": 4.867,
+        "p95": 5.849,
+        "max": 14.234,
+        "mean": 4.829
+      },
+      "timeoutPublishRttMs": {
+        "n": 1,
+        "p50": 3000.122,
+        "p95": 3000.122,
+        "max": 3000.122,
+        "mean": 3000.122
+      }
+    },
+    "bundles": {
+      "health": {
+        "published": 16,
+        "payloadBytes": {
+          "n": 16,
+          "p50": 5702,
+          "p95": 5763,
+          "max": 5763,
+          "mean": 5644.625
+        },
+        "routes": {
+          "https_large": 10,
+          "https_mqtt_down": 4,
+          "https_mqtt_unconfirmed": 2
+        },
+        "publishRttMs": {
+          "n": 16,
+          "p50": 7.779,
+          "p95": 17.644,
+          "max": 17.644,
+          "mean": 7.817
+        }
+      },
+      "credential-receipt": {
+        "published": 1,
+        "payloadBytes": {
+          "n": 1,
+          "p50": 5667,
+          "p95": 5667,
+          "max": 5667,
+          "mean": 5667
+        },
+        "routes": {
+          "https_large": 1
+        },
+        "publishRttMs": {
+          "n": 1,
+          "p50": 10.709,
+          "p95": 10.709,
+          "max": 10.709,
+          "mean": 10.709
+        }
+      }
+    }
+  },
+  "ble": {
+    "framing": "LF-terminated JSON, 20-byte GATT notifications (keyring/firmware/src/main.cpp)",
+    "frameBytes": {
+      "n": 509,
+      "p50": 210,
+      "p95": 211,
+      "max": 211,
+      "mean": 209.937
+    },
+    "notificationsPerObservation": {
+      "n": 509,
+      "p50": 11,
+      "p95": 11,
+      "max": 11,
+      "mean": 11
+    },
+    "estimatedOnAirBytesPerObservation": {
+      "n": 509,
+      "p50": 441,
+      "p95": 442,
+      "max": 442,
+      "mean": 440.937
+    },
+    "onAirModel": "per 20-byte fragment: ATT 3 + L2CAP 4 + LL header 2 + MIC 4 + preamble/access address/CRC 8 = 21 B (LE 1M PHY, encrypted link, empty-PDU acks excluded)"
+  },
+  "integrity": {
+    "emittedObservations": 509,
+    "connectReadObservations": 24,
+    "delivered": 509,
+    "lost": 0,
+    "readbackChecked": 509,
+    "readbackMatched": 509,
+    "readbackMissing": 0,
+    "readbackMismatched": 0,
+    "cseContainerCni": 533,
+    "expectedCni": 533,
+    "duplicateCreatesAbsorbed4105": {
+      "mqtt": 0,
+      "https": 0
+    },
+    "notifications": 533,
+    "duplicateNotifications": 0,
+    "finalOutboxRows": 0
+  },
+  "apps": {
+    "restRetrieveLatest": {
+      "requests": 213,
+      "latencyMs": {
+        "n": 213,
+        "p50": 3.515,
+        "p95": 4.853,
+        "max": 31.714,
+        "mean": 3.957
+      },
+      "responseBodyBytes": {
+        "n": 213,
+        "p50": 634,
+        "p95": 634,
+        "max": 634,
+        "mean": 630.934
+      },
+      "requestWireBytes": {
+        "n": 213,
+        "p50": 222,
+        "p95": 222,
+        "max": 222,
+        "mean": 222
+      },
+      "responseWireBytes": {
+        "n": 213,
+        "p50": 988,
+        "p95": 988,
+        "max": 988,
+        "mean": 984.958
+      },
+      "statuses": [
+        "404/4004",
+        "200/2000"
+      ]
+    },
+    "push": {
+      "notifications": 533,
+      "bodyBytes": {
+        "n": 533,
+        "p50": 741,
+        "p95": 741,
+        "max": 741,
+        "mean": 740.347
+      },
+      "wireInBytes": {
+        "n": 520,
+        "p50": 1072,
+        "p95": 1072,
+        "max": 1072,
+        "mean": 1071.337
+      },
+      "connections": {
+        "connections": 13,
+        "handshakes": 13,
+        "bytesIn": 580241,
+        "bytesOut": 108015,
+        "handshakeIn": 23146,
+        "handshakeOut": 3727
+      }
+    }
+  },
+  "commands": [
+    "npm run setup",
+    "node pc-mobius/scripts/run-protocol-matrix-real.mjs"
+  ],
+  "artifacts": {
+    "trace": "protocol-matrix-trace.jsonl",
+    "localRunDirectory": ".local/protocol-matrix/runs/1795090210814_c49d3d"
+  },
+  "limitations": [
+    "Device side is emulated: GATT timing, radio loss and BlueZ are not exercised; BLE on-air bytes are computed from the firmware framing.",
+    "Single host over loopback: latency excludes Wi-Fi/LTE RTT; byte counts include TLS records but not TCP/IP headers.",
+    "Mobius4 4.24.5 subscribes and responds at MQTT QoS 0, so QoS 1 covers the Gateway-broker leg only; end-to-end reliability comes from rqi-matched responses, SQLite outbox retry and deterministic resource names.",
+    "The CSE-side MQTT fault is induced in the broker (forwards to the CSE dropped); the broker restart is a process-level stop/start with in-memory session state.",
+    "The SSE/WebSocket app channel is not part of this run; web-dashboard SSE evidence remains fixture replay."
+  ]
+}
