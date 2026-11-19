@@ -1,6 +1,9 @@
 import asyncio
 import hashlib
 import json
+import os
+from pathlib import Path
+import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from email.utils import format_datetime
@@ -9,6 +12,7 @@ from unittest.mock import AsyncMock, Mock, call, patch
 
 import httpx
 
+from bubble_gateway.config import GatewayConfig
 from bubble_gateway.core_bridge import telemetry
 from bubble_gateway.model import iso_time, payload_hash, utc_now
 from bubble_gateway.transport import (MAX_RETRY_AFTER_SECONDS, HttpRetryDeferred, NativeDeliveryHold, ReceiptParentMismatch,
@@ -74,6 +78,197 @@ class HttpRetryAfterTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([request.url.host for request in requests], ["cse.invalid", "api.invalid", "cse.invalid"])
         self.assertEqual(requests[0].headers["X-M2M-RI"], requests[-1].headers["X-M2M-RI"])
         self.assertEqual(requests[0].content, requests[-1].content)
+
+
+class ProtocolSelectionTests(unittest.IsolatedAsyncioTestCase):
+    """Native oneM2M binding chosen from broker state, frame size and CSE answers."""
+
+    def setUp(self):
+        cfg = config()
+        cfg.api_url, cfg.cse_url = "https://api.invalid", "https://cse.invalid"
+        cfg.request_timeout, cfg.mqtt_wrapped_primitive = 0.02, False
+        cfg.mqtt_max_payload_bytes, cfg.mqtt_probe_interval_seconds = 700, 5.0
+        self.hub = TransportHub(cfg)
+        self.posts = []
+
+        async def http(method, url, *, headers, body=None):
+            self.posts.append((method, body["m2m:cin"]["rn"] if body else None))
+            return 201, httpx.Headers({"X-M2M-RI": headers["X-M2M-RI"], "X-M2M-RSC": "2001"}), {}
+
+        self.hub._http_json = AsyncMock(side_effect=http)
+        self.answer_create, self.answer_probe = True, True
+        self.wire = []
+
+        def publish(topic, payload, qos, retain):
+            primitive = json.loads(payload)
+            self.wire.append((topic, primitive["op"], len(payload), qos))
+            if (self.answer_create if primitive["op"] == 1 else self.answer_probe):
+                self.hub._receive(dict(rqi=primitive["rqi"], rsc=2001 if primitive["op"] == 1 else 2000))
+            return SimpleNamespace(rc=0)
+
+        self.hub._mqtt = SimpleNamespace(publish=Mock(side_effect=publish), disconnect=Mock(), loop_stop=Mock())
+        self.hub._ready.set()
+        self.addAsyncCleanup(self.hub.close)
+
+    async def send(self, name, size=8):
+        await self.hub.publish(name, "/test/observations", {"blob": "x" * size})
+
+    def ops(self):
+        return [entry[1] for entry in self.wire]
+
+    async def test_small_frames_use_mqtt_and_large_bundles_use_https(self):
+        await self.send("small")
+        await self.send("large", size=800)
+        self.assertEqual(self.ops(), [1])
+        topic, _, size, qos = self.wire[0]
+        self.assertEqual((topic, qos), ("/oneM2M/req/Ctest/test-cse/json", 1))
+        self.assertLessEqual(size, 700)
+        self.assertEqual([method for method, _ in self.posts], ["POST"])
+        self.assertEqual(self.hub.route_counters, {"native_mqtt": 1, "native_https_large": 1})
+
+    async def test_size_rule_can_be_disabled(self):
+        self.hub._mqtt_budget = 0
+        await self.send("large", size=800)
+        self.assertEqual(self.ops(), [1])
+        self.hub._http_json.assert_not_awaited()
+
+    async def test_broker_session_down_uses_https_without_waiting(self):
+        self.hub._ready.clear()
+        await self.send("offline")
+        self.assertEqual(self.wire, [])
+        self.assertEqual(self.hub.route_counters, {"native_https_mqtt_down": 1})
+        self.assertIsNone(self.hub._unconfirmed_until)
+
+    async def test_queue_failure_falls_back_once_without_probing(self):
+        self.hub._mqtt.publish = Mock(return_value=SimpleNamespace(rc=4))
+        await self.send("disconnected")
+        self.assertEqual(len(self.posts), 1)
+        self.assertEqual(self.hub.route_counters, {"native_mqtt": 1, "native_mqtt_disconnect": 1,
+                                                   "native_https_fallback_disconnect": 1})
+        self.assertIsNone(self.hub._unconfirmed_until)
+
+    async def test_new_session_uses_https_until_the_cse_answers_a_probe(self):
+        self.answer_probe = False
+        with patch("bubble_gateway.transport.monotonic", return_value=100.0) as clock:
+            self.hub._session_ready()  # Broker back; the CSE has not resubscribed yet.
+            self.assertEqual(self.hub._native_route(), "https_mqtt_unconfirmed")
+            await self.hub._probe
+            self.assertEqual(self.hub._unconfirmed_until, 105.0)
+            await self.send("while-cse-resubscribes")
+            self.assertEqual(self.ops(), [2])  # Data never waited on MQTT.
+            self.answer_probe = True
+            clock.return_value = 106.0
+            await self.send("probe-due")
+            await self.hub._probe
+            self.assertIsNone(self.hub._unconfirmed_until)
+            await self.send("confirmed")
+        self.assertEqual(self.ops(), [2, 2, 1])
+        self.assertEqual(len(self.posts), 2)
+        self.assertEqual(self.hub.route_counters, {
+            "mqtt_probe": 2, "mqtt_probe_timeout": 1, "mqtt_probe_ok": 1,
+            "native_https_mqtt_unconfirmed": 2, "native_mqtt": 1})
+
+    async def test_response_timeout_routes_https_until_probe_confirms_mqtt(self):
+        self.answer_create = False
+        with patch("bubble_gateway.transport.monotonic", return_value=100.0) as clock:
+            await self.send("timed-out")
+            self.assertEqual(self.ops(), [1])
+            self.assertEqual(self.hub._unconfirmed_until, 105.0)
+            clock.return_value = 101.0
+            await self.send("unconfirmed")  # No MQTT wait while unconfirmed.
+            self.assertEqual(self.ops(), [1])
+            self.answer_create = True
+            clock.return_value = 106.0
+            await self.send("probe-due")  # HTTPS while the probe runs.
+            await self.hub._probe
+            self.assertIsNone(self.hub._unconfirmed_until)
+            self.assertIsNone(self.hub._probe_timer)
+            await self.send("recovered")
+        self.assertEqual(self.ops(), [1, 2, 1])
+        self.assertEqual(len(self.posts), 3)
+        self.assertEqual(self.hub.route_counters, {
+            "native_mqtt": 2, "native_mqtt_timeout": 1, "native_https_fallback_timeout": 1,
+            "native_https_mqtt_unconfirmed": 2, "mqtt_probe": 1, "mqtt_probe_ok": 1})
+
+    async def test_failed_probes_double_the_interval_and_a_new_session_resets_it(self):
+        self.answer_create = self.answer_probe = False
+        with patch("bubble_gateway.transport.monotonic", return_value=100.0) as clock:
+            await self.send("timed-out")
+            clock.return_value = 106.0
+            await self.send("probe-due")
+            await self.hub._probe
+            self.assertEqual((self.hub._unconfirmed_until, self.hub._probe_failures), (116.0, 2))
+            self.assertIsNotNone(self.hub._probe_timer)
+            self.answer_probe = True
+            self.hub._session_ready()
+            self.assertEqual(self.hub._probe_failures, 0)
+            await self.hub._probe
+        self.assertIsNone(self.hub._unconfirmed_until)
+        self.assertEqual(self.ops(), [1, 2, 2])
+
+    async def test_scheduled_probe_restores_mqtt_without_new_traffic(self):
+        self.hub._probe_interval = 0.01
+        self.answer_create = False
+        await self.send("timed-out")
+        self.assertIsNotNone(self.hub._unconfirmed_until)
+        async with asyncio.timeout(2):
+            while self.hub._unconfirmed_until is not None:
+                await asyncio.sleep(0.01)
+        self.assertEqual(self.ops(), [1, 2])
+        self.assertEqual(self.hub.route_counters["mqtt_probe_ok"], 1)
+
+    async def test_zero_interval_keeps_per_request_mqtt_attempts(self):
+        self.hub._probe_interval = 0
+        self.answer_create = False
+        self.hub._session_ready()
+        await self.send("first")
+        await self.send("second")
+        self.assertEqual(self.ops(), [1, 1])
+        self.assertIsNone(self.hub._unconfirmed_until)
+        self.assertIsNone(self.hub._probe)
+
+    async def test_close_cancels_an_unanswered_probe(self):
+        self.answer_probe = False
+        self.hub.config.request_timeout = 5
+        self.hub._session_ready()
+        await asyncio.sleep(0)
+        await self.hub.close()
+        self.assertIsNone(self.hub._probe)
+        self.assertIsNone(self.hub._probe_timer)
+        self.assertEqual(self.hub._pending, {})
+
+
+class ProtocolConfigTests(unittest.TestCase):
+    def env(self, root, **changes):
+        files = {name: root / f"{name}.pem" for name in ("ca", "cert", "key")}
+        for path in files.values():
+            path.write_text("placeholder", encoding="ascii")
+        values = {
+            "GATEWAY_ID": "gw-test", "M2M_ORIGINATOR": "Ctest", "M2M_CSE_ID": "Mobius4",
+            "PC_API_URL": "https://example.invalid", "M2M_CSE_URL": "https://example.invalid",
+            "M2M_OBSERVATION_CONTAINER": "/test/obs", "M2M_RECEIPT_CONTAINER": "/test/receipts",
+            "M2M_HEALTH_CONTAINER": "/test/health", "M2M_RVI": "4", "MQTT_HOST": "127.0.0.1",
+            "BLE_DEVICES": json.dumps({"kr-test": "00:00:00:00:00:01"}),
+            "GATEWAY_DATABASE": str(root / "gateway.sqlite3"),
+            "TLS_CA_FILE": str(files["ca"]), "TLS_CERT_FILE": str(files["cert"]), "TLS_KEY_FILE": str(files["key"]),
+        }
+        values.update(changes)
+        return values
+
+    def load(self, **changes):
+        with tempfile.TemporaryDirectory(prefix="keyring-protocol-config-") as tmp:
+            with patch.dict(os.environ, self.env(Path(tmp), **changes), clear=True):
+                return GatewayConfig.from_env()
+
+    def test_defaults_and_bounds(self):
+        loaded = self.load()
+        self.assertEqual((loaded.mqtt_max_payload_bytes, loaded.mqtt_probe_interval_seconds), (4096, 5.0))
+        loaded = self.load(MQTT_MAX_PAYLOAD_BYTES="0", MQTT_PROBE_INTERVAL_SECONDS="0")
+        self.assertEqual((loaded.mqtt_max_payload_bytes, loaded.mqtt_probe_interval_seconds), (0, 0.0))
+        for name, value in (("MQTT_MAX_PAYLOAD_BYTES", "100"), ("MQTT_MAX_PAYLOAD_BYTES", "262145"),
+                            ("MQTT_MAX_PAYLOAD_BYTES", "1024.5"), ("MQTT_PROBE_INTERVAL_SECONDS", "301")):
+            with self.subTest(name=name, value=value), self.assertRaises(ValueError):
+                self.load(**{name: value})
 
 
 class TransportMockTests(unittest.IsolatedAsyncioTestCase):

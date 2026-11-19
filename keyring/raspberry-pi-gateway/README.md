@@ -4,6 +4,8 @@ DOC-REV 2.0.0의 팀 CORE 계약을 연결했다. `BLE_GATT_PROFILE=core-v1`이 
 
 Gateway 0.2.12의 선택 설정 `CORE_TELEMETRY_EPOCHS`는 `BLE_DEVICES`에 등록한 모든 장치의 epoch를 담은 JSON 객체다. 각 epoch는 중앙 배정값이며 0부터 2147483647 사이의 정수여야 한다. `CORE_BRIDGE_ENABLED=true`에서만 쓸 수 있다. 전환 후 이전 epoch와 기존 unscoped 전송 행은 SQLite에 보류된다. 설정을 생략하면 기존 CORE 토픽을 사용하며 epoch가 저장된 행은 보류된다. 배포 전 [정확한 토픽 ACL과 중앙 수신 조건](../integration-candidate/README.md#발행-당시-epoch를-보존하는-mqtt-수신-후보)을 충족해야 한다.
 
+Gateway 0.2.44는 native oneM2M 요청마다 전송 경로를 조건으로 고른다. 기본은 MQTT(QoS 1, 지속 세션)다. 브로커 세션이 끊기면 대기 없이 HTTPS로 보낸다. primitive가 `MQTT_MAX_PAYLOAD_BYTES`(기본 4096, 키링 BLE 프레임 상한과 같은 값)를 넘는 health와 자격 전환 묶음은 HTTPS로 보낸다. MQTT 응답이 `REQUEST_TIMEOUT` 안에 오지 않으면 그 요청을 같은 자원 이름으로 HTTPS에 다시 보낸다. 새 브로커 세션이 열렸을 때와 응답 시간 초과 뒤에는 관측 컨테이너 RETRIEVE probe를 MQTT로 보내고, 응답을 받을 때까지 데이터를 HTTPS로 보낸다. probe 간격은 `MQTT_PROBE_INTERVAL_SECONDS`(기본 5초)에서 시작해 300초까지 두 배씩 늘린다. 브로커 재시작 직후 CSE가 아직 다시 구독하지 않은 구간에서도 데이터가 MQTT 응답을 기다리지 않는다. 경로별 횟수는 health `counters`의 `native_*`, `mqtt_probe*` 항목에 남는다. [R02 실행 기록](../../docs/rubric-work/R02.md)
+
 Gateway 0.2.13에서는 `M2M_MQTT_ENABLED=false`로 native cin을 HTTPS에 고정한 채 CORE MQTT를 별도로 사용할 수 있다. 생략하면 native MQTT는 `MQTT_ENABLED`를 따른다. 이 설정은 oneM2M listener가 없는 [격리 epoch 브로커](../dev/mobius4/README.md#epoch-전용-mqtt-프로필)에 사용한다.
 
 Gateway 0.2.14부터 epoch 관측은 일치하는 CSE 적용 영수증을 받아야 SQLite에서 완료 처리한다. 일반 관측과 명령 영수증은 scoped 응답 대기와 별도로 전송한다. 중앙 소비자와 응답 토픽 ACL을 같은 변경으로 배치한다. [적용 영수증 계약](../integration-candidate/README.md#epoch-관측의-적용-영수증)

@@ -62,6 +62,8 @@ class Gateway:
             "mqttEnabled": self.config.mqtt_enabled, "mqttHost": self.config.mqtt_host,
             "m2mMqttEnabled": self.config.m2m_mqtt_enabled,
             "mqttWrappedPrimitive": self.config.mqtt_wrapped_primitive,
+            "mqttMaxPayloadBytes": getattr(self.config, "mqtt_max_payload_bytes", None),
+            "mqttProbeIntervalSeconds": getattr(self.config, "mqtt_probe_interval_seconds", None),
             "coreBridgeEnabled": self.config.core_bridge_enabled,
             "coreTelemetryEpochs": self.config.core_telemetry_epochs,
             "bleGattProfile": self.config.ble_gatt_profile,
@@ -402,7 +404,9 @@ class Gateway:
             "runtimeDigest": self.runtime_digest,
             "credentialStatus": self.credential_status if self._credentials_active() or self.credential_status in {"LOST", "REVOKED"} else "UNKNOWN",
             "credentialRevision": self.credential_revision, "outboxDepth": outbox,
-            "commandCount": commands, "devices": self.ble.snapshot(), "counters": dict(self.counters),
+            "commandCount": commands, "devices": self.ble.snapshot(),
+            # Route counters show which native binding (MQTT/HTTPS) carried each request and why.
+            "counters": dict(self.counters) | dict(getattr(self.transport, "route_counters", {})),
         }
 
     def _enqueue_health(self) -> None:
