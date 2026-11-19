@@ -88,7 +88,7 @@ export async function startMecSandboxSimulator({ sandboxName = 'sbx-local', mep 
     for (const record of subscriptions.values()) {
       if (record.service !== 'RNIS' || record.address !== address || expired(record)) continue;
       const plmn = { mcc: '001', mnc: '01' };
-      sent.push(await deliver(record, { notificationType: 'CellChangeNotification', associateId: [{ type: 'UE_IPv4_ADDRESS', value: address }], hoStatus, srcEcgi: { plmn, cellId: srcCellId }, trgEcgi: [{ plmn, cellId: trgCellId }], timeStamp: seconds(at), _links: { subscription: { href: `${origin}${record.resourcePath}` } } }));
+      sent.push(await deliver(record, { notificationType: 'CellChangeNotification', associateId: [{ type: 1, value: address }], hoStatus, srcEcgi: { plmn, cellId: srcCellId }, trgEcgi: [{ plmn, cellId: trgCellId }], timeStamp: seconds(at), _links: { subscription: { href: `${origin}${record.resourcePath}` } } }));
     }
     return sent;
   }
@@ -157,7 +157,7 @@ export async function startMecSandboxSimulator({ sandboxName = 'sbx-local', mep 
         if (!id && request.method === 'GET') {
           const items = [...subscriptions.values()].filter((record) => record.collectionPath === collectionPath && !expired(record));
           entry.status = 200;
-          return json(response, 200, location ? { notificationSubscriptionList: { subscription: items.map((record) => ({ href: `${origin}${record.resourcePath}`, subscriptionType: record.type })), resourceURL: { href: `${origin}${collectionPath}` } } } : { _links: { self: { href: `${origin}${collectionPath}` } }, subscription: items.map((record) => ({ href: `${origin}${record.resourcePath}`, subscriptionType: 'CellChangeSubscription' })) });
+          return json(response, 200, location ? { notificationSubscriptionList: { subscription: items.map((record) => ({ href: `${origin}${record.resourcePath}`, subscriptionType: record.type })), resourceURL: { href: `${origin}${collectionPath}` } } } : { _links: { self: { href: `${origin}${collectionPath}` }, subscription: items.map((record) => ({ href: `${origin}${record.resourcePath}`, subscriptionType: 'CellChangeSubscription' })) } });
         }
         const record = subscriptions.get(`${collectionPath}/${id}`);
         if (!record || expired(record)) { if (record) subscriptions.delete(record.resourcePath); entry.status = 404; return json(response, 404, { title: 'subscription not found' }); }
@@ -166,6 +166,9 @@ export async function startMecSandboxSimulator({ sandboxName = 'sbx-local', mep 
           const body = await readJson(request);
           const next = location ? parseLocationSubscription(version, collection, body) : { callbackUrl: body?.callbackReference, address: body?.filterCriteriaAssocHo?.associateId?.[0]?.value, expiryMs: body?.expiryDeadline ? body.expiryDeadline.seconds * 1000 : null };
           if (!next?.callbackUrl) { entry.status = 400; return json(response, 400, { title: 'subscription body' }); }
+          // Same rule as the ETSI MEC Sandbox: the body names the subscription through its self link.
+          const self = location && version === 'v3' ? Object.values(body ?? {})[0]?._links?.self?.href : !location ? body?._links?.self?.href : `${origin}${record.resourcePath}`;
+          if (typeof self !== 'string' || self.split('/').at(-1) !== record.id) { entry.status = 400; return json(response, 400, { title: 'Mandatory Links.Self.Href parameter not present' }); }
           Object.assign(record, { callbackUrl: next.callbackUrl, address: next.address ?? record.address, expiryMs: next.expiryMs, body, updates: record.updates + 1 });
           entry.status = 200; entry.subscriptionId = record.id; return json(response, 200, body);
         }

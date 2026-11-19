@@ -282,3 +282,73 @@ test('R16: runtime keeps the direct MEC path by default and disables it behind c
   await bridged.close();
   await assert.rejects(createIntegrationRuntime({ core: { mec: { path: 'other' } } }), /direct or onem2m/);
 });
+
+// Behaviour observed on the ETSI MEC Sandbox (STF_685) during the 2026-11-20 real run.
+const sandboxSamples = {
+  periodic: { userLocationPeriodicNotification: { address: '33633442878', locationInfo: { latitude: [43.74566], longitude: [7.429352], shape: 2 }, notificationType: 'UserLocationPeriodicNotification', result: 'SUCCESS', timeStamp: { nanoSeconds: 0, seconds: 1795102690 }, _links: { subscription: { href: 'https://192.168.0.103/bubble/mep1/location/v3/subscriptions/users/9' } } } },
+  event: { userLocationEventNotification: { accessPointId: 'zon2-poa-4g-3', address: '33633442878', notificationType: 'UserLocationEventNotification', timeStamp: { nanoSeconds: 0, seconds: 1795102929 }, userLocationEvent: 'ENTERING_AREA_EVENT', zoneId: 'zone2', _links: { subscription: { href: 'https://192.168.0.103/bubble/mep1/location/v3/subscriptions/users/10' } } } },
+  cellChange: { associateId: [{ type: 1, value: '33633442878' }], hoStatus: 3, notificationType: 'CellChangeNotification', srcEcgi: { cellId: '1111111', plmn: { mcc: '', mnc: '' } }, timeStamp: { nanoSeconds: 0, seconds: 1795102074 }, trgEcgi: [{ cellId: '2222223', plmn: { mcc: '', mnc: '' } }], _links: { subscription: { href: 'https://192.168.0.103/bubble/mep1/rni/v2/subscriptions/3' } } },
+};
+
+test('R16 sandbox: real ETSI MEC Sandbox notification shapes normalize', () => {
+  const periodic = normalizeMecNotification('Location', sandboxSamples.periodic);
+  assert.deepEqual([periodic.kind, periodic.address, periodic.location, periodic.observedAt], ['location', '33633442878', { lat: 43.74566, lon: 7.429352, accuracyM: null }, new Date(1795102690000).toISOString()]);
+  const event = normalizeMecNotification('Location', sandboxSamples.event);
+  assert.deepEqual([event.location, event.zoneId, event.accessPointId, event.event, event.subscriptionHref.split('/').at(-1)], [null, 'zone2', 'zon2-poa-4g-3', 'ENTERING_AREA_EVENT', '10']);
+  const cell = normalizeMecNotification('RNIS', sandboxSamples.cellChange);
+  assert.deepEqual([cell.address, cell.hoStatus, cell.srcCellId, cell.trgCellId], ['33633442878', 'COMPLETED', '1111111', '2222223']);
+});
+
+test('R16 sandbox: MEC012 integer enums, PUT self link, _links.subscription lists, no subscriber app id in the RNIS filter', async () => {
+  const requests = [];
+  const root = 'https://sbx.example/bubble/mep1';
+  const fetchImpl = async (url, init = {}) => {
+    const body = init.body ? JSON.parse(init.body) : null; requests.push({ method: init.method, url, body });
+    if (init.method === 'POST') return new Response(JSON.stringify({ ...body, _links: { self: { href: `${root}/rni/v2/subscriptions/7` } } }), { status: 201 });
+    if (init.method === 'GET') return new Response(JSON.stringify({ _links: { self: { href: `${root}/rni/v2/subscriptions` }, subscription: [{ href: `${root}/rni/v2/subscriptions/7`, subscriptionType: 'CellChangeSubscription' }] } }), { status: 200 });
+    return new Response(JSON.stringify(body), { status: 200 });
+  };
+  const platform = new MecPlatformClient({ platformRoot: root, fetchImpl, appInstanceId: 'ipe-app', locationVersion: 'v3' });
+  const created = await platform.createSubscription('RNIS', 'cellChange', { address: '33633442878', callbackUrl: 'http://pc/mec/RNIS/t', expiresAtMs: 1795102000000 });
+  assert.deepEqual(requests[0].body.filterCriteriaAssocHo, { associateId: [{ type: 1, value: '33633442878' }], hoStatus: [3] });
+  assert.equal(created.subscriptionId, '7');
+  await platform.updateSubscription('RNIS', 'cellChange', created.resourceUrl, { address: '33633442878', callbackUrl: 'http://pc/mec/RNIS/t', expiresAtMs: 1795102100000 });
+  assert.deepEqual(requests[1].body._links, { self: { href: `${root}/rni/v2/subscriptions/7` } });
+  await platform.updateSubscription('Location', 'periodic', `${root}/location/v3/subscriptions/users/9`, { address: 'ue', callbackUrl: 'http://pc/mec/Location/t', expiresAtMs: 1795102100000 });
+  assert.deepEqual(requests[2].body.userLocationPeriodicSubscription._links, { self: { href: `${root}/location/v3/subscriptions/users/9` } });
+  assert.deepEqual((await platform.listSubscriptions('RNIS', 'cellChange')).map((item) => item.href), [`${root}/rni/v2/subscriptions/7`]);
+});
+
+test('R16 sandbox: catalog entries of sandbox services classify, and duplicate service instances keep separate flexContainers', async (t) => {
+  assert.deepEqual(['IOT', 'FED', 'SSS', 'MEC IPE'].map((name, index) => classifyMecService({ serName: `mep1-x-${index}`, serCategory: { name } }).key), ['IoT', 'Federation', 'SSS', 'SandboxIPE']);
+  const cse = await startFakeCse({ specializations: MEC_IPE_SPECIALIZATIONS });
+  t.after(() => cse.close());
+  const services = ['aaaa1111-0000', 'bbbb2222-0000'].map((serInstanceId) => ({ key: 'RNIS', mecApi: 'MEC012', serName: 'mep1-mec012-1', serInstanceId, state: 'ACTIVE', endpoint: 'https://sbx.example/bubble/mep1/rni/v2', apiVersion: 'v2', endpointRebased: false }));
+  const platform = { appInstanceId: null, discoverServices: async () => ({ status: 200, catalogHash: 'catalog', services }), bind: () => ({}) };
+  const ipe = new MecIpe({ cse: { endpoint: cse.endpoint, cseId: cse.cseId }, originator: 'Cmec-ipe-dup', platform, consume: ['RNIS'], requesters: { RNIS: ['Capp'] }, readers: ['Capp'], encryptionKey: randomBytes(32).toString('base64'), renewCheckMs: 3600000 });
+  t.after(() => ipe.stop());
+  const started = await ipe.start();
+  assert.deepEqual(started.catalog.services.map((item) => [item.rn, item.rsc]), [['RNIS', 2001], ['RNIS-bbbb2222', 2001]]);
+  assert.equal(started.catalog.group.members, 2);
+});
+
+test('R16 sandbox: a callback the platform sends while it serves our DELETE is answered at once (no cross-system deadlock)', async (t) => {
+  const f = await fixture(t);
+  await f.request('Location', { op: 'subscribe', requestId: 'loc-dl', deviceAe: 'keyring-test', ueAddress, type: 'periodic', durationSec: 600, intent: f.intent });
+  const record = f.requestRecord('loc-dl');
+  const callbackUrl = f.ipe.secret(record).callbackUrl;
+  const original = f.ipe.platform.deleteSubscription.bind(f.ipe.platform);
+  let answered = null;
+  // Like the sandbox loc-serv: the DELETE completes only after the in-flight notification is answered.
+  f.ipe.platform.deleteSubscription = async (...args) => {
+    const body = { userLocationPeriodicNotification: { address: ueAddress, locationInfo: { latitude: [43.7385], longitude: [7.4225] }, notificationType: 'UserLocationPeriodicNotification', timeStamp: { seconds: Math.floor(f.clock() / 1000), nanoSeconds: 0 }, _links: { subscription: { href: record.resourceUrl } } } };
+    const response = await fetch(callbackUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(2000) });
+    answered = response.status;
+    return original(...args);
+  };
+  await f.request('Location', { op: 'unsubscribe', requestId: 'loc-dl' });
+  await waitFor(async () => { await f.settle(); return f.requestRecord('loc-dl').state === 'DELETED'; }, 3000);
+  assert.equal(answered, 204);
+  assert.equal(f.reviews().at(-1), 'TOMBSTONE');
+  assert.equal(f.sim.activeSubscriptions().length, 0);
+});

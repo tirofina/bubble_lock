@@ -1,0 +1,16 @@
+--- a/go-apps/meep-loc-serv/server/loc-serv.go.orig	2026-11-19 15:43:44.412966978 +0000
++++ b/go-apps/meep-loc-serv/server/loc-serv.go	2026-11-19 15:43:44.420966978 +0000
+@@ -1730,9 +1730,11 @@
+ 			var zonal UserLocationEventNotification
+ 			zonal.Address = userId
+ 			zonal.Links = &SubscriptionLinks{} // Initialize Links outside the loop
+-			for _, value_ := range userSubscriptionMapLink {
++			// Local fix (bubble_lock): link the notification to the subscription that matched (subsId);
++			// the former loop over every entry picked an arbitrary subscription href (map order).
++			if link := userSubscriptionMapLink[subsId]; link != nil && link.Subscription != nil && link.Subscription.Links != nil && link.Subscription.Links.Self != nil {
+ 				zonal.Links.Subscription = &LinkType{
+-					Href: value_.Subscription.Links.Self.Href,
++					Href: link.Subscription.Links.Self.Href,
+ 				}
+ 			}
+ 			zonal.NotificationType = "UserLocationEventNotification"

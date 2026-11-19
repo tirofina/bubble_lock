@@ -64,6 +64,11 @@ const CATALOG = [
   { key: 'AppSupport', mecApi: 'MEC011', names: ['meep-app-enablement', 'mec_app_support', 'appsupport', 'app-enablement'], categories: ['app enablement', 'app support'], path: /\/mec_app_support\/(v\d+)/ },
   { key: 'AMS', mecApi: 'MEC021', names: ['meep-ams', 'ams', 'applicationmobilityservice'], categories: ['ams'], path: /\/amsi\/(v\d+)/ },
   { key: 'VIS', mecApi: 'MEC030', names: ['meep-vis', 'vis', 'v2xinformationservice'], categories: ['v2xi', 'vis'], path: /\/vis\/(v\d+)/ },
+  // Further entries seen in the ETSI MEC Sandbox (STF_685) MEC011 catalog.
+  { key: 'IoT', mecApi: 'MEC033', names: ['meep-iot', 'iotservice'], categories: ['iot'], path: /\/iots\/(v\d+)/ },
+  { key: 'Federation', mecApi: 'MEC040', names: ['meep-federation', 'federationenablement'], categories: ['fed'], path: /\/fed_enablement\/(v\d+)/ },
+  { key: 'SSS', mecApi: 'MEC046', names: ['meep-sss', 'sensorsharingservice'], categories: ['sss'], path: /\/sens\/(v\d+)/ },
+  { key: 'SandboxIPE', mecApi: 'oneM2M-IPE', names: ['mec ipe service', 'meep-ipe'], categories: ['mec ipe'], path: /\/meep_ipe\/(v\d+)/ },
 ];
 
 export function classifyMecService(entry) {
@@ -157,7 +162,11 @@ export class MecPlatformClient {
     return `${this.apiRoot('Location')}/subscriptions/${collection}`;
   }
   subscriptionBody(service, { type, address, callbackUrl, clientCorrelator, expiresAtMs, periodSec = 5, zoneId = null }) {
-    if (service === 'RNIS') return { subscriptionType: 'CellChangeSubscription', callbackReference: callbackUrl, filterCriteriaAssocHo: { ...(this.appInstanceId ? { appInstanceId: this.appInstanceId } : {}), associateId: [{ type: 'UE_IPv4_ADDRESS', value: address }], hoStatus: ['COMPLETED'] }, expiryDeadline: deadline(expiresAtMs) };
+    // MEC012 v2: AssociateId.type and hoStatus are integer enums (1 = UE_IPv4_ADDRESS, 3 = COMPLETED).
+    // The ETSI MEC Sandbox (STF_685) rejects the string forms with 500 (int32 unmarshal).
+    // filterCriteriaAssocHo.appInstanceId names the MEC app associated with the UE, not the subscriber,
+    // so the IPE's own app instance id stays out of the filter (the sandbox then never matches).
+    if (service === 'RNIS') return { subscriptionType: 'CellChangeSubscription', callbackReference: callbackUrl, filterCriteriaAssocHo: { associateId: [{ type: 1, value: address }], hoStatus: [3] }, expiryDeadline: deadline(expiresAtMs) };
     if (this.locationVersionFor() === 'v3') {
       if (type === 'periodic') return { userLocationPeriodicSubscription: { subscriptionType: 'UserLocationPeriodicSubscription', callbackReference: callbackUrl, address, clientCorrelator, periodicEventInfo: { reportingAmount: 1000000, reportingInterval: periodSec }, requestTestNotification: false, expiryDeadline: deadline(expiresAtMs) } };
       if (type === 'zone') return { zoneLocationEventSubscription: { subscriptionType: 'ZoneLocationEventSubscription', callbackReference: callbackUrl, zoneId, addressList: [address], clientCorrelator, locationEventCriteria: ['ENTERING_AREA_EVENT', 'LEAVING_AREA_EVENT'], requestTestNotification: false, expiryDeadline: deadline(expiresAtMs) } };
@@ -186,8 +195,13 @@ export class MecPlatformClient {
     return { status: response.status, resourceUrl, subscriptionId: decodeURIComponent(resourceUrl.split('/').at(-1)), requestHash: approvalHash(body) };
   }
   async updateSubscription(service, type, resourceUrl, params) {
+    const target = this.resourceUrl(service, type, resourceUrl);
     const body = this.subscriptionBody(service, { type, ...params });
-    const response = await this.request('PUT', this.resourceUrl(service, type, resourceUrl), body, [200, 204]);
+    // A PUT carries the full resource representation, including the self link that names the
+    // subscription (MEC012/MEC013 v3); the sandbox answers 400 when it is missing or differs.
+    if (service === 'RNIS') body._links = { self: { href: target } };
+    else if (this.locationVersionFor() === 'v3') { const root = Object.values(body)[0]; if (root && typeof root === 'object') root._links = { self: { href: target } }; }
+    const response = await this.request('PUT', target, body, [200, 204]);
     return { status: response.status, requestHash: approvalHash(body) };
   }
   async deleteSubscription(service, type, resourceUrl) {
@@ -197,7 +211,8 @@ export class MecPlatformClient {
   async listSubscriptions(service, type) {
     const response = await this.request('GET', this.collectionUrl(service, type));
     const data = response.data ?? {};
-    return data.notificationSubscriptionList?.subscription ?? data.subscription ?? (Array.isArray(data) ? data : []);
+    // MEC013: notificationSubscriptionList.subscription; MEC012 v2 SubscriptionLinkList: _links.subscription.
+    return data.notificationSubscriptionList?.subscription ?? data._links?.subscription ?? data.subscription ?? (Array.isArray(data) ? data : []);
   }
   /** MEC013 user query, used when a notification carries zone/AP only. */
   async queryUser(address) {

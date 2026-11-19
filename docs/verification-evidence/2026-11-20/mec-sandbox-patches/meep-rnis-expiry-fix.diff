@@ -1,0 +1,36 @@
+--- a/go-apps/meep-rnis/server/rnis.go.orig	2026-11-19 15:36:33.424960375 +0000
++++ b/go-apps/meep-rnis/server/rnis.go	2026-11-19 15:36:33.432960375 +0000
+@@ -936,15 +936,24 @@
+ 			subscriptionExpiryMap[expiryTime] = nil
+ 			for _, subsId := range subsIndexList {
+ 				cbRef := ""
++				// Local fix (bubble_lock): a PUT renewal registers a new expiry entry but keeps the old one,
++				// so skip entries older than the subscription current expiryDeadline.
++				var current *TimeStamp
+ 				if ccSubscriptionMap[subsId] != nil {
+ 					cbRef = ccSubscriptionMap[subsId].CallbackReference
++					current = ccSubscriptionMap[subsId].ExpiryDeadline
+ 				} else if reSubscriptionMap[subsId] != nil {
+ 					cbRef = reSubscriptionMap[subsId].CallbackReference
++					current = reSubscriptionMap[subsId].ExpiryDeadline
+ 				} else if rrSubscriptionMap[subsId] != nil {
+ 					cbRef = rrSubscriptionMap[subsId].CallbackReference
++					current = rrSubscriptionMap[subsId].ExpiryDeadline
+ 				} else {
+ 					continue
+ 				}
++				if current != nil && int(current.Seconds) > expiryTime {
++					continue
++				}
+ 
+ 				subsIdStr := strconv.Itoa(subsId)
+ 
+@@ -958,6 +967,8 @@
+ 				expiryTimeStamp.Seconds = int32(expiryTime)
+ 
+ 				link := new(ExpiryNotificationLinks)
++				// Local fix (bubble_lock): Subscription is a pointer and was dereferenced while nil (SIGSEGV).
++				link.Subscription = new(LinkType)
+ 				link.Subscription.Href = cbRef
+ 				notif.Links = link
+ 

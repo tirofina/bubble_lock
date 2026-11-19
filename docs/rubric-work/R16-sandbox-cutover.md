@@ -1,6 +1,8 @@
 # R16 MEC 샌드박스 전환 절차
 
-로컬 시뮬레이터로 검증한 MEC IPE를 실제 ETSI MEC 샌드박스(VM 192.168.0.103)에 연결하는 명령 모음임. 샌드박스 배포 자체는 quahog 세션의 `deploy/mec-sandbox/` 담당 범위이며, 이 문서는 IPE 쪽 설정과 확인 절차만 다룸.
+로컬 시뮬레이터로 검증한 MEC IPE를 실제 ETSI MEC 샌드박스(VM 192.168.0.103)에 연결하는 명령 모음임.
+
+2026-11-20에 sandbox `bubble`(시나리오 `dep-opt-b`, MEP `mep1`)로 전 과정을 실행했고 33개 항목이 PASS함. 한 번에 실행하는 명령은 `npm --prefix pc-mobius run integration:mec-ipe-sandbox`이며, 결과와 sandbox에서 확인한 동작은 `docs/rubric-work/R15-R16.md`의 "실제 sandbox 실행" 절에 있음. 이 sandbox는 Location v3만 제공하고(v2는 404), ingress CA는 `.local/mec-sandbox/ca.pem`, PC callback 주소는 `http://192.168.0.106:18092`임. 샌드박스 배포 자체는 quahog 세션의 `deploy/mec-sandbox/` 담당 범위이며, 이 문서는 IPE 쪽 설정과 확인 절차만 다룸.
 
 ## 준비물
 

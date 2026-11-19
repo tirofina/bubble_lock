@@ -15,6 +15,7 @@
     "integration:mec": "node scripts/run-mec-verification.mjs",
     "integration:mec-ipe": "node scripts/run-mec-ipe.mjs",
     "integration:mec-ipe-real": "node scripts/run-mec-ipe-real.mjs",
+    "integration:mec-ipe-sandbox": "node scripts/run-mec-ipe-sandbox.mjs",
     "fl:verify": "node scripts/run-fl-verification.mjs",
     "fl:worker": "node scripts/run-fl-worker.mjs",
     "fl:cse": "node scripts/run-fl-cse-verification.mjs",

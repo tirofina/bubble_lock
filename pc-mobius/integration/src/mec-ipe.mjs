@@ -142,9 +142,13 @@ export class MecIpe {
     const discovery = await this.platform.discoverServices();
     this.platform.bind(discovery.services);
     const discoveredAt = this.iso();
-    const published = [];
+    const published = []; const used = new Set();
     for (const record of discovery.services) {
-      const rn = RN.test(record.key) ? record.key : `svc-${digest(record.serName ?? record.key).slice(0, 12)}`;
+      // A catalog can hold several instances of one service (e.g. a restarted MEC service that did not
+      // deregister); each instance keeps its own flexContainer.
+      let rn = RN.test(record.key) ? record.key : `svc-${digest(record.serName ?? record.key).slice(0, 12)}`;
+      if (used.has(rn)) rn = `${rn}-${String(record.serInstanceId ?? digest(record)).replace(/[^A-Za-z0-9]/g, '').slice(0, 8)}`;
+      used.add(rn);
       const attributes = Object.fromEntries(Object.entries({ serName: record.serName, serInstanceId: record.serInstanceId, mecApi: record.mecApi, version: record.version, apiVersion: record.apiVersion, state: record.state, endpoint: record.endpoint, category: record.category, scopeOfLocality: record.scopeOfLocality, consumed: this.consume.includes(record.key), endpointRebased: record.endpointRebased, discoveredAt, catalogHash: discovery.catalogHash, simulation: this.simulation }).filter(([, value]) => value !== null && value !== undefined));
       const path = `${this.paths.services}/${rn}`;
       let representation = 'flexContainer';
@@ -303,6 +307,8 @@ export class MecIpe {
     const record = this.store.get('ipeRequests', key);
     if (!record || !['ACTIVE', 'CREATING', 'DELETE_REVIEW'].includes(record.state)) return null;
     let providerStatus = null; let state = 'DELETED';
+    // Callbacks that arrive while the provider DELETE is in flight are tombstoned at once.
+    await this.store.put('ipeRequests', key, { ...record, state: 'DELETING' });
     if (record.resourceUrl) {
       try { providerStatus = (await this.platform.deleteSubscription(record.service, record.type, record.resourceUrl)).status; }
       catch (error) { providerStatus = error.status ?? null; state = 'DELETE_REVIEW'; }
@@ -352,24 +358,28 @@ export class MecIpe {
     const routeHash = digest(token);
     const route = this.store.get('ipeRoutes', routeHash);
     if (!route || route.kind !== 'mec' || route.service !== service) { this.trace('MEC_CALLBACK_REVIEW', { service, status: 'UNKNOWN_ROUTE' }); return { httpStatus: 404, status: 'UNKNOWN_ROUTE' }; }
-    return this.serial(route.key, async () => {
+    // Callbacks are ordered on their own per-request queue. A MEC platform can hold a notification
+    // request open while it serves our PUT/DELETE on the same subscription (the ETSI MEC Sandbox
+    // loc-serv does), so a callback never waits behind a renew or teardown of its own request.
+    return this.serial(`notify:${route.key}`, async () => {
       const record = this.store.get('ipeRequests', route.key);
       const review = (status, httpStatus = 204, details = {}) => { this.trace('MEC_CALLBACK_REVIEW', { service, requestId: record?.requestId ?? null, status, ...details }); return { httpStatus, status }; };
       if (!record || record.state !== 'ACTIVE' || route.state !== 'ACTIVE') return review('TOMBSTONE');
       this.trace('MEC_NOTIFICATION_RECEIVED', { service, requestId: record.requestId, mecSubscriptionId: record.mecSubscriptionId, notificationType: payload?.notificationType ?? Object.keys(payload ?? {})[0] ?? null });
       let note;
-      try { note = normalizeMecNotification(service, payload); } catch (error) { return review(error.code === 'MEC_BINDING_REVIEW' ? 'BINDING_REVIEW' : 'SCHEMA_REVIEW', 400); }
-      if (note.kind === 'expiry') { await this.renew(route.key, { force: true }); return review('EXPIRY_RENEWED'); }
+      try { note = normalizeMecNotification(service, payload); } catch (error) { return review(error.code === 'MEC_BINDING_REVIEW' ? 'BINDING_REVIEW' : 'SCHEMA_REVIEW', 400, { cause: error.code === 'MEC_BINDING_REVIEW' ? 'notification-type' : 'schema' }); }
+      // The renewal runs after the callback answers (idle() awaits it), so the platform is not blocked on us.
+      if (note.kind === 'expiry') { this.background(() => this.serial(route.key, () => this.renew(route.key, { force: true }))); return review('EXPIRY_RENEWED'); }
       const { address } = this.secret(record);
-      if (note.address && note.address !== address) return review('BINDING_REVIEW', 403);
+      if (note.address && note.address !== address) return review('BINDING_REVIEW', 403, { cause: 'address' });
       if (note.subscriptionHref) {
         let normalized = null;
         try { normalized = this.platform.resourceUrl(service, record.type, note.subscriptionHref); } catch { normalized = null; }
-        if (normalized !== record.resourceUrl) return review('BINDING_REVIEW', 403);
+        if (normalized !== record.resourceUrl) return review('BINDING_REVIEW', 403, { cause: 'subscription-link', subscriptionId: String(note.subscriptionHref).split('/').at(-1), expectedSubscriptionId: record.mecSubscriptionId });
       }
       if (this.authorize) {
         const decision = await this.authorize({ service, request: record, creator: record.creator, phase: 'notification' });
-        if (!decision?.allowed) { await this.teardown(route.key, decision?.reason ?? 'authorization-revoked'); return review('REVOKED'); }
+        if (!decision?.allowed) { this.background(() => this.serial(route.key, () => this.teardown(route.key, decision?.reason ?? 'authorization-revoked'))); return review('REVOKED'); }
       }
       const sourceHash = digest(payload);
       const eventKey = digest({ service, key: route.key, eventId: note.eventId, observedAt: note.observedAt, sourceHash: note.eventId ? null : sourceHash });
@@ -409,7 +419,7 @@ export class MecIpe {
     const result = await this.client.create(record.container, 4, { 'm2m:cin': { cnf: 'application/json', con, ...(loc ? { loc } : {}), lbl: [`pb:mec-${record.service.toLowerCase()}`, `pb:device:${record.deviceId}`], et: m2mTime(this.clock() + this.retentionMs), cr: null } });
     const written = { rsc: result.rsc, ri: result.payload?.['m2m:cin']?.ri ?? null, path: result.payload?.['m2m:cin']?.rn ? `${record.container}/${result.payload['m2m:cin'].rn}` : null, loc };
     if (result.rsc !== 2001) return written;
-    this.trace('ONEM2M_OBSERVATION_WRITTEN', { service: record.service, requestId: record.requestId, mecSubscriptionId: record.mecSubscriptionId, eventKey, cinPath: written.path, cinRi: written.ri, rsc: written.rsc, loc, observedAt: note.observedAt, ...(record.service === 'RNIS' ? { hoStatus: note.hoStatus, srcCellId: note.srcCellId, trgCellId: note.trgCellId } : { zoneId: note.zoneId, locationSource: note.locationSource ?? 'MEC013-notification' }) });
+    this.trace('ONEM2M_OBSERVATION_WRITTEN', { service: record.service, requestId: record.requestId, mecSubscriptionId: record.mecSubscriptionId, eventKey, cinPath: written.path, cinRi: written.ri, rsc: written.rsc, loc, observedAt: note.observedAt, ...(record.service === 'RNIS' ? { hoStatus: note.hoStatus, srcCellId: note.srcCellId, trgCellId: note.trgCellId } : { zoneId: note.zoneId, event: note.event ?? null, locationSource: note.locationSource ?? 'MEC013-notification' }) });
     if (loc) await this.client.update(record.container, { 'm2m:cnt': { loc } });
     return written;
   }

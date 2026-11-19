@@ -1,0 +1,613 @@
+{
+  "status": "PASS",
+  "generatedAt": "2026-11-19T15:49:03.306Z",
+  "docRevision": "2.0.0",
+  "rubricIds": [
+    "R13",
+    "R15",
+    "R16"
+  ],
+  "simulation": {
+    "mec": false,
+    "ue": "sandbox-scenario",
+    "cse": false,
+    "hardware": false
+  },
+  "transport": {
+    "onem2m": "actual-mobius4-http-loopback",
+    "mec": "https-k8s-ingress-ca",
+    "mecTlsCaPinned": true,
+    "mecCallbacks": "http, sandbox pod -> PC LAN (node SNAT)"
+  },
+  "mecSandbox": {
+    "real": true,
+    "implementation": "ETSI MEC Sandbox STF_685 (local kubeadm install on VirtualBox VM)",
+    "revision": "STF_685 backend 8c66f08 (+ local meep-rnis expiry fix, meep-loc-serv link fix), frontend df11a72",
+    "host": "192.168.0.103",
+    "sandboxName": "bubble",
+    "mep": "mep1",
+    "scenario": "dep-opt-b",
+    "locationApiVersion": "v3",
+    "catalogHash": "1d774188b640f69200e8d26e6edbdc73c3cf42ad07e33f7523a43ec1ec877dbe",
+    "caSHA256": "41b040e74ccdada474afe8972813df3adcebef77fdbf04fc9a0bfe7f52898bc4",
+    "appInstanceId": "ba46c031-9450-43cf-a256-a9d8d6b120e0",
+    "ipeServiceInstanceId": "62332df6-c7ac-415a-a17e-b9de99ad7d9d",
+    "paths": [
+      "/mec_service_mgmt/v1/services",
+      "/mec_service_mgmt/v1/applications/{id}/services",
+      "/mec_app_support/v2/applications/{id}/confirm_ready",
+      "/location/v3/subscriptions/users",
+      "/location/v3/queries/users",
+      "/rni/v2/subscriptions",
+      "/sandbox-ctrl/v1/applications",
+      "/gis/v1/geodata/{ue}",
+      "/gis/v1/automation/MOBILITY"
+    ],
+    "ue": {
+      "ref": "50a1274fb0924e27",
+      "schoolPoa": "zon2-poa-4g-3",
+      "schoolCellId": "2222223"
+    }
+  },
+  "cseVersion": "4.24.5",
+  "cseSourceRevision": "3da4d8523694b5077e348ab1c9e769fb3a30df24",
+  "postgres": "PostgreSQL 17.6 on x86_64-windows",
+  "hostCount": {
+    "pc": 1,
+    "vm": 1
+  },
+  "cseCount": 2,
+  "cseIds": [
+    "/edge-a",
+    "/edge-b"
+  ],
+  "ipe": {
+    "aePath": "/Mobius/mec-ipe",
+    "aei": "Cmec-ipe-abc314",
+    "representation": [
+      {
+        "key": "AMS",
+        "mecApi": "MEC021",
+        "state": "ACTIVE",
+        "representation": "flexContainer",
+        "rsc": 2001,
+        "consumed": false
+      },
+      {
+        "key": "IoT",
+        "mecApi": "MEC033",
+        "state": "ACTIVE",
+        "representation": "flexContainer",
+        "rsc": 2001,
+        "consumed": false
+      },
+      {
+        "key": "RNIS",
+        "mecApi": "MEC012",
+        "state": "ACTIVE",
+        "representation": "flexContainer",
+        "rsc": 2001,
+        "consumed": true
+      },
+      {
+        "key": "Location",
+        "mecApi": "MEC013",
+        "state": "ACTIVE",
+        "representation": "flexContainer",
+        "rsc": 2001,
+        "consumed": true
+      },
+      {
+        "key": "SandboxIPE",
+        "mecApi": "oneM2M-IPE",
+        "state": "ACTIVE",
+        "representation": "flexContainer",
+        "rsc": 2001,
+        "consumed": false
+      },
+      {
+        "key": "RNIS",
+        "mecApi": "MEC012",
+        "state": "ACTIVE",
+        "representation": "flexContainer",
+        "rsc": 2001,
+        "consumed": true
+      },
+      {
+        "key": "SSS",
+        "mecApi": "MEC046",
+        "state": "ACTIVE",
+        "representation": "flexContainer",
+        "rsc": 2001,
+        "consumed": false
+      },
+      {
+        "key": "Location",
+        "mecApi": "MEC013",
+        "state": "ACTIVE",
+        "representation": "flexContainer",
+        "rsc": 2001,
+        "consumed": true
+      },
+      {
+        "key": "Federation",
+        "mecApi": "MEC040",
+        "state": "ACTIVE",
+        "representation": "flexContainer",
+        "rsc": 2001,
+        "consumed": false
+      },
+      {
+        "key": "RNIS",
+        "mecApi": "MEC012",
+        "state": "ACTIVE",
+        "representation": "flexContainer",
+        "rsc": 2001,
+        "consumed": true
+      }
+    ],
+    "group": {
+      "path": "/Mobius/mec-ipe/mecServiceGroup",
+      "rsc": 2001,
+      "members": 10
+    },
+    "requestContainers": [
+      "/Mobius/mec-ipe/locationRequests",
+      "/Mobius/mec-ipe/rnisRequests"
+    ],
+    "statusContainer": "/Mobius/mec-ipe/requestStatus"
+  },
+  "flows": {
+    "Location": {
+      "requestCin": "83ftaqmf2t",
+      "mecApi": "MEC013",
+      "type": "periodic",
+      "mecSubscriptionId": "5",
+      "mecNotificationReceived": {
+        "notificationType": "userLocationPeriodicNotification"
+      },
+      "firstObservationCin": "icythxcs5a",
+      "appNotified": true,
+      "policyDecision": {
+        "allowed": false,
+        "reason": "geofence-review",
+        "triggerState": null
+      }
+    },
+    "LocationUserEvent": {
+      "requestCin": "fvdy446b45",
+      "mecApi": "MEC013",
+      "type": "userTracking",
+      "mecSubscriptionId": "6",
+      "mecNotificationReceived": {
+        "notificationType": "userLocationEventNotification"
+      },
+      "firstObservationCin": "b8u2ydaec6",
+      "appNotified": true,
+      "policyDecision": {
+        "allowed": true,
+        "reason": "location-health-accepted",
+        "triggerState": "WAITING"
+      }
+    },
+    "RNIS": {
+      "requestCin": "fkhy140v4e",
+      "mecApi": "MEC012",
+      "type": "cellChange",
+      "mecSubscriptionId": "6",
+      "mecNotificationReceived": {
+        "notificationType": "CellChangeNotification"
+      },
+      "firstObservationCin": "kazls7vgpm",
+      "appNotified": true,
+      "policyDecision": {
+        "allowed": true,
+        "reason": "network-corroborates-target",
+        "triggerState": null
+      }
+    }
+  },
+  "notifications": {
+    "userLocationPeriodicNotification": 13,
+    "CellChangeNotification": 2,
+    "userLocationEventNotification": 4
+  },
+  "triggerStates": [
+    "geofence-review",
+    "WAITING",
+    "WAITING",
+    "WAITING",
+    "WAITING",
+    "WAITING",
+    "WAITING",
+    "WAITING",
+    "WAITING",
+    "ACTIVE",
+    "geofence-review"
+  ],
+  "handover": {
+    "triggerDecision": {
+      "cinRi": "1guw1u3gc0",
+      "eventKey": "904c1d3f3062fa8c",
+      "triggerState": "ACTIVE",
+      "handoverId": "handover-152d895f-342e-4c48-aff8-b1c5b60076ed"
+    },
+    "initialEdgeId": "edge-a",
+    "finalEdgeId": "edge-b",
+    "epoch": 2,
+    "decisionAfterMoveMs": 29156,
+    "decisionAfterPlacementMs": 30439
+  },
+  "geoQuery": {
+    "school": [
+      "Mobius/keyring-abc314"
+    ],
+    "home": [],
+    "schoolObservationCins": 10,
+    "request": "?fu=1&ty=3&gmty=3&gsf=1&geom=<polygon>"
+  },
+  "renewals": {
+    "rnis": 2,
+    "loc": 2,
+    "trk": 2
+  },
+  "teardown": [
+    {
+      "service": "RNIS",
+      "request": "rnis",
+      "reason": "requester-unsubscribe",
+      "providerStatus": 204
+    },
+    {
+      "service": "Location",
+      "request": "loc",
+      "reason": "device-deregistered",
+      "providerStatus": 204
+    },
+    {
+      "service": "Location",
+      "request": "trk",
+      "reason": "device-deregistered",
+      "providerStatus": 204
+    }
+  ],
+  "appNotifications": 26,
+  "policyDecisions": 13,
+  "privacy": {
+    "preciseCoordinatesOnCse": "AES-256-GCM ciphertext only",
+    "locPrecisionDecimals": 3,
+    "ueAddressInObservationCin": false,
+    "ueAddressInIpeState": "AES-256-GCM sealed",
+    "requestCinReaders": "IPE AE only (requesters hold CREATE)"
+  },
+  "checks": [
+    {
+      "name": "sandbox-scenario-active",
+      "status": "PASS",
+      "expected": "dep-opt-b",
+      "actual": "dep-opt-b"
+    },
+    {
+      "name": "mec-tls-without-ca-is-refused",
+      "status": "PASS",
+      "expected": "MEC_TRANSPORT_REVIEW",
+      "actual": "MEC_TRANSPORT_REVIEW"
+    },
+    {
+      "name": "device-ae-acpi-bound-by-provisioning",
+      "status": "PASS",
+      "expected": 2004,
+      "actual": 2004,
+      "selfBindingRsc": 5000
+    },
+    {
+      "name": "app-subscription-app-location",
+      "status": "PASS",
+      "expected": 2001,
+      "actual": 2001
+    },
+    {
+      "name": "app-subscription-app-rnis",
+      "status": "PASS",
+      "expected": 2001,
+      "actual": 2001
+    },
+    {
+      "name": "app-subscription-app-status",
+      "status": "PASS",
+      "expected": 2001,
+      "actual": 2001
+    },
+    {
+      "name": "mec011-confirm-ready",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "httpStatus": 204,
+      "reason": null
+    },
+    {
+      "name": "mec011-ipe-service-registered-and-visible",
+      "status": "PASS",
+      "expected": {
+        "status": 201,
+        "visible": 1
+      },
+      "actual": {
+        "status": 201,
+        "visible": 1
+      }
+    },
+    {
+      "name": "app-discovers-sandbox-mec-services-via-onem2m",
+      "status": "PASS",
+      "expected": true,
+      "actual": true
+    },
+    {
+      "name": "mec-service-group-of-flexcontainers",
+      "status": "PASS",
+      "expected": {
+        "rsc": 2000,
+        "mt": 28,
+        "cnm": 10
+      },
+      "actual": {
+        "rsc": 2000,
+        "mt": 28,
+        "cnm": 10
+      }
+    },
+    {
+      "name": "acp-visitor-cannot-create-request",
+      "status": "PASS",
+      "expected": 4103,
+      "actual": 4103
+    },
+    {
+      "name": "acp-visitor-cannot-read-location",
+      "status": "PASS",
+      "expected": 4103,
+      "actual": 4103
+    },
+    {
+      "name": "acp-app-cannot-read-request-container",
+      "status": "PASS",
+      "expected": 4103,
+      "actual": 4103
+    },
+    {
+      "name": "request-with-other-grant-revision-rejected",
+      "status": "PASS",
+      "expected": [],
+      "actual": []
+    },
+    {
+      "name": "sandbox-subscriptions-created-from-onem2m-requests",
+      "status": "PASS",
+      "expected": [
+        "Location",
+        "Location",
+        "RNIS"
+      ],
+      "actual": [
+        "Location",
+        "Location",
+        "RNIS"
+      ]
+    },
+    {
+      "name": "geofence-entry-triggers-handover-to-edge-b",
+      "status": "PASS",
+      "expected": {
+        "edgeId": "edge-b",
+        "state": "ACTIVE"
+      },
+      "actual": {
+        "edgeId": "edge-b",
+        "state": "ACTIVE"
+      }
+    },
+    {
+      "name": "sandbox-zone-entry-event-written-with-queried-location",
+      "status": "PASS",
+      "expected": {
+        "zoneId": "zone2",
+        "event": "ENTERING_AREA_EVENT",
+        "locationSource": "MEC013-query"
+      },
+      "actual": {
+        "zoneId": "zone2",
+        "event": "ENTERING_AREA_EVENT",
+        "locationSource": "MEC013-query"
+      }
+    },
+    {
+      "name": "replayed-sandbox-callback-duplicate-stale-future-binding",
+      "status": "PASS",
+      "expected": [
+        "DUPLICATE",
+        "STALE",
+        "FUTURE",
+        "BINDING_REVIEW"
+      ],
+      "actual": [
+        "DUPLICATE",
+        "STALE",
+        "FUTURE",
+        "BINDING_REVIEW"
+      ]
+    },
+    {
+      "name": "replayed-sandbox-callback-http-status",
+      "status": "PASS",
+      "expected": [
+        204,
+        204,
+        204,
+        403
+      ],
+      "actual": [
+        204,
+        204,
+        204,
+        403
+      ],
+      "tokenKnown": true
+    },
+    {
+      "name": "location-cin-readback",
+      "status": "PASS",
+      "expected": {
+        "rsc": 2000,
+        "schema": "pb.mec.location.v1",
+        "creator": "Cmec-ipe-abc314",
+        "locType": 1,
+        "preciseAlgorithm": "AES-256-GCM",
+        "simulation": false
+      },
+      "actual": {
+        "rsc": 2000,
+        "schema": "pb.mec.location.v1",
+        "creator": "Cmec-ipe-abc314",
+        "locType": 1,
+        "preciseAlgorithm": "AES-256-GCM",
+        "simulation": false
+      }
+    },
+    {
+      "name": "location-cin-carries-grant-and-policy-revision",
+      "status": "PASS",
+      "expected": {
+        "policyId": "policy-b6fa8338-95be-4f4b-b055-e41b909feb12",
+        "grantId": "grant-d020e3e2-533f-4abe-8b7c-8783c06aaca0",
+        "grantRevision": 1,
+        "policyRevision": 1
+      },
+      "actual": {
+        "grantId": "grant-d020e3e2-533f-4abe-8b7c-8783c06aaca0",
+        "policyId": "policy-b6fa8338-95be-4f4b-b055-e41b909feb12",
+        "grantRevision": 1,
+        "policyRevision": 1
+      }
+    },
+    {
+      "name": "ue-address-absent-from-cse-cin-and-ipe-state",
+      "status": "PASS",
+      "expected": [
+        false,
+        false
+      ],
+      "actual": [
+        false,
+        false
+      ]
+    },
+    {
+      "name": "geo-query-school-zone-returns-device",
+      "status": "PASS",
+      "expected": [
+        "Mobius/keyring-abc314"
+      ],
+      "actual": [
+        "Mobius/keyring-abc314"
+      ]
+    },
+    {
+      "name": "geo-query-home-zone-is-empty-after-move",
+      "status": "PASS",
+      "expected": [],
+      "actual": []
+    },
+    {
+      "name": "sandbox-subscription-renewed-by-put",
+      "status": "PASS",
+      "expected": true,
+      "actual": true
+    },
+    {
+      "name": "no-renew-review-on-sandbox",
+      "status": "PASS",
+      "expected": 0,
+      "actual": 0
+    },
+    {
+      "name": "sandbox-rnis-cell-change-feeds-policy",
+      "status": "PASS",
+      "expected": [
+        "network-corroborates-target",
+        "network-cell-outside-target"
+      ],
+      "actual": [
+        "network-corroborates-target",
+        "network-cell-outside-target"
+      ],
+      "cellChanges": [
+        "1111111->2222223",
+        "2222223->1111111"
+      ]
+    },
+    {
+      "name": "rnis-unsubscribe-deletes-sandbox-subscription",
+      "status": "PASS",
+      "expected": [
+        "Location",
+        "Location"
+      ],
+      "actual": [
+        "Location",
+        "Location"
+      ]
+    },
+    {
+      "name": "late-rnis-callback-after-teardown-is-tombstoned",
+      "status": "PASS",
+      "expected": "TOMBSTONE",
+      "actual": "TOMBSTONE",
+      "httpStatus": 204
+    },
+    {
+      "name": "device-ae-deregistration",
+      "status": "PASS",
+      "expected": 2002,
+      "actual": 2002
+    },
+    {
+      "name": "ae-deregistration-deletes-sandbox-location-subscriptions",
+      "status": "PASS",
+      "expected": [],
+      "actual": []
+    },
+    {
+      "name": "sandbox-delete-status",
+      "status": "PASS",
+      "expected": [
+        204,
+        204,
+        204
+      ],
+      "actual": [
+        204,
+        204,
+        204
+      ]
+    },
+    {
+      "name": "bidirectional-trace-complete",
+      "status": "PASS",
+      "expected": true,
+      "actual": true
+    }
+  ],
+  "caseCount": 33,
+  "passed": 33,
+  "failed": 0,
+  "artifacts": {
+    "trace": "docs/verification-evidence/2026-11-20/mec-ipe-sandbox-trace.jsonl",
+    "traceSHA256": "69ce3c315a59886e6cfdab44f01b6fd376625ff7db2faec1b114e199569b61f7",
+    "rawNotifications": "docs/verification-evidence/2026-11-20/mec-sandbox-raw/notifications.json",
+    "runtimeDirectory": ".local/mec-ipe-sandbox/1795103302582_33a133"
+  },
+  "runnerSHA256": "52a9728f7958daa4859e60ab4c0dc5f67303eeefb9a40c9b835841dedfa1e583",
+  "notes": "MEC side is the ETSI MEC Sandbox (STF_685) on a separate VM; UE movement is driven through the sandbox GIS engine with MOBILITY automation, so the POA change and the RNIS cell change come from the sandbox. oneM2M side is two actual Mobius4 processes with PostgreSQL/PostGIS on the PC."
+}
