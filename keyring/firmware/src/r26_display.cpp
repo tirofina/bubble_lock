@@ -13,17 +13,14 @@ constexpr uint16_t rgb565(uint8_t red, uint8_t green, uint8_t blue) {
 }
 
 constexpr auto Background = rgb565(12, 20, 27);
-constexpr auto Surface = rgb565(23, 36, 46);
-constexpr auto Border = rgb565(48, 70, 82);
-constexpr auto Badge = rgb565(34, 52, 63);
-constexpr auto Text = rgb565(241, 249, 249);
-constexpr auto Muted = rgb565(172, 194, 204);
-constexpr auto Mint = rgb565(100, 233, 202);
-constexpr auto Lime = rgb565(188, 240, 133);
-constexpr auto Coral = rgb565(255, 136, 124);
+constexpr auto Text = rgb565(255, 255, 255);
+constexpr auto Muted = rgb565(190, 195, 198);
+constexpr auto Divider = rgb565(57, 62, 67);
+constexpr auto Blue = rgb565(41, 151, 255);
+constexpr auto Red = rgb565(255, 105, 97);
 
 constexpr int16_t Center = 120;
-constexpr int16_t BadgeY = 90;
+constexpr int16_t BadgeY = 91;
 
 uint16_t blend565(uint16_t foreground, uint16_t background, uint8_t alpha) {
   const unsigned inverse = 15 - alpha;
@@ -53,29 +50,24 @@ void drawFrame(Arduino_GFX &panel) {
   static_assert(r26logo::Background == Background, "The logo must match the display background");
   panel.draw16bitRGBBitmap(Center - r26logo::Width / 2, 31 - r26logo::Height / 2,
       r26logo::Pixels, r26logo::Width, r26logo::Height);
-  panel.drawFastHLine(14, 58, 212, Border);
-
-  panel.fillRoundRect(14, 68, 212, 108, 16, Surface);
-  panel.drawRoundRect(14, 68, 212, 108, 16, Border);
+  panel.drawFastHLine(20, 59, 200, Divider);
 
   // Fixed five-bar demo artwork for the front assembly without a fuel gauge.
-  panel.fillRoundRect(14, 187, 212, 39, 11, Surface);
-  panel.drawRoundRect(14, 187, 212, 39, 11, Border);
-  label(panel, 28, 206, r26text::Battery, Text, Surface);
-  panel.drawRoundRect(138, 197, 70, 19, 4, Muted);
-  panel.fillRoundRect(209, 203, 3, 7, 1, Muted);
+  panel.drawFastHLine(20, 187, 200, Divider);
+  label(panel, 28, 210, r26text::Battery, Muted, Background);
+  panel.drawRoundRect(138, 201, 70, 19, 4, Muted);
+  panel.fillRoundRect(209, 207, 3, 7, 1, Muted);
   for (int16_t bar = 0; bar < 5; ++bar) {
-    panel.fillRoundRect(144 + bar * 12, 201, 9, 11, 2, Mint);
+    panel.fillRoundRect(144 + bar * 12, 205, 9, 11, 2, Text);
   }
 }
 }
 
 void drawR26Display(Arduino_GFX &panel, const KeyringScreen &screen, bool fullDraw) {
   if (fullDraw) drawFrame(panel);
-  else panel.fillRect(23, 73, 194, 92, Surface);
+  else panel.fillRect(20, 67, 200, 110, Background);
 
-  const auto accent = screen.panic ? Coral : screen.confirm ? Lime : Mint;
-  panel.fillCircle(Center, BadgeY, 15, Badge);
+  const auto accent = screen.panic ? Red : Blue;
   panel.drawCircle(Center, BadgeY, 15, accent);
   if (screen.panic) {
     panel.fillRoundRect(Center - 2, BadgeY - 10, 5, 13, 2, accent);
@@ -92,7 +84,7 @@ void drawR26Display(Arduino_GFX &panel, const KeyringScreen &screen, bool fullDr
 
   const auto &title = screen.panic ? r26text::Panic : screen.confirm ? r26text::Confirm : r26text::Ready;
   const auto &hint = screen.panic ? r26text::PanicHint : screen.confirm ? r26text::ConfirmHint : r26text::ReadyHint;
-  label(panel, Center - title.width / 2, 123, title, accent, Surface);
-  label(panel, Center - hint.width / 2, 151, hint, Text, Surface);
+  label(panel, Center - title.width / 2, 128, title, screen.panic ? Red : Text, Background);
+  label(panel, Center - hint.width / 2, 157, hint, Muted, Background);
 }
 #endif
