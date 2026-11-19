@@ -6,6 +6,8 @@ Gateway 0.2.12의 선택 설정 `CORE_TELEMETRY_EPOCHS`는 `BLE_DEVICES`에 등�
 
 Gateway 0.2.13에서는 `M2M_MQTT_ENABLED=false`로 native cin을 HTTPS에 고정한 채 CORE MQTT를 별도로 사용할 수 있다. 생략하면 native MQTT는 `MQTT_ENABLED`를 따른다. 이 설정은 oneM2M listener가 없는 [격리 epoch 브로커](../dev/mobius4/README.md#epoch-전용-mqtt-프로필)에 사용한다.
 
+BubbleLock 운영 MQTT 브리지에는 `M2M_MQTT_MOBIUS_NAMED_PATHS=true`를 지정한다. 이름 경로의 선행 슬래시를 유지하여 `/Mobius/...`를 보낸다. 리소스 ID가 고정된 컨테이너는 이 설정에서 HTTPS로 전송하여 고정된 부모를 검증한다.
+
 Gateway 0.2.14부터 epoch 관측은 일치하는 CSE 적용 영수증을 받아야 SQLite에서 완료 처리한다. 일반 관측과 명령 영수증은 scoped 응답 대기와 별도로 전송한다. 중앙 소비자와 응답 토픽 ACL을 같은 변경으로 배치한다. [적용 영수증 계약](../integration-candidate/README.md#epoch-관측의-적용-영수증)
 
 Gateway 0.2.15의 `bubble-gateway-state retire-core`는 전환 뒤 보류된 이전 epoch 행을 운영자가 보관하고 정리할 때 사용한다. daemon을 중지하고 현재보다 낮은 epoch를 명시하면 격리 스냅샷과 보관 계획을 저장한 뒤 해당 CORE 행만 정리한다. [상태 보관 절차](STATE_RECOVERY.md#종료된-core-epoch-보관)

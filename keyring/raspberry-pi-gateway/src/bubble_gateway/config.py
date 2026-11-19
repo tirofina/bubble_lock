@@ -102,6 +102,7 @@ class GatewayConfig:
     ble_observation_timeout: float = 30.0
     native_observation_trace: bool = False
     pc_api_tls_files: tuple[Path, Path, Path] | None = None
+    mqtt_mobius_named_paths: bool = False
 
     @classmethod
     def from_env(cls, values: Mapping[str, str] | None = None, *, require_tls_files: bool = True) -> "GatewayConfig":
@@ -227,6 +228,7 @@ class GatewayConfig:
             mqtt_port=int(number("MQTT_PORT", "8883", 1, 65535)),
             mqtt_enabled=mqtt_enabled, m2m_mqtt_enabled=m2m_mqtt_enabled,
             mqtt_wrapped_primitive=boolean("MQTT_WRAPPED_PRIMITIVE", "false"),
+            mqtt_mobius_named_paths=boolean("M2M_MQTT_MOBIUS_NAMED_PATHS", "false"),
             mqtt_keepalive=int(number("MQTT_KEEPALIVE", "60", 10, 600)),
             request_timeout=number("REQUEST_TIMEOUT", "10", 1, 60), rvi=required("M2M_RVI"),
             observation_container=observation_container, receipt_container=receipt_container,

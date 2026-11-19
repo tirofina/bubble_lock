@@ -94,6 +94,8 @@ def cutover_plan(current: GatewayConfig, target: GatewayConfig) -> dict:
         "central_telemetry_retention_seconds", "pc_dispatch_start_required",
     )
     changed_delivery = [name for name in delivery_settings if getattr(current, name) != getattr(target, name)]
+    if getattr(current, "mqtt_mobius_named_paths", False) != getattr(target, "mqtt_mobius_named_paths", False):
+        changed_delivery.append("mqtt_mobius_named_paths")
     source_central_staging = current.commands_enabled and current.central_receipts_enabled
 
     with closing(readonly(current.database)) as db:

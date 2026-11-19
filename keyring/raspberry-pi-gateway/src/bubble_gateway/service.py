@@ -84,6 +84,8 @@ class Gateway:
             "devices": self.config.ble_devices,
             "firmwareAllowlist": self.config.firmware_revision_allowlist,
         }
+        if getattr(self.config, "mqtt_mobius_named_paths", False):
+            public_configuration["mqttMobiusNamedPaths"] = True
         digest.update(canonical(public_configuration).encode("utf-8"))
         # Public certificate digest helps distinguish rotations; never read the private key here.
         digest.update(self.config.cert_file.read_bytes())

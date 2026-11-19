@@ -568,12 +568,16 @@ class TransportHub:
             # Write to the verified resource itself even if its name is later rebound.
             target = f"/{pin}"
             path = _resource_path(target)
-        if self._native_mqtt_ready():
+        named_mobius_paths = getattr(self.config, "mqtt_mobius_named_paths", False)
+        # The deployment bridge accepts named /Mobius resources. Pinned writes
+        # use the resource ID over HTTPS to retain their parent identity check.
+        if self._native_mqtt_ready() and not (named_mobius_paths and pin is not None):
             if rqi in self._pending:
                 raise RuntimeError("request ID already in flight")
             future = asyncio.get_running_loop().create_future()
             self._pending[rqi] = future
-            primitive = {"op": 1, "to": _mqtt_to(target), "fr": self.config.originator,
+            mqtt_target = target if named_mobius_paths and target.startswith("/Mobius/") else _mqtt_to(target)
+            primitive = {"op": 1, "to": mqtt_target, "fr": self.config.originator,
                          "rqi": rqi, "ty": 4, "rvi": self.config.rvi, "pc": {"m2m:cin": cin}}
             try:
                 wire = {"m2m:rqp": primitive} if self.config.mqtt_wrapped_primitive else primitive

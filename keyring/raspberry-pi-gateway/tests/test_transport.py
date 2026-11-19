@@ -209,6 +209,14 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
         self.hub._http_json.assert_not_awaited()
         self.assertEqual(self.hub._pending, {})
 
+    async def test_deployment_bridge_mqtt_uses_named_mobius_path(self):
+        self.hub.config.mqtt_mobius_named_paths = True
+        container = "/Mobius/household/gateway-1/observations"
+        self.mqtt(2001, target=container)
+        result = await self.hub.publish(self.rqi, container, self.payload)
+        self.assertEqual(result, NativeConfirmation("mqtt", True))
+        self.hub._http_json.assert_not_awaited()
+
     async def test_broker_acceptance_without_application_receipt_uses_same_cin_http(self):
         self.mqtt()
         result = await self.hub.publish(self.rqi, self.container, self.payload)
@@ -296,6 +304,15 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([entry.args for entry in self.hub._http_json.await_args_list],
                          [("GET", "https://cse.invalid/test/receipts"), ("POST", "https://cse.invalid/cnt-original"),
                           ("GET", "https://cse.invalid/test/receipts/" + self.rn)])
+
+    async def test_deployment_bridge_keeps_pinned_create_on_https(self):
+        self.hub.config.mqtt_mobius_named_paths = True
+        self.pin_receipt_container("cnt-original")
+        self.mqtt(2001)
+        await self.hub.publish(self.rqi, self.container, self.payload)
+        self.hub._mqtt.publish.assert_not_called()
+        self.assertEqual(self.hub._http_json.await_args_list[1].args,
+                         ("POST", "https://cse.invalid/cnt-original"))
 
     async def test_pin_requires_mqtt_confirmation_from_the_expected_parent(self):
         self.pin_receipt_container("cnt-original")
