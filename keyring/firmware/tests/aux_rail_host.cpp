@@ -10,6 +10,7 @@ using portMUX_TYPE = bool;
 constexpr bool portMUX_INITIALIZER_UNLOCKED = false;
 using gpio_num_t = int;
 using esp_timer_handle_t = void *;
+using esp_err_t = int;
 constexpr int ESP_OK = 0;
 struct esp_timer_create_args_t {
     void (*callback)(void *);

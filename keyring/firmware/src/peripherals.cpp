@@ -143,8 +143,9 @@ void Peripherals::entry(void *context) { static_cast<Peripherals *>(context)->ru
 void Peripherals::run() {
 #if KEYRING_DISPLAY_PROFILE || KEYRING_ENABLE_SD_LOG
   // Both CS pins are inactive before configuring the common SPI signals.
-  digitalWrite(board::LcdCs, HIGH); digitalWrite(board::SdCs, HIGH);
-  sharedSpi.begin(board::LcdSck, board::SdMiso, board::LcdMosi);
+  digitalWrite(board::LcdCs, HIGH);
+  if (!board::FrontAssembly) digitalWrite(board::SdCs, HIGH);
+  sharedSpi.begin(board::LcdSck, board::FrontAssembly ? -1 : board::SdMiso, board::LcdMosi);
 #endif
 #if KEYRING_DISPLAY_PROFILE
   const bool screenStarted = display.begin(KEYRING_LCD_SPI_HZ);

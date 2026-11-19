@@ -336,7 +336,8 @@ class BleFleet:
         command_ready = False
         handshake_error = None
         # BlueZ may still list writable handles from the full image.
-        if getattr(self.config, "commands_enabled", True) and not _r18_bringup(identity):
+        r26_observation_only = identity["boardRevision"] == "r26-front-assembly"
+        if getattr(self.config, "commands_enabled", True) and not (_r18_bringup(identity) or r26_observation_only):
             command = service.get_characteristic(self.command_uuid)
             if command is not None and "write" in command.properties:
                 receipt = service.get_characteristic(self.receipt_uuid)

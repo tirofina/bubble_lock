@@ -123,12 +123,12 @@ def _json(value: Any) -> bytes:
                       separators=(",", ":")).encode("utf-8")
 
 
-def _https_base(value: str, *, origin_only: bool = False) -> str:
+def _https_base(value: str, *, cse: bool = False) -> str:
     parsed = urlsplit(value)
     if (parsed.scheme != "https" or not parsed.hostname or parsed.username is not None
             or parsed.password is not None or parsed.query or parsed.fragment
-            or (origin_only and parsed.path not in ("", "/"))):
-        raise ValueError("endpoint must be an HTTPS origin without credentials/query/fragment")
+            or (cse and parsed.path.rstrip("/") not in ("", "/onem2m"))):
+        raise ValueError("invalid HTTPS endpoint")
     return value.rstrip("/")
 
 
@@ -173,7 +173,7 @@ class TransportHub:
     def __init__(self, config: Any, *, retry_store: Store | None = None):
         self.config = config
         self._api_url = _https_base(config.api_url)
-        self._cse_url = _https_base(config.cse_url, origin_only=True)
+        self._cse_url = _https_base(config.cse_url, cse=True)
         self._api_origin = _https_origin(self._api_url)
         self._cse_origin = _https_origin(self._cse_url)
         for segment in (config.originator, config.cse_id):

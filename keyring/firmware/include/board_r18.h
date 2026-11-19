@@ -5,7 +5,13 @@
 // Portable source handoff: keyring/pcb/r18/ and pcb/HARDWARE_FIRMWARE_MAP.md.
 // Older r17 root pin maps and BOM prose contain superseded GPIO assignments.
 namespace board {
+#if defined(KEYRING_R26_FRONT)
+constexpr bool FrontAssembly = true;
+constexpr char Revision[] = "r26-front-assembly";
+#else
+constexpr bool FrontAssembly = false;
 constexpr char Revision[] = "r18-hand-solder";
+#endif
 constexpr int AuxEnable = 4;
 constexpr int Confirm = 6;
 constexpr int Panic = 7;

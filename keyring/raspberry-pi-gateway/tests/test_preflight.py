@@ -140,6 +140,13 @@ class PreflightTests(unittest.TestCase):
             "https://example.invalid/api/v1/gateways/gw-test/commands?limit=16",
         ])
 
+    def test_cse_reverse_proxy_keeps_the_onem2m_prefix(self):
+        self.env["M2M_CSE_URL"] = "https://example.invalid/onem2m"
+        self.assertEqual(self.check_route()[0], "https://example.invalid/onem2m/test/receipts")
+        self.env["M2M_CSE_URL"] = "https://example.invalid/onem2m/../other"
+        with self.assertRaisesRegex(ValueError, "M2M_CSE_URL"):
+            GatewayConfig.from_env(self.env)
+
     def test_command_route_stops_before_poll_on_wrong_parent_or_inactive_credential(self):
         self.assertEqual(len(self.check_route(observed_parent="cnt-other", expected_error="ReceiptParentMismatch")), 1)
         self.assertEqual(len(self.check_route(credential_status="REVOKED", expected_error="credential is not ACTIVE")), 2)

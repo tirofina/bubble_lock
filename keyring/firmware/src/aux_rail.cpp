@@ -11,14 +11,17 @@ bool timerReady = false, alertOwner = false, alertWasInterrupted = false;
 bool displayDriveFault = false;
 uint64_t displayUntil = 0;
 uint64_t nowMs() { return static_cast<uint64_t>(esp_timer_get_time()) / 1000; }
-bool healthy() { return gpio_get_level(static_cast<gpio_num_t>(board::MainFaultN)); }
-bool railEnabled() { return gpio_get_level(static_cast<gpio_num_t>(board::AuxEnable)) != 0; }
+bool healthy() { return board::FrontAssembly || gpio_get_level(static_cast<gpio_num_t>(board::MainFaultN)); }
+bool railEnabled() { return board::FrontAssembly || gpio_get_level(static_cast<gpio_num_t>(board::AuxEnable)) != 0; }
+esp_err_t setRail(int level) {
+  return board::FrontAssembly ? ESP_OK : gpio_set_level(static_cast<gpio_num_t>(board::AuxEnable), level);
+}
 bool backlightOn() { return gpio_get_level(static_cast<gpio_num_t>(board::LcdBacklight)) == 0; }
 void interruptAlert() { // Caller holds mux.
   alertOwner = false;
   alertWasInterrupted = true;
   displayUntil = 0;
-  gpio_set_level(static_cast<gpio_num_t>(board::AuxEnable), 0);
+  setRail(0);
 }
 void apply(uint64_t now) { // Caller holds mux.
   if (!healthy()) {
@@ -28,10 +31,9 @@ void apply(uint64_t now) { // Caller holds mux.
   }
   if (now >= displayUntil) displayUntil = 0;
   const bool light = displayUntil && !alertOwner && !alertWasInterrupted;
-  const auto rail = static_cast<gpio_num_t>(board::AuxEnable);
   const auto backlight = static_cast<gpio_num_t>(board::LcdBacklight);
   if (light) {
-    if (gpio_set_level(rail, 1) == ESP_OK && railEnabled() &&
+    if (setRail(1) == ESP_OK && railEnabled() &&
         gpio_set_level(backlight, 0) == ESP_OK && backlightOn()) return;
     displayDriveFault = true;
     displayUntil = 0;
@@ -45,7 +47,7 @@ void apply(uint64_t now) { // Caller holds mux.
       return;
     }
   }
-  const auto railWrite = gpio_set_level(rail, alertOwner && !alertWasInterrupted);
+  const auto railWrite = setRail(alertOwner && !alertWasInterrupted);
   if (alertOwner && (railWrite != ESP_OK || !railEnabled())) interruptAlert();
 }
 void expired(void *) { auxRail::service(); }

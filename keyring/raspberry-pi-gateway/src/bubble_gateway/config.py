@@ -131,12 +131,14 @@ class GatewayConfig:
                 raise ValueError(f"{name} must be true or false")
             return value == "true"
 
-        def endpoint(name: str, origin_only: bool = False) -> str:
+        def endpoint(name: str) -> str:
             value = required(name).rstrip("/")
             url = urlsplit(value)
             if (url.scheme != "https" or not url.hostname or url.username or url.password
-                    or url.query or url.fragment or (origin_only and url.path)):
-                raise ValueError(f"{name} must be an HTTPS {'origin' if origin_only else 'base URL'}")
+                    or url.query or url.fragment):
+                raise ValueError(f"{name} must be an HTTPS base URL")
+            if name == "M2M_CSE_URL" and url.path not in ("", "/onem2m"):
+                raise ValueError("M2M_CSE_URL must be an HTTPS origin or use the /onem2m proxy path")
             return value
 
         def secret_file(name: str) -> Path:
@@ -218,7 +220,7 @@ class GatewayConfig:
                         (health_container, health_ri)))
         return cls(
             gateway_id=identifier("GATEWAY_ID"), originator=identifier("M2M_ORIGINATOR"),
-            cse_id=identifier("M2M_CSE_ID"), cse_url=endpoint("M2M_CSE_URL", True),
+            cse_id=identifier("M2M_CSE_ID"), cse_url=endpoint("M2M_CSE_URL"),
             api_url=endpoint("PC_API_URL"), ca_file=secret_file("TLS_CA_FILE"),
             cert_file=secret_file("TLS_CERT_FILE"), key_file=secret_file("TLS_KEY_FILE"),
             mqtt_host=required("MQTT_HOST") if mqtt_enabled else "",

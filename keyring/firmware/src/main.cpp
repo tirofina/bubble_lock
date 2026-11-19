@@ -46,7 +46,11 @@ extern "C" esp_err_t __wrap_nvs_flash_init() {
 namespace {
 #if KEYRING_R18_BRINGUP
 #if KEYRING_R18_BRINGUP_DISPLAY == 1
+#if defined(KEYRING_R26_FRONT)
+constexpr char FirmwareRevision[] = "keyring-0.7.25-r26-st7789-bringup";
+#else
 constexpr char FirmwareRevision[] = "keyring-0.7.25-st7789-bringup";
+#endif
 constexpr char BringupPanelField[] = " panel=st7789";
 #elif KEYRING_R18_BRINGUP_DISPLAY == 2
 constexpr char FirmwareRevision[] = "keyring-0.7.25-jd9853-bringup";
@@ -279,8 +283,10 @@ void loadJournal() {
 }
 
 void output(int pin, int level) { digitalWrite(pin, level); pinMode(pin, OUTPUT); }
-bool readState() { return gpio_get_level(static_cast<gpio_num_t>(board::Motor)) != 0; }
+bool readState() { return !board::FrontAssembly && gpio_get_level(static_cast<gpio_num_t>(board::Motor)) != 0; }
+bool mainFaultActive() { return !board::FrontAssembly && digitalRead(board::MainFaultN) == LOW; }
 void stopMotor() {
+  if (board::FrontAssembly) return;
   gpio_set_level(static_cast<gpio_num_t>(board::Motor), 0);
   audio.stop();
   auxRail::alert(false);
@@ -330,6 +336,14 @@ bool startMotor(uint64_t commandDeadlineUs, uint32_t generation, uint32_t subscr
   return started;
 }
 void safePins() {
+  if (board::FrontAssembly) {
+    output(board::LcdBacklight, HIGH);
+    gpio_set_direction(static_cast<gpio_num_t>(board::LcdBacklight), GPIO_MODE_INPUT_OUTPUT);
+    output(board::LcdCs, HIGH);
+    pinMode(board::Confirm, INPUT_PULLUP);
+    pinMode(board::Panic, INPUT_PULLUP);
+    return;
+  }
   output(board::Motor, LOW);
   gpio_set_direction(static_cast<gpio_num_t>(board::Motor), GPIO_MODE_INPUT_OUTPUT);
   output(board::AuxEnable, LOW);
@@ -398,6 +412,7 @@ struct Sensors {
   float battery = 0, volts = 0, xyz[3] = {};
 } sensors;
 void recoverAccelerometer(uint64_t now) {
+  if (board::FrontAssembly) return;
   if ((accelReady && motion.ready()) || now < nextAccelRetry) return;
   const bool configureAxes = !accelReady;
   if (configureAxes) accelReady = configureAccelerometer();
@@ -406,6 +421,7 @@ void recoverAccelerometer(uint64_t now) {
   if ((configureAxes && accelReady) || motionRestored) observationDirty = true;
 }
 void sampleSensors() {
+  if (board::FrontAssembly) { lastSensorRead = uptime(); return; }
   uint8_t data[6] = {};
   sensors.fuel = readRegisters(board::FuelAddress, 0x02, data, 4);
   if (sensors.fuel) {
@@ -584,7 +600,7 @@ void publishObservation(bool buttonTransition = false) {
   StaticJsonDocument<1536> doc;
   const uint32_t observationSequence = sequence++;
   const uint64_t now = uptime();
-  const bool outputState = readState(), fault = digitalRead(board::MainFaultN) == LOW;
+  const bool outputState = readState(), fault = mainFaultActive();
   const uint8_t section = detailSection; detailSection = (detailSection + 1) % 3;
   const char *detail = section == 0 ? "sensors" : section == 1 ? "energy" : "health";
   auto base = [&]() -> JsonObject {
@@ -1095,7 +1111,7 @@ void considerSleep(uint64_t now) {
 
 void setup() {
   safePins();
-  powerState::begin(); // Release sleep holds after writing safe output latches.
+  if (!board::FrontAssembly) powerState::begin(); // Release sleep holds after writing safe output latches.
   safePins();
   Serial.begin(115200); // Native USB CDC only; GPIO43 is reserved for LCD reset.
   if (journalNvsNeedsRecovery) {
@@ -1111,9 +1127,11 @@ void setup() {
   snprintf(bootId, sizeof(bootId), "%08lx%08lx%08lx%08lx", static_cast<unsigned long>(esp_random()),
       static_cast<unsigned long>(esp_random()), static_cast<unsigned long>(esp_random()), static_cast<unsigned long>(esp_random()));
   if (!ObservationOnly) loadJournal();
-  initSensors();
-  headphone.begin(readRegisters, writeRegister);
-  supply.begin(readRegisters, writeRegister16);
+  if (!board::FrontAssembly) {
+    initSensors();
+    headphone.begin(readRegisters, writeRegister);
+    supply.begin(readRegisters, writeRegister16);
+  }
   recoverAccelerometer(uptime());
   if (!ObservationOnly) {
     esp_timer_create_args_t timerArgs = {};
@@ -1139,8 +1157,8 @@ void setup() {
 #if KEYRING_R18_BRINGUP
   // Retain the initial readbacks even if the USB console attaches after setup.
   const int motor = readState();
-  const int aux = gpio_get_level(static_cast<gpio_num_t>(board::AuxEnable));
-  const int fault = digitalRead(board::MainFaultN) == LOW;
+  const int aux = !board::FrontAssembly && gpio_get_level(static_cast<gpio_num_t>(board::AuxEnable));
+  const int fault = mainFaultActive();
   char imageDigest[65] = "unavailable";
   readRunningImageDigest(imageDigest);
   const int length = snprintf(bringupBootRecord, sizeof(bringupBootRecord),
@@ -1159,6 +1177,11 @@ void loop() {
 #if KEYRING_R18_BRINGUP
   if (Serial.available() > 0 && Serial.read() == '?' && bringupBootRecord[0] != '\0') {
     Serial.println(bringupBootRecord);
+    if (board::FrontAssembly) {
+      const auto screen = peripherals.displayTest();
+      Serial.printf("KEYRING display=%s confirmDrawn=%lu panicDrawn=%lu\n", screen.status,
+                    static_cast<unsigned long>(screen.confirmPress), static_cast<unsigned long>(screen.panicPress));
+    }
   }
 #endif
   uint64_t now = uptime();
@@ -1183,7 +1206,7 @@ void loop() {
   portEXIT_CRITICAL(&linkMux);
   if (motorExpiredNow || (motorStopAt && now >= motorStopAt) ||
       (!ObservationOnly && auxRail::alertInterrupted()) ||
-      (!authenticated && readState()) || (digitalRead(board::MainFaultN) == LOW && readState())) {
+      (!authenticated && readState()) || (mainFaultActive() && readState())) {
     stopMotor();
   }
   const bool previousPanic = panic.pressed;
@@ -1193,7 +1216,10 @@ void loop() {
       previousConfirm != (confirm.pressed && !panic.pressed);
   const bool pressedButton = buttonPresses.record(changedConfirm && confirm.pressed,
                                                   changedPanic && panic.pressed, panic.pressed);
-  const bool requestDisplay = KEYRING_DISPLAY_PROFILE && pressedButton && digitalRead(board::MainFaultN) != LOW;
+  const bool requestDisplay = KEYRING_DISPLAY_PROFILE && pressedButton && !mainFaultActive();
+  if (board::FrontAssembly && buttonTransition) {
+    Serial.printf("KEYRING button=%s\n", panic.pressed ? "panic" : confirm.pressed ? "confirm" : "released");
+  }
   if (changedConfirm || changedPanic) observationDirty = true;
   if (confirm.pressed || panic.pressed || changedConfirm || changedPanic) powerState::activity(now);
   if (motion.poll(now)) { powerState::activity(now); observationDirty = true; }
@@ -1209,7 +1235,7 @@ void loop() {
       setGattReadValue(journalRead, {});
     }
   }
-  supply.poll(uptime());
+  if (!board::FrontAssembly) supply.poll(uptime());
   recoverAccelerometer(uptime());
   if (uptime() - lastSensorRead >= board::ObserveMs) { sampleSensors(); observationDirty = true; }
   if (uptime() - lastObservation >= board::ObserveMs) observationDirty = true;
@@ -1225,7 +1251,7 @@ void loop() {
     screen.confirmPress = buttonPresses.confirm;
     screen.panicPress = buttonPresses.panic;
 #endif
-    screen.motor = readState(); screen.fault = digitalRead(board::MainFaultN) == LOW;
+    screen.motor = readState(); screen.fault = mainFaultActive();
     screen.journal = storageHealthy; screen.motionEvents = motion.events();
     screen.supplyValid = supply.valid(uptime()); screen.supplyCurrentMa = supply.reading().currentUa / 1000.0f;
     screen.supplyReadAt = supply.reading().readAt;
