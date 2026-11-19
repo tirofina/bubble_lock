@@ -1,0 +1,18 @@
+
+> privacy-bubble-pc-mobius-core@0.1.0 integration
+> node scripts/run-integration.mjs
+
+{
+  "contractId": "privacy-bubble.integration.v1",
+  "docRevision": "2.0.0",
+  "owner": "PC-MOBIUS-INTEGRATION",
+  "status": "PASS",
+  "consentId": "consent-d396803e-8f20-45b7-b516-269f7d7d8eee",
+  "grantId": "grant-ce618a67-04cb-4ffd-991e-8d93c8a55f11",
+  "mecEventId": "mec-demo-grant-ce618a67-04cb-4ffd-991e-8d93c8a55f11",
+  "handoverEpoch": 1,
+  "flRoundId": "privacy-risk-grant-ce618a67-04cb-4ffd-991e-8d93c8a55f11-r1",
+  "modelHash": "5c3e1d3bee87fef6946ecf7eb0c2c9b86b8605b76b9585709d57a9517dc4a2a8",
+  "mcpRunId": "mcp-run-48eb003f-ffd6-490f-b99a-99f6a6909e1b",
+  "receiptPath": "C:\\Users\\user\\orca\\workspaces\\bubble_lock\\kelp\\pc-mobius\\receipts\\integration-demo.jsonl"
+}

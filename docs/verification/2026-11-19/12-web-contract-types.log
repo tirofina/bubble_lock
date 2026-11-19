@@ -1,0 +1,4 @@
+
+> bubblelock-web-dashboard@0.1.0 typecheck:contract
+> tsc --noEmit -p tsconfig.contract.json
+
