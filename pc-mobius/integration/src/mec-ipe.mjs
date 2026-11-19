@@ -58,12 +58,13 @@ export function parseMecRequest(service, con, { maxDurationSec = 3600 } = {}) {
 }
 
 export class MecIpe {
-  constructor({ cse, originator, aeName = 'mec-ipe', api = 'N.privacy.bubble.mec-ipe', platform, consume = ['Location', 'RNIS'], requesters = {}, readers = [], readerAcop = 35, cipher = null, encryptionKey = null, store = null, authorize = null, clock = () => Date.now(), listen = {}, publicBaseUrl = null, onem2mBaseUrl = null, staleMs = 30000, futureMs = 2000, leaseSec = 120, renewBeforeMs = 10000, renewCheckMs = 5000, maxDurationSec = 3600, locPrecision = 3, retentionMs = 24 * 60 * 60 * 1000, cellLocations = {}, simulation = false, trace = () => {} } = {}) {
+  constructor({ cse, originator, aeName = 'mec-ipe', api = 'N.privacy.bubble.mec-ipe', platform, consume = ['Location', 'RNIS'], requesters = {}, readers = [], readerAcop = 35, cipher = null, encryptionKey = null, store = null, authorize = null, clock = () => Date.now(), listen = {}, publicBaseUrl = null, onem2mBaseUrl = null, staleMs = 30000, futureMs = 2000, leaseSec = 120, renewBeforeMs = 10000, renewCheckMs = 5000, maxDurationSec = 3600, locPrecision = 3, retentionMs = 24 * 60 * 60 * 1000, cellLocations = {}, simulation = false, intakeName = 'mec-ipe-intake', watchName = 'mec-ipe-watch', trace = () => {} } = {}) {
     if (!cse?.endpoint || !originator || !platform) throw new Error('MecIpe needs cse.endpoint, originator and platform');
-    Object.assign(this, { cse: { cseBase: '/Mobius', cseId: null, ...cse }, originator, aeName, api, platform, consume: consume.filter((name) => TYPES[name]), requesters, readers, readerAcop, authorize, clock, listen: { host: '127.0.0.1', port: 0, ...listen }, publicBaseUrl, onem2mBaseUrl, staleMs, futureMs, leaseSec, renewBeforeMs, renewCheckMs, maxDurationSec, locPrecision, retentionMs, cellLocations, simulation, traceSink: trace });
+    Object.assign(this, { cse: { cseBase: '/Mobius', cseId: null, ...cse }, originator, aeName, api, platform, consume: consume.filter((name) => TYPES[name]), requesters, readers, readerAcop, authorize, clock, listen: { host: '127.0.0.1', port: 0, ...listen }, publicBaseUrl, onem2mBaseUrl, staleMs, futureMs, leaseSec, renewBeforeMs, renewCheckMs, maxDurationSec, locPrecision, retentionMs, cellLocations, simulation, intakeName, watchName, traceSink: trace });
     this.store = store ?? new IntegrationStore();
     this.cipher = cipher ?? new MecCipher({ store: { path: null }, encryptionKey });
-    this.client = new Onem2mHttpClient({ endpoint: this.cse.endpoint, cseBase: this.cse.cseBase, originator });
+    // cse.fetchImpl lets an IPE on a MEC host reach an HTTPS CSE with a pinned CA (createMecFetch).
+    this.client = new Onem2mHttpClient({ endpoint: this.cse.endpoint, cseBase: this.cse.cseBase, originator, ...(this.cse.fetchImpl ? { fetchImpl: this.cse.fetchImpl } : {}) });
     this.queues = new Map(); this.pending = new Set(); this.acps = {}; this.paths = {}; this.secrets = new Map();
   }
   /** UE address and callback token stay sealed (AES-256-GCM) in the IPE state file. */
@@ -110,10 +111,10 @@ export class MecIpe {
     }
     this.catalog = await this.discoverAndPublish();
     if (this.platform.appInstanceId) {
-      try { const ready = await this.platform.confirmReady(); this.trace('MEC011_CONFIRM_READY', { status: ready?.status }); }
-      catch (error) { this.trace('MEC011_CONFIRM_READY_REVIEW', { reason: error.code ?? error.message, status: error.status ?? null }); }
+      try { const ready = await this.platform.confirmReady(); this.readyResult = { status: ready?.status ?? null }; this.trace('MEC011_CONFIRM_READY', { status: ready?.status }); }
+      catch (error) { this.readyResult = { status: error.status ?? null, reason: error.code ?? error.message }; this.trace('MEC011_CONFIRM_READY_REVIEW', { reason: error.code ?? error.message, status: error.status ?? null }); }
     }
-    for (const service of this.consume) await this.subscribe(this.paths[service], 'mec-ipe-intake', [3, 4], { kind: 'intake', service });
+    for (const service of this.consume) await this.subscribe(this.paths[service], this.intakeName, [3, 4], { kind: 'intake', service });
     this.timer = setInterval(() => this.background(() => this.renewDue()), this.renewCheckMs); this.timer.unref?.();
     return { aePath: this.aePath, aei: this.ae.aei, paths: this.paths, catalog: this.catalog };
   }
@@ -197,6 +198,8 @@ export class MecIpe {
       const result = await this.onMecNotification(mec[1], mec[2], payload);
       return reply(result.httpStatus, {}, result.httpStatus === 204 ? undefined : { status: result.status });
     }
+    const extra = await this.extraRoute(url.pathname, payload, request.headers);
+    if (extra) return reply(extra.httpStatus ?? 204, {}, extra.body);
     reply(404);
   }
 
@@ -216,11 +219,18 @@ export class MecIpe {
       if (net === 4) this.background(() => this.onRequestDeleted(route.service, cin));
     }
     if (route.kind === 'device' && net === 2) this.background(() => this.onDeviceDeleted(route.devicePath));
+    if (!['intake', 'device'].includes(route.kind)) this.background(() => this.onRouteNotification(route, net, rep));
     return { ok: true };
   }
+  /** Subclass hook: notifications on IPE-owned subscriptions of other kinds. */
+  async onRouteNotification() { return null; }
+  /** Subclass hook: extra HTTP routes (MEC011/MEC021 callbacks); returns { httpStatus, body } or null. */
+  async extraRoute() { return null; }
+  /** Subclass hook: fields added to every status and observation cin (e.g. the serving MEC host). */
+  observationExtras() { return {}; }
 
   async writeStatus(entry) {
-    const con = { ...entry, at: this.iso(), simulation: this.simulation };
+    const con = { ...entry, ...this.observationExtras(), at: this.iso(), simulation: this.simulation };
     const result = await this.client.create(this.paths.status, 4, { 'm2m:cin': { cnf: 'application/json', con, lbl: ['pb:mec-request-status', `pb:state:${entry.state}`], et: m2mTime(this.clock() + this.retentionMs) } });
     return { rsc: result.rsc, ri: result.payload?.['m2m:cin']?.ri ?? null };
   }
@@ -289,7 +299,7 @@ export class MecIpe {
   async ensureDeviceWatch(devicePath) {
     if (this.store.get('ipeDevices', devicePath)?.state === 'ACTIVE') return;
     try {
-      const watch = await this.subscribe(devicePath, 'mec-ipe-watch', [2], { kind: 'device', devicePath });
+      const watch = await this.subscribe(devicePath, this.watchName, [2], { kind: 'device', devicePath });
       await this.store.put('ipeDevices', devicePath, { devicePath, state: 'ACTIVE', subscriptionPath: watch.subscriptionPath });
     } catch (error) {
       await this.store.put('ipeDevices', devicePath, { devicePath, state: 'WATCH_UNAVAILABLE', rsc: error.rsc ?? null });
@@ -303,10 +313,10 @@ export class MecIpe {
     for (const item of affected) await this.serial(item.key, () => this.teardown(item.key, 'device-deregistered'));
     return affected.length;
   }
-  async teardown(key, reason) {
+  async teardown(key, reason, { finalState = 'DELETED' } = {}) {
     const record = this.store.get('ipeRequests', key);
     if (!record || !['ACTIVE', 'CREATING', 'DELETE_REVIEW'].includes(record.state)) return null;
-    let providerStatus = null; let state = 'DELETED';
+    let providerStatus = null; let state = finalState;
     // Callbacks that arrive while the provider DELETE is in flight are tombstoned at once.
     await this.store.put('ipeRequests', key, { ...record, state: 'DELETING' });
     if (record.resourceUrl) {
@@ -314,7 +324,7 @@ export class MecIpe {
       catch (error) { providerStatus = error.status ?? null; state = 'DELETE_REVIEW'; }
     }
     await this.store.put('ipeRequests', key, { ...record, state, reason, deletedAt: this.iso(), providerStatus });
-    if (state === 'DELETED') await this.store.put('ipeRoutes', record.routeHash, { kind: 'mec', key, service: record.service, routeHash: record.routeHash, state: 'TOMBSTONED' });
+    if (state === finalState) await this.store.put('ipeRoutes', record.routeHash, { kind: 'mec', key, service: record.service, routeHash: record.routeHash, state: 'TOMBSTONED' });
     this.trace('MEC_SUBSCRIPTION_DELETED', { service: record.service, requestId: record.requestId, mecSubscriptionId: record.mecSubscriptionId, reason, providerStatus, state });
     await this.receipt('MEC_IPE_SUBSCRIPTION_DELETED', { service: record.service, requestId: record.requestId, mecSubscriptionId: record.mecSubscriptionId, reason, providerStatus });
     try { await this.writeStatus({ service: record.service, requestId: record.requestId, deviceId: record.deviceId, state, reason, mecSubscriptionId: record.mecSubscriptionId, providerStatus }); } catch { /* status container may already be gone */ }
@@ -405,7 +415,7 @@ export class MecIpe {
   }
   async writeObservation(record, note, eventKey, sourceHash) {
     const receivedAt = this.iso();
-    const base = { deviceId: record.deviceId, requestId: record.requestId, mecSubscriptionId: record.mecSubscriptionId, eventKey, sourceHash, notificationType: note.notificationType, observedAt: note.observedAt, receivedAt, clockQuality: 'VERIFIED', intent: record.intent, simulation: this.simulation };
+    const base = { deviceId: record.deviceId, requestId: record.requestId, mecSubscriptionId: record.mecSubscriptionId, eventKey, sourceHash, notificationType: note.notificationType, observedAt: note.observedAt, receivedAt, clockQuality: 'VERIFIED', intent: record.intent, ...this.observationExtras(), simulation: this.simulation };
     let con; let loc = null;
     if (record.service === 'Location') {
       const precise = this.cipher.seal({ lat: note.location.lat, lon: note.location.lon, accuracyM: note.location.accuracyM }, `${record.deviceId}:${eventKey}`);
