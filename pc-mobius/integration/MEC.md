@@ -91,3 +91,27 @@ MEC reconciler는 승인 정책의 `trigger.kind`를 `HandoverCoordinator.consid
 ## 보관 정산
 
 MEC 상세·dedup·watermark·outbox는 24시간 만료를 사용한다. 공급자 cleanup 완료 구독은 request ciphertext를 정리하고 24시간 뒤 구독 상세와 tombstone을 삭제한다. cleanup 진행 중 tombstone은 후속 정산에 보존한다. `MEC_RETENTION_EXPIRED`는 삭제 개수·collection별 개수·삭제 키 집합 hash를 기록한다. 30일 감사 metadata와 PostgreSQL receipt outbox 정리는 공통 `RetentionService`가 담당한다.
+
+## oneM2M IPE 경로 (R15/R16)
+
+`src/mec-ipe.mjs`의 `MecIpe`는 CSE에 AE로 등록하는 MEC 연동 프록시임. MEC011 서비스 목록을 `mec:mecSvc` flexContainer(cnd `org.etsi.mec.ipe.mecService`)와 AE 아래 `mecServiceGroup`으로 게시함. 요청 컨테이너 `locationRequests`, `rnisRequests`에 들어온 cin을 MEC013 구독(periodic, userTracking, zone)과 MEC012 CellChange 구독으로 바꾸고, MEC 알림을 `<device-AE>/location`(loc 포함), `<device-AE>/rnis` cin으로 기록함. TR-0086, TR-0077의 요청 컨테이너 방식을 따름.
+
+| 파일 | 동작 |
+| --- | --- |
+| `src/mec-platform-client.mjs` | `MEC_BASE_URL`, `MEC_SANDBOX_NAME`, `MEC_MEP`, `MEC_CA_FILE` 설정, 고정 CA TLS, MEC011 분류, Location v2/v3 경로, MEC012/MEC013 알림 정규화 |
+| `src/mec-ipe.mjs` | IPE AE와 ACP, 요청 cin 검증(생성자 허용 목록, grant revision), 구독 생성/갱신/삭제, 중복/지연/미래/순서 검사, 장치 AE 삭제 감시 |
+| `src/mec-onem2m-consumer.mjs` | 정책 AE가 location/rnis 컨테이너를 구독하고 MEC013 위치와 MEC012 셀을 결합해 `MecPolicyReconciler`를 호출함, loc geo-query |
+| `src/onem2m-http-client.mjs` | AE-ID originator 단위 oneM2M HTTP 클라이언트, geo-query 필터 |
+| `src/mec-sandbox-simulator.mjs` | 로컬 MEC 샌드박스 시뮬레이터(`simulation: true`) |
+| `scripts/run-mec-ipe.mjs` | 실제 샌드박스용 IPE 프로세스, `--discover-only` 목록 점검 |
+| `scripts/run-mec-ipe-real.mjs` | 실제 Mobius4 두 개와 시뮬레이터 대상 양방향 trace |
+
+정밀 좌표는 AES-256-GCM 암호문으로 cin에 담고, `loc`에는 소수 셋째 자리 격자 좌표를 기록함. UE 주소와 callback token은 IPE 상태 파일 안에서 같은 방식으로 봉인함. 런타임은 `core.mec.path`(또는 `BUBBLE_MEC_PATH`)로 경로를 고름. `direct`는 기존 `/v1/mec/subscriptions` 계약 호환용 기본값이고, `onem2m`은 직접 구독 API를 닫고 `core.mec.onem2m` 설정으로 `MecOneM2mConsumer`를 시작함.
+
+```powershell
+cd pc-mobius
+node --test test/mec-ipe.test.mjs
+npm run integration:mec-ipe-real
+```
+
+실행 기록은 `docs/verification-evidence/2026-11-19/mec-ipe-real-cse.json`과 같은 폴더의 trace 파일에 있음. 샌드박스 전환 절차는 `docs/rubric-work/R16-sandbox-cutover.md`에 있음.

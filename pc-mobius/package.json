@@ -13,6 +13,8 @@
     "replay-receipt": "node scripts/replay-receipt.mjs",
     "integration": "node scripts/run-integration.mjs",
     "integration:mec": "node scripts/run-mec-verification.mjs",
+    "integration:mec-ipe": "node scripts/run-mec-ipe.mjs",
+    "integration:mec-ipe-real": "node scripts/run-mec-ipe-real.mjs",
     "fl:verify": "node scripts/run-fl-verification.mjs",
     "fl:worker": "node scripts/run-fl-worker.mjs",
     "fl:cse": "node scripts/run-fl-cse-verification.mjs",

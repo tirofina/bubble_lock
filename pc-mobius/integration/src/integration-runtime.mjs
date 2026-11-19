@@ -4,6 +4,8 @@ import { IntegrationStore } from './integration-store.mjs';
 import { PostgresIntegrationStore } from './postgres-integration-store.mjs';
 import { PolicyService } from './policy-service.mjs';
 import { MecAdapter, MecCallbackIngress, MecPolicyReconciler, MecSubscriptionManager } from './mec-adapter.mjs';
+import { MecOneM2mConsumer } from './mec-onem2m-consumer.mjs';
+import { MecCipher } from './mec-state.mjs';
 import { HandoverCoordinator } from './handover-coordinator.mjs';
 import { FlCoordinator } from './fl-coordinator.mjs';
 import { FlOneM2mPublisher } from './fl-publisher.mjs';
@@ -37,6 +39,18 @@ export async function createIntegrationRuntime({ statePath = null, receiptPath =
   const mecIngress = new MecCallbackIngress({ store, policyService, subscriptions: mecSubscriptions, clock, locationAdapter, rnisAdapter });
   const reconciler = new MecPolicyReconciler({ store, policyService, handoverCoordinator, clock });
   mecIngress.onEvent((event) => reconciler.reconcileApprovedIntent(event));
+  // MEC path: 'direct' keeps the PC-to-MEC subscription API; 'onem2m' consumes MEC only through the IPE resources on the CSE.
+  const mecPath = core.mec?.path ?? process.env.BUBBLE_MEC_PATH ?? 'direct';
+  if (!['direct', 'onem2m'].includes(mecPath)) throw new Error('core.mec.path must be direct or onem2m');
+  let mecConsumer = null;
+  if (mecPath === 'onem2m' && core.mec?.onem2m) {
+    const settings = core.mec.onem2m;
+    const cipher = new MecCipher({ store: { path: null }, encryptionKey: settings.encryptionKey ?? process.env.MEC_IPE_ENCRYPTION_KEY });
+    await cipher.ready;
+    mecConsumer = new MecOneM2mConsumer({ ...settings, cipher, reconciler, store, handoverCoordinator });
+    await mecConsumer.start();
+    for (const device of settings.devices ?? []) await mecConsumer.watchDevice(device);
+  }
   const flPublisher = core.fl?.publication ? new FlOneM2mPublisher({ fetchImpl, ...core.fl.publication }) : null;
   const flCoordinator = new FlCoordinator({ store, clock, ...(core.fl ?? {}), ...(flPublisher ? { publisher: (input) => flPublisher.publish(input) } : {}) });
   const mcpOrchestrator = new McpOrchestrator({ store, policyService, clock });
@@ -58,7 +72,7 @@ export async function createIntegrationRuntime({ statePath = null, receiptPath =
   portalLocations.start();
   const retention = new RetentionService({ store, clock, receiptJournal, ...(core.retention ?? {}) });
   if (core.retention?.autoPrune !== false) retention.start();
-  const api = new IntegrationApiGateway({ policyService, mecIngress, mecSubscriptions, handoverCoordinator, flCoordinator, mcpOrchestrator, gatewayControl, gatewayRegistration, portalService, portalLocations, clock });
+  const api = new IntegrationApiGateway({ policyService, mecIngress, mecSubscriptions: mecPath === 'direct' ? mecSubscriptions : null, handoverCoordinator, flCoordinator, mcpOrchestrator, gatewayControl, gatewayRegistration, portalService, portalLocations, clock });
   let gatewayBridge = null;
   if (mqttClient) {
     gatewayBridge = new GatewayBridge({ mqttClient, fetchImpl, receiptJournal, clock, ...core });
@@ -70,11 +84,11 @@ export async function createIntegrationRuntime({ statePath = null, receiptPath =
     });
   }
   let mecTimer;
-  if (core.mec?.autoReconcile !== false && (locationAdapter.endpoint || rnisAdapter.endpoint || locationAdapter.platformRoot || rnisAdapter.platformRoot)) {
+  if (mecPath === 'direct' && core.mec?.autoReconcile !== false && (locationAdapter.endpoint || rnisAdapter.endpoint || locationAdapter.platformRoot || rnisAdapter.platformRoot)) {
     mecSubscriptions.start();
     mecTimer = setInterval(() => mecIngress.drainOutbox().then(() => mecIngress.prune()).catch(() => {}), 1000);
     mecTimer.unref?.();
   }
-  const close = async () => { mecSubscriptions.stop(); portalLocations.close(); retention.close(); clearInterval(mecTimer); await mcpOrchestrator.close(); await store.close(); };
-  return { store, receiptJournal, policyService, mecIngress, mecSubscriptions, reconciler, handoverCoordinator, flCoordinator, mcpOrchestrator, gatewayControl, gatewayRegistration, portalService, portalLocations, locationPrivacy,deviceIncidents, retention, api, gatewayBridge, close };
+  const close = async () => { mecSubscriptions.stop(); await mecConsumer?.stop(); portalLocations.close(); retention.close(); clearInterval(mecTimer); await mcpOrchestrator.close(); await store.close(); };
+  return { store, receiptJournal, policyService, mecIngress, mecSubscriptions, mecPath, mecConsumer, reconciler, handoverCoordinator, flCoordinator, mcpOrchestrator, gatewayControl, gatewayRegistration, portalService, portalLocations, locationPrivacy,deviceIncidents, retention, api, gatewayBridge, close };
 }
