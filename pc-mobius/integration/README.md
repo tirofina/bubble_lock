@@ -26,7 +26,8 @@ PC-MOBIUS-INTEGRATION
 | `src/mec-adapter.mjs` | Location·RNIS adapter, callback ingress, event dedup, geofence·health reconcile, 양방향 trace | R13, R15, R16 |
 | `src/handover-coordinator.mjs` | Edge-A/B inventory, health/load selection, drain→active, epoch, subscription·security context, rollback | R12, R13 |
 | `src/fl-coordinator.mjs` | ESTIMED VM selection, multi-round update, consent revision, artifact fence, checkpoint·recovery | R14 |
-| `src/mcp-orchestrator.mjs` | oneM2M·MEC·Audit server registry, approval hash, persistent run, checkpoint·resume, audit | R17 |
+| `src/mcp-orchestrator.mjs` | oneM2M·MEC·Audit server registry, approval hash, persistent run, checkpoint·resume, audit, LLM agent workflow ledger (`McpAgentWorkflow`) | R17 |
+| `src/mcp-agent-tools.mjs` | LLM agent profile: session-bound MCP context, real oneM2M SDT discovery/ACP/grant adapter, MEC Location adapter, guardian approvalHash gate | R17 |
 | `src/api-gateway.mjs` | `/v1` 정책·MEC·handover·FL·MCP API 및 idempotency route | R10~R17 |
 | `src/gateway-control.mjs` | 인증서·장치 등록, canonical 명령 발급, grant/claim/epoch 승인 | R03, R10 |
 | `src/api-server.mjs` | TLS 1.3, mTLS Gateway 및 OIDC 사용자 principal 연결 | R10 |

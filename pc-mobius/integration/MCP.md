@@ -45,3 +45,32 @@ node --test test/mcp-wire.test.mjs
 runner는 `.local/mcp-verification/<실행ID>/report.json`, wire trace, tool commit receipt, 중앙 run snapshot, 시험 로그와 SHA-256을 생성한다. 기록 범위는 `LOCAL_HTTP_REAL_WIRE`, 서버 수는 3개, domain adapter는 `TEST_FIXTURES`이다. R17/A08/A19/W15/W16에 대해 승인 전 대기, 원격 효과 commit 뒤 장애와 재시작, grant 회수·만료, schema·지시문 주입, timeout, 동시 worker lease, JSON/SSE 결속과 두 버전의 협상·session header·입력 오류를 시험한다. 2026-11-10 실행은 9개 시험 PASS이며 실행 ID는 `1794303295685-ba759725`다.
 
 운영 IdP·CSE·MEC endpoint의 계정/인증서와 실물 Gateway 상태는 배포 설정을 채운 뒤 해당 환경의 receipt로 연결한다. 도구의 wire 계약은 [MCP tools](https://modelcontextprotocol.io/specification/2025-11-25/server/tools)를 따른다.
+
+## LLM agent 프로필
+
+[agent 도구 계약](../contracts/mcp-agent-tools.v1.json)(`privacy-bubble.mcp-agent.v1`)은 Claude Code 같은 범용 MCP client가 직접 호출하는 도구 8개를 정의한다. 이 프로필의 서버는 client가 보낸 `_meta`를 무시하고, 인증된 run token에서 runId, grant revision, audience, deadline, operationKey를 만든다(`createMcpHttpServer`의 `resolveContext`). 쓰기 도구의 operationKey는 runId와 입력의 hash이므로 같은 쓰기 호출은 저장된 결과를 다시 돌려준다. 읽기 도구는 호출마다 새 operationKey를 쓴다. 도구 오류는 reason code가 붙은 `isError` 결과로 돌아가고, 입력 schema 오류에는 AJV 경로와 메시지가 붙는다.
+
+| 서버 | 도구 | 실제 연결 |
+|---|---|---|
+| oneM2M | `discoverDevices` | `GET <household AE>?fu=1&ty=28&cnd=org.onem2m.common.moduleclass.binarySwitch`로 SDT flexContainer를 찾고 부모 container label에서 deviceId를 읽는다 |
+| oneM2M | `readGrant` | 중앙 grant revision, location container `acpi`, grants container의 `VISITOR_GRANT` contentInstance |
+| oneM2M | `draftPolicy` | run 상태에 draft, draftHash, 최소 권한 findings를 저장한다. CSE 접근 권한은 이 단계에서 그대로 유지된다 |
+| oneM2M | `requestGuardianApproval` | household approvals container에 `APPROVAL_REQUEST` contentInstance를 만든다 |
+| oneM2M | `applyApprovedPolicy` | guardian approvalHash를 검사한 뒤 visitor ACP(`acop` 2, `et`=notAfter)를 만들고 location container `acpi`에 붙이며, grants container에 payloadHash가 있는 `VISITOR_GRANT`를 기록한다 |
+| MEC | `reconcileApprovedIntent` | `MecAdapter`로 MEC 013 service discovery와 `queries/users`를 호출하고 incident 영역을 판정한 뒤 소수 셋째 자리 좌표 sample을 location container에 기록한다 |
+| Audit | `readExecution` | completedSteps, nextStep, guardian 승인 상태, resumedFrom |
+| Audit | `appendRunEvidence` | checkpoint output hash, approvalHash, ACP와 grant 경로를 묶은 evidenceHash를 audit container에 기록하고 run을 완료한다 |
+
+`McpAgentWorkflow`(`mcp-orchestrator.mjs`)는 쓰기 단계를 계약 순서대로 한 번씩 실행하고, 각 commit을 dedup 기록과 같은 store transaction 안에서 checkpoint로 저장한다. 순서를 벗어난 호출에는 `ROUTE_ORDER`와 nextStep을 돌려준다. agent token의 scope는 서버별 도구 scope이고 `policy:approve`는 guardian principal에만 있다. guardian 단계는 agent session 밖에서 approvals container의 요청 기록을 guardian originator로 읽고, 저장된 draftHash와 최소 권한 findings를 확인한 뒤 approvalHash를 만든다. `applyApprovedPolicy`는 현재 draftHash에 결속된 guardian approvalHash만 받고, 다른 값에는 `APPROVAL_HASH_MISMATCH`를 돌려주며 그 시도를 run 상태의 `approvalChecks`에 기록한다. guardian이 거절하면 agent는 새 draft와 새 승인 요청으로 진행한다.
+
+run 상태는 `.local/mcp-llm-agent/<run>/agent-state.json`(IntegrationStore, fsync 뒤 rename)에 있다. 새 runner는 같은 파일을 열어 `beginInvocation`으로 resumedFrom(cursor, completedSteps, nextStep)을 기록하고, 새 agent session은 `readExecution`으로 다음 단계를 받는다.
+
+```powershell
+$env:MOBIUS4_ROOT = "<mobius4 checkout>"
+npm --prefix pc-mobius run mcp:agent                            # claude -p, receipt는 docs/verification-evidence/2026-11-19
+node pc-mobius/scripts/run-mcp-llm-agent.mjs --agent=scripted   # 같은 흐름을 scripted MCP client로 실행, 결과는 .local run 폴더
+```
+
+runner는 Mobius4 4.24.5를 run 전용 PostgreSQL DB로 시작하고 household, guardian, visitor, stranger AE와 keyring container 2개(SDT, location, grants)를 만든다. MEC Location은 로컬 simulator(`simulation: true`)이다. 첫 invocation은 `requestGuardianApproval` commit 직후 runner process tree(MCP 서버 3개와 claude)를 `taskkill /F /T`로 종료한다. 이어서 guardian 단계, runner의 mismatched hash probe 2건, 두 번째 invocation 순서로 진행한다. Claude Code는 `--tools ""`, `--strict-mcp-config`, `--allowedTools`(MCP 도구 8개), `--permission-mode dontAsk`, `--setting-sources local`, `--no-session-persistence`, 짧은 `--system-prompt`로 실행하며 model은 사용자 기본값을 따른다. transcript는 token, CSE admin originator, DB 비밀번호를 치환하고 계정 rate limit 줄을 제외해 저장한다.
+
+2026-11-19 실행 receipt [mcp-llm-agent-real-cse.json](../../docs/verification-evidence/2026-11-19/mcp-llm-agent-real-cse.json)은 조건 8개 PASS이다. 첫 invocation은 cursor 4에서 종료했고, 두 번째 invocation은 `applyApprovedPolicy`부터 진행해 앞 단계 재실행 0건으로 완료했다. visitor originator의 location `la` 조회는 2000, SDT와 다른 keyring 조회와 location 쓰기는 4103이다. 단위 시험은 `node --test test/mcp-agent.test.mjs`(4건)이다.

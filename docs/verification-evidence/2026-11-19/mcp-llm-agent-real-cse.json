@@ -1,0 +1,591 @@
+{
+  "receiptId": "mcp-llm-agent-real-cse",
+  "status": "PASS",
+  "generatedAt": "2026-11-19T11:50:22.169Z",
+  "docRevision": "2.0.0",
+  "rubricIds": [
+    "R17"
+  ],
+  "runId": "agent-run-c573064e-159a-4653-b1a1-1dd9e3a74e46",
+  "command": "node pc-mobius/scripts/run-mcp-llm-agent.mjs --agent=claude",
+  "simulation": true,
+  "simulationScope": {
+    "cse": false,
+    "mcpTransport": false,
+    "llmAgent": false,
+    "mecLocationService": true,
+    "guardianDecision": "scripted guardian principal",
+    "hardware": false
+  },
+  "transport": {
+    "agentToMcp": "MCP Streamable HTTP 2025-11-25 over loopback HTTP with run-bound bearer tokens",
+    "mcpToCse": "oneM2M HTTP binding RVI 4 over loopback HTTP",
+    "mcpToMec": "ETSI MEC 013 Location REST via MecAdapter to the local simulator"
+  },
+  "cseVersion": "4.24.5",
+  "cseSourceRevision": "3da4d8523694b5077e348ab1c9e769fb3a30df24",
+  "postgres": "PostgreSQL 17.6 on x86_64-windows",
+  "hostCount": 1,
+  "host": "single Windows PC, all processes on 127.0.0.1",
+  "contract": {
+    "id": "privacy-bubble.mcp-agent.v1",
+    "sha256": "cc91c402f9dc4215da572b7817789066744bf08cd340cafced0a0e3055e1d11d"
+  },
+  "agent": {
+    "kind": "claude",
+    "client": "claude-code 2.1.323 (Claude Code) headless -p stream-json",
+    "model": "claude-opus-5-5",
+    "builtInTools": "disabled (--tools \"\")",
+    "allowedTools": [
+      "mcp__onem2m__discoverDevices",
+      "mcp__onem2m__readGrant",
+      "mcp__onem2m__draftPolicy",
+      "mcp__onem2m__requestGuardianApproval",
+      "mcp__onem2m__applyApprovedPolicy",
+      "mcp__mec__reconcileApprovedIntent",
+      "mcp__audit__readExecution",
+      "mcp__audit__appendRunEvidence"
+    ],
+    "permissionMode": "dontAsk",
+    "strictMcpConfig": true,
+    "invocations": [
+      {
+        "invocation": 1,
+        "mode": "start",
+        "startedAt": "2026-11-19T11:49:44.497Z",
+        "endedAt": "2026-11-19T11:49:56.458Z",
+        "interruptedAt": "2026-11-19T11:49:56.458Z",
+        "resumedFrom": null,
+        "result": null,
+        "toolUses": [
+          "mcp__audit__readExecution",
+          "mcp__onem2m__discoverDevices",
+          "mcp__onem2m__readGrant",
+          "mcp__onem2m__draftPolicy",
+          "mcp__onem2m__requestGuardianApproval"
+        ]
+      },
+      {
+        "invocation": 2,
+        "mode": "resume",
+        "startedAt": "2026-11-19T11:49:58.780Z",
+        "endedAt": "2026-11-19T11:50:22.127Z",
+        "interruptedAt": null,
+        "resumedFrom": {
+          "invocation": 1,
+          "cursor": 4,
+          "completedSteps": [
+            "discoverDevices",
+            "readGrant",
+            "draftPolicy",
+            "requestGuardianApproval"
+          ],
+          "nextStep": "applyApprovedPolicy"
+        },
+        "result": {
+          "subtype": "success",
+          "isError": false,
+          "numTurns": 6,
+          "durationMs": 22282,
+          "totalCostUsd": 0.0605992
+        },
+        "toolUses": [
+          "mcp__audit__readExecution",
+          "mcp__onem2m__applyApprovedPolicy",
+          "mcp__mec__reconcileApprovedIntent",
+          "mcp__audit__appendRunEvidence",
+          "mcp__audit__appendRunEvidence"
+        ]
+      }
+    ]
+  },
+  "servers": [
+    {
+      "serverId": "oneM2M",
+      "audience": "privacy-bubble-mcp-onem2m",
+      "tools": [
+        "discoverDevices",
+        "readGrant",
+        "draftPolicy",
+        "requestGuardianApproval",
+        "applyApprovedPolicy"
+      ],
+      "toolsCalled": {
+        "discoverDevices": {
+          "agent": {
+            "committed": 1,
+            "replayed": 0,
+            "review": 0
+          },
+          "runner-probe": {
+            "committed": 0,
+            "replayed": 0,
+            "review": 0
+          }
+        },
+        "readGrant": {
+          "agent": {
+            "committed": 1,
+            "replayed": 0,
+            "review": 0
+          },
+          "runner-probe": {
+            "committed": 0,
+            "replayed": 0,
+            "review": 0
+          }
+        },
+        "draftPolicy": {
+          "agent": {
+            "committed": 1,
+            "replayed": 0,
+            "review": 0
+          },
+          "runner-probe": {
+            "committed": 0,
+            "replayed": 0,
+            "review": 0
+          }
+        },
+        "requestGuardianApproval": {
+          "agent": {
+            "committed": 1,
+            "replayed": 0,
+            "review": 0
+          },
+          "runner-probe": {
+            "committed": 0,
+            "replayed": 0,
+            "review": 0
+          }
+        },
+        "applyApprovedPolicy": {
+          "agent": {
+            "committed": 1,
+            "replayed": 0,
+            "review": 0
+          },
+          "runner-probe": {
+            "committed": 0,
+            "replayed": 0,
+            "review": 2
+          }
+        }
+      }
+    },
+    {
+      "serverId": "MEC",
+      "audience": "privacy-bubble-mcp-mec",
+      "tools": [
+        "reconcileApprovedIntent"
+      ],
+      "toolsCalled": {
+        "reconcileApprovedIntent": {
+          "agent": {
+            "committed": 1,
+            "replayed": 0,
+            "review": 0
+          },
+          "runner-probe": {
+            "committed": 0,
+            "replayed": 0,
+            "review": 0
+          }
+        }
+      }
+    },
+    {
+      "serverId": "Audit",
+      "audience": "privacy-bubble-mcp-audit",
+      "tools": [
+        "readExecution",
+        "appendRunEvidence"
+      ],
+      "toolsCalled": {
+        "readExecution": {
+          "agent": {
+            "committed": 2,
+            "replayed": 0,
+            "review": 0
+          },
+          "runner-probe": {
+            "committed": 1,
+            "replayed": 0,
+            "review": 0
+          }
+        },
+        "appendRunEvidence": {
+          "agent": {
+            "committed": 1,
+            "replayed": 0,
+            "review": 0
+          },
+          "runner-probe": {
+            "committed": 0,
+            "replayed": 0,
+            "review": 0
+          }
+        }
+      }
+    }
+  ],
+  "toolCallsInOrder": [
+    {
+      "invocation": 1,
+      "actor": "agent",
+      "serverId": "Audit",
+      "tool": "readExecution",
+      "outcome": "COMMITTED"
+    },
+    {
+      "invocation": 1,
+      "actor": "agent",
+      "serverId": "oneM2M",
+      "tool": "discoverDevices",
+      "outcome": "COMMITTED"
+    },
+    {
+      "invocation": 1,
+      "actor": "agent",
+      "serverId": "oneM2M",
+      "tool": "readGrant",
+      "outcome": "COMMITTED"
+    },
+    {
+      "invocation": 1,
+      "actor": "agent",
+      "serverId": "oneM2M",
+      "tool": "draftPolicy",
+      "outcome": "COMMITTED"
+    },
+    {
+      "invocation": 1,
+      "actor": "agent",
+      "serverId": "oneM2M",
+      "tool": "requestGuardianApproval",
+      "outcome": "COMMITTED"
+    },
+    {
+      "invocation": 2,
+      "actor": "runner-probe",
+      "serverId": "Audit",
+      "tool": "readExecution",
+      "outcome": "COMMITTED"
+    },
+    {
+      "invocation": 2,
+      "actor": "runner-probe",
+      "serverId": "oneM2M",
+      "tool": "applyApprovedPolicy",
+      "outcome": "REVIEW:APPROVAL_HASH_MISMATCH"
+    },
+    {
+      "invocation": 2,
+      "actor": "runner-probe",
+      "serverId": "oneM2M",
+      "tool": "applyApprovedPolicy",
+      "outcome": "REVIEW:APPROVAL_HASH_MISMATCH"
+    },
+    {
+      "invocation": 2,
+      "actor": "agent",
+      "serverId": "Audit",
+      "tool": "readExecution",
+      "outcome": "COMMITTED"
+    },
+    {
+      "invocation": 2,
+      "actor": "agent",
+      "serverId": "oneM2M",
+      "tool": "applyApprovedPolicy",
+      "outcome": "COMMITTED"
+    },
+    {
+      "invocation": 2,
+      "actor": "agent",
+      "serverId": "MEC",
+      "tool": "reconcileApprovedIntent",
+      "outcome": "COMMITTED"
+    },
+    {
+      "invocation": 2,
+      "actor": "agent",
+      "serverId": "Audit",
+      "tool": "appendRunEvidence",
+      "outcome": "COMMITTED"
+    }
+  ],
+  "approval": {
+    "gate": {
+      "tool": "applyApprovedPolicy",
+      "requires": "guardian approvalHash for the exact current draftHash",
+      "approver": "guardian principal outside the MCP agent session"
+    },
+    "draft": {
+      "draftId": "draft-ed60b38eff561e2e",
+      "draftHash": "60f6aa7050592de98d4b9dab5b7c5096abb30d96c52321aa7ef12f3326cca88f",
+      "acop": 2,
+      "resource": "location",
+      "operations": [
+        "RETRIEVE"
+      ],
+      "durationMinutes": 30,
+      "findings": []
+    },
+    "guardian": {
+      "principalId": "guardian-g1",
+      "mode": "SCRIPTED_GUARDIAN_PRINCIPAL",
+      "reviewedRecordPath": "/Mobius/pb-hh-mwnhmqyc1586/approvals/approval-048d894cae559b28",
+      "reviewedDraftHash": "60f6aa7050592de98d4b9dab5b7c5096abb30d96c52321aa7ef12f3326cca88f",
+      "findings": [],
+      "decision": "APPROVE",
+      "approvalHash": "8e18e99299374f027f4c298d762e4d1b8e2eab69e5976989f5da32b96c3cb3e2",
+      "decisionRecordPath": "/Mobius/pb-hh-mwnhmqyc1586/approvals/decision-048d894cae559b28",
+      "decidedAt": "2026-11-19T11:49:58.576Z"
+    },
+    "runnerNegativeProbes": {
+      "approvalStatusBeforeProbe": "APPROVED",
+      "probes": [
+        {
+          "name": "tampered-approval-hash",
+          "tamper": "guardian approvalHash with the last hex digit changed",
+          "isError": true,
+          "reason": "APPROVAL_HASH_MISMATCH",
+          "presentedHashPrefix": "8e18e9929937",
+          "presentedHashSuffix": "b3e0"
+        },
+        {
+          "name": "draft-hash-as-approval-hash",
+          "tamper": "draftHash presented in place of the guardian approvalHash",
+          "isError": true,
+          "reason": "APPROVAL_HASH_MISMATCH",
+          "presentedHashPrefix": "60f6aa705059",
+          "presentedHashSuffix": "a88f"
+        }
+      ]
+    },
+    "checks": [
+      {
+        "result": "REJECTED",
+        "reason": "APPROVAL_HASH_MISMATCH",
+        "draftId": "draft-ed60b38eff561e2e",
+        "presentedHashPrefix": "8e18e9929937",
+        "invocation": 2,
+        "at": "2026-11-19T11:49:58.886Z"
+      },
+      {
+        "result": "REJECTED",
+        "reason": "APPROVAL_HASH_MISMATCH",
+        "draftId": "draft-ed60b38eff561e2e",
+        "presentedHashPrefix": "60f6aa705059",
+        "invocation": 2,
+        "at": "2026-11-19T11:49:58.891Z"
+      },
+      {
+        "result": "ACCEPTED",
+        "reason": "APPROVAL_HASH_MATCH",
+        "draftId": "draft-ed60b38eff561e2e",
+        "presentedHashPrefix": "8e18e9929937",
+        "invocation": 2,
+        "at": "2026-11-19T11:50:04.908Z"
+      }
+    ]
+  },
+  "interruption": {
+    "method": "taskkill /F /T on the runner process tree (MCP servers and agent)",
+    "trigger": "TOOL_COMMITTED oneM2M.requestGuardianApproval",
+    "killedAt": "2026-11-19T11:49:56.458Z",
+    "taskkillStatus": 0,
+    "runnerExitCode": 1,
+    "runnerAliveAfterKill": false,
+    "agentAliveAfterKill": false,
+    "cursorAtInterruption": 4
+  },
+  "resumePoint": {
+    "invocation": 1,
+    "cursor": 4,
+    "completedSteps": [
+      "discoverDevices",
+      "readGrant",
+      "draftPolicy",
+      "requestGuardianApproval"
+    ],
+    "nextStep": "applyApprovedPolicy"
+  },
+  "firstMutatingToolAfterResume": "applyApprovedPolicy",
+  "repeatedStepsAfterResume": [],
+  "repeatedReadOnlyCalls": [],
+  "checkpoints": [
+    {
+      "index": 0,
+      "step": "discoverDevices",
+      "cursor": 1,
+      "invocation": 1,
+      "outputHash": "e93d36f874ad97fd2204accc837992094e0cdf6a69a05e8d15ef8b12a2afb8fc"
+    },
+    {
+      "index": 1,
+      "step": "readGrant",
+      "cursor": 2,
+      "invocation": 1,
+      "outputHash": "bc432e0f6cf279807c2577a3c5433c96b86b0051bf95b0b9ae40e0db3b183647"
+    },
+    {
+      "index": 2,
+      "step": "draftPolicy",
+      "cursor": 3,
+      "invocation": 1,
+      "outputHash": "38b61fffc41124b2184cb3188274277cf4623cffdee2d747c188a139910f59cb"
+    },
+    {
+      "index": 3,
+      "step": "requestGuardianApproval",
+      "cursor": 4,
+      "invocation": 1,
+      "outputHash": "c454cc25061940df39f592cca85d8bfef1327f0576c5282f3f308446f407b7b3"
+    },
+    {
+      "index": 4,
+      "step": "applyApprovedPolicy",
+      "cursor": 5,
+      "invocation": 2,
+      "outputHash": "bfce0e44eaf52af3f80a929517b6577cb67bb3a43ac589cacf1bd8b946f9ff97"
+    },
+    {
+      "index": 5,
+      "step": "reconcileApprovedIntent",
+      "cursor": 6,
+      "invocation": 2,
+      "outputHash": "e4bdb6fc4aef4ac0c1aee1f468ef118f89f8189fb358c1827f48edc1ce787885"
+    },
+    {
+      "index": 6,
+      "step": "appendRunEvidence",
+      "cursor": 7,
+      "invocation": 2,
+      "outputHash": "26efbbb59550b037c602e84aa6dc21f55e33d984bad41d227a4f913d08c65ca7"
+    }
+  ],
+  "mec": {
+    "simulation": true,
+    "serviceInstanceId": "mec-location-sim-1",
+    "zoneId": "zone-h1-entrance",
+    "insideIncidentArea": true,
+    "simulatorRequests": [
+      "GET /mec_service_mgmt/v1/services",
+      "GET /location/v2/queries/users"
+    ]
+  },
+  "finalCseState": {
+    "acp": {
+      "path": "/Mobius/pb-hh-mwnhmqyc1586/visit-8e18e99299374f02",
+      "rsc": 2000,
+      "pv": {
+        "acr": [
+          {
+            "acop": 2,
+            "acor": [
+              "CTsOdF"
+            ]
+          }
+        ]
+      },
+      "pvs": {
+        "acr": [
+          {
+            "acop": 63,
+            "acor": [
+              "[secret]",
+              "CvnvNP"
+            ]
+          }
+        ]
+      },
+      "et": "20261119T121958",
+      "lbl": [
+        "pb-incident:incident-i42",
+        "pb-approval:8e18e99299374f02",
+        "pb-visitor:visitor-v1"
+      ]
+    },
+    "locationContainerAcpi": [
+      "rshpzmg0ms",
+      "5stwvknh8f"
+    ],
+    "baseAcpRi": "rshpzmg0ms",
+    "grantRecord": {
+      "path": "/Mobius/pb-hh-mwnhmqyc1586/keyring-x/grants/grant-8e18e99299374f02",
+      "rsc": 2000,
+      "con": {
+        "type": "VISITOR_GRANT",
+        "grantId": "grant-a8b37ddd-ce5f-467a-86d6-01a5954b43b6",
+        "grantRevision": 1,
+        "visitorId": "visitor-v1",
+        "deviceId": "keyring-x",
+        "resource": "location",
+        "operations": [
+          "RETRIEVE"
+        ],
+        "acop": 2,
+        "notAfter": "2026-11-19T12:19:58.576Z",
+        "deadline": "2026-11-19T12:19:58.576Z",
+        "draftHash": "60f6aa7050592de98d4b9dab5b7c5096abb30d96c52321aa7ef12f3326cca88f",
+        "approvalHash": "8e18e99299374f027f4c298d762e4d1b8e2eab69e5976989f5da32b96c3cb3e2",
+        "acpRi": "5stwvknh8f",
+        "payloadHash": "7b3340fb21bbcc27acb635c69117f4b4178142c7f4c6eb46c5ccd77e0f2eb56d"
+      }
+    },
+    "approvalRecords": 2,
+    "auditEvidence": {
+      "path": "/Mobius/pb-hh-mwnhmqyc1586/audit/evidence-339279261a530e1f",
+      "rsc": 2000,
+      "evidenceHash": "4bd677eb97c4fe182365d92704d334eb978ef108153399a35d416453f51cfcc2"
+    },
+    "accessChecks": {
+      "visitorRetrieveLocationLatest": 2000,
+      "visitorRetrieveLocationZone": "zone-h1-entrance",
+      "visitorRetrieveBubbleSdt": 4103,
+      "visitorCreateLocationSample": 4103,
+      "visitorRetrieveOtherDeviceLocation": 4103,
+      "strangerRetrieveLocationLatest": 4103,
+      "guardianRetrieveLocationLatest": 2000
+    }
+  },
+  "conditions": {
+    "runCompleted": true,
+    "interruptedAfterApprovalRequest": true,
+    "resumedAtApply": true,
+    "mismatchedHashesRejected": true,
+    "guardianHashAccepted": true,
+    "leastPrivilegeAcp": true,
+    "visitorReadsOnlyGrantedLocation": true,
+    "auditEvidenceOnCse": true
+  },
+  "toolErrors": [
+    {
+      "serverId": "oneM2M",
+      "tool": "applyApprovedPolicy",
+      "reason": "APPROVAL_HASH_MISMATCH",
+      "invocation": 2
+    },
+    {
+      "serverId": "oneM2M",
+      "tool": "applyApprovedPolicy",
+      "reason": "APPROVAL_HASH_MISMATCH",
+      "invocation": 2
+    }
+  ],
+  "transcript": {
+    "path": "docs/verification-evidence/2026-11-19/mcp-llm-agent-transcript.jsonl",
+    "sha256": "078e468f6f924766600e319bdcc26db1e3d97a6256ce2158c6f045caf1e91d85",
+    "lines": 25,
+    "droppedLines": 3,
+    "sanitized": "bearer tokens, CSE admin originator and database password replaced; account rate_limit_event lines dropped; init event plugin, skill, command, agent, capability and local IPC path fields removed"
+  },
+  "runnerSHA256": "fc5adb2be5d4e9468543b4c955785b5b3bdde28e17128b94c9440e8b91b056f3",
+  "notes": [
+    "MEC Location is the local simulator (simulation true); CSE, PostgreSQL, MCP wire and the LLM agent are real local processes.",
+    "Guardian approval is a scripted guardian principal outside the agent session; the agent tokens carry no policy:approve scope.",
+    "Runner negative probes use the agent oneM2M token before the resumed agent starts."
+  ]
+}
