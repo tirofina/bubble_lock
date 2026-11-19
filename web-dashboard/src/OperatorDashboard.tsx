@@ -39,16 +39,17 @@ export function OperatorDashboard({ page }: { page: string }) {
   const latest = stream.events.at(-1);
   const verified = commands.filter((command) => summarizeCommand(command).status === 'verified').length;
   const connected = stream.connection === 'connected';
+  const live = latest?.source === 'onem2m-cse-live';
   return <PortalShell role="operator" page={page} actions={<button className="primary" onClick={() => { stream.reconnect(); setRefresh((value) => value + 1); }}><Icon name="refresh" size={17} />새로고침</button>}>
     <div className="context-strip" role="status"><span className={`connection-pill${connected ? ' connected' : ''}`}><i />{label(connectionLabels, stream.connection)}</span>
-      <span>명령과 서비스 기록을 재생하고 있어요. 지금까지 {stream.timeline.lastSequence}번째 기록을 받았어요.</span><Badge tone="warning">모의 데이터</Badge></div>
+      <span>{live ? 'oneM2M CSE 알림을 실시간으로 받고 있어요.' : '명령과 서비스 기록을 재생하고 있어요.'} 지금까지 {stream.timeline.lastSequence}번째 기록을 받았어요.</span><Badge tone={latest?.simulation === false ? 'info' : 'warning'}>{live ? (latest?.simulation === false ? '실제 CSE' : '모의 장치, 실제 CSE') : '모의 데이터'}</Badge></div>
     {stream.error && <div className="notice error" role="alert">{stream.error}<button onClick={() => stream.reconnect(true)}>처음부터 다시 받기</button></div>}
     {page === 'overview' && <>
       <div className="operator-welcome"><div><p className="eyebrow">운영 현황</p><h2>현장의 흐름을 한눈에</h2><p>키링 위치, 명령 처리, 연결 서비스 상태를 한 화면에서 확인하세요.</p>
         <a className="button primary" href="#/operator/map">위치 지도 열기<Icon name="arrow" size={18} /></a></div>
         <div className="network-visual" aria-hidden="true"><Icon name="server" size={44} /><i /><Icon name="bubble" size={60} /><i /><Icon name="key" size={40} /></div></div>
       <div className="metrics-grid">
-        <Metric label="받은 기록" value={stream.timeline.lastSequence} note="연결 기록 파일을 기준으로 센 숫자예요." icon="activity" />
+        <Metric label="받은 기록" value={stream.timeline.lastSequence} note={live ? 'CSE 알림과 재동기화로 받은 기록 수예요.' : '연결 기록 파일을 기준으로 센 숫자예요.'} icon="activity" />
         <Metric label="처리 중인 명령" value={commands.length} note={`그중 ${verified}개 적용 확인`} icon="bolt" />
         <Metric label="연결 서비스" value={`${services.filter((service) => service.receipt).length} / ${services.length}`} note="최근 응답이 온 서비스 수예요." icon="server" />
         <Metric label="연결 상태" value={label(connectionLabels, stream.connection)} compact note="연결이 끊기면 마지막 기록 다음부터 이어서 받아요." icon="refresh" />

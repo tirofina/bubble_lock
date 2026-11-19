@@ -100,6 +100,15 @@ CORE와 INTEGRATION 기록을 한 파일에 넣어도 같은 순서로 재생합
 - 화면은 마지막 유효 cursor와 누적 명령 상태를 보존하고 최근 100개 이벤트를 표시합니다.
 - 자원 revision은 adapter 설정값 또는 `null`, roleScope는 표시 메타데이터입니다.
 
+## 실시간 oneM2M 원천 (R03)
+
+- `DASHBOARD_SOURCE=cse-live`와 `CSE_LIVE_CONFIG=<JSON>`을 주면 서버가 실제 CSE에 운영 대시보드 AE와 보호자 포털 AE를 따로 등록합니다. 기본값 `replay`는 기존 fixture와 journal 재생입니다.
+- 두 AE는 `lbl=pb-keyring` discovery로 키링을 찾고 컨테이너마다 자기 `<subscription>`(net=3, chty=4, nct=1)을 만듭니다. 알림은 별도 수신 포트로 받고 `X-M2M-Origin`이 설정한 CSE-ID와 같을 때만 처리합니다.
+- 알림은 `shared/cse-notification.ts`가 기존 이벤트 계약으로 바꿉니다. 관측은 `gateway.telemetry`, 명령 cin은 `command.accepted`(CSE creationTime), Gateway dispatch 기록은 `command.dispatched`, native receipt는 `command.ack`(READBACK_VERIFIED), 자동화 사건은 `integration.receipt`입니다. 예상 작성자(cr)와 다른 cin은 `receipt.review`입니다.
+- SSE 재연결(`Last-Event-ID` 또는 `lastSequence`)이 오면 서버가 먼저 컨테이너별 `la` RETRIEVE와 createdAfter discovery로 놓친 cin을 채운 뒤 이어서 보냅니다. `source`는 `onem2m-cse-live`이고 `simulation`은 설정값을 그대로 씁니다.
+- 보호자 승인(`/api/portal/commands/approve`) 결과는 보호자 AE가 transient group(et=deadline)의 fopt CREATE 한 번으로 키링 명령 컨테이너에 기록합니다.
+- 실제 CSE 시나리오: `node pc-mobius/scripts/run-multiapp-real.mjs --screenshot`, 기록은 `docs/rubric-work/R03.md`입니다.
+
 ## 검증
 
 `npm test`는 CORE 계약·SSE cursor·Group 타임라인·통합 runtime journal·키링 위치·사용자 포털·OIDC 세션과 권한 경계를 검증합니다. `npm run typecheck`, `npm run typecheck:contract`, `npm run build`로 TypeScript와 배포 파일을 검사합니다. 루트 `npm run verify`에는 실제 TLS API와 BFF upstream 호출 시험도 포함됩니다.

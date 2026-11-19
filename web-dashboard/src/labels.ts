@@ -32,7 +32,7 @@ export const receiptTypeLabels: Labels = {
   CONSENT_CREATED: '동의 생성', GRANT_ISSUED: '권한 발급', POLICY_APPROVED: '정책 승인',
   MEC_POLICY_RECONCILE: '위치 서비스 정책 반영', UE_LOCATION_UPDATE: '단말 위치 갱신',
   HANDOVER_ACTIVE: '엣지 전환 완료', HANDOVER_DRAINING: '엣지 전환 준비',
-  FL_ROUND: '연합 학습 회차', MCP_AUDIT: '자동화 실행 기록',
+  FL_ROUND: '연합 학습 회차', MCP_AUDIT: '자동화 실행 기록', AUTOMATION_INCIDENT_OPENED: '자동화 사건 기록',
 };
 
 export const serviceStateLabels: Labels = {
@@ -47,7 +47,7 @@ export const scopeList = (scopes: readonly string[]) => scopes.map((scope) => la
 
 export const portalStatusLabels: Labels = {
   ACTIVE: '사용 중', REVOKED: '취소됨', EXPIRED: '기간 끝남', INACTIVE: '동의 확인 필요', PENDING: '승인 대기',
-  PARTIAL: '일부만 등록됨, 다시 시도 중', QUEUED: '실행 순서 기다리는 중', OPEN: '접수됨', RESOLVED: '처리 완료',
+  PARTIAL: '일부만 등록됨, 다시 시도 중', QUEUED: '실행 순서 기다리는 중', CONFIRMED_BY_CSE: '키링 적용 확인됨', OPEN: '접수됨', RESOLVED: '처리 완료',
 };
 
 export const serviceMeta: Readonly<Record<string, { readonly label: string; readonly description: string }>> = {
