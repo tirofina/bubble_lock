@@ -51,7 +51,7 @@ namespace {
 #if KEYRING_R18_BRINGUP_DISPLAY == 1
 #if defined(KEYRING_R26_FRONT)
 #if defined(KEYRING_R26_OTA)
-constexpr char FirmwareRevision[] = "keyring-0.7.28-r26-st7789-ota";
+constexpr char FirmwareRevision[] = "keyring-0.7.29-r26-st7789-ota";
 #else
 constexpr char FirmwareRevision[] = "keyring-0.7.27-r26-st7789-bringup";
 #endif
@@ -1232,7 +1232,15 @@ void loop() {
       previousConfirm != (confirm.pressed && !panic.pressed);
   const bool pressedButton = buttonPresses.record(changedConfirm && confirm.pressed,
                                                   changedPanic && panic.pressed, panic.pressed);
-  const bool requestDisplay = KEYRING_DISPLAY_PROFILE && pressedButton && !mainFaultActive();
+  bool requestDisplay = KEYRING_DISPLAY_PROFILE && pressedButton && !mainFaultActive();
+#if defined(KEYRING_R26_OTA)
+  const uint8_t wifiLevel = r26ota::wifiLevel();
+  static uint8_t displayedWifiLevel = 255;
+  if (wifiLevel != displayedWifiLevel) {
+    requestDisplay = true;
+    displayedWifiLevel = wifiLevel;
+  }
+#endif
   if (board::FrontAssembly && buttonTransition) {
     Serial.printf("KEYRING button=%s\n", panic.pressed ? "panic" : confirm.pressed ? "confirm" : "released");
   }
@@ -1259,6 +1267,9 @@ void loop() {
   if (!ObservationOnly || KEYRING_R18_BRINGUP_DISPLAY) auxRail::service();
   if (requestDisplay || now >= nextScreenAt) {
     KeyringScreen screen;
+#if defined(KEYRING_R26_OTA)
+    screen.wifiLevel = wifiLevel;
+#endif
     screen.linked = connected; screen.authenticated = authenticated;
     screen.batteryValid = sensors.fuel; screen.battery = sensors.battery; screen.batteryLow = sensors.batteryLow;
     screen.confirm = buttonPresses.last == ButtonPress::Confirm;

@@ -18,6 +18,8 @@ constexpr auto Muted = rgb565(190, 195, 198);
 constexpr auto Divider = rgb565(57, 62, 67);
 constexpr auto Blue = rgb565(41, 151, 255);
 constexpr auto Red = rgb565(255, 105, 97);
+constexpr auto Green = rgb565(76, 217, 135);
+constexpr auto Inactive = rgb565(87, 96, 101);
 
 constexpr int16_t Center = 120;
 constexpr int16_t BadgeY = 91;
@@ -48,7 +50,7 @@ void label(Arduino_GFX &panel, int16_t x, int16_t middleY, const r26text::Mask &
 void drawFrame(Arduino_GFX &panel) {
   panel.fillScreen(Background);
   static_assert(r26logo::Background == Background, "The logo must match the display background");
-  panel.draw16bitRGBBitmap(Center - r26logo::Width / 2, 31 - r26logo::Height / 2,
+  panel.draw16bitRGBBitmap(14, 31 - r26logo::Height / 2,
       r26logo::Pixels, r26logo::Width, r26logo::Height);
   panel.drawFastHLine(20, 59, 200, Divider);
 
@@ -61,11 +63,30 @@ void drawFrame(Arduino_GFX &panel) {
     panel.fillRoundRect(144 + bar * 12, 205, 9, 11, 2, Text);
   }
 }
+
+void drawWifi(Arduino_GFX &panel, uint8_t level) {
+  panel.fillRect(201, 15, 37, 31, Background);
+  const uint16_t dot = level ? Green : Inactive;
+  panel.fillCircle(219, 40, 2, dot);
+  const uint16_t inner = level >= 2 ? Green : Inactive;
+  panel.drawLine(213, 34, 216, 31, inner);
+  panel.drawLine(216, 31, 222, 31, inner);
+  panel.drawLine(222, 31, 225, 34, inner);
+  const uint16_t middle = level >= 3 ? Green : Inactive;
+  panel.drawLine(208, 29, 213, 25, middle);
+  panel.drawLine(213, 25, 225, 25, middle);
+  panel.drawLine(225, 25, 230, 29, middle);
+  const uint16_t outer = level >= 4 ? Green : Inactive;
+  panel.drawLine(203, 23, 210, 18, outer);
+  panel.drawLine(210, 18, 228, 18, outer);
+  panel.drawLine(228, 18, 235, 23, outer);
+}
 }
 
 void drawR26Display(Arduino_GFX &panel, const KeyringScreen &screen, bool fullDraw) {
   if (fullDraw) drawFrame(panel);
   else panel.fillRect(20, 67, 200, 110, Background);
+  drawWifi(panel, screen.wifiLevel);
 
   const auto accent = screen.panic ? Red : Blue;
   panel.drawCircle(Center, BadgeY, 15, accent);

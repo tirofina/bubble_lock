@@ -23,6 +23,19 @@ const Network networks[] = KEYRING_OTA_NETWORKS;
 static_assert(sizeof(KEYRING_OTA_PASSWORD) >= 13, "OTA password must contain at least 12 characters");
 static_assert(sizeof(networks) / sizeof(networks[0]) > 0, "Configure at least one Wi-Fi network");
 bool (*displayIsReady)() = nullptr;
+portMUX_TYPE wifiMux = portMUX_INITIALIZER_UNLOCKED;
+uint8_t currentWifiLevel = 0;
+
+void updateWifiLevel() {
+  uint8_t level = 0;
+  if (WiFi.status() == WL_CONNECTED) {
+    const int32_t rssi = WiFi.RSSI();
+    level = rssi >= -55 ? 4 : rssi >= -67 ? 3 : rssi >= -78 ? 2 : 1;
+  }
+  portENTER_CRITICAL(&wifiMux);
+  currentWifiLevel = level;
+  portEXIT_CRITICAL(&wifiMux);
+}
 
 bool pendingImage() {
   esp_ota_img_states_t state;
@@ -43,6 +56,7 @@ void run(void *) {
   bool started = false;
   const uint32_t verificationStarted = millis();
   for (;;) {
+    updateWifiLevel();
     if (pendingImage()) {
       if (WiFi.status() == WL_CONNECTED && displayIsReady && displayIsReady()) {
         if (esp_ota_mark_app_valid_cancel_rollback() != ESP_OK) ESP.restart();
@@ -57,6 +71,7 @@ void run(void *) {
         started = false;
       }
       WiFi.disconnect(false, false);
+      updateWifiLevel();
       const Network &network = networks[next];
       next = (next + 1) % (sizeof(networks) / sizeof(networks[0]));
       WiFi.begin(network.ssid, network.password);
@@ -82,6 +97,13 @@ void run(void *) {
 }
 
 namespace r26ota {
+uint8_t wifiLevel() {
+  portENTER_CRITICAL(&wifiMux);
+  const uint8_t level = currentWifiLevel;
+  portEXIT_CRITICAL(&wifiMux);
+  return level;
+}
+
 void rejectPending() {
   if (pendingImage()) esp_ota_mark_app_invalid_rollback_and_reboot();
 }

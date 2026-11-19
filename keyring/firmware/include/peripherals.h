@@ -14,6 +14,7 @@ struct KeyringScreen {
   uint64_t supplyReadAt = 0;
   uint32_t motionEvents = 0;
   uint32_t confirmPress = 0, panicPress = 0;
+  uint8_t wifiLevel = 0;
 };
 
 struct KeyringDisplayTest {
