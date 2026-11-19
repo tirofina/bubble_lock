@@ -21,7 +21,8 @@
     "integration:evidence": "node scripts/build-integration-evidence.mjs",
     "integration:replay": "node scripts/replay-integration.mjs",
     "mcp:servers": "node scripts/run-mcp-servers.mjs",
-    "mcp:verify": "node scripts/run-mcp-verification.mjs"
+    "mcp:verify": "node scripts/run-mcp-verification.mjs",
+    "mcp:agent": "node scripts/run-mcp-llm-agent.mjs"
   },
   "dependencies": {
     "ajv": "^8.20.0",

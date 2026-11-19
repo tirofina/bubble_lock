@@ -95,8 +95,15 @@ export class McpHttpClient {
   }
 }
 
-/** Streamable HTTP JSON response profile. Tool writes and dedup receipts share one server-store transaction. */
-export function createMcpHttpServer({ serverId, audience, tools, handlers, store, authenticate, authorizeCall, tls = null, allowedOrigins = [], clock = () => new Date().toISOString(), trace = null, timeoutMs = 5000 }) {
+const toolErrorResult = (rpcId, reason, message) => ({ jsonrpc: '2.0', id: rpcId, result: { content: [{ type: 'text', text: `${reason}: ${message}`.slice(0, 600) }], isError: true } });
+
+/**
+ * Streamable HTTP JSON response profile. Tool writes and dedup receipts share one server-store transaction.
+ * Agent profile options: `resolveContext` derives the run context from the authenticated session (client `_meta` is ignored),
+ * `exposeToolErrors` returns McpToolReview reasons as `isError` results, `onToolError`/`onCommitted` run outside the tool transaction.
+ */
+export function createMcpHttpServer({ serverId, audience, tools, handlers, store, authenticate, authorizeCall, tls = null, allowedOrigins = [], clock = () => new Date().toISOString(), trace = null, timeoutMs = 5000,
+  resolveContext = null, exposeToolErrors = false, onToolError = null, onCommitted = null }) {
   if (!serverId || !audience || !store || typeof authenticate !== 'function' || typeof authorizeCall !== 'function') throw new Error('MCP server identity, store and authorization required');
   const catalog = compileTools(tools);
   const sessions = new Map();
@@ -131,6 +138,7 @@ export function createMcpHttpServer({ serverId, audience, tools, handlers, store
       if (!session || session.principalId !== principal.principalId) { json(response, 404, { error: 'mcp_session_required' }); return; }
       if (request.headers['mcp-protocol-version'] !== session.protocolVersion) { json(response, 400, { error: 'mcp_protocol_version_required' }); return; }
       if (method === 'notifications/initialized' && rpcId === null) { session.initialized = true; json(response, 202, null); return; }
+      if (rpcId === null && session.initialized && method.startsWith('notifications/')) { json(response, 202, null); return; }
       if (!session.initialized || rpcId === null) throw new Error('Initialized MCP request required');
       if (method === 'ping') { json(response, 200, { jsonrpc: '2.0', id: rpcId, result: {} }); return; }
       if (method === 'tools/list') { json(response, 200, { jsonrpc: '2.0', id: rpcId, result: { tools: [...catalog.values()].map(wireTool) } }); return; }
@@ -139,18 +147,29 @@ export function createMcpHttpServer({ serverId, audience, tools, handlers, store
       if (!catalog.has(name)) throw new Error('Registered MCP tool required');
       let tool;
       try { tool = validateTool(catalog, name, 'input', input); }
-      catch { json(response, 200, { jsonrpc: '2.0', id: rpcId, result: { content: [{ type: 'text', text: 'MCP tool input schema review required' }], isError: true } }); return; }
-      const context = _meta?.['privacy-bubble'];
+      catch {
+        const detail = exposeToolErrors ? (catalog.get(name).input.errors ?? []).slice(0, 4).map((entry) => `${entry.instancePath || '/'} ${entry.message}`).join('; ') : '';
+        json(response, 200, { jsonrpc: '2.0', id: rpcId, result: { content: [{ type: 'text', text: `MCP tool input schema review required${detail ? `: ${detail}` : ''}`.slice(0, 600) }], isError: true } }); return;
+      }
+      const toolInfo = { serverId, name, requiredScope: catalog.get(name).requiredScope, readOnly: catalog.get(name).readOnly === true };
+      let context;
+      try { context = resolveContext ? await resolveContext({ principal, serverId, audience, tool: toolInfo, input }) : _meta?.['privacy-bubble']; }
+      catch (error) {
+        if (!exposeToolErrors || error?.code !== 'MCP_TOOL_REVIEW') throw error;
+        try { await onToolError?.({ serverId, tool: name, principal, context: null, input, reason: error.reason, message: error.message }); } catch { /* review record is best effort */ }
+        json(response, 200, toolErrorResult(rpcId, error.reason, error.message)); return;
+      }
       if (!context || !/^[a-f0-9]{64}$/.test(context.operationKey) || !/^[a-f0-9]{64}$/.test(context.approvalHash)
         || context.principalId !== principal.principalId || context.audience !== audience || typeof context.grantId !== 'string'
         || !Number.isInteger(context.grantRevision) || context.grantRevision < 1 || !Number.isFinite(Date.parse(context.deadline)) || Date.parse(context.deadline) <= Date.parse(clock())) throw new Error('MCP call approval and deadline required');
       if (!Array.isArray(principal.scopes) || !principal.scopes.includes(tool.requiredScope)) throw new Error('MCP token tool scope required');
       if (typeof handlers?.[name] !== 'function') throw new Error('MCP domain tool adapter required');
-      const result = await store.transaction(`mcp-tool:${context.operationKey}`, async () => {
+      let replayed = false;
+      const execute = () => store.transaction(`mcp-tool:${context.operationKey}`, async () => {
         await authorizeCall({ principal, context, tool: { serverId, name, requiredScope: tool.requiredScope }, input });
         const intentHash = approvalHash({ serverId, name, input, principalId: principal.principalId, approvalHash: context.approvalHash, grantId: context.grantId, grantRevision: context.grantRevision });
         const prior = store.get('mcpToolOperations', context.operationKey);
-        if (prior) { if (prior.intentHash !== intentHash) throw new Error('MCP original operation intent required'); return prior.output; }
+        if (prior) { if (prior.intentHash !== intentHash) throw new Error('MCP original operation intent required'); replayed = true; return prior.output; }
         let timer;
         let output;
         try { output = await Promise.race([handlers[name](input, { ...context, store, principal }), new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('MCP server tool timeout')), timeoutMs); })]); }
@@ -162,9 +181,21 @@ export function createMcpHttpServer({ serverId, audience, tools, handlers, store
         await store.append('receipts', recordEnvelope({ type: 'MCP_TOOL_COMMITTED', serverId, tool: name, runId: context.runId, operationKey: context.operationKey, outputHash: approvalHash(output) }, clock));
         return output;
       });
+      let result;
+      try { result = await execute(); }
+      catch (error) {
+        if (!exposeToolErrors) throw error;
+        const review = error?.code === 'MCP_TOOL_REVIEW';
+        const reason = review ? error.reason : 'TOOL_FAILURE';
+        const message = review ? error.message : 'Tool execution failed; the operation was not committed and can be retried.';
+        try { await onToolError?.({ serverId, tool: name, principal, context, input, reason, message, internal: review ? null : String(error?.message ?? error).slice(0, 300) }); } catch { /* review record is best effort */ }
+        trace?.({ direction: 'send', serverId, method, id: rpcId, isError: true, reason });
+        json(response, 200, toolErrorResult(rpcId, reason, message)); return;
+      }
       const envelope = { jsonrpc: '2.0', id: rpcId, result: { content: [{ type: 'text', text: JSON.stringify(result) }], structuredContent: result, isError: false } };
-      trace?.({ direction: 'send', serverId, method, id: rpcId, payloadHash: approvalHash(envelope) });
+      trace?.({ direction: 'send', serverId, method, id: rpcId, payloadHash: approvalHash(envelope), ...(replayed ? { replayed } : {}) });
       json(response, 200, envelope);
+      try { await onCommitted?.({ serverId, tool: name, principal, context, input, output: result, replayed }); } catch { /* observer failures do not change the committed result */ }
     } catch {
       if (!response.headersSent) json(response, 200, { jsonrpc: '2.0', id: rpcId, error: { code: -32602, message: 'MCP schema, approval or current authority review required' } });
       else response.end();

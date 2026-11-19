@@ -1,7 +1,14 @@
 import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import contract from '../../contracts/mcp-tools.v1.json' with { type: 'json' };
-export { contract as MCP_CONTRACT };
+import agentContract from '../../contracts/mcp-agent-tools.v1.json' with { type: 'json' };
+export { contract as MCP_CONTRACT, agentContract as MCP_AGENT_CONTRACT };
+
+/** Tool-level review result that the agent profile returns as an MCP `isError` result with a safe reason code. */
+export class McpToolReview extends Error {
+  constructor(reason, message, detail = {}) { super(message); this.name = 'McpToolReview'; this.code = 'MCP_TOOL_REVIEW'; this.reason = reason; this.detail = detail; }
+}
+export const toolReview = (reason, message, detail) => new McpToolReview(reason, message, detail);
 
 export function compileTools(tools) {
   if (!Array.isArray(tools) || tools.length < 1 || tools.length > 64) throw new Error('MCP tool catalog required');

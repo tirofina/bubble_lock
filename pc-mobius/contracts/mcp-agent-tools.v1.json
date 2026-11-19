@@ -1,0 +1,96 @@
+{
+  "contractId": "privacy-bubble.mcp-agent.v1",
+  "docRevision": "2.0.0",
+  "protocolVersion": "2025-11-25",
+  "supportedProtocolVersions": ["2025-11-25", "2025-06-18"],
+  "schemaVersion": "https://json-schema.org/draft/2020-12/schema",
+  "description": "LLM agent profile. The MCP server derives run, grant and operation context from the authenticated agent session; client _meta is ignored. applyApprovedPolicy accepts only a guardian approvalHash bound to the exact current draftHash.",
+  "workflow": {
+    "steps": ["discoverDevices", "readGrant", "draftPolicy", "requestGuardianApproval", "applyApprovedPolicy", "reconcileApprovedIntent", "appendRunEvidence"],
+    "readOnlyTools": ["discoverDevices", "readGrant", "readExecution"],
+    "approvalGate": { "tool": "applyApprovedPolicy", "requires": "guardian approvalHash for the exact current draftHash", "approver": "guardian principal outside the MCP agent session" },
+    "states": ["READY", "RUNNING", "AWAITING_GUARDIAN", "APPROVED", "DRAFT_REJECTED", "APPLIED", "RECONCILED", "COMPLETED"],
+    "maxDurationMinutes": 60
+  },
+  "servers": {
+    "oneM2M": {
+      "audience": "privacy-bubble-mcp-onem2m",
+      "tools": [
+        {
+          "name": "discoverDevices", "description": "Discover keyring devices of the bound household through oneM2M SDT discovery (fu=1, ty=28, binarySwitch cnd).", "requiredScope": "bubble:read", "readOnly": true,
+          "inputSchema": {"type":"object","additionalProperties":false,"required":["householdId"],"properties":{"householdId":{"type":"string","minLength":1,"maxLength":64,"pattern":"^[A-Za-z0-9._-]+$"}}},
+          "outputSchema": {"type":"object","additionalProperties":false,"required":["householdId","discovery","devices","observedAt"],"properties":{
+            "householdId":{"type":"string"},
+            "discovery":{"type":"object","additionalProperties":false,"required":["fu","ty","cnd","rsc","matched"],"properties":{"fu":{"const":1},"ty":{"const":28},"cnd":{"type":"string","maxLength":128},"rsc":{"type":"integer"},"matched":{"type":"integer","minimum":0}}},
+            "devices":{"type":"array","maxItems":64,"items":{"type":"object","additionalProperties":false,"required":["deviceId","resourcePath","sdtPath","sdtState"],"properties":{"deviceId":{"type":"string","maxLength":64},"resourcePath":{"type":"string","maxLength":256},"sdtPath":{"type":"string","maxLength":256},"sdtState":{"type":"boolean"}}}},
+            "observedAt":{"type":"string","format":"date-time"}}}
+        },
+        {
+          "name": "readGrant", "description": "Read the current guardian grant of the run and the visitor grants and ACP list on the device location container.", "requiredScope": "bubble:read", "readOnly": true,
+          "inputSchema": {"type":"object","additionalProperties":false,"required":["deviceId"],"properties":{"deviceId":{"type":"string","minLength":1,"maxLength":64,"pattern":"^[A-Za-z0-9._-]+$"}}},
+          "outputSchema": {"type":"object","additionalProperties":false,"required":["grantId","revision","status","scopes","expiresAt","deviceId","locationAcpi","visitorGrants"],"properties":{
+            "grantId":{"type":"string"},"revision":{"type":"integer","minimum":1},"status":{"enum":["ACTIVE","REVOKED","EXPIRED"]},
+            "scopes":{"type":"array","maxItems":32,"items":{"type":"string"}},"expiresAt":{"type":"string","format":"date-time"},
+            "deviceId":{"type":"string"},"locationAcpi":{"type":"array","maxItems":32,"items":{"type":"string","maxLength":128}},
+            "visitorGrants":{"type":"array","maxItems":16,"items":{"type":"object","additionalProperties":false,"required":["visitorId","notAfter","acop"],"properties":{"visitorId":{"type":"string"},"notAfter":{"type":"string","format":"date-time"},"acop":{"type":"integer","minimum":0,"maximum":63}}}}}}
+        },
+        {
+          "name": "draftPolicy", "description": "Store a visitor access policy draft. Drafting does not change CSE access; the guardian reviews the returned draftHash.", "requiredScope": "bubble:command", "readOnly": false,
+          "inputSchema": {"type":"object","additionalProperties":false,"required":["deviceId","visitorId","incidentId","resource","operations","durationMinutes"],"properties":{
+            "deviceId":{"type":"string","minLength":1,"maxLength":64,"pattern":"^[A-Za-z0-9._-]+$"},
+            "visitorId":{"type":"string","minLength":1,"maxLength":64,"pattern":"^[A-Za-z0-9._-]+$"},
+            "incidentId":{"type":"string","minLength":1,"maxLength":64,"pattern":"^[A-Za-z0-9._-]+$"},
+            "resource":{"enum":["location","bubble","grants"]},
+            "operations":{"type":"array","minItems":1,"maxItems":5,"uniqueItems":true,"items":{"enum":["RETRIEVE","CREATE","UPDATE","DELETE","DISCOVER"]}},
+            "durationMinutes":{"type":"integer","minimum":1,"maximum":1440}}},
+          "outputSchema": {"type":"object","additionalProperties":false,"required":["draftId","draftHash","acop","resourcePath","durationMinutes","leastPrivilege","status"],"properties":{
+            "draftId":{"type":"string"},"draftHash":{"type":"string","pattern":"^[a-f0-9]{64}$"},"acop":{"type":"integer","minimum":1,"maximum":63},
+            "resourcePath":{"type":"string","maxLength":256},"durationMinutes":{"type":"integer"},
+            "leastPrivilege":{"type":"object","additionalProperties":false,"required":["withinTask","findings"],"properties":{"withinTask":{"type":"boolean"},"findings":{"type":"array","maxItems":8,"items":{"type":"string","maxLength":160}}}},
+            "status":{"enum":["DRAFT"]}}}
+        },
+        {
+          "name": "requestGuardianApproval", "description": "Publish an approval request for the exact draftHash to the household approvals container. Only the guardian can decide.", "requiredScope": "bubble:command", "readOnly": false,
+          "inputSchema": {"type":"object","additionalProperties":false,"required":["draftId","draftHash"],"properties":{"draftId":{"type":"string","minLength":1,"maxLength":64},"draftHash":{"type":"string","pattern":"^[a-f0-9]{64}$"}}},
+          "outputSchema": {"type":"object","additionalProperties":false,"required":["approvalRequestId","draftHash","status","requestRecordPath"],"properties":{"approvalRequestId":{"type":"string"},"draftHash":{"type":"string","pattern":"^[a-f0-9]{64}$"},"status":{"enum":["PENDING_GUARDIAN"]},"requestRecordPath":{"type":"string","maxLength":256}}}
+        },
+        {
+          "name": "applyApprovedPolicy", "description": "Apply a guardian-approved draft: create a time-bounded ACP, attach it to the device resource and record the visitor grant. Requires the guardian approvalHash.", "requiredScope": "bubble:command", "readOnly": false,
+          "inputSchema": {"type":"object","additionalProperties":false,"required":["draftId","approvalHash"],"properties":{"draftId":{"type":"string","minLength":1,"maxLength":64},"approvalHash":{"type":"string","pattern":"^[a-f0-9]{64}$"}}},
+          "outputSchema": {"type":"object","additionalProperties":false,"required":["status","acpPath","acpRi","grantRecordPath","notAfter","grantRevision","payloadHash"],"properties":{"status":{"enum":["APPLIED"]},"acpPath":{"type":"string","maxLength":256},"acpRi":{"type":"string","maxLength":128},"grantRecordPath":{"type":"string","maxLength":256},"notAfter":{"type":"string","format":"date-time"},"grantRevision":{"type":"integer","minimum":1},"payloadHash":{"type":"string","pattern":"^[a-f0-9]{64}$"}}}
+        }
+      ]
+    },
+    "MEC": {
+      "audience": "privacy-bubble-mcp-mec",
+      "tools": [
+        {
+          "name": "reconcileApprovedIntent", "description": "Query the MEC Location service for the applied device, check the incident area and publish a coarse location sample for the approved visitor.", "requiredScope": "mec:location", "readOnly": false,
+          "inputSchema": {"type":"object","additionalProperties":false,"required":["deviceId","incidentId"],"properties":{"deviceId":{"type":"string","minLength":1,"maxLength":64,"pattern":"^[A-Za-z0-9._-]+$"},"incidentId":{"type":"string","minLength":1,"maxLength":64,"pattern":"^[A-Za-z0-9._-]+$"}}},
+          "outputSchema": {"type":"object","additionalProperties":false,"required":["status","serviceInstanceId","zoneId","insideIncidentArea","locationRecordPath","observedAt","simulation"],"properties":{"status":{"enum":["RECONCILED","REVIEW"]},"serviceInstanceId":{"type":"string","maxLength":128},"zoneId":{"type":"string","maxLength":64},"insideIncidentArea":{"type":"boolean"},"locationRecordPath":{"type":"string","maxLength":256},"observedAt":{"type":"string","format":"date-time"},"simulation":{"type":"boolean"}}}
+        }
+      ]
+    },
+    "Audit": {
+      "audience": "privacy-bubble-mcp-audit",
+      "tools": [
+        {
+          "name": "readExecution", "description": "Read the persistent run state: completed steps, next step, guardian approval status and resume point.", "requiredScope": "audit:read", "readOnly": true,
+          "inputSchema": {"type":"object","additionalProperties":false,"required":["runId"],"properties":{"runId":{"type":"string","minLength":1,"maxLength":128}}},
+          "outputSchema": {"type":"object","additionalProperties":false,"required":["runId","status","invocation","completedSteps","nextStep","waitingFor","approval","checkpointCount"],"properties":{
+            "runId":{"type":"string"},"status":{"enum":["READY","RUNNING","AWAITING_GUARDIAN","APPROVED","DRAFT_REJECTED","APPLIED","RECONCILED","COMPLETED"]},
+            "invocation":{"type":"integer","minimum":0},"completedSteps":{"type":"array","maxItems":7,"items":{"type":"string"}},
+            "nextStep":{"type":"string"},"waitingFor":{"enum":["NONE","GUARDIAN_APPROVAL"]},
+            "approval":{"type":"object","additionalProperties":false,"required":["status"],"properties":{"status":{"enum":["NONE","PENDING_GUARDIAN","APPROVED","REJECTED"]},"approvalRequestId":{"type":"string"},"draftId":{"type":"string"},"draftHash":{"type":"string","pattern":"^[a-f0-9]{64}$"},"approvalHash":{"type":"string","pattern":"^[a-f0-9]{64}$"},"reason":{"type":"string","maxLength":160}}},
+            "checkpointCount":{"type":"integer","minimum":0},
+            "resumedFrom":{"type":"object","additionalProperties":false,"required":["invocation","nextStep","cursor"],"properties":{"invocation":{"type":"integer"},"nextStep":{"type":"string"},"cursor":{"type":"integer"}}}}}
+        },
+        {
+          "name": "appendRunEvidence", "description": "Write the run evidence (checkpoint output hashes, approval hash, applied resources) to the household audit container and complete the run.", "requiredScope": "audit:write", "readOnly": false,
+          "inputSchema": {"type":"object","additionalProperties":false,"required":["runId","summary"],"properties":{"runId":{"type":"string","minLength":1,"maxLength":128},"summary":{"type":"string","minLength":1,"maxLength":600}}},
+          "outputSchema": {"type":"object","additionalProperties":false,"required":["evidenceId","evidenceHash","evidenceRecordPath","recordedAt","status"],"properties":{"evidenceId":{"type":"string"},"evidenceHash":{"type":"string","pattern":"^[a-f0-9]{64}$"},"evidenceRecordPath":{"type":"string","maxLength":256},"recordedAt":{"type":"string","format":"date-time"},"status":{"enum":["COMPLETED"]}}}
+        }
+      ]
+    }
+  }
+}
