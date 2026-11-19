@@ -32,7 +32,8 @@
     "mcp:verify": "node scripts/run-mcp-verification.mjs",
     "acp:mtls": "node scripts/run-acp-mtls-real.mjs",
     "originator-binding:configs": "node scripts/build-originator-binding-configs.mjs",
-    "mcp:agent": "node scripts/run-mcp-llm-agent.mjs"
+    "mcp:agent": "node scripts/run-mcp-llm-agent.mjs",
+    "mcp:triage": "node scripts/run-anomaly-triage.mjs"
   },
   "dependencies": {
     "ajv": "^8.20.0",

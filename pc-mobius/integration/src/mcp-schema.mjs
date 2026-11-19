@@ -2,7 +2,8 @@ import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import contract from '../../contracts/mcp-tools.v1.json' with { type: 'json' };
 import agentContract from '../../contracts/mcp-agent-tools.v1.json' with { type: 'json' };
-export { contract as MCP_CONTRACT, agentContract as MCP_AGENT_CONTRACT };
+import triageContract from '../../contracts/mcp-triage-tools.v1.json' with { type: 'json' };
+export { contract as MCP_CONTRACT, agentContract as MCP_AGENT_CONTRACT, triageContract as MCP_TRIAGE_CONTRACT };
 
 /** Tool-level review result that the agent profile returns as an MCP `isError` result with a safe reason code. */
 export class McpToolReview extends Error {

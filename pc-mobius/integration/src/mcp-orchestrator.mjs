@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { approvalHash, id, recordEnvelope, requireArray, requireString } from './integration-utils.mjs';
-import { MCP_AGENT_CONTRACT, MCP_CONTRACT, compileTools, toolReview, validateTool } from './mcp-schema.mjs';
+import { MCP_AGENT_CONTRACT, MCP_CONTRACT, MCP_TRIAGE_CONTRACT, compileTools, toolReview, validateTool } from './mcp-schema.mjs';
 import { McpHttpClient } from './mcp-http.mjs';
 
 export class McpOrchestrator {
@@ -164,6 +164,8 @@ const OPERATION_BITS = { CREATE: 1, RETRIEVE: 2, UPDATE: 4, DELETE: 8, DISCOVER:
 const STEP_STATUS = { requestGuardianApproval: 'AWAITING_GUARDIAN', applyApprovedPolicy: 'APPLIED', reconcileApprovedIntent: 'RECONCILED', appendRunEvidence: 'COMPLETED' };
 const safeEqual = (left, right) => typeof left === 'string' && typeof right === 'string' && left.length === right.length && timingSafeEqual(Buffer.from(left), Buffer.from(right));
 export const agentAcop = (operations) => operations.reduce((mask, operation) => mask | (OPERATION_BITS[operation] ?? 0), 0);
+/** Workflow profile: ordered steps, read-only tools, run status per step and the approval-gated step. */
+export const AGENT_WORKFLOW_PROFILE = Object.freeze({ contract: MCP_AGENT_CONTRACT, steps: AGENT_STEPS, readOnly: AGENT_READ_ONLY, stepStatus: STEP_STATUS, approvalStep: 'applyApprovedPolicy' });
 
 /**
  * Persistent LLM-agent workflow ledger. Every tool commit writes its checkpoint in the same store transaction as the
@@ -171,9 +173,9 @@ export const agentAcop = (operations) => operations.reduce((mask, operation) => 
  * step; applyApprovedPolicy only accepts the approvalHash that the guardian produced for the exact current draftHash.
  */
 export class McpAgentWorkflow {
-  constructor({ store, policyService, clock = policyService?.clock ?? (() => new Date().toISOString()), approvalTtlMs = 20 * 60000 } = {}) {
+  constructor({ store, policyService, clock = policyService?.clock ?? (() => new Date().toISOString()), approvalTtlMs = 20 * 60000, profile = AGENT_WORKFLOW_PROFILE } = {}) {
     if (!store || !policyService) throw new Error('MCP agent workflow store and policy service required');
-    Object.assign(this, { store, policyService, clock, approvalTtlMs });
+    Object.assign(this, { store, policyService, clock, approvalTtlMs, profile });
   }
   static get steps() { return [...AGENT_STEPS]; }
   static get scopes() { return [...AGENT_SCOPES]; }
@@ -208,8 +210,9 @@ export class McpAgentWorkflow {
     return { run, grant: decision.grant };
   }
   resumePoint(run) {
-    const completedSteps = AGENT_STEPS.filter((step) => run.steps[step]?.status === 'COMPLETED');
-    const nextStep = AGENT_STEPS.find((step) => run.steps[step]?.status !== 'COMPLETED') ?? 'NONE';
+    const steps = this.profile.steps;
+    const completedSteps = steps.filter((step) => run.steps[step]?.status === 'COMPLETED');
+    const nextStep = steps.find((step) => run.steps[step]?.status !== 'COMPLETED') ?? 'NONE';
     return { cursor: completedSteps.length, completedSteps, nextStep };
   }
   latestApproval(run, draftId = null) {
@@ -226,18 +229,19 @@ export class McpAgentWorkflow {
     const point = this.resumePoint(run); const approval = this.approvalView(run);
     const resumed = run.invocations.at(-1)?.resumedFrom;
     return { runId: run.runId, status: run.status, invocation: run.invocations.length, completedSteps: point.completedSteps, nextStep: point.nextStep,
-      waitingFor: point.nextStep === 'applyApprovedPolicy' && approval.status === 'PENDING_GUARDIAN' ? 'GUARDIAN_APPROVAL' : 'NONE', approval, checkpointCount: run.checkpoints.length,
+      waitingFor: point.nextStep === this.profile.approvalStep && approval.status === 'PENDING_GUARDIAN' ? 'GUARDIAN_APPROVAL' : 'NONE', approval, checkpointCount: run.checkpoints.length,
       ...(resumed ? { resumedFrom: { invocation: resumed.invocation, nextStep: resumed.nextStep, cursor: resumed.cursor } } : {}) };
   }
   /** Ordered routing: mutating steps follow the contract order once; read-only steps may refresh after their prerequisites. */
   route(run, step) {
-    const index = AGENT_STEPS.indexOf(step);
+    const steps = this.profile.steps;
+    const index = steps.indexOf(step);
     if (index < 0) throw toolReview('ROUTE_UNKNOWN', `${step} is not a workflow step`);
     const point = this.resumePoint(run);
     if (run.status === 'COMPLETED') throw toolReview('RUN_COMPLETED', 'Run is completed; use audit readExecution');
-    const missing = AGENT_STEPS.slice(0, index).filter((name) => run.steps[name]?.status !== 'COMPLETED');
+    const missing = steps.slice(0, index).filter((name) => run.steps[name]?.status !== 'COMPLETED');
     if (missing.length) throw toolReview('ROUTE_ORDER', `${step} requires ${missing.join(', ')} first; nextStep is ${point.nextStep}`);
-    if (AGENT_READ_ONLY.has(step)) return point;
+    if (this.profile.readOnly.has(step)) return point;
     const redraft = step === 'draftPolicy' && this.latestApproval(run)?.status === 'REJECTED';
     if (run.steps[step]?.status === 'COMPLETED' && !redraft) throw toolReview('STEP_COMPLETED', `${step} is already checkpointed; nextStep is ${point.nextStep}`);
     return point;
@@ -287,13 +291,13 @@ export class McpAgentWorkflow {
   /** Runs inside the MCP tool transaction, so the checkpoint and the dedup record commit together. */
   async checkpoint(context, step, { input, output, update = null }) {
     return this.mutate(context.runId, (run) => {
-      if (run.steps[step]?.status === 'COMPLETED' && AGENT_READ_ONLY.has(step)) {
+      if (run.steps[step]?.status === 'COMPLETED' && this.profile.readOnly.has(step)) {
         run.repeatedCalls.push({ step, invocation: context.invocation, at: this.clock() }); update?.(run); return structuredClone(run);
       }
       update?.(run);
       run.steps[step] = { status: 'COMPLETED', operationKey: context.operationKey, inputHash: approvalHash(input), outputHash: approvalHash(output), output, completedAt: this.clock(), invocation: context.invocation };
       run.checkpoints.push({ index: run.checkpoints.length, step, cursor: this.resumePoint(run).cursor, operationKey: context.operationKey, outputHash: approvalHash(output), invocation: context.invocation, at: this.clock() });
-      run.status = STEP_STATUS[step] ?? 'RUNNING';
+      run.status = this.profile.stepStatus[step] ?? 'RUNNING';
       if (run.status === 'COMPLETED') run.completedAt = this.clock();
       return structuredClone(run);
     });
@@ -337,12 +341,90 @@ export class McpAgentWorkflow {
     return this.mutate(runId, (run) => {
       const entry = { serverId, tool, reason, message: String(message).slice(0, 200), invocation: run.invocations.length, at: this.clock(), ...(internal ? { internal } : {}) };
       run.toolErrors.push(entry); if (run.toolErrors.length > 64) run.toolErrors.splice(0, run.toolErrors.length - 64);
-      if (tool === 'applyApprovedPolicy' && String(reason).startsWith('APPROVAL_')) run.approvalChecks.push({ result: 'REJECTED', reason, draftId: input?.draftId ?? null, presentedHashPrefix: String(input?.approvalHash ?? '').slice(0, 12), invocation: run.invocations.length, at: entry.at });
+      if (tool === this.profile.approvalStep && String(reason).startsWith('APPROVAL_')) run.approvalChecks.push({ result: 'REJECTED', reason, draftId: input?.draftId ?? null, presentedHashPrefix: String(input?.approvalHash ?? '').slice(0, 12), invocation: run.invocations.length, at: entry.at });
       return structuredClone(entry);
     });
   }
   async receipt(run, action, detail = {}) {
     const evidence = recordEnvelope({ type: 'MCP_AGENT_AUDIT', runId: run.runId, action, taskHash: run.taskHash, detail }, this.clock);
     await this.store.append('receipts', evidence); return evidence;
+  }
+}
+
+const TRIAGE = MCP_TRIAGE_CONTRACT.workflow;
+const TRIAGE_STEPS = TRIAGE.steps;
+const TRIAGE_LEASE_STEPS = new Set(TRIAGE.leaseSteps);
+const TRIAGE_READ_ONLY = new Set(TRIAGE.readOnlyTools);
+const TRIAGE_SCOPES = [...new Set(Object.values(MCP_TRIAGE_CONTRACT.servers).flatMap((server) => server.tools.map((tool) => tool.requiredScope)))].sort();
+const TRIAGE_STATUS = { readAlert: 'TRIAGING', submitTriage: 'TRIAGED', draftLocationLease: 'DRAFTED', requestGuardianApproval: 'AWAITING_GUARDIAN', applyApprovedLease: 'LEASE_APPLIED', appendTriageEvidence: 'COMPLETED' };
+export const TRIAGE_WORKFLOW_PROFILE = Object.freeze({ contract: MCP_TRIAGE_CONTRACT, steps: TRIAGE_STEPS, readOnly: TRIAGE_READ_ONLY, stepStatus: TRIAGE_STATUS, approvalStep: 'applyApprovedLease' });
+
+/**
+ * Persistent ledger for one anomaly triage run. Context reads are free in order (that is the agent's routing choice)
+ * but bounded by a read budget and recorded; submitTriage needs readAlert; the lease steps exist only for the
+ * emergencyLease action and keep the guardian approvalHash gate of McpAgentWorkflow.
+ */
+export class McpTriageWorkflow extends McpAgentWorkflow {
+  constructor(options = {}) { super({ ...options, profile: TRIAGE_WORKFLOW_PROFILE }); }
+  static get steps() { return [...TRIAGE_STEPS]; }
+  static get scopes() { return [...TRIAGE_SCOPES]; }
+  async createRun({ guardian, task, grantId, agentPrincipalId, idempotencyKey }) {
+    this.policyService.authorize(guardian, 'mcp:run'); requireString(idempotencyKey, 'idempotencyKey'); requireString(agentPrincipalId, 'agentPrincipalId');
+    const clean = structuredClone(task ?? {});
+    for (const field of ['householdId', 'residentId', 'deviceId', 'keyringId', 'alertId', 'guardianId', 'caseId']) if (!AGENT_ID.test(clean[field] ?? '')) throw new Error(`MCP triage task ${field} required`);
+    if (!TRIAGE.steps.length || !clean.paths || typeof clean.paths.alerts !== 'string' || typeof clean.alertPath !== 'string') throw new Error('MCP triage task resource paths required');
+    if (!clean.leaseGrants || Object.keys(clean.leaseGrants).some((purpose) => !TRIAGE.leasePurposes.includes(purpose))) throw new Error('MCP triage lease purposes required');
+    clean.maxLeaseMinutes = Math.min(Number.isInteger(clean.maxLeaseMinutes) ? clean.maxLeaseMinutes : TRIAGE.maxLeaseMinutes, TRIAGE.maxLeaseMinutes);
+    const decision = this.policyService.evaluateGrant(grantId);
+    if (!decision.allowed || decision.grant.principalId !== guardian.principalId || decision.grant.subjectId !== clean.householdId || TRIAGE_SCOPES.some((scope) => !decision.grant.scopes.includes(scope))) throw new Error('MCP triage run requires the household guardian grant with triage scopes');
+    const intent = { task: clean, grantId, grantRevision: decision.grant.revision, guardianId: guardian.principalId, agentPrincipalId };
+    const taskHash = approvalHash(intent);
+    return this.store.transaction(`mcp-triage-start:${guardian.principalId}:${idempotencyKey}`, async () => {
+      const prior = this.store.list('mcpAgentRuns').find((run) => run.guardianId === guardian.principalId && run.idempotencyKey === idempotencyKey);
+      if (prior) { if (prior.taskHash !== taskHash) throw new Error('MCP triage idempotency requires the original task'); return structuredClone(prior); }
+      const run = { runId: id('triage-run'), idempotencyKey, profile: MCP_TRIAGE_CONTRACT.contractId, ...intent, taskHash, status: 'READY', steps: {}, checkpoints: [], invocations: [], devices: {}, drafts: {}, approvals: {}, approvalChecks: [],
+        toolErrors: [], repeatedCalls: [], readCalls: [], triage: null, incident: null, lease: null, createdAt: this.clock() };
+      await this.store.put('mcpAgentRuns', run.runId, run); await this.receipt(run, 'TRIAGE_RUN_CREATED', { taskHash, alertId: clean.alertId }); return structuredClone(run);
+    });
+  }
+  leaseSkipped(run, step) { return TRIAGE_LEASE_STEPS.has(step) && Boolean(run.triage) && run.triage.action !== 'emergencyLease'; }
+  resumePoint(run) {
+    const completedSteps = TRIAGE_STEPS.filter((step) => run.steps[step]?.status === 'COMPLETED');
+    const nextStep = TRIAGE_STEPS.find((step) => run.steps[step]?.status !== 'COMPLETED' && !this.leaseSkipped(run, step)) ?? 'NONE';
+    return { cursor: completedSteps.length, completedSteps, nextStep };
+  }
+  route(run, step) {
+    if (run.status === 'COMPLETED') throw toolReview('RUN_COMPLETED', 'Triage run is completed; use audit readExecution');
+    const point = this.resumePoint(run);
+    if (TRIAGE_READ_ONLY.has(step)) {
+      if (step !== 'readExecution' && run.readCalls.length >= TRIAGE.readBudget) throw toolReview('ROUTE_BUDGET', `The read budget of ${TRIAGE.readBudget} context calls is used; submit the triage with the context already gathered`);
+      return point;
+    }
+    const index = TRIAGE_STEPS.indexOf(step);
+    if (index < 0) throw toolReview('ROUTE_UNKNOWN', `${step} is not a triage workflow step`);
+    if (this.leaseSkipped(run, step)) throw toolReview('ROUTE_ACTION', `${step} applies only to action emergencyLease; the recorded action is ${run.triage.action}`);
+    const missing = TRIAGE_STEPS.slice(0, index).filter((name) => run.steps[name]?.status !== 'COMPLETED' && !this.leaseSkipped(run, name));
+    if (missing.length) {
+      const waiting = missing.includes('applyApprovedLease') && this.approvalView(run).status === 'PENDING_GUARDIAN';
+      throw toolReview(waiting ? 'APPROVAL_PENDING' : 'ROUTE_ORDER', waiting ? 'The guardian decision is pending; stop and report PENDING' : `${step} requires ${missing.join(', ')} first; nextStep is ${point.nextStep}`);
+    }
+    const redraft = ['draftLocationLease', 'requestGuardianApproval'].includes(step) && this.latestApproval(run)?.status === 'REJECTED';
+    if (run.steps[step]?.status === 'COMPLETED' && !redraft) throw toolReview('STEP_COMPLETED', `${step} is already checkpointed; nextStep is ${point.nextStep}`);
+    return point;
+  }
+  /** Context reads are part of the routing trace: tool, server and output hash per call, inside the tool transaction. */
+  async recordRead(context, { serverId, tool, input, output }) {
+    return this.mutate(context.runId, (run) => {
+      run.readCalls.push({ serverId, tool, inputHash: approvalHash(input), outputHash: approvalHash(output), invocation: context.invocation, at: this.clock() });
+      return structuredClone(run.readCalls.at(-1));
+    });
+  }
+  executionView(run) {
+    const point = this.resumePoint(run); const approval = this.approvalView(run); const resumed = run.invocations.at(-1)?.resumedFrom;
+    return { runId: run.runId, status: run.status, alertId: run.task.alertId, alertKind: run.task.alertKind ?? 'UNKNOWN', invocation: run.invocations.length, completedSteps: point.completedSteps, nextStep: point.nextStep,
+      waitingFor: point.nextStep === 'applyApprovedLease' && approval.status === 'PENDING_GUARDIAN' ? 'GUARDIAN_APPROVAL' : 'NONE',
+      ...(run.triage ? { triage: { severity: run.triage.severity, action: run.triage.action } } : {}), approval,
+      readCalls: run.readCalls.length, readBudget: TRIAGE.readBudget, checkpointCount: run.checkpoints.length,
+      ...(resumed ? { resumedFrom: { invocation: resumed.invocation, nextStep: resumed.nextStep, cursor: resumed.cursor } } : {}) };
   }
 }
