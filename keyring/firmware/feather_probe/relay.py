@@ -173,7 +173,9 @@ async def read_scoped_state(hub: RelayTransport, expected: bool) -> bool:
     status, headers, body = await hub._http_json(
         "GET", hub.config.cse_url + FEATHER_SDT, headers=hub._m2m_headers(rqi))
     rsc = hub._response_rsc(status, headers, rqi)
-    switch = body.get("pb:binarySwitch")
+    # Dual reader: canonical TS-0023 cod:binSh, or the deprecated pb:binarySwitch of older bench volumes.
+    envelopes = [key for key in ("cod:binSh", "pb:binarySwitch") if isinstance(body, dict) and key in body]
+    switch = body.get(envelopes[0]) if len(envelopes) == 1 and len(body) == 1 else None
     if (status != 200 or rsc != 2000 or not isinstance(switch, dict) or switch.get("rn") != "featherState"
             or switch.get("cnd") != "org.onem2m.common.moduleclass.binarySwitch"
             or switch.get("state") is not expected):

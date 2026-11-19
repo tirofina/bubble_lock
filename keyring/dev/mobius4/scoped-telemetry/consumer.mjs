@@ -23,6 +23,11 @@ const transitions = new Map([
 const sameOwner = (current, expected) => current?.gatewayId === expected.gatewayId
   && current.deviceId === expected.deviceId && current.ownershipEpoch === expected.ownershipEpoch;
 const cseAdmin = process.env.CSE_ADMIN;
+// binarySwitch envelope of the mounted registry (sdt-profile.mjs). r4-common-1.0 is the canonical
+// TS-0023 cod:binSh; pb-legacy-1.0 is deprecated and kept for bench volumes created before it.
+const SDT_ENVELOPES = { 'r4-common-1.0': 'cod:binSh', 'pb-legacy-1.0': 'pb:binarySwitch' };
+const sdtProfile = process.env.KEYRING_SDT_PROFILE || 'pb-legacy-1.0';
+if (!Object.hasOwn(SDT_ENVELOPES, sdtProfile)) throw new Error('Unsupported KEYRING_SDT_PROFILE');
 if (!cseAdmin) throw new Error('Scoped CSE admin identity is required');
 const store = await new IntegrationStore('/var/lib/mobius4/scoped-cursor.json').init();
 const persistedOwner = store.get(owners, path);
@@ -53,7 +58,7 @@ const tls = {
 };
 
 function apply({ resource, requestId, payload }) {
-  const body = Buffer.from(JSON.stringify({ 'pb:binarySwitch': { state: payload.state } }));
+  const body = Buffer.from(JSON.stringify({ [SDT_ENVELOPES[sdtProfile]]: { state: payload.state } }));
   return new Promise((resolve, reject) => {
     const req = request(new URL(resource, 'https://tls:8759'), {
       ...tls, method: 'PUT', signal: AbortSignal.timeout(15000),

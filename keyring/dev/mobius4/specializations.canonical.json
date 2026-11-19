@@ -1,0 +1,7 @@
+{
+  "org.onem2m.common.moduleclass.binarySwitch": {
+    "typeName": "binSh",
+    "namespacePrefix": "cod",
+    "attributes": {"state": {"type": "boolean", "required": true}}
+  }
+}

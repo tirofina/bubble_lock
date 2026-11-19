@@ -5,6 +5,7 @@ import {setTimeout as delay} from 'node:timers/promises';
 import {randomUUID} from 'node:crypto';
 import {scopedCommandReceiptContainers, scopedFeatherCommandObservationContainer} from './scoped-command-receipts.mjs';
 import {receiptIdentifier} from '../../integration-candidate/receipt-authorization.mjs';
+import {describeSwitch, selectSdtProfile, switchResource} from './sdt-profile.mjs';
 
 const args = process.argv.slice(2);
 if (args.length && (args.length !== 1 || !['--scoped', '--scoped-command-receipts',
@@ -22,6 +23,9 @@ const environment = Object.fromEntries((await readFile(new URL('compose.env', ro
     const at = line.indexOf('=');
     return [line.slice(0, at), line.slice(at + 1)];
   }));
+// KEYRING_SDT_PROFILE in compose.env selects the binarySwitch envelope; see sdt-profile.mjs.
+const sdt = selectSdtProfile(environment.KEYRING_SDT_PROFILE ?? process.env.KEYRING_SDT_PROFILE);
+if (sdt.deprecated) console.log(`DEPRECATED SDT profile ${sdt.name} (${sdt.envelope}); new deployments use r4-common-1.0 (cod:binSh).`);
 const tls = {
   ca: await readFile(new URL('tls/ca.pem', root)),
   cert: await readFile(new URL('tls/client.pem', root)),
@@ -34,10 +38,9 @@ const resources = fullProfile ? [
   ...['observations', 'receipts', 'health'].map(rn => ({
     path: `/Mobius/${ae}`, ty: 3, body: {'m2m:cnt': {rn, mni: 10000}},
   })),
-  {path: `/Mobius/${ae}`, ty: 28, body: {'pb:binarySwitch': {
-    rn: 'bubbleState', cnd: 'org.onem2m.common.moduleclass.binarySwitch',
-    state: false, lbl: ['dev-bootstrap', 'unobserved'],
-  }}},
+  {path: `/Mobius/${ae}`, ty: 28, body: switchResource(sdt, {
+    rn: 'bubbleState', state: false, lbl: ['dev-bootstrap', 'unobserved'],
+  })},
 ] : [];
 if (scoped && !pinReceiptRoutes) {
   const commandContainers = [
@@ -52,10 +55,9 @@ if (scoped && !pinReceiptRoutes) {
   }
 }
 if (scoped && fullProfile) {
-  resources.push({path: `/Mobius/${ae}`, ty: 28, body: {'pb:binarySwitch': {
-    rn: 'featherState', cnd: 'org.onem2m.common.moduleclass.binarySwitch',
-    state: false, lbl: ['dev-bootstrap', 'feather-bench'],
-  }}});
+  resources.push({path: `/Mobius/${ae}`, ty: 28, body: switchResource(sdt, {
+    rn: 'featherState', state: false, lbl: ['dev-bootstrap', 'feather-bench'],
+  })});
 }
 async function exchange(method, path, resource = null) {
   const requestId = `kr-setup-${randomUUID()}`;
@@ -96,11 +98,14 @@ async function provision(resource) {
     const existing = await exchange('GET', `${resource.path}/${expected.rn}`);
     if (existing.rqi !== existing.requestId) throw new Error('Scoped resource response RQI mismatch');
     if (existing.httpStatus === 200 && existing.rsc === 2000) {
-      const actual = JSON.parse(existing.content)[envelope];
+      const content = JSON.parse(existing.content);
+      // Dual representation: an existing binarySwitch keeps the envelope it was created with.
+      const existingSwitch = resource.ty === 28 ? describeSwitch(content) : null;
+      const actual = existingSwitch ? existingSwitch.resource : content[envelope];
       if (actual?.rn !== expected.rn || actual.ty !== resource.ty || (expected.cnd && actual.cnd !== expected.cnd)) {
         throw new Error('Existing scoped resource does not match the required name, type or specialization.');
       }
-      return {...existing, status: 'EXISTS_UNCHANGED'};
+      return {...existing, status: 'EXISTS_UNCHANGED', ...(existingSwitch ? {sdtProfile: existingSwitch.profile, sdtEnvelope: existingSwitch.envelope, sdtDeprecated: existingSwitch.deprecated} : {})};
     }
     if (existing.httpStatus !== 404 || existing.rsc !== 4004) {
       throw new Error(`Scoped resource lookup stopped: HTTP ${existing.httpStatus}, rsc ${existing.rsc}`);
@@ -112,7 +117,8 @@ async function provision(resource) {
       || (!scoped && response.httpStatus === 409 && response.rsc === 4105))) {
     throw new Error(`Resource provisioning stopped: HTTP ${response.httpStatus}, rsc ${response.rsc}`);
   }
-  return {...response, status: response.rsc === 2001 ? 'CREATED' : 'EXISTS_UNCHANGED'};
+  return {...response, status: response.rsc === 2001 ? 'CREATED' : 'EXISTS_UNCHANGED',
+    ...(resource.ty === 28 ? {sdtProfile: sdt.name, sdtEnvelope: sdt.envelope, sdtDeprecated: sdt.deprecated} : {})};
 }
 
 async function preparePinnedReceiptRoutes() {
@@ -165,9 +171,10 @@ async function provisionEmptyResources() {
   const receipts = [];
   for (const [index, resource] of resources.entries()) {
     if (index) await delay(7000);
-    const {requestId, status, httpStatus, rsc, rqi} = await provision(resource);
+    const {requestId, status, httpStatus, rsc, rqi, sdtProfile, sdtEnvelope, sdtDeprecated} = await provision(resource);
     const resourceName = Object.values(resource.body)[0].rn;
     receipts.push({requestId, parent: resource.path, resourceName, ty: resource.ty, httpStatus, rsc, rqi, status,
+      ...(sdtProfile ? {sdtProfile, sdtEnvelope, sdtDeprecated} : {}),
       timestamp: new Date().toISOString(), evidenceScope: 'empty-resource-provisioning'});
     console.log(`${status} ${resource.path}/${resourceName} ty=${resource.ty} HTTP=${httpStatus} rsc=${rsc}`);
   }

@@ -30,3 +30,25 @@ python pc-mobius/scripts/build-sdt-closure.py
 파생 closure는 binarySwitch 전체 import를 컴파일하고 실제 XML 자원의 필수 boolean state와 문자열 거부를 검사한다. 위경도 범위·배열 중첩 문법을 보존하며 Polygon의 첫/끝점 일치와 최소 정점 수 검증은 GeoJSON 애플리케이션 계층의 책임이다. binarySwitch의 선택 capability는 state RW이며 action·instance와 GeoJSON 데이터 사용 범위는 `lineage.json`에 명시했다. 이 파일은 원본 출처·고정 commit·파일별 SHA-256·수정 범위·컴파일 결과를 기록한다. 재생성에는 Python `lxml` 패키지가 필요하다.
 
 `node --test pc-mobius/test/sdt-adapter.test.mjs`는 profile 변환, false 보존, cnd·envelope 충돌, HTTP/MQTT 직렬화, XSD 해시와 v2 계약을 검사한다. 실제 CSE의 CREATE/UPDATE/RETRIEVE/discovery 응답은 실행 receipt에 별도로 연결한다.
+
+## 독립 Python 클라이언트
+
+`tools/onem2m-sdt-client/sdt_client.py`는 Python 표준 라이브러리만 사용하는 두 번째 클라이언트 구현이다. 공개 XSD `specializations/r4/binarySwitch-r4-profile.xsd`에서 envelope(`cod:binSh`), 속성 이름(`state`), 타입(`xs:boolean`)을 읽고, TS-0023 containerDefinition으로 `fu=1&ty=28&cnd=org.onem2m.common.moduleclass.binarySwitch` discovery, RETRIEVE, UPDATE를 수행한다. 프로젝트 JavaScript 코드를 import하지 않으며 oneM2M HTTP binding 헤더(`X-M2M-Origin`, `X-M2M-RI`, `X-M2M-RVI`, `X-M2M-RSC`)만 사용한다.
+
+```powershell
+py -3 tools/onem2m-sdt-client/sdt_client.py --endpoint http://127.0.0.1:7599 --originator <AE-ID> --xsd pc-mobius/specializations/r4/binarySwitch-r4-profile.xsd verify --toggle /Mobius/<device-ae>/binarySwitch
+py -3 -m unittest tests.integration.test_sdt_python_client -v
+```
+
+`scripts/run-group-command-real.mjs`가 실제 Mobius4에서 JavaScript `OneM2mEdgeClient`와 이 Python 클라이언트의 discovery URI, state, 교차 쓰기와 읽기 결과를 비교한다.
+
+## 키링 bench의 이중 표현
+
+Mobius4 4.24.5 registry는 containerDefinition 하나에 envelope 하나를 연결한다(`cse/specialization.js`의 `expected_envelope_key`). 따라서 키링 bench는 배포 단위로 profile을 고른다. `keyring/dev/mobius4/sdt-profile.mjs`가 두 profile을 정의한다.
+
+| profile | envelope | registry | 상태 |
+|---|---|---|---|
+| `r4-common-1.0` | `cod:binSh` | `specializations.canonical.json` | 정본, 새 scoped 배포 기본값 |
+| `pb-legacy-1.0` | `pb:binarySwitch` | `specializations.json` | deprecated, 기존 bench volume 유지용 |
+
+`prepare-scoped.ps1 -SdtProfile`이 `compose.env`에 `KEYRING_SDT_PROFILE`과 `KEYRING_SDT_REGISTRY`를 기록하고, compose가 registry 파일과 consumer envelope를 같은 값으로 맞춘다. 변수가 없는 기존 `compose.env`는 `pb-legacy-1.0`으로 동작한다. `bootstrap.mjs`는 기존 binarySwitch 자원의 envelope를 그대로 인정하고 provisioning receipt에 `sdtProfile`, `sdtEnvelope`, `sdtDeprecated`를 남긴다. Feather relay readback은 두 envelope를 모두 읽는다.
