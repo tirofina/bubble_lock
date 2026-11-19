@@ -22,7 +22,7 @@
     },
     "mec": { "services": ["Location", "RNIS"], "callbackPath": "/v1/mec/callback", "dedupKey": "eventId" },
     "handover": { "states": ["DETACHED", "DRAINING", "ACTIVE", "ROLLED_BACK"], "epoch": "uint64" },
-    "fl": { "vmRuntime": "ESTIMED", "roundStates": ["RUNNING", "RECOVERED", "COMPLETED"], "artifactFence": true },
+    "fl": { "vmRuntime": "ESTIMED", "roundStates": ["RUNNING", "RECOVERED", "COMPLETED"], "artifactFence": true, "coordinationPlane": "fl-onem2m-plane.v1.json", "coordinationPlaneEvidence": "docs/verification-evidence/2026-11-19/fl-onem2m-real-cse.json" },
     "mcp": { "servers": ["oneM2M", "MEC", "Audit"], "protocolVersion": "2025-11-25", "supportedProtocolVersions": ["2025-11-25", "2025-06-18"], "transport": "Streamable HTTP", "toolsContract": "mcp-tools.v1.json", "checkpoint": true, "resume": true, "approvalHash": true, "approvalRequired": true, "currentGrantPerStep": true, "durableOperationDedup": true, "states": ["PENDING_APPROVAL", "APPROVED", "RUNNING", "PAUSED", "COMPLETED"] }
   },
   "rubricMapping": {
