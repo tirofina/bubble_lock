@@ -25,6 +25,9 @@
 #include "peripherals.h"
 #include "supply_monitor.h"
 #include "headphone_standby.h"
+#if defined(KEYRING_R26_OTA)
+#include "r26_ota.h"
+#endif
 #if KEYRING_R18_BRINGUP
 #include <esp_ota_ops.h>
 #include <esp_partition.h>
@@ -1116,6 +1119,9 @@ void setup() {
   Serial.begin(115200); // Native USB CDC only; GPIO43 is reserved for LCD reset.
   if (journalNvsNeedsRecovery) {
     Serial.println("KEYRING LOCKED: default NVS needs recovery; command journal preserved.");
+#if defined(KEYRING_R26_OTA)
+    r26ota::rejectPending();
+#endif
     return;
   }
   uint64_t mac = ESP.getEfuseMac();
@@ -1144,6 +1150,9 @@ void setup() {
       && (ObservationOnly || (commandQueue && journalRequests));
   if (!provisioned) {
     Serial.println("KEYRING LOCKED: set a per-device passkey and valid identity before enabling BLE.");
+#if defined(KEYRING_R26_OTA)
+    r26ota::rejectPending();
+#endif
     return;
   }
   initializeAudioWhenQuiet(); // I2S installation also waits for the other receiver's quiet state.
@@ -1151,6 +1160,9 @@ void setup() {
   peripherals.begin();
   sampleSensors(); publishObservation(); // Freeze a readable observation before advertising.
   initBle();
+#if defined(KEYRING_R26_OTA)
+  r26ota::begin([]() { return strcmp(peripherals.displayStatus(), "st7789_unverified") == 0; });
+#endif
   Serial.printf("KEYRING ready: %s, storage=%s, radioSleep=%s\n", deviceId,
       ObservationOnly ? "disabled" : storageHealthy ? "ready" : "error",
       radioSleepEnabled ? "enabled" : "unavailable");
