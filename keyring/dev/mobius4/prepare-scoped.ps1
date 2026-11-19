@@ -1,6 +1,8 @@
 param(
   [Parameter(Mandatory = $true)][string]$Mobius4Root,
-  [Parameter(Mandatory = $true)][string]$TeamCoreRoot
+  [Parameter(Mandatory = $true)][string]$TeamCoreRoot,
+  # r4-common-1.0 mounts the canonical TS-0023 cod:binSh registry. pb-legacy-1.0 is deprecated.
+  [ValidateSet('r4-common-1.0', 'pb-legacy-1.0')][string]$SdtProfile = 'r4-common-1.0'
 )
 $ErrorActionPreference = 'Stop'
 $sourceRoot = (Resolve-Path -LiteralPath $Mobius4Root).Path
@@ -38,5 +40,7 @@ DB_PW=$databasePassword
 CSE_ADMIN=$originator
 KEYRING_CSE_TLS_PORT=8760
 KEYRING_MQTT_TLS_PORT=8884
+KEYRING_SDT_PROFILE=$SdtProfile
+KEYRING_SDT_REGISTRY=$(if ($SdtProfile -eq 'r4-common-1.0') { './specializations.canonical.json' } else { './specializations.json' })
 "@ | Set-Content -LiteralPath (Join-Path $stateRoot 'compose.env') -Encoding utf8NoBOM
 Write-Host 'Scoped profile and TLS files prepared.'

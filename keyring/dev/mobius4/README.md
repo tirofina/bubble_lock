@@ -39,7 +39,7 @@ docker compose --env-file ./keyring/dev/mobius4/.local/compose.env -f ./keyring/
 
 `/api/`는 항상 503/allowed=false다. INTEGRATION 서버가 없는 상태에서 임의 승인이나 가짜 명령을 제공하지 않는다. 실제 `PC_API_URL`과 credential/authorize API를 연결하기 전에는 Gateway 명령 실행이 차단된다.
 
-관측/receipt/health container와 binarySwitch 자원은 CORE owner가 준비해야 한다. 포함한 specialization registry는 `pb:binarySwitch`를 위한 로컬 설정이며 팀의 공통 파일을 변경하지 않는다. CORE 제공 하니스의 `create-state`는 현재 ty=4로 기록돼 있어 flexContainer ty=28과 불일치한다. 이 차이는 [인수 메모](../../CORE_INTEGRATION.md)에 기록했고 팀 원본은 보존했다.
+관측/receipt/health container와 binarySwitch 자원은 CORE owner가 준비해야 한다. 포함한 specialization registry는 두 가지다. `specializations.canonical.json`은 TS-0023 정본 `cod:binSh`(`r4-common-1.0`)이고 새 scoped 배포의 기본값이다. `specializations.json`은 `pb:binarySwitch`(`pb-legacy-1.0`)이며 deprecated 상태로 기존 bench volume을 위해 유지한다. Mobius4 registry는 containerDefinition 하나에 envelope 하나를 연결하므로 `compose.env`의 `KEYRING_SDT_PROFILE`과 `KEYRING_SDT_REGISTRY`가 CSE registry, `bootstrap.mjs` 생성 body, scoped consumer UPDATE body를 같은 profile로 맞춘다. 두 변수가 없는 기존 `compose.env`는 legacy profile로 그대로 동작한다. profile 정의는 `sdt-profile.mjs`, 비교 설명은 [SDT 문서](../../../pc-mobius/SDT.md#키링-bench의-이중-표현)에 있다. CORE 제공 하니스의 `create-state`는 현재 ty=4로 기록돼 있어 flexContainer ty=28과 불일치한다. 이 차이는 [인수 메모](../../CORE_INTEGRATION.md)에 기록했고 팀 원본은 보존했다.
 
 나중에 실제 Mobius 서버로 바꿀 때는 `M2M_CSE_URL`/RVI/Originator/container/CA·credential과 `PC_API_URL`을 교체한다. 운영 서버의 별도 데이터 저장소에는 새 `M2M_CSE_DEPLOYMENT_ID`와 새 `GATEWAY_DATABASE`를 지정한다. [배포 전환](../../raspberry-pi-gateway/STATE_RECOVERY.md#cse-배포-전환)
 
@@ -63,6 +63,8 @@ Gateway 0.2.14는 적용 영수증을 기다린다. 새 ACL은 해당 Gateway에
 ./keyring/dev/mobius4/prepare-scoped.ps1 -Mobius4Root $mobius4Root -TeamCoreRoot $teamCoreRoot
 ./keyring/dev/mobius4/start-scoped.ps1
 ```
+
+`prepare-scoped.ps1`은 기본으로 `-SdtProfile r4-common-1.0`(정본 `cod:binSh`)을 기록한다. legacy envelope가 필요한 시험은 `-SdtProfile pb-legacy-1.0`을 지정한다.
 
 두 번째 명령은 격리 서버와 소비자를 기동하고 빈 oneM2M 자원을 준비한다. 기존 scoped 자원이 있으면 RQI·타입·이름·SDT specialization을 조회해 재사용한다. TLS 키, 임시 관리자 값과 `config/owner.json`은 `.local/scoped/`에만 생성된다. 기본 초기 소유권은 `gw-a`·`kr-handover`·epoch 7이다. 새 소비자는 이 파일을 최초 등록에만 사용하고 이후에는 cursor 저장소의 소유권을 사용한다. 운영 전환에는 중앙 정본과 이전 writer의 drain이 필요하다.
 

@@ -3,8 +3,8 @@ import { createIntegrationRuntime } from './integration-runtime.mjs';
 const guardianScopes = ['portal:read', 'household:write', 'device:write', 'consent:write', 'grant:write', 'grant:revoke', 'command:request', 'bubble:command', 'incident:write', 'incident:resolve'];
 
 /** 로컬 시연용 별도 저장소이며 명령은 데모 Gateway 큐에 보관합니다. */
-export async function createPortalDemo({ statePath = null, clock = () => new Date().toISOString() } = {}) {
-  const runtime = await createIntegrationRuntime({ statePath, clock });
+export async function createPortalDemo({ statePath = null, clock = () => new Date().toISOString(), core = {} } = {}) {
+  const runtime = await createIntegrationRuntime({ statePath, clock, core });
   const principals = {
     guardian: { principalId: 'guardian-demo', scopes: guardianScopes, simulation: true },
     visitor: { principalId: 'visitor-demo', scopes: ['portal:read', 'command:request', 'incident:write'], simulation: true },

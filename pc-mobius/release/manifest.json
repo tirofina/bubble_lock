@@ -18,6 +18,7 @@
     "db/migrations/001_core_receipts.sql",
     "src/gateway-bridge.mjs",
     "src/group-dispatcher.mjs",
+    "src/onem2m-group-fanout.mjs",
     "src/receipt-journal.mjs"
   ],
   "commands": {
@@ -27,6 +28,7 @@
     "prepareSpecialization": "node scripts/prepare-specialization.mjs --mobius-root <mobius4-source>",
     "httpContract": "node scripts/run-contract.mjs",
     "mqttBridge": "npm run bridge",
-    "replayReceipt": "node scripts/replay-receipt.mjs --input <receipt.json>"
+    "replayReceipt": "node scripts/replay-receipt.mjs --input <receipt.json>",
+    "groupCommandRealCse": "node scripts/run-group-command-real.mjs"
   }
 }

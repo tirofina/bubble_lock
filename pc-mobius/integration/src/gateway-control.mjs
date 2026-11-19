@@ -18,6 +18,8 @@ export class GatewayControl {
     Object.assign(this, { store, policyService, handoverCoordinator, clock });
     this.issuance = Promise.resolve();
     this.pollOffsets = new Map();
+    this.receiptListeners = new Set();
+    this.receiptJobs = new Set();
     const authorize = this.authorize.bind(this);
     this.authorize = (...args) => this.store.transaction(`gateway:authorize:${args[0]}`, () => authorize(...args));
   }
@@ -180,7 +182,33 @@ export class GatewayControl {
     });
   }
 
+  // Settled device receipts are published to in-process listeners (Group fan-out ACK/readback).
+  // Listener work runs after the receipt transaction and never changes the Gateway response.
+  onReceipt(listener) {
+    if (typeof listener !== 'function') throw new Error('Receipt listener function required');
+    this.receiptListeners.add(listener);
+    return () => this.receiptListeners.delete(listener);
+  }
+
+  notifyReceipt(event) {
+    for (const listener of this.receiptListeners) {
+      const job = Promise.resolve().then(() => listener(structuredClone(event))).catch(() => {});
+      this.receiptJobs.add(job);
+      job.finally(() => this.receiptJobs.delete(job));
+    }
+  }
+
+  async drainReceiptListeners() {
+    while (this.receiptJobs.size) await Promise.allSettled([...this.receiptJobs]);
+  }
+
   async receiveReceipt(gatewayId, principal, receipt) {
+    const result = await this.settleReceipt(gatewayId, principal, receipt);
+    if (result.status === 'ACCEPTED') this.notifyReceipt({ gatewayId, deviceId: receipt.deviceId, commandId: result.commandId, claimId: result.claimId, payloadHash: receipt.payloadHash, grantRevision: receipt.grantRevision, ownershipEpoch: receipt.ownershipEpoch, executionState: result.executionState, status: receipt.status, ackCode: receipt.ackCode, readback: receipt.readback ?? null, appliedAt: receipt.appliedAt, receiptHash: result.receiptHash });
+    return result;
+  }
+
+  async settleReceipt(gatewayId, principal, receipt) {
     const gateway = this.authenticate(gatewayId, principal);
     if (!validateReceipt(receipt) || receipt.gatewayId !== gatewayId || !gateway.devices[receipt.deviceId]) throw new Error('GATEWAY_RECEIPT_SCHEMA');
     return this.store.transaction(`gateway:receipt:${receipt.commandId}`, async () => {

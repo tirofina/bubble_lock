@@ -74,7 +74,7 @@ class FeatherRelayTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(loaded, self.config)
             self.assertEqual(dict(os.environ), before)
 
-    async def run_relay(self, corrupt=False, mqtt=False, scoped=False):
+    async def run_relay(self, corrupt=False, mqtt=False, scoped=False, sdt_envelope="pb:binarySwitch"):
         stored, fleets, hubs = {}, [], []
         http_posts = []
         frames = [dict(frame, gatewayId="gw-a") for frame in self.frames] if scoped else self.frames
@@ -109,7 +109,7 @@ class FeatherRelayTests(unittest.IsolatedAsyncioTestCase):
                 return httpx.Response(201, headers=headers | {"X-M2M-RSC": "2001"}, json={})
             if scoped and request.url.path == relay.FEATHER_SDT:
                 return httpx.Response(200, headers=headers | {"X-M2M-RSC": "2000"},
-                                      json={"pb:binarySwitch": {"rn": "featherState", "state": applied[-1],
+                                      json={sdt_envelope: {"rn": "featherState", "state": applied[-1],
                                             "cnd": "org.onem2m.common.moduleclass.binarySwitch"}})
             cin = json.loads(canonical(stored[request.url.path]))
             if corrupt:
@@ -210,6 +210,11 @@ class FeatherRelayTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(summary["readbackSha256"], summary["payloadSha256"])
         self.assertEqual(summary["scopedReceiptCount"], 3)
         self.assertEqual([receipt["sequence"] for receipt in summary["scopedReceipts"]], [0, 1, 2])
+        self.assertIs(summary["sdtReadbackState"], False)
+
+    async def test_scoped_relay_reads_canonical_binsh_readback(self):
+        summary = await self.run_relay(scoped=True, sdt_envelope="cod:binSh")
+        self.assertEqual(summary["status"], "passed", summary)
         self.assertIs(summary["sdtReadbackState"], False)
 
     async def test_scoped_recovery_reuses_pending_bytes_without_starting_ble(self):

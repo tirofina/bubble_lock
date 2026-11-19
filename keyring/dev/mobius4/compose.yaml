@@ -49,7 +49,7 @@ services:
       RATELIMIT_MAX: 500
     volumes:
       - identity_v2:/var/lib/mobius4
-      - ./specializations.json:/app/config/specializations.json:ro
+      - ${KEYRING_SDT_REGISTRY:-./specializations.json}:/app/config/specializations.json:ro
     restart: on-failure
   tls:
     image: nginx:1.28-alpine

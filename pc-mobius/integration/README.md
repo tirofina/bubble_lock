@@ -88,12 +88,15 @@ npm run integration:replay -- --input=receipts/integration-demo.json
 | 동의 생성·회수 | `/v1/portal/consents`, `/v1/portal/consents/revoke` | guardian + `consent:write` |
 | 권한 발급·회수 | `/v1/portal/grants`, `/v1/portal/grants/revoke` | 동의/권한 소유자 + `grant:write`/`grant:revoke` |
 | 명령 요청·승인 | `/v1/portal/commands/request`, `/v1/portal/commands/approve` | `command:request`; 승인은 guardian + `bubble:command` + 현재 가구 grant |
+| 가구 Group 명령 재시도 | `/v1/portal/commands/retry` | 승인한 guardian + `bubble:command`; `RETRY_PENDING` 구성원만 재전송 |
 | 도움·분실·안전 요청 | `/v1/portal/incidents`, `/v1/portal/incidents/resolve` | `incident:write`; 처리는 guardian + `incident:resolve` |
 | 알림 확인 | `/v1/portal/notifications/read` | 알림 수신자 + `portal:read` |
 
 `GET /v1/portal/location-access`는 `{deviceIds,householdIds,role}`을 반환한다. 보호자는 소속 가구 기기를 조회하고, 방문자는 해당 가구 보호자의 `location:read` 권한이 활성인 동안 기기 위치를 조회한다. 동의·권한 회수, revision 변경, 만료가 다음 조회에 즉시 반영된다. 웹 위치 데이터 경로는 이 결과로 기기 집합을 필터링한다.
 
 명령 승인은 기존 `GatewayControl`의 canonical 큐에 claim·grantRevision·ownershipEpoch·deadline을 저장한다. `PENDING`은 승인 대기, `PARTIAL`은 일부 기기의 큐 등록, `QUEUED`는 Gateway 전달 대기를 뜻한다. 실제 실행 확인은 Gateway ACK/readback receipt로 연결한다. `PARTIAL` 재시도는 원래 commandId와 intent를 유지한다.
+
+`target: household` 요청은 가구 등록 기기 전체를 구성원으로 하는 oneM2M `<grp>`(mt=28, macp, et=grant 만료)를 사용한다. 승인은 `<grp>/fopt` UPDATE 한 번을 보내고 `m2m:agr`의 구성원별 rsc를 기록한다. CSE가 수락한 구성원에게만 claim을 발급하고, 실패 구성원은 `PARTIAL`과 `group.members[].status=RETRY_PENDING`으로 남는다. `commands/retry`와 같은 요청의 재승인은 실패 구성원에게만 구성원 UPDATE와 claim을 보낸다. Gateway receipt 정산 뒤 `group-command-service.mjs`가 CSE readback과 구성원 ACK cin을 기록한다. 설정은 `createIntegrationRuntime({ core: { groupCommand: { cse, groupParent, memberResources, ackContainers, auditContainer, macp, acpi } } })`이다.
 
 `createPortalDemo({statePath?,clock?})`는 고정된 guardian/visitor/operator identity, `household-demo`, `pi-01`, 키링 3개와 로컬 sandbox 큐를 제공한다. 웹 demo 모드의 역할 선택은 이 고정 identity에 결속된다. 운영 환경은 [설정 예시](../config/integration-api.example.json)에 실제 issuer·JWKS URI·subject enrollment와 인증서 파일을 채워 실행한다. OIDC 설정 시 TLS client certificate는 선택이며, Gateway 경로의 certificate fingerprint 결속은 필수다. TLS 설정 전에는 `/healthz` 상태 조회가 제공된다.
 

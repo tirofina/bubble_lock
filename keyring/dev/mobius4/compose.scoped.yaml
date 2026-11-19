@@ -23,6 +23,7 @@ services:
     depends_on: [broker, tls]
     environment:
       CSE_ADMIN: ${CSE_ADMIN:?Run prepare-scoped.ps1 first}
+      KEYRING_SDT_PROFILE: ${KEYRING_SDT_PROFILE:-pb-legacy-1.0}
     volumes:
       - ./scoped-telemetry/consumer.mjs:/scoped/consumer.mjs:ro
       - ../../integration-candidate:/scoped/integration-candidate:ro
