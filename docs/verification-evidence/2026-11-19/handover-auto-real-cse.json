@@ -1,0 +1,2967 @@
+{
+  "status": "PASS",
+  "rubric": "R12",
+  "docRevision": "2.0.0",
+  "generatedAt": "2026-11-19T11:55:39.635Z",
+  "runId": "1795089224796_b5d7d1",
+  "scope": {
+    "physicalHosts": 1,
+    "cseProcesses": 2,
+    "cseImplementation": "Mobius4",
+    "cseVersion": "4.24.5",
+    "sourceRevision": "3da4d8523694b5077e348ab1c9e769fb3a30df24",
+    "postgres": "PostgreSQL 17.6 on x86_64-windows, compiled by msvc-19.44.35213, 64-bit",
+    "transport": "actual-mobius4-loopback-http-through-latency-proxy",
+    "host": "single Windows host, loopback only"
+  },
+  "simulation": {
+    "cse": false,
+    "device": true,
+    "deviceNote": "keyring telemetry generated in-process at a fixed rate (Gateway telemetry schema 1.0.0); no BLE hardware",
+    "location": true,
+    "locationNote": "scripted MEC Location reports through MecPolicyReconciler and approved zone policies",
+    "availabilityFault": false,
+    "availabilityNote": "edge-a Mobius4 process is terminated (TerminateProcess) and restarted on the same PostgreSQL database",
+    "latency": "real probe RTT; extra delay injected by a loopback TCP proxy process",
+    "load": true,
+    "loadNote": "edge-agent load value set by the scenario (simulated report)",
+    "coordinatorStore": "run-local in-memory IntegrationStore subclass (shallow collection copy per transaction)"
+  },
+  "triggerPolicy": {
+    "minResidenceMs": 1500,
+    "cooldownMs": 1500,
+    "zoneDwellMs": 500,
+    "minInsideM": 20,
+    "continuityGapMs": 1000,
+    "healthFailures": 3,
+    "healthFailureSpacingMs": 1000,
+    "availabilityFailures": 3,
+    "availabilityFailureSpacingMs": 0,
+    "performanceDwellMs": 600,
+    "minScoreGain": 0.15,
+    "latencyBudgetMs": 50,
+    "latencyWeight": 1,
+    "latencyAlpha": 0.3,
+    "probeFailuresForDown": 3
+  },
+  "intervals": {
+    "probeMs": 100,
+    "evaluateMs": 200,
+    "checkpointMs": 500,
+    "locationReportMs": 250,
+    "producerMs": 50
+  },
+  "baseOneWayDelayMs": {
+    "edge-a": 0,
+    "edge-b": 8
+  },
+  "injectedOneWayDelayMs": 40,
+  "zones": [
+    {
+      "zoneId": "home",
+      "geofence": {
+        "type": "circle",
+        "lat": 37.5,
+        "lon": 127,
+        "radiusM": 120
+      }
+    },
+    {
+      "zoneId": "street",
+      "geofence": {
+        "type": "circle",
+        "lat": 37.503,
+        "lon": 127,
+        "radiusM": 150
+      }
+    },
+    {
+      "zoneId": "outside",
+      "geofence": {
+        "type": "circle",
+        "lat": 37.507,
+        "lon": 127,
+        "radiusM": 200
+      }
+    }
+  ],
+  "edgeZones": {
+    "edge-a": [
+      "home",
+      "street"
+    ],
+    "edge-b": [
+      "street",
+      "outside"
+    ]
+  },
+  "rounds": 5,
+  "interruptionDefinition": "time between the last observation acknowledged by the source CSE and the first acknowledgement on the target CSE of a newer sequence (live write or cutover replay)",
+  "targets": {
+    "handoversAtLeast": 10,
+    "observationsAtLeast": 1000,
+    "lost": 0,
+    "duplicatesDeliveredToApp": 0
+  },
+  "summary": {
+    "handovers": 30,
+    "initialPlacements": 1,
+    "byKind": {
+      "zone": 10,
+      "availability": 5,
+      "performance": 15
+    },
+    "stepsMatchingExpectedKind": true,
+    "unexpectedHandovers": 0,
+    "reviewsDuringRun": 0,
+    "interruptionMs": {
+      "n": 30,
+      "p50": 70.3,
+      "p95": 779.5,
+      "max": 791.7
+    },
+    "interruptionMsByKind": {
+      "zone": {
+        "n": 10,
+        "p50": 34.9,
+        "p95": 279.8,
+        "max": 279.8
+      },
+      "availability": {
+        "n": 5,
+        "p50": 776.8,
+        "p95": 791.7,
+        "max": 791.7
+      },
+      "performance": {
+        "n": 15,
+        "p50": 66.6,
+        "p95": 254.2,
+        "max": 254.2
+      }
+    },
+    "detectionMsByKind": {
+      "zone": {
+        "n": 10,
+        "p50": 666.5,
+        "p95": 974.2,
+        "max": 974.2
+      },
+      "availability": {
+        "n": 5,
+        "p50": 263.3,
+        "p95": 280.2,
+        "max": 280.2
+      },
+      "performance": {
+        "n": 15,
+        "p50": 778.8,
+        "p95": 1406.2,
+        "max": 1406.2
+      }
+    },
+    "cutoverMs": {
+      "n": 30,
+      "p50": 739.2,
+      "p95": 1416.5,
+      "max": 2544.3
+    },
+    "activeMs": {
+      "n": 30,
+      "p50": 742.9,
+      "p95": 1457.9,
+      "max": 2582.8
+    },
+    "maxDeliveryDelayMs": {
+      "n": 30,
+      "p50": 63.4,
+      "p95": 1093.9,
+      "max": 1139.1
+    },
+    "notificationResumeObsMs": {
+      "n": 30,
+      "p50": 13.8,
+      "p95": 25.8,
+      "max": 29.2
+    },
+    "notificationResumeStateMs": {
+      "n": 30,
+      "p50": 33.2,
+      "p95": 56.3,
+      "max": 56.3
+    },
+    "notificationFromTargetEveryHandover": true,
+    "observations": {
+      "produced": 2154,
+      "retransmissionsInjected": 58,
+      "retransmissionsSuppressed": 58,
+      "acceptedCentral": 2154,
+      "finalEdge": "edge-a",
+      "finalContainerCni": 2154,
+      "presentOnFinalCse": 2154,
+      "lost": 0,
+      "duplicatesInCse": 0,
+      "liveWrites": 2126,
+      "replayDelivered": 28,
+      "cseDuplicateWriteAttempts": 0,
+      "writeFailuresRetried": 96,
+      "heldDuringCutover": 163,
+      "standbyMirrored": 1660,
+      "standbyMirrorFailures": 0,
+      "standbyMirrorDropped": 0
+    },
+    "holdWindowMs": {
+      "n": 30,
+      "p50": 55.3,
+      "p95": 280.1,
+      "max": 344.4
+    },
+    "notificationGapMs": {
+      "n": 30,
+      "p50": 95,
+      "p95": 755.2,
+      "max": 767.2
+    },
+    "app": {
+      "notificationsRaw": 2853,
+      "uniqueSequences": 2154,
+      "duplicatesSuppressedByAppDedup": 699,
+      "duplicatesDeliveredToApp": 0,
+      "missingAtApp": 0,
+      "verificationRequests": 0
+    },
+    "security": {
+      "checks": 30,
+      "pass": true,
+      "intruderDenied4103": 30,
+      "staleSourceDenied4103": 30,
+      "deferredFencesApplied": 5,
+      "deferredFencesPending": 0
+    },
+    "gatewayBridge": {
+      "edge-a:APPLIED": 1042,
+      "gateway-dedup:DUPLICATE": 51,
+      "cutover-hold:REVIEW": 137,
+      "edge-b:APPLIED": 950,
+      "edge-a:REVIEW": 29,
+      "gateway-dedup:IN_FLIGHT": 3
+    },
+    "probes": {
+      "edge-a": {
+        "count": 1042,
+        "failures": 146,
+        "rttP50Ms": 1.6,
+        "rttP95Ms": 82.9
+      },
+      "edge-b": {
+        "count": 1080,
+        "failures": 0,
+        "rttP50Ms": 18.4,
+        "rttP95Ms": 20.6
+      }
+    },
+    "orchestratorEventLoopDelayMs": {
+      "p50": 1.8,
+      "p99": 3.5,
+      "max": 11.5
+    },
+    "cseRestarts": 5
+  },
+  "steps": [
+    {
+      "label": "r1 zone home->outside",
+      "expectedKind": "zone",
+      "stimulusAt": 4842.2375999999995,
+      "handoverId": "handover-03c07f37-80fd-49f3-a762-1cebd7863fb8",
+      "reason": "zone",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 2,
+      "trigger": {
+        "kind": "zone",
+        "since": "2026-11-19T11:53:49.888Z",
+        "firedAt": "2026-11-19T11:53:50.388Z",
+        "observedAt": "2026-11-19T11:53:50.388Z",
+        "failures": 0,
+        "scoreGain": null,
+        "distanceInsideM": 195
+      },
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "replay": {
+        "acceptedCount": 91,
+        "watermark": 90
+      },
+      "durationMs": 2583
+    },
+    {
+      "label": "r1 zone outside->home",
+      "expectedKind": "zone",
+      "stimulusAt": 9678.9616,
+      "handoverId": "handover-73d369db-6fc1-423f-8ba0-b55606e2d990",
+      "reason": "zone",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 3,
+      "trigger": {
+        "kind": "zone",
+        "since": "2026-11-19T11:53:54.893Z",
+        "firedAt": "2026-11-19T11:53:55.395Z",
+        "observedAt": "2026-11-19T11:53:55.394Z",
+        "failures": 0,
+        "scoreGain": null,
+        "distanceInsideM": 115
+      },
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "replay": {
+        "acceptedCount": 146,
+        "watermark": 145
+      },
+      "durationMs": 159
+    },
+    {
+      "label": "r1 home->street (both edges serve street)",
+      "expectedKind": null,
+      "stimulusAt": 12262.031500000001,
+      "handoverId": null,
+      "unexpectedHandover": false
+    },
+    {
+      "label": "r1 availability: kill edge-a Mobius4",
+      "expectedKind": "availability",
+      "stimulusAt": 12963.769600000001,
+      "handoverId": "handover-a05d5a27-3d5f-4ddc-9de7-cc167d50e910",
+      "reason": "availability",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 4,
+      "trigger": {
+        "kind": "availability",
+        "since": "2026-11-19T11:53:58.080Z",
+        "firedAt": "2026-11-19T11:53:58.279Z",
+        "observedAt": "2026-11-19T11:53:58.279Z",
+        "failures": 3,
+        "scoreGain": null,
+        "distanceInsideM": 0
+      },
+      "checkpointSource": "cached-checkpoint",
+      "checkpointAgeMs": 655,
+      "sourceFence": {
+        "fenced": false,
+        "deferred": true
+      },
+      "sourceCleanup": "deferred-to-recovery",
+      "replay": {
+        "acceptedCount": 201,
+        "watermark": 200
+      },
+      "durationMs": 826
+    },
+    {
+      "label": "r1 failback after edge-a restart",
+      "expectedKind": "performance",
+      "stimulusAt": 15813.897,
+      "handoverId": "handover-53898b18-8f45-4f33-a5c7-a2db08f5954a",
+      "reason": "performance",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 5,
+      "trigger": {
+        "kind": "performance",
+        "since": "2026-11-19T11:54:02.173Z",
+        "firedAt": "2026-11-19T11:54:02.774Z",
+        "observedAt": "2026-11-19T11:54:02.774Z",
+        "failures": 0,
+        "scoreGain": 0.35334886009182054,
+        "distanceInsideM": 0
+      },
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "replay": {
+        "acceptedCount": 302,
+        "watermark": 301
+      },
+      "durationMs": 658
+    },
+    {
+      "label": "r1 latency: inject 40ms one-way on edge-a",
+      "expectedKind": "performance",
+      "stimulusAt": 20139.1135,
+      "handoverId": "handover-d79fa14c-2c64-4d9a-9b20-1c9f8e5ba78d",
+      "reason": "performance",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 6,
+      "trigger": {
+        "kind": "performance",
+        "since": "2026-11-19T11:54:05.378Z",
+        "firedAt": "2026-11-19T11:54:05.979Z",
+        "observedAt": "2026-11-19T11:54:05.979Z",
+        "failures": 0,
+        "scoreGain": 1.175982989559424,
+        "distanceInsideM": 0
+      },
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "replay": {
+        "acceptedCount": 375,
+        "watermark": 374
+      },
+      "durationMs": 1383
+    },
+    {
+      "label": "r1 latency cleared on edge-a",
+      "expectedKind": "performance",
+      "stimulusAt": 24071.5421,
+      "handoverId": "handover-24d1c8dc-6637-4845-a334-c483737f897b",
+      "reason": "performance",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 7,
+      "trigger": {
+        "kind": "performance",
+        "since": "2026-11-19T11:54:09.786Z",
+        "firedAt": "2026-11-19T11:54:10.386Z",
+        "observedAt": "2026-11-19T11:54:10.386Z",
+        "failures": 0,
+        "scoreGain": 0.3258460925904714,
+        "distanceInsideM": 0
+      },
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "replay": {
+        "acceptedCount": 443,
+        "watermark": 442
+      },
+      "durationMs": 143
+    },
+    {
+      "label": "r1 street->home",
+      "expectedKind": null,
+      "stimulusAt": 27237.4937,
+      "handoverId": null,
+      "unexpectedHandover": false
+    },
+    {
+      "label": "r2 zone home->outside",
+      "expectedKind": "zone",
+      "stimulusAt": 27937.3184,
+      "handoverId": "handover-5c22894c-7cdf-4f86-a064-4f03f4d1406a",
+      "reason": "zone",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 8,
+      "trigger": {
+        "kind": "zone",
+        "since": "2026-11-19T11:54:13.177Z",
+        "firedAt": "2026-11-19T11:54:13.678Z",
+        "observedAt": "2026-11-19T11:54:13.677Z",
+        "failures": 0,
+        "scoreGain": null,
+        "distanceInsideM": 195
+      },
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "replay": {
+        "acceptedCount": 521,
+        "watermark": 520
+      },
+      "durationMs": 884
+    },
+    {
+      "label": "r2 zone outside->home",
+      "expectedKind": "zone",
+      "stimulusAt": 31269.516799999998,
+      "handoverId": "handover-81b34693-de02-4f6e-8cf5-52964f1f63fa",
+      "reason": "zone",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 9,
+      "trigger": {
+        "kind": "zone",
+        "since": "2026-11-19T11:54:16.432Z",
+        "firedAt": "2026-11-19T11:54:16.933Z",
+        "observedAt": "2026-11-19T11:54:16.932Z",
+        "failures": 0,
+        "scoreGain": null,
+        "distanceInsideM": 115
+      },
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "replay": {
+        "acceptedCount": 573,
+        "watermark": 572
+      },
+      "durationMs": 143
+    },
+    {
+      "label": "r2 home->street (both edges serve street)",
+      "expectedKind": null,
+      "stimulusAt": 33783.433300000004,
+      "handoverId": null,
+      "unexpectedHandover": false
+    },
+    {
+      "label": "r2 availability: kill edge-a Mobius4",
+      "expectedKind": "availability",
+      "stimulusAt": 34484.035200000006,
+      "handoverId": "handover-7a633555-a549-4355-81d8-698be5bc10d0",
+      "reason": "availability",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 10,
+      "trigger": {
+        "kind": "availability",
+        "since": "2026-11-19T11:54:19.570Z",
+        "firedAt": "2026-11-19T11:54:19.771Z",
+        "observedAt": "2026-11-19T11:54:19.771Z",
+        "failures": 3,
+        "scoreGain": null,
+        "distanceInsideM": 0
+      },
+      "checkpointSource": "cached-checkpoint",
+      "checkpointAgeMs": 633,
+      "sourceFence": {
+        "fenced": false,
+        "deferred": true
+      },
+      "sourceCleanup": "deferred-to-recovery",
+      "replay": {
+        "acceptedCount": 627,
+        "watermark": 626
+      },
+      "durationMs": 787
+    },
+    {
+      "label": "r2 failback after edge-a restart",
+      "expectedKind": "performance",
+      "stimulusAt": 37265.085900000005,
+      "handoverId": "handover-5c642d8c-e8de-4a75-8c8b-2e1f87a0834f",
+      "reason": "performance",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 11,
+      "trigger": {
+        "kind": "performance",
+        "since": "2026-11-19T11:54:23.398Z",
+        "firedAt": "2026-11-19T11:54:24.000Z",
+        "observedAt": "2026-11-19T11:54:23.999Z",
+        "failures": 0,
+        "scoreGain": 0.36397788860736086,
+        "distanceInsideM": 0
+      },
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "replay": {
+        "acceptedCount": 722,
+        "watermark": 721
+      },
+      "durationMs": 637
+    },
+    {
+      "label": "r2 load: edge-a agent reports load 0.7",
+      "expectedKind": "performance",
+      "stimulusAt": 41345.9384,
+      "handoverId": "handover-dcff7285-9957-4e89-baab-5f87960ce895",
+      "reason": "performance",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 12,
+      "trigger": {
+        "kind": "performance",
+        "since": "2026-11-19T11:54:26.404Z",
+        "firedAt": "2026-11-19T11:54:27.006Z",
+        "observedAt": "2026-11-19T11:54:27.006Z",
+        "failures": 0,
+        "scoreGain": 0.35731500874554467,
+        "distanceInsideM": 0
+      },
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "replay": {
+        "acceptedCount": 785,
+        "watermark": 784
+      },
+      "durationMs": 938
+    },
+    {
+      "label": "r2 load: edge-a agent reports load 0.0",
+      "expectedKind": "performance",
+      "stimulusAt": 44653.206900000005,
+      "handoverId": "handover-e1cb3e7f-0758-4889-9731-b88292cbcb01",
+      "reason": "performance",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 13,
+      "trigger": {
+        "kind": "performance",
+        "since": "2026-11-19T11:54:29.809Z",
+        "firedAt": "2026-11-19T11:54:30.412Z",
+        "observedAt": "2026-11-19T11:54:30.412Z",
+        "failures": 0,
+        "scoreGain": 0.35654951080148317,
+        "distanceInsideM": 0
+      },
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "replay": {
+        "acceptedCount": 840,
+        "watermark": 839
+      },
+      "durationMs": 161
+    },
+    {
+      "label": "r2 street->home",
+      "expectedKind": null,
+      "stimulusAt": 47281.1814,
+      "handoverId": null,
+      "unexpectedHandover": false
+    },
+    {
+      "label": "r3 zone home->outside",
+      "expectedKind": "zone",
+      "stimulusAt": 47982.3713,
+      "handoverId": "handover-7f6dc085-5e79-41ad-bb50-5732f40b8fe0",
+      "reason": "zone",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 14,
+      "trigger": {
+        "kind": "zone",
+        "since": "2026-11-19T11:54:33.217Z",
+        "firedAt": "2026-11-19T11:54:33.720Z",
+        "observedAt": "2026-11-19T11:54:33.719Z",
+        "failures": 0,
+        "scoreGain": null,
+        "distanceInsideM": 195
+      },
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "replay": {
+        "acceptedCount": 918,
+        "watermark": 917
+      },
+      "durationMs": 930
+    },
+    {
+      "label": "r3 zone outside->home",
+      "expectedKind": "zone",
+      "stimulusAt": 51358.8346,
+      "handoverId": "handover-87185cab-cc44-439f-996f-d7297be86f7d",
+      "reason": "zone",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 15,
+      "trigger": {
+        "kind": "zone",
+        "since": "2026-11-19T11:54:36.473Z",
+        "firedAt": "2026-11-19T11:54:36.975Z",
+        "observedAt": "2026-11-19T11:54:36.973Z",
+        "failures": 0,
+        "scoreGain": null,
+        "distanceInsideM": 115
+      },
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "replay": {
+        "acceptedCount": 970,
+        "watermark": 969
+      },
+      "durationMs": 142
+    },
+    {
+      "label": "r3 home->street (both edges serve street)",
+      "expectedKind": null,
+      "stimulusAt": 53826.8877,
+      "handoverId": null,
+      "unexpectedHandover": false
+    },
+    {
+      "label": "r3 availability: kill edge-a Mobius4",
+      "expectedKind": "availability",
+      "stimulusAt": 54526.779500000004,
+      "handoverId": "handover-76f769d9-67f0-476d-8bc1-51a9a1f85a9f",
+      "reason": "availability",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 16,
+      "trigger": {
+        "kind": "availability",
+        "since": "2026-11-19T11:54:39.593Z",
+        "firedAt": "2026-11-19T11:54:39.793Z",
+        "observedAt": "2026-11-19T11:54:39.793Z",
+        "failures": 3,
+        "scoreGain": null,
+        "distanceInsideM": 0
+      },
+      "checkpointSource": "cached-checkpoint",
+      "checkpointAgeMs": 641,
+      "sourceFence": {
+        "fenced": false,
+        "deferred": true
+      },
+      "sourceCleanup": "deferred-to-recovery",
+      "replay": {
+        "acceptedCount": 1024,
+        "watermark": 1023
+      },
+      "durationMs": 801
+    },
+    {
+      "label": "r3 failback after edge-a restart",
+      "expectedKind": "performance",
+      "stimulusAt": 57304.093,
+      "handoverId": "handover-9ad42c85-509c-4d11-a0b1-8cec13a05a3d",
+      "reason": "performance",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 17,
+      "trigger": {
+        "kind": "performance",
+        "since": "2026-11-19T11:54:43.448Z",
+        "firedAt": "2026-11-19T11:54:44.048Z",
+        "observedAt": "2026-11-19T11:54:44.048Z",
+        "failures": 0,
+        "scoreGain": 0.32694304668215624,
+        "distanceInsideM": 0
+      },
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "replay": {
+        "acceptedCount": 1119,
+        "watermark": 1118
+      },
+      "durationMs": 603
+    },
+    {
+      "label": "r3 latency: inject 40ms one-way on edge-a",
+      "expectedKind": "performance",
+      "stimulusAt": 61360.781200000005,
+      "handoverId": "handover-64af226b-4a39-40b6-84f9-f05fc870796f",
+      "reason": "performance",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 18,
+      "trigger": {
+        "kind": "performance",
+        "since": "2026-11-19T11:54:46.656Z",
+        "firedAt": "2026-11-19T11:54:47.256Z",
+        "observedAt": "2026-11-19T11:54:47.256Z",
+        "failures": 0,
+        "scoreGain": 1.1795379764325045,
+        "distanceInsideM": 0
+      },
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "replay": {
+        "acceptedCount": 1192,
+        "watermark": 1191
+      },
+      "durationMs": 1337
+    },
+    {
+      "label": "r3 latency cleared on edge-a",
+      "expectedKind": "performance",
+      "stimulusAt": 65300.453100000006,
+      "handoverId": "handover-7e8af813-cb81-4af9-941e-b80439c66f4c",
+      "reason": "performance",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 19,
+      "trigger": {
+        "kind": "performance",
+        "since": "2026-11-19T11:54:51.065Z",
+        "firedAt": "2026-11-19T11:54:51.666Z",
+        "observedAt": "2026-11-19T11:54:51.666Z",
+        "failures": 0,
+        "scoreGain": 0.3426538869420238,
+        "distanceInsideM": 0
+      },
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "replay": {
+        "acceptedCount": 1261,
+        "watermark": 1260
+      },
+      "durationMs": 158
+    },
+    {
+      "label": "r3 street->home",
+      "expectedKind": null,
+      "stimulusAt": 68530.35299999999,
+      "handoverId": null,
+      "unexpectedHandover": false
+    },
+    {
+      "label": "r4 zone home->outside",
+      "expectedKind": "zone",
+      "stimulusAt": 69231.5469,
+      "handoverId": "handover-30f2df0d-3a5b-4045-acee-1875b8f46645",
+      "reason": "zone",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 20,
+      "trigger": {
+        "kind": "zone",
+        "since": "2026-11-19T11:54:54.496Z",
+        "firedAt": "2026-11-19T11:54:55.249Z",
+        "observedAt": "2026-11-19T11:54:55.247Z",
+        "failures": 0,
+        "scoreGain": null,
+        "distanceInsideM": 195
+      },
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "replay": {
+        "acceptedCount": 1345,
+        "watermark": 1344
+      },
+      "durationMs": 837
+    },
+    {
+      "label": "r4 zone outside->home",
+      "expectedKind": "zone",
+      "stimulusAt": 72793.5303,
+      "handoverId": "handover-c790b4aa-c23a-4766-b22b-95d02bfc8169",
+      "reason": "zone",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 21,
+      "trigger": {
+        "kind": "zone",
+        "since": "2026-11-19T11:54:58.001Z",
+        "firedAt": "2026-11-19T11:54:58.503Z",
+        "observedAt": "2026-11-19T11:54:58.502Z",
+        "failures": 0,
+        "scoreGain": null,
+        "distanceInsideM": 115
+      },
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "replay": {
+        "acceptedCount": 1397,
+        "watermark": 1396
+      },
+      "durationMs": 144
+    },
+    {
+      "label": "r4 home->street (both edges serve street)",
+      "expectedKind": null,
+      "stimulusAt": 75354.034,
+      "handoverId": null,
+      "unexpectedHandover": false
+    },
+    {
+      "label": "r4 availability: kill edge-a Mobius4",
+      "expectedKind": "availability",
+      "stimulusAt": 76054.2613,
+      "handoverId": "handover-2fdbce49-e7d4-4e5b-97cc-b3372a4b102a",
+      "reason": "availability",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 22,
+      "trigger": {
+        "kind": "availability",
+        "since": "2026-11-19T11:55:01.188Z",
+        "firedAt": "2026-11-19T11:55:01.389Z",
+        "observedAt": "2026-11-19T11:55:01.388Z",
+        "failures": 3,
+        "scoreGain": null,
+        "distanceInsideM": 0
+      },
+      "checkpointSource": "cached-checkpoint",
+      "checkpointAgeMs": 714,
+      "sourceFence": {
+        "fenced": false,
+        "deferred": true
+      },
+      "sourceCleanup": "deferred-to-recovery",
+      "replay": {
+        "acceptedCount": 1452,
+        "watermark": 1451
+      },
+      "durationMs": 814
+    },
+    {
+      "label": "r4 failback after edge-a restart",
+      "expectedKind": "performance",
+      "stimulusAt": 78911.72929999999,
+      "handoverId": "handover-f9264c3d-6859-499b-9e85-a0de0e22fb78",
+      "reason": "performance",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 23,
+      "trigger": {
+        "kind": "performance",
+        "since": "2026-11-19T11:55:05.302Z",
+        "firedAt": "2026-11-19T11:55:05.905Z",
+        "observedAt": "2026-11-19T11:55:05.904Z",
+        "failures": 0,
+        "scoreGain": 0.32912137688349524,
+        "distanceInsideM": 0
+      },
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "replay": {
+        "acceptedCount": 1555,
+        "watermark": 1554
+      },
+      "durationMs": 743
+    },
+    {
+      "label": "r4 load: edge-a agent reports load 0.7",
+      "expectedKind": "performance",
+      "stimulusAt": 83355.91549999999,
+      "handoverId": "handover-1fd092c2-bdb2-4d7e-9269-ab6049e1e267",
+      "reason": "performance",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 24,
+      "trigger": {
+        "kind": "performance",
+        "since": "2026-11-19T11:55:08.513Z",
+        "firedAt": "2026-11-19T11:55:09.118Z",
+        "observedAt": "2026-11-19T11:55:09.116Z",
+        "failures": 0,
+        "scoreGain": 0.39368012080528214,
+        "distanceInsideM": 0
+      },
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "replay": {
+        "acceptedCount": 1622,
+        "watermark": 1621
+      },
+      "durationMs": 996
+    },
+    {
+      "label": "r4 load: edge-a agent reports load 0.0",
+      "expectedKind": "performance",
+      "stimulusAt": 86820.4583,
+      "handoverId": "handover-fa5c237c-e862-46a7-8c43-517029a2a25f",
+      "reason": "performance",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 25,
+      "trigger": {
+        "kind": "performance",
+        "since": "2026-11-19T11:55:11.930Z",
+        "firedAt": "2026-11-19T11:55:12.533Z",
+        "observedAt": "2026-11-19T11:55:12.532Z",
+        "failures": 0,
+        "scoreGain": 0.3274774725995933,
+        "distanceInsideM": 0
+      },
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "replay": {
+        "acceptedCount": 1676,
+        "watermark": 1675
+      },
+      "durationMs": 177
+    },
+    {
+      "label": "r4 street->home",
+      "expectedKind": null,
+      "stimulusAt": 89418.7004,
+      "handoverId": null,
+      "unexpectedHandover": false
+    },
+    {
+      "label": "r5 zone home->outside",
+      "expectedKind": "zone",
+      "stimulusAt": 90118.8394,
+      "handoverId": "handover-ecbbe11f-8a6e-4bfe-a1c2-2c14ea745c10",
+      "reason": "zone",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 26,
+      "trigger": {
+        "kind": "zone",
+        "since": "2026-11-19T11:55:15.284Z",
+        "firedAt": "2026-11-19T11:55:15.787Z",
+        "observedAt": "2026-11-19T11:55:15.785Z",
+        "failures": 0,
+        "scoreGain": null,
+        "distanceInsideM": 195
+      },
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "replay": {
+        "acceptedCount": 1754,
+        "watermark": 1753
+      },
+      "durationMs": 1034
+    },
+    {
+      "label": "r5 zone outside->home",
+      "expectedKind": "zone",
+      "stimulusAt": 93530.16619999999,
+      "handoverId": "handover-211d0956-93fa-45ab-aa60-0df8508cf35a",
+      "reason": "zone",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 27,
+      "trigger": {
+        "kind": "zone",
+        "since": "2026-11-19T11:55:18.787Z",
+        "firedAt": "2026-11-19T11:55:19.290Z",
+        "observedAt": "2026-11-19T11:55:19.288Z",
+        "failures": 0,
+        "scoreGain": null,
+        "distanceInsideM": 115
+      },
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "replay": {
+        "acceptedCount": 1810,
+        "watermark": 1809
+      },
+      "durationMs": 174
+    },
+    {
+      "label": "r5 home->street (both edges serve street)",
+      "expectedKind": null,
+      "stimulusAt": 96170.7181,
+      "handoverId": null,
+      "unexpectedHandover": false
+    },
+    {
+      "label": "r5 availability: kill edge-a Mobius4",
+      "expectedKind": "availability",
+      "stimulusAt": 96871.8933,
+      "handoverId": "handover-828f3a68-6d96-4520-9593-639c3f95906e",
+      "reason": "availability",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 28,
+      "trigger": {
+        "kind": "availability",
+        "since": "2026-11-19T11:55:21.991Z",
+        "firedAt": "2026-11-19T11:55:22.193Z",
+        "observedAt": "2026-11-19T11:55:22.192Z",
+        "failures": 3,
+        "scoreGain": null,
+        "distanceInsideM": 0
+      },
+      "checkpointSource": "cached-checkpoint",
+      "checkpointAgeMs": 494,
+      "sourceFence": {
+        "fenced": false,
+        "deferred": true
+      },
+      "sourceCleanup": "deferred-to-recovery",
+      "replay": {
+        "acceptedCount": 1865,
+        "watermark": 1864
+      },
+      "durationMs": 828
+    },
+    {
+      "label": "r5 failback after edge-a restart",
+      "expectedKind": "performance",
+      "stimulusAt": 99729.4561,
+      "handoverId": "handover-3c3a8ccb-5b8c-4996-86e0-4817fe18593d",
+      "reason": "performance",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 29,
+      "trigger": {
+        "kind": "performance",
+        "since": "2026-11-19T11:55:25.762Z",
+        "firedAt": "2026-11-19T11:55:26.364Z",
+        "observedAt": "2026-11-19T11:55:26.363Z",
+        "failures": 0,
+        "scoreGain": 0.3376278371263346,
+        "distanceInsideM": 0
+      },
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "replay": {
+        "acceptedCount": 1958,
+        "watermark": 1957
+      },
+      "durationMs": 601
+    },
+    {
+      "label": "r5 latency: inject 40ms one-way on edge-a",
+      "expectedKind": "performance",
+      "stimulusAt": 103673.4451,
+      "handoverId": "handover-e114c92b-dafb-433a-a825-8be97ef1656d",
+      "reason": "performance",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 30,
+      "trigger": {
+        "kind": "performance",
+        "since": "2026-11-19T11:55:28.969Z",
+        "firedAt": "2026-11-19T11:55:29.571Z",
+        "observedAt": "2026-11-19T11:55:29.570Z",
+        "failures": 0,
+        "scoreGain": 1.1914944923547568,
+        "distanceInsideM": 0
+      },
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "replay": {
+        "acceptedCount": 2033,
+        "watermark": 2032
+      },
+      "durationMs": 1458
+    },
+    {
+      "label": "r5 latency cleared on edge-a",
+      "expectedKind": "performance",
+      "stimulusAt": 107735.1197,
+      "handoverId": "handover-d8ff3da6-2734-4e76-a3b4-b80e2452a4ff",
+      "reason": "performance",
+      "reasonMatches": true,
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 31,
+      "trigger": {
+        "kind": "performance",
+        "since": "2026-11-19T11:55:33.580Z",
+        "firedAt": "2026-11-19T11:55:34.184Z",
+        "observedAt": "2026-11-19T11:55:34.183Z",
+        "failures": 0,
+        "scoreGain": 0.35273981146104527,
+        "distanceInsideM": 0
+      },
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "replay": {
+        "acceptedCount": 2104,
+        "watermark": 2103
+      },
+      "durationMs": 163
+    },
+    {
+      "label": "r5 street->home",
+      "expectedKind": null,
+      "stimulusAt": 111054.38089999999,
+      "handoverId": null,
+      "unexpectedHandover": false
+    }
+  ],
+  "handovers": [
+    {
+      "index": 0,
+      "handoverId": "handover-dd9d589d-94da-493a-b57d-add42f072efc",
+      "kind": "initial-approved-placement",
+      "sourceEdgeId": null,
+      "targetEdgeId": "edge-a",
+      "epoch": 1,
+      "step": "initial-placement",
+      "sourceUnavailable": false,
+      "reviews": 0,
+      "initialPlacement": true
+    },
+    {
+      "index": 1,
+      "handoverId": "handover-03c07f37-80fd-49f3-a762-1cebd7863fb8",
+      "kind": "zone",
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 2,
+      "step": "r1 zone home->outside",
+      "sourceUnavailable": false,
+      "reviews": 0,
+      "detectionMs": 503.9,
+      "detectionBasis": "stimulus-to-prepare",
+      "cutoverMs": 2544.3,
+      "activeMs": 2582.8,
+      "releaseMs": 2620.7,
+      "holdWindowMs": 245.6,
+      "interruptionMs": 279.8,
+      "lastSourceSequence": 90,
+      "firstTargetSequence": 95,
+      "firstTargetVia": "live",
+      "replayedToTarget": 52,
+      "maxDeliveryDelayMs": 263.3,
+      "notificationResumeStateMs": 31.7,
+      "notificationResumeObsMs": 22.3,
+      "notificationGapMs": 260.3,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "triggerDetails": {
+        "kind": "zone",
+        "since": "2026-11-19T11:53:49.888Z",
+        "firedAt": "2026-11-19T11:53:50.388Z",
+        "observedAt": "2026-11-19T11:53:50.388Z",
+        "failures": 0,
+        "scoreGain": null,
+        "distanceInsideM": 195
+      },
+      "security": {
+        "handoverId": "handover-03c07f37-80fd-49f3-a762-1cebd7863fb8",
+        "targetEdgeId": "edge-b",
+        "sourceEdgeId": "edge-a",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "staleSourceAeRsc": 4103,
+        "pass": true
+      }
+    },
+    {
+      "index": 2,
+      "handoverId": "handover-73d369db-6fc1-423f-8ba0-b55606e2d990",
+      "kind": "zone",
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 3,
+      "step": "r1 zone outside->home",
+      "sourceUnavailable": false,
+      "reviews": 0,
+      "detectionMs": 673.4,
+      "detectionBasis": "stimulus-to-prepare",
+      "cutoverMs": 156,
+      "activeMs": 159,
+      "releaseMs": 209.2,
+      "holdWindowMs": 46.9,
+      "interruptionMs": 30.5,
+      "lastSourceSequence": 145,
+      "firstTargetSequence": 146,
+      "firstTargetVia": "live",
+      "replayedToTarget": 2,
+      "maxDeliveryDelayMs": 51.2,
+      "notificationResumeStateMs": 38.2,
+      "notificationResumeObsMs": 3.5,
+      "notificationGapMs": 57.2,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "triggerDetails": {
+        "kind": "zone",
+        "since": "2026-11-19T11:53:54.893Z",
+        "firedAt": "2026-11-19T11:53:55.395Z",
+        "observedAt": "2026-11-19T11:53:55.394Z",
+        "failures": 0,
+        "scoreGain": null,
+        "distanceInsideM": 115
+      },
+      "security": {
+        "handoverId": "handover-73d369db-6fc1-423f-8ba0-b55606e2d990",
+        "targetEdgeId": "edge-a",
+        "sourceEdgeId": "edge-b",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "staleSourceAeRsc": 4103,
+        "pass": true
+      }
+    },
+    {
+      "index": 3,
+      "handoverId": "handover-a05d5a27-3d5f-4ddc-9de7-cc167d50e910",
+      "kind": "availability",
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 4,
+      "step": "r1 availability: kill edge-a Mobius4",
+      "sourceUnavailable": true,
+      "reviews": 0,
+      "detectionMs": 263.3,
+      "detectionBasis": "process-kill-to-prepare",
+      "cutoverMs": 791.2,
+      "activeMs": 825.6,
+      "releaseMs": 825.7,
+      "holdWindowMs": 55.3,
+      "interruptionMs": 791.7,
+      "lastSourceSequence": 194,
+      "firstTargetSequence": 195,
+      "firstTargetVia": "replay",
+      "replayedToTarget": 6,
+      "maxDeliveryDelayMs": 1139.1,
+      "notificationResumeStateMs": 24,
+      "notificationResumeObsMs": 13.8,
+      "notificationGapMs": 767.2,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "cached-checkpoint",
+      "checkpointAgeMs": 655,
+      "sourceFence": {
+        "fenced": false,
+        "deferred": true
+      },
+      "sourceCleanup": "deferred-to-recovery",
+      "triggerDetails": {
+        "kind": "availability",
+        "since": "2026-11-19T11:53:58.080Z",
+        "firedAt": "2026-11-19T11:53:58.279Z",
+        "observedAt": "2026-11-19T11:53:58.279Z",
+        "failures": 3,
+        "scoreGain": null,
+        "distanceInsideM": 0
+      },
+      "security": {
+        "handoverId": "handover-a05d5a27-3d5f-4ddc-9de7-cc167d50e910",
+        "targetEdgeId": "edge-b",
+        "sourceEdgeId": "edge-a",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "pass": true,
+        "staleSourceAeRscAfterRecovery": 4103
+      }
+    },
+    {
+      "index": 4,
+      "handoverId": "handover-53898b18-8f45-4f33-a5c7-a2db08f5954a",
+      "kind": "performance",
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 5,
+      "step": "r1 failback after edge-a restart",
+      "sourceUnavailable": false,
+      "reviews": 0,
+      "detectionMs": 961.2,
+      "detectionBasis": "recovered-edge-reconciled-to-prepare",
+      "cutoverMs": 655.3,
+      "activeMs": 657.5,
+      "releaseMs": 698.8,
+      "holdWindowMs": 48,
+      "interruptionMs": 50.9,
+      "lastSourceSequence": 301,
+      "firstTargetSequence": 302,
+      "firstTargetVia": "live",
+      "replayedToTarget": 78,
+      "maxDeliveryDelayMs": 43.4,
+      "notificationResumeStateMs": 31.4,
+      "notificationResumeObsMs": 10.3,
+      "notificationGapMs": 74.2,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "triggerDetails": {
+        "kind": "performance",
+        "since": "2026-11-19T11:54:02.173Z",
+        "firedAt": "2026-11-19T11:54:02.774Z",
+        "observedAt": "2026-11-19T11:54:02.774Z",
+        "failures": 0,
+        "scoreGain": 0.35334886009182054,
+        "distanceInsideM": 0
+      },
+      "security": {
+        "handoverId": "handover-53898b18-8f45-4f33-a5c7-a2db08f5954a",
+        "targetEdgeId": "edge-a",
+        "sourceEdgeId": "edge-b",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "staleSourceAeRsc": 4103,
+        "pass": true
+      }
+    },
+    {
+      "index": 5,
+      "handoverId": "handover-d79fa14c-2c64-4d9a-9b20-1c9f8e5ba78d",
+      "kind": "performance",
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 6,
+      "step": "r1 latency: inject 40ms one-way on edge-a",
+      "sourceUnavailable": false,
+      "reviews": 0,
+      "detectionMs": 798.1,
+      "detectionBasis": "stimulus-to-prepare",
+      "cutoverMs": 1345.5,
+      "activeMs": 1383.1,
+      "releaseMs": 1555.5,
+      "holdWindowMs": 279.3,
+      "interruptionMs": 188,
+      "lastSourceSequence": 374,
+      "firstTargetSequence": 376,
+      "firstTargetVia": "live",
+      "replayedToTarget": 10,
+      "maxDeliveryDelayMs": 311,
+      "notificationResumeStateMs": 46.6,
+      "notificationResumeObsMs": 14.2,
+      "notificationGapMs": 286,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "triggerDetails": {
+        "kind": "performance",
+        "since": "2026-11-19T11:54:05.378Z",
+        "firedAt": "2026-11-19T11:54:05.979Z",
+        "observedAt": "2026-11-19T11:54:05.979Z",
+        "failures": 0,
+        "scoreGain": 1.175982989559424,
+        "distanceInsideM": 0
+      },
+      "security": {
+        "handoverId": "handover-d79fa14c-2c64-4d9a-9b20-1c9f8e5ba78d",
+        "targetEdgeId": "edge-b",
+        "sourceEdgeId": "edge-a",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "staleSourceAeRsc": 4103,
+        "pass": true
+      }
+    },
+    {
+      "index": 6,
+      "handoverId": "handover-24d1c8dc-6637-4845-a334-c483737f897b",
+      "kind": "performance",
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 7,
+      "step": "r1 latency cleared on edge-a",
+      "sourceUnavailable": false,
+      "reviews": 0,
+      "detectionMs": 1272.6,
+      "detectionBasis": "stimulus-to-prepare",
+      "cutoverMs": 140.5,
+      "activeMs": 142.9,
+      "releaseMs": 184.3,
+      "holdWindowMs": 43.7,
+      "interruptionMs": 27.8,
+      "lastSourceSequence": 442,
+      "firstTargetSequence": 443,
+      "firstTargetVia": "live",
+      "replayedToTarget": 1,
+      "maxDeliveryDelayMs": 43.8,
+      "notificationResumeStateMs": 51,
+      "notificationResumeObsMs": 11.8,
+      "notificationGapMs": 55.9,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "triggerDetails": {
+        "kind": "performance",
+        "since": "2026-11-19T11:54:09.786Z",
+        "firedAt": "2026-11-19T11:54:10.386Z",
+        "observedAt": "2026-11-19T11:54:10.386Z",
+        "failures": 0,
+        "scoreGain": 0.3258460925904714,
+        "distanceInsideM": 0
+      },
+      "security": {
+        "handoverId": "handover-24d1c8dc-6637-4845-a334-c483737f897b",
+        "targetEdgeId": "edge-a",
+        "sourceEdgeId": "edge-b",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "staleSourceAeRsc": 4103,
+        "pass": true
+      }
+    },
+    {
+      "index": 7,
+      "handoverId": "handover-5c22894c-7cdf-4f86-a064-4f03f4d1406a",
+      "kind": "zone",
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 8,
+      "step": "r2 zone home->outside",
+      "sourceUnavailable": false,
+      "reviews": 0,
+      "detectionMs": 698.5,
+      "detectionBasis": "stimulus-to-prepare",
+      "cutoverMs": 844.3,
+      "activeMs": 883.4,
+      "releaseMs": 889.7,
+      "holdWindowMs": 120.2,
+      "interruptionMs": 204,
+      "lastSourceSequence": 520,
+      "firstTargetSequence": 522,
+      "firstTargetVia": "live",
+      "replayedToTarget": 7,
+      "maxDeliveryDelayMs": 161.7,
+      "notificationResumeStateMs": 56.3,
+      "notificationResumeObsMs": 25.8,
+      "notificationGapMs": 179.6,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "triggerDetails": {
+        "kind": "zone",
+        "since": "2026-11-19T11:54:13.177Z",
+        "firedAt": "2026-11-19T11:54:13.678Z",
+        "observedAt": "2026-11-19T11:54:13.677Z",
+        "failures": 0,
+        "scoreGain": null,
+        "distanceInsideM": 195
+      },
+      "security": {
+        "handoverId": "handover-5c22894c-7cdf-4f86-a064-4f03f4d1406a",
+        "targetEdgeId": "edge-b",
+        "sourceEdgeId": "edge-a",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "staleSourceAeRsc": 4103,
+        "pass": true
+      }
+    },
+    {
+      "index": 8,
+      "handoverId": "handover-81b34693-de02-4f6e-8cf5-52964f1f63fa",
+      "kind": "zone",
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 9,
+      "step": "r2 zone outside->home",
+      "sourceUnavailable": false,
+      "reviews": 0,
+      "detectionMs": 621.4,
+      "detectionBasis": "stimulus-to-prepare",
+      "cutoverMs": 140.5,
+      "activeMs": 142.7,
+      "releaseMs": 183.5,
+      "holdWindowMs": 45.4,
+      "interruptionMs": 17.9,
+      "lastSourceSequence": 572,
+      "firstTargetSequence": 573,
+      "firstTargetVia": "live",
+      "replayedToTarget": 3,
+      "maxDeliveryDelayMs": 42.5,
+      "notificationResumeStateMs": 6.5,
+      "notificationResumeObsMs": 4.8,
+      "notificationGapMs": 43,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "triggerDetails": {
+        "kind": "zone",
+        "since": "2026-11-19T11:54:16.432Z",
+        "firedAt": "2026-11-19T11:54:16.933Z",
+        "observedAt": "2026-11-19T11:54:16.932Z",
+        "failures": 0,
+        "scoreGain": null,
+        "distanceInsideM": 115
+      },
+      "security": {
+        "handoverId": "handover-81b34693-de02-4f6e-8cf5-52964f1f63fa",
+        "targetEdgeId": "edge-a",
+        "sourceEdgeId": "edge-b",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "staleSourceAeRsc": 4103,
+        "pass": true
+      }
+    },
+    {
+      "index": 9,
+      "handoverId": "handover-7a633555-a549-4355-81d8-698be5bc10d0",
+      "kind": "availability",
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 10,
+      "step": "r2 availability: kill edge-a Mobius4",
+      "sourceUnavailable": true,
+      "reviews": 0,
+      "detectionMs": 235,
+      "detectionBasis": "process-kill-to-prepare",
+      "cutoverMs": 747.2,
+      "activeMs": 786.5,
+      "releaseMs": 786.7,
+      "holdWindowMs": 60.2,
+      "interruptionMs": 735,
+      "lastSourceSequence": 621,
+      "firstTargetSequence": 622,
+      "firstTargetVia": "replay",
+      "replayedToTarget": 5,
+      "maxDeliveryDelayMs": 1008.4,
+      "notificationResumeStateMs": 21.5,
+      "notificationResumeObsMs": 18.7,
+      "notificationGapMs": 708.3,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "cached-checkpoint",
+      "checkpointAgeMs": 633,
+      "sourceFence": {
+        "fenced": false,
+        "deferred": true
+      },
+      "sourceCleanup": "deferred-to-recovery",
+      "triggerDetails": {
+        "kind": "availability",
+        "since": "2026-11-19T11:54:19.570Z",
+        "firedAt": "2026-11-19T11:54:19.771Z",
+        "observedAt": "2026-11-19T11:54:19.771Z",
+        "failures": 3,
+        "scoreGain": null,
+        "distanceInsideM": 0
+      },
+      "security": {
+        "handoverId": "handover-7a633555-a549-4355-81d8-698be5bc10d0",
+        "targetEdgeId": "edge-b",
+        "sourceEdgeId": "edge-a",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "pass": true,
+        "staleSourceAeRscAfterRecovery": 4103
+      }
+    },
+    {
+      "index": 10,
+      "handoverId": "handover-5c642d8c-e8de-4a75-8c8b-2e1f87a0834f",
+      "kind": "performance",
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 11,
+      "step": "r2 failback after edge-a restart",
+      "sourceUnavailable": false,
+      "reviews": 0,
+      "detectionMs": 655.4,
+      "detectionBasis": "recovered-edge-reconciled-to-prepare",
+      "cutoverMs": 633.7,
+      "activeMs": 636.6,
+      "releaseMs": 676.6,
+      "holdWindowMs": 49.1,
+      "interruptionMs": 66.6,
+      "lastSourceSequence": 721,
+      "firstTargetSequence": 723,
+      "firstTargetVia": "live",
+      "replayedToTarget": 79,
+      "maxDeliveryDelayMs": 63.4,
+      "notificationResumeStateMs": 10.7,
+      "notificationResumeObsMs": 9,
+      "notificationGapMs": 92.7,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "triggerDetails": {
+        "kind": "performance",
+        "since": "2026-11-19T11:54:23.398Z",
+        "firedAt": "2026-11-19T11:54:24.000Z",
+        "observedAt": "2026-11-19T11:54:23.999Z",
+        "failures": 0,
+        "scoreGain": 0.36397788860736086,
+        "distanceInsideM": 0
+      },
+      "security": {
+        "handoverId": "handover-5c642d8c-e8de-4a75-8c8b-2e1f87a0834f",
+        "targetEdgeId": "edge-a",
+        "sourceEdgeId": "edge-b",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "staleSourceAeRsc": 4103,
+        "pass": true
+      }
+    },
+    {
+      "index": 11,
+      "handoverId": "handover-dcff7285-9957-4e89-baab-5f87960ce895",
+      "kind": "performance",
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 12,
+      "step": "r2 load: edge-a agent reports load 0.7",
+      "sourceUnavailable": false,
+      "reviews": 0,
+      "detectionMs": 618.2,
+      "detectionBasis": "stimulus-to-prepare",
+      "cutoverMs": 899.3,
+      "activeMs": 937.7,
+      "releaseMs": 944.1,
+      "holdWindowMs": 177,
+      "interruptionMs": 254.2,
+      "lastSourceSequence": 784,
+      "firstTargetSequence": 786,
+      "firstTargetVia": "live",
+      "replayedToTarget": 8,
+      "maxDeliveryDelayMs": 211.3,
+      "notificationResumeStateMs": 49.5,
+      "notificationResumeObsMs": 13.8,
+      "notificationGapMs": 226.6,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "triggerDetails": {
+        "kind": "performance",
+        "since": "2026-11-19T11:54:26.404Z",
+        "firedAt": "2026-11-19T11:54:27.006Z",
+        "observedAt": "2026-11-19T11:54:27.006Z",
+        "failures": 0,
+        "scoreGain": 0.35731500874554467,
+        "distanceInsideM": 0
+      },
+      "security": {
+        "handoverId": "handover-dcff7285-9957-4e89-baab-5f87960ce895",
+        "targetEdgeId": "edge-b",
+        "sourceEdgeId": "edge-a",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "staleSourceAeRsc": 4103,
+        "pass": true
+      }
+    },
+    {
+      "index": 12,
+      "handoverId": "handover-e1cb3e7f-0758-4889-9731-b88292cbcb01",
+      "kind": "performance",
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 13,
+      "step": "r2 load: edge-a agent reports load 0.0",
+      "sourceUnavailable": false,
+      "reviews": 0,
+      "detectionMs": 717.3,
+      "detectionBasis": "stimulus-to-prepare",
+      "cutoverMs": 158,
+      "activeMs": 161.2,
+      "releaseMs": 205.6,
+      "holdWindowMs": 44.5,
+      "interruptionMs": 44.5,
+      "lastSourceSequence": 839,
+      "firstTargetSequence": 840,
+      "firstTargetVia": "live",
+      "replayedToTarget": 3,
+      "maxDeliveryDelayMs": 42.8,
+      "notificationResumeStateMs": 36.9,
+      "notificationResumeObsMs": 11.6,
+      "notificationGapMs": 70.7,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "triggerDetails": {
+        "kind": "performance",
+        "since": "2026-11-19T11:54:29.809Z",
+        "firedAt": "2026-11-19T11:54:30.412Z",
+        "observedAt": "2026-11-19T11:54:30.412Z",
+        "failures": 0,
+        "scoreGain": 0.35654951080148317,
+        "distanceInsideM": 0
+      },
+      "security": {
+        "handoverId": "handover-e1cb3e7f-0758-4889-9731-b88292cbcb01",
+        "targetEdgeId": "edge-a",
+        "sourceEdgeId": "edge-b",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "staleSourceAeRsc": 4103,
+        "pass": true
+      }
+    },
+    {
+      "index": 13,
+      "handoverId": "handover-7f6dc085-5e79-41ad-bb50-5732f40b8fe0",
+      "kind": "zone",
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 14,
+      "step": "r3 zone home->outside",
+      "sourceUnavailable": false,
+      "reviews": 0,
+      "detectionMs": 696,
+      "detectionBasis": "stimulus-to-prepare",
+      "cutoverMs": 891.7,
+      "activeMs": 930.6,
+      "releaseMs": 938.1,
+      "holdWindowMs": 179.1,
+      "interruptionMs": 243.1,
+      "lastSourceSequence": 917,
+      "firstTargetSequence": 919,
+      "firstTargetVia": "live",
+      "replayedToTarget": 8,
+      "maxDeliveryDelayMs": 199.2,
+      "notificationResumeStateMs": 56.3,
+      "notificationResumeObsMs": 14.3,
+      "notificationGapMs": 219.7,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "triggerDetails": {
+        "kind": "zone",
+        "since": "2026-11-19T11:54:33.217Z",
+        "firedAt": "2026-11-19T11:54:33.720Z",
+        "observedAt": "2026-11-19T11:54:33.719Z",
+        "failures": 0,
+        "scoreGain": null,
+        "distanceInsideM": 195
+      },
+      "security": {
+        "handoverId": "handover-7f6dc085-5e79-41ad-bb50-5732f40b8fe0",
+        "targetEdgeId": "edge-b",
+        "sourceEdgeId": "edge-a",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "staleSourceAeRsc": 4103,
+        "pass": true
+      }
+    },
+    {
+      "index": 14,
+      "handoverId": "handover-87185cab-cc44-439f-996f-d7297be86f7d",
+      "kind": "zone",
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 15,
+      "step": "r3 zone outside->home",
+      "sourceUnavailable": false,
+      "reviews": 0,
+      "detectionMs": 574.6,
+      "detectionBasis": "stimulus-to-prepare",
+      "cutoverMs": 139.7,
+      "activeMs": 141.9,
+      "releaseMs": 186.5,
+      "holdWindowMs": 47.7,
+      "interruptionMs": 34.9,
+      "lastSourceSequence": 969,
+      "firstTargetSequence": 970,
+      "firstTargetVia": "live",
+      "replayedToTarget": 2,
+      "maxDeliveryDelayMs": 41.8,
+      "notificationResumeStateMs": 53.9,
+      "notificationResumeObsMs": 20.3,
+      "notificationGapMs": 61.2,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "triggerDetails": {
+        "kind": "zone",
+        "since": "2026-11-19T11:54:36.473Z",
+        "firedAt": "2026-11-19T11:54:36.975Z",
+        "observedAt": "2026-11-19T11:54:36.973Z",
+        "failures": 0,
+        "scoreGain": null,
+        "distanceInsideM": 115
+      },
+      "security": {
+        "handoverId": "handover-87185cab-cc44-439f-996f-d7297be86f7d",
+        "targetEdgeId": "edge-a",
+        "sourceEdgeId": "edge-b",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "staleSourceAeRsc": 4103,
+        "pass": true
+      }
+    },
+    {
+      "index": 15,
+      "handoverId": "handover-76f769d9-67f0-476d-8bc1-51a9a1f85a9f",
+      "kind": "availability",
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 16,
+      "step": "r3 availability: kill edge-a Mobius4",
+      "sourceUnavailable": true,
+      "reviews": 0,
+      "detectionMs": 213,
+      "detectionBasis": "process-kill-to-prepare",
+      "cutoverMs": 758.6,
+      "activeMs": 800.9,
+      "releaseMs": 801.4,
+      "holdWindowMs": 66.8,
+      "interruptionMs": 722.5,
+      "lastSourceSequence": 1018,
+      "firstTargetSequence": 1019,
+      "firstTargetVia": "replay",
+      "replayedToTarget": 5,
+      "maxDeliveryDelayMs": 1005.8,
+      "notificationResumeStateMs": 18.3,
+      "notificationResumeObsMs": 14.6,
+      "notificationGapMs": 696.2,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "cached-checkpoint",
+      "checkpointAgeMs": 641,
+      "sourceFence": {
+        "fenced": false,
+        "deferred": true
+      },
+      "sourceCleanup": "deferred-to-recovery",
+      "triggerDetails": {
+        "kind": "availability",
+        "since": "2026-11-19T11:54:39.593Z",
+        "firedAt": "2026-11-19T11:54:39.793Z",
+        "observedAt": "2026-11-19T11:54:39.793Z",
+        "failures": 3,
+        "scoreGain": null,
+        "distanceInsideM": 0
+      },
+      "security": {
+        "handoverId": "handover-76f769d9-67f0-476d-8bc1-51a9a1f85a9f",
+        "targetEdgeId": "edge-b",
+        "sourceEdgeId": "edge-a",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "pass": true,
+        "staleSourceAeRscAfterRecovery": 4103
+      }
+    },
+    {
+      "index": 16,
+      "handoverId": "handover-9ad42c85-509c-4d11-a0b1-8cec13a05a3d",
+      "kind": "performance",
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 17,
+      "step": "r3 failback after edge-a restart",
+      "sourceUnavailable": false,
+      "reviews": 0,
+      "detectionMs": 778.8,
+      "detectionBasis": "recovered-edge-reconciled-to-prepare",
+      "cutoverMs": 600.9,
+      "activeMs": 603.6,
+      "releaseMs": 644.1,
+      "holdWindowMs": 54.8,
+      "interruptionMs": 47.1,
+      "lastSourceSequence": 1118,
+      "firstTargetSequence": 1119,
+      "firstTargetVia": "live",
+      "replayedToTarget": 77,
+      "maxDeliveryDelayMs": 43.9,
+      "notificationResumeStateMs": 34.8,
+      "notificationResumeObsMs": 11.1,
+      "notificationGapMs": 72.6,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "triggerDetails": {
+        "kind": "performance",
+        "since": "2026-11-19T11:54:43.448Z",
+        "firedAt": "2026-11-19T11:54:44.048Z",
+        "observedAt": "2026-11-19T11:54:44.048Z",
+        "failures": 0,
+        "scoreGain": 0.32694304668215624,
+        "distanceInsideM": 0
+      },
+      "security": {
+        "handoverId": "handover-9ad42c85-509c-4d11-a0b1-8cec13a05a3d",
+        "targetEdgeId": "edge-a",
+        "sourceEdgeId": "edge-b",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "staleSourceAeRsc": 4103,
+        "pass": true
+      }
+    },
+    {
+      "index": 17,
+      "handoverId": "handover-64af226b-4a39-40b6-84f9-f05fc870796f",
+      "kind": "performance",
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 18,
+      "step": "r3 latency: inject 40ms one-way on edge-a",
+      "sourceUnavailable": false,
+      "reviews": 0,
+      "detectionMs": 852.3,
+      "detectionBasis": "stimulus-to-prepare",
+      "cutoverMs": 1301.3,
+      "activeMs": 1337.4,
+      "releaseMs": 1507,
+      "holdWindowMs": 280.1,
+      "interruptionMs": 200.4,
+      "lastSourceSequence": 1191,
+      "firstTargetSequence": 1192,
+      "firstTargetVia": "live",
+      "replayedToTarget": 9,
+      "maxDeliveryDelayMs": 321,
+      "notificationResumeStateMs": 39.2,
+      "notificationResumeObsMs": 19.1,
+      "notificationGapMs": 300.1,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "triggerDetails": {
+        "kind": "performance",
+        "since": "2026-11-19T11:54:46.656Z",
+        "firedAt": "2026-11-19T11:54:47.256Z",
+        "observedAt": "2026-11-19T11:54:47.256Z",
+        "failures": 0,
+        "scoreGain": 1.1795379764325045,
+        "distanceInsideM": 0
+      },
+      "security": {
+        "handoverId": "handover-64af226b-4a39-40b6-84f9-f05fc870796f",
+        "targetEdgeId": "edge-b",
+        "sourceEdgeId": "edge-a",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "staleSourceAeRsc": 4103,
+        "pass": true
+      }
+    },
+    {
+      "index": 18,
+      "handoverId": "handover-7e8af813-cb81-4af9-941e-b80439c66f4c",
+      "kind": "performance",
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 19,
+      "step": "r3 latency cleared on edge-a",
+      "sourceUnavailable": false,
+      "reviews": 0,
+      "detectionMs": 1322.6,
+      "detectionBasis": "stimulus-to-prepare",
+      "cutoverMs": 154.6,
+      "activeMs": 157.8,
+      "releaseMs": 198.1,
+      "holdWindowMs": 46.4,
+      "interruptionMs": 61.6,
+      "lastSourceSequence": 1260,
+      "firstTargetSequence": 1261,
+      "firstTargetVia": "live",
+      "replayedToTarget": 2,
+      "maxDeliveryDelayMs": 54.3,
+      "notificationResumeStateMs": 25.2,
+      "notificationResumeObsMs": 19.7,
+      "notificationGapMs": 85.7,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "triggerDetails": {
+        "kind": "performance",
+        "since": "2026-11-19T11:54:51.065Z",
+        "firedAt": "2026-11-19T11:54:51.666Z",
+        "observedAt": "2026-11-19T11:54:51.666Z",
+        "failures": 0,
+        "scoreGain": 0.3426538869420238,
+        "distanceInsideM": 0
+      },
+      "security": {
+        "handoverId": "handover-7e8af813-cb81-4af9-941e-b80439c66f4c",
+        "targetEdgeId": "edge-a",
+        "sourceEdgeId": "edge-b",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "staleSourceAeRsc": 4103,
+        "pass": true
+      }
+    },
+    {
+      "index": 19,
+      "handoverId": "handover-30f2df0d-3a5b-4045-acee-1875b8f46645",
+      "kind": "zone",
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 20,
+      "step": "r4 zone home->outside",
+      "sourceUnavailable": false,
+      "reviews": 0,
+      "detectionMs": 974.2,
+      "detectionBasis": "stimulus-to-prepare",
+      "cutoverMs": 798.8,
+      "activeMs": 837.4,
+      "releaseMs": 844.7,
+      "holdWindowMs": 63.9,
+      "interruptionMs": 156.9,
+      "lastSourceSequence": 1344,
+      "firstTargetSequence": 1345,
+      "firstTargetVia": "live",
+      "replayedToTarget": 6,
+      "maxDeliveryDelayMs": 112.4,
+      "notificationResumeStateMs": 51.9,
+      "notificationResumeObsMs": 24.2,
+      "notificationGapMs": 132.6,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "triggerDetails": {
+        "kind": "zone",
+        "since": "2026-11-19T11:54:54.496Z",
+        "firedAt": "2026-11-19T11:54:55.249Z",
+        "observedAt": "2026-11-19T11:54:55.247Z",
+        "failures": 0,
+        "scoreGain": null,
+        "distanceInsideM": 195
+      },
+      "security": {
+        "handoverId": "handover-30f2df0d-3a5b-4045-acee-1875b8f46645",
+        "targetEdgeId": "edge-b",
+        "sourceEdgeId": "edge-a",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "staleSourceAeRsc": 4103,
+        "pass": true
+      }
+    },
+    {
+      "index": 20,
+      "handoverId": "handover-c790b4aa-c23a-4766-b22b-95d02bfc8169",
+      "kind": "zone",
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 21,
+      "step": "r4 zone outside->home",
+      "sourceUnavailable": false,
+      "reviews": 0,
+      "detectionMs": 666.5,
+      "detectionBasis": "stimulus-to-prepare",
+      "cutoverMs": 140.5,
+      "activeMs": 144.1,
+      "releaseMs": 183.2,
+      "holdWindowMs": 51.7,
+      "interruptionMs": 33,
+      "lastSourceSequence": 1396,
+      "firstTargetSequence": 1397,
+      "firstTargetVia": "live",
+      "replayedToTarget": 2,
+      "maxDeliveryDelayMs": 41.6,
+      "notificationResumeStateMs": 48.1,
+      "notificationResumeObsMs": 11.3,
+      "notificationGapMs": 58.7,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "triggerDetails": {
+        "kind": "zone",
+        "since": "2026-11-19T11:54:58.001Z",
+        "firedAt": "2026-11-19T11:54:58.503Z",
+        "observedAt": "2026-11-19T11:54:58.502Z",
+        "failures": 0,
+        "scoreGain": null,
+        "distanceInsideM": 115
+      },
+      "security": {
+        "handoverId": "handover-c790b4aa-c23a-4766-b22b-95d02bfc8169",
+        "targetEdgeId": "edge-a",
+        "sourceEdgeId": "edge-b",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "staleSourceAeRsc": 4103,
+        "pass": true
+      }
+    },
+    {
+      "index": 21,
+      "handoverId": "handover-2fdbce49-e7d4-4e5b-97cc-b3372a4b102a",
+      "kind": "availability",
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 22,
+      "step": "r4 availability: kill edge-a Mobius4",
+      "sourceUnavailable": true,
+      "reviews": 0,
+      "detectionMs": 280.2,
+      "detectionBasis": "process-kill-to-prepare",
+      "cutoverMs": 776.9,
+      "activeMs": 814,
+      "releaseMs": 814.7,
+      "holdWindowMs": 60.1,
+      "interruptionMs": 779.5,
+      "lastSourceSequence": 1445,
+      "firstTargetSequence": 1446,
+      "firstTargetVia": "replay",
+      "replayedToTarget": 6,
+      "maxDeliveryDelayMs": 1093.4,
+      "notificationResumeStateMs": 31.8,
+      "notificationResumeObsMs": 15.8,
+      "notificationGapMs": 755.2,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "cached-checkpoint",
+      "checkpointAgeMs": 714,
+      "sourceFence": {
+        "fenced": false,
+        "deferred": true
+      },
+      "sourceCleanup": "deferred-to-recovery",
+      "triggerDetails": {
+        "kind": "availability",
+        "since": "2026-11-19T11:55:01.188Z",
+        "firedAt": "2026-11-19T11:55:01.389Z",
+        "observedAt": "2026-11-19T11:55:01.388Z",
+        "failures": 3,
+        "scoreGain": null,
+        "distanceInsideM": 0
+      },
+      "security": {
+        "handoverId": "handover-2fdbce49-e7d4-4e5b-97cc-b3372a4b102a",
+        "targetEdgeId": "edge-b",
+        "sourceEdgeId": "edge-a",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "pass": true,
+        "staleSourceAeRscAfterRecovery": 4103
+      }
+    },
+    {
+      "index": 22,
+      "handoverId": "handover-f9264c3d-6859-499b-9e85-a0de0e22fb78",
+      "kind": "performance",
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 23,
+      "step": "r4 failback after edge-a restart",
+      "sourceUnavailable": false,
+      "reviews": 0,
+      "detectionMs": 730.6,
+      "detectionBasis": "recovered-edge-reconciled-to-prepare",
+      "cutoverMs": 739.2,
+      "activeMs": 742.9,
+      "releaseMs": 785.8,
+      "holdWindowMs": 54.4,
+      "interruptionMs": 70.1,
+      "lastSourceSequence": 1554,
+      "firstTargetSequence": 1555,
+      "firstTargetVia": "live",
+      "replayedToTarget": 83,
+      "maxDeliveryDelayMs": 61.1,
+      "notificationResumeStateMs": 15,
+      "notificationResumeObsMs": 10.5,
+      "notificationGapMs": 91.2,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "triggerDetails": {
+        "kind": "performance",
+        "since": "2026-11-19T11:55:05.302Z",
+        "firedAt": "2026-11-19T11:55:05.905Z",
+        "observedAt": "2026-11-19T11:55:05.904Z",
+        "failures": 0,
+        "scoreGain": 0.32912137688349524,
+        "distanceInsideM": 0
+      },
+      "security": {
+        "handoverId": "handover-f9264c3d-6859-499b-9e85-a0de0e22fb78",
+        "targetEdgeId": "edge-a",
+        "sourceEdgeId": "edge-b",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "staleSourceAeRsc": 4103,
+        "pass": true
+      }
+    },
+    {
+      "index": 23,
+      "handoverId": "handover-1fd092c2-bdb2-4d7e-9269-ab6049e1e267",
+      "kind": "performance",
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 24,
+      "step": "r4 load: edge-a agent reports load 0.7",
+      "sourceUnavailable": false,
+      "reviews": 0,
+      "detectionMs": 718.9,
+      "detectionBasis": "stimulus-to-prepare",
+      "cutoverMs": 955.8,
+      "activeMs": 996.6,
+      "releaseMs": 1009.9,
+      "holdWindowMs": 190,
+      "interruptionMs": 238.9,
+      "lastSourceSequence": 1621,
+      "firstTargetSequence": 1622,
+      "firstTargetVia": "live",
+      "replayedToTarget": 8,
+      "maxDeliveryDelayMs": 201.7,
+      "notificationResumeStateMs": 33.2,
+      "notificationResumeObsMs": 29.2,
+      "notificationGapMs": 218.8,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "triggerDetails": {
+        "kind": "performance",
+        "since": "2026-11-19T11:55:08.513Z",
+        "firedAt": "2026-11-19T11:55:09.118Z",
+        "observedAt": "2026-11-19T11:55:09.116Z",
+        "failures": 0,
+        "scoreGain": 0.39368012080528214,
+        "distanceInsideM": 0
+      },
+      "security": {
+        "handoverId": "handover-1fd092c2-bdb2-4d7e-9269-ab6049e1e267",
+        "targetEdgeId": "edge-b",
+        "sourceEdgeId": "edge-a",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "staleSourceAeRsc": 4103,
+        "pass": true
+      }
+    },
+    {
+      "index": 24,
+      "handoverId": "handover-fa5c237c-e862-46a7-8c43-517029a2a25f",
+      "kind": "performance",
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 25,
+      "step": "r4 load: edge-a agent reports load 0.0",
+      "sourceUnavailable": false,
+      "reviews": 0,
+      "detectionMs": 669.6,
+      "detectionBasis": "stimulus-to-prepare",
+      "cutoverMs": 173.2,
+      "activeMs": 176.7,
+      "releaseMs": 215.8,
+      "holdWindowMs": 53.9,
+      "interruptionMs": 43.3,
+      "lastSourceSequence": 1675,
+      "firstTargetSequence": 1676,
+      "firstTargetVia": "live",
+      "replayedToTarget": 2,
+      "maxDeliveryDelayMs": 44.6,
+      "notificationResumeStateMs": 39.7,
+      "notificationResumeObsMs": 12.6,
+      "notificationGapMs": 68.8,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "triggerDetails": {
+        "kind": "performance",
+        "since": "2026-11-19T11:55:11.930Z",
+        "firedAt": "2026-11-19T11:55:12.533Z",
+        "observedAt": "2026-11-19T11:55:12.532Z",
+        "failures": 0,
+        "scoreGain": 0.3274774725995933,
+        "distanceInsideM": 0
+      },
+      "security": {
+        "handoverId": "handover-fa5c237c-e862-46a7-8c43-517029a2a25f",
+        "targetEdgeId": "edge-a",
+        "sourceEdgeId": "edge-b",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "staleSourceAeRsc": 4103,
+        "pass": true
+      }
+    },
+    {
+      "index": 25,
+      "handoverId": "handover-ecbbe11f-8a6e-4bfe-a1c2-2c14ea745c10",
+      "kind": "zone",
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 26,
+      "step": "r5 zone home->outside",
+      "sourceUnavailable": false,
+      "reviews": 0,
+      "detectionMs": 625.4,
+      "detectionBasis": "stimulus-to-prepare",
+      "cutoverMs": 996,
+      "activeMs": 1033.6,
+      "releaseMs": 1044.1,
+      "holdWindowMs": 232.7,
+      "interruptionMs": 275.7,
+      "lastSourceSequence": 1753,
+      "firstTargetSequence": 1754,
+      "firstTargetVia": "live",
+      "replayedToTarget": 9,
+      "maxDeliveryDelayMs": 234.5,
+      "notificationResumeStateMs": 28,
+      "notificationResumeObsMs": 20,
+      "notificationGapMs": 252.1,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "triggerDetails": {
+        "kind": "zone",
+        "since": "2026-11-19T11:55:15.284Z",
+        "firedAt": "2026-11-19T11:55:15.787Z",
+        "observedAt": "2026-11-19T11:55:15.785Z",
+        "failures": 0,
+        "scoreGain": null,
+        "distanceInsideM": 195
+      },
+      "security": {
+        "handoverId": "handover-ecbbe11f-8a6e-4bfe-a1c2-2c14ea745c10",
+        "targetEdgeId": "edge-b",
+        "sourceEdgeId": "edge-a",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "staleSourceAeRsc": 4103,
+        "pass": true
+      }
+    },
+    {
+      "index": 26,
+      "handoverId": "handover-211d0956-93fa-45ab-aa60-0df8508cf35a",
+      "kind": "zone",
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 27,
+      "step": "r5 zone outside->home",
+      "sourceUnavailable": false,
+      "reviews": 0,
+      "detectionMs": 716.6,
+      "detectionBasis": "stimulus-to-prepare",
+      "cutoverMs": 171.5,
+      "activeMs": 174.6,
+      "releaseMs": 215.7,
+      "holdWindowMs": 51.6,
+      "interruptionMs": 24.9,
+      "lastSourceSequence": 1809,
+      "firstTargetSequence": 1810,
+      "firstTargetVia": "live",
+      "replayedToTarget": 3,
+      "maxDeliveryDelayMs": 45.2,
+      "notificationResumeStateMs": 50.4,
+      "notificationResumeObsMs": 7.6,
+      "notificationGapMs": 50.5,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "triggerDetails": {
+        "kind": "zone",
+        "since": "2026-11-19T11:55:18.787Z",
+        "firedAt": "2026-11-19T11:55:19.290Z",
+        "observedAt": "2026-11-19T11:55:19.288Z",
+        "failures": 0,
+        "scoreGain": null,
+        "distanceInsideM": 115
+      },
+      "security": {
+        "handoverId": "handover-211d0956-93fa-45ab-aa60-0df8508cf35a",
+        "targetEdgeId": "edge-a",
+        "sourceEdgeId": "edge-b",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "staleSourceAeRsc": 4103,
+        "pass": true
+      }
+    },
+    {
+      "index": 27,
+      "handoverId": "handover-828f3a68-6d96-4520-9593-639c3f95906e",
+      "kind": "availability",
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 28,
+      "step": "r5 availability: kill edge-a Mobius4",
+      "sourceUnavailable": true,
+      "reviews": 0,
+      "detectionMs": 267.2,
+      "detectionBasis": "process-kill-to-prepare",
+      "cutoverMs": 790.2,
+      "activeMs": 827.7,
+      "releaseMs": 828.8,
+      "holdWindowMs": 62.8,
+      "interruptionMs": 776.8,
+      "lastSourceSequence": 1858,
+      "firstTargetSequence": 1859,
+      "firstTargetVia": "replay",
+      "replayedToTarget": 6,
+      "maxDeliveryDelayMs": 1093.9,
+      "notificationResumeStateMs": 28.2,
+      "notificationResumeObsMs": 16.7,
+      "notificationGapMs": 751.9,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "cached-checkpoint",
+      "checkpointAgeMs": 494,
+      "sourceFence": {
+        "fenced": false,
+        "deferred": true
+      },
+      "sourceCleanup": "deferred-to-recovery",
+      "triggerDetails": {
+        "kind": "availability",
+        "since": "2026-11-19T11:55:21.991Z",
+        "firedAt": "2026-11-19T11:55:22.193Z",
+        "observedAt": "2026-11-19T11:55:22.192Z",
+        "failures": 3,
+        "scoreGain": null,
+        "distanceInsideM": 0
+      },
+      "security": {
+        "handoverId": "handover-828f3a68-6d96-4520-9593-639c3f95906e",
+        "targetEdgeId": "edge-b",
+        "sourceEdgeId": "edge-a",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "pass": true,
+        "staleSourceAeRscAfterRecovery": 4103
+      }
+    },
+    {
+      "index": 28,
+      "handoverId": "handover-3c3a8ccb-5b8c-4996-86e0-4817fe18593d",
+      "kind": "performance",
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 29,
+      "step": "r5 failback after edge-a restart",
+      "sourceUnavailable": false,
+      "reviews": 0,
+      "detectionMs": 661.3,
+      "detectionBasis": "recovered-edge-reconciled-to-prepare",
+      "cutoverMs": 596.3,
+      "activeMs": 600.5,
+      "releaseMs": 640.9,
+      "holdWindowMs": 56.3,
+      "interruptionMs": 56.2,
+      "lastSourceSequence": 1957,
+      "firstTargetSequence": 1958,
+      "firstTargetVia": "live",
+      "replayedToTarget": 77,
+      "maxDeliveryDelayMs": 49.7,
+      "notificationResumeStateMs": 15.3,
+      "notificationResumeObsMs": 4.6,
+      "notificationGapMs": 82.6,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "triggerDetails": {
+        "kind": "performance",
+        "since": "2026-11-19T11:55:25.762Z",
+        "firedAt": "2026-11-19T11:55:26.364Z",
+        "observedAt": "2026-11-19T11:55:26.363Z",
+        "failures": 0,
+        "scoreGain": 0.3376278371263346,
+        "distanceInsideM": 0
+      },
+      "security": {
+        "handoverId": "handover-3c3a8ccb-5b8c-4996-86e0-4817fe18593d",
+        "targetEdgeId": "edge-a",
+        "sourceEdgeId": "edge-b",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "staleSourceAeRsc": 4103,
+        "pass": true
+      }
+    },
+    {
+      "index": 29,
+      "handoverId": "handover-e114c92b-dafb-433a-a825-8be97ef1656d",
+      "kind": "performance",
+      "sourceEdgeId": "edge-a",
+      "targetEdgeId": "edge-b",
+      "epoch": 30,
+      "step": "r5 latency: inject 40ms one-way on edge-a",
+      "sourceUnavailable": false,
+      "reviews": 0,
+      "detectionMs": 855,
+      "detectionBasis": "stimulus-to-prepare",
+      "cutoverMs": 1416.5,
+      "activeMs": 1457.9,
+      "releaseMs": 1628.3,
+      "holdWindowMs": 344.4,
+      "interruptionMs": 232.4,
+      "lastSourceSequence": 2032,
+      "firstTargetSequence": 2033,
+      "firstTargetVia": "live",
+      "replayedToTarget": 11,
+      "maxDeliveryDelayMs": 351.4,
+      "notificationResumeStateMs": 52,
+      "notificationResumeObsMs": 15.5,
+      "notificationGapMs": 331.7,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "triggerDetails": {
+        "kind": "performance",
+        "since": "2026-11-19T11:55:28.969Z",
+        "firedAt": "2026-11-19T11:55:29.571Z",
+        "observedAt": "2026-11-19T11:55:29.570Z",
+        "failures": 0,
+        "scoreGain": 1.1914944923547568,
+        "distanceInsideM": 0
+      },
+      "security": {
+        "handoverId": "handover-e114c92b-dafb-433a-a825-8be97ef1656d",
+        "targetEdgeId": "edge-b",
+        "sourceEdgeId": "edge-a",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "staleSourceAeRsc": 4103,
+        "pass": true
+      }
+    },
+    {
+      "index": 30,
+      "handoverId": "handover-d8ff3da6-2734-4e76-a3b4-b80e2452a4ff",
+      "kind": "performance",
+      "sourceEdgeId": "edge-b",
+      "targetEdgeId": "edge-a",
+      "epoch": 31,
+      "step": "r5 latency cleared on edge-a",
+      "sourceUnavailable": false,
+      "reviews": 0,
+      "detectionMs": 1406.2,
+      "detectionBasis": "stimulus-to-prepare",
+      "cutoverMs": 159.2,
+      "activeMs": 162.8,
+      "releaseMs": 202.3,
+      "holdWindowMs": 47.5,
+      "interruptionMs": 70.3,
+      "lastSourceSequence": 2103,
+      "firstTargetSequence": 2105,
+      "firstTargetVia": "live",
+      "replayedToTarget": 2,
+      "maxDeliveryDelayMs": 62.9,
+      "notificationResumeStateMs": 9.4,
+      "notificationResumeObsMs": 8.4,
+      "notificationGapMs": 95,
+      "notificationFromTarget": true,
+      "callbackVerifiedOnTarget": true,
+      "checkpointSource": "source-readback",
+      "checkpointAgeMs": 0,
+      "sourceFence": {
+        "fenced": true,
+        "deferred": false
+      },
+      "sourceCleanup": "released",
+      "triggerDetails": {
+        "kind": "performance",
+        "since": "2026-11-19T11:55:33.580Z",
+        "firedAt": "2026-11-19T11:55:34.184Z",
+        "observedAt": "2026-11-19T11:55:34.183Z",
+        "failures": 0,
+        "scoreGain": 0.35273981146104527,
+        "distanceInsideM": 0
+      },
+      "security": {
+        "handoverId": "handover-d8ff3da6-2734-4e76-a3b4-b80e2452a4ff",
+        "targetEdgeId": "edge-a",
+        "sourceEdgeId": "edge-b",
+        "acpRestored": true,
+        "aeAcpi": true,
+        "switchAcpi": true,
+        "intruderRsc": 4103,
+        "staleSourceAeRsc": 4103,
+        "pass": true
+      }
+    }
+  ],
+  "runtimeEvidenceDirectory": ".local/handover-auto-cse/1795089224796_b5d7d1"
+}
