@@ -1,0 +1,1338 @@
+{
+  "contractId": "privacy-bubble.group-command-real-cse.v1",
+  "docRevision": "2.0.0",
+  "generatedAt": "2026-11-19T11:44:42.489Z",
+  "status": "PASS",
+  "rubricIds": [
+    "R01",
+    "R11"
+  ],
+  "simulation": {
+    "cse": false,
+    "oneM2MGroupFanout": false,
+    "centralCommandService": false,
+    "sdtClients": false,
+    "gatewayBleDevice": true,
+    "note": "Mobius4, PostgreSQL, the <grp>/fopt fan-out, member ACP, ACK containers and both SDT clients ran for real over loopback HTTP. The Gateway poll/authorize/dispatch-start/receipt calls were made in-process by this script through IntegrationApiGateway.handle, and the keyring readback echoes the desired state. No Raspberry Pi, BLE link or keyring hardware took part."
+  },
+  "transport": {
+    "cse": "actual-Mobius4-loopback-HTTP",
+    "centralApi": "in-process IntegrationApiGateway.handle (no TLS)",
+    "pythonClient": "urllib HTTP",
+    "javascriptClient": "fetch HTTP"
+  },
+  "cseImplementation": "Mobius4",
+  "cseVersion": "4.24.5",
+  "cseSourceRevision": "3da4d8523694b5077e348ab1c9e769fb3a30df24",
+  "hostCount": 1,
+  "cseCount": 1,
+  "host": {
+    "platform": "win32",
+    "node": "v22.19.0"
+  },
+  "postgres": "PostgreSQL 17.6 on x86_64-windows, compiled by msvc-19.44.35213, 64-bit",
+  "registry": {
+    "profile": "r4-common-1.0",
+    "envelope": "cod:binSh",
+    "cnd": "org.onem2m.common.moduleclass.binarySwitch",
+    "sha256": "b3780469f8ff962de7c0bdb04e2f8247e122d72f98a1f478b5ddae30ff799eac"
+  },
+  "resources": {
+    "centralAe": {
+      "path": "/Mobius/pb-central-3928cc",
+      "aeId": "C9IE32"
+    },
+    "sdtClientAes": {
+      "python": "CxBMCU",
+      "javascript": "C4QOFY"
+    },
+    "macp": {
+      "path": "/Mobius/pb-central-3928cc/household-macp",
+      "ri": "kak8qx955k",
+      "centralAcop": 6
+    },
+    "group": {
+      "path": "/Mobius/pb-central-3928cc/household-demo-switches",
+      "ri": "vs8ai1twnd",
+      "mt": 28,
+      "mnm": 16,
+      "cnm": 3,
+      "mtv": true,
+      "csy": 1,
+      "mid": [
+        "Mobius/kr-3928cc-a/binarySwitch",
+        "Mobius/kr-3928cc-b/binarySwitch",
+        "Mobius/kr-3928cc-c/binarySwitch"
+      ],
+      "macp": [
+        "kak8qx955k"
+      ],
+      "et": "20261119T121441",
+      "fanoutPoint": "/Mobius/pb-central-3928cc/household-demo-switches/fopt"
+    },
+    "devices": [
+      {
+        "deviceId": "keyring-A",
+        "aePath": "/Mobius/kr-3928cc-a",
+        "aeId": "CL7h9D",
+        "switchPath": "/Mobius/kr-3928cc-a/binarySwitch",
+        "switchRi": "5ru2f8vmbr",
+        "switchAcp": {
+          "path": "/Mobius/kr-3928cc-a/switch-acp",
+          "ri": "ru859zfucm",
+          "centralAcop": 39
+        },
+        "ackContainer": "/Mobius/kr-3928cc-a/commandAcks"
+      },
+      {
+        "deviceId": "keyring-B",
+        "aePath": "/Mobius/kr-3928cc-b",
+        "aeId": "C0Hat1",
+        "switchPath": "/Mobius/kr-3928cc-b/binarySwitch",
+        "switchRi": "l35ezfms3d",
+        "switchAcp": {
+          "path": "/Mobius/kr-3928cc-b/switch-acp",
+          "ri": "3b3chkwb9f",
+          "centralAcop": 39
+        },
+        "ackContainer": "/Mobius/kr-3928cc-b/commandAcks"
+      },
+      {
+        "deviceId": "keyring-C",
+        "aePath": "/Mobius/kr-3928cc-c",
+        "aeId": "CQ9SUF",
+        "switchPath": "/Mobius/kr-3928cc-c/binarySwitch",
+        "switchRi": "2ii22s8ckc",
+        "switchAcp": {
+          "path": "/Mobius/kr-3928cc-c/switch-acp",
+          "ri": "mbim44v21b",
+          "centralAcop": 34
+        },
+        "ackContainer": "/Mobius/kr-3928cc-c/commandAcks"
+      }
+    ],
+    "auditContainer": {
+      "path": "/Mobius/pb-central-3928cc/groupCommands",
+      "mni": 10,
+      "cni": 2,
+      "latestEt": "20261120T115441"
+    },
+    "flexContainerMniProbe": {
+      "rsc": 5001,
+      "debug": "mni with a non-zero value requires <flexContainerInstance> support, which is not implemented"
+    }
+  },
+  "commands": [
+    {
+      "name": "G1-household-on-partial-acp-retry",
+      "requestId": "request-6dfaa27a3af4f4aeeae4d94e",
+      "groupCommandId": "group-2cc1932f123c17f25ee96117a59fd764",
+      "desiredState": true,
+      "fanout": {
+        "operation": "GROUP_FOPT_UPDATE",
+        "at": "2026-11-19T11:44:41.263Z",
+        "groupPath": "/Mobius/pb-central-3928cc/household-demo-switches",
+        "fopt": "/Mobius/pb-central-3928cc/household-demo-switches/fopt",
+        "request": {
+          "cod:binSh": {
+            "state": true
+          }
+        },
+        "aggregateRsc": 2000,
+        "requestId": "grp-c5d2f0df-d6be-466a-ade9-6843eee39c21",
+        "rqiMatches": true,
+        "memberResults": [
+          {
+            "deviceId": "keyring-A",
+            "fr": "Mobius/kr-3928cc-a/binarySwitch",
+            "rsc": 2004,
+            "ok": true,
+            "error": null,
+            "claimId": "claim-171a9769-d8c8-4161-b2cc-64373be703c5"
+          },
+          {
+            "deviceId": "keyring-B",
+            "fr": "Mobius/kr-3928cc-b/binarySwitch",
+            "rsc": 2004,
+            "ok": true,
+            "error": null,
+            "claimId": "claim-b7933294-1f0d-498f-8369-068dff08f8a1"
+          },
+          {
+            "deviceId": "keyring-C",
+            "fr": "Mobius/kr-3928cc-c/binarySwitch",
+            "rsc": 4103,
+            "ok": false,
+            "error": "CSE_MEMBER_RSC_4103",
+            "claimId": null
+          }
+        ],
+        "auditInstance": {
+          "rsc": 2001,
+          "ri": "amctzewgpb",
+          "et": "20261120T115441"
+        }
+      },
+      "afterFanout": [
+        {
+          "deviceId": "keyring-A",
+          "path": "/Mobius/kr-3928cc-a/binarySwitch",
+          "status": "DISPATCHED",
+          "attempts": 1,
+          "cseRsc": 2004,
+          "error": null,
+          "binding": {
+            "claimId": "claim-171a9769-d8c8-4161-b2cc-64373be703c5",
+            "grantRevision": 1,
+            "ownershipEpoch": 0,
+            "deadline": "2026-11-19T11:54:41.179Z",
+            "issuedAt": "2026-11-19T11:44:41.263Z"
+          },
+          "payloadHash": "fea9d437b7412eaea6f0b0fd3ea0f0b8eb62dfa068d48717dba2f05776a51643"
+        },
+        {
+          "deviceId": "keyring-B",
+          "path": "/Mobius/kr-3928cc-b/binarySwitch",
+          "status": "DISPATCHED",
+          "attempts": 1,
+          "cseRsc": 2004,
+          "error": null,
+          "binding": {
+            "claimId": "claim-b7933294-1f0d-498f-8369-068dff08f8a1",
+            "grantRevision": 1,
+            "ownershipEpoch": 0,
+            "deadline": "2026-11-19T11:54:41.179Z",
+            "issuedAt": "2026-11-19T11:44:41.263Z"
+          },
+          "payloadHash": "7eb3223e65c87344b84119e36f6810df210ef78512d4b0bb53460f037480ddc8"
+        },
+        {
+          "deviceId": "keyring-C",
+          "path": "/Mobius/kr-3928cc-c/binarySwitch",
+          "status": "RETRY_PENDING",
+          "attempts": 1,
+          "cseRsc": 4103,
+          "error": "CSE_MEMBER_RSC_4103"
+        }
+      ],
+      "beforeRestart": [
+        {
+          "deviceId": "keyring-A",
+          "path": "/Mobius/kr-3928cc-a/binarySwitch",
+          "status": "READBACK_VERIFIED",
+          "attempts": 1,
+          "cseRsc": 2004,
+          "error": null,
+          "binding": {
+            "claimId": "claim-171a9769-d8c8-4161-b2cc-64373be703c5",
+            "grantRevision": 1,
+            "ownershipEpoch": 0,
+            "deadline": "2026-11-19T11:54:41.179Z",
+            "issuedAt": "2026-11-19T11:44:41.263Z"
+          },
+          "payloadHash": "fea9d437b7412eaea6f0b0fd3ea0f0b8eb62dfa068d48717dba2f05776a51643",
+          "readback": {
+            "state": true
+          },
+          "cseReadback": {
+            "rsc": 2000,
+            "state": true,
+            "envelope": "cod:binSh",
+            "matchesDesired": true,
+            "readAt": "2026-11-19T11:44:41.296Z",
+            "ackInstance": {
+              "container": "/Mobius/kr-3928cc-a/commandAcks",
+              "rsc": 2001,
+              "ri": "lepbpdqruf",
+              "et": "20261120T114441"
+            }
+          }
+        },
+        {
+          "deviceId": "keyring-B",
+          "path": "/Mobius/kr-3928cc-b/binarySwitch",
+          "status": "READBACK_VERIFIED",
+          "attempts": 1,
+          "cseRsc": 2004,
+          "error": null,
+          "binding": {
+            "claimId": "claim-b7933294-1f0d-498f-8369-068dff08f8a1",
+            "grantRevision": 1,
+            "ownershipEpoch": 0,
+            "deadline": "2026-11-19T11:54:41.179Z",
+            "issuedAt": "2026-11-19T11:44:41.263Z"
+          },
+          "payloadHash": "7eb3223e65c87344b84119e36f6810df210ef78512d4b0bb53460f037480ddc8",
+          "readback": {
+            "state": true
+          },
+          "cseReadback": {
+            "rsc": 2000,
+            "state": true,
+            "envelope": "cod:binSh",
+            "matchesDesired": true,
+            "readAt": "2026-11-19T11:44:41.302Z",
+            "ackInstance": {
+              "container": "/Mobius/kr-3928cc-b/commandAcks",
+              "rsc": 2001,
+              "ri": "7m7f1snpwd",
+              "et": "20261120T114441"
+            }
+          }
+        },
+        {
+          "deviceId": "keyring-C",
+          "path": "/Mobius/kr-3928cc-c/binarySwitch",
+          "status": "RETRY_PENDING",
+          "attempts": 1,
+          "cseRsc": 4103,
+          "error": "CSE_MEMBER_RSC_4103"
+        }
+      ],
+      "restartRecovered": [
+        {
+          "deviceId": "keyring-A",
+          "path": "/Mobius/kr-3928cc-a/binarySwitch",
+          "status": "READBACK_VERIFIED",
+          "attempts": 1,
+          "cseRsc": 2004,
+          "error": null,
+          "binding": {
+            "claimId": "claim-171a9769-d8c8-4161-b2cc-64373be703c5",
+            "grantRevision": 1,
+            "ownershipEpoch": 0,
+            "deadline": "2026-11-19T11:54:41.179Z",
+            "issuedAt": "2026-11-19T11:44:41.263Z"
+          },
+          "payloadHash": "fea9d437b7412eaea6f0b0fd3ea0f0b8eb62dfa068d48717dba2f05776a51643",
+          "readback": {
+            "state": true
+          },
+          "cseReadback": {
+            "rsc": 2000,
+            "state": true,
+            "envelope": "cod:binSh",
+            "matchesDesired": true,
+            "readAt": "2026-11-19T11:44:41.296Z",
+            "ackInstance": {
+              "container": "/Mobius/kr-3928cc-a/commandAcks",
+              "rsc": 2001,
+              "ri": "lepbpdqruf",
+              "et": "20261120T114441"
+            }
+          }
+        },
+        {
+          "deviceId": "keyring-B",
+          "path": "/Mobius/kr-3928cc-b/binarySwitch",
+          "status": "READBACK_VERIFIED",
+          "attempts": 1,
+          "cseRsc": 2004,
+          "error": null,
+          "binding": {
+            "claimId": "claim-b7933294-1f0d-498f-8369-068dff08f8a1",
+            "grantRevision": 1,
+            "ownershipEpoch": 0,
+            "deadline": "2026-11-19T11:54:41.179Z",
+            "issuedAt": "2026-11-19T11:44:41.263Z"
+          },
+          "payloadHash": "7eb3223e65c87344b84119e36f6810df210ef78512d4b0bb53460f037480ddc8",
+          "readback": {
+            "state": true
+          },
+          "cseReadback": {
+            "rsc": 2000,
+            "state": true,
+            "envelope": "cod:binSh",
+            "matchesDesired": true,
+            "readAt": "2026-11-19T11:44:41.302Z",
+            "ackInstance": {
+              "container": "/Mobius/kr-3928cc-b/commandAcks",
+              "rsc": 2001,
+              "ri": "7m7f1snpwd",
+              "et": "20261120T114441"
+            }
+          }
+        },
+        {
+          "deviceId": "keyring-C",
+          "path": "/Mobius/kr-3928cc-c/binarySwitch",
+          "status": "RETRY_PENDING",
+          "attempts": 1,
+          "cseRsc": 4103,
+          "error": "CSE_MEMBER_RSC_4103"
+        }
+      ],
+      "aclRepair": {
+        "member": "keyring-C",
+        "acp": "/Mobius/kr-3928cc-c/switch-acp",
+        "rsc": 2004,
+        "centralAcop": 39
+      },
+      "retry": {
+        "portalStatus": "QUEUED",
+        "cseCalls": [
+          {
+            "method": "PUT",
+            "path": "/Mobius/kr-3928cc-c/binarySwitch",
+            "rsc": 2004
+          }
+        ],
+        "records": [
+          {
+            "operation": "GROUP_MEMBER_RETRY_UPDATE",
+            "at": "2026-11-19T11:44:41.334Z",
+            "deviceId": "keyring-C",
+            "path": "/Mobius/kr-3928cc-c/binarySwitch",
+            "rsc": 2004,
+            "requestId": "grp-93ef7a07-3ebe-45c4-afaa-05e4390d6ef0",
+            "ok": true,
+            "claimId": "claim-c25d7b2d-a999-431e-9c7a-c0a33aa19dc3"
+          }
+        ]
+      },
+      "gateway": [
+        {
+          "deviceId": "keyring-A",
+          "commandId": "portal-5a351fd285933b6df263341ef8a20070",
+          "claimId": "claim-171a9769-d8c8-4161-b2cc-64373be703c5",
+          "grantRevision": 1,
+          "ownershipEpoch": 0,
+          "deadline": "2026-11-19T11:54:41.179Z",
+          "payloadHash": "fea9d437b7412eaea6f0b0fd3ea0f0b8eb62dfa068d48717dba2f05776a51643",
+          "authorizeAllowed": true,
+          "dispatchStartAllowed": true,
+          "receiptStatus": "ACCEPTED",
+          "executionState": "APPLIED_VERIFIED",
+          "receiptHash": "a038c11851ef22f69875131d145bd6a1d0bdc2c8bf3ee585e52abfb111ba93c9"
+        },
+        {
+          "deviceId": "keyring-B",
+          "commandId": "portal-7f860ef6c99be9a28fdace0ad59555b0",
+          "claimId": "claim-b7933294-1f0d-498f-8369-068dff08f8a1",
+          "grantRevision": 1,
+          "ownershipEpoch": 0,
+          "deadline": "2026-11-19T11:54:41.179Z",
+          "payloadHash": "7eb3223e65c87344b84119e36f6810df210ef78512d4b0bb53460f037480ddc8",
+          "authorizeAllowed": true,
+          "dispatchStartAllowed": true,
+          "receiptStatus": "ACCEPTED",
+          "executionState": "APPLIED_VERIFIED",
+          "receiptHash": "0629a93a882b1f8867210ab67411fbf9bf32d4eab7907bb0c027999a7cfd7fd5"
+        },
+        {
+          "deviceId": "keyring-C",
+          "commandId": "portal-0f7a7741c7b1bab57799f1d807590cae",
+          "claimId": "claim-c25d7b2d-a999-431e-9c7a-c0a33aa19dc3",
+          "grantRevision": 1,
+          "ownershipEpoch": 0,
+          "deadline": "2026-11-19T11:54:41.179Z",
+          "payloadHash": "d86d9c5b777709fb8fa0b6deb772de2803f4ad5c4802d9f78c4e7ab031c6acbe",
+          "authorizeAllowed": true,
+          "dispatchStartAllowed": true,
+          "receiptStatus": "ACCEPTED",
+          "executionState": "APPLIED_VERIFIED",
+          "receiptHash": "951d44d34d01c6703e2093e47af3e6ea9b82cf1c86cdae4a24c95f7b8a3d98d7"
+        }
+      ],
+      "final": {
+        "status": "SETTLED",
+        "appliedCount": 3,
+        "attempts": 2,
+        "members": [
+          {
+            "deviceId": "keyring-A",
+            "path": "/Mobius/kr-3928cc-a/binarySwitch",
+            "status": "READBACK_VERIFIED",
+            "attempts": 1,
+            "cseRsc": 2004,
+            "error": null,
+            "binding": {
+              "claimId": "claim-171a9769-d8c8-4161-b2cc-64373be703c5",
+              "grantRevision": 1,
+              "ownershipEpoch": 0,
+              "deadline": "2026-11-19T11:54:41.179Z",
+              "issuedAt": "2026-11-19T11:44:41.263Z"
+            },
+            "payloadHash": "fea9d437b7412eaea6f0b0fd3ea0f0b8eb62dfa068d48717dba2f05776a51643",
+            "readback": {
+              "state": true
+            },
+            "cseReadback": {
+              "rsc": 2000,
+              "state": true,
+              "envelope": "cod:binSh",
+              "matchesDesired": true,
+              "readAt": "2026-11-19T11:44:41.296Z",
+              "ackInstance": {
+                "container": "/Mobius/kr-3928cc-a/commandAcks",
+                "rsc": 2001,
+                "ri": "lepbpdqruf",
+                "et": "20261120T114441"
+              }
+            }
+          },
+          {
+            "deviceId": "keyring-B",
+            "path": "/Mobius/kr-3928cc-b/binarySwitch",
+            "status": "READBACK_VERIFIED",
+            "attempts": 1,
+            "cseRsc": 2004,
+            "error": null,
+            "binding": {
+              "claimId": "claim-b7933294-1f0d-498f-8369-068dff08f8a1",
+              "grantRevision": 1,
+              "ownershipEpoch": 0,
+              "deadline": "2026-11-19T11:54:41.179Z",
+              "issuedAt": "2026-11-19T11:44:41.263Z"
+            },
+            "payloadHash": "7eb3223e65c87344b84119e36f6810df210ef78512d4b0bb53460f037480ddc8",
+            "readback": {
+              "state": true
+            },
+            "cseReadback": {
+              "rsc": 2000,
+              "state": true,
+              "envelope": "cod:binSh",
+              "matchesDesired": true,
+              "readAt": "2026-11-19T11:44:41.302Z",
+              "ackInstance": {
+                "container": "/Mobius/kr-3928cc-b/commandAcks",
+                "rsc": 2001,
+                "ri": "7m7f1snpwd",
+                "et": "20261120T114441"
+              }
+            }
+          },
+          {
+            "deviceId": "keyring-C",
+            "path": "/Mobius/kr-3928cc-c/binarySwitch",
+            "status": "READBACK_VERIFIED",
+            "attempts": 2,
+            "cseRsc": 2004,
+            "error": null,
+            "binding": {
+              "claimId": "claim-c25d7b2d-a999-431e-9c7a-c0a33aa19dc3",
+              "grantRevision": 1,
+              "ownershipEpoch": 0,
+              "deadline": "2026-11-19T11:54:41.179Z",
+              "issuedAt": "2026-11-19T11:44:41.333Z"
+            },
+            "payloadHash": "d86d9c5b777709fb8fa0b6deb772de2803f4ad5c4802d9f78c4e7ab031c6acbe",
+            "readback": {
+              "state": true
+            },
+            "cseReadback": {
+              "rsc": 2000,
+              "state": true,
+              "envelope": "cod:binSh",
+              "matchesDesired": true,
+              "readAt": "2026-11-19T11:44:41.347Z",
+              "ackInstance": {
+                "container": "/Mobius/kr-3928cc-c/commandAcks",
+                "rsc": 2001,
+                "ri": "0av1u65qat",
+                "et": "20261120T114441"
+              }
+            }
+          }
+        ]
+      },
+      "centralCseCalls": [
+        {
+          "method": "POST",
+          "path": "/Mobius/pb-central-3928cc",
+          "rsc": 2001
+        },
+        {
+          "method": "PUT",
+          "path": "/Mobius/pb-central-3928cc/household-demo-switches/fopt",
+          "rsc": 2000
+        },
+        {
+          "method": "POST",
+          "path": "/Mobius/pb-central-3928cc/groupCommands",
+          "rsc": 2001
+        }
+      ]
+    },
+    {
+      "name": "G2-household-off-all-members",
+      "requestId": "request-5fca378dc9b4365363d8520c",
+      "groupCommandId": "group-7aa78b5c13b299778dcdaeb807f7859d",
+      "desiredState": false,
+      "fanout": {
+        "operation": "GROUP_FOPT_UPDATE",
+        "at": "2026-11-19T11:44:41.376Z",
+        "groupPath": "/Mobius/pb-central-3928cc/household-demo-switches",
+        "fopt": "/Mobius/pb-central-3928cc/household-demo-switches/fopt",
+        "request": {
+          "cod:binSh": {
+            "state": false
+          }
+        },
+        "aggregateRsc": 2000,
+        "requestId": "grp-48cfe280-f02d-46d0-aaa5-867e545d90b9",
+        "rqiMatches": true,
+        "memberResults": [
+          {
+            "deviceId": "keyring-A",
+            "fr": "Mobius/kr-3928cc-a/binarySwitch",
+            "rsc": 2004,
+            "ok": true,
+            "error": null,
+            "claimId": "claim-a4d6e95b-d64e-415b-a17e-91013e44962d"
+          },
+          {
+            "deviceId": "keyring-B",
+            "fr": "Mobius/kr-3928cc-b/binarySwitch",
+            "rsc": 2004,
+            "ok": true,
+            "error": null,
+            "claimId": "claim-8539de29-e682-4354-9d0c-d7d8083532fe"
+          },
+          {
+            "deviceId": "keyring-C",
+            "fr": "Mobius/kr-3928cc-c/binarySwitch",
+            "rsc": 2004,
+            "ok": true,
+            "error": null,
+            "claimId": "claim-a17fcacd-f6ba-4665-907a-94cafc627633"
+          }
+        ],
+        "auditInstance": {
+          "rsc": 2001,
+          "ri": "z1mz5ka2n3",
+          "et": "20261120T115441"
+        }
+      },
+      "gateway": [
+        {
+          "deviceId": "keyring-A",
+          "commandId": "portal-a367f0aae6ce7f58ba406333d7d9dc2c",
+          "claimId": "claim-a4d6e95b-d64e-415b-a17e-91013e44962d",
+          "grantRevision": 1,
+          "ownershipEpoch": 0,
+          "deadline": "2026-11-19T11:54:41.354Z",
+          "payloadHash": "6e2857eaeac2a314cd8fd4756835e354009d4445e7131a04db6c529c4f7c7794",
+          "authorizeAllowed": true,
+          "dispatchStartAllowed": true,
+          "receiptStatus": "ACCEPTED",
+          "executionState": "APPLIED_VERIFIED",
+          "receiptHash": "6253d4598da968eba45ffd5674655348385f7fdf55564930f006c66019cd8994"
+        },
+        {
+          "deviceId": "keyring-B",
+          "commandId": "portal-a4f523fba6411a9b4c1aaeb15d29be96",
+          "claimId": "claim-8539de29-e682-4354-9d0c-d7d8083532fe",
+          "grantRevision": 1,
+          "ownershipEpoch": 0,
+          "deadline": "2026-11-19T11:54:41.354Z",
+          "payloadHash": "c47500234ddef828834d77a9db31212b8d9584f2afba2b6f8aa684a9c15b7bf1",
+          "authorizeAllowed": true,
+          "dispatchStartAllowed": true,
+          "receiptStatus": "ACCEPTED",
+          "executionState": "APPLIED_VERIFIED",
+          "receiptHash": "1c964d7870fd6ae18f5dd50d1bacf292f2c269ccc923f1db3a7b1322c33f4b06"
+        },
+        {
+          "deviceId": "keyring-C",
+          "commandId": "portal-83dfa1654de0bbead6e6525030739fa0",
+          "claimId": "claim-a17fcacd-f6ba-4665-907a-94cafc627633",
+          "grantRevision": 1,
+          "ownershipEpoch": 0,
+          "deadline": "2026-11-19T11:54:41.354Z",
+          "payloadHash": "8938ea8c6ff9c378f8d2b6bdbf05bae28b18dfc78400235b8a7b93cc94577670",
+          "authorizeAllowed": true,
+          "dispatchStartAllowed": true,
+          "receiptStatus": "ACCEPTED",
+          "executionState": "APPLIED_VERIFIED",
+          "receiptHash": "a79168723ea9ba548d6c88f0ac88aa59632edf4e0940543f337243a1ff05e11d"
+        }
+      ],
+      "final": {
+        "status": "SETTLED",
+        "appliedCount": 3,
+        "attempts": 1,
+        "members": [
+          {
+            "deviceId": "keyring-A",
+            "path": "/Mobius/kr-3928cc-a/binarySwitch",
+            "status": "READBACK_VERIFIED",
+            "attempts": 1,
+            "cseRsc": 2004,
+            "error": null,
+            "binding": {
+              "claimId": "claim-a4d6e95b-d64e-415b-a17e-91013e44962d",
+              "grantRevision": 1,
+              "ownershipEpoch": 0,
+              "deadline": "2026-11-19T11:54:41.354Z",
+              "issuedAt": "2026-11-19T11:44:41.375Z"
+            },
+            "payloadHash": "6e2857eaeac2a314cd8fd4756835e354009d4445e7131a04db6c529c4f7c7794",
+            "readback": {
+              "state": false
+            },
+            "cseReadback": {
+              "rsc": 2000,
+              "state": false,
+              "envelope": "cod:binSh",
+              "matchesDesired": true,
+              "readAt": "2026-11-19T11:44:41.394Z",
+              "ackInstance": {
+                "container": "/Mobius/kr-3928cc-a/commandAcks",
+                "rsc": 2001,
+                "ri": "mg34ojucy1",
+                "et": "20261120T114441"
+              }
+            }
+          },
+          {
+            "deviceId": "keyring-B",
+            "path": "/Mobius/kr-3928cc-b/binarySwitch",
+            "status": "READBACK_VERIFIED",
+            "attempts": 1,
+            "cseRsc": 2004,
+            "error": null,
+            "binding": {
+              "claimId": "claim-8539de29-e682-4354-9d0c-d7d8083532fe",
+              "grantRevision": 1,
+              "ownershipEpoch": 0,
+              "deadline": "2026-11-19T11:54:41.354Z",
+              "issuedAt": "2026-11-19T11:44:41.376Z"
+            },
+            "payloadHash": "c47500234ddef828834d77a9db31212b8d9584f2afba2b6f8aa684a9c15b7bf1",
+            "readback": {
+              "state": false
+            },
+            "cseReadback": {
+              "rsc": 2000,
+              "state": false,
+              "envelope": "cod:binSh",
+              "matchesDesired": true,
+              "readAt": "2026-11-19T11:44:41.403Z",
+              "ackInstance": {
+                "container": "/Mobius/kr-3928cc-b/commandAcks",
+                "rsc": 2001,
+                "ri": "ho9lpmo5uo",
+                "et": "20261120T114441"
+              }
+            }
+          },
+          {
+            "deviceId": "keyring-C",
+            "path": "/Mobius/kr-3928cc-c/binarySwitch",
+            "status": "READBACK_VERIFIED",
+            "attempts": 1,
+            "cseRsc": 2004,
+            "error": null,
+            "binding": {
+              "claimId": "claim-a17fcacd-f6ba-4665-907a-94cafc627633",
+              "grantRevision": 1,
+              "ownershipEpoch": 0,
+              "deadline": "2026-11-19T11:54:41.354Z",
+              "issuedAt": "2026-11-19T11:44:41.376Z"
+            },
+            "payloadHash": "8938ea8c6ff9c378f8d2b6bdbf05bae28b18dfc78400235b8a7b93cc94577670",
+            "readback": {
+              "state": false
+            },
+            "cseReadback": {
+              "rsc": 2000,
+              "state": false,
+              "envelope": "cod:binSh",
+              "matchesDesired": true,
+              "readAt": "2026-11-19T11:44:41.416Z",
+              "ackInstance": {
+                "container": "/Mobius/kr-3928cc-c/commandAcks",
+                "rsc": 2001,
+                "ri": "79wt76s6ey",
+                "et": "20261120T114441"
+              }
+            }
+          }
+        ]
+      },
+      "centralCseCalls": [
+        {
+          "method": "POST",
+          "path": "/Mobius/pb-central-3928cc",
+          "rsc": 4105
+        },
+        {
+          "method": "GET",
+          "path": "/Mobius/pb-central-3928cc/household-demo-switches",
+          "rsc": 2000
+        },
+        {
+          "method": "PUT",
+          "path": "/Mobius/pb-central-3928cc/household-demo-switches/fopt",
+          "rsc": 2000
+        },
+        {
+          "method": "POST",
+          "path": "/Mobius/pb-central-3928cc/groupCommands",
+          "rsc": 2001
+        }
+      ]
+    }
+  ],
+  "ackContainers": [
+    {
+      "deviceId": "keyring-A",
+      "path": "/Mobius/kr-3928cc-a/commandAcks",
+      "mni": 1,
+      "cni": 1,
+      "latest": {
+        "et": "20261120T114441",
+        "commandId": "portal-a367f0aae6ce7f58ba406333d7d9dc2c",
+        "claimId": "claim-a4d6e95b-d64e-415b-a17e-91013e44962d",
+        "payloadHash": "6e2857eaeac2a314cd8fd4756835e354009d4445e7131a04db6c529c4f7c7794",
+        "readback": {
+          "state": false
+        },
+        "cseState": false,
+        "executionState": "APPLIED_VERIFIED"
+      }
+    },
+    {
+      "deviceId": "keyring-B",
+      "path": "/Mobius/kr-3928cc-b/commandAcks",
+      "mni": 1,
+      "cni": 1,
+      "latest": {
+        "et": "20261120T114441",
+        "commandId": "portal-a4f523fba6411a9b4c1aaeb15d29be96",
+        "claimId": "claim-8539de29-e682-4354-9d0c-d7d8083532fe",
+        "payloadHash": "c47500234ddef828834d77a9db31212b8d9584f2afba2b6f8aa684a9c15b7bf1",
+        "readback": {
+          "state": false
+        },
+        "cseState": false,
+        "executionState": "APPLIED_VERIFIED"
+      }
+    },
+    {
+      "deviceId": "keyring-C",
+      "path": "/Mobius/kr-3928cc-c/commandAcks",
+      "mni": 1,
+      "cni": 1,
+      "latest": {
+        "et": "20261120T114441",
+        "commandId": "portal-83dfa1654de0bbead6e6525030739fa0",
+        "claimId": "claim-a17fcacd-f6ba-4665-907a-94cafc627633",
+        "payloadHash": "8938ea8c6ff9c378f8d2b6bdbf05bae28b18dfc78400235b8a7b93cc94577670",
+        "readback": {
+          "state": false
+        },
+        "cseState": false,
+        "executionState": "APPLIED_VERIFIED"
+      }
+    }
+  ],
+  "macpNegative": {
+    "originator": "python SDT client AE",
+    "rsc": 4103
+  },
+  "sdtClients": {
+    "implementations": [
+      {
+        "language": "JavaScript",
+        "implementation": "pc-mobius OneM2mEdgeClient"
+      },
+      {
+        "language": "Python",
+        "implementation": "tools/onem2m-sdt-client/sdt_client.py",
+        "dependencies": "standard library only",
+        "contractSource": "pc-mobius/specializations/r4/binarySwitch-r4-profile.xsd + TS-0023 cnd"
+      }
+    ],
+    "javascript": {
+      "discovery": {
+        "filter": {
+          "fu": 1,
+          "ty": 28,
+          "cnd": "org.onem2m.common.moduleclass.binarySwitch"
+        },
+        "rsc": 2000,
+        "uris": [
+          "/Mobius/kr-3928cc-a/binarySwitch",
+          "/Mobius/kr-3928cc-b/binarySwitch",
+          "/Mobius/kr-3928cc-c/binarySwitch"
+        ]
+      },
+      "states": {
+        "/Mobius/kr-3928cc-a/binarySwitch": false,
+        "/Mobius/kr-3928cc-b/binarySwitch": false,
+        "/Mobius/kr-3928cc-c/binarySwitch": false
+      }
+    },
+    "python": {
+      "client": "python-stdlib-sdt-client",
+      "clientSHA256": "c9612b89616bd1dde27531011842228d517a7981896bcc12c689382354a94160",
+      "contract": {
+        "cnd": "org.onem2m.common.moduleclass.binarySwitch",
+        "envelope": "cod:binSh",
+        "namespace": "http://www.onem2m.org/xml/protocols/commondomain",
+        "stateAttribute": "state",
+        "stateType": "bool"
+      },
+      "discovery": {
+        "filter": {
+          "cnd": "org.onem2m.common.moduleclass.binarySwitch",
+          "fu": 1,
+          "ty": 28
+        },
+        "rsc": 2000,
+        "uris": [
+          "/Mobius/kr-3928cc-a/binarySwitch",
+          "/Mobius/kr-3928cc-b/binarySwitch",
+          "/Mobius/kr-3928cc-c/binarySwitch"
+        ]
+      },
+      "states": {
+        "/Mobius/kr-3928cc-a/binarySwitch": false,
+        "/Mobius/kr-3928cc-b/binarySwitch": false,
+        "/Mobius/kr-3928cc-c/binarySwitch": false
+      },
+      "toggle": {
+        "before": false,
+        "restore": {
+          "applied": true,
+          "readback": false,
+          "readbackRsc": 2000,
+          "rsc": 2004,
+          "state": false
+        },
+        "set": {
+          "applied": true,
+          "readback": true,
+          "readbackRsc": 2000,
+          "rsc": 2004,
+          "state": true
+        },
+        "uri": "/Mobius/kr-3928cc-b/binarySwitch"
+      },
+      "unmatchedCnd": {
+        "cnd": "urn:privacy-bubble:unregistered",
+        "uris": []
+      }
+    },
+    "crossWrite": {
+      "jsWrite": {
+        "uri": "/Mobius/kr-3928cc-a/binarySwitch",
+        "rsc": 2004,
+        "pythonRead": true
+      },
+      "pythonWrite": {
+        "uri": "/Mobius/kr-3928cc-a/binarySwitch",
+        "rsc": 2004,
+        "pythonReadback": false,
+        "javascriptRead": false
+      }
+    }
+  },
+  "checks": [
+    {
+      "name": "flexContainer mni capability boundary (5001 NOT_IMPLEMENTED)",
+      "expected": 5001,
+      "actual": 5001,
+      "status": "PASS"
+    },
+    {
+      "name": "G1 one fanOutPoint UPDATE for the household",
+      "expected": 1,
+      "actual": 1,
+      "status": "PASS"
+    },
+    {
+      "name": "G1 per-member rsc from m2m:agr",
+      "expected": [
+        [
+          "keyring-A",
+          2004
+        ],
+        [
+          "keyring-B",
+          2004
+        ],
+        [
+          "keyring-C",
+          4103
+        ]
+      ],
+      "actual": [
+        [
+          "keyring-A",
+          2004
+        ],
+        [
+          "keyring-B",
+          2004
+        ],
+        [
+          "keyring-C",
+          4103
+        ]
+      ],
+      "status": "PASS"
+    },
+    {
+      "name": "G1 request status after partial fan-out",
+      "expected": "PARTIAL",
+      "actual": "PARTIAL",
+      "status": "PASS"
+    },
+    {
+      "name": "G1 claims issued only for CSE-accepted members",
+      "expected": [
+        "keyring-A",
+        "keyring-B"
+      ],
+      "actual": [
+        "keyring-A",
+        "keyring-B"
+      ],
+      "status": "PASS"
+    },
+    {
+      "name": "G1 Gateway receipts for A and B settle APPLIED_VERIFIED",
+      "expected": [
+        "APPLIED_VERIFIED",
+        "APPLIED_VERIFIED"
+      ],
+      "actual": [
+        "APPLIED_VERIFIED",
+        "APPLIED_VERIFIED"
+      ],
+      "status": "PASS"
+    },
+    {
+      "name": "restart keeps member states durable",
+      "expected": [
+        [
+          "keyring-A",
+          "READBACK_VERIFIED"
+        ],
+        [
+          "keyring-B",
+          "READBACK_VERIFIED"
+        ],
+        [
+          "keyring-C",
+          "RETRY_PENDING"
+        ]
+      ],
+      "actual": [
+        [
+          "keyring-A",
+          "READBACK_VERIFIED"
+        ],
+        [
+          "keyring-B",
+          "READBACK_VERIFIED"
+        ],
+        [
+          "keyring-C",
+          "RETRY_PENDING"
+        ]
+      ],
+      "status": "PASS"
+    },
+    {
+      "name": "operator repairs keyring-C member ACP",
+      "expected": 2004,
+      "actual": 2004,
+      "status": "PASS"
+    },
+    {
+      "name": "retry reaches only the failed member",
+      "expected": [
+        [
+          "/Mobius/kr-3928cc-c/binarySwitch",
+          2004
+        ]
+      ],
+      "actual": [
+        [
+          "/Mobius/kr-3928cc-c/binarySwitch",
+          2004
+        ]
+      ],
+      "status": "PASS"
+    },
+    {
+      "name": "retry replay with the same key is idempotent",
+      "expected": true,
+      "actual": true,
+      "status": "PASS"
+    },
+    {
+      "name": "G1 settles after retry",
+      "expected": [
+        "SETTLED",
+        3
+      ],
+      "actual": [
+        "SETTLED",
+        3
+      ],
+      "status": "PASS"
+    },
+    {
+      "name": "G1 member binding equals Gateway claim",
+      "expected": true,
+      "actual": true,
+      "status": "PASS"
+    },
+    {
+      "name": "G1 device and CSE readback per member",
+      "expected": [
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ]
+      ],
+      "actual": [
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ],
+        [
+          true,
+          true
+        ]
+      ],
+      "status": "PASS"
+    },
+    {
+      "name": "G2 group reused without re-creation",
+      "expected": [
+        4105
+      ],
+      "actual": [
+        4105
+      ],
+      "status": "PASS"
+    },
+    {
+      "name": "G2 all members 2004 in one fopt",
+      "expected": [
+        2004,
+        2004,
+        2004
+      ],
+      "actual": [
+        2004,
+        2004,
+        2004
+      ],
+      "status": "PASS"
+    },
+    {
+      "name": "G2 settles with readback false",
+      "expected": [
+        "SETTLED",
+        [
+          false,
+          false,
+          false
+        ]
+      ],
+      "actual": [
+        "SETTLED",
+        [
+          false,
+          false,
+          false
+        ]
+      ],
+      "status": "PASS"
+    },
+    {
+      "name": "group mt=28, 3 members, macp, et = grant expiry",
+      "expected": [
+        28,
+        3,
+        [
+          "kak8qx955k"
+        ],
+        "20261119T121441"
+      ],
+      "actual": [
+        28,
+        3,
+        [
+          "kak8qx955k"
+        ],
+        "20261119T121441"
+      ],
+      "status": "PASS"
+    },
+    {
+      "name": "ACK container mni=1 keeps only the latest member readback",
+      "expected": [
+        [
+          1,
+          1,
+          false
+        ],
+        [
+          1,
+          1,
+          false
+        ],
+        [
+          1,
+          1,
+          false
+        ]
+      ],
+      "actual": [
+        [
+          1,
+          1,
+          false
+        ],
+        [
+          1,
+          1,
+          false
+        ],
+        [
+          1,
+          1,
+          false
+        ]
+      ],
+      "status": "PASS"
+    },
+    {
+      "name": "audit container holds the fan-out records with et",
+      "expected": [
+        10,
+        2,
+        "string"
+      ],
+      "actual": [
+        10,
+        2,
+        "string"
+      ],
+      "status": "PASS"
+    },
+    {
+      "name": "macp refuses a non-central originator at the fanOutPoint",
+      "expected": 4103,
+      "actual": 4103,
+      "status": "PASS"
+    },
+    {
+      "name": "Python and JavaScript discover the same binarySwitch URIs",
+      "expected": [
+        "/Mobius/kr-3928cc-a/binarySwitch",
+        "/Mobius/kr-3928cc-b/binarySwitch",
+        "/Mobius/kr-3928cc-c/binarySwitch"
+      ],
+      "actual": [
+        "/Mobius/kr-3928cc-a/binarySwitch",
+        "/Mobius/kr-3928cc-b/binarySwitch",
+        "/Mobius/kr-3928cc-c/binarySwitch"
+      ],
+      "status": "PASS"
+    },
+    {
+      "name": "discovery finds exactly the three keyring flexContainers",
+      "expected": [
+        "/Mobius/kr-3928cc-a/binarySwitch",
+        "/Mobius/kr-3928cc-b/binarySwitch",
+        "/Mobius/kr-3928cc-c/binarySwitch"
+      ],
+      "actual": [
+        "/Mobius/kr-3928cc-a/binarySwitch",
+        "/Mobius/kr-3928cc-b/binarySwitch",
+        "/Mobius/kr-3928cc-c/binarySwitch"
+      ],
+      "status": "PASS"
+    },
+    {
+      "name": "Python and JavaScript read the same states",
+      "expected": {
+        "/Mobius/kr-3928cc-a/binarySwitch": false,
+        "/Mobius/kr-3928cc-b/binarySwitch": false,
+        "/Mobius/kr-3928cc-c/binarySwitch": false
+      },
+      "actual": {
+        "/Mobius/kr-3928cc-a/binarySwitch": false,
+        "/Mobius/kr-3928cc-b/binarySwitch": false,
+        "/Mobius/kr-3928cc-c/binarySwitch": false
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "Python toggle and restore readback",
+      "expected": [
+        2004,
+        true,
+        2004,
+        false
+      ],
+      "actual": [
+        2004,
+        true,
+        2004,
+        false
+      ],
+      "status": "PASS"
+    },
+    {
+      "name": "unregistered cnd discovery is empty",
+      "expected": [],
+      "actual": [],
+      "status": "PASS"
+    },
+    {
+      "name": "JavaScript write is read by Python",
+      "expected": [
+        2004,
+        true
+      ],
+      "actual": [
+        2004,
+        true
+      ],
+      "status": "PASS"
+    },
+    {
+      "name": "Python write is read by JavaScript",
+      "expected": [
+        2004,
+        false,
+        false
+      ],
+      "actual": [
+        2004,
+        false,
+        false
+      ],
+      "status": "PASS"
+    }
+  ],
+  "passed": 27,
+  "failed": 0,
+  "runnerSHA256": "866417dd7552f7e89bdf64fd7d70b6635e9ac2f3b0e26bdec96043eba302446f",
+  "pythonClientSHA256": "c9612b89616bd1dde27531011842228d517a7981896bcc12c689382354a94160",
+  "replay": "MOBIUS4_ROOT=<mobius4> node pc-mobius/scripts/run-group-command-real.mjs (requires .local/postgres/connection.json)"
+}
