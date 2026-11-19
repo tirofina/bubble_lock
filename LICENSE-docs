@@ -1,0 +1,24 @@
+Creative Commons Attribution 4.0 International (CC BY 4.0)
+
+Copyright 2026 Privacy Bubble Keyring contributors
+
+Non-code content in this repository is licensed under the Creative Commons
+Attribution 4.0 International License, unless a file or folder states
+otherwise. Non-code content covers documentation and Markdown files,
+diagrams, screenshots and other images, video and other media, verification
+evidence logs and receipts, and the PCB and hardware design files authored by
+the project.
+
+Human-readable summary: https://creativecommons.org/licenses/by/4.0/
+Full legal code:        https://creativecommons.org/licenses/by/4.0/legalcode
+
+You may share and adapt this material for any purpose, including commercial
+use, provided that you give appropriate credit, provide a link to the
+license, and indicate whether you made changes.
+
+Suggested attribution:
+  "Privacy Bubble Keyring contributors, https://github.com/tirofina/bubble_lock,
+   licensed under CC BY 4.0"
+
+Source code is licensed separately under the Apache License, Version 2.0
+(see LICENSE). Third-party material keeps its own license (see NOTICE).

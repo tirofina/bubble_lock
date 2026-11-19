@@ -1,0 +1,120 @@
+Privacy Bubble Keyring (bubble_lock)
+Copyright 2026 Privacy Bubble Keyring contributors
+
+This product includes software developed by the Privacy Bubble Keyring
+contributors for the 2026 oneM2M International Hackathon.
+
+LICENSING OF THIS REPOSITORY
+============================
+
+Source code (JavaScript, TypeScript, Python, C/C++, shell and PowerShell
+scripts, SQL, build and configuration files) is licensed under the Apache
+License, Version 2.0. See the LICENSE file.
+
+Non-code content is licensed under the Creative Commons Attribution 4.0
+International License (CC BY 4.0) unless a file or folder states otherwise.
+Non-code content includes documentation and Markdown files, diagrams,
+screenshots and other images, video and other media, verification evidence
+logs and receipts, and the PCB and hardware design files authored by the
+project (KiCad schematic, board and project files, BOM and pinout tables).
+See LICENSE-docs and https://creativecommons.org/licenses/by/4.0/
+
+Suggested attribution for CC BY 4.0 content:
+  "Privacy Bubble Keyring contributors, https://github.com/tirofina/bubble_lock,
+   licensed under CC BY 4.0"
+
+Third-party material listed below keeps its own license and notices. The
+project licenses above apply only to the parts authored by the project.
+
+THIRD-PARTY MATERIAL INCLUDED IN THIS REPOSITORY
+================================================
+
+1. oneM2M XML Schema files (TS-0004 common types, TS-0023 binarySwitch module)
+   Files:
+     pc-mobius/specializations/reference/CDT-commonTypes-r4.xsd
+     pc-mobius/specializations/reference/COD-mod-binarySwitch.xsd
+     pc-mobius/specializations/r4/CDT-commonTypes.xsd
+     pc-mobius/specializations/r4/CDT-enumerationTypes.xsd
+   Source: https://git.onem2m.org/XMLSchemas/ts-0004 (pinned commit
+     a59a0152ff414a069c2bb7baafb91e84924aea0f) and the oneM2M SDT
+     repository (commit recorded in pc-mobius/specializations/lineage.json).
+   Copyright (c) oneM2M Partners Type 1 (ARIB, ATIS, CCSA, ETSI, TIA, TSDSI,
+     TTA, TTC). All rights reserved.
+   Terms: the oneM2M copyright notification and disclaimer kept at the top
+     of each file. pc-mobius/specializations/r4/CDT-commonTypes.xsd is a
+     derived copy in which only the geoJsonCoordinates type is rewritten for
+     XSD 1.0 compilation; lineage.json records the original and derived
+     SHA-256 values.
+
+2. KiCad library footprints and 3D models
+   Files: footprints in keyring/pcb/r18/Sourced_4L.pretty/ and
+     keyring/pcb/r18/HandSolder.pretty/ that originate from the KiCad
+     libraries (the HandSolder variants are modified pads of those
+     footprints), and the STEP models in keyring/pcb/r18/3dmodels/ whose
+     headers carry the KiCad or "kicad StepUp" copyright line.
+   Copyright (c) KiCad library contributors.
+   License: CC BY-SA 4.0 with the KiCad libraries exception.
+     https://www.kicad.org/libraries/license/
+     https://creativecommons.org/licenses/by-sa/4.0/
+   Some project files reference models installed with KiCad through
+     ${KICAD10_3DMODEL_DIR}; those models are part of the KiCad installation.
+
+3. Supplier and vendor CAD models
+   Files: keyring/pcb/r18/3dmodels/MAX17048_EasyEDA.step,
+     keyring/pcb/r18/3dmodels/RF_Module_ESP32-S3-WROOM-1.step,
+     keyring/pcb/r18/3dmodels/Connector_USB_USB_C_Receptacle_HRO_TYPE-C-31-M-12.step,
+     keyring/pcb/r18/3dmodels/PJ320D_supplier_aligned.step,
+     keyring/pcb/r18/sourced_cad/MAX98357A.3dshapes/, and footprints in
+     keyring/pcb/r18/Sourced_4L.pretty/ whose properties point to a supplier
+     source such as LCSC/EasyEDA (for example AUDIO-SMD_PJ-320D).
+   These models and footprints remain under the terms of their original
+     sources (EasyEDA/LCSC, component manufacturers and suppliers). The
+     project grants no new license for them. See keyring/pcb/r18/README.md.
+
+4. Component datasheet data
+   File: keyring/pcb/r18/datasheets/extracted/MAX9850ETI__07c924.json
+   Pin and parameter data extracted from the manufacturer datasheet of the
+     MAX9850 (Analog Devices / Maxim Integrated). The datasheet itself is not
+     included and remains the property of its publisher.
+
+5. Mobius4 source excerpts
+   File: pc-mobius/scripts/apply-mobius-security.mjs
+   Contains short excerpts of Mobius4 source lines that serve as patch
+     anchors for the local subscription-security patch.
+   Mobius4: https://github.com/IoTKETI/mobius4
+   Copyright (c) 2025, IoTKETI. BSD 3-Clause License.
+
+6. JD9853 display reference
+   keyring/firmware/src/jd9853_display.cpp was informed by jd9853-rs
+     (https://github.com/drindr/jd9853-rs, MIT OR Apache-2.0,
+     Copyright (c) 2026 Drin). No vendor initialization table was copied.
+     The full notice is in keyring/firmware/THIRD_PARTY_NOTICES.md.
+
+EXTERNAL DEPENDENCIES (FETCHED AT BUILD OR RUN TIME, NOT VENDORED)
+==================================================================
+
+These components are downloaded by npm, pip, PlatformIO or a git checkout
+and keep their own licenses. Retain their notices when you redistribute
+builds or firmware images.
+
+  Mobius4 4.24.5 oneM2M CSE (external checkout via MOBIUS4_ROOT)
+      BSD-3-Clause, Copyright (c) 2025, IoTKETI
+  Arduino_GFX (pinned commit 3cc08c4e9ab6d85807e49b657d73fae10871616e)
+      BSD license, includes Adafruit Industries copyright
+  ArduinoJson 6.21.5                                   MIT
+  Espressif ESP32 Arduino core / espressif32 platform  Apache-2.0 and others
+  Node.js packages: ajv, ajv-formats, mqtt, pg, react, react-dom, vite (MIT),
+      leaflet (BSD-2-Clause), typescript (Apache-2.0)
+  Python packages: bleak (MIT), httpx (BSD-3-Clause),
+      paho-mqtt (EPL-2.0 or EDL-1.0)
+
+Map tiles shown by the web dashboard come from OpenStreetMap at run time:
+  (c) OpenStreetMap contributors, https://www.openstreetmap.org/copyright
+
+TRADEMARKS
+==========
+
+oneM2M is a trademark of the oneM2M Partners. ETSI and MEC are trademarks of
+ETSI. Other product names belong to their owners. Their use here identifies
+the standards and products the project builds on and implies no endorsement
+by those organizations.
