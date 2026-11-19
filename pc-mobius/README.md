@@ -30,7 +30,7 @@ Node.js 검증 묶음은 `npm test`, `npm run validate`, `npm run dry-run` 명�
 
 `src/gateway-bridge.mjs`는 Pi telemetry를 `pb:binarySwitch` oneM2M UPDATE로 변환하고, command publish와 ACK/readback을 하나의 receipt 흐름으로 연결한다. `MOBIUS4_ONEM2M_TRANSPORT=http`는 HTTP binding, `MOBIUS4_ONEM2M_TRANSPORT=mqtt`는 `/oneM2M/req/{originator}/{cseId}/json` binding을 사용한다. `src/receipt-journal.mjs`를 통해 JSONL receipt와 SHA-256 hash를 영속화한다. 실제 MQTT broker와 Mobius4가 준비되면 `npm install` 후 `npm run bridge`를 실행한다. 환경변수는 `MOBIUS4_MQTT_URL`, `MOBIUS4_URL`, `MOBIUS4_ORIGINATOR`, `MOBIUS4_GATEWAY_ID`, `MOBIUS4_RECEIPT_PATH`, `MOBIUS4_ONEM2M_TRANSPORT`, `MOBIUS4_CSE_ID`를 사용한다.
 
-`src/group-dispatcher.mjs`는 oneM2M Group/fan-out 명령을 구성원별 commandId로 분배하고, ACK/readback 집계와 pending member retry를 제공한다.
+`src/group-dispatcher.mjs`는 oneM2M Group/fan-out 명령을 구성원별 commandId로 분배하고, ACK/readback 집계와 pending member retry를 제공한다. `src/onem2m-group-fanout.mjs`는 `<grp>` 생성과 갱신(mt=28, mid, macp, et), `<grp>/fopt` UPDATE, `m2m:agr` 구성원별 rsc 해석을 담당한다. 보호자가 가구 전체 명령(`target: household`)을 승인하면 `integration/src/group-command-service.mjs`가 fopt 요청 한 번을 보내고, CSE가 수락한 구성원에게만 canonical claim을 발급하며, 실패 구성원만 `retryScope: failed`로 다시 보낸다. 실제 Mobius4 실행은 `node scripts/run-group-command-real.mjs`이다.
 
 `db/migrations/001_core_receipts.sql`은 gateway event dedup, group dispatch, receipt journal, oneM2M HTTP/MQTT binding을 PostgreSQL에 기록한다. Mobius4 companion DB에 migration을 적용하면 runtime receipt와 재처리 기준을 공유할 수 있다.
 

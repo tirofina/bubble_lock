@@ -25,8 +25,9 @@
     "POST /grants/revoke": {"scope": "grant:revoke", "role": "guardian", "ownerBound": true, "input": {"required": ["grantId"], "optional": ["reason"]}, "response": "grant"},
     "POST /incidents": {"scope": "incident:write", "input": {"required": ["householdId", "kind", "message"], "optional": ["deviceId"]}, "response": "incident"},
     "POST /incidents/resolve": {"scope": "incident:resolve", "role": "guardian", "input": {"required": ["incidentId"], "optional": []}, "response": "incident"},
-    "POST /commands/request": {"scope": "command:request", "input": {"required": ["householdId", "deviceIds", "desiredState", "reason"], "optional": ["ttlSec"]}, "response": "commandRequest"},
-    "POST /commands/approve": {"scope": "bubble:command", "role": "guardian", "input": {"required": ["requestId", "grantId"], "optional": []}, "response": "commandRequest"},
+    "POST /commands/request": {"scope": "command:request", "input": {"required": ["householdId", "deviceIds", "desiredState", "reason"], "optional": ["ttlSec"], "householdTarget": {"required": ["householdId", "target", "desiredState", "reason"], "target": "household", "deviceIds": "resolved from the 2..16 registered household devices"}}, "response": "commandRequest"},
+    "POST /commands/approve": {"scope": "bubble:command", "role": "guardian", "input": {"required": ["requestId", "grantId"], "optional": []}, "response": "commandRequest", "householdTarget": "one UPDATE to the household <grp>/fopt; per-member claim only for members the CSE accepted"},
+    "POST /commands/retry": {"scope": "bubble:command", "role": "guardian", "ownerBound": true, "input": {"required": ["requestId"], "optional": []}, "response": "commandRequest", "retryScope": "members in RETRY_PENDING only, same memberCommandIds"},
     "POST /notifications/read": {"scope": "portal:read", "ownerBound": true, "input": {"required": ["notificationId"], "optional": []}, "response": "notification"}
   },
   "commandLifecycle": {
@@ -35,6 +36,7 @@
     "QUEUED": "Canonical commands persisted for authenticated gateway polling",
     "EXPIRED": "Computed effectiveStatus for expired PENDING/PARTIAL requests",
     "executionEvidence": "Gateway ACK and readback receipts",
+    "groupCommand": {"resource": "<grp> mt=28, mid=member cod:binSh flexContainers, macp, et=grant expiry", "fanOutPoint": "PUT <grp>/fopt {cod:binSh:{state}}", "memberResult": "m2m:agr/m2m:rsp rsc per member", "PARTIAL": "one or more members RETRY_PENDING after fan-out", "QUEUED": "every member reached the CSE and holds its canonical claim", "memberAck": "Gateway receipt readback + CSE readback + ACK contentInstance (container mni, cin et)", "service": "integration/src/group-command-service.mjs"},
     "fences": ["household guardian", "grant owner", "device subject", "active consent", "grant revision", "credential revision", "ownership epoch", "deadline"]
   },
   "demo": {"factory": "integration/src/portal-demo.mjs#createPortalDemo", "principals": ["guardian-demo", "visitor-demo", "operator-demo"], "householdId": "household-demo", "gatewayId": "pi-01", "deviceIds": ["keyring-A", "keyring-B", "keyring-C"], "transport": "local sandbox queue", "operatorMembership": "visitor"}

@@ -90,9 +90,14 @@ export class PortalService {
       households, devices: this.store.list('portalDevices').filter((record) => ids.has(record.householdId)), consents, grants,
       locationLeases:this.locationPrivacy?.list(principal)??[],
       incidents: this.store.list('portalIncidents').filter((record) => ids.has(record.householdId)),
-      commandRequests: this.store.list('portalCommandRequests').filter((record) => ids.has(record.householdId)).map((record) => ({ ...record, effectiveStatus: ['PENDING', 'PARTIAL'].includes(record.status) && Date.parse(record.expiresAt) <= now ? 'EXPIRED' : record.status })),
+      commandRequests: this.store.list('portalCommandRequests').filter((record) => ids.has(record.householdId)).map((record) => this.liveGroup(record)).map((record) => ({ ...record, effectiveStatus: ['PENDING', 'PARTIAL'].includes(record.status) && Date.parse(record.expiresAt) <= now ? 'EXPIRED' : record.status })),
       notifications: this.store.list('portalNotifications').filter((record) => record.principalId === principal.principalId && ids.has(record.householdId)).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0,100),
     });
+  }
+
+  liveGroup(record) {
+    if (!record.group?.commandId || !this.groupCommands) return record;
+    try { return this.groupRequest(record, this.groupCommands.summary(record.group.commandId)); } catch { return record; }
   }
 
   locationAccess(principal) {
@@ -212,12 +217,17 @@ export class PortalService {
     this.policyService.authorize(principal, 'command:request');
     this.household(principal, input.householdId);
     return this.mutate(principal, 'command.request', input, async (key) => {
-      if (!Array.isArray(input.deviceIds) || input.deviceIds.length < 1 || input.deviceIds.length > 16 || new Set(input.deviceIds).size !== input.deviceIds.length) throw new Error('1~16개 기기를 선택하세요.');
-      for (const deviceId of input.deviceIds) if (this.store.get('portalDevices', identifier(deviceId))?.householdId !== input.householdId) throw new Error('가구에 연결된 기기를 선택하세요.');
+      const household = input.target === 'household';
+      if (input.target !== undefined && !household) throw new Error('명령 대상은 household로 지정하세요.');
+      if (household && input.deviceIds !== undefined) throw new Error('가구 전체 명령은 기기 목록 없이 요청하세요.');
+      const deviceIds = household ? this.store.list('portalDevices').filter((device) => device.householdId === input.householdId).map((device) => device.deviceId).sort() : input.deviceIds;
+      if (household && (deviceIds.length < 2 || deviceIds.length > 16)) throw new Error('가구 전체 명령에는 2~16개 등록 기기가 필요합니다.');
+      if (!Array.isArray(deviceIds) || deviceIds.length < 1 || deviceIds.length > 16 || new Set(deviceIds).size !== deviceIds.length) throw new Error('1~16개 기기를 선택하세요.');
+      for (const deviceId of deviceIds) if (this.store.get('portalDevices', identifier(deviceId))?.householdId !== input.householdId) throw new Error('가구에 연결된 기기를 선택하세요.');
       if (!input.desiredState || Object.keys(input.desiredState).join() !== 'state' || typeof input.desiredState.state !== 'boolean') throw new Error('기기 목표 상태를 확인하세요.');
       const ttlSec = input.ttlSec ?? 300;
       if (!Number.isInteger(ttlSec) || ttlSec < 1 || ttlSec > 900) throw new Error('요청 유효기간은 1~900초로 설정하세요.');
-      const request = { requestId: `request-${key.slice(0,24)}`, householdId: input.householdId, deviceIds: [...input.deviceIds], desiredState: { state: input.desiredState.state }, reason: text(input.reason, '명령 요청 사유'), requestedBy: principal.principalId, requestedAt: this.clock(), expiresAt: new Date(Date.parse(this.clock()) + ttlSec * 1000).toISOString(), status: 'PENDING', commands: [] };
+      const request = { requestId: `request-${key.slice(0,24)}`, householdId: input.householdId, deviceIds: [...deviceIds], ...(household ? { target: 'household' } : {}), desiredState: { state: input.desiredState.state }, reason: text(input.reason, '명령 요청 사유'), requestedBy: principal.principalId, requestedAt: this.clock(), expiresAt: new Date(Date.parse(this.clock()) + ttlSec * 1000).toISOString(), status: 'PENDING', commands: [] };
       await this.store.put('portalCommandRequests', request.requestId, request);
       await this.event(principal, request.householdId, 'COMMAND_APPROVAL_REQUESTED', '기기 명령 승인을 기다리고 있습니다.', { requestId: request.requestId });
       return request;
@@ -235,6 +245,7 @@ export class PortalService {
       if (!decision.allowed || decision.grant.principalId !== principal.principalId || decision.grant.subjectId !== current.householdId) throw new Error('현재 가구의 유효한 명령 승인 권한을 확인하세요.');
       if (Date.parse(current.expiresAt) <= Date.parse(this.clock())) throw new Error('새 명령 요청으로 유효기간을 갱신하세요.');
       const deadline = new Date(Math.min(Date.parse(current.expiresAt), Date.parse(decision.grant.expiresAt))).toISOString();
+      if (current.target === 'household') return this.approveGroupCommand(principal, input, current, deadline);
       const commands = [];
       try {
         for (const deviceId of current.deviceIds) {
@@ -252,6 +263,43 @@ export class PortalService {
       const result = { ...current, status: 'QUEUED', approvedBy: principal.principalId, approvedAt: this.clock(), grantId: input.grantId, approvalHash: approvalHash({ requestId: current.requestId, principalId: principal.principalId, grantId: input.grantId, commands }), commands };
       await this.store.put('portalCommandRequests', current.requestId, result);
       await this.event(principal, current.householdId, 'COMMAND_APPROVED_QUEUED', '명령이 승인되어 Gateway 전달을 기다리고 있습니다.', { requestId: current.requestId, approvalHash: result.approvalHash });
+      return result;
+    });
+  }
+
+  // Household-wide command: one oneM2M <grp>/fopt request, per-member claim, failed-member retry.
+  async approveGroupCommand(principal, input, current, deadline) {
+    if (!this.groupCommands) throw new Error('가구 Group 명령 서비스 설정을 확인하세요.');
+    const prior = current.group?.commandId;
+    const group = prior ? await this.groupCommands.retry(prior) : await this.groupCommands.approve({ principal, request: current, grantId: input.grantId, deadline });
+    const result = this.groupRequest(current, group, prior ? {} : { approvedBy: principal.principalId, approvedAt: this.clock(), grantId: input.grantId });
+    await this.store.put('portalCommandRequests', current.requestId, result);
+    await this.event(principal, current.householdId, prior ? 'GROUP_COMMAND_RETRIED' : 'GROUP_COMMAND_FANOUT', prior ? '실패한 구성원에게 Group 명령을 다시 보냈습니다.' : '가구 전체 Group 명령을 한 번에 보냈습니다.', { requestId: current.requestId, groupCommandId: group.commandId, appliedCount: group.appliedCount, memberCount: group.memberCount, retryPendingCount: group.members.filter((member) => member.status === 'RETRY_PENDING').length });
+    return result;
+  }
+
+  groupRequest(current, group, approval = {}) {
+    const commands = group.members.map((member) => this.store.get('gatewayCommands', member.memberCommandId)?.command).filter(Boolean);
+    const retryPending = group.members.some((member) => member.status === 'RETRY_PENDING');
+    const view = { commandId: group.commandId, status: group.status, transport: group.transport, groupPath: group.groupPath, fanoutPoint: group.fanoutPoint, attempts: group.attempts, memberCount: group.memberCount, appliedCount: group.appliedCount,
+      members: group.members.map(({ memberId, memberCommandId, deviceId, gatewayId, status, attempts, cseRsc, error, binding, payloadHash, readback, cseReadback, path }) => ({ memberId, memberCommandId, deviceId, gatewayId, status, attempts, cseRsc, error, binding, payloadHash, readback, cseReadback, path })) };
+    const next = { ...current, ...approval, status: retryPending ? 'PARTIAL' : 'QUEUED', commands, group: view };
+    next.approvalHash = approvalHash({ requestId: current.requestId, principalId: next.approvedBy, grantId: next.grantId, groupCommandId: group.commandId, commands });
+    return next;
+  }
+
+  retryCommand(principal, input) {
+    this.policyService.authorize(principal, 'bubble:command');
+    const request = this.store.get('portalCommandRequests', identifier(input.requestId));
+    this.household(principal, request?.householdId, true);
+    return this.mutate(principal, 'command.retry', input, async () => {
+      const current = this.store.get('portalCommandRequests', input.requestId);
+      if (!current.group?.commandId || !this.groupCommands) throw new Error('Group 명령 요청을 선택하세요.');
+      if (current.approvedBy !== principal.principalId) throw new Error('승인한 보호자 권한을 확인하세요.');
+      const group = await this.groupCommands.retry(current.group.commandId);
+      const result = this.groupRequest(current, group);
+      await this.store.put('portalCommandRequests', current.requestId, result);
+      await this.event(principal, current.householdId, 'GROUP_COMMAND_RETRIED', '실패한 구성원에게 Group 명령을 다시 보냈습니다.', { requestId: current.requestId, groupCommandId: group.commandId, appliedCount: group.appliedCount, memberCount: group.memberCount });
       return result;
     });
   }
@@ -277,7 +325,7 @@ export class PortalService {
     const actions = {
       households: 'createHousehold', devices: 'registerDevice', consents: 'createConsent', grants: 'createGrant',
       'consents/revoke': 'revokeConsent', 'grants/revoke': 'revokeGrant', incidents: 'createIncident', 'incidents/resolve': 'resolveIncident',
-      'commands/request': 'requestCommand', 'commands/approve': 'approveCommand', 'notifications/read': 'readNotification',
+      'commands/request': 'requestCommand', 'commands/approve': 'approveCommand', 'commands/retry': 'retryCommand', 'notifications/read': 'readNotification',
     };
     const actionKey = path.replace(/^\/v1\/portal\//, '');
     const action = Object.hasOwn(actions, actionKey) ? actions[actionKey] : null;
