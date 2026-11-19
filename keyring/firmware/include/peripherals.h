@@ -50,6 +50,10 @@ private:
   TaskHandle_t worker = nullptr;
   QueueHandle_t logs = nullptr;
   KeyringScreen snapshot;
+#if defined(KEYRING_R26_FRONT)
+  KeyringScreen renderedScreen;
+  bool renderedScreenValid = false;
+#endif
   const char *displayState = "disabled", *sdState = "disabled";
   uint32_t drawnConfirmPress = 0, drawnPanicPress = 0;
   bool displayRequested = false;

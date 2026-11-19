@@ -27,10 +27,28 @@ portMUX_TYPE wifiMux = portMUX_INITIALIZER_UNLOCKED;
 uint8_t currentWifiLevel = 0;
 
 void updateWifiLevel() {
-  uint8_t level = 0;
-  if (WiFi.status() == WL_CONNECTED) {
+  static uint32_t lastSample = 0;
+  static uint8_t candidate = 0, candidateSamples = 0;
+  static bool sampled = false;
+  uint8_t level = currentWifiLevel;
+  if (WiFi.status() != WL_CONNECTED) {
+    level = 0;
+    sampled = false;
+    candidate = candidateSamples = 0;
+  } else {
+    const uint32_t now = millis();
+    if (sampled && now - lastSample < 2000) return;
+    sampled = true;
+    lastSample = now;
     const int32_t rssi = WiFi.RSSI();
-    level = rssi >= -55 ? 4 : rssi >= -67 ? 3 : rssi >= -78 ? 2 : 1;
+    uint8_t next = level;
+    if (!next) next = rssi >= -55 ? 4 : rssi >= -67 ? 3 : rssi >= -78 ? 2 : 1;
+    const int8_t boundaries[] = {-78, -67, -55};
+    while (next < 4 && rssi >= boundaries[next - 1] + 4) ++next;
+    while (next > 1 && rssi < boundaries[next - 2] - 4) --next;
+    if (next != candidate) { candidate = next; candidateSamples = 1; }
+    else if (candidateSamples < 3) ++candidateSamples;
+    if (!level || candidateSamples >= 3) level = candidate;
   }
   portENTER_CRITICAL(&wifiMux);
   currentWifiLevel = level;

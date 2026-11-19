@@ -215,7 +215,9 @@ void Peripherals::run() {
 void Peripherals::draw(const KeyringScreen &screen, bool fullDraw) {
 #if KEYRING_DISPLAY_PROFILE
 #if defined(KEYRING_R26_FRONT)
-  drawR26Display(display, screen, fullDraw);
+  drawR26Display(display, screen, fullDraw || !renderedScreenValid ? nullptr : &renderedScreen);
+  renderedScreen = screen;
+  renderedScreenValid = true;
 #else
   if (fullDraw) display.fillScreen(Black);
 #if KEYRING_R18_BRINGUP_DISPLAY

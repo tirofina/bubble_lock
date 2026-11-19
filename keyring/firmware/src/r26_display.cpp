@@ -65,28 +65,29 @@ void drawFrame(Arduino_GFX &panel) {
 }
 
 void drawWifi(Arduino_GFX &panel, uint8_t level) {
-  panel.fillRect(201, 15, 37, 31, Background);
+  panel.fillRect(207, 20, 28, 23, Background);
   const uint16_t dot = level ? Green : Inactive;
-  panel.fillCircle(219, 40, 2, dot);
+  panel.fillCircle(221, 39, 1, dot);
   const uint16_t inner = level >= 2 ? Green : Inactive;
-  panel.drawLine(213, 34, 216, 31, inner);
-  panel.drawLine(216, 31, 222, 31, inner);
-  panel.drawLine(222, 31, 225, 34, inner);
+  panel.drawLine(217, 35, 219, 33, inner);
+  panel.drawLine(219, 33, 223, 33, inner);
+  panel.drawLine(223, 33, 225, 35, inner);
   const uint16_t middle = level >= 3 ? Green : Inactive;
-  panel.drawLine(208, 29, 213, 25, middle);
-  panel.drawLine(213, 25, 225, 25, middle);
-  panel.drawLine(225, 25, 230, 29, middle);
+  panel.drawLine(213, 31, 216, 28, middle);
+  panel.drawLine(216, 28, 226, 28, middle);
+  panel.drawLine(226, 28, 229, 31, middle);
   const uint16_t outer = level >= 4 ? Green : Inactive;
-  panel.drawLine(203, 23, 210, 18, outer);
-  panel.drawLine(210, 18, 228, 18, outer);
-  panel.drawLine(228, 18, 235, 23, outer);
+  panel.drawLine(209, 26, 214, 23, outer);
+  panel.drawLine(214, 23, 228, 23, outer);
+  panel.drawLine(228, 23, 233, 26, outer);
 }
 }
 
-void drawR26Display(Arduino_GFX &panel, const KeyringScreen &screen, bool fullDraw) {
-  if (fullDraw) drawFrame(panel);
-  else panel.fillRect(20, 67, 200, 110, Background);
-  drawWifi(panel, screen.wifiLevel);
+void drawR26Display(Arduino_GFX &panel, const KeyringScreen &screen, const KeyringScreen *previous) {
+  if (!previous) drawFrame(panel);
+  if (!previous || previous->wifiLevel != screen.wifiLevel) drawWifi(panel, screen.wifiLevel);
+  if (previous && previous->panic == screen.panic && previous->confirm == screen.confirm) return;
+  if (previous) panel.fillRect(20, 67, 200, 110, Background);
 
   const auto accent = screen.panic ? Red : Blue;
   panel.drawCircle(Center, BadgeY, 15, accent);
