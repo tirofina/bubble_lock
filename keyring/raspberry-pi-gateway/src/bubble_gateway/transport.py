@@ -10,6 +10,7 @@ import logging
 import math
 import re
 import uuid
+from collections import Counter
 from datetime import timezone
 from email.utils import parsedate_to_datetime
 from time import monotonic
@@ -26,6 +27,10 @@ LOG = logging.getLogger(__name__)
 MAX_BODY = 256 * 1024
 COMMAND_BATCH = 16
 MAX_RETRY_AFTER_SECONDS = 2**31
+# Native oneM2M binding selection defaults (see GatewayConfig for the env names).
+MQTT_PAYLOAD_BUDGET = 4096
+MQTT_PROBE_INTERVAL = 5.0
+MQTT_PROBE_INTERVAL_MAX = 300.0
 CORE_RECEIPT_FIELDS = {"version", "gatewayId", "deviceId", "ownershipEpoch", "sequence",
                        "payloadHash", "cseRequestId", "responseStatus"}
 
@@ -169,6 +174,18 @@ class TransportHub:
         self._core_pending: dict[tuple[str, int, int, str], asyncio.Future[dict[str, Any]]] = {}
         self._subscribe_mid: int | None = None
         self._closing = False
+        # Condition-based native binding: MQTT by default; HTTPS while the broker
+        # session is down, for frames above the MQTT budget, and while the CSE's
+        # MQTT answers are unconfirmed (new session or response timeout) until a
+        # RETRIEVE probe gets a response. Probes back off from the interval to 300 s.
+        self._mqtt_budget = int(getattr(config, "mqtt_max_payload_bytes", MQTT_PAYLOAD_BUDGET))
+        self._probe_interval = float(getattr(config, "mqtt_probe_interval_seconds", MQTT_PROBE_INTERVAL))
+        self._unconfirmed_until: float | None = None
+        self._probe_failures = 0
+        self._probe: asyncio.Task | None = None
+        self._probe_timer: asyncio.TimerHandle | None = None
+        self._route: str | None = None
+        self.route_counters: Counter[str] = Counter()
 
     async def start(self) -> None:
         if self._http is not None:
@@ -233,7 +250,15 @@ class TransportHub:
             LOG.warning("MQTT response subscription denied")
             self._schedule(self._ready.clear)
             return
-        self._schedule(self._ready.set)
+        self._schedule(self._session_ready)
+
+    def _session_ready(self) -> None:
+        self._ready.set()
+        if self._probe_interval > 0:
+            # The broker session is up, but the CSE may still be resubscribing. Data uses
+            # HTTPS until a probe on this session gets an application response.
+            self._unconfirmed_until, self._probe_failures = monotonic(), 0
+            self._start_probe()
 
     def _on_disconnect(self, _client: Any, _userdata: Any, _flags: Any,
                        _reason_code: Any, _properties: Any) -> None:
@@ -374,6 +399,84 @@ class TransportHub:
     def _native_mqtt_ready(self) -> bool:
         return self.config.m2m_mqtt_enabled and self._mqtt is not None and self._ready.is_set()
 
+    def _native_route(self) -> str:
+        """Pick the binding for one native request from the current link conditions."""
+        if not self.config.m2m_mqtt_enabled or self._mqtt is None:
+            return "https_configured"
+        if not self._ready.is_set():
+            return "https_mqtt_down"
+        if self._unconfirmed_until is not None:
+            if monotonic() >= self._unconfirmed_until:
+                self._start_probe()
+            return "https_mqtt_unconfirmed"
+        return "mqtt"
+
+    def _count_route(self, route: str) -> None:
+        self.route_counters["native_" + route] += 1
+        if route != self._route:
+            LOG.info("Native oneM2M delivery route: %s", route)
+            self._route = route
+
+    def _mqtt_unconfirmed(self) -> None:
+        if self._probe_interval <= 0:
+            return
+        self._probe_failures += 1
+        hold = min(self._probe_interval * 2 ** min(self._probe_failures - 1, 16),
+                   max(self._probe_interval, MQTT_PROBE_INTERVAL_MAX))
+        self._unconfirmed_until = monotonic() + hold
+        if self._probe_timer is not None:
+            self._probe_timer.cancel()
+        self._probe_timer = asyncio.get_running_loop().call_later(hold, self._start_probe)
+        LOG.warning("MQTT application response missing; native oneM2M uses HTTPS, next probe in %.0f s", hold)
+
+    def _mqtt_confirmed(self) -> None:
+        if self._unconfirmed_until is not None:
+            LOG.info("MQTT application path confirmed; native oneM2M uses MQTT")
+        self._unconfirmed_until, self._probe_failures = None, 0
+        if self._probe_timer is not None:
+            self._probe_timer.cancel()
+            self._probe_timer = None
+
+    def _start_probe(self) -> None:
+        if self._closing or self._mqtt is None or not self._ready.is_set():
+            return
+        if self._probe is None or self._probe.done():
+            self._probe = asyncio.get_running_loop().create_task(self._probe_mqtt(), name="mqtt-probe")
+
+    async def _probe_mqtt(self) -> None:
+        """RETRIEVE the observation container over MQTT; any CSE response proves the path."""
+        client = self._mqtt
+        if client is None or not self._ready.is_set():
+            return
+        self.route_counters["mqtt_probe"] += 1
+        rqi = "mqtt-probe-" + uuid.uuid4().hex
+        future = asyncio.get_running_loop().create_future()
+        self._pending[rqi] = future
+        primitive = {"op": 2, "to": _mqtt_to(self.config.observation_container),
+                     "fr": self.config.originator, "rqi": rqi, "rvi": self.config.rvi}
+        try:
+            wire = {"m2m:rqp": primitive} if self.config.mqtt_wrapped_primitive else primitive
+            info = client.publish(self._request_topic, payload=_json(wire), qos=1, retain=False)
+            if info.rc != mqtt.MQTT_ERR_SUCCESS:
+                raise ConnectionError("MQTT probe was not queued")
+            await asyncio.wait_for(future, self.config.request_timeout)
+        except asyncio.TimeoutError:
+            self.route_counters["mqtt_probe_timeout"] += 1
+            self._mqtt_unconfirmed()
+        except (ConnectionError, OSError):
+            # A disconnect is followed by a new session and its own probe.
+            if self._ready.is_set():
+                self._mqtt_unconfirmed()
+        else:
+            self.route_counters["mqtt_probe_ok"] += 1
+            self._mqtt_confirmed()
+        finally:
+            self._pending.pop(rqi, None)
+            if not future.done():
+                future.cancel()
+            elif not future.cancelled():
+                future.exception()
+
     def native_delivery_hold(self) -> NativeDeliveryHold:
         if self._http_deferral(self._cse_origin) is None:
             return NativeDeliveryHold()
@@ -490,22 +593,36 @@ class TransportHub:
             # Write to the verified resource itself even if its name is later rebound.
             target = f"/{pin}"
             path = _resource_path(target)
-        if self._native_mqtt_ready():
-            if rqi in self._pending:
-                raise RuntimeError("request ID already in flight")
-            future = asyncio.get_running_loop().create_future()
-            self._pending[rqi] = future
+        route = self._native_route()
+        if route == "mqtt":
             primitive = {"op": 1, "to": _mqtt_to(target), "fr": self.config.originator,
                          "rqi": rqi, "ty": 4, "rvi": self.config.rvi, "pc": {"m2m:cin": cin}}
+            wire = _json({"m2m:rqp": primitive} if self.config.mqtt_wrapped_primitive else primitive)
+            if self._mqtt_budget and len(wire) > self._mqtt_budget:
+                route = "https_large"
+        if route == "mqtt":
+            if rqi in self._pending:
+                raise RuntimeError("request ID already in flight")
+            self._count_route(route)
+            future = asyncio.get_running_loop().create_future()
+            self._pending[rqi] = future
             try:
-                wire = {"m2m:rqp": primitive} if self.config.mqtt_wrapped_primitive else primitive
-                info = self._mqtt.publish(self._request_topic, payload=_json(wire), qos=1, retain=False)
+                info = self._mqtt.publish(self._request_topic, payload=wire, qos=1, retain=False)
                 if info.rc != mqtt.MQTT_ERR_SUCCESS:
                     raise ConnectionError("MQTT publish was not queued")
                 response = await asyncio.wait_for(future, self.config.request_timeout)
-            except (ConnectionError, OSError, asyncio.TimeoutError):
+            except asyncio.TimeoutError:
+                # Checked first: TimeoutError is also an OSError subclass.
                 LOG.info("MQTT response unavailable; attempting HTTPS with the same resource name")
+                self.route_counters["native_mqtt_timeout"] += 1
+                self._mqtt_unconfirmed()
+                route = "https_fallback_timeout"
+            except (ConnectionError, OSError):
+                LOG.info("MQTT response unavailable; attempting HTTPS with the same resource name")
+                self.route_counters["native_mqtt_disconnect"] += 1
+                route = "https_fallback_disconnect"
             else:
+                self._mqtt_confirmed()
                 rsc = response["rsc"]
                 if rsc == 2001:
                     await self._confirm_create(rqi, container, payload, rn, response.get("pc"), pin=pin,
@@ -524,6 +641,7 @@ class TransportHub:
                     future.cancel()
                 elif not future.cancelled():
                     future.exception()
+        self._count_route(route)
         status, headers, document = await self._http_json(
             "POST", self._cse_url + path, headers=self._m2m_headers(rqi, create=True), body={"m2m:cin": cin})
         rsc = self._response_rsc(status, headers, rqi)
@@ -662,6 +780,14 @@ class TransportHub:
     async def close(self) -> None:
         self._disconnected()
         self._closing = True
+        if self._probe_timer is not None:
+            self._probe_timer.cancel()
+            self._probe_timer = None
+        if self._probe is not None:
+            self._probe.cancel()
+            with contextlib.suppress(asyncio.CancelledError, Exception):
+                await self._probe
+            self._probe = None
         if self._mqtt is not None:
             await asyncio.to_thread(self._mqtt.disconnect)
             await asyncio.to_thread(self._mqtt.loop_stop)

@@ -66,6 +66,13 @@ class GatewayConfig:
     m2m_mqtt_enabled: bool = True
     cse_deployment_id: str | None = None
     receipt_container_ri: str | None = None
+    # Native oneM2M binding selection: MQTT carries frames up to this primitive size;
+    # larger bundles use HTTPS. 0 disables the size rule.
+    mqtt_max_payload_bytes: int = 4096
+    # A new broker session or an MQTT response timeout routes native requests over HTTPS
+    # until an MQTT RETRIEVE probe is answered; probes start at this interval and double
+    # up to 300 s. 0 disables probing and keeps per-request MQTT attempts.
+    mqtt_probe_interval_seconds: float = 5.0
 
     @classmethod
     def from_env(cls) -> "GatewayConfig":
@@ -152,6 +159,9 @@ class GatewayConfig:
         receipt_ri = identifier("M2M_RECEIPT_CONTAINER_RI") if "M2M_RECEIPT_CONTAINER_RI" in os.environ else None
         if receipt_ri is not None and deployment is None:
             raise ValueError("M2M_RECEIPT_CONTAINER_RI requires M2M_CSE_DEPLOYMENT_ID")
+        mqtt_budget = number("MQTT_MAX_PAYLOAD_BYTES", "4096", 0, 262144)
+        if mqtt_budget != int(mqtt_budget) or 0 < mqtt_budget < 512:
+            raise ValueError("MQTT_MAX_PAYLOAD_BYTES must be 0 or an integer from 512 to 262144")
         return cls(
             gateway_id=identifier("GATEWAY_ID"), originator=identifier("M2M_ORIGINATOR"),
             cse_id=identifier("M2M_CSE_ID"), cse_url=endpoint("M2M_CSE_URL", True),
@@ -179,6 +189,8 @@ class GatewayConfig:
             max_commands=int(number("MAX_COMMANDS", "100000", 100, 10000000)),
             core_bridge_enabled=core_bridge, ble_gatt_profile=profile, core_telemetry_epochs=epochs,
             cse_deployment_id=deployment, receipt_container_ri=receipt_ri,
+            mqtt_max_payload_bytes=int(mqtt_budget),
+            mqtt_probe_interval_seconds=number("MQTT_PROBE_INTERVAL_SECONDS", "5", 0, 300),
         )
 
 
