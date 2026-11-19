@@ -7,15 +7,14 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 LABELS = (
-    ("Wordmark", "BubbleLock", "SemiBold", 26),
     ("Ready", "READY", "SemiBold", 38),
     ("Confirm", "CONFIRM", "SemiBold", 38),
     ("Panic", "PANIC", "SemiBold", 38),
     ("ReadyHint", "Press a button", "Medium", 20),
     ("ConfirmHint", "Input received", "Medium", 20),
     ("PanicHint", "Emergency input", "Medium", 20),
-    ("ConfirmButton", "CONFIRM", "Medium", 18),
-    ("PanicButton", "PANIC", "Medium", 18),
+    ("Battery", "Battery", "SemiBold", 19),
+    ("BatteryUnavailable", "No reading", "Medium", 18),
 )
 
 
