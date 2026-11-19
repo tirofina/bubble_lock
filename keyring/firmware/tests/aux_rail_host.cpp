@@ -64,6 +64,23 @@ void tick() {
 }
 
 int main() {
+    if (board::FrontAssembly) {
+        assert(auxRail::begin() && auxRail::displayFor(15000));
+        timeUs += 14990000;
+        assert(auxRail::displayVisible());
+        tick();
+        assert(!auxRail::displayVisible() && backlightHigh);
+        assert(auxRail::displayFor(15000, true));
+        timeUs += 30000000;
+        tick();
+        assert(auxRail::displayVisible());
+        assert(auxRail::displayFor(15000));
+        timeUs += 15000000;
+        tick();
+        assert(!auxRail::displayVisible() && backlightHigh);
+        std::puts("PASS r26 idle timeout, panic hold and confirm timeout");
+        return 0;
+    }
     const std::vector<std::pair<int, int>> displayOn{{board::AuxEnable, 1}, {board::LcdBacklight, 0}};
     const std::vector<std::pair<int, int>> railOff{{board::LcdBacklight, 1}, {board::AuxEnable, 0}};
     assert(auxRail::begin());

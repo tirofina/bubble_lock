@@ -189,6 +189,10 @@ void Peripherals::run() {
   setIo(false);
   uint64_t nextDraw = 0;
   bool firstDraw = true;
+#if defined(KEYRING_R26_FRONT) && KEYRING_DISPLAY_PROFILE
+  bool panelAsleep = false;
+  constexpr uint32_t IdleDisplayMs = 15000;
+#endif
   for (;;) {
     ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(100));
     const uint64_t now = nowMs();
@@ -196,7 +200,21 @@ void Peripherals::run() {
     bool requestDisplay = false;
     const bool periodicDraw = !board::FrontAssembly && now >= nextDraw && auxRail::displayVisible();
     if (displayReady && takeScreen(screen, periodicDraw, requestDisplay)) {
+#if defined(KEYRING_R26_FRONT) && KEYRING_DISPLAY_PROFILE
+      // Wi-Fi redraws share the worker notification but never extend the light timer.
+      const bool activity = firstDraw || screen.confirmPress != renderedScreen.confirmPress ||
+                            screen.panicPress != renderedScreen.panicPress;
+      if (activity) {
+        if (panelAsleep) {
+          display.displayOn();
+          panelAsleep = false;
+          renderedScreenValid = false;
+        }
+        auxRail::displayFor(IdleDisplayMs, screen.panic);
+      }
+#else
       if (requestDisplay) auxRail::displayFor(KEYRING_LCD_SHOW_MS);
+#endif
       if (auxRail::displayVisible() && setIo(true)) {
         draw(screen, !board::FrontAssembly || firstDraw);
         firstDraw = false;
@@ -204,6 +222,12 @@ void Peripherals::run() {
         nextDraw = nowMs() + 1000;
       }
     }
+#if defined(KEYRING_R26_FRONT) && KEYRING_DISPLAY_PROFILE
+    if (displayReady && !firstDraw && !panelAsleep && !auxRail::displayVisible()) {
+      display.displayOff();
+      panelAsleep = true;
+    }
+#endif
     LogLine line = {};
     // Mark busy before dequeueing so sleep cannot slip into the queue/I/O gap.
     if (setIo(true)) {

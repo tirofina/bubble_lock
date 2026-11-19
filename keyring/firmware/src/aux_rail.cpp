@@ -86,12 +86,12 @@ bool auxRail::alertInterrupted() {
   portEXIT_CRITICAL(&mux);
   return result;
 }
-bool auxRail::displayFor(uint32_t durationMs) {
+bool auxRail::displayFor(uint32_t durationMs, bool holdPanic) {
   if (!durationMs || durationMs > 30000) return false;
   portENTER_CRITICAL(&mux);
   const uint64_t now = nowMs();
   displayDriveFault = !timerReady;
-  const uint64_t deadline = board::FrontAssembly ? UINT64_MAX : now + durationMs;
+  const uint64_t deadline = board::FrontAssembly && holdPanic ? UINT64_MAX : now + durationMs;
   displayUntil = timerReady && healthy() ? deadline : 0;
   apply(now);
   const bool result = displayUntil != 0;

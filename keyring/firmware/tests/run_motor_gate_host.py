@@ -34,6 +34,10 @@ def main():
                         "/I" + str(firmware / "include"), str(subject), "/Fe:" + executable],
                        cwd=output, check=True)
         subprocess.run([str(output / executable)], cwd=output, check=True)
+    subprocess.run(["cl", "/nologo", "/utf-8", "/std:c++14", "/EHsc", "/W4", "/DKEYRING_R26_FRONT=1",
+                    "/I" + str(output), "/I" + str(firmware / "include"), str(test.with_name("aux_rail_host.cpp")),
+                    "/Fe:aux_rail_r26.exe"], cwd=output, check=True)
+    subprocess.run([str(output / "aux_rail_r26.exe")], cwd=output, check=True)
 
 
 if __name__ == "__main__":
