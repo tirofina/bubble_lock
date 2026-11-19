@@ -1,0 +1,65 @@
+{
+  "contractId": "privacy-bubble.fl-onem2m-plane.v1",
+  "docRevision": "2.0.0",
+  "reference": "oneM2M TR-0084 (federated learning resource model); resource names and content schemas are project-defined",
+  "owner": "PC-MOBIUS-INTEGRATION",
+  "transport": "oneM2M HTTP binding (X-M2M-Origin, X-M2M-RI, X-M2M-RVI 4); HTTPS required for non-loopback CSE unless allowPlainHttp is set",
+  "resourceLayout": {
+    "cseBaseAcp": "acp-<flAe>: coordinator ALL, all DISCOVERY (AE carries it from creation)",
+    "flAe": "<cseBase>/<flAe> AE api N.privacy.bubble.fl, lbl [fl-plane:coordinator, fl-plane:task:<taskId>]",
+    "acps": {
+      "acp-coordinator": "coordinator ALL",
+      "acp-task-read": "coordinator ALL, all RETRIEVE|DISCOVERY",
+      "acp-inbox": "coordinator ALL, all CREATE",
+      "acp-members": "coordinator ALL, admitted non-revoked AE-IDs RETRIEVE|DISCOVERY",
+      "acp-r-NNNN": "coordinator ALL, selected AE-IDs CREATE while the round is open, coordinator only after close"
+    },
+    "containers": {
+      "participants": { "acpi": "acp-inbox", "mni": 1000, "content": ["registration", "consent"] },
+      "datasets": { "acpi": "acp-coordinator", "mni": 1000, "content": ["dataset"] },
+      "tasks": { "acpi": "acp-task-read", "content": ["task"], "cinName": "task-v<taskVersion>" },
+      "currentModel": { "acpi": "acp-members", "mni": 5, "content": ["model"], "cinName": "v-NNNN" },
+      "status": { "acpi": "acp-members", "mni": 200, "content": ["status"], "cinName": "epoch-NNNN (epoch claim) | eNNNN-sNNNNN" },
+      "rounds/r-NNNN": { "acpi": "acp-members", "children": { "config": "cin roundConfig", "updates": "cnt acpi acp-r-NNNN mni 100, cin u-<participantId> update", "result": "cin roundResult" } }
+    },
+    "workerAe": "<cseBase>/flw-<participantId> AE (pre-assigned AE-ID); acp-self (worker ALL, coordinator RETRIEVE); heartbeat cnt mni 5"
+  },
+  "integrity": {
+    "payloadHash": "sha256 of canonical sorted JSON of the content without payloadHash and signature",
+    "signature": "Ed25519 over the payloadHash string; coordinator key for task/roundConfig/roundResult/model/status/dataset, participant key for registration/consent/update/heartbeat",
+    "artifactDigest": "sha256 of the float32 little-endian model bytes (8x3 W then 3 b, 108 bytes)",
+    "creator": "registration, consent and update cin are created with cr:null so the CSE records the originator; the coordinator requires cr == participant AE-ID",
+    "enrollment": "operator Ed25519 signature binding participantId, AE-ID, key fingerprint and taskId"
+  },
+  "resilience": {
+    "epochClaim": "create-if-absent status/epoch-NNNN; a newer epoch fences older coordinator instances",
+    "resume": "coordinator rebuilds membership (inbox replay), selection counts and open round (rounds/r-NNNN config without result) and current model from the CSE",
+    "deadlineQuorum": "round closes when all selected respond or at deadline; COMPLETED if verified updates >= minUpdates, else DEFERRED",
+    "dynamicSelection": "eligible = enrolled + consent ACTIVE + signed heartbeat younger than heartbeatTtlMs; order = least selected, highest last base loss, participantId"
+  },
+  "contentSchemas": {
+    "common": {
+      "type": "object",
+      "required": ["schema", "payloadHash", "signature"],
+      "properties": { "schema": { "type": "string", "pattern": "^urn:privacy-bubble:fl-plane:[a-z-]+:1$" }, "payloadHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }, "signature": { "type": "string", "minLength": 80 } }
+    },
+    "task": { "type": "object", "required": ["taskId", "taskVersion", "purpose", "targetRounds", "maxParticipants", "minUpdates", "roundDeadlineMs", "heartbeatTtlMs", "featureSchemaVersion", "modelFormat", "training", "aggregation", "coordinatorAeId", "coordinatorPublicKeyPem", "paths", "dataPolicy"], "properties": { "schema": { "const": "urn:privacy-bubble:fl-plane:task:1" }, "minUpdates": { "type": "integer", "minimum": 2 } } },
+    "registration": { "type": "object", "required": ["taskId", "participantId", "aeId", "publicKeyPem", "enrollment", "workerAePath", "heartbeatPath", "dataset", "consent", "issuedAt", "nonce"], "properties": { "schema": { "const": "urn:privacy-bubble:fl-plane:registration:1" }, "dataset": { "type": "object", "additionalProperties": false, "required": ["datasetId", "datasetVersion", "featureSchemaVersion", "trainCount", "splitHash", "rawDataLocation"], "properties": { "datasetId": { "type": "string" }, "datasetVersion": { "type": "integer" }, "featureSchemaVersion": { "type": "string" }, "taskVersion": { "type": "string" }, "trainCount": { "type": "integer", "minimum": 64 }, "validationCount": { "type": "integer" }, "testCount": { "type": "integer" }, "splitHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }, "rawDataLocation": { "const": "participant-local" } } }, "consent": { "type": "object", "required": ["status", "purpose", "revision", "validUntil"] } } },
+    "consent": { "type": "object", "required": ["taskId", "participantId", "aeId", "status", "revision", "issuedAt"], "properties": { "schema": { "const": "urn:privacy-bubble:fl-plane:consent:1" }, "status": { "enum": ["REVOKED", "ACTIVE"] } } },
+    "roundConfig": { "type": "object", "required": ["taskId", "roundNumber", "roundId", "coordinatorAeId", "coordinatorEpoch", "openedAt", "deadline", "baseModel", "selected", "minUpdates", "training", "updatePath", "selection"], "properties": { "schema": { "const": "urn:privacy-bubble:fl-plane:round-config:1" }, "selected": { "type": "array", "minItems": 2, "items": { "type": "object", "required": ["participantId", "aeId"] } } } },
+    "update": { "type": "object", "required": ["taskId", "roundNumber", "roundId", "roundConfigHash", "participantId", "aeId", "datasetId", "consentRevision", "baseModelVersion", "baseModelHash", "sampleCount", "artifactDigest", "artifact", "localTrainReceipt", "metrics", "rawDataShared"], "properties": { "schema": { "const": "urn:privacy-bubble:fl-plane:update:1" }, "rawDataShared": { "const": false }, "artifactDigest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }, "artifact": { "type": "object", "required": ["encoding", "dtype", "bytes", "digest", "data"], "properties": { "encoding": { "const": "base64" }, "dtype": { "const": "float32" }, "bytes": { "const": 108 } } } } },
+    "roundResult": { "type": "object", "required": ["taskId", "roundNumber", "roundId", "roundConfigHash", "coordinatorEpoch", "trigger", "state", "selected", "acceptedSet", "rejected", "missing", "aggregation", "federatedEvaluation"], "properties": { "schema": { "const": "urn:privacy-bubble:fl-plane:round-result:1" }, "state": { "enum": ["COMPLETED", "DEFERRED"] }, "trigger": { "enum": ["ALL_SELECTED_RESPONDED", "DEADLINE"] } } },
+    "model": { "type": "object", "required": ["taskId", "modelVersion", "modelHash", "parentModelHash", "roundNumber", "contributors", "coordinatorEpoch", "artifact"], "properties": { "schema": { "const": "urn:privacy-bubble:fl-plane:model:1" } } },
+    "status": { "type": "object", "required": ["taskId", "coordinatorAeId", "coordinatorEpoch", "instanceId", "seq", "state", "openRound", "at"], "properties": { "schema": { "const": "urn:privacy-bubble:fl-plane:status:1" }, "state": { "enum": ["EPOCH_CLAIMED", "BOOTSTRAPPED", "RESUMED", "WAITING_PARTICIPANTS", "ROUND_OPEN", "ROUND_COMPLETED", "ROUND_DEFERRED", "COMPLETED"] } } },
+    "dataset": { "type": "object", "required": ["taskId", "participantId", "aeId", "datasetId", "metadata", "consentRevision", "state"], "properties": { "schema": { "const": "urn:privacy-bubble:fl-plane:dataset:1" }, "state": { "enum": ["ADMITTED", "REVOKED", "RE_CONSENTED"] } } },
+    "heartbeat": { "type": "object", "required": ["participantId", "seq", "state", "at"], "properties": { "schema": { "const": "urn:privacy-bubble:fl-plane:heartbeat:1" } } }
+  },
+  "commands": {
+    "realRun": "MOBIUS4_ROOT=<mobius4> node pc-mobius/scripts/run-fl-onem2m-real.mjs",
+    "coordinator": "node pc-mobius/scripts/run-fl-onem2m-coordinator.mjs --config=<coordinator.config.json>",
+    "worker": "node pc-mobius/scripts/run-fl-onem2m-worker.mjs --config=<worker.config.json>",
+    "provision": "node pc-mobius/scripts/fl-onem2m-provision.mjs --out=.local/fl-deploy --cse-url=<url> --workers=w1,w2,w3",
+    "tests": "node --test test/fl-onem2m-plane.test.mjs"
+  },
+  "evidence": "docs/verification-evidence/2026-11-19/fl-onem2m-real-cse.json"
+}

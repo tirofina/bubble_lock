@@ -1,0 +1,2200 @@
+{
+  "status": "PASS",
+  "rubric": "R14",
+  "reference": "oneM2M TR-0084 (FL resource model; own wording)",
+  "docRevision": "2.0.0",
+  "generatedAt": "2026-11-19T11:52:46.081Z",
+  "runtimeMode": "LOCAL_HOST_REAL_CSE_MULTIPROCESS",
+  "simulation": false,
+  "syntheticData": true,
+  "estimedExecution": false,
+  "simulatedComponents": [
+    "dataset: documented synthetic task privacy-motion-8-heterogeneous-v1 (worker-private seeds)",
+    "compute time: trainDelayMs=800 per selected round to open a deterministic dropout window"
+  ],
+  "transport": "oneM2M HTTP binding to a real Mobius4 CSE over loopback (X-M2M-Origin/RI/RVI, rsc checked)",
+  "cse": {
+    "implementation": "Mobius4",
+    "cseVersion": "4.24.5",
+    "sourceRevision": "3da4d8523694b5077e348ab1c9e769fb3a30df24",
+    "cseId": "/fl-in-cse",
+    "postgres": "PostgreSQL 17.6 on x86_64-windows",
+    "databaseDroppedAfterRun": true
+  },
+  "hostCount": 1,
+  "host": {
+    "platform": "win32",
+    "node": "v22.19.0"
+  },
+  "processes": {
+    "coordinatorLifetimes": 2,
+    "workerLifetimes": 5,
+    "distinctWorkers": 4,
+    "lifetimes": [
+      {
+        "label": "coordinator#1",
+        "pid": 19220,
+        "startedAt": "2026-11-19T11:52:22.146Z",
+        "exitedAt": "2026-11-19T11:52:28.816Z",
+        "exitCode": null,
+        "killed": true,
+        "signal": "SIGKILL"
+      },
+      {
+        "label": "w1#1",
+        "pid": 68852,
+        "startedAt": "2026-11-19T11:52:22.437Z",
+        "exitedAt": "2026-11-19T11:52:30.907Z",
+        "exitCode": null,
+        "killed": true,
+        "signal": "SIGKILL"
+      },
+      {
+        "label": "w2#1",
+        "pid": 96276,
+        "startedAt": "2026-11-19T11:52:22.442Z",
+        "exitedAt": "2026-11-19T11:52:44.741Z",
+        "exitCode": 0,
+        "killed": false,
+        "signal": null
+      },
+      {
+        "label": "w3#1",
+        "pid": 95948,
+        "startedAt": "2026-11-19T11:52:22.447Z",
+        "exitedAt": "2026-11-19T11:52:38.384Z",
+        "exitCode": 0,
+        "killed": false,
+        "signal": null
+      },
+      {
+        "label": "w4#1",
+        "pid": 35316,
+        "startedAt": "2026-11-19T11:52:25.395Z",
+        "exitedAt": "2026-11-19T11:52:44.757Z",
+        "exitCode": 0,
+        "killed": false,
+        "signal": null
+      },
+      {
+        "label": "coordinator#2",
+        "pid": 34248,
+        "startedAt": "2026-11-19T11:52:30.320Z",
+        "exitedAt": "2026-11-19T11:52:44.578Z",
+        "exitCode": 0,
+        "killed": false,
+        "signal": null
+      },
+      {
+        "label": "w1#2",
+        "pid": 33820,
+        "startedAt": "2026-11-19T11:52:39.458Z",
+        "exitedAt": "2026-11-19T11:52:44.757Z",
+        "exitCode": 0,
+        "killed": false,
+        "signal": null
+      }
+    ]
+  },
+  "task": {
+    "taskId": "privacy-motion",
+    "flAePath": "/Mobius/fl-privacy-motion-76388c",
+    "targetRounds": 12,
+    "definitionPayloadHash": "b8ce0abb73cb5627f27dc6cdaa8cf400690430742df949deb614166eae510142",
+    "selectionPolicy": "eligible = enrolled + consent ACTIVE + signed heartbeat fresh; order = least selected, then highest last base loss, then participantId; take maxParticipants; close at all updates or deadline; quorum minUpdates",
+    "maxParticipants": 3,
+    "minUpdates": 2,
+    "roundDeadlineMs": 6000,
+    "heartbeatTtlMs": 4000,
+    "training": {
+      "learningRate": 0.05,
+      "batchSize": 32,
+      "localEpochs": 2
+    },
+    "aggregation": "sample-weighted-FedAvg"
+  },
+  "dataset": {
+    "task": "privacy-motion-8-heterogeneous-v1",
+    "features": 8,
+    "classes": [
+      "dwell",
+      "transit",
+      "relay-gap"
+    ],
+    "std": 0.3,
+    "labelNoise": 0.05,
+    "split": [
+      360,
+      120,
+      120
+    ],
+    "workers": {
+      "w1": {
+        "profile": "home-dwell",
+        "classProportions": [
+          0.75,
+          0.15,
+          0.1
+        ],
+        "covariateShift": false,
+        "splitHash": "084af313ec70ece51430464cddeb95fdd7a4f746543b782666169180fa4c0c46"
+      },
+      "w2": {
+        "profile": "commute",
+        "classProportions": [
+          0.15,
+          0.75,
+          0.1
+        ],
+        "covariateShift": false,
+        "splitHash": "3db22c2228751e9fe5baf9d14170d8e29efc83cd528beddbca63e2f63d9e471e"
+      },
+      "w3": {
+        "profile": "relay-sparse",
+        "classProportions": [
+          0.1,
+          0.15,
+          0.75
+        ],
+        "covariateShift": false,
+        "splitHash": "1b1773043b07b62fd20348d91e2825cc333d676e61d24612991dd4a1393d5451"
+      },
+      "w4": {
+        "profile": "new-device",
+        "classProportions": [
+          0.4,
+          0.2,
+          0.4
+        ],
+        "covariateShift": true,
+        "splitHash": "42413ce8554d48a6a2978357cab69f327b15999b7166885fc870aa288e43fe84"
+      }
+    },
+    "rawDataLocation": "participant-local (seed stays in worker config)",
+    "oracleEvaluation": "harness regenerates shards from provisioned seeds only for the comparison table; the coordinator never receives seeds or rows"
+  },
+  "resourceLayout": {
+    "ae": "/Mobius/fl-privacy-motion-76388c",
+    "cseBaseAcp": "/Mobius/acp-fl-privacy-motion-76388c (coordinator ALL, all DISCOVERY; AE acpi from creation)",
+    "children": [
+      "acp-coordinator",
+      "acp-task-read",
+      "acp-inbox",
+      "acp-members",
+      "acp-r-NNNN (per round)",
+      "participants (cnt, inbox, mni 1000)",
+      "datasets (cnt, catalog)",
+      "tasks (cnt, public read)",
+      "currentModel (cnt, mni 5)",
+      "status (cnt, mni 200)",
+      "rounds/r-NNNN/{config cin, updates cnt, result cin}"
+    ],
+    "workerAe": "/Mobius/flw-<participantId>/{acp-self, heartbeat cnt mni 5}"
+  },
+  "rounds": [
+    {
+      "roundNumber": 1,
+      "state": "COMPLETED",
+      "configEpoch": 1,
+      "resultEpoch": 1,
+      "trigger": "ALL_SELECTED_RESPONDED",
+      "eligible": [
+        "w1",
+        "w2"
+      ],
+      "excluded": [],
+      "selected": [
+        "w1",
+        "w2"
+      ],
+      "accepted": [
+        "w1",
+        "w2"
+      ],
+      "missing": [],
+      "rejected": [],
+      "durationMs": 1008,
+      "baseModelVersion": 0,
+      "modelVersion": 1,
+      "modelHash": "33dcc25487999587da8e0b054ca35c11a21e20f7c04dbcc28ce74004305d1a22",
+      "reaggregatedHash": "33dcc25487999587da8e0b054ca35c11a21e20f7c04dbcc28ce74004305d1a22",
+      "federatedEvaluationOfBaseModel": {
+        "baseModelVersion": 0,
+        "accuracy": 0.3375,
+        "crossEntropy": 1.1002,
+        "samples": 240,
+        "participants": 2
+      },
+      "updatesInCse": 2,
+      "oracleEvaluationOfRoundModel": {
+        "pooledTest": {
+          "accuracy": 0.6479,
+          "crossEntropy": 0.9672,
+          "macroF1": 0.5157
+        },
+        "newDeviceTest": {
+          "accuracy": 0.5583,
+          "crossEntropy": 1.0057,
+          "macroF1": 0.4621
+        }
+      }
+    },
+    {
+      "roundNumber": 2,
+      "state": "COMPLETED",
+      "configEpoch": 1,
+      "resultEpoch": 1,
+      "trigger": "ALL_SELECTED_RESPONDED",
+      "eligible": [
+        "w3",
+        "w2",
+        "w1"
+      ],
+      "excluded": [],
+      "selected": [
+        "w3",
+        "w2",
+        "w1"
+      ],
+      "accepted": [
+        "w1",
+        "w2",
+        "w3"
+      ],
+      "missing": [],
+      "rejected": [],
+      "durationMs": 1210,
+      "baseModelVersion": 1,
+      "modelVersion": 2,
+      "modelHash": "2b53434eb8fdaad21a9a91d38721388b8386d88bcda563e78cdc3cbe32560c91",
+      "reaggregatedHash": "2b53434eb8fdaad21a9a91d38721388b8386d88bcda563e78cdc3cbe32560c91",
+      "federatedEvaluationOfBaseModel": {
+        "baseModelVersion": 1,
+        "accuracy": 0.6778,
+        "crossEntropy": 0.9543,
+        "samples": 360,
+        "participants": 3
+      },
+      "updatesInCse": 3,
+      "oracleEvaluationOfRoundModel": {
+        "pooledTest": {
+          "accuracy": 0.9208,
+          "crossEntropy": 0.7959,
+          "macroF1": 0.92
+        },
+        "newDeviceTest": {
+          "accuracy": 0.925,
+          "crossEntropy": 0.7997,
+          "macroF1": 0.916
+        }
+      }
+    },
+    {
+      "roundNumber": 3,
+      "state": "COMPLETED",
+      "configEpoch": 1,
+      "resultEpoch": 1,
+      "trigger": "ALL_SELECTED_RESPONDED",
+      "eligible": [
+        "w3",
+        "w1",
+        "w2"
+      ],
+      "excluded": [],
+      "selected": [
+        "w3",
+        "w1",
+        "w2"
+      ],
+      "accepted": [
+        "w1",
+        "w2",
+        "w3"
+      ],
+      "missing": [],
+      "rejected": [],
+      "durationMs": 987,
+      "baseModelVersion": 2,
+      "modelVersion": 3,
+      "modelHash": "6c319ae9eee02660e71803454db4265a1923f1a886991361f19f00fc7497b699",
+      "reaggregatedHash": "6c319ae9eee02660e71803454db4265a1923f1a886991361f19f00fc7497b699",
+      "federatedEvaluationOfBaseModel": {
+        "baseModelVersion": 2,
+        "accuracy": 0.9194,
+        "crossEntropy": 0.7946,
+        "samples": 360,
+        "participants": 3
+      },
+      "updatesInCse": 3,
+      "oracleEvaluationOfRoundModel": {
+        "pooledTest": {
+          "accuracy": 0.9458,
+          "crossEntropy": 0.6923,
+          "macroF1": 0.9458
+        },
+        "newDeviceTest": {
+          "accuracy": 0.9333,
+          "crossEntropy": 0.6884,
+          "macroF1": 0.9252
+        }
+      }
+    },
+    {
+      "roundNumber": 4,
+      "state": "COMPLETED",
+      "configEpoch": 1,
+      "resultEpoch": 1,
+      "trigger": "ALL_SELECTED_RESPONDED",
+      "eligible": [
+        "w4",
+        "w3",
+        "w1",
+        "w2"
+      ],
+      "excluded": [],
+      "selected": [
+        "w4",
+        "w3",
+        "w1"
+      ],
+      "accepted": [
+        "w1",
+        "w3",
+        "w4"
+      ],
+      "missing": [],
+      "rejected": [],
+      "durationMs": 1024,
+      "baseModelVersion": 3,
+      "modelVersion": 4,
+      "modelHash": "110d90a141fef8b9a8ff18bd23b37cff369df323025a33f738b6413435b87c54",
+      "reaggregatedHash": "110d90a141fef8b9a8ff18bd23b37cff369df323025a33f738b6413435b87c54",
+      "federatedEvaluationOfBaseModel": {
+        "baseModelVersion": 3,
+        "accuracy": 0.9417,
+        "crossEntropy": 0.7061,
+        "samples": 360,
+        "participants": 3
+      },
+      "updatesInCse": 3,
+      "oracleEvaluationOfRoundModel": {
+        "pooledTest": {
+          "accuracy": 0.9146,
+          "crossEntropy": 0.6251,
+          "macroF1": 0.9141
+        },
+        "newDeviceTest": {
+          "accuracy": 0.8833,
+          "crossEntropy": 0.6065,
+          "macroF1": 0.8672
+        }
+      }
+    },
+    {
+      "roundNumber": 5,
+      "state": "COMPLETED",
+      "configEpoch": 1,
+      "resultEpoch": 2,
+      "trigger": "ALL_SELECTED_RESPONDED",
+      "eligible": [
+        "w4",
+        "w3",
+        "w2",
+        "w1"
+      ],
+      "excluded": [],
+      "selected": [
+        "w4",
+        "w3",
+        "w2"
+      ],
+      "accepted": [
+        "w2",
+        "w3",
+        "w4"
+      ],
+      "missing": [],
+      "rejected": [],
+      "durationMs": 2705,
+      "baseModelVersion": 4,
+      "modelVersion": 5,
+      "modelHash": "2bd4246ff6d00ea4f20a8c02cff7c4878b432549ce7c7cf4fb04cf27d9440b3b",
+      "reaggregatedHash": "2bd4246ff6d00ea4f20a8c02cff7c4878b432549ce7c7cf4fb04cf27d9440b3b",
+      "federatedEvaluationOfBaseModel": {
+        "baseModelVersion": 4,
+        "accuracy": 0.8972,
+        "crossEntropy": 0.6356,
+        "samples": 360,
+        "participants": 3
+      },
+      "updatesInCse": 3,
+      "oracleEvaluationOfRoundModel": {
+        "pooledTest": {
+          "accuracy": 0.9313,
+          "crossEntropy": 0.5631,
+          "macroF1": 0.9314
+        },
+        "newDeviceTest": {
+          "accuracy": 0.8833,
+          "crossEntropy": 0.5644,
+          "macroF1": 0.8757
+        }
+      }
+    },
+    {
+      "roundNumber": 6,
+      "state": "COMPLETED",
+      "configEpoch": 2,
+      "resultEpoch": 2,
+      "trigger": "DEADLINE",
+      "eligible": [
+        "w4",
+        "w1",
+        "w2",
+        "w3"
+      ],
+      "excluded": [],
+      "selected": [
+        "w4",
+        "w1",
+        "w2"
+      ],
+      "accepted": [
+        "w2",
+        "w4"
+      ],
+      "missing": [
+        {
+          "reason": "NO_UPDATE_BY_DEADLINE",
+          "participantId": "w1"
+        }
+      ],
+      "rejected": [],
+      "durationMs": 6156,
+      "baseModelVersion": 5,
+      "modelVersion": 6,
+      "modelHash": "76270bd1fd97ca7ccd3b3efcdc98fd984f51aa3ffa2b8863ca0aa72ca5f8435a",
+      "reaggregatedHash": "76270bd1fd97ca7ccd3b3efcdc98fd984f51aa3ffa2b8863ca0aa72ca5f8435a",
+      "federatedEvaluationOfBaseModel": {
+        "baseModelVersion": 5,
+        "accuracy": 0.9125,
+        "crossEntropy": 0.5618,
+        "samples": 240,
+        "participants": 2
+      },
+      "updatesInCse": 2,
+      "oracleEvaluationOfRoundModel": {
+        "pooledTest": {
+          "accuracy": 0.9396,
+          "crossEntropy": 0.5161,
+          "macroF1": 0.9396
+        },
+        "newDeviceTest": {
+          "accuracy": 0.9083,
+          "crossEntropy": 0.5235,
+          "macroF1": 0.9012
+        }
+      }
+    },
+    {
+      "roundNumber": 7,
+      "state": "COMPLETED",
+      "configEpoch": 2,
+      "resultEpoch": 2,
+      "trigger": "ALL_SELECTED_RESPONDED",
+      "eligible": [
+        "w4",
+        "w3",
+        "w2"
+      ],
+      "excluded": [
+        {
+          "ageMs": 6330,
+          "reason": "HEARTBEAT_STALE",
+          "participantId": "w1"
+        }
+      ],
+      "selected": [
+        "w4",
+        "w3",
+        "w2"
+      ],
+      "accepted": [
+        "w2",
+        "w3",
+        "w4"
+      ],
+      "missing": [],
+      "rejected": [],
+      "durationMs": 957,
+      "baseModelVersion": 6,
+      "modelVersion": 7,
+      "modelHash": "64dd156362d38ba37354604875bd84d878ea93de9522129d2866c47c80fa0077",
+      "reaggregatedHash": "64dd156362d38ba37354604875bd84d878ea93de9522129d2866c47c80fa0077",
+      "federatedEvaluationOfBaseModel": {
+        "baseModelVersion": 6,
+        "accuracy": 0.9306,
+        "crossEntropy": 0.5109,
+        "samples": 360,
+        "participants": 3
+      },
+      "updatesInCse": 3,
+      "oracleEvaluationOfRoundModel": {
+        "pooledTest": {
+          "accuracy": 0.9354,
+          "crossEntropy": 0.484,
+          "macroF1": 0.9354
+        },
+        "newDeviceTest": {
+          "accuracy": 0.8917,
+          "crossEntropy": 0.4991,
+          "macroF1": 0.8835
+        }
+      }
+    },
+    {
+      "roundNumber": 8,
+      "state": "COMPLETED",
+      "configEpoch": 2,
+      "resultEpoch": 2,
+      "trigger": "ALL_SELECTED_RESPONDED",
+      "eligible": [
+        "w4",
+        "w2"
+      ],
+      "excluded": [
+        {
+          "ageMs": 7347,
+          "reason": "HEARTBEAT_STALE",
+          "participantId": "w1"
+        },
+        {
+          "reason": "CONSENT_REVOKED",
+          "participantId": "w3"
+        }
+      ],
+      "selected": [
+        "w4",
+        "w2"
+      ],
+      "accepted": [
+        "w2",
+        "w4"
+      ],
+      "missing": [],
+      "rejected": [],
+      "durationMs": 1177,
+      "baseModelVersion": 7,
+      "modelVersion": 8,
+      "modelHash": "ae8dca627ac6460e8ba1140322f941e9ff05e2247eee7119cbf900f6f49e1e9b",
+      "reaggregatedHash": "ae8dca627ac6460e8ba1140322f941e9ff05e2247eee7119cbf900f6f49e1e9b",
+      "federatedEvaluationOfBaseModel": {
+        "baseModelVersion": 7,
+        "accuracy": 0.9208,
+        "crossEntropy": 0.4634,
+        "samples": 240,
+        "participants": 2
+      },
+      "updatesInCse": 2,
+      "oracleEvaluationOfRoundModel": {
+        "pooledTest": {
+          "accuracy": 0.9292,
+          "crossEntropy": 0.4575,
+          "macroF1": 0.9292
+        },
+        "newDeviceTest": {
+          "accuracy": 0.9,
+          "crossEntropy": 0.4708,
+          "macroF1": 0.8921
+        }
+      }
+    },
+    {
+      "roundNumber": 9,
+      "state": "COMPLETED",
+      "configEpoch": 2,
+      "resultEpoch": 2,
+      "trigger": "ALL_SELECTED_RESPONDED",
+      "eligible": [
+        "w1",
+        "w4",
+        "w2"
+      ],
+      "excluded": [
+        {
+          "reason": "CONSENT_REVOKED",
+          "participantId": "w3"
+        }
+      ],
+      "selected": [
+        "w1",
+        "w4",
+        "w2"
+      ],
+      "accepted": [
+        "w1",
+        "w2",
+        "w4"
+      ],
+      "missing": [],
+      "rejected": [],
+      "durationMs": 1041,
+      "baseModelVersion": 8,
+      "modelVersion": 9,
+      "modelHash": "1e098377e7c8e534fdc162393927b83bd5b159dc9e513304bd4a2e476b134805",
+      "reaggregatedHash": "1e098377e7c8e534fdc162393927b83bd5b159dc9e513304bd4a2e476b134805",
+      "federatedEvaluationOfBaseModel": {
+        "baseModelVersion": 8,
+        "accuracy": 0.9361,
+        "crossEntropy": 0.4387,
+        "samples": 360,
+        "participants": 3
+      },
+      "updatesInCse": 3,
+      "oracleEvaluationOfRoundModel": {
+        "pooledTest": {
+          "accuracy": 0.9417,
+          "crossEntropy": 0.4348,
+          "macroF1": 0.9415
+        },
+        "newDeviceTest": {
+          "accuracy": 0.925,
+          "crossEntropy": 0.4448,
+          "macroF1": 0.916
+        }
+      }
+    },
+    {
+      "roundNumber": 10,
+      "state": "COMPLETED",
+      "configEpoch": 2,
+      "resultEpoch": 2,
+      "trigger": "ALL_SELECTED_RESPONDED",
+      "eligible": [
+        "w1",
+        "w4",
+        "w2"
+      ],
+      "excluded": [
+        {
+          "reason": "CONSENT_REVOKED",
+          "participantId": "w3"
+        }
+      ],
+      "selected": [
+        "w1",
+        "w4",
+        "w2"
+      ],
+      "accepted": [
+        "w2",
+        "w4"
+      ],
+      "missing": [],
+      "rejected": [
+        {
+          "rn": "u-w1",
+          "reason": "FL_ARTIFACT_DIGEST",
+          "creator": "Cfl-76388c-w1",
+          "participantId": "w1"
+        }
+      ],
+      "durationMs": 982,
+      "baseModelVersion": 9,
+      "modelVersion": 10,
+      "modelHash": "27d8e07e1a26f00808112af34a4f9f424c86ae69b6fae3ffb8770f0dddafbda9",
+      "reaggregatedHash": "27d8e07e1a26f00808112af34a4f9f424c86ae69b6fae3ffb8770f0dddafbda9",
+      "federatedEvaluationOfBaseModel": {
+        "baseModelVersion": 9,
+        "accuracy": 0.9417,
+        "crossEntropy": 0.4029,
+        "samples": 240,
+        "participants": 2
+      },
+      "updatesInCse": 3,
+      "oracleEvaluationOfRoundModel": {
+        "pooledTest": {
+          "accuracy": 0.9396,
+          "crossEntropy": 0.4181,
+          "macroF1": 0.9394
+        },
+        "newDeviceTest": {
+          "accuracy": 0.925,
+          "crossEntropy": 0.4304,
+          "macroF1": 0.916
+        }
+      }
+    },
+    {
+      "roundNumber": 11,
+      "state": "COMPLETED",
+      "configEpoch": 2,
+      "resultEpoch": 2,
+      "trigger": "ALL_SELECTED_RESPONDED",
+      "eligible": [
+        "w1",
+        "w4",
+        "w2"
+      ],
+      "excluded": [
+        {
+          "reason": "CONSENT_REVOKED",
+          "participantId": "w3"
+        }
+      ],
+      "selected": [
+        "w1",
+        "w4",
+        "w2"
+      ],
+      "accepted": [
+        "w1",
+        "w2",
+        "w4"
+      ],
+      "missing": [],
+      "rejected": [],
+      "durationMs": 996,
+      "baseModelVersion": 10,
+      "modelVersion": 11,
+      "modelHash": "2c57eabf7b3ed64344c1113fbc0adb6e631d548b97891bbeca9f6015292608b9",
+      "reaggregatedHash": "2c57eabf7b3ed64344c1113fbc0adb6e631d548b97891bbeca9f6015292608b9",
+      "federatedEvaluationOfBaseModel": {
+        "baseModelVersion": 10,
+        "accuracy": 0.9528,
+        "crossEntropy": 0.3862,
+        "samples": 360,
+        "participants": 3
+      },
+      "updatesInCse": 3,
+      "oracleEvaluationOfRoundModel": {
+        "pooledTest": {
+          "accuracy": 0.9417,
+          "crossEntropy": 0.4035,
+          "macroF1": 0.9415
+        },
+        "newDeviceTest": {
+          "accuracy": 0.925,
+          "crossEntropy": 0.4156,
+          "macroF1": 0.916
+        }
+      }
+    },
+    {
+      "roundNumber": 12,
+      "state": "COMPLETED",
+      "configEpoch": 2,
+      "resultEpoch": 2,
+      "trigger": "ALL_SELECTED_RESPONDED",
+      "eligible": [
+        "w4",
+        "w1",
+        "w2"
+      ],
+      "excluded": [
+        {
+          "reason": "CONSENT_REVOKED",
+          "participantId": "w3"
+        }
+      ],
+      "selected": [
+        "w4",
+        "w1",
+        "w2"
+      ],
+      "accepted": [
+        "w1",
+        "w2",
+        "w4"
+      ],
+      "missing": [],
+      "rejected": [],
+      "durationMs": 996,
+      "baseModelVersion": 11,
+      "modelVersion": 12,
+      "modelHash": "760faf4a27d9fa8e1ee236d88f98901a2a6dec2d9c99285ddb0511e52c6e17e3",
+      "reaggregatedHash": "760faf4a27d9fa8e1ee236d88f98901a2a6dec2d9c99285ddb0511e52c6e17e3",
+      "federatedEvaluationOfBaseModel": {
+        "baseModelVersion": 11,
+        "accuracy": 0.9556,
+        "crossEntropy": 0.3668,
+        "samples": 360,
+        "participants": 3
+      },
+      "updatesInCse": 3,
+      "oracleEvaluationOfRoundModel": {
+        "pooledTest": {
+          "accuracy": 0.9396,
+          "crossEntropy": 0.3919,
+          "macroF1": 0.9394
+        },
+        "newDeviceTest": {
+          "accuracy": 0.925,
+          "crossEntropy": 0.4048,
+          "macroF1": 0.916
+        }
+      }
+    }
+  ],
+  "baselines": {
+    "note": "same pooled test split (4 x 120 rows) and same numerics, computed in the harness process; centralized pools all 4 train splits (needs raw data transfer, reference upper bound); static ideal fixes w1-w3 with no faults; static same-faults fixes w1-w3 and drops members that were ineligible, missing or rejected in the real round",
+    "perRound": [
+      {
+        "roundNumber": 1,
+        "modelVersion": 1,
+        "dynamicOneM2M": {
+          "pooledTest": {
+            "accuracy": 0.6479,
+            "crossEntropy": 0.9672,
+            "macroF1": 0.5157
+          },
+          "newDeviceTest": {
+            "accuracy": 0.5583,
+            "crossEntropy": 1.0057,
+            "macroF1": 0.4621
+          }
+        },
+        "centralized": {
+          "pooledTest": {
+            "accuracy": 0.9083,
+            "crossEntropy": 0.6042,
+            "macroF1": 0.9088
+          },
+          "newDeviceTest": {
+            "accuracy": 0.85,
+            "crossEntropy": 0.5982,
+            "macroF1": 0.8348
+          }
+        },
+        "staticSelectionIdeal": {
+          "cohort": [
+            "w1",
+            "w2",
+            "w3"
+          ],
+          "pooledTest": {
+            "accuracy": 0.9313,
+            "crossEntropy": 0.919,
+            "macroF1": 0.9312
+          },
+          "newDeviceTest": {
+            "accuracy": 0.8833,
+            "crossEntropy": 0.9131,
+            "macroF1": 0.8763
+          }
+        },
+        "staticSelectionSameFaults": {
+          "cohort": [
+            "w1",
+            "w2"
+          ],
+          "aggregated": true,
+          "pooledTest": {
+            "accuracy": 0.6479,
+            "crossEntropy": 0.9672,
+            "macroF1": 0.5157
+          },
+          "newDeviceTest": {
+            "accuracy": 0.5583,
+            "crossEntropy": 1.0057,
+            "macroF1": 0.4621
+          }
+        }
+      },
+      {
+        "roundNumber": 2,
+        "modelVersion": 2,
+        "dynamicOneM2M": {
+          "pooledTest": {
+            "accuracy": 0.9208,
+            "crossEntropy": 0.7959,
+            "macroF1": 0.92
+          },
+          "newDeviceTest": {
+            "accuracy": 0.925,
+            "crossEntropy": 0.7997,
+            "macroF1": 0.916
+          }
+        },
+        "centralized": {
+          "pooledTest": {
+            "accuracy": 0.9458,
+            "crossEntropy": 0.4448,
+            "macroF1": 0.9458
+          },
+          "newDeviceTest": {
+            "accuracy": 0.9,
+            "crossEntropy": 0.4631,
+            "macroF1": 0.8897
+          }
+        },
+        "staticSelectionIdeal": {
+          "cohort": [
+            "w1",
+            "w2",
+            "w3"
+          ],
+          "pooledTest": {
+            "accuracy": 0.9396,
+            "crossEntropy": 0.7895,
+            "macroF1": 0.9396
+          },
+          "newDeviceTest": {
+            "accuracy": 0.9,
+            "crossEntropy": 0.7822,
+            "macroF1": 0.8935
+          }
+        },
+        "staticSelectionSameFaults": {
+          "cohort": [
+            "w1",
+            "w2",
+            "w3"
+          ],
+          "aggregated": true,
+          "pooledTest": {
+            "accuracy": 0.9208,
+            "crossEntropy": 0.7959,
+            "macroF1": 0.92
+          },
+          "newDeviceTest": {
+            "accuracy": 0.925,
+            "crossEntropy": 0.7997,
+            "macroF1": 0.916
+          }
+        }
+      },
+      {
+        "roundNumber": 3,
+        "modelVersion": 3,
+        "dynamicOneM2M": {
+          "pooledTest": {
+            "accuracy": 0.9458,
+            "crossEntropy": 0.6923,
+            "macroF1": 0.9458
+          },
+          "newDeviceTest": {
+            "accuracy": 0.9333,
+            "crossEntropy": 0.6884,
+            "macroF1": 0.9252
+          }
+        },
+        "centralized": {
+          "pooledTest": {
+            "accuracy": 0.9458,
+            "crossEntropy": 0.3775,
+            "macroF1": 0.9458
+          },
+          "newDeviceTest": {
+            "accuracy": 0.9167,
+            "crossEntropy": 0.4097,
+            "macroF1": 0.9076
+          }
+        },
+        "staticSelectionIdeal": {
+          "cohort": [
+            "w1",
+            "w2",
+            "w3"
+          ],
+          "pooledTest": {
+            "accuracy": 0.9437,
+            "crossEntropy": 0.6934,
+            "macroF1": 0.9438
+          },
+          "newDeviceTest": {
+            "accuracy": 0.9,
+            "crossEntropy": 0.6872,
+            "macroF1": 0.8935
+          }
+        },
+        "staticSelectionSameFaults": {
+          "cohort": [
+            "w1",
+            "w2",
+            "w3"
+          ],
+          "aggregated": true,
+          "pooledTest": {
+            "accuracy": 0.9458,
+            "crossEntropy": 0.6923,
+            "macroF1": 0.9458
+          },
+          "newDeviceTest": {
+            "accuracy": 0.9333,
+            "crossEntropy": 0.6884,
+            "macroF1": 0.9252
+          }
+        }
+      },
+      {
+        "roundNumber": 4,
+        "modelVersion": 4,
+        "dynamicOneM2M": {
+          "pooledTest": {
+            "accuracy": 0.9146,
+            "crossEntropy": 0.6251,
+            "macroF1": 0.9141
+          },
+          "newDeviceTest": {
+            "accuracy": 0.8833,
+            "crossEntropy": 0.6065,
+            "macroF1": 0.8672
+          }
+        },
+        "centralized": {
+          "pooledTest": {
+            "accuracy": 0.9458,
+            "crossEntropy": 0.3419,
+            "macroF1": 0.9458
+          },
+          "newDeviceTest": {
+            "accuracy": 0.9167,
+            "crossEntropy": 0.3837,
+            "macroF1": 0.9076
+          }
+        },
+        "staticSelectionIdeal": {
+          "cohort": [
+            "w1",
+            "w2",
+            "w3"
+          ],
+          "pooledTest": {
+            "accuracy": 0.9437,
+            "crossEntropy": 0.6211,
+            "macroF1": 0.9438
+          },
+          "newDeviceTest": {
+            "accuracy": 0.9,
+            "crossEntropy": 0.6176,
+            "macroF1": 0.8935
+          }
+        },
+        "staticSelectionSameFaults": {
+          "cohort": [
+            "w1",
+            "w2",
+            "w3"
+          ],
+          "aggregated": true,
+          "pooledTest": {
+            "accuracy": 0.9458,
+            "crossEntropy": 0.619,
+            "macroF1": 0.9458
+          },
+          "newDeviceTest": {
+            "accuracy": 0.9167,
+            "crossEntropy": 0.6158,
+            "macroF1": 0.9111
+          }
+        }
+      },
+      {
+        "roundNumber": 5,
+        "modelVersion": 5,
+        "dynamicOneM2M": {
+          "pooledTest": {
+            "accuracy": 0.9313,
+            "crossEntropy": 0.5631,
+            "macroF1": 0.9314
+          },
+          "newDeviceTest": {
+            "accuracy": 0.8833,
+            "crossEntropy": 0.5644,
+            "macroF1": 0.8757
+          }
+        },
+        "centralized": {
+          "pooledTest": {
+            "accuracy": 0.9479,
+            "crossEntropy": 0.3204,
+            "macroF1": 0.9479
+          },
+          "newDeviceTest": {
+            "accuracy": 0.925,
+            "crossEntropy": 0.3695,
+            "macroF1": 0.9146
+          }
+        },
+        "staticSelectionIdeal": {
+          "cohort": [
+            "w1",
+            "w2",
+            "w3"
+          ],
+          "pooledTest": {
+            "accuracy": 0.9437,
+            "crossEntropy": 0.5657,
+            "macroF1": 0.9438
+          },
+          "newDeviceTest": {
+            "accuracy": 0.9,
+            "crossEntropy": 0.5659,
+            "macroF1": 0.8935
+          }
+        },
+        "staticSelectionSameFaults": {
+          "cohort": [
+            "w1",
+            "w2",
+            "w3"
+          ],
+          "aggregated": true,
+          "pooledTest": {
+            "accuracy": 0.9458,
+            "crossEntropy": 0.5637,
+            "macroF1": 0.9458
+          },
+          "newDeviceTest": {
+            "accuracy": 0.9083,
+            "crossEntropy": 0.5637,
+            "macroF1": 0.9006
+          }
+        }
+      },
+      {
+        "roundNumber": 6,
+        "modelVersion": 6,
+        "dynamicOneM2M": {
+          "pooledTest": {
+            "accuracy": 0.9396,
+            "crossEntropy": 0.5161,
+            "macroF1": 0.9396
+          },
+          "newDeviceTest": {
+            "accuracy": 0.9083,
+            "crossEntropy": 0.5235,
+            "macroF1": 0.9012
+          }
+        },
+        "centralized": {
+          "pooledTest": {
+            "accuracy": 0.9479,
+            "crossEntropy": 0.3063,
+            "macroF1": 0.9479
+          },
+          "newDeviceTest": {
+            "accuracy": 0.925,
+            "crossEntropy": 0.3612,
+            "macroF1": 0.9146
+          }
+        },
+        "staticSelectionIdeal": {
+          "cohort": [
+            "w1",
+            "w2",
+            "w3"
+          ],
+          "pooledTest": {
+            "accuracy": 0.9437,
+            "crossEntropy": 0.5224,
+            "macroF1": 0.9438
+          },
+          "newDeviceTest": {
+            "accuracy": 0.9,
+            "crossEntropy": 0.5267,
+            "macroF1": 0.8935
+          }
+        },
+        "staticSelectionSameFaults": {
+          "cohort": [
+            "w2",
+            "w3"
+          ],
+          "aggregated": true,
+          "pooledTest": {
+            "accuracy": 0.9187,
+            "crossEntropy": 0.5304,
+            "macroF1": 0.9185
+          },
+          "newDeviceTest": {
+            "accuracy": 0.8833,
+            "crossEntropy": 0.547,
+            "macroF1": 0.8763
+          }
+        }
+      },
+      {
+        "roundNumber": 7,
+        "modelVersion": 7,
+        "dynamicOneM2M": {
+          "pooledTest": {
+            "accuracy": 0.9354,
+            "crossEntropy": 0.484,
+            "macroF1": 0.9354
+          },
+          "newDeviceTest": {
+            "accuracy": 0.8917,
+            "crossEntropy": 0.4991,
+            "macroF1": 0.8835
+          }
+        },
+        "centralized": {
+          "pooledTest": {
+            "accuracy": 0.9479,
+            "crossEntropy": 0.2966,
+            "macroF1": 0.9479
+          },
+          "newDeviceTest": {
+            "accuracy": 0.925,
+            "crossEntropy": 0.3561,
+            "macroF1": 0.9146
+          }
+        },
+        "staticSelectionIdeal": {
+          "cohort": [
+            "w1",
+            "w2",
+            "w3"
+          ],
+          "pooledTest": {
+            "accuracy": 0.9417,
+            "crossEntropy": 0.4879,
+            "macroF1": 0.9417
+          },
+          "newDeviceTest": {
+            "accuracy": 0.9,
+            "crossEntropy": 0.4965,
+            "macroF1": 0.8935
+          }
+        },
+        "staticSelectionSameFaults": {
+          "cohort": [
+            "w2",
+            "w3"
+          ],
+          "aggregated": true,
+          "pooledTest": {
+            "accuracy": 0.9021,
+            "crossEntropy": 0.5096,
+            "macroF1": 0.9014
+          },
+          "newDeviceTest": {
+            "accuracy": 0.8333,
+            "crossEntropy": 0.5371,
+            "macroF1": 0.8316
+          }
+        }
+      },
+      {
+        "roundNumber": 8,
+        "modelVersion": 8,
+        "dynamicOneM2M": {
+          "pooledTest": {
+            "accuracy": 0.9292,
+            "crossEntropy": 0.4575,
+            "macroF1": 0.9292
+          },
+          "newDeviceTest": {
+            "accuracy": 0.9,
+            "crossEntropy": 0.4708,
+            "macroF1": 0.8921
+          }
+        },
+        "centralized": {
+          "pooledTest": {
+            "accuracy": 0.9458,
+            "crossEntropy": 0.2894,
+            "macroF1": 0.9458
+          },
+          "newDeviceTest": {
+            "accuracy": 0.925,
+            "crossEntropy": 0.3529,
+            "macroF1": 0.9146
+          }
+        },
+        "staticSelectionIdeal": {
+          "cohort": [
+            "w1",
+            "w2",
+            "w3"
+          ],
+          "pooledTest": {
+            "accuracy": 0.9417,
+            "crossEntropy": 0.4601,
+            "macroF1": 0.9417
+          },
+          "newDeviceTest": {
+            "accuracy": 0.9,
+            "crossEntropy": 0.4729,
+            "macroF1": 0.8935
+          }
+        },
+        "staticSelectionSameFaults": {
+          "cohort": [
+            "w2"
+          ],
+          "aggregated": false,
+          "pooledTest": {
+            "accuracy": 0.9021,
+            "crossEntropy": 0.5096,
+            "macroF1": 0.9014
+          },
+          "newDeviceTest": {
+            "accuracy": 0.8333,
+            "crossEntropy": 0.5371,
+            "macroF1": 0.8316
+          }
+        }
+      },
+      {
+        "roundNumber": 9,
+        "modelVersion": 9,
+        "dynamicOneM2M": {
+          "pooledTest": {
+            "accuracy": 0.9417,
+            "crossEntropy": 0.4348,
+            "macroF1": 0.9415
+          },
+          "newDeviceTest": {
+            "accuracy": 0.925,
+            "crossEntropy": 0.4448,
+            "macroF1": 0.916
+          }
+        },
+        "centralized": {
+          "pooledTest": {
+            "accuracy": 0.9458,
+            "crossEntropy": 0.2841,
+            "macroF1": 0.9458
+          },
+          "newDeviceTest": {
+            "accuracy": 0.925,
+            "crossEntropy": 0.3509,
+            "macroF1": 0.9146
+          }
+        },
+        "staticSelectionIdeal": {
+          "cohort": [
+            "w1",
+            "w2",
+            "w3"
+          ],
+          "pooledTest": {
+            "accuracy": 0.9417,
+            "crossEntropy": 0.4372,
+            "macroF1": 0.9417
+          },
+          "newDeviceTest": {
+            "accuracy": 0.9,
+            "crossEntropy": 0.454,
+            "macroF1": 0.8935
+          }
+        },
+        "staticSelectionSameFaults": {
+          "cohort": [
+            "w1",
+            "w2"
+          ],
+          "aggregated": true,
+          "pooledTest": {
+            "accuracy": 0.9396,
+            "crossEntropy": 0.4614,
+            "macroF1": 0.9395
+          },
+          "newDeviceTest": {
+            "accuracy": 0.9083,
+            "crossEntropy": 0.4734,
+            "macroF1": 0.9019
+          }
+        }
+      },
+      {
+        "roundNumber": 10,
+        "modelVersion": 10,
+        "dynamicOneM2M": {
+          "pooledTest": {
+            "accuracy": 0.9396,
+            "crossEntropy": 0.4181,
+            "macroF1": 0.9394
+          },
+          "newDeviceTest": {
+            "accuracy": 0.925,
+            "crossEntropy": 0.4304,
+            "macroF1": 0.916
+          }
+        },
+        "centralized": {
+          "pooledTest": {
+            "accuracy": 0.9479,
+            "crossEntropy": 0.28,
+            "macroF1": 0.9479
+          },
+          "newDeviceTest": {
+            "accuracy": 0.9333,
+            "crossEntropy": 0.3497,
+            "macroF1": 0.9252
+          }
+        },
+        "staticSelectionIdeal": {
+          "cohort": [
+            "w1",
+            "w2",
+            "w3"
+          ],
+          "pooledTest": {
+            "accuracy": 0.9396,
+            "crossEntropy": 0.4182,
+            "macroF1": 0.9396
+          },
+          "newDeviceTest": {
+            "accuracy": 0.9,
+            "crossEntropy": 0.4389,
+            "macroF1": 0.8935
+          }
+        },
+        "staticSelectionSameFaults": {
+          "cohort": [
+            "w2"
+          ],
+          "aggregated": false,
+          "pooledTest": {
+            "accuracy": 0.9396,
+            "crossEntropy": 0.4614,
+            "macroF1": 0.9395
+          },
+          "newDeviceTest": {
+            "accuracy": 0.9083,
+            "crossEntropy": 0.4734,
+            "macroF1": 0.9019
+          }
+        }
+      },
+      {
+        "roundNumber": 11,
+        "modelVersion": 11,
+        "dynamicOneM2M": {
+          "pooledTest": {
+            "accuracy": 0.9417,
+            "crossEntropy": 0.4035,
+            "macroF1": 0.9415
+          },
+          "newDeviceTest": {
+            "accuracy": 0.925,
+            "crossEntropy": 0.4156,
+            "macroF1": 0.916
+          }
+        },
+        "centralized": {
+          "pooledTest": {
+            "accuracy": 0.9479,
+            "crossEntropy": 0.2769,
+            "macroF1": 0.9479
+          },
+          "newDeviceTest": {
+            "accuracy": 0.9333,
+            "crossEntropy": 0.3491,
+            "macroF1": 0.9252
+          }
+        },
+        "staticSelectionIdeal": {
+          "cohort": [
+            "w1",
+            "w2",
+            "w3"
+          ],
+          "pooledTest": {
+            "accuracy": 0.9417,
+            "crossEntropy": 0.4021,
+            "macroF1": 0.9417
+          },
+          "newDeviceTest": {
+            "accuracy": 0.9083,
+            "crossEntropy": 0.4265,
+            "macroF1": 0.9006
+          }
+        },
+        "staticSelectionSameFaults": {
+          "cohort": [
+            "w1",
+            "w2"
+          ],
+          "aggregated": true,
+          "pooledTest": {
+            "accuracy": 0.9375,
+            "crossEntropy": 0.446,
+            "macroF1": 0.9372
+          },
+          "newDeviceTest": {
+            "accuracy": 0.925,
+            "crossEntropy": 0.4521,
+            "macroF1": 0.916
+          }
+        }
+      },
+      {
+        "roundNumber": 12,
+        "modelVersion": 12,
+        "dynamicOneM2M": {
+          "pooledTest": {
+            "accuracy": 0.9396,
+            "crossEntropy": 0.3919,
+            "macroF1": 0.9394
+          },
+          "newDeviceTest": {
+            "accuracy": 0.925,
+            "crossEntropy": 0.4048,
+            "macroF1": 0.916
+          }
+        },
+        "centralized": {
+          "pooledTest": {
+            "accuracy": 0.9479,
+            "crossEntropy": 0.2743,
+            "macroF1": 0.9479
+          },
+          "newDeviceTest": {
+            "accuracy": 0.9333,
+            "crossEntropy": 0.3488,
+            "macroF1": 0.9252
+          }
+        },
+        "staticSelectionIdeal": {
+          "cohort": [
+            "w1",
+            "w2",
+            "w3"
+          ],
+          "pooledTest": {
+            "accuracy": 0.9417,
+            "crossEntropy": 0.3885,
+            "macroF1": 0.9417
+          },
+          "newDeviceTest": {
+            "accuracy": 0.9083,
+            "crossEntropy": 0.4163,
+            "macroF1": 0.9006
+          }
+        },
+        "staticSelectionSameFaults": {
+          "cohort": [
+            "w1",
+            "w2"
+          ],
+          "aggregated": true,
+          "pooledTest": {
+            "accuracy": 0.9271,
+            "crossEntropy": 0.4352,
+            "macroF1": 0.9267
+          },
+          "newDeviceTest": {
+            "accuracy": 0.925,
+            "crossEntropy": 0.4392,
+            "macroF1": 0.916
+          }
+        }
+      }
+    ],
+    "final": {
+      "roundNumber": 12,
+      "modelVersion": 12,
+      "dynamicOneM2M": {
+        "pooledTest": {
+          "accuracy": 0.9396,
+          "crossEntropy": 0.3919,
+          "macroF1": 0.9394
+        },
+        "newDeviceTest": {
+          "accuracy": 0.925,
+          "crossEntropy": 0.4048,
+          "macroF1": 0.916
+        }
+      },
+      "centralized": {
+        "pooledTest": {
+          "accuracy": 0.9479,
+          "crossEntropy": 0.2743,
+          "macroF1": 0.9479
+        },
+        "newDeviceTest": {
+          "accuracy": 0.9333,
+          "crossEntropy": 0.3488,
+          "macroF1": 0.9252
+        }
+      },
+      "staticSelectionIdeal": {
+        "cohort": [
+          "w1",
+          "w2",
+          "w3"
+        ],
+        "pooledTest": {
+          "accuracy": 0.9417,
+          "crossEntropy": 0.3885,
+          "macroF1": 0.9417
+        },
+        "newDeviceTest": {
+          "accuracy": 0.9083,
+          "crossEntropy": 0.4163,
+          "macroF1": 0.9006
+        }
+      },
+      "staticSelectionSameFaults": {
+        "cohort": [
+          "w1",
+          "w2"
+        ],
+        "aggregated": true,
+        "pooledTest": {
+          "accuracy": 0.9271,
+          "crossEntropy": 0.4352,
+          "macroF1": 0.9267
+        },
+        "newDeviceTest": {
+          "accuracy": 0.925,
+          "crossEntropy": 0.4392,
+          "macroF1": 0.916
+        }
+      }
+    },
+    "pairedMcNemar": {
+      "centralized": {
+        "pooledTest": {
+          "dynamicOnlyCorrect": 1,
+          "baselineOnlyCorrect": 5,
+          "discordant": 6,
+          "exactTwoSidedP": 0.2188
+        },
+        "newDeviceTest": {
+          "dynamicOnlyCorrect": 0,
+          "baselineOnlyCorrect": 1,
+          "discordant": 1,
+          "exactTwoSidedP": 1
+        }
+      },
+      "staticSelectionIdeal": {
+        "pooledTest": {
+          "dynamicOnlyCorrect": 5,
+          "baselineOnlyCorrect": 6,
+          "discordant": 11,
+          "exactTwoSidedP": 1
+        },
+        "newDeviceTest": {
+          "dynamicOnlyCorrect": 3,
+          "baselineOnlyCorrect": 1,
+          "discordant": 4,
+          "exactTwoSidedP": 0.625
+        }
+      },
+      "staticSelectionSameFaults": {
+        "pooledTest": {
+          "dynamicOnlyCorrect": 6,
+          "baselineOnlyCorrect": 0,
+          "discordant": 6,
+          "exactTwoSidedP": 0.0313
+        },
+        "newDeviceTest": {
+          "dynamicOnlyCorrect": 0,
+          "baselineOnlyCorrect": 0,
+          "discordant": 0,
+          "exactTwoSidedP": 1
+        }
+      }
+    },
+    "sensitivity": {
+      "method": "in-process replay of the real run participation schedule (accepted sets per completed round) on 10 alternative shard seed sets; same numerics; not a CSE run",
+      "trials": 10,
+      "accuracy": {
+        "dynamicSchedule": {
+          "pooledTest": {
+            "mean": 0.9433,
+            "sd": 0.011,
+            "min": 0.9208,
+            "max": 0.9563
+          },
+          "newDeviceTest": {
+            "mean": 0.9458,
+            "sd": 0.0126,
+            "min": 0.925,
+            "max": 0.9583
+          }
+        },
+        "centralized": {
+          "pooledTest": {
+            "mean": 0.9521,
+            "sd": 0.0096,
+            "min": 0.9375,
+            "max": 0.9667
+          },
+          "newDeviceTest": {
+            "mean": 0.9425,
+            "sd": 0.0154,
+            "min": 0.9167,
+            "max": 0.9583
+          }
+        },
+        "staticSelectionIdeal": {
+          "pooledTest": {
+            "mean": 0.9508,
+            "sd": 0.009,
+            "min": 0.9333,
+            "max": 0.9646
+          },
+          "newDeviceTest": {
+            "mean": 0.9408,
+            "sd": 0.0198,
+            "min": 0.9083,
+            "max": 0.975
+          }
+        },
+        "staticSelectionSameFaults": {
+          "pooledTest": {
+            "mean": 0.9344,
+            "sd": 0.0153,
+            "min": 0.9104,
+            "max": 0.9542
+          },
+          "newDeviceTest": {
+            "mean": 0.9442,
+            "sd": 0.0142,
+            "min": 0.925,
+            "max": 0.9583
+          }
+        }
+      },
+      "dynamicMinusStaticIdeal": {
+        "pooledTest": {
+          "mean": -0.0075,
+          "sd": 0.0114,
+          "min": -0.0271,
+          "max": 0.0083
+        },
+        "newDeviceTest": {
+          "mean": 0.005,
+          "sd": 0.0143,
+          "min": -0.0167,
+          "max": 0.025
+        },
+        "dynamicAtLeastStaticOnNewDevice": 8
+      },
+      "dynamicMinusStaticSameFaults": {
+        "pooledTest": {
+          "mean": 0.009,
+          "sd": 0.0086,
+          "min": -0.0021,
+          "max": 0.025
+        },
+        "newDeviceTest": {
+          "mean": 0.0017,
+          "sd": 0.0035,
+          "min": 0,
+          "max": 0.0083
+        }
+      },
+      "dynamicMinusCentralized": {
+        "pooledTest": {
+          "mean": -0.0088,
+          "sd": 0.0102,
+          "min": -0.0292,
+          "max": 0
+        }
+      }
+    }
+  },
+  "faults": {
+    "rogueRegistrations": {
+      "posts": [
+        {
+          "participantId": "rogue1",
+          "rsc": 2001
+        },
+        {
+          "participantId": "w1",
+          "rsc": 2001
+        }
+      ],
+      "rejections": [
+        {
+          "participantId": "rogue1",
+          "reason": "ENROLLMENT_SIGNATURE"
+        },
+        {
+          "participantId": "w1",
+          "reason": "ENROLLMENT_SIGNATURE"
+        }
+      ]
+    },
+    "lateJoin": {
+      "participantId": "w4",
+      "spawnedDuringRound": 3,
+      "admittedAt": "2026-11-19T11:52:25.544Z",
+      "firstSelectedRound": 4,
+      "discoveredBy": "label-discovery"
+    },
+    "coordinatorRestart": {
+      "killedAt": "2026-11-19T11:52:28.816Z",
+      "killedAfterUpdateFrom": "w3",
+      "completedBeforeKill": false,
+      "resumedEvent": {
+        "previousEpoch": 1,
+        "coordinatorEpoch": 2,
+        "openRound": 5,
+        "completedRounds": 4,
+        "modelVersion": 4,
+        "members": [
+          "w1",
+          "w2",
+          "w3",
+          "w4"
+        ]
+      },
+      "round5CompletedBy": "coordinator#2",
+      "round5Accepted": [
+        "w2",
+        "w3",
+        "w4"
+      ],
+      "round5Trigger": "ALL_SELECTED_RESPONDED",
+      "round5ResumedRound": true
+    },
+    "dropout": {
+      "participantId": "w1",
+      "killedAt": "2026-11-19T11:52:30.907Z",
+      "round": 6,
+      "roundTrigger": "DEADLINE",
+      "roundAccepted": [
+        "w2",
+        "w4"
+      ],
+      "roundMissing": [
+        {
+          "participantId": "w1",
+          "reason": "NO_UPDATE_BY_DEADLINE"
+        }
+      ],
+      "round7Excluded": [
+        {
+          "participantId": "w1",
+          "reason": "HEARTBEAT_STALE",
+          "ageMs": 6330
+        }
+      ],
+      "restartedAndReselectedRound": 9
+    },
+    "consentRevocation": {
+      "participantId": "w3",
+      "consentRevision": 2,
+      "contributedRoundsBeforeRevocation": [
+        2,
+        3,
+        4,
+        5,
+        7
+      ],
+      "nextRound": 8,
+      "nextRoundSelected": [
+        "w4",
+        "w2"
+      ],
+      "nextRoundExcluded": [
+        {
+          "participantId": "w3",
+          "reason": "CONSENT_REVOKED"
+        }
+      ]
+    },
+    "tamperedUpdate": {
+      "participantId": "w1",
+      "round": 10,
+      "reason": "FL_ARTIFACT_DIGEST",
+      "roundState": "ROUND_COMPLETED",
+      "accepted": [
+        "w2",
+        "w4"
+      ]
+    }
+  },
+  "acpProbes": [
+    {
+      "name": "member:read-currentModel",
+      "originatorRole": "member",
+      "method": "GET",
+      "path": "/Mobius/fl-privacy-motion-76388c/currentModel/la",
+      "expectedRsc": 2000,
+      "rsc": 2000,
+      "pass": true
+    },
+    {
+      "name": "revoked:read-status",
+      "originatorRole": "revoked",
+      "method": "GET",
+      "path": "/Mobius/fl-privacy-motion-76388c/status/la",
+      "expectedRsc": 4103,
+      "rsc": 4103,
+      "pass": true
+    },
+    {
+      "name": "revoked:read-currentModel",
+      "originatorRole": "revoked",
+      "method": "GET",
+      "path": "/Mobius/fl-privacy-motion-76388c/currentModel/la",
+      "expectedRsc": 4103,
+      "rsc": 4103,
+      "pass": true
+    },
+    {
+      "name": "revoked:write-update-closed-round",
+      "originatorRole": "revoked",
+      "method": "POST",
+      "path": "/Mobius/fl-privacy-motion-76388c/rounds/r-0012/updates",
+      "expectedRsc": 4103,
+      "rsc": 4103,
+      "pass": true
+    },
+    {
+      "name": "member:write-update-closed-round",
+      "originatorRole": "member",
+      "method": "POST",
+      "path": "/Mobius/fl-privacy-motion-76388c/rounds/r-0012/updates",
+      "expectedRsc": 4103,
+      "rsc": 4103,
+      "pass": true
+    },
+    {
+      "name": "member:read-inbox",
+      "originatorRole": "member",
+      "method": "GET",
+      "path": "/Mobius/fl-privacy-motion-76388c/participants/la",
+      "expectedRsc": 4103,
+      "rsc": 4103,
+      "pass": true
+    },
+    {
+      "name": "member:read-other-heartbeat",
+      "originatorRole": "member",
+      "method": "GET",
+      "path": "/Mobius/flw-w4/heartbeat/la",
+      "expectedRsc": 4103,
+      "rsc": 4103,
+      "pass": true
+    },
+    {
+      "name": "rogue:read-currentModel",
+      "originatorRole": "rogue",
+      "method": "GET",
+      "path": "/Mobius/fl-privacy-motion-76388c/currentModel/la",
+      "expectedRsc": 4103,
+      "rsc": 4103,
+      "pass": true
+    },
+    {
+      "name": "rogue:read-public-task",
+      "originatorRole": "rogue",
+      "method": "GET",
+      "path": "/Mobius/fl-privacy-motion-76388c/tasks/task-v1",
+      "expectedRsc": 2000,
+      "rsc": 2000,
+      "pass": true
+    },
+    {
+      "name": "rogue:read-datasets-catalog",
+      "originatorRole": "rogue",
+      "method": "GET",
+      "path": "/Mobius/fl-privacy-motion-76388c/datasets/la",
+      "expectedRsc": 4103,
+      "rsc": 4103,
+      "pass": true
+    }
+  ],
+  "discovery": {
+    "rsc": 2000,
+    "found": 1,
+    "byOriginator": "unregistered rogue AE (discovery-only ACP)"
+  },
+  "integrity": {
+    "signatures": 26,
+    "signatureFailures": 0,
+    "reaggregationMatches": 12,
+    "reaggregationMismatches": 0,
+    "lineageBreaks": 0,
+    "acceptedUpdatesReadBack": 32,
+    "acceptedUpdatesMissing": 0
+  },
+  "dataLocality": {
+    "scannedContents": 102,
+    "leakFindings": 0,
+    "rule": "no feature arrays and no row ids in any CSE content"
+  },
+  "readbackCli": {
+    "exitCode": 0,
+    "status": "PASS",
+    "completedRounds": 12,
+    "checks": {
+      "signaturesValid": true,
+      "reaggregationMatches": true,
+      "lineageUnbroken": true,
+      "currentModelMatchesLastRound": true,
+      "noRawRowsInCse": true
+    }
+  },
+  "epochs": [
+    {
+      "coordinatorEpoch": 1,
+      "instanceId": "0a16b21d-56e8-4007-bcba-6a6c0ca30860",
+      "at": "2026-11-19T11:52:22.329Z"
+    },
+    {
+      "coordinatorEpoch": 2,
+      "instanceId": "ac1c33f6-2c9b-4826-8510-2a5247e1846b",
+      "at": "2026-11-19T11:52:30.457Z"
+    }
+  ],
+  "catalog": [
+    {
+      "participantId": "w3",
+      "state": "REVOKED",
+      "consentRevision": 2,
+      "datasetId": "w3-local"
+    },
+    {
+      "participantId": "w4",
+      "state": "ADMITTED",
+      "consentRevision": 1,
+      "datasetId": "w4-local"
+    },
+    {
+      "participantId": "w3",
+      "state": "ADMITTED",
+      "consentRevision": 1,
+      "datasetId": "w3-local"
+    },
+    {
+      "participantId": "w2",
+      "state": "ADMITTED",
+      "consentRevision": 1,
+      "datasetId": "w2-local"
+    },
+    {
+      "participantId": "w1",
+      "state": "ADMITTED",
+      "consentRevision": 1,
+      "datasetId": "w1-local"
+    }
+  ],
+  "roles": {
+    "coordinator": [
+      {
+        "proc": "coordinator#2",
+        "notifications": 21,
+        "completedRounds": 12,
+        "cseRequests": {
+          "requests": 336,
+          "byRsc": {
+            "2000": 224,
+            "2001": 70,
+            "2002": 8,
+            "2004": 12,
+            "4004": 3,
+            "4105": 19
+          }
+        }
+      }
+    ],
+    "workers": [
+      {
+        "proc": "w3#1",
+        "counters": {
+          "updatesWritten": 5,
+          "updatesDenied": 0,
+          "notSelected": 2,
+          "heartbeats": 20,
+          "statusDenied": 2
+        },
+        "cseRequests": {
+          "requests": 99,
+          "byRsc": {
+            "2000": 67,
+            "2001": 30,
+            "4103": 2
+          }
+        }
+      },
+      {
+        "proc": "w2#1",
+        "counters": {
+          "updatesWritten": 11,
+          "updatesDenied": 0,
+          "notSelected": 1,
+          "heartbeats": 30,
+          "statusDenied": 1
+        },
+        "cseRequests": {
+          "requests": 133,
+          "byRsc": {
+            "2000": 87,
+            "2001": 45,
+            "4103": 1
+          }
+        }
+      },
+      {
+        "proc": "w4#1",
+        "counters": {
+          "updatesWritten": 9,
+          "updatesDenied": 0,
+          "notSelected": 1,
+          "heartbeats": 26,
+          "statusDenied": 1
+        },
+        "cseRequests": {
+          "requests": 119,
+          "byRsc": {
+            "2000": 79,
+            "2001": 39,
+            "4103": 1
+          }
+        }
+      },
+      {
+        "proc": "w1#2",
+        "counters": {
+          "updatesWritten": 4,
+          "updatesDenied": 0,
+          "notSelected": 0,
+          "heartbeats": 9,
+          "statusDenied": 0
+        },
+        "cseRequests": {
+          "requests": 39,
+          "byRsc": {
+            "2000": 22,
+            "2001": 14,
+            "4105": 3
+          }
+        }
+      }
+    ]
+  },
+  "checks": {
+    "completedRoundsAtLeast10": true,
+    "workerProcessesAtLeast3": true,
+    "dynamicSelectionVaried": true,
+    "lateJoinerSelected": true,
+    "dropoutHandledByDeadlineQuorum": true,
+    "droppedWorkerExcludedNextRound": true,
+    "coordinatorResumedFromCse": true,
+    "revokedParticipantRemoved": true,
+    "tamperedUpdateRejected": true,
+    "rogueRegistrationsRejected": true,
+    "acpProbesPass": true,
+    "signaturesValid": true,
+    "reaggregationMatches": true,
+    "lineageUnbroken": true,
+    "currentModelMatchesLastRound": true,
+    "noRawRowsInCse": true,
+    "labelDiscoveryUsed": true,
+    "readbackCliPass": true
+  },
+  "durationSeconds": 25.6,
+  "reproduce": "MOBIUS4_ROOT=<mobius4> node pc-mobius/scripts/run-fl-onem2m-real.mjs",
+  "sourceSHA256": {
+    "pc-mobius/integration/src/fl-onem2m-plane.mjs": "12766eaaefebd172dec8441c46e50765fe6162e0776cec4a62d69dbe1fbaf95c",
+    "pc-mobius/integration/src/fl-onem2m-coordinator.mjs": "7f2b2fccc4a5435a339bd6036ffdd90630936bf82e6c57df4f503ba420b30a77",
+    "pc-mobius/integration/src/fl-onem2m-worker.mjs": "fd857613577486bae0bbe17e2fe0ced355e03bc819be63135223c74bd98ee26c",
+    "pc-mobius/integration/src/fl-shards.mjs": "71837a5f8917a6fb8a28445f8adcce65d240047e9bb0891de33a10586110009b",
+    "pc-mobius/integration/src/fl-onem2m-readback.mjs": "20519100e18838557deb83ff1d8841273c0c008b7af732c1265403e5a1b3fa1f",
+    "pc-mobius/scripts/run-fl-onem2m-real.mjs": "e20bf7ea1fe3918a04f051a10a9311f0709764d4b5849d0fb6f68123d89e2162"
+  },
+  "localEvidenceDirectory": ".local/fl-onem2m/1795089140457-76388c"
+}
