@@ -306,21 +306,22 @@ hardware verified (real keyring board or bench board and a real Raspberry Pi).
 
 Open external checks are tracked in [docs/external-validation-todo.md](docs/external-validation-todo.md).
 
-### Work packages in progress (2026-11-19)
+### Work packages verified on 2026-11-19
 
-Results and evidence for these packages will be linked here at merge
-(`docs/rubric-work/`, `docs/verification-evidence/2026-11-19/`).
+All runs below used real Mobius4 4.24.5 processes with PostgreSQL 17 + PostGIS
+on one development host. Each receipt lists which parts were simulated
+(keyring devices, MEC platform, UE movement, guardian decision).
 
-| Package | Scope | Results |
-|---|---|---|
-| R10 | mTLS identity bound to oneM2M ACP originators | TBD |
-| R01 / R11 | Group fan-out and an SDT Python client | TBD |
-| R12 | Automated handover metrics | TBD |
-| R14 | Federated learning over oneM2M resources | TBD |
-| R17 | LLM agent over the three MCP servers | TBD |
-| R15 / R16 | MEC bridge AE as a oneM2M IPE | TBD |
-| R03 | Several applications on one live CSE | TBD |
-| R02 | Protocol matrix per segment | TBD |
+| Package | Scope | Result | Notes and receipt |
+|---|---|---|---|
+| R10 | mTLS identity bound to oneM2M ACP originators (HTTP and MQTT) | 918/918 cases PASS through a TLS 1.3 mTLS front | [R10](docs/rubric-work/R10.md), [receipt](docs/verification-evidence/2026-11-19/acp-mtls-real-cse.json) |
+| R01 / R11 | Household commands through `<grp>/fopt` with partial failure and retry; TS-0023 `cod:binSh` with an independent Python SDT client | 27/27 checks PASS | [R01-R11](docs/rubric-work/R01-R11.md), [receipt](docs/verification-evidence/2026-11-19/group-command-real-cse.json) |
+| R12 | Automated handover on zone, availability, latency and load | 30 handovers, 2154 observations, 0 lost, 0 duplicates delivered | [R12](docs/rubric-work/R12.md), [receipt](docs/verification-evidence/2026-11-19/handover-auto-real-cse.json) |
+| R14 | Federated learning coordinated through oneM2M resources | 12 rounds, 4 worker processes, late join, dropout, coordinator restart, consent revocation; 18/18 checks PASS | [R14](docs/rubric-work/R14.md), [ESTIMED deploy steps](docs/rubric-work/R14-estimed-deploy.md), [receipt](docs/verification-evidence/2026-11-19/fl-onem2m-real-cse.json) |
+| R17 | Claude Code agent over the three MCP servers with server-side guardian approval and resume | PASS, interrupted and resumed run | [R17](docs/rubric-work/R17.md), [receipt](docs/verification-evidence/2026-11-19/mcp-llm-agent-real-cse.json) |
+| R15 / R16 | MEC IPE: oneM2M requests drive MEC Location (MEC013) and RNIS (MEC012) subscriptions; notifications return as oneM2M resources | 29/29 checks PASS against the local MEC simulator | [R15-R16](docs/rubric-work/R15-R16.md), [sandbox cutover](docs/rubric-work/R16-sandbox-cutover.md), [receipt](docs/verification-evidence/2026-11-19/mec-ipe-real-cse.json) |
+| R03 | Operator dashboard, guardian portal and automation AE on one live CSE | 19/19 checks PASS | [R03](docs/rubric-work/R03.md), [receipt](docs/verification-evidence/2026-11-19/multiapp-real-cse.json) |
+| R02 | Full Gateway daemon with condition-based MQTT/HTTPS selection | 509 observations, 4 fault conditions, 0 lost | [R02](docs/rubric-work/R02.md), [receipt](docs/verification-evidence/2026-11-19/protocol-matrix-real-cse.json) |
 
 ## Korean documents (한국어 문서)
 
