@@ -1,0 +1,14 @@
+{
+  "version": "privacy-bubble.originator-binding.v1",
+  "revision": 1,
+  "cseId": "/Mobius4",
+  "bindings": [
+    {
+      "bindingId": "keyring-dev-gateway",
+      "role": "gateway",
+      "identity": { "type": "cn", "value": "keyring-dev-gateway" },
+      "originator": "Ckeyring-dev-gateway",
+      "mqttUsername": "keyring-dev-gateway"
+    }
+  ]
+}

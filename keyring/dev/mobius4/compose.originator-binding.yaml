@@ -1,0 +1,10 @@
+# Optional override (DOC-REV 2.0.0, R10): per-certificate originator binding for the dev TLS proxy.
+# The default bench profile (compose.yaml + nginx.conf.template) is unchanged. To opt in:
+#   docker compose --env-file ./keyring/dev/mobius4/.local/compose.env \
+#     -f ./keyring/dev/mobius4/compose.yaml -f ./keyring/dev/mobius4/compose.originator-binding.yaml up -d tls
+# Generate .local/originator-binding/originator-map.conf first (see originator-binding/nginx.conf.template).
+services:
+  tls:
+    volumes:
+      - ./originator-binding/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./.local/originator-binding:/etc/nginx/keyring-originator-binding:ro
