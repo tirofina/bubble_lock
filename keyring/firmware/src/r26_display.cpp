@@ -58,14 +58,15 @@ void drawFrame(Arduino_GFX &panel) {
   panel.fillRoundRect(14, 68, 212, 108, 16, Surface);
   panel.drawRoundRect(14, 68, 212, 108, 16, Border);
 
-  // The r26 front assembly has no populated fuel gauge.
+  // Fixed five-bar demo artwork for the front assembly without a fuel gauge.
   panel.fillRoundRect(14, 187, 212, 39, 11, Surface);
   panel.drawRoundRect(14, 187, 212, 39, 11, Border);
-  panel.drawRoundRect(28, 200, 20, 13, 3, Muted);
-  panel.drawFastVLine(49, 204, 5, Muted);
-  panel.drawFastHLine(34, 206, 8, Muted);
-  label(panel, 58, 206, r26text::Battery, Text, Surface);
-  label(panel, 211 - r26text::BatteryUnavailable.width, 206, r26text::BatteryUnavailable, Muted, Surface);
+  label(panel, 28, 206, r26text::Battery, Text, Surface);
+  panel.drawRoundRect(138, 197, 70, 19, 4, Muted);
+  panel.fillRoundRect(209, 203, 3, 7, 1, Muted);
+  for (int16_t bar = 0; bar < 5; ++bar) {
+    panel.fillRoundRect(144 + bar * 12, 201, 9, 11, 2, Mint);
+  }
 }
 }
 

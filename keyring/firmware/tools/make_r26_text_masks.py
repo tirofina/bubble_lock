@@ -14,7 +14,6 @@ LABELS = (
     ("ConfirmHint", "Input received", "Medium", 20),
     ("PanicHint", "Emergency input", "Medium", 20),
     ("Battery", "Battery", "SemiBold", 19),
-    ("BatteryUnavailable", "No reading", "Medium", 18),
 )
 
 
