@@ -5,7 +5,7 @@
 3. 전원을 끈 뒤 1.54인치 ST7789의 GND·VCC·SCL·SDA·RST·DC·CS·BL을 J3.2·1·4·3·7·6·5·8에 연결한다. 이후 배터리를 연결하고 USB 데이터 케이블을 PC에 꽂는다.
 4. COM에서 응답하는 ESP32-S3가 대상인지 확인하고 장치별 BLE 설정으로 `keyring_r26_front_st7789`를 빌드한다. 기존 데모를 복구할 수 있게 덮어쓸 플래시 구간을 먼저 보관한다. r26은 기존 데모와 NVS 시작·크기를 공유한다.
 5. USB 콘솔 115200 baud에서 `?`로 `r26-front-assembly`와 실행 이미지 해시를 확인한다. 확인·비상 버튼을 각각 눌렀다 떼고 `CONFIRM`·`PANIC`, USB 전환과 화면 그리기 누계를 비교한다.
-6. Pi에 장치 ID·BLE 주소·펌웨어 revision을 등록하고 해당 장치의 관측을 수집한다. 운영 프록시를 쓰는 환경의 CSE URL은 `https://bubblelock.iptime.org/onem2m`이며 장치별 mTLS와 운영 서버에 등록된 경로가 필요하다.
+6. Pi에서 BLE 페어링을 마친 뒤 Gateway에 장치 ID·BLE 주소·펌웨어 revision을 지정한다. `BLE_GATT_PROFILE=core-v1`, `BLE_BOARD_REVISION=r26-front-assembly`, `COMMANDS_ENABLED=false`로 해당 장치의 관측을 수집한다. 운영 프록시를 쓰는 환경의 CSE URL은 `https://bubblelock.iptime.org/onem2m`이며 Gateway별 mTLS와 운영 서버에 등록된 경로가 필요하다.
 
 이 프로필은 LCD·버튼·BLE 관측용이다. 앞면 조립에서 빠진 잔량계·가속도계·INA219와 충전·보조 전원 제어는 실측 증거의 대상에서 제외된다. BLE 명령 및 모터 출력은 비활성화한다.
 
