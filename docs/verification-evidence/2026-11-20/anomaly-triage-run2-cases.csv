@@ -1,0 +1,7 @@
+case,expect_alert,routine_alerts,triage_action,guardian_alert,first_guardian_alert,time_to_alert_s,lead_time_vs_panic_s,false_alarms,missed,agent_tools_onem2m,agent_tools_mec,agent_tools_audit,baseline5_alerts,baseline5_false_alarms,baseline5_missed,baseline5_lead_s,baseline10_alerts,baseline10_false_alarms,baseline10_missed,baseline10_lead_s
+"C1-normal-walk","false","none","none","false","","","","0","false","","","","2","2","false","","2","2","false",""
+"C2-longer-loop","false","none","none","false","","","","0","false","","","","2","2","false","","2","2","false",""
+"C3-bench-rest","false","none","none","false","","","","0","false","","","","1","1","false","","1","1","false",""
+"C4-fork-dusk","true","WANDERING","observe","false","","","","0","true","readAlert readRoutineProfile readRecentHistory readDeviceState submitTriage","","readExecution appendTriageEvidence","3","2","false","180","2","1","true","-120"
+"C5-tunnel-gap","false","SIGNAL_GAP","observe","false","","","","0","false","readAlert readDeviceState submitTriage","queryServingCell queryUeLocation","readExecution appendTriageEvidence","3","3","false","","2","2","false",""
+"C6-keyring-home","true","DEVICE_SEPARATION","checkIn","true","16:35:12","313","","0","false","readAlert submitTriage","","readExecution appendTriageEvidence","2","2","true","","2","2","true",""

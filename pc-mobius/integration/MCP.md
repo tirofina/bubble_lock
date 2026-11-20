@@ -73,4 +73,28 @@ node pc-mobius/scripts/run-mcp-llm-agent.mjs --agent=scripted   # 같은 흐름�
 
 runner는 Mobius4 4.24.5를 run 전용 PostgreSQL DB로 시작하고 household, guardian, visitor, stranger AE와 keyring container 2개(SDT, location, grants)를 만든다. MEC Location은 로컬 simulator(`simulation: true`)이다. 첫 invocation은 `requestGuardianApproval` commit 직후 runner process tree(MCP 서버 3개와 claude)를 `taskkill /F /T`로 종료한다. 이어서 guardian 단계, runner의 mismatched hash probe 2건, 두 번째 invocation 순서로 진행한다. Claude Code는 `--tools ""`, `--strict-mcp-config`, `--allowedTools`(MCP 도구 8개), `--permission-mode dontAsk`, `--setting-sources local`, `--no-session-persistence`, 짧은 `--system-prompt`로 실행하며 model은 사용자 기본값을 따른다. transcript는 token, CSE admin originator, DB 비밀번호를 치환하고 계정 rate limit 줄을 제외해 저장한다.
 
-2026-11-19 실행 receipt [mcp-llm-agent-real-cse.json](../../docs/verification-evidence/2026-11-19/mcp-llm-agent-real-cse.json)은 조건 8개 PASS이다. 첫 invocation은 cursor 4에서 종료했고, 두 번째 invocation은 `applyApprovedPolicy`부터 진행해 앞 단계 재실행 0건으로 완료했다. visitor originator의 location `la` 조회는 2000, SDT와 다른 keyring 조회와 location 쓰기는 4103이다. 단위 시험은 `node --test test/mcp-agent.test.mjs`(4건)이다.
+2026-11-19 실행 receipt [mcp-llm-agent-real-cse.json](../../docs/verification-evidence/2026-11-19/mcp-llm-agent-real-cse.json)은 조건 8개 PASS이다. 첫 invocation은 cursor 4에서 종료했고, 두 번째 invocation은 `applyApprovedPolicy`부터 진행해 앞 단계 재실행 0건으로 완료했다. visitor originator의 location `la` 조회는 2000, SDT와 다른 keyring 조회와 location 쓰기는 4103이다. 단위 시험은 `node --test test/mcp-agent.test.mjs`(4건)이다. 이 흐름은 오후 돌봄 위임(방문 돌봄자 위치 조회 위임) 단계로 유지한다.
+
+## 이상 징후 triage 프로필
+
+[triage 도구 계약](../contracts/mcp-triage-tools.v1.json)(`privacy-bubble.mcp-triage.v1`)은 같은 oneM2M, MEC, Audit 서버에 도구 13개를 둔다. 이상 징후 판정은 결정론적 routine model(`routine-model.mjs`)이 맡고, LLM agent는 경보가 난 뒤의 맥락 수집, 도구 선택, 보호자용 설명을 맡는다.
+
+| 서버 | 도구 | 실제 연결 |
+|---|---|---|
+| oneM2M | `readAlert`, `readRecentHistory`, `readRoutineProfile`, `readDeviceState` | 거주자 AE의 alerts, location(구간 이름과 소수 셋째 자리 격자), routine, keyring state와 events container |
+| oneM2M | `submitTriage` | severity, action(observe, checkIn, emergencyLease), 보호자용 설명을 triageLog에 기록한다. checkIn과 emergencyLease는 incident를 열고 guardianInbox에 알림 cin을 쓴다 |
+| oneM2M | `draftLocationLease`, `requestGuardianApproval`, `applyApprovedLease` | 보호자 수신, 목적 2종, 최대 5분 lease 초안과 draftHash, approvals container 요청, guardian approvalHash 검사 뒤 `LocationPrivacyService.createLease` |
+| MEC | `queryUeLocation`, `queryZoneStatus`, `queryServingCell` | ETSI MEC Sandbox의 MEC013 v3 `queries/users`, `queries/zones/{zoneId}`, MEC012 `rab_info`. MEP locality에 따라 MEP를 차례로 조회한다 |
+| Audit | `readExecution`, `appendTriageEvidence` | run ledger와 evidenceHash 기록 |
+
+`McpTriageWorkflow`는 `McpAgentWorkflow`의 checkpoint, guardian 결정, approvalHash 검사를 그대로 쓰고, 단계 규칙만 바꾼다. 읽기 도구는 순서 제약 없이 호출하고 run마다 14회 예산 안에서 기록한다. `submitTriage`는 `readAlert` 뒤에만 받는다. lease 단계는 action이 emergencyLease일 때만 열리고(`ROUTE_ACTION`), 보호자 결정 전의 apply와 evidence는 `APPROVAL_PENDING`으로 돌아간다. 서버는 설명 문장 안의 좌표형 숫자와 action-severity 불일치를 `EXPLANATION_PRIVACY`, `ACTION_SEVERITY`로 거절한다. 경보 종류별 최소 action은 계약의 `actionFloor`에 둔 제품 규칙이다. `readAlert`가 `minimumAction`을 알려 주고, DEVICE_SEPARATION(키링을 집에 두고 나간 경우)에서 checkIn보다 낮은 action은 `ACTION_FLOOR`로 돌아간다. 모든 도구 출력은 구간 이름, 시각, 10 m 단위 거리, 소수 셋째 자리 격자만 담고 정밀 좌표는 암호화 참조로 서버 안에 머문다.
+
+```powershell
+$env:MOBIUS4_ROOT = "<mobius4 checkout>"
+node pc-mobius/scripts/run-anomaly-triage.mjs --agent=scripted --sandbox=dayofcare --evidence   # LLM 호출 0회
+node pc-mobius/scripts/run-anomaly-triage.mjs --agent=claude --sandbox=dayofcare                # receipt는 docs/verification-evidence/2026-11-20
+```
+
+runner는 Mobius4와 run 전용 DB, 거주자, routine, triage, guardian app, incident service AE를 준비하고, 합성 정상 산책 7일을 locationHistory에 기록한 뒤 routine AE가 CSE에서 다시 읽어 profile을 만든다. 사례마다 sandbox UE를 GIS로 옮기고 MEC013 조회 위치를 location cin으로, MEC012 cell 변화를 rnis cin으로 기록한다. routine AE가 alerts에 cin을 쓰면 triage AE가 oneM2M 알림으로 깨어나 agent를 실행한다. 보호자 승인 뒤 lease 적용은 triage AE가 저장된 run 상태에서 LLM 없이 재개한다. 단위 시험은 `node --test test/mcp-triage.test.mjs`(6건)이다.
+
+장소 기억(`place-memory.mjs`)을 켜면 routine container에 봉인된 `memory-*` cin(AES-256-GCM)과 이름표 요약 `summary-*` cin이 함께 쌓인다. `readRoutineProfile`은 `profile-*`과 최신 `summary-*`만 읽어 `places`(이름표, 친숙도, 방문 수, 시간대, 보호자 OK 표시, 거리 구간)를 돌려주고, `readAlert`는 경보 장소의 이름표, 친숙도, 거리 구간, 동행 여부를 돌려준다. MCP 도구 출력은 이름표와 거친 통계만 담고, 좌표와 봉인된 기억은 routine service 안에 머문다. 학습 gate, 동행 판정, 14일 학습 곡선은 `node pc-mobius/scripts/run-routine-learning.mjs`(LLM 호출 0회)와 `node --test test/place-memory.test.mjs`(5건)로 확인한다.

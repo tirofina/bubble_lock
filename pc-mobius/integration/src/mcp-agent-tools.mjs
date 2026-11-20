@@ -250,9 +250,9 @@ export async function provisionAgentHousehold({ client, tag, householdId, device
 }
 
 /** Run-bound bearer tokens, one audience per MCP server; the principal carries the runId the server context binds to. */
-export function issueAgentTokens({ runId, agentPrincipalId }) {
+export function issueAgentTokens({ runId, agentPrincipalId, contract = MCP_AGENT_CONTRACT }) {
   const tokens = new Map(); const byServer = {};
-  for (const [serverId, definition] of Object.entries(MCP_AGENT_CONTRACT.servers)) {
+  for (const [serverId, definition] of Object.entries(contract.servers)) {
     const token = randomBytes(32).toString('base64url');
     tokens.set(token, { audience: definition.audience, principal: { principalId: agentPrincipalId, runId, serverId, scopes: [...new Set(definition.tools.map((tool) => tool.requiredScope))] } });
     byServer[serverId] = token;
@@ -260,9 +260,9 @@ export function issueAgentTokens({ runId, agentPrincipalId }) {
   return { tokens, byServer };
 }
 
-export async function startAgentMcpServers({ store, workflow, handlers, tokens, ports = {}, host = '127.0.0.1', clock = workflow.clock, timeoutMs = 15000, trace = null, onCommitted = null, onToolError = null }) {
+export async function startAgentMcpServers({ store, workflow, handlers, tokens, ports = {}, host = '127.0.0.1', clock = workflow.clock, timeoutMs = 15000, trace = null, onCommitted = null, onToolError = null, contract = MCP_AGENT_CONTRACT }) {
   const started = [];
-  for (const [serverId, definition] of Object.entries(MCP_AGENT_CONTRACT.servers)) {
+  for (const [serverId, definition] of Object.entries(contract.servers)) {
     const server = createMcpHttpServer({ serverId, audience: definition.audience, tools: definition.tools, handlers: handlers[serverId], store, clock, timeoutMs, exposeToolErrors: true,
       trace: trace ? (entry) => trace({ ...entry, serverId }) : null,
       authenticate: async (request, audience) => {
@@ -280,7 +280,7 @@ export async function startAgentMcpServers({ store, workflow, handlers, tokens, 
 }
 
 /** Claude Code `--mcp-config` document for the three HTTP servers (tokens stay in the .local run directory). */
-export function agentMcpConfig({ endpoints, byServer }) {
-  return { mcpServers: Object.fromEntries(Object.keys(MCP_AGENT_CONTRACT.servers).map((serverId) => [serverId.toLowerCase(), { type: 'http', url: endpoints[serverId], headers: { Authorization: `Bearer ${byServer[serverId]}` } }])) };
+export function agentMcpConfig({ endpoints, byServer, contract = MCP_AGENT_CONTRACT }) {
+  return { mcpServers: Object.fromEntries(Object.keys(contract.servers).map((serverId) => [serverId.toLowerCase(), { type: 'http', url: endpoints[serverId], headers: { Authorization: `Bearer ${byServer[serverId]}` } }])) };
 }
-export const agentToolNames = () => Object.entries(MCP_AGENT_CONTRACT.servers).flatMap(([serverId, definition]) => definition.tools.map((tool) => `mcp__${serverId.toLowerCase()}__${tool.name}`));
+export const agentToolNames = (contract = MCP_AGENT_CONTRACT) => Object.entries(contract.servers).flatMap(([serverId, definition]) => definition.tools.map((tool) => `mcp__${serverId.toLowerCase()}__${tool.name}`));

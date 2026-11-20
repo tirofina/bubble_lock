@@ -1,0 +1,1662 @@
+{
+  "contractId": "privacy-bubble.mcp-triage.v1",
+  "docRevision": "2.0.0",
+  "protocolVersion": "2025-11-25",
+  "supportedProtocolVersions": [
+    "2025-11-25",
+    "2025-06-18"
+  ],
+  "schemaVersion": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Anomaly triage profile. A deterministic routine model writes alert contentInstances; the triage agent gathers situation-dependent context through the oneM2M, MEC and Audit servers and records a structured triage. The server derives run context from the authenticated session, keeps precise coordinates out of every tool output, and applies a location lease only with the guardian approvalHash bound to the exact draftHash.",
+  "workflow": {
+    "steps": [
+      "readAlert",
+      "submitTriage",
+      "draftLocationLease",
+      "requestGuardianApproval",
+      "applyApprovedLease",
+      "appendTriageEvidence"
+    ],
+    "leaseSteps": [
+      "draftLocationLease",
+      "requestGuardianApproval",
+      "applyApprovedLease"
+    ],
+    "readOnlyTools": [
+      "readAlert",
+      "readRecentHistory",
+      "readRoutineProfile",
+      "readDeviceState",
+      "queryUeLocation",
+      "queryZoneStatus",
+      "queryServingCell",
+      "readExecution"
+    ],
+    "readBudget": 14,
+    "actions": {
+      "observe": "no guardian notification; the routine model keeps watching",
+      "checkIn": "guardian notification to call or check on the resident",
+      "emergencyLease": "urgent guardian notification and a guardian-approved precise location lease of at most maxLeaseMinutes"
+    },
+    "leasePurposes": [
+      "wandering-check",
+      "emergency-rescue"
+    ],
+    "maxLeaseMinutes": 5,
+    "actionOrder": [
+      "observe",
+      "checkIn",
+      "emergencyLease"
+    ],
+    "actionFloor": {
+      "WANDERING": {
+        "minimumAction": "checkIn",
+        "reason": "the routine model found a behavioural deviation; the guardian is told every time and the agent chooses checkIn or emergencyLease and the wording"
+      },
+      "DEVICE_SEPARATION": {
+        "minimumAction": "checkIn",
+        "reason": "the resident is out without the PANIC button; the guardian is told every time (product rule, not an agent judgement)"
+      }
+    },
+    "approvalGate": {
+      "tool": "applyApprovedLease",
+      "requires": "guardian approvalHash for the exact current draftHash",
+      "approver": "guardian principal outside the MCP agent session"
+    },
+    "states": [
+      "READY",
+      "TRIAGING",
+      "TRIAGED",
+      "DRAFTED",
+      "AWAITING_GUARDIAN",
+      "APPROVED",
+      "DRAFT_REJECTED",
+      "LEASE_APPLIED",
+      "COMPLETED"
+    ]
+  },
+  "servers": {
+    "oneM2M": {
+      "audience": "privacy-bubble-mcp-onem2m",
+      "tools": [
+        {
+          "name": "readAlert",
+          "description": "Read the routine-model alert that woke the triage agent from the resident alerts container on the oneM2M CSE: alert kind, score, feature values, map segment (name only) and local times. Required first step.",
+          "requiredScope": "bubble:read",
+          "readOnly": true,
+          "inputSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "alertId"
+            ],
+            "properties": {
+              "alertId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 96,
+                "pattern": "^[A-Za-z0-9._:-]+$"
+              }
+            }
+          },
+          "outputSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "alertId",
+              "kind",
+              "score",
+              "severityHint",
+              "detectedLocal",
+              "startedLocal",
+              "nowLocal",
+              "segment",
+              "features",
+              "modelVersion",
+              "profileHash",
+              "alertRecordPath",
+              "minimumAction"
+            ],
+            "properties": {
+              "alertId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 96,
+                "pattern": "^[A-Za-z0-9._:-]+$"
+              },
+              "kind": {
+                "enum": [
+                  "WANDERING",
+                  "SIGNAL_GAP",
+                  "DEVICE_SEPARATION"
+                ]
+              },
+              "score": {
+                "type": "number"
+              },
+              "severityHint": {
+                "enum": [
+                  "check",
+                  "watch",
+                  "urgent"
+                ]
+              },
+              "detectedLocal": {
+                "type": "string",
+                "pattern": "^[0-2][0-9]:[0-5][0-9](:[0-5][0-9])?$"
+              },
+              "startedLocal": {
+                "type": "string",
+                "pattern": "^[0-2][0-9]:[0-5][0-9](:[0-5][0-9])?$"
+              },
+              "nowLocal": {
+                "type": "string",
+                "pattern": "^[0-2][0-9]:[0-5][0-9](:[0-5][0-9])?$"
+              },
+              "segment": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "kind"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  "kind": {
+                    "type": "string",
+                    "maxLength": 16
+                  }
+                }
+              },
+              "features": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "dwellSec",
+                  "dwellRefSec",
+                  "dwellRatio",
+                  "reversals",
+                  "distanceHomeM",
+                  "gapSec",
+                  "components"
+                ],
+                "properties": {
+                  "dwellSec": {
+                    "type": "number"
+                  },
+                  "dwellRefSec": {
+                    "type": "number"
+                  },
+                  "dwellRatio": {
+                    "type": "number"
+                  },
+                  "reversals": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "speedMps": {
+                    "type": "number"
+                  },
+                  "corridorDistanceM": {
+                    "type": "number"
+                  },
+                  "offCorridorSec": {
+                    "type": "number"
+                  },
+                  "offCorridorSince": {
+                    "type": "string",
+                    "pattern": "^[0-2][0-9]:[0-5][0-9](:[0-5][0-9])?$"
+                  },
+                  "stopSince": {
+                    "type": "string",
+                    "pattern": "^[0-2][0-9]:[0-5][0-9](:[0-5][0-9])?$"
+                  },
+                  "minutesAfterSunset": {
+                    "type": "number"
+                  },
+                  "sunsetLocal": {
+                    "type": "string",
+                    "pattern": "^[0-2][0-9]:[0-5][0-9](:[0-5][0-9])?$"
+                  },
+                  "minutesPastUsualReturn": {
+                    "type": "number"
+                  },
+                  "distanceHomeM": {
+                    "type": "number"
+                  },
+                  "gapSec": {
+                    "type": "number"
+                  },
+                  "gapRefSec": {
+                    "type": "number"
+                  },
+                  "lastSampleAt": {
+                    "type": "string",
+                    "pattern": "^[0-2][0-9]:[0-5][0-9](:[0-5][0-9])?$"
+                  },
+                  "components": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "dwell",
+                      "pacing",
+                      "offCorridor",
+                      "dusk",
+                      "distance"
+                    ],
+                    "properties": {
+                      "dwell": {
+                        "type": "number"
+                      },
+                      "pacing": {
+                        "type": "number"
+                      },
+                      "offCorridor": {
+                        "type": "number"
+                      },
+                      "dusk": {
+                        "type": "number"
+                      },
+                      "distance": {
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "keyring": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "bleSeenBy",
+                      "battery",
+                      "seenAt"
+                    ],
+                    "properties": {
+                      "bleSeenBy": {
+                        "type": "string",
+                        "maxLength": 24
+                      },
+                      "battery": {
+                        "type": "number"
+                      },
+                      "seenAt": {
+                        "type": "string",
+                        "pattern": "^[0-2][0-9]:[0-5][0-9](:[0-5][0-9])?$"
+                      }
+                    }
+                  },
+                  "place": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "label",
+                      "familiarity",
+                      "distanceBand",
+                      "coldStart"
+                    ],
+                    "properties": {
+                      "label": {
+                        "type": "string",
+                        "maxLength": 64
+                      },
+                      "familiarity": {
+                        "type": "number"
+                      },
+                      "distanceBand": {
+                        "enum": [
+                          "near home",
+                          "neighbourhood",
+                          "park range",
+                          "far"
+                        ]
+                      },
+                      "coldStart": {
+                        "type": "boolean"
+                      }
+                    }
+                  },
+                  "trigger": {
+                    "enum": [
+                      "behaviour",
+                      "novelty"
+                    ]
+                  },
+                  "accompanied": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "modelVersion": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "profileHash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "alertRecordPath": {
+                "type": "string",
+                "maxLength": 256
+              },
+              "minimumAction": {
+                "enum": [
+                  "observe",
+                  "checkIn",
+                  "emergencyLease"
+                ]
+              },
+              "minimumActionReason": {
+                "type": "string",
+                "maxLength": 160
+              }
+            }
+          }
+        },
+        {
+          "name": "readRecentHistory",
+          "description": "Summarize the resident location contentInstances of the last N minutes from the oneM2M CSE as map segments with times, usual-corridor flags, sample gaps and the last few 3-decimal grid cells (about 110 m), plus stop episodes (stayed within 35 m for at least a minute, with direction reversals). At a junction the segment name can change while she stands still; stops show where she actually stayed. Precise coordinates are never returned.",
+          "requiredScope": "bubble:read",
+          "readOnly": true,
+          "inputSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "minutes"
+            ],
+            "properties": {
+              "minutes": {
+                "type": "integer",
+                "minimum": 5,
+                "maximum": 60
+              }
+            }
+          },
+          "outputSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fromLocal",
+              "toLocal",
+              "samples",
+              "segments",
+              "stops",
+              "gaps",
+              "recentGrid",
+              "precision"
+            ],
+            "properties": {
+              "fromLocal": {
+                "type": "string",
+                "pattern": "^[0-2][0-9]:[0-5][0-9](:[0-5][0-9])?$"
+              },
+              "toLocal": {
+                "type": "string",
+                "pattern": "^[0-2][0-9]:[0-5][0-9](:[0-5][0-9])?$"
+              },
+              "samples": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "segments": {
+                "type": "array",
+                "maxItems": 24,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "segment",
+                    "kind",
+                    "fromLocal",
+                    "toLocal",
+                    "minutes",
+                    "onCorridor",
+                    "samples"
+                  ],
+                  "properties": {
+                    "segment": {
+                      "type": "string",
+                      "maxLength": 64
+                    },
+                    "kind": {
+                      "type": "string",
+                      "maxLength": 16
+                    },
+                    "fromLocal": {
+                      "type": "string",
+                      "pattern": "^[0-2][0-9]:[0-5][0-9](:[0-5][0-9])?$"
+                    },
+                    "toLocal": {
+                      "type": "string",
+                      "pattern": "^[0-2][0-9]:[0-5][0-9](:[0-5][0-9])?$"
+                    },
+                    "minutes": {
+                      "type": "number"
+                    },
+                    "onCorridor": {
+                      "type": "boolean"
+                    },
+                    "samples": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                }
+              },
+              "stops": {
+                "type": "array",
+                "maxItems": 12,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "place",
+                    "fromLocal",
+                    "toLocal",
+                    "minutes",
+                    "reversals",
+                    "withinM"
+                  ],
+                  "properties": {
+                    "place": {
+                      "type": "string",
+                      "maxLength": 64
+                    },
+                    "fromLocal": {
+                      "type": "string",
+                      "pattern": "^[0-2][0-9]:[0-5][0-9](:[0-5][0-9])?$"
+                    },
+                    "toLocal": {
+                      "type": "string",
+                      "pattern": "^[0-2][0-9]:[0-5][0-9](:[0-5][0-9])?$"
+                    },
+                    "minutes": {
+                      "type": "number"
+                    },
+                    "reversals": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "withinM": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "gaps": {
+                "type": "array",
+                "maxItems": 12,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "fromLocal",
+                    "toLocal",
+                    "seconds"
+                  ],
+                  "properties": {
+                    "fromLocal": {
+                      "type": "string",
+                      "pattern": "^[0-2][0-9]:[0-5][0-9](:[0-5][0-9])?$"
+                    },
+                    "toLocal": {
+                      "type": "string",
+                      "pattern": "^[0-2][0-9]:[0-5][0-9](:[0-5][0-9])?$"
+                    },
+                    "seconds": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "recentGrid": {
+                "type": "array",
+                "maxItems": 6,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "localTime",
+                    "lat",
+                    "lon"
+                  ],
+                  "properties": {
+                    "localTime": {
+                      "type": "string",
+                      "pattern": "^[0-2][0-9]:[0-5][0-9](:[0-5][0-9])?$"
+                    },
+                    "lat": {
+                      "type": "number"
+                    },
+                    "lon": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "precision": {
+                "const": "grid-3-decimals"
+              }
+            }
+          }
+        },
+        {
+          "name": "readRoutineProfile",
+          "description": "Read the resident routine profile (learned from her oneM2M location history of normal walk days): usual departure and return times, usual corridor segments, usual stops with dwell percentiles, usual signal gaps, walking speed and today's sunset; with the place memory on, places adds its label summary (familiar places, visits, time bands, guardian OK marks; no coordinates).",
+          "requiredScope": "bubble:read",
+          "readOnly": true,
+          "inputSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [],
+            "properties": {}
+          },
+          "outputSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "modelVersion",
+              "days",
+              "synthetic",
+              "profileHash",
+              "usualDeparture",
+              "usualReturn",
+              "latestUsualReturn",
+              "sunsetLocal",
+              "walkingSpeedMps",
+              "corridor",
+              "usualStops",
+              "usualSignalGaps"
+            ],
+            "properties": {
+              "modelVersion": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "days": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "synthetic": {
+                "type": "boolean"
+              },
+              "profileHash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "usualDeparture": {
+                "type": "string",
+                "pattern": "^[0-2][0-9]:[0-5][0-9](:[0-5][0-9])?$"
+              },
+              "usualReturn": {
+                "type": "string",
+                "pattern": "^[0-2][0-9]:[0-5][0-9](:[0-5][0-9])?$"
+              },
+              "latestUsualReturn": {
+                "type": "string",
+                "pattern": "^[0-2][0-9]:[0-5][0-9](:[0-5][0-9])?$"
+              },
+              "sunsetLocal": {
+                "type": "string",
+                "pattern": "^[0-2][0-9]:[0-5][0-9](:[0-5][0-9])?$"
+              },
+              "walkingSpeedMps": {
+                "type": "number"
+              },
+              "corridor": {
+                "type": "array",
+                "maxItems": 48,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "segment",
+                    "kind",
+                    "days"
+                  ],
+                  "properties": {
+                    "segment": {
+                      "type": "string",
+                      "maxLength": 64
+                    },
+                    "kind": {
+                      "type": "string",
+                      "maxLength": 16
+                    },
+                    "days": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                }
+              },
+              "usualStops": {
+                "type": "array",
+                "maxItems": 16,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "segment",
+                    "p50Sec",
+                    "p95Sec",
+                    "days"
+                  ],
+                  "properties": {
+                    "segment": {
+                      "type": "string",
+                      "maxLength": 64
+                    },
+                    "p50Sec": {
+                      "type": "number"
+                    },
+                    "p95Sec": {
+                      "type": "number"
+                    },
+                    "days": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                }
+              },
+              "usualSignalGaps": {
+                "type": "array",
+                "maxItems": 16,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "segment",
+                    "p95Sec",
+                    "days"
+                  ],
+                  "properties": {
+                    "segment": {
+                      "type": "string",
+                      "maxLength": 64
+                    },
+                    "p95Sec": {
+                      "type": "number"
+                    },
+                    "days": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                }
+              },
+              "places": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "soloDays",
+                  "accompaniedDays",
+                  "coldStart",
+                  "corridorCells",
+                  "items"
+                ],
+                "properties": {
+                  "soloDays": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "accompaniedDays": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "coldStart": {
+                    "type": "boolean"
+                  },
+                  "corridorCells": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "items": {
+                    "type": "array",
+                    "maxItems": 16,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "label",
+                        "familiarity",
+                        "visits",
+                        "usualTimeBand",
+                        "dwellP50Min",
+                        "guardianMarkedOk",
+                        "distanceBand"
+                      ],
+                      "properties": {
+                        "label": {
+                          "type": "string",
+                          "maxLength": 64
+                        },
+                        "familiarity": {
+                          "type": "number"
+                        },
+                        "visits": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "usualTimeBand": {
+                          "type": "string",
+                          "maxLength": 16
+                        },
+                        "dwellP50Min": {
+                          "type": "number"
+                        },
+                        "guardianMarkedOk": {
+                          "type": "boolean"
+                        },
+                        "distanceBand": {
+                          "type": "string",
+                          "maxLength": 16
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "readDeviceState",
+          "description": "Read the keyring device state from the oneM2M CSE: battery, which receiver last saw the keyring over BLE (relay-ue carried by the resident, home-gateway, none), button state and the last PANIC event.",
+          "requiredScope": "bubble:read",
+          "readOnly": true,
+          "inputSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "deviceId"
+            ],
+            "properties": {
+              "deviceId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 96,
+                "pattern": "^[A-Za-z0-9._:-]+$"
+              }
+            }
+          },
+          "outputSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "deviceId",
+              "battery",
+              "bleSeenBy",
+              "bleLastSeenLocal",
+              "button",
+              "stateRecordPath"
+            ],
+            "properties": {
+              "deviceId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 96,
+                "pattern": "^[A-Za-z0-9._:-]+$"
+              },
+              "battery": {
+                "type": "number"
+              },
+              "bleSeenBy": {
+                "enum": [
+                  "relay-ue",
+                  "home-gateway",
+                  "none"
+                ]
+              },
+              "bleLastSeenLocal": {
+                "type": "string",
+                "pattern": "^[0-2][0-9]:[0-5][0-9](:[0-5][0-9])?$"
+              },
+              "button": {
+                "type": "string",
+                "maxLength": 16
+              },
+              "lastPanicLocal": {
+                "type": "string",
+                "maxLength": 8
+              },
+              "stateRecordPath": {
+                "type": "string",
+                "maxLength": 256
+              }
+            }
+          }
+        },
+        {
+          "name": "submitTriage",
+          "description": "Record the structured triage for the alert. action observe = keep watching, no guardian notification; checkIn = notify the guardian to call or check on the resident; emergencyLease = urgent, notify the guardian and continue with draftLocationLease. The guardian-facing explanation must use times and place names, never coordinates. readAlert reports the minimumAction for the alert kind; a lower action returns ACTION_FLOOR.",
+          "requiredScope": "bubble:command",
+          "readOnly": false,
+          "inputSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "alertId",
+              "severity",
+              "action",
+              "explanation",
+              "checked"
+            ],
+            "properties": {
+              "alertId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 96,
+                "pattern": "^[A-Za-z0-9._:-]+$"
+              },
+              "severity": {
+                "enum": [
+                  "info",
+                  "watch",
+                  "urgent"
+                ]
+              },
+              "action": {
+                "enum": [
+                  "observe",
+                  "checkIn",
+                  "emergencyLease"
+                ]
+              },
+              "explanation": {
+                "type": "string",
+                "minLength": 20,
+                "maxLength": 280
+              },
+              "checked": {
+                "type": "array",
+                "maxItems": 16,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "maxLength": 48
+                }
+              },
+              "recheckMinutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 30
+              }
+            }
+          },
+          "outputSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "triageId",
+              "alertId",
+              "severity",
+              "action",
+              "guardianNotified",
+              "triageRecordPath",
+              "nextStep"
+            ],
+            "properties": {
+              "triageId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 96,
+                "pattern": "^[A-Za-z0-9._:-]+$"
+              },
+              "alertId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 96,
+                "pattern": "^[A-Za-z0-9._:-]+$"
+              },
+              "severity": {
+                "type": "string",
+                "maxLength": 16
+              },
+              "action": {
+                "type": "string",
+                "maxLength": 16
+              },
+              "guardianNotified": {
+                "type": "boolean"
+              },
+              "incidentId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 96,
+                "pattern": "^[A-Za-z0-9._:-]+$"
+              },
+              "triageRecordPath": {
+                "type": "string",
+                "maxLength": 256
+              },
+              "inboxRecordPath": {
+                "type": "string",
+                "maxLength": 256
+              },
+              "nextStep": {
+                "type": "string",
+                "maxLength": 48
+              }
+            }
+          }
+        },
+        {
+          "name": "draftLocationLease",
+          "description": "Draft a short emergency location lease that lets the recipient open the resident precise location. The server stores the draft with a draftHash and least-privilege findings; nothing is shared until the guardian approves this exact draftHash.",
+          "requiredScope": "bubble:command",
+          "readOnly": false,
+          "inputSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "recipientId",
+              "purpose",
+              "durationMinutes",
+              "deviceId"
+            ],
+            "properties": {
+              "recipientId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 96,
+                "pattern": "^[A-Za-z0-9._:-]+$"
+              },
+              "purpose": {
+                "enum": [
+                  "wandering-check",
+                  "emergency-rescue"
+                ]
+              },
+              "durationMinutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 60
+              },
+              "deviceId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 96,
+                "pattern": "^[A-Za-z0-9._:-]+$"
+              }
+            }
+          },
+          "outputSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "draftId",
+              "draftHash",
+              "recipientId",
+              "purpose",
+              "durationMinutes",
+              "deviceId",
+              "leastPrivilege",
+              "status"
+            ],
+            "properties": {
+              "draftId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 96,
+                "pattern": "^[A-Za-z0-9._:-]+$"
+              },
+              "draftHash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "recipientId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 96,
+                "pattern": "^[A-Za-z0-9._:-]+$"
+              },
+              "purpose": {
+                "type": "string",
+                "maxLength": 32
+              },
+              "durationMinutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 60
+              },
+              "deviceId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 96,
+                "pattern": "^[A-Za-z0-9._:-]+$"
+              },
+              "leastPrivilege": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "withinTask",
+                  "findings"
+                ],
+                "properties": {
+                  "withinTask": {
+                    "type": "boolean"
+                  },
+                  "findings": {
+                    "type": "array",
+                    "maxItems": 8,
+                    "items": {
+                      "type": "string",
+                      "maxLength": 160
+                    }
+                  }
+                }
+              },
+              "status": {
+                "const": "DRAFT"
+              }
+            }
+          }
+        },
+        {
+          "name": "requestGuardianApproval",
+          "description": "Publish an approval request for the exact draft (draftId and draftHash) to the household approvals container on the oneM2M CSE. The guardian decides outside the agent session.",
+          "requiredScope": "bubble:command",
+          "readOnly": false,
+          "inputSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "draftId",
+              "draftHash"
+            ],
+            "properties": {
+              "draftId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 96,
+                "pattern": "^[A-Za-z0-9._:-]+$"
+              },
+              "draftHash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          },
+          "outputSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "approvalRequestId",
+              "draftHash",
+              "status",
+              "requestRecordPath"
+            ],
+            "properties": {
+              "approvalRequestId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 96,
+                "pattern": "^[A-Za-z0-9._:-]+$"
+              },
+              "draftHash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "status": {
+                "const": "PENDING_GUARDIAN"
+              },
+              "requestRecordPath": {
+                "type": "string",
+                "maxLength": 256
+              }
+            }
+          }
+        },
+        {
+          "name": "applyApprovedLease",
+          "description": "Apply the location lease after the guardian approved. Accepts only the guardian approvalHash bound to the current draftHash; other values return APPROVAL_* reason codes.",
+          "requiredScope": "bubble:command",
+          "readOnly": false,
+          "inputSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "draftId",
+              "approvalHash"
+            ],
+            "properties": {
+              "draftId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 96,
+                "pattern": "^[A-Za-z0-9._:-]+$"
+              },
+              "approvalHash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          },
+          "outputSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "status",
+              "leaseId",
+              "recipientId",
+              "purpose",
+              "expiresAt",
+              "grantRevision",
+              "leaseRecordPath",
+              "payloadHash"
+            ],
+            "properties": {
+              "status": {
+                "const": "APPLIED"
+              },
+              "leaseId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 96,
+                "pattern": "^[A-Za-z0-9._:-]+$"
+              },
+              "recipientId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 96,
+                "pattern": "^[A-Za-z0-9._:-]+$"
+              },
+              "purpose": {
+                "type": "string",
+                "maxLength": 32
+              },
+              "expiresAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "grantRevision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "leaseRecordPath": {
+                "type": "string",
+                "maxLength": 256
+              },
+              "payloadHash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "MEC": {
+      "audience": "privacy-bubble-mcp-mec",
+      "tools": [
+        {
+          "name": "queryUeLocation",
+          "description": "Query the ETSI MEC013 v3 Location service (queries/users) for the resident relay UE now: zone, access point, 3-decimal grid cell, map segment, whether it is on the usual corridor, distance from home and distance moved since the last stored location fix.",
+          "requiredScope": "mec:location",
+          "readOnly": true,
+          "inputSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [],
+            "properties": {}
+          },
+          "outputSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source",
+              "zoneId",
+              "accessPointId",
+              "grid",
+              "segment",
+              "onCorridor",
+              "distanceHomeM",
+              "movedSinceLastFixM",
+              "lastFixLocal",
+              "observedLocal"
+            ],
+            "properties": {
+              "source": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "zoneId": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "accessPointId": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "grid": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "lat",
+                  "lon",
+                  "decimals"
+                ],
+                "properties": {
+                  "lat": {
+                    "type": "number"
+                  },
+                  "lon": {
+                    "type": "number"
+                  },
+                  "decimals": {
+                    "const": 3
+                  }
+                }
+              },
+              "segment": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "kind"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  "kind": {
+                    "type": "string",
+                    "maxLength": 16
+                  }
+                }
+              },
+              "onCorridor": {
+                "type": "boolean"
+              },
+              "distanceHomeM": {
+                "type": "number"
+              },
+              "movedSinceLastFixM": {
+                "type": "number"
+              },
+              "lastFixLocal": {
+                "type": "string",
+                "pattern": "^[0-2][0-9]:[0-5][0-9](:[0-5][0-9])?$"
+              },
+              "observedLocal": {
+                "type": "string",
+                "pattern": "^[0-2][0-9]:[0-5][0-9](:[0-5][0-9])?$"
+              }
+            }
+          }
+        },
+        {
+          "name": "queryZoneStatus",
+          "description": "Query the ETSI MEC013 v3 Location zone status (queries/zones/{zoneId}): access points, unserviceable access points and users in the zone.",
+          "requiredScope": "mec:location",
+          "readOnly": true,
+          "inputSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "zoneId"
+            ],
+            "properties": {
+              "zoneId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64,
+                "pattern": "^[A-Za-z0-9._-]+$"
+              }
+            }
+          },
+          "outputSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source",
+              "zoneId",
+              "numberOfAccessPoints",
+              "numberOfUnserviceableAccessPoints",
+              "numberOfUsers"
+            ],
+            "properties": {
+              "source": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "zoneId": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "numberOfAccessPoints": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "numberOfUnserviceableAccessPoints": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "numberOfUsers": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        {
+          "name": "queryServingCell",
+          "description": "Query the ETSI MEC012 RNIS (rab_info) for the relay UE serving E-UTRAN (4G) cell now, together with the cell changes of the last N minutes that the RNIS path stored on the oneM2M CSE. rab_info lists 4G cells only: cellId none means the UE is on Wi-Fi or a 5G access point (MEC013 accessPointId names it), not that the network lost the UE.",
+          "requiredScope": "mec:rnis",
+          "readOnly": true,
+          "inputSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "minutes"
+            ],
+            "properties": {
+              "minutes": {
+                "type": "integer",
+                "minimum": 5,
+                "maximum": 60
+              }
+            }
+          },
+          "outputSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source",
+              "cellId",
+              "observedLocal",
+              "cellChangesInWindow",
+              "recentCellChanges"
+            ],
+            "properties": {
+              "source": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "cellId": {
+                "type": "string",
+                "maxLength": 32
+              },
+              "observedLocal": {
+                "type": "string",
+                "pattern": "^[0-2][0-9]:[0-5][0-9](:[0-5][0-9])?$"
+              },
+              "cellChangesInWindow": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "recentCellChanges": {
+                "type": "array",
+                "maxItems": 12,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "localTime",
+                    "fromCell",
+                    "toCell"
+                  ],
+                  "properties": {
+                    "localTime": {
+                      "type": "string",
+                      "pattern": "^[0-2][0-9]:[0-5][0-9](:[0-5][0-9])?$"
+                    },
+                    "fromCell": {
+                      "type": "string",
+                      "maxLength": 32
+                    },
+                    "toCell": {
+                      "type": "string",
+                      "maxLength": 32
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Audit": {
+      "audience": "privacy-bubble-mcp-audit",
+      "tools": [
+        {
+          "name": "readExecution",
+          "description": "Read the persistent triage run: alert, completed steps, nextStep, triage decision, guardian approval status and the read-call budget.",
+          "requiredScope": "audit:read",
+          "readOnly": true,
+          "inputSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "runId"
+            ],
+            "properties": {
+              "runId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 96,
+                "pattern": "^[A-Za-z0-9._:-]+$"
+              }
+            }
+          },
+          "outputSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "runId",
+              "status",
+              "alertId",
+              "alertKind",
+              "invocation",
+              "completedSteps",
+              "nextStep",
+              "waitingFor",
+              "approval",
+              "readCalls",
+              "readBudget",
+              "checkpointCount"
+            ],
+            "properties": {
+              "runId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 96,
+                "pattern": "^[A-Za-z0-9._:-]+$"
+              },
+              "status": {
+                "type": "string",
+                "maxLength": 32
+              },
+              "alertId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 96,
+                "pattern": "^[A-Za-z0-9._:-]+$"
+              },
+              "alertKind": {
+                "type": "string",
+                "maxLength": 24
+              },
+              "invocation": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "completedSteps": {
+                "type": "array",
+                "maxItems": 8,
+                "items": {
+                  "type": "string",
+                  "maxLength": 48
+                }
+              },
+              "nextStep": {
+                "type": "string",
+                "maxLength": 48
+              },
+              "waitingFor": {
+                "type": "string",
+                "maxLength": 32
+              },
+              "triage": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "severity",
+                  "action"
+                ],
+                "properties": {
+                  "severity": {
+                    "type": "string",
+                    "maxLength": 16
+                  },
+                  "action": {
+                    "type": "string",
+                    "maxLength": 16
+                  }
+                }
+              },
+              "approval": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "maxLength": 24
+                  },
+                  "approvalRequestId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 96,
+                    "pattern": "^[A-Za-z0-9._:-]+$"
+                  },
+                  "draftId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 96,
+                    "pattern": "^[A-Za-z0-9._:-]+$"
+                  },
+                  "draftHash": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "approvalHash": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 160
+                  }
+                }
+              },
+              "readCalls": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "readBudget": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "checkpointCount": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "resumedFrom": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "invocation",
+                  "nextStep",
+                  "cursor"
+                ],
+                "properties": {
+                  "invocation": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "nextStep": {
+                    "type": "string",
+                    "maxLength": 48
+                  },
+                  "cursor": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "appendTriageEvidence",
+          "description": "Append the triage evidence (alert hash, context tool calls with output hashes, triage decision, lease if any) to the audit container on the oneM2M CSE and complete the run.",
+          "requiredScope": "audit:write",
+          "readOnly": false,
+          "inputSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "runId",
+              "summary"
+            ],
+            "properties": {
+              "runId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 96,
+                "pattern": "^[A-Za-z0-9._:-]+$"
+              },
+              "summary": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 600
+              }
+            }
+          },
+          "outputSchema": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "evidenceId",
+              "evidenceHash",
+              "evidenceRecordPath",
+              "recordedAt",
+              "status"
+            ],
+            "properties": {
+              "evidenceId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 96,
+                "pattern": "^[A-Za-z0-9._:-]+$"
+              },
+              "evidenceHash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "evidenceRecordPath": {
+                "type": "string",
+                "maxLength": 256
+              },
+              "recordedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "status": {
+                "const": "COMPLETED"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
