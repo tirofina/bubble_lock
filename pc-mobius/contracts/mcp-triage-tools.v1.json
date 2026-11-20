@@ -49,6 +49,10 @@
       "emergencyLease"
     ],
     "actionFloor": {
+      "WANDERING": {
+        "minimumAction": "checkIn",
+        "reason": "the routine model found a behavioural deviation; the guardian is told every time and the agent chooses checkIn or emergencyLease and the wording"
+      },
       "DEVICE_SEPARATION": {
         "minimumAction": "checkIn",
         "reason": "the resident is out without the PANIC button; the guardian is told every time (product rule, not an agent judgement)"
@@ -313,7 +317,7 @@
         },
         {
           "name": "readRecentHistory",
-          "description": "Summarize the resident location contentInstances of the last N minutes from the oneM2M CSE as map segments with times, usual-corridor flags, sample gaps and the last few 3-decimal grid cells (about 110 m). Precise coordinates are never returned.",
+          "description": "Summarize the resident location contentInstances of the last N minutes from the oneM2M CSE as map segments with times, usual-corridor flags, sample gaps and the last few 3-decimal grid cells (about 110 m), plus stop episodes (stayed within 35 m for at least a minute, with direction reversals). At a junction the segment name can change while she stands still; stops show where she actually stayed. Precise coordinates are never returned.",
           "requiredScope": "bubble:read",
           "readOnly": true,
           "inputSchema": {
@@ -338,6 +342,7 @@
               "toLocal",
               "samples",
               "segments",
+              "stops",
               "gaps",
               "recentGrid",
               "precision"
@@ -396,6 +401,46 @@
                     "samples": {
                       "type": "integer",
                       "minimum": 0
+                    }
+                  }
+                }
+              },
+              "stops": {
+                "type": "array",
+                "maxItems": 12,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "place",
+                    "fromLocal",
+                    "toLocal",
+                    "minutes",
+                    "reversals",
+                    "withinM"
+                  ],
+                  "properties": {
+                    "place": {
+                      "type": "string",
+                      "maxLength": 64
+                    },
+                    "fromLocal": {
+                      "type": "string",
+                      "pattern": "^[0-2][0-9]:[0-5][0-9](:[0-5][0-9])?$"
+                    },
+                    "toLocal": {
+                      "type": "string",
+                      "pattern": "^[0-2][0-9]:[0-5][0-9](:[0-5][0-9])?$"
+                    },
+                    "minutes": {
+                      "type": "number"
+                    },
+                    "reversals": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "withinM": {
+                      "type": "number"
                     }
                   }
                 }

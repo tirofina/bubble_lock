@@ -81,6 +81,7 @@ export function createTriageToolHandlers({ workflow, oneM2M, mec, privacy, scene
         if (rows.length && toMs - rows.at(-1).ms > 2 * (scene.intervalSec ?? 20) * 1000) gaps.push({ fromLocal: local(rows.at(-1).ms), toLocal: local(toMs), seconds: Math.round((toMs - rows.at(-1).ms) / 1000) });
         const output = { fromLocal: local(fromMs), toLocal: local(toMs), samples: rows.length,
           segments: segments.slice(-24).map((entry) => ({ segment: entry.segment, kind: entry.kind, fromLocal: local(entry.fromMs), toLocal: local(entry.toMs), minutes: Math.round((entry.toMs - entry.fromMs) / 6000) / 10, onCorridor: entry.onCorridor, samples: entry.samples })),
+          stops: (scene.stops?.(fromMs, toMs) ?? []).slice(-12).map((stop) => ({ place: stop.place, fromLocal: local(stop.fromMs), toLocal: local(stop.toMs), minutes: Math.round((stop.toMs - stop.fromMs) / 6000) / 10, reversals: stop.reversals, withinM: stop.withinM })),
           gaps: gaps.slice(-12), recentGrid: rows.slice(-6).map((row) => ({ localTime: local(row.ms), lat: grid3(row.con.grid?.lat ?? 0), lon: grid3(row.con.grid?.lon ?? 0) })), precision: 'grid-3-decimals' };
         return read(context, 'oneM2M', 'readRecentHistory', input, output);
       },

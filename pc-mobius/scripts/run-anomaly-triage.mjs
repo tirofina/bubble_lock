@@ -27,7 +27,7 @@ import { McpTriageWorkflow } from '../integration/src/mcp-orchestrator.mjs';
 import { MCP_TRIAGE_CONTRACT } from '../integration/src/mcp-schema.mjs';
 import { agentMcpConfig, issueAgentTokens, startAgentMcpServers } from '../integration/src/mcp-agent-tools.mjs';
 import { createMecTriageAdapter, createOneM2mTriageAdapter, createTriageToolHandlers, locationRecord, resumeTriageAfterApproval, scriptedTriage, seedTriageAuthority, triageToolNames } from '../integration/src/mcp-triage-tools.mjs';
-import { DwellThresholdBaseline, ROUTINE_MODEL_VERSION, RoutineDetector, summarizeProfile, trainRoutineProfile } from '../integration/src/routine-model.mjs';
+import { DwellThresholdBaseline, ROUTINE_MODEL_VERSION, RoutineDetector, recentStops, summarizeProfile, trainRoutineProfile } from '../integration/src/routine-model.mjs';
 import { DEV_MAP_BUBBLE, dayofcareDefinition, evaluationCases, routineMapOf, trainingDays } from '../integration/src/routine-scenarios.mjs';
 import { MecPlatformClient, createMecFetch } from '../integration/src/mec-platform-client.mjs';
 import { Onem2mHttpClient, parseContent } from '../integration/src/onem2m-http-client.mjs';
@@ -233,7 +233,8 @@ try {
   };
 
   const startServers = async (run, n) => {
-    const scene = { caseId: current.caseId, map, profile, corridor, nowMs: () => clock.nowMs(), lastFix: () => current.lastFix, ueAddress, intervalSec: 20 };
+    const scene = { caseId: current.caseId, map, profile, corridor, nowMs: () => clock.nowMs(), lastFix: () => current.lastFix, ueAddress, intervalSec: 20,
+      stops: (fromMs, toMs) => recentStops(current.detector.samples, map, { fromMs, toMs, params: profile.params }) };
     const toolHandlers = createTriageToolHandlers({ workflow, oneM2M: createOneM2mTriageAdapter({ client: clients.triage }), mec, privacy, scene, guardianPrincipal: authority.guardian });
     const { tokens, byServer } = issueAgentTokens({ runId: run.runId, agentPrincipalId: AGENT, contract: MCP_TRIAGE_CONTRACT });
     secrets.push(...Object.values(byServer));

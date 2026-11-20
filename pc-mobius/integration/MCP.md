@@ -87,7 +87,7 @@ runner는 Mobius4 4.24.5를 run 전용 PostgreSQL DB로 시작하고 household, 
 | MEC | `queryUeLocation`, `queryZoneStatus`, `queryServingCell` | ETSI MEC Sandbox의 MEC013 v3 `queries/users`, `queries/zones/{zoneId}`, MEC012 `rab_info`. MEP locality에 따라 MEP를 차례로 조회한다 |
 | Audit | `readExecution`, `appendTriageEvidence` | run ledger와 evidenceHash 기록 |
 
-`McpTriageWorkflow`는 `McpAgentWorkflow`의 checkpoint, guardian 결정, approvalHash 검사를 그대로 쓰고, 단계 규칙만 바꾼다. 읽기 도구는 순서 제약 없이 호출하고 run마다 14회 예산 안에서 기록한다. `submitTriage`는 `readAlert` 뒤에만 받는다. lease 단계는 action이 emergencyLease일 때만 열리고(`ROUTE_ACTION`), 보호자 결정 전의 apply와 evidence는 `APPROVAL_PENDING`으로 돌아간다. 서버는 설명 문장 안의 좌표형 숫자와 action-severity 불일치를 `EXPLANATION_PRIVACY`, `ACTION_SEVERITY`로 거절한다. 모든 도구 출력은 구간 이름, 시각, 10 m 단위 거리, 소수 셋째 자리 격자만 담고 정밀 좌표는 암호화 참조로 서버 안에 머문다.
+`McpTriageWorkflow`는 `McpAgentWorkflow`의 checkpoint, guardian 결정, approvalHash 검사를 그대로 쓰고, 단계 규칙만 바꾼다. 읽기 도구는 순서 제약 없이 호출하고 run마다 14회 예산 안에서 기록한다. `submitTriage`는 `readAlert` 뒤에만 받는다. lease 단계는 action이 emergencyLease일 때만 열리고(`ROUTE_ACTION`), 보호자 결정 전의 apply와 evidence는 `APPROVAL_PENDING`으로 돌아간다. 서버는 설명 문장 안의 좌표형 숫자와 action-severity 불일치를 `EXPLANATION_PRIVACY`, `ACTION_SEVERITY`로 거절한다. 경보 종류별 최소 action은 계약의 `actionFloor`에 둔 제품 규칙이다. `readAlert`가 `minimumAction`을 알려 주고, DEVICE_SEPARATION(키링을 집에 두고 나간 경우)에서 checkIn보다 낮은 action은 `ACTION_FLOOR`로 돌아간다. 모든 도구 출력은 구간 이름, 시각, 10 m 단위 거리, 소수 셋째 자리 격자만 담고 정밀 좌표는 암호화 참조로 서버 안에 머문다.
 
 ```powershell
 $env:MOBIUS4_ROOT = "<mobius4 checkout>"
@@ -95,4 +95,4 @@ node pc-mobius/scripts/run-anomaly-triage.mjs --agent=scripted --sandbox=dayofca
 node pc-mobius/scripts/run-anomaly-triage.mjs --agent=claude --sandbox=dayofcare                # receipt는 docs/verification-evidence/2026-11-20
 ```
 
-runner는 Mobius4와 run 전용 DB, 거주자, routine, triage, guardian app, incident service AE를 준비하고, 합성 정상 산책 7일을 locationHistory에 기록한 뒤 routine AE가 CSE에서 다시 읽어 profile을 만든다. 사례마다 sandbox UE를 GIS로 옮기고 MEC013 조회 위치를 location cin으로, MEC012 cell 변화를 rnis cin으로 기록한다. routine AE가 alerts에 cin을 쓰면 triage AE가 oneM2M 알림으로 깨어나 agent를 실행한다. 보호자 승인 뒤 lease 적용은 triage AE가 저장된 run 상태에서 LLM 없이 재개한다. 단위 시험은 `node --test test/mcp-triage.test.mjs`(5건)이다.
+runner는 Mobius4와 run 전용 DB, 거주자, routine, triage, guardian app, incident service AE를 준비하고, 합성 정상 산책 7일을 locationHistory에 기록한 뒤 routine AE가 CSE에서 다시 읽어 profile을 만든다. 사례마다 sandbox UE를 GIS로 옮기고 MEC013 조회 위치를 location cin으로, MEC012 cell 변화를 rnis cin으로 기록한다. routine AE가 alerts에 cin을 쓰면 triage AE가 oneM2M 알림으로 깨어나 agent를 실행한다. 보호자 승인 뒤 lease 적용은 triage AE가 저장된 run 상태에서 LLM 없이 재개한다. 단위 시험은 `node --test test/mcp-triage.test.mjs`(6건)이다.

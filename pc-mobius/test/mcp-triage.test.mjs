@@ -14,7 +14,7 @@ import { McpTriageWorkflow } from '../integration/src/mcp-orchestrator.mjs';
 import { MCP_TRIAGE_CONTRACT } from '../integration/src/mcp-schema.mjs';
 import { issueAgentTokens, startAgentMcpServers } from '../integration/src/mcp-agent-tools.mjs';
 import { createTriageToolHandlers, explanationFindings, locationRecord, resumeTriageAfterApproval, scriptedTriage, seedTriageAuthority } from '../integration/src/mcp-triage-tools.mjs';
-import { DwellThresholdBaseline, RoutineDetector, solarTimes, trainRoutineProfile } from '../integration/src/routine-model.mjs';
+import { DwellThresholdBaseline, RoutineDetector, recentStops, solarTimes, trainRoutineProfile } from '../integration/src/routine-model.mjs';
 import { DEV_MAP_BUBBLE, dayofcareDefinition, evaluationCases, routineMapOf, trainingDays } from '../integration/src/routine-scenarios.mjs';
 
 const map = routineMapOf(DEV_MAP_BUBBLE);
@@ -114,7 +114,8 @@ async function triageRuntime(t, caseId) {
   const workflow = new McpTriageWorkflow({ store, policyService });
   const ue = { lat: result.last.lat + 0.0006, lon: result.last.lon - 0.0002, zoneId: 'zone2', accessPointId: 'poa-2' };
   const mec = { locate: async () => ue, zone: async (zoneId) => ({ zoneId, numberOfAccessPoints: 7, numberOfUnserviceableAccessPoints: 0, numberOfUsers: 3 }), cell: async () => ({ cellId: '2222222' }) };
-  const scene = { caseId, map, profile, corridor: new Set(Object.keys(profile.corridor)), nowMs: () => alert.t + 30000, lastFix: () => result.last, ueAddress: 'ue-1', intervalSec: 20 };
+  const scene = { caseId, map, profile, corridor: new Set(Object.keys(profile.corridor)), nowMs: () => alert.t + 30000, lastFix: () => result.last, ueAddress: 'ue-1', intervalSec: 20,
+    stops: (fromMs, toMs) => recentStops(result.detector.samples, map, { fromMs, toMs, params: profile.params }) };
   const task = { householdId: 'household-r1', residentId: 'resident-r1', deviceId: 'resident-ue', keyringId: 'keyring-k1', alertId, alertKind: alert.kind, guardianId: 'guardian-daughter', caseId, paths, alertPath: `${paths.alerts}/${alertId}`, leaseGrants: authority.leaseGrants };
   const run = await workflow.createRun({ guardian: authority.guardian, task, grantId: authority.triageGrant.grantId, agentPrincipalId: 'agent-triage', idempotencyKey: `triage-${alertId}` });
   const handlers = createTriageToolHandlers({ workflow, oneM2M: cse, mec, privacy, scene, guardianPrincipal: authority.guardian });
@@ -133,6 +134,9 @@ test('R17 triage: wandering at dusk becomes an emergency lease that applies only
   const outcome = await scriptedTriage({ call: f.call, runId: f.run.runId, alertId: f.alertId, keyringId: 'keyring-k1', deviceId: 'resident-ue', guardianId: 'guardian-daughter' });
   assert.equal(outcome.triage.action, 'emergencyLease'); assert.equal(outcome.triage.guardianNotified, true); assert.equal(outcome.pending, true);
   assert.equal(f.cse.containers.get(paths.guardianInbox).length, 1); assert.equal(f.cse.containers.get(paths.approvals)[0].con.type, 'APPROVAL_REQUEST');
+  assert.equal(outcome.alert.minimumAction, 'checkIn', 'a wandering alert always reaches the guardian');
+  const history = await f.call('oneM2M', 'readRecentHistory', { minutes: 20 });
+  assert.ok(history.stops.some((stop) => stop.reversals >= 1 && stop.minutes >= 1), 'stop episodes carry the back-and-forth at the fork');
   const early = await f.raw('oneM2M', 'applyApprovedLease', { draftId: outcome.draft.draftId, approvalHash: 'a'.repeat(64) });
   assert.match(early.content[0].text, /^APPROVAL_PENDING/);
   const evidenceEarly = await f.raw('Audit', 'appendTriageEvidence', { runId: f.run.runId, summary: 'too early' });
@@ -153,7 +157,7 @@ test('R17 triage: wandering at dusk becomes an emergency lease that applies only
   const run = f.workflow.getRun(f.run.runId);
   assert.equal(run.status, 'COMPLETED');
   assert.deepEqual(run.approvalChecks.map((entry) => `${entry.result}:${entry.reason}`), ['REJECTED:APPROVAL_PENDING', 'REJECTED:APPROVAL_HASH_MISMATCH', 'REJECTED:APPROVAL_HASH_MISMATCH', 'ACCEPTED:APPROVAL_HASH_MATCH']);
-  assert.deepEqual(run.readCalls.map((entry) => entry.tool), ['readAlert', 'readRecentHistory', 'readRoutineProfile', 'queryUeLocation']);
+  assert.deepEqual(run.readCalls.map((entry) => entry.tool), ['readAlert', 'readRecentHistory', 'readRoutineProfile', 'queryUeLocation', 'readRecentHistory']);
 });
 
 test('R17 triage: a signal gap with network progress is observed; routing, budget and explanation reviews hold on the server', async (t) => {

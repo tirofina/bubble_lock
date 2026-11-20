@@ -135,6 +135,16 @@ export function countReversals(samples, { minLegM, reversalDeg }) {
   return reversals;
 }
 
+/** Stop episodes of at least minSec inside [fromMs, toMs], named by the map segment at the episode median (server side). */
+export function recentStops(samples, map, { fromMs, toMs, minSec = 60, params = {} } = {}) {
+  const p = { ...ROUTINE_DEFAULTS, ...params };
+  const window = samples.filter((sample) => sample.t >= fromMs && sample.t <= toMs);
+  return stopEpisodes(window, p).filter((episode) => episode.dwellSec >= minSec && map.distanceHomeM(episodeCenter(episode.samples)) > map.homeRadiusM).map((episode) => {
+    const match = map.match(episodeCenter(episode.samples));
+    return { place: match.distanceM <= p.corridorTolM ? match.name : 'unmapped area', fromMs: episode.startMs, toMs: episode.lastMs, reversals: countReversals(episode.samples, p), withinM: p.stopRadiusM };
+  });
+}
+
 function walkBounds(samples, map) {
   const departIndex = samples.findIndex((sample) => map.distanceHomeM(sample) > map.homeRadiusM);
   if (departIndex < 0) return { departMs: null, returnMs: null };
