@@ -2,6 +2,8 @@
 
 ROLE KEYRING / 남호 · DOC-REV 2.0.0 · source included / unverified.
 
+시연 키링의 보드는 r26 앞면 실장판이다. 제조 파일(Gerber, BOM, CPL), KiCad 프로젝트, 검사 결과는 [r26](r26/README.md)에, 케이스는 [../case/r26](../case/r26/README.md)에 있다.
+
 기존 **r18-hand-solder** 프로젝트를 [r18](r18/README.md)에 인계용 snapshot으로 포함했다. 팀원이 clone으로 회로도·PCB·프로젝트·로컬 심볼/풋프린트·모델·기존 BOM·배선표를 받을 수 있다. 원래 작업공간의 파일과 제조 산출물은 보존했다. 회로·배치·패드를 새로 설계하거나 변경하지 않았다.
 
 | 자료 | 경로 |

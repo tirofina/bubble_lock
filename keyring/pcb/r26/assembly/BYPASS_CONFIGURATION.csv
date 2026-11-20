@@ -1,0 +1,5 @@
+﻿Reference,MPN,LCSC,Side,Value,Pin1,Pin2,Replaces,Before_optional_population
+R72,RC0805JR-070RL,C96345,Top,0R,/VBAT,/SYS_LIMIT,JP1,REMOVE R72; JP1; bypass U3/U11 charger and main load switch
+R73,RC0805JR-070RL,C96345,Top,0R,/VBAT,/PWR_SW,JP2,REMOVE R73; JP2; bypass U10 low-voltage gating
+R74,RC0805JR-070RL,C96345,Top,0R,/REG_EN,/REG_READY,JP3,REMOVE R74; JP3; bypass U17 supervisor
+R75,RC0805JR-070RL,C96345,Top,0R,/+3V3,/AUX3V3,JP4,REMOVE R75; JP4; bypass U13 auxiliary load switch

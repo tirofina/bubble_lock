@@ -1,0 +1,26 @@
+﻿Comment,Designator,Footprint,LCSC Part #,Manufacturer Part Number,Manufacturer,Description,Quantity
+CL10B105KO8NNNC,C1,0603,C59782,CL10B105KO8NNNC,Samsung Electro-Mechanics,16V 1uF X7R ±10% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS,1
+CC0603KRX7R9BB104,C3,0603,C14663,CC0603KRX7R9BB104,Yageo,100nF 50V X7R ±10% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS,1
+GRM21BR71A106KE51L,"C19,C2,C28,C8",0805,C86038,GRM21BR71A106KE51L,Murata,10V 10uF X7R ±10% 0805 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS,4
+GRM155R71H104KE14D,"C20,C24,C7",0402,C77020,GRM155R71H104KE14D,Murata,100nF 50V X7R ±10% 0402 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS,3
+CL21B475KPFNNNE,C4,0805,C87998,CL21B475KPFNNNE,Samsung Electro-Mechanics,10V 4.7uF X7R ±10% 0805 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS,1
+GRM21BR61C226ME44L,"C10,C33,C9",0805,C86817,GRM21BR61C226ME44L,Murata,16V 22uF X5R ±20% 0805 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS,3
+TYPE-C-31-M-12,J1,TYPE-C-31-M-12,C165948,TYPE-C-31-M-12,HRO,"-30℃~+80℃ 1 10,000 cycles 16P 20V 5A 7.35mm Female Surface Mount, Right Angle Type-C SMD USB Connectors ROHS",1
+S2B-PH-SM4-TB(LF)(SN),J2,"JST-PH,2P,P2.00mm,SMD",C295747,S2B-PH-SM4-TB(LF)(SN),JST,"-25℃~+85℃ 1 100V 1x2P 2 2A 2P 2mm 5.5mm 7.9mm 8.6mm Auxiliary Solder Pin Beige Copper alloy PA PH Surface Mount, Right Angle Tin UL94V-0 SMD,P=2mm,卧贴 Wire To Board Connector ROHS",1
+SM08B-SRSS-TB(LF)(SN),J3,"JST-SH,8P,P1.00mm,SMD",C160407,SM08B-SRSS-TB(LF)(SN),JST,"-25℃~+85℃ 1 10mm 1A 1mm 1x8P 2.9mm 4.32mm 50V 8 8P Auxiliary Solder Pin Copper alloy PA SH Surface Mount, Right Angle Tin UL94V-0 White SMD,P=1mm,卧贴 Wire To Board Connector ROHS",1
+XFL4020-222MEC,L1,"XFL4020,4x4mm",C122469,XFL4020-222MEC,Coilcraft,"2.2uH 21.35mΩ 3.7A 8A ±20% SMD,4x4mm Power Inductors ROHS",1
+AO3401A,Q3,SOT-23,C15127,AO3401A,Alpha & Omega Semiconductor,1 P-Channel 14nC@10V 30V 47mΩ@10V、60mΩ@4.5V、85mΩ@2.5V 4A 55pF 645pF 80pF 900mV SOT-23 MOSFETs ROHS,1
+RC0402FR-07100RL,R19,0402,C106232,RC0402FR-07100RL,Yageo,-55℃~+155℃ 100Ω 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS,1
+RC0402FR-0710KL,R2,0402,C60490,RC0402FR-0710KL,Yageo,-55℃~+155℃ 10kΩ 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS,1
+RC0402FR-0733RL,"R10,R31,R32,R9",0402,C138002,RC0402FR-0733RL,Yageo,-55℃~+155℃ 33Ω 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS,4
+RC0402FR-07100KL,"R1,R35,R43",0402,C60491,RC0402FR-07100KL,Yageo,-55℃~+155℃ 100kΩ 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS,3
+RC0402FR-0747KL,"R33,R34,R5,R6",0402,C93943,RC0402FR-0747KL,Yageo,-55℃~+155℃ 47kΩ 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS,4
+ERJP06F1000V,R60,0805,C441975,ERJP06F1000V,Panasonic,-55℃~+155℃ 100Ω 400V 500mW Thick Film Resistor ±1% ±100ppm/℃ 0805 Chip Resistor - Surface Mount ROHS,1
+RL0805FR-070R1L,R61,0805,C327210,RL0805FR-070R1L,Yageo,-55℃~+155℃ 100mΩ 125mW Thick Film Resistor ±1% ±600ppm/℃ 0805 Chip Resistor - Surface Mount ROHS,1
+RC0603FR-07220RL,R69,0603,C107696,RC0603FR-07220RL,Yageo,-55℃~+155℃ 100mW 220Ω 75V Thick Film Resistor ±1% ±100ppm/℃ 0603 Chip Resistor - Surface Mount ROHS,1
+RC0402FR-075K1L,"R7,R8",0402,C105872,RC0402FR-075K1L,Yageo,-55℃~+155℃ 5.1kΩ 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS,2
+RC0805JR-070RL,"R72,R73,R74,R75",0805,C96345,RC0805JR-070RL,YAGEO,-55℃~+155℃ 0Ω 125mW 150V Thick Film Resistor ±5% 0805 Chip Resistor - Surface Mount ROHS,4
+PTS810SJK250SMTRLFS,"SW1,SW2,SW3,SW4",PTS810,C221896,PTS810SJK250SMTRLFS,Littelfuse / C&K,"-40℃~+85℃ 16V 2.5mm 2.6N 3.2mm 4.2mm 50mA J-Lead Round Button SPST Surface Mount,Vertical SMD-4P,4.2x3.2mm Tactile Switches ROHS",4
+ESP32-S3-WROOM-1-N16R8,U1,ESP32-S3-WROOM-1,C2913202,ESP32-S3-WROOM-1-N16R8,Espressif,"-103.5dBm -40℃~+65℃ 2.4GHz 20.5dBm 355mA 3V~3.6V 95mA ESP32-S3R8 On-board PCB Antenna UART、SPI、I2C、GPIO、I2S、USB SMD,25.5x18mm WiFi Modules ROHS",1
+TPS63001DRCR,U4,"VSON-10,3x3mm",C28060,TPS63001DRCR,Texas Instruments,-40℃~+85℃@(TA) 1 1.5MHz 1.8V~5.5V 3.3V 50uA Buck-Boost Buck-Boost Built-in Fixed Yes VSON-10-EP(3x3) DC-DC Converters ROHS,1
+USBLC6-2SC6,U9,SOT-23-6,C7519,USBLC6-2SC6,STMicroelectronics,-40℃~+125℃ 150nA 17V 2 3.5pF 5.25V 5A 6V ESD IEC 61000-4-2 Unidirectional SOT-23-6L ESD and Surge Protection (TVS/ESD) ROHS,1

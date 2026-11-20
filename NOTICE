@@ -51,7 +51,10 @@ THIRD-PARTY MATERIAL INCLUDED IN THIS REPOSITORY
      keyring/pcb/r18/HandSolder.pretty/ that originate from the KiCad
      libraries (the HandSolder variants are modified pads of those
      footprints), and the STEP models in keyring/pcb/r18/3dmodels/ whose
-     headers carry the KiCad or "kicad StepUp" copyright line.
+     headers carry the KiCad or "kicad StepUp" copyright line. The r26
+     board carries the same kinds of files in keyring/pcb/r26/Sourced_4L.pretty/,
+     keyring/pcb/r26/Sourced.pretty/, keyring/pcb/r26/HandSolder.pretty/ and
+     keyring/pcb/r26/3dmodels/.
    Copyright (c) KiCad library contributors.
    License: CC BY-SA 4.0 with the KiCad libraries exception.
      https://www.kicad.org/libraries/license/
@@ -67,9 +70,14 @@ THIRD-PARTY MATERIAL INCLUDED IN THIS REPOSITORY
      keyring/pcb/r18/sourced_cad/MAX98357A.3dshapes/, and footprints in
      keyring/pcb/r18/Sourced_4L.pretty/ whose properties point to a supplier
      source such as LCSC/EasyEDA (for example AUDIO-SMD_PJ-320D).
+     The same supplier models and footprints appear for the r26 board in
+     keyring/pcb/r26/3dmodels/ (including TQFN-16_L3.0-W3.0-P0.50-BL-EP1.5.step),
+     keyring/pcb/r26/sourced_cad/MAX98357A.3dshapes/ and
+     keyring/pcb/r26/Sourced_4L.pretty/.
    These models and footprints remain under the terms of their original
      sources (EasyEDA/LCSC, component manufacturers and suppliers). The
-     project grants no new license for them. See keyring/pcb/r18/README.md.
+     project grants no new license for them. See keyring/pcb/r18/README.md
+     and keyring/pcb/r26/README.md.
 
 4. Component datasheet data
    File: keyring/pcb/r18/datasheets/extracted/MAX9850ETI__07c924.json

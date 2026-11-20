@@ -1,0 +1,143 @@
+{
+  "revision": "r26_direct_lcd_dc",
+  "PCB_sha256": "3c408eef457f7f8830f5e8cf06486eea775e83996467143cab9025f8d674c1ef",
+  "schematic_sha256": "325c5987df2d07763a71aed6f76833c1f18a5b041ecb8c4495e2a1bf22ffe083",
+  "source_r25_unchanged": true,
+  "copper_layers": 4,
+  "thickness_mm": 1.0,
+  "DRC": 0,
+  "ERC": 0,
+  "unconnected": 0,
+  "schematic_parity": 0,
+  "automatic_parts": 47,
+  "automatic_groups": 25,
+  "automatic_sides": {
+    "Top": 47,
+    "Bottom": 0
+  },
+  "manual_parts": 0,
+  "manual_resistors": 0,
+  "manual_capacitors": 0,
+  "manual_inductors": 0,
+  "DNP_parts": 89,
+  "jumpers": 0,
+  "bypass_resistors": 4,
+  "In1_signal_tracks": 0,
+  "minimum_via_drill_mm": 0.3,
+  "minimum_via_diameter_mm": 0.5,
+  "ports_buttons_module_mounts_outline_unchanged": true,
+  "decoupling_distances": [
+    {
+      "IC": "U1",
+      "pin": "2",
+      "capacitor": "C3",
+      "purpose": "ESP32 100nF",
+      "straight_pin_to_pad_mm": 1.64
+    },
+    {
+      "IC": "U1",
+      "pin": "2",
+      "capacitor": "C2",
+      "purpose": "ESP32 10uF",
+      "straight_pin_to_pad_mm": 9.614
+    },
+    {
+      "IC": "U4",
+      "pin": "5",
+      "capacitor": "C8",
+      "purpose": "TPS63001 input",
+      "straight_pin_to_pad_mm": 2.456
+    },
+    {
+      "IC": "U4",
+      "pin": "1",
+      "capacitor": "C9",
+      "purpose": "TPS63001 output",
+      "straight_pin_to_pad_mm": 2.493
+    },
+    {
+      "IC": "U4",
+      "pin": "8",
+      "capacitor": "C7",
+      "purpose": "TPS63001 VINA",
+      "straight_pin_to_pad_mm": 1.329
+    },
+    {
+      "IC": "J3",
+      "pin": "1",
+      "capacitor": "C19",
+      "purpose": "LCD connector 10uF",
+      "straight_pin_to_pad_mm": 2.894
+    },
+    {
+      "IC": "J3",
+      "pin": "1",
+      "capacitor": "C20",
+      "purpose": "LCD connector 100nF",
+      "straight_pin_to_pad_mm": 2.794
+    },
+    {
+      "IC": "Q3",
+      "pin": "2",
+      "capacitor": "C33",
+      "purpose": "Backlight supply 22uF",
+      "straight_pin_to_pad_mm": 2.147
+    },
+    {
+      "IC": "U9",
+      "pin": "5",
+      "capacitor": "C4",
+      "purpose": "USB ESD supply",
+      "straight_pin_to_pad_mm": 2.663
+    }
+  ],
+  "assembly_paste_front_automatic_only": true,
+  "gerber_sha256": "f0dce0d82636ecae53193ac9f12c5b3398b924d0ad4898663b5b28ab639df73f",
+  "existing_netlist_preserved_except_R71_direct_connection": true,
+  "R71_removed": true,
+  "LCD_DC_direct": true,
+  "expected_bypass_connections": [
+    [
+      "/+3V3",
+      "R75",
+      "1"
+    ],
+    [
+      "/AUX3V3",
+      "R75",
+      "2"
+    ],
+    [
+      "/PWR_SW",
+      "R73",
+      "2"
+    ],
+    [
+      "/REG_EN",
+      "R74",
+      "1"
+    ],
+    [
+      "/REG_READY",
+      "R74",
+      "2"
+    ],
+    [
+      "/SYS_LIMIT",
+      "R72",
+      "2"
+    ],
+    [
+      "/VBAT",
+      "R72",
+      "1"
+    ],
+    [
+      "/VBAT",
+      "R73",
+      "1"
+    ]
+  ],
+  "all_required_components_factory_assembled": true,
+  "manual_wire_jumpers": 0
+}

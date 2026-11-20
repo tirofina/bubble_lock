@@ -1,0 +1,9 @@
+{
+  "jaw_layer_count": 13,
+  "jaw_z_range_mm": [
+    3.08,
+    5.0
+  ],
+  "supports": false,
+  "independent_toolpaths": 2
+}
