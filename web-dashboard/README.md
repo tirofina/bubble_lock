@@ -143,7 +143,7 @@ CORE와 INTEGRATION 기록을 한 파일에 넣어도 같은 순서로 재생합
 - [화면 캡처·해시](evidence/hig/capture-manifest.json)
 - [실측 시험 기록](evidence/hig/round2-proof.json)
 - [프로토콜 1차 자료](docs/primary-sources.md)
-- [Article 초안](docs/R04-article.md)
+- [Article 안내](docs/R04-article.md)
 - [2026-10-29 release manifest](docs/release-manifest-2026-10-29.json)
 
 ## 디렉터리
