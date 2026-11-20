@@ -286,6 +286,45 @@
                         "pattern": "^[0-2][0-9]:[0-5][0-9](:[0-5][0-9])?$"
                       }
                     }
+                  },
+                  "place": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "label",
+                      "familiarity",
+                      "distanceBand",
+                      "coldStart"
+                    ],
+                    "properties": {
+                      "label": {
+                        "type": "string",
+                        "maxLength": 64
+                      },
+                      "familiarity": {
+                        "type": "number"
+                      },
+                      "distanceBand": {
+                        "enum": [
+                          "near home",
+                          "neighbourhood",
+                          "park range",
+                          "far"
+                        ]
+                      },
+                      "coldStart": {
+                        "type": "boolean"
+                      }
+                    }
+                  },
+                  "trigger": {
+                    "enum": [
+                      "behaviour",
+                      "novelty"
+                    ]
+                  },
+                  "accompanied": {
+                    "type": "boolean"
                   }
                 }
               },
@@ -504,7 +543,7 @@
         },
         {
           "name": "readRoutineProfile",
-          "description": "Read the resident routine profile (learned from her oneM2M location history of normal walk days): usual departure and return times, usual corridor segments, usual stops with dwell percentiles, usual signal gaps, walking speed and today's sunset.",
+          "description": "Read the resident routine profile (learned from her oneM2M location history of normal walk days): usual departure and return times, usual corridor segments, usual stops with dwell percentiles, usual signal gaps, walking speed and today's sunset; with the place memory on, places adds its label summary (familiar places, visits, time bands, guardian OK marks; no coordinates).",
           "requiredScope": "bubble:read",
           "readOnly": true,
           "inputSchema": {
@@ -644,6 +683,78 @@
                     "days": {
                       "type": "integer",
                       "minimum": 0
+                    }
+                  }
+                }
+              },
+              "places": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "soloDays",
+                  "accompaniedDays",
+                  "coldStart",
+                  "corridorCells",
+                  "items"
+                ],
+                "properties": {
+                  "soloDays": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "accompaniedDays": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "coldStart": {
+                    "type": "boolean"
+                  },
+                  "corridorCells": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "items": {
+                    "type": "array",
+                    "maxItems": 16,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "label",
+                        "familiarity",
+                        "visits",
+                        "usualTimeBand",
+                        "dwellP50Min",
+                        "guardianMarkedOk",
+                        "distanceBand"
+                      ],
+                      "properties": {
+                        "label": {
+                          "type": "string",
+                          "maxLength": 64
+                        },
+                        "familiarity": {
+                          "type": "number"
+                        },
+                        "visits": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "usualTimeBand": {
+                          "type": "string",
+                          "maxLength": 16
+                        },
+                        "dwellP50Min": {
+                          "type": "number"
+                        },
+                        "guardianMarkedOk": {
+                          "type": "boolean"
+                        },
+                        "distanceBand": {
+                          "type": "string",
+                          "maxLength": 16
+                        }
+                      }
                     }
                   }
                 }

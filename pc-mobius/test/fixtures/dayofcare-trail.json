@@ -1,0 +1,224 @@
+{
+ "schema": "pb.mec-sandbox.dayofcare.v1",
+ "note": "Subset of the dayofcare sandbox description (R13 day-of-care scenario): resident trail, guardian path, home radius, MEP and UE names. Coordinates are public places in Monaco from the scenario design.",
+ "sandboxName": "dayofcare",
+ "scenario": "day-of-care",
+ "residentTrail": {
+  "points": [
+   {
+    "index": 0,
+    "lon": 7.417915,
+    "lat": 43.736945,
+    "label": "home-door"
+   },
+   {
+    "index": 1,
+    "lon": 7.417894,
+    "lat": 43.736678
+   },
+   {
+    "index": 2,
+    "lon": 7.417596,
+    "lat": 43.736644
+   },
+   {
+    "index": 3,
+    "lon": 7.417302,
+    "lat": 43.736479,
+    "label": "boulevard-de-belgique"
+   },
+   {
+    "index": 4,
+    "lon": 7.417082,
+    "lat": 43.736212
+   },
+   {
+    "index": 5,
+    "lon": 7.416868,
+    "lat": 43.735937
+   },
+   {
+    "index": 6,
+    "lon": 7.416715,
+    "lat": 43.735715
+   },
+   {
+    "index": 7,
+    "lon": 7.416551,
+    "lat": 43.735538
+   },
+   {
+    "index": 8,
+    "lon": 7.41646,
+    "lat": 43.735358
+   },
+   {
+    "index": 9,
+    "lon": 7.416365,
+    "lat": 43.735125
+   },
+   {
+    "index": 10,
+    "lon": 7.416308,
+    "lat": 43.734946
+   },
+   {
+    "index": 11,
+    "lon": 7.416266,
+    "lat": 43.734679
+   },
+   {
+    "index": 12,
+    "lon": 7.416249,
+    "lat": 43.734458,
+    "label": "park-district-coverage-entry (park-5g-entrance in range)"
+   },
+   {
+    "index": 13,
+    "lon": 7.416217,
+    "lat": 43.7343
+   },
+   {
+    "index": 14,
+    "lon": 7.416158,
+    "lat": 43.734131
+   },
+   {
+    "index": 15,
+    "lon": 7.416042,
+    "lat": 43.733948,
+    "label": "park-east-gate (Chemin des Revoires)"
+   },
+   {
+    "index": 16,
+    "lon": 7.415986,
+    "lat": 43.733975
+   },
+   {
+    "index": 17,
+    "lon": 7.415907,
+    "lat": 43.733872
+   },
+   {
+    "index": 18,
+    "lon": 7.41571,
+    "lat": 43.733702
+   },
+   {
+    "index": 19,
+    "lon": 7.41556,
+    "lat": 43.733582
+   },
+   {
+    "index": 20,
+    "lon": 7.415479,
+    "lat": 43.733515
+   },
+   {
+    "index": 21,
+    "lon": 7.415336,
+    "lat": 43.733392,
+    "label": "trail-fork"
+   },
+   {
+    "index": 22,
+    "lon": 7.415248,
+    "lat": 43.733333
+   },
+   {
+    "index": 23,
+    "lon": 7.415159,
+    "lat": 43.733293
+   },
+   {
+    "index": 24,
+    "lon": 7.4151,
+    "lat": 43.733238
+   },
+   {
+    "index": 25,
+    "lon": 7.415052,
+    "lat": 43.733171
+   },
+   {
+    "index": 26,
+    "lon": 7.414975,
+    "lat": 43.733087
+   },
+   {
+    "index": 27,
+    "lon": 7.414598,
+    "lat": 43.732772
+   },
+   {
+    "index": 28,
+    "lon": 7.414514,
+    "lat": 43.732722
+   },
+   {
+    "index": 29,
+    "lon": 7.414478,
+    "lat": 43.732648,
+    "label": "bench"
+   }
+  ]
+ },
+ "guardianPath": [
+  [
+   7.417963,
+   43.730843
+  ],
+  [
+   7.417615,
+   43.73142
+  ],
+  [
+   7.416843,
+   43.732451
+  ],
+  [
+   7.41533,
+   43.7324
+  ],
+  [
+   7.415273,
+   43.732446
+  ],
+  [
+   7.415066,
+   43.732616
+  ],
+  [
+   7.414725,
+   43.732736
+  ],
+  [
+   7.414478,
+   43.732648
+  ]
+ ],
+ "places": {
+  "home": {
+   "radiusM": 40
+  }
+ },
+ "meps": [
+  {
+   "name": "mep1"
+  },
+  {
+   "name": "mep2"
+  }
+ ],
+ "ues": [
+  {
+   "id": "resident-relay"
+  },
+  {
+   "id": "caregiver"
+  },
+  {
+   "id": "guardian"
+  }
+ ]
+}

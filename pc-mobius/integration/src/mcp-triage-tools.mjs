@@ -62,7 +62,8 @@ export function createTriageToolHandlers({ workflow, oneM2M, mec, privacy, scene
         const pick = (keys) => Object.fromEntries(keys.filter((key) => f[key] !== undefined && f[key] !== null).map((key) => [key, f[key]]));
         const output = { alertId: alert.alertId, kind: alert.kind, score: alert.score, severityHint: alert.severityHint, detectedLocal: alert.detectedLocal, startedLocal: alert.startedLocal, nowLocal: nowLocal(),
           segment: { name: alert.segment?.name ?? 'unknown', kind: alert.segment?.kind ?? 'unknown' },
-          features: { ...pick(['dwellSec', 'dwellRefSec', 'dwellRatio', 'reversals', 'speedMps', 'corridorDistanceM', 'offCorridorSec', 'offCorridorSince', 'stopSince', 'minutesAfterSunset', 'sunsetLocal', 'minutesPastUsualReturn', 'distanceHomeM', 'gapSec', 'gapRefSec', 'lastSampleAt']), components: f.components, ...(f.keyring ? { keyring: f.keyring } : {}) },
+          features: { ...pick(['dwellSec', 'dwellRefSec', 'dwellRatio', 'reversals', 'speedMps', 'corridorDistanceM', 'offCorridorSec', 'offCorridorSince', 'stopSince', 'minutesAfterSunset', 'sunsetLocal', 'minutesPastUsualReturn', 'distanceHomeM', 'gapSec', 'gapRefSec', 'lastSampleAt']), components: f.components, ...(f.keyring ? { keyring: f.keyring } : {}),
+            ...(f.place ? { place: { label: f.place.label, familiarity: f.place.familiarity, distanceBand: f.place.distanceBand, coldStart: f.place.coldStart === true } } : {}), ...(f.trigger ? { trigger: f.trigger } : {}), ...(f.accompanied ? { accompanied: true } : {}) },
           modelVersion: alert.modelVersion, profileHash: alert.profileHash, alertRecordPath: run.task.alertPath,
           minimumAction: actionFloor(alert.kind).minimumAction, ...(actionFloor(alert.kind).reason ? { minimumActionReason: actionFloor(alert.kind).reason.slice(0, 160) } : {}) };
         await workflow.checkpoint(context, 'readAlert', { input, output, update: (state) => { state.alert = { kind: alert.kind, score: alert.score, alertHash: approvalHash(alert) }; } });
@@ -87,14 +88,21 @@ export function createTriageToolHandlers({ workflow, oneM2M, mec, privacy, scene
       },
       async readRoutineProfile(input, context) {
         const { run } = bind(context, 'bubble:read', 'readRoutineProfile');
-        const record = await oneM2M.latestCon(run.task.paths.routine);
+        // The routine container holds the segment profile (profile-*), the sealed place memory (memory-*, ciphertext) and
+        // its label summary (summary-*); this tool reads the profile and the summary only.
+        const children = await oneM2M.listChildren(run.task.paths.routine);
+        const profileEntry = children.filter((entry) => entry.rn.startsWith('profile')).at(-1); const summaryEntry = children.filter((entry) => entry.rn.startsWith('summary')).at(-1);
+        const record = profileEntry ? await oneM2M.readCon(profileEntry.path) : await oneM2M.latestCon(run.task.paths.routine);
+        const placeSummary = summaryEntry ? (await oneM2M.readCon(summaryEntry.path))?.summary : null;
         if (!record?.profile?.profileHash) throw toolReview('PROFILE_RECORD', 'Routine profile contentInstance required');
         const summary = summarizeProfile(record.profile, scene.map);
         const sunset = scene.map.sunset(scene.nowMs());
         const label = (minutes) => `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(Math.floor(minutes % 60)).padStart(2, '0')}`;
         const output = { modelVersion: summary.modelVersion, days: summary.days, synthetic: summary.synthetic, profileHash: summary.profileHash, usualDeparture: summary.usualDeparture, usualReturn: summary.usualReturn, latestUsualReturn: summary.latestUsualReturn,
           sunsetLocal: label(sunset.sunsetLocalMin), walkingSpeedMps: summary.walkingSpeedMps,
-          corridor: [...new Map(summary.corridor.map((entry) => [entry.segment, entry])).values()].slice(0, 48), usualStops: summary.usualStops.slice(0, 16), usualSignalGaps: summary.usualSignalGaps.slice(0, 16) };
+          corridor: [...new Map(summary.corridor.map((entry) => [entry.segment, entry])).values()].slice(0, 48), usualStops: summary.usualStops.slice(0, 16), usualSignalGaps: summary.usualSignalGaps.slice(0, 16),
+          ...(placeSummary ? { places: { soloDays: placeSummary.soloDays, accompaniedDays: placeSummary.accompaniedDays, coldStart: placeSummary.coldStart, corridorCells: placeSummary.corridorCells,
+            items: placeSummary.places.slice(0, 16).map(({ label, familiarity, visits, usualTimeBand, dwellP50Min, guardianMarkedOk, distanceBand }) => ({ label, familiarity, visits, usualTimeBand, dwellP50Min, guardianMarkedOk, distanceBand })) } } : {}) };
         return read(context, 'oneM2M', 'readRoutineProfile', input, output);
       },
       async readDeviceState(input, context) {

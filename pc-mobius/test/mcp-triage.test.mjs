@@ -195,4 +195,9 @@ test('R17 triage: a keyring left at home has a server-side checkIn floor that th
   const triage = await f.call('oneM2M', 'submitTriage', { alertId: f.alertId, severity: 'watch', action: 'checkIn', explanation: 'Her keyring is at home while she walks her usual route; please call her.', checked: ['readAlert'] });
   assert.equal(triage.guardianNotified, true);
   assert.equal(f.cse.containers.get(paths.guardianInbox)[0].con.alertKind, 'DEVICE_SEPARATION');
+  await f.cse.createCin(paths.routine, { type: 'PLACE_MEMORY', sealed: { algorithm: 'AES-256-GCM', iv: 'x', tag: 'y', ciphertext: 'z' } }, { rn: 'memory-d1' });
+  await f.cse.createCin(paths.routine, { type: 'PLACE_SUMMARY', summary: { soloDays: 5, accompaniedDays: 1, coldStart: false, corridorCells: 30, places: [{ label: 'south bench', familiarity: 1, visits: 5, usualTimeBand: '16-20h', dwellP50Min: 17, guardianMarkedOk: false, distanceBand: 'park range' }] } }, { rn: 'summary-d1' });
+  const routineView = await f.call('oneM2M', 'readRoutineProfile', {});
+  assert.equal(routineView.places.items[0].label, 'south bench'); assert.equal(routineView.days, 7, 'the segment profile is still read from profile-1');
+  assert.equal(/\b(43|7)\.\d{4,}/.test(JSON.stringify(routineView)), false);
 });

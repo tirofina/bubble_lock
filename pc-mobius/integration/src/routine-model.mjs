@@ -215,13 +215,22 @@ export function summarizeProfile(profile, map) {
  * DEVICE_SEPARATION (keyring seen at home while the relay UE walks away).
  */
 export class RoutineDetector {
-  constructor({ map, profile, params = {} }) {
-    if (!(map instanceof RoutineMap) || !profile?.profileHash) throw new Error('Routine detector needs a map and a trained profile');
-    this.map = map; this.profile = profile; this.p = { ...ROUTINE_DEFAULTS, ...profile.params, ...params, weights: { ...ROUTINE_DEFAULTS.weights, ...profile.weights, ...(params.weights ?? {}) } };
+  /**
+   * memory (optional, PlaceMemory): familiarity replaces the segment corridor, place dwell replaces segment dwell, a
+   * novelty rule (solo, unfamiliar and far) joins WANDERING and cold start raises the thresholds. Without memory the
+   * detector behaves exactly as the segment profile v1.
+   */
+  constructor({ map, profile = null, params = {}, memory = null }) {
+    if (!(map instanceof RoutineMap) || (!profile?.profileHash && !memory)) throw new Error('Routine detector needs a map and a trained profile or a place memory');
+    profile ??= { params: {}, weights: {}, corridor: {}, dwell: {}, gaps: {}, return: { p50Min: null, p95Min: 24 * 60 }, profileHash: 'place-memory-only' };
+    this.map = map; this.profile = profile; this.memory = memory; this.p = { ...ROUTINE_DEFAULTS, ...profile.params, ...params, weights: { ...ROUTINE_DEFAULTS.weights, ...profile.weights, ...(params.weights ?? {}) } };
     this.corridor = new Set(Object.keys(profile.corridor));
     this.samples = []; this.episode = null; this.offSinceMs = null; this.departMs = null; this.returned = false;
-    this.device = null; this.separationSinceMs = null; this.raised = new Set(); this.alerts = [];
+    this.device = null; this.separationSinceMs = null; this.raised = new Set(); this.alerts = []; this.companion = { accompanied: false };
   }
+  /** Companion status from CompanionTracker: while accompanied, novelty and distance alerts stay off (PANIC is separate). */
+  observeCompanion(status) { this.companion = { ...status }; }
+  unfamiliar(point) { return this.memory ? this.memory.score(point, point.t).familiarity < this.memory.p.familiarAt : this.map.match(point, this.corridor)?.distanceM > this.p.corridorTolM; }
   observe(sample) {
     const point = { t: typeof sample.t === 'number' ? sample.t : Date.parse(sample.t), lat: sample.lat, lon: sample.lon };
     const last = this.samples.at(-1);
@@ -233,7 +242,7 @@ export class RoutineDetector {
     const broken = this.episode && (point.t - this.episode.lastMs > 2 * this.p.nominalIntervalSec * 1000 || haversineM(this.episode.anchor, point) > this.p.stopRadiusM);
     if (!this.episode || broken) this.episode = { anchor: point, startMs: point.t, lastMs: point.t, samples: [point] };
     else { this.episode.lastMs = point.t; this.episode.samples.push(point); }
-    const off = !home && this.map.match(point, this.corridor)?.distanceM > this.p.corridorTolM;
+    const off = !home && this.unfamiliar(point);
     this.offSinceMs = off ? (this.offSinceMs ?? point.t) : null;
   }
   observeDevice(state) { this.device = { ...state, t: typeof state.t === 'number' ? state.t : Date.parse(state.t) }; }
@@ -242,10 +251,13 @@ export class RoutineDetector {
     if (!last) return null;
     const anchorMatch = this.map.match(episodeCenter(this.episode.samples)); const lastMatch = this.map.match(last);
     const segment = anchorMatch.distanceM <= p.corridorTolM ? anchorMatch : { segmentId: 'off-map', name: 'unmapped area', kind: 'unknown', distanceM: anchorMatch.distanceM };
-    const corridorDistanceM = this.map.match(last, this.corridor)?.distanceM ?? Infinity;
+    const place = this.memory ? this.memory.score(episodeCenter(this.episode.samples), nowMs) : null;
+    const coldStart = Boolean(place?.coldStart);
+    const corridorDistanceM = this.memory ? (this.unfamiliar(last) ? p.corridorTolM + 1 : 0) : this.map.match(last, this.corridor)?.distanceM ?? Infinity;
     const offCorridorSec = this.offSinceMs === null ? 0 : (last.t - this.offSinceMs) / 1000;
     const dwellSec = (this.episode.lastMs - this.episode.startMs) / 1000;
-    const dwellRefSec = Math.max(this.profile.dwell[segment.segmentId]?.p95 ?? 0, p.minDwellSec);
+    const dwellFloor = coldStart ? Math.max(p.minDwellSec, this.memory.p.coldStartDwellFloorSec) : p.minDwellSec;
+    const dwellRefSec = Math.max(place ? place.dwellRefSec ?? 0 : this.profile.dwell[segment.segmentId]?.p95 ?? 0, dwellFloor);
     const recent = this.samples.filter((sample) => sample.t >= last.t - 120000);
     const speeds = recent.slice(1).map((sample, index) => haversineM(recent[index], sample) / Math.max(1, (sample.t - recent[index].t) / 1000));
     const sun = this.map.sunset(nowMs); const localMin = this.map.localMinutes(nowMs);
@@ -256,7 +268,7 @@ export class RoutineDetector {
     const components = {
       dwell: clamp01((dwellSec / dwellRefSec - 1) / p.dwellRamp),
       pacing: clamp01(countReversals(this.episode.samples, p) / p.pacingFull),
-      offCorridor: corridorDistanceM > p.corridorTolM ? clamp01(offCorridorSec / p.offCorridorRampSec) : 0,
+      offCorridor: corridorDistanceM > p.corridorTolM && !coldStart ? clamp01(offCorridorSec / p.offCorridorRampSec) : 0,
       dusk: Math.max(clamp01((localMin - sun.sunsetLocalMin + p.duskLeadMin) / p.duskRampMin), clamp01((localMin - this.profile.return.p95Min) / p.lateRampMin)),
       distance: clamp01(distanceHomeM / p.distanceScaleM),
     };
@@ -269,6 +281,8 @@ export class RoutineDetector {
       minutesAfterSunset: round(localMin - sun.sunsetLocalMin, 1), sunsetLocal: minutesLabel(sun.sunsetLocalMin), minutesPastUsualReturn: round(localMin - this.profile.return.p95Min, 1),
       distanceHomeM: round(distanceHomeM), gapSec: round(gapSec), gapRefSec: round(gapRefSec), lastSampleAt: this.map.localTime(last.t, true),
       components: Object.fromEntries(Object.entries(components).map(([key, value]) => [key, round(value, 3)])), score: round(score, 3),
+      ...(place ? { place: { label: place.label, familiarity: place.familiarity, distanceBand: place.distanceBand, coldStart } } : {}),
+      ...(this.companion.accompanied ? { accompanied: true } : {}),
     };
   }
   raise(kind, key, nowMs, features, { score, startedMs, severityHint }) {
@@ -284,10 +298,15 @@ export class RoutineDetector {
     if (features.gapSec > features.gapRefSec) {
       const alert = this.raise('SIGNAL_GAP', `gap:${last.t}`, nowMs, features, { score: clamp01(features.gapSec / (2 * features.gapRefSec)), startedMs: last.t, severityHint: 'check' });
       if (alert) raised.push(alert);
-    } else if ((features.dwellRatio >= 1 || features.offCorridorSec >= 120) && features.score >= p.alertScore) {
-      const starts = [features.dwellRatio >= 1 ? this.episode.startMs : Infinity, this.offSinceMs ?? Infinity];
-      const alert = this.raise('WANDERING', 'walk', nowMs, features, { score: features.score, startedMs: Math.min(...starts), severityHint: features.score >= 0.6 ? 'urgent' : 'watch' });
-      if (alert) raised.push(alert);
+    } else if (!this.companion.accompanied) {
+      const threshold = features.place?.coldStart ? this.memory.p.coldStartAlertScore : p.alertScore;
+      const behaviour = (features.dwellRatio >= 1 || features.offCorridorSec >= 120) && features.score >= threshold;
+      const novelty = Boolean(this.memory) && !features.place?.coldStart && features.offCorridorSec >= this.memory.p.noveltySec && features.distanceHomeM >= this.memory.p.noveltyFarM;
+      if (behaviour || novelty) {
+        const starts = [features.dwellRatio >= 1 ? this.episode.startMs : Infinity, this.offSinceMs ?? Infinity];
+        const alert = this.raise('WANDERING', 'walk', nowMs, { ...features, trigger: behaviour ? 'behaviour' : 'novelty' }, { score: features.score, startedMs: Math.min(...starts), severityHint: features.score >= 0.6 ? 'urgent' : 'watch' });
+        if (alert) raised.push(alert);
+      }
     }
     const device = this.device;
     const separated = device && device.bleSeenBy === 'home-gateway' && nowMs - device.t <= p.deviceFreshSec * 1000 && features.distanceHomeM > p.separationM;
