@@ -1,0 +1,1376 @@
+{
+  "receiptId": "anomaly-triage-run1",
+  "status": "REVIEW",
+  "generatedAt": "2026-11-20T00:31:09.510Z",
+  "docRevision": "2.0.0",
+  "rubricIds": [
+    "R17"
+  ],
+  "command": "node pc-mobius/scripts/run-anomaly-triage.mjs --agent=claude",
+  "agent": {
+    "kind": "claude",
+    "client": "claude-code 2.1.323 (Claude Code) headless -p stream-json",
+    "model": "claude-opus-5-5",
+    "llmInvocations": 3,
+    "builtInTools": "disabled (--tools \"\")",
+    "allowedTools": [
+      "mcp__onem2m__readAlert",
+      "mcp__onem2m__readRecentHistory",
+      "mcp__onem2m__readRoutineProfile",
+      "mcp__onem2m__readDeviceState",
+      "mcp__onem2m__submitTriage",
+      "mcp__onem2m__draftLocationLease",
+      "mcp__onem2m__requestGuardianApproval",
+      "mcp__onem2m__applyApprovedLease",
+      "mcp__mec__queryUeLocation",
+      "mcp__mec__queryZoneStatus",
+      "mcp__mec__queryServingCell",
+      "mcp__audit__readExecution",
+      "mcp__audit__appendTriageEvidence"
+    ],
+    "permissionMode": "dontAsk",
+    "strictMcpConfig": true,
+    "modelFlag": "not passed (user default)"
+  },
+  "simulationScope": {
+    "walks": "synthetic (generated on the sandbox map geometry, seeded)",
+    "keyringStates": "synthetic",
+    "guardianDecision": "scripted guardian principal outside the agent session",
+    "mecSandbox": false,
+    "cse": false,
+    "mcpTransport": false,
+    "llmAgent": false,
+    "hardware": false
+  },
+  "sandbox": {
+    "host": "192.168.0.103",
+    "name": "dayofcare",
+    "scenario": "day-of-care",
+    "meps": [
+      "mep1",
+      "mep2"
+    ],
+    "ue": "resident-relay",
+    "caSHA256": "41b040e74ccdada474afe8972813df3adcebef77fdbf04fc9a0bfe7f52898bc4",
+    "tlsWithoutPinnedCa": "MEC_TRANSPORT_REVIEW",
+    "mobilityAutomation": "turned on for the run and restored",
+    "movementAutomation": "off",
+    "definitionSource": {
+      "path": ".local/mec-sandbox/dayofcare.json (sandbox description written by the R13 day-of-care agent)",
+      "sha256": "ad5b8d800d6c22838aea33c6eb9f67bc05453639918bcdace3964dfb1ad6ee5d",
+      "schema": "pb.mec-sandbox.dayofcare.v1"
+    },
+    "apis": [
+      "MEC013 v3 queries/users",
+      "MEC013 v3 queries/zones",
+      "MEC012 rab_info",
+      "GIS geodata POST",
+      "GIS automation MOBILITY"
+    ]
+  },
+  "cse": {
+    "version": "4.24.5",
+    "postgres": "PostgreSQL 17.6 on x86_64-windows",
+    "resources": {
+      "residentAe": "/Mobius/pb-resident-mwo89dk89519",
+      "history": "/Mobius/pb-resident-mwo89dk89519/locationHistory",
+      "routine": "/Mobius/pb-resident-mwo89dk89519/routine"
+    },
+    "acp": "resident ACP: resident 63, routine/triage/guardian/incident AEs 35 (CREATE, RETRIEVE, DISCOVER)"
+  },
+  "routineModel": {
+    "version": "pb-routine-model.v1",
+    "profileHash": "3cc2709ef64066dbf50cebbbdfb945d4c5e757cf7e949448bdb162a13cfb28a5",
+    "trainingDays": 7,
+    "synthetic": true,
+    "readBackFromCse": 7,
+    "params": {
+      "stopRadiusM": 35,
+      "corridorTolM": 35,
+      "minCorridorDays": 2,
+      "minDwellSec": 120,
+      "minGapSec": 120,
+      "gapFactor": 1.5,
+      "nominalIntervalSec": 20,
+      "minLegM": 8,
+      "reversalDeg": 135,
+      "separationM": 150,
+      "separationSec": 120,
+      "deviceFreshSec": 900,
+      "alertScore": 0.45,
+      "dwellRamp": 1.5,
+      "pacingFull": 3,
+      "offCorridorRampSec": 180,
+      "duskLeadMin": 15,
+      "duskRampMin": 30,
+      "lateRampMin": 15,
+      "distanceScaleM": 800
+    },
+    "weights": {
+      "dwell": 0.4,
+      "pacing": 0.2,
+      "offCorridor": 0.15,
+      "dusk": 0.15,
+      "distance": 0.1
+    },
+    "summary": {
+      "modelVersion": "pb-routine-model.v1",
+      "days": 7,
+      "synthetic": true,
+      "profileHash": "3cc2709ef64066dbf50cebbbdfb945d4c5e757cf7e949448bdb162a13cfb28a5",
+      "usualDeparture": "16:31",
+      "usualReturn": "17:24",
+      "latestUsualReturn": "17:31",
+      "corridor": [
+        {
+          "segment": "home street",
+          "kind": "street",
+          "days": 7
+        },
+        {
+          "segment": "Boulevard de Belgique",
+          "kind": "street",
+          "days": 7
+        },
+        {
+          "segment": "Boulevard de Belgique",
+          "kind": "street",
+          "days": 7
+        },
+        {
+          "segment": "shaded passage on the boulevard",
+          "kind": "shaded",
+          "days": 7
+        },
+        {
+          "segment": "Chemin des Revoires",
+          "kind": "path",
+          "days": 7
+        },
+        {
+          "segment": "park east path",
+          "kind": "path",
+          "days": 7
+        },
+        {
+          "segment": "park east path",
+          "kind": "path",
+          "days": 7
+        },
+        {
+          "segment": "main footway",
+          "kind": "path",
+          "days": 7
+        },
+        {
+          "segment": "main footway",
+          "kind": "path",
+          "days": 7
+        },
+        {
+          "segment": "main footway to the bench",
+          "kind": "path",
+          "days": 7
+        },
+        {
+          "segment": "south bench",
+          "kind": "bench",
+          "days": 7
+        },
+        {
+          "segment": "park edge loop",
+          "kind": "path",
+          "days": 4
+        },
+        {
+          "segment": "park edge loop",
+          "kind": "path",
+          "days": 2
+        },
+        {
+          "segment": "park edge loop",
+          "kind": "path",
+          "days": 2
+        },
+        {
+          "segment": "park edge loop",
+          "kind": "path",
+          "days": 2
+        }
+      ],
+      "usualStops": [
+        {
+          "segment": "south bench",
+          "p50Sec": 1140,
+          "p95Sec": 1540,
+          "days": 7
+        }
+      ],
+      "usualSignalGaps": [
+        {
+          "segment": "Boulevard de Belgique",
+          "p95Sec": 120,
+          "days": 7
+        }
+      ],
+      "walkingSpeedMps": 0.88
+    },
+    "map": {
+      "mapId": "dayofcare-trail",
+      "homeRadiusM": 40,
+      "tzOffsetMin": 60,
+      "segments": [
+        {
+          "id": "d01",
+          "name": "home street",
+          "kind": "street",
+          "from": "H",
+          "to": "P3",
+          "lengthM": 71
+        },
+        {
+          "id": "d02",
+          "name": "Boulevard de Belgique",
+          "kind": "street",
+          "from": "P3",
+          "to": "P6",
+          "lengthM": 97
+        },
+        {
+          "id": "d03",
+          "name": "Boulevard de Belgique",
+          "kind": "street",
+          "from": "P6",
+          "to": "P9",
+          "lengthM": 71
+        },
+        {
+          "id": "d04",
+          "name": "shaded passage on the boulevard",
+          "kind": "shaded",
+          "from": "P9",
+          "to": "P13",
+          "lengthM": 93
+        },
+        {
+          "id": "d05",
+          "name": "Chemin des Revoires",
+          "kind": "path",
+          "from": "P13",
+          "to": "G",
+          "lengthM": 42
+        },
+        {
+          "id": "d06",
+          "name": "park east path",
+          "kind": "path",
+          "from": "G",
+          "to": "P18",
+          "lengthM": 38
+        },
+        {
+          "id": "d07",
+          "name": "park east path",
+          "kind": "path",
+          "from": "P18",
+          "to": "F",
+          "lengthM": 46
+        },
+        {
+          "id": "d08",
+          "name": "main footway",
+          "kind": "path",
+          "from": "F",
+          "to": "P24",
+          "lengthM": 26
+        },
+        {
+          "id": "d09",
+          "name": "main footway",
+          "kind": "path",
+          "from": "P24",
+          "to": "P26",
+          "lengthM": 20
+        },
+        {
+          "id": "d10",
+          "name": "main footway to the bench",
+          "kind": "path",
+          "from": "P26",
+          "to": "B",
+          "lengthM": 63
+        },
+        {
+          "id": "d11",
+          "name": "south bench",
+          "kind": "bench",
+          "from": "B",
+          "to": "B2",
+          "lengthM": 18
+        },
+        {
+          "id": "d12",
+          "name": "east branch at the trail fork",
+          "kind": "fork",
+          "from": "F",
+          "to": "EB",
+          "lengthM": 43
+        },
+        {
+          "id": "d13",
+          "name": "park edge loop",
+          "kind": "path",
+          "from": "F",
+          "to": "L1",
+          "lengthM": 68
+        },
+        {
+          "id": "d14",
+          "name": "park edge loop",
+          "kind": "path",
+          "from": "L1",
+          "to": "L2",
+          "lengthM": 68
+        },
+        {
+          "id": "d15",
+          "name": "park edge loop",
+          "kind": "path",
+          "from": "L2",
+          "to": "L3",
+          "lengthM": 78
+        },
+        {
+          "id": "d16",
+          "name": "park edge loop",
+          "kind": "path",
+          "from": "L3",
+          "to": "B",
+          "lengthM": 36
+        }
+      ]
+    }
+  },
+  "clockModel": "scenario time advances on the 20 s sample grid during replay; while an alert is triaged it runs at real speed (rate 1), so CSE notification, agent and guardian latency add to scenario time 1:1; PANIC is delivered at its scenario time even during triage",
+  "cases": [
+    {
+      "caseId": "C1-normal-walk",
+      "title": "Normal walk: bench rest with a short loop, home about 17:25",
+      "expectAlert": false,
+      "expectedKind": null,
+      "rationale": "usual trail, usual bench rest and times",
+      "deviationStartLocal": null,
+      "panicLocal": null,
+      "delivery": {
+        "ticks": 189,
+        "locationCins": 185,
+        "droppedByScenarioGap": 3,
+        "mecPositionMatched": 185,
+        "mecPositionUnmatched": 0,
+        "mecTickWallMsP50": 842,
+        "mecTickWallMsP95": 1007,
+        "mepsAnswering": {
+          "mep1": 55,
+          "mep2": 130
+        },
+        "cellChanges": [
+          {
+            "localTime": "16:34:00",
+            "from": "none",
+            "to": "1A00001"
+          },
+          {
+            "localTime": "16:35:40",
+            "from": "1A00001",
+            "to": "none"
+          },
+          {
+            "localTime": "17:19:00",
+            "from": "none",
+            "to": "1A00001"
+          },
+          {
+            "localTime": "17:20:40",
+            "from": "1A00001",
+            "to": "none"
+          }
+        ],
+        "caseWallSec": 150
+      },
+      "routineAlerts": [],
+      "attachedAlerts": [],
+      "triage": [],
+      "guardianNotices": [],
+      "routinePlusTriage": {
+        "alert": false,
+        "alerts": 0,
+        "falseAlarms": 0,
+        "missed": false,
+        "firstTrueAlertLocal": null,
+        "timeToAlertSec": null,
+        "leadTimeSec": null,
+        "action": null,
+        "severity": null
+      },
+      "baseline5min": {
+        "alert": true,
+        "alerts": 2,
+        "falseAlarms": 2,
+        "missed": false,
+        "firstTrueAlertLocal": null,
+        "timeToAlertSec": null,
+        "leadTimeSec": null,
+        "alertTimes": [
+          "16:46:20",
+          "17:06:20"
+        ]
+      },
+      "baseline10min": {
+        "alert": true,
+        "alerts": 2,
+        "falseAlarms": 2,
+        "missed": false,
+        "firstTrueAlertLocal": null,
+        "timeToAlertSec": null,
+        "leadTimeSec": null,
+        "alertTimes": [
+          "16:51:20",
+          "17:11:20"
+        ]
+      },
+      "panic": null,
+      "duplicateTriageRunsAfterPanic": 0
+    },
+    {
+      "caseId": "C2-longer-loop",
+      "title": "Longer but normal walk: park edge loop on the way out, home about 17:35",
+      "expectAlert": false,
+      "expectedKind": null,
+      "rationale": "park edge loop is part of the learned corridor (two of seven days)",
+      "deviationStartLocal": null,
+      "panicLocal": null,
+      "delivery": {
+        "ticks": 212,
+        "locationCins": 208,
+        "droppedByScenarioGap": 3,
+        "mecPositionMatched": 208,
+        "mecPositionUnmatched": 0,
+        "mecTickWallMsP50": 860,
+        "mecTickWallMsP95": 1000,
+        "mepsAnswering": {
+          "mep1": 59,
+          "mep2": 149
+        },
+        "cellChanges": [
+          {
+            "localTime": "16:35:20",
+            "from": "none",
+            "to": "1A00001"
+          },
+          {
+            "localTime": "16:37:00",
+            "from": "1A00001",
+            "to": "none"
+          },
+          {
+            "localTime": "16:42:20",
+            "from": "none",
+            "to": "1A00001"
+          },
+          {
+            "localTime": "16:43:00",
+            "from": "1A00001",
+            "to": "none"
+          },
+          {
+            "localTime": "17:27:20",
+            "from": "none",
+            "to": "1A00001"
+          },
+          {
+            "localTime": "17:29:00",
+            "from": "1A00001",
+            "to": "none"
+          }
+        ],
+        "caseWallSec": 178
+      },
+      "routineAlerts": [],
+      "attachedAlerts": [],
+      "triage": [],
+      "guardianNotices": [],
+      "routinePlusTriage": {
+        "alert": false,
+        "alerts": 0,
+        "falseAlarms": 0,
+        "missed": false,
+        "firstTrueAlertLocal": null,
+        "timeToAlertSec": null,
+        "leadTimeSec": null,
+        "action": null,
+        "severity": null
+      },
+      "baseline5min": {
+        "alert": true,
+        "alerts": 2,
+        "falseAlarms": 2,
+        "missed": false,
+        "firstTrueAlertLocal": null,
+        "timeToAlertSec": null,
+        "leadTimeSec": null,
+        "alertTimes": [
+          "16:49:40",
+          "17:11:40"
+        ]
+      },
+      "baseline10min": {
+        "alert": true,
+        "alerts": 2,
+        "falseAlarms": 2,
+        "missed": false,
+        "firstTrueAlertLocal": null,
+        "timeToAlertSec": null,
+        "leadTimeSec": null,
+        "alertTimes": [
+          "16:54:40",
+          "17:16:40"
+        ]
+      },
+      "panic": null,
+      "duplicateTriageRunsAfterPanic": 0
+    },
+    {
+      "caseId": "C3-bench-rest",
+      "title": "Usual bench rest: 22 minutes on the south bench without the short loop",
+      "expectAlert": false,
+      "expectedKind": null,
+      "rationale": "bench dwell inside the learned bench distribution",
+      "deviationStartLocal": null,
+      "panicLocal": null,
+      "delivery": {
+        "ticks": 157,
+        "locationCins": 153,
+        "droppedByScenarioGap": 3,
+        "mecPositionMatched": 153,
+        "mecPositionUnmatched": 0,
+        "mecTickWallMsP50": 835,
+        "mecTickWallMsP95": 1013,
+        "mepsAnswering": {
+          "mep1": 56,
+          "mep2": 97
+        },
+        "cellChanges": [
+          {
+            "localTime": "16:34:20",
+            "from": "none",
+            "to": "1A00001"
+          },
+          {
+            "localTime": "16:36:00",
+            "from": "1A00001",
+            "to": "none"
+          },
+          {
+            "localTime": "17:08:20",
+            "from": "none",
+            "to": "1A00001"
+          },
+          {
+            "localTime": "17:10:00",
+            "from": "1A00001",
+            "to": "none"
+          }
+        ],
+        "caseWallSec": 124
+      },
+      "routineAlerts": [],
+      "attachedAlerts": [],
+      "triage": [],
+      "guardianNotices": [],
+      "routinePlusTriage": {
+        "alert": false,
+        "alerts": 0,
+        "falseAlarms": 0,
+        "missed": false,
+        "firstTrueAlertLocal": null,
+        "timeToAlertSec": null,
+        "leadTimeSec": null,
+        "action": null,
+        "severity": null
+      },
+      "baseline5min": {
+        "alert": true,
+        "alerts": 1,
+        "falseAlarms": 1,
+        "missed": false,
+        "firstTrueAlertLocal": null,
+        "timeToAlertSec": null,
+        "leadTimeSec": null,
+        "alertTimes": [
+          "16:46:00"
+        ]
+      },
+      "baseline10min": {
+        "alert": true,
+        "alerts": 1,
+        "falseAlarms": 1,
+        "missed": false,
+        "firstTrueAlertLocal": null,
+        "timeToAlertSec": null,
+        "leadTimeSec": null,
+        "alertTimes": [
+          "16:51:00"
+        ]
+      },
+      "panic": null,
+      "duplicateTriageRunsAfterPanic": 0
+    },
+    {
+      "caseId": "C4-fork-dusk",
+      "title": "Story day: on the way home she stops at the trail fork at 17:10 (dusk), back and forth between branches, PANIC at 17:18",
+      "expectAlert": true,
+      "expectedKind": "WANDERING",
+      "rationale": "stop and back-and-forth at the fork after sunset; the fork is usually passed without a stop",
+      "deviationStartLocal": "17:08:54",
+      "panicLocal": "17:18:00",
+      "delivery": {
+        "ticks": 178,
+        "locationCins": 175,
+        "droppedByScenarioGap": 3,
+        "mecPositionMatched": 175,
+        "mecPositionUnmatched": 0,
+        "mecTickWallMsP50": 860,
+        "mecTickWallMsP95": 1021,
+        "mepsAnswering": {
+          "mep1": 30,
+          "mep2": 145
+        },
+        "cellChanges": [
+          {
+            "localTime": "16:34:00",
+            "from": "none",
+            "to": "1A00001"
+          },
+          {
+            "localTime": "16:36:00",
+            "from": "1A00001",
+            "to": "none"
+          }
+        ],
+        "caseWallSec": 169
+      },
+      "routineAlerts": [
+        {
+          "alertId": "alert-c4-1-9519",
+          "kind": "WANDERING",
+          "score": 0.476,
+          "detectedLocal": "17:13:20",
+          "startedLocal": "17:09",
+          "segment": "east branch at the trail fork",
+          "features": {
+            "dwellSec": 220,
+            "dwellRefSec": 120,
+            "reversals": 1,
+            "offCorridorSec": 0,
+            "minutesAfterSunset": 11.2,
+            "distanceHomeM": 448,
+            "gapSec": 0,
+            "gapRefSec": 120,
+            "components": {
+              "dwell": 0.556,
+              "pacing": 0.333,
+              "offCorridor": 0,
+              "dusk": 0.874,
+              "distance": 0.56
+            }
+          }
+        }
+      ],
+      "attachedAlerts": [],
+      "triage": [
+        {
+          "runId": "triage-run-f6fe1302-e034-46e9-a549-85b04cbba069",
+          "alertId": "alert-c4-1-9519",
+          "kind": "WANDERING",
+          "wakeLocal": "17:13:20",
+          "invocations": [
+            {
+              "invocation": 1,
+              "actor": "claude-code-headless",
+              "wallSec": 20.1,
+              "code": 0,
+              "subtype": "success",
+              "isError": false,
+              "numTurns": 8,
+              "durationMs": 18737,
+              "model": "claude-opus-5-5",
+              "toolUses": [
+                "mcp__onem2m__readAlert",
+                "mcp__audit__readExecution",
+                "mcp__onem2m__readRoutineProfile",
+                "mcp__onem2m__readRecentHistory",
+                "mcp__onem2m__readDeviceState",
+                "mcp__onem2m__submitTriage",
+                "mcp__audit__appendTriageEvidence"
+              ],
+              "result": "I set alert alert-c4-1-9519 to **watch** and chose **checkIn**, so guardian-daughter has been asked to call her mother. I did not draft a location lease, and the run is now complete in the audit record.\n\n**Why I flagged it:**\n- Since 16:53 she has gone back and forth between the south bench, the main footway, the trail fork and the park paths, with one reversal.\n- She sat at the south bench for only about 2 and then 7 minutes. She usually sits there for about 19 minutes.\n- She stopped at the east branch of the trail fork at 17:09 and was still there at 17:13. That's longer than usual for that spot, and it was after sunset (17:02), with her walking slowly.\n\n**Why it isn't urgent:**\n- The location history marks all her positions as on her usual route, and there are no signal gaps.\n- Her keyr",
+              "prompt": "Run triage-run-f6fe1302-e034-46e9-a549-85b04cbba069. The routine model raised alert alert-c4-1-9519 for resident resident-r1 (relay UE device resident-ue, keyring keyring-k1). Household guardian: guardian-daughter. Triage this alert."
+            }
+          ],
+          "status": "COMPLETED",
+          "triage": {
+            "severity": "watch",
+            "action": "checkIn",
+            "explanation": "Since 16:53 she has gone back and forth between the south bench, main footway and trail fork; stopped at the fork 17:09-17:13 after sunset (17:02). Usually sits ~19 min at the bench and is home by 17:24. Still on her usual route, no panic press. Please call her.",
+            "checked": [
+              "alert",
+              "routineProfile",
+              "recentHistory",
+              "keyringState"
+            ],
+            "decidedLocal": "17:13:30"
+          },
+          "readCalls": [
+            {
+              "serverId": "oneM2M",
+              "tool": "readAlert",
+              "invocation": 1
+            },
+            {
+              "serverId": "oneM2M",
+              "tool": "readRoutineProfile",
+              "invocation": 1
+            },
+            {
+              "serverId": "oneM2M",
+              "tool": "readRecentHistory",
+              "invocation": 1
+            },
+            {
+              "serverId": "oneM2M",
+              "tool": "readDeviceState",
+              "invocation": 1
+            }
+          ],
+          "checkpoints": [
+            {
+              "step": "readAlert",
+              "invocation": 1
+            },
+            {
+              "step": "submitTriage",
+              "invocation": 1
+            },
+            {
+              "step": "appendTriageEvidence",
+              "invocation": 1
+            }
+          ],
+          "toolErrors": [],
+          "approvalChecks": [],
+          "evidenceHash": "94ce2be546a65440eb55890640d4508ac129edc34a7fc4a15566ab212b9ea006",
+          "doneLocal": "17:13:40",
+          "wallSec": 20.1,
+          "toolsCalledByAgent": {
+            "oneM2M": [
+              "readAlert",
+              "readRoutineProfile",
+              "readRecentHistory",
+              "readDeviceState",
+              "submitTriage"
+            ],
+            "MEC": [],
+            "Audit": [
+              "readExecution",
+              "appendTriageEvidence"
+            ]
+          },
+          "toolsCalledByTriageAe": {
+            "oneM2M": [],
+            "MEC": [],
+            "Audit": []
+          }
+        }
+      ],
+      "guardianNotices": [
+        {
+          "type": "INCIDENT_OPENED",
+          "container": "incidents",
+          "scenarioLocal": "17:13:30",
+          "action": null,
+          "severity": "watch",
+          "alertKind": null
+        },
+        {
+          "type": "TRIAGE_NOTICE",
+          "container": "guardianInbox",
+          "scenarioLocal": "17:13:30",
+          "action": "checkIn",
+          "severity": "watch",
+          "alertKind": "WANDERING"
+        },
+        {
+          "type": "INCIDENT_ESCALATED",
+          "container": "incidents",
+          "scenarioLocal": "17:18:00",
+          "action": null,
+          "severity": null,
+          "alertKind": null
+        },
+        {
+          "type": "ESCALATION",
+          "container": "guardianInbox",
+          "scenarioLocal": "17:18:00",
+          "action": null,
+          "severity": null,
+          "alertKind": null
+        }
+      ],
+      "routinePlusTriage": {
+        "alert": true,
+        "alerts": 1,
+        "falseAlarms": 0,
+        "missed": false,
+        "firstTrueAlertLocal": "17:13:30",
+        "timeToAlertSec": 276,
+        "leadTimeSec": 269,
+        "action": "checkIn",
+        "severity": "watch"
+      },
+      "baseline5min": {
+        "alert": true,
+        "alerts": 3,
+        "falseAlarms": 2,
+        "missed": false,
+        "firstTrueAlertLocal": "17:15:00",
+        "timeToAlertSec": 365,
+        "leadTimeSec": 180,
+        "alertTimes": [
+          "16:46:00",
+          "17:05:00",
+          "17:15:00"
+        ]
+      },
+      "baseline10min": {
+        "alert": true,
+        "alerts": 2,
+        "falseAlarms": 1,
+        "missed": true,
+        "firstTrueAlertLocal": "17:20:00",
+        "timeToAlertSec": 665,
+        "leadTimeSec": -120,
+        "alertTimes": [
+          "16:51:00",
+          "17:20:00"
+        ]
+      },
+      "panic": {
+        "panicLocal": "17:18:00",
+        "deliveredLocal": "17:18:00",
+        "escalatedOpenIncident": true,
+        "incidentId": "incident-alert-c4-1-9519",
+        "leadTimeSec": 269,
+        "triageRunsAtPanic": 1
+      },
+      "duplicateTriageRunsAfterPanic": 0
+    },
+    {
+      "caseId": "C5-tunnel-gap",
+      "title": "Six-minute location gap from the shaded passage while she keeps walking into the park",
+      "expectAlert": false,
+      "expectedKind": null,
+      "rationale": "data gap only; the network still serves the UE along the trail and records the cell change",
+      "deviationStartLocal": null,
+      "panicLocal": null,
+      "delivery": {
+        "ticks": 189,
+        "locationCins": 170,
+        "droppedByScenarioGap": 18,
+        "mecPositionMatched": 170,
+        "mecPositionUnmatched": 0,
+        "mecTickWallMsP50": 853,
+        "mecTickWallMsP95": 1038,
+        "mepsAnswering": {
+          "mep1": 55,
+          "mep2": 115
+        },
+        "cellChanges": [
+          {
+            "localTime": "16:34:00",
+            "from": "none",
+            "to": "1A00001"
+          },
+          {
+            "localTime": "16:36:00",
+            "from": "1A00001",
+            "to": "none"
+          },
+          {
+            "localTime": "17:19:00",
+            "from": "none",
+            "to": "1A00001"
+          },
+          {
+            "localTime": "17:20:40",
+            "from": "1A00001",
+            "to": "none"
+          }
+        ],
+        "caseWallSec": 170
+      },
+      "routineAlerts": [
+        {
+          "alertId": "alert-c5-1-9519",
+          "kind": "SIGNAL_GAP",
+          "score": 0.556,
+          "detectedLocal": "16:37:40",
+          "startedLocal": "16:34",
+          "segment": "Boulevard de Belgique",
+          "features": {
+            "dwellSec": 20,
+            "dwellRefSec": 120,
+            "reversals": 0,
+            "offCorridorSec": 0,
+            "minutesAfterSunset": -24.4,
+            "distanceHomeM": 233,
+            "gapSec": 200,
+            "gapRefSec": 180,
+            "components": {
+              "dwell": 0,
+              "pacing": 0,
+              "offCorridor": 0,
+              "dusk": 0,
+              "distance": 0.291
+            }
+          }
+        }
+      ],
+      "attachedAlerts": [],
+      "triage": [
+        {
+          "runId": "triage-run-e1f799b5-9e03-4d1a-b2a9-6dfbce742e0c",
+          "alertId": "alert-c5-1-9519",
+          "kind": "SIGNAL_GAP",
+          "wakeLocal": "16:37:40",
+          "invocations": [
+            {
+              "invocation": 1,
+              "actor": "claude-code-headless",
+              "wallSec": 18,
+              "code": 0,
+              "subtype": "success",
+              "isError": false,
+              "numTurns": 8,
+              "durationMs": 16833,
+              "model": "claude-opus-5-5",
+              "toolUses": [
+                "mcp__onem2m__readAlert",
+                "mcp__audit__readExecution",
+                "mcp__mec__queryUeLocation",
+                "mcp__mec__queryServingCell",
+                "mcp__onem2m__readRoutineProfile",
+                "mcp__onem2m__submitTriage",
+                "mcp__audit__appendTriageEvidence"
+              ],
+              "result": "I triaged alert alert-c5-1-9519 as **info**, with the action **observe**. The guardian was not notified, no location lease was drafted, and the run is now COMPLETED.\n\n**Why it's not a concern:**\n- **What triggered it:** Her location updates stopped for 200 seconds, starting at 16:34 on Boulevard de Belgique. The model's reference is 180 seconds, and her profile shows gaps on this street every walk day.\n- **She's been found again:** At 16:37 the location service placed her phone on the park east path, which is part of her usual route. It's connected to the park's 5G access point at the entrance.\n- **She's walking normally:** She moved about 170 m in roughly 3.4 minutes, close to her usual pace of 0.88 m/s.\n- **Why the network shows no cell:** Her phone moved off the 4G cell to the park's 5G",
+              "prompt": "Run triage-run-e1f799b5-9e03-4d1a-b2a9-6dfbce742e0c. The routine model raised alert alert-c5-1-9519 for resident resident-r1 (relay UE device resident-ue, keyring keyring-k1). Household guardian: guardian-daughter. Triage this alert."
+            }
+          ],
+          "status": "COMPLETED",
+          "triage": {
+            "severity": "info",
+            "action": "observe",
+            "explanation": "Location samples paused 16:34-16:37 on Boulevard de Belgique (usual gap there). At 16:37 her phone is on the park 5G access point on the park east path, her usual route, moving at normal walking pace. Usual return 17:24.",
+            "checked": [
+              "alert",
+              "mec013-ue-location",
+              "mec012-serving-cell",
+              "routine-profile"
+            ],
+            "decidedLocal": "16:37:49"
+          },
+          "readCalls": [
+            {
+              "serverId": "oneM2M",
+              "tool": "readAlert",
+              "invocation": 1
+            },
+            {
+              "serverId": "MEC",
+              "tool": "queryUeLocation",
+              "invocation": 1
+            },
+            {
+              "serverId": "MEC",
+              "tool": "queryServingCell",
+              "invocation": 1
+            },
+            {
+              "serverId": "oneM2M",
+              "tool": "readRoutineProfile",
+              "invocation": 1
+            }
+          ],
+          "checkpoints": [
+            {
+              "step": "readAlert",
+              "invocation": 1
+            },
+            {
+              "step": "submitTriage",
+              "invocation": 1
+            },
+            {
+              "step": "appendTriageEvidence",
+              "invocation": 1
+            }
+          ],
+          "toolErrors": [],
+          "approvalChecks": [],
+          "evidenceHash": "68409ec1e7ff78986781bb2553539cb06f8b0e0cbdb486da14aa7ccb9f7fb304",
+          "doneLocal": "16:37:57",
+          "wallSec": 18,
+          "toolsCalledByAgent": {
+            "oneM2M": [
+              "readAlert",
+              "readRoutineProfile",
+              "submitTriage"
+            ],
+            "MEC": [
+              "queryUeLocation",
+              "queryServingCell"
+            ],
+            "Audit": [
+              "readExecution",
+              "appendTriageEvidence"
+            ]
+          },
+          "toolsCalledByTriageAe": {
+            "oneM2M": [],
+            "MEC": [],
+            "Audit": []
+          }
+        }
+      ],
+      "guardianNotices": [],
+      "routinePlusTriage": {
+        "alert": false,
+        "alerts": 0,
+        "falseAlarms": 0,
+        "missed": false,
+        "firstTrueAlertLocal": null,
+        "timeToAlertSec": null,
+        "leadTimeSec": null,
+        "action": "observe",
+        "severity": "info"
+      },
+      "baseline5min": {
+        "alert": true,
+        "alerts": 3,
+        "falseAlarms": 3,
+        "missed": false,
+        "firstTrueAlertLocal": null,
+        "timeToAlertSec": null,
+        "leadTimeSec": null,
+        "alertTimes": [
+          "16:39:20",
+          "16:46:00",
+          "17:06:40"
+        ]
+      },
+      "baseline10min": {
+        "alert": true,
+        "alerts": 2,
+        "falseAlarms": 2,
+        "missed": false,
+        "firstTrueAlertLocal": null,
+        "timeToAlertSec": null,
+        "leadTimeSec": null,
+        "alertTimes": [
+          "16:51:00",
+          "17:11:40"
+        ]
+      },
+      "panic": null,
+      "duplicateTriageRunsAfterPanic": 0
+    },
+    {
+      "caseId": "C6-keyring-home",
+      "title": "Keyring left at home while the relay UE walks the usual trail",
+      "expectAlert": true,
+      "expectedKind": "DEVICE_SEPARATION",
+      "rationale": "PANIC button is not with the resident",
+      "deviationStartLocal": "16:30:00",
+      "panicLocal": null,
+      "delivery": {
+        "ticks": 189,
+        "locationCins": 185,
+        "droppedByScenarioGap": 3,
+        "mecPositionMatched": 185,
+        "mecPositionUnmatched": 0,
+        "mecTickWallMsP50": 794,
+        "mecTickWallMsP95": 1004,
+        "mepsAnswering": {
+          "mep1": 56,
+          "mep2": 129
+        },
+        "cellChanges": [
+          {
+            "localTime": "16:34:20",
+            "from": "none",
+            "to": "1A00001"
+          },
+          {
+            "localTime": "16:36:00",
+            "from": "1A00001",
+            "to": "none"
+          },
+          {
+            "localTime": "17:19:00",
+            "from": "none",
+            "to": "1A00001"
+          },
+          {
+            "localTime": "17:20:40",
+            "from": "1A00001",
+            "to": "none"
+          }
+        ],
+        "caseWallSec": 169
+      },
+      "routineAlerts": [
+        {
+          "alertId": "alert-c6-1-9519",
+          "kind": "DEVICE_SEPARATION",
+          "score": 0.643,
+          "detectedLocal": "16:35:00",
+          "startedLocal": "16:31",
+          "segment": "Boulevard de Belgique",
+          "features": {
+            "dwellSec": 20,
+            "dwellRefSec": 120,
+            "reversals": 0,
+            "offCorridorSec": 0,
+            "minutesAfterSunset": -27.1,
+            "distanceHomeM": 228,
+            "gapSec": 40,
+            "gapRefSec": 180,
+            "components": {
+              "dwell": 0,
+              "pacing": 0,
+              "offCorridor": 0,
+              "dusk": 0,
+              "distance": 0.285
+            }
+          }
+        }
+      ],
+      "attachedAlerts": [],
+      "triage": [
+        {
+          "runId": "triage-run-693faf68-5c7b-4b10-8fdf-f6b66de7e37d",
+          "alertId": "alert-c6-1-9519",
+          "kind": "DEVICE_SEPARATION",
+          "wakeLocal": "16:35:00",
+          "invocations": [
+            {
+              "invocation": 1,
+              "actor": "claude-code-headless",
+              "wallSec": 27,
+              "code": 0,
+              "subtype": "success",
+              "isError": false,
+              "numTurns": 7,
+              "durationMs": 25954,
+              "model": "claude-opus-5-5",
+              "toolUses": [
+                "mcp__onem2m__readAlert",
+                "mcp__audit__readExecution",
+                "mcp__onem2m__readDeviceState",
+                "mcp__mec__queryUeLocation",
+                "mcp__onem2m__submitTriage",
+                "mcp__audit__appendTriageEvidence"
+              ],
+              "result": "I recorded alert alert-c6-1-9519 as **watch / observe**, so the guardian was not notified. The system will check again in 10 minutes, and the run is complete with evidence logged.\n\nThe alert says her keyring and her phone have separated. It looks like she left the keyring at home:\n- **Keyring:** since 16:31 only the home gateway has picked it up. The battery is at 81%, the button is idle and there has been no panic press.\n- **Phone:** it is moving with her at normal walking speed along her usual Boulevard de Belgique route. At 16:35 she was in the shaded passage on the boulevard, 260 m from home.\n- **Timing:** sunset is at 17:02 and she usually gets home around 17:32, so nothing about the walk itself is out of the ordinary.\n\nHer phone still tracks where she is, but she has no panic button ",
+              "prompt": "Run triage-run-693faf68-5c7b-4b10-8fdf-f6b66de7e37d. The routine model raised alert alert-c6-1-9519 for resident resident-r1 (relay UE device resident-ue, keyring keyring-k1). Household guardian: guardian-daughter. Triage this alert."
+            }
+          ],
+          "status": "COMPLETED",
+          "triage": {
+            "severity": "watch",
+            "action": "observe",
+            "explanation": "Since 16:31 her keyring has stayed at home (home gateway, button idle) while her phone walks the usual Boulevard de Belgique route at normal pace, 260 m from home. Sunset 17:02, usual return ~17:32. Likely forgotten keyring; rechecking.",
+            "checked": [
+              "readAlert",
+              "readDeviceState",
+              "queryUeLocation"
+            ],
+            "decidedLocal": "16:35:16"
+          },
+          "readCalls": [
+            {
+              "serverId": "oneM2M",
+              "tool": "readAlert",
+              "invocation": 1
+            },
+            {
+              "serverId": "oneM2M",
+              "tool": "readDeviceState",
+              "invocation": 1
+            },
+            {
+              "serverId": "MEC",
+              "tool": "queryUeLocation",
+              "invocation": 1
+            }
+          ],
+          "checkpoints": [
+            {
+              "step": "readAlert",
+              "invocation": 1
+            },
+            {
+              "step": "submitTriage",
+              "invocation": 1
+            },
+            {
+              "step": "appendTriageEvidence",
+              "invocation": 1
+            }
+          ],
+          "toolErrors": [],
+          "approvalChecks": [],
+          "evidenceHash": "08e4308ecc684502c9da77dc020c3965a8cb65fbc70c166f9c4922fef2c32598",
+          "doneLocal": "16:35:27",
+          "wallSec": 27,
+          "toolsCalledByAgent": {
+            "oneM2M": [
+              "readAlert",
+              "readDeviceState",
+              "submitTriage"
+            ],
+            "MEC": [
+              "queryUeLocation"
+            ],
+            "Audit": [
+              "readExecution",
+              "appendTriageEvidence"
+            ]
+          },
+          "toolsCalledByTriageAe": {
+            "oneM2M": [],
+            "MEC": [],
+            "Audit": []
+          }
+        }
+      ],
+      "guardianNotices": [],
+      "routinePlusTriage": {
+        "alert": false,
+        "alerts": 0,
+        "falseAlarms": 0,
+        "missed": true,
+        "firstTrueAlertLocal": null,
+        "timeToAlertSec": null,
+        "leadTimeSec": null,
+        "action": "observe",
+        "severity": "watch"
+      },
+      "baseline5min": {
+        "alert": true,
+        "alerts": 2,
+        "falseAlarms": 2,
+        "missed": true,
+        "firstTrueAlertLocal": null,
+        "timeToAlertSec": null,
+        "leadTimeSec": null,
+        "alertTimes": [
+          "16:46:00",
+          "17:06:40"
+        ]
+      },
+      "baseline10min": {
+        "alert": true,
+        "alerts": 2,
+        "falseAlarms": 2,
+        "missed": true,
+        "firstTrueAlertLocal": null,
+        "timeToAlertSec": null,
+        "leadTimeSec": null,
+        "alertTimes": [
+          "16:51:00",
+          "17:11:40"
+        ]
+      },
+      "panic": null,
+      "duplicateTriageRunsAfterPanic": 0
+    }
+  ],
+  "totals": {
+    "routinePlusTriage": {
+      "casesWithGuardianAlert": 1,
+      "falseAlarms": 0,
+      "missed": 1,
+      "leadTimeSec": {
+        "C4-fork-dusk": 269
+      },
+      "timeToAlertSec": {
+        "C4-fork-dusk": 276,
+        "C6-keyring-home": null
+      }
+    },
+    "baseline5min": {
+      "casesWithGuardianAlert": 6,
+      "falseAlarms": 12,
+      "missed": 1,
+      "leadTimeSec": {
+        "C4-fork-dusk": 180
+      },
+      "timeToAlertSec": {
+        "C4-fork-dusk": 365,
+        "C6-keyring-home": null
+      }
+    },
+    "baseline10min": {
+      "casesWithGuardianAlert": 6,
+      "falseAlarms": 10,
+      "missed": 2,
+      "leadTimeSec": {
+        "C4-fork-dusk": -120
+      },
+      "timeToAlertSec": {
+        "C4-fork-dusk": 665,
+        "C6-keyring-home": null
+      }
+    }
+  },
+  "checks": {
+    "routineAlertsOnlyWhereExpectedOrTriaged": true,
+    "noMissedCaseRoutinePlusTriage": false,
+    "noFalseAlarmRoutinePlusTriage": true,
+    "panicEscalatedWithoutDuplicateRun": true,
+    "leaseOnlyWithGuardianHash": true,
+    "noPreciseCoordinateInAgentTranscript": true
+  },
+  "contract": {
+    "id": "privacy-bubble.mcp-triage.v1",
+    "sha256": "4b7a07371737c136c99f403e55586c14d16be372a797c9696d0195ef38fd5a65"
+  },
+  "transcript": {
+    "path": "docs/verification-evidence/2026-11-20/anomaly-triage-run1-transcript.jsonl",
+    "sha256": "482b5bd4d67e7b7f8bf90d8f9011596251ed69295f7fced5acb5c18f3032994d",
+    "lines": 71,
+    "sanitized": "bearer tokens, CSE admin originator and database password replaced; rate_limit_event lines and init plugin/skill/agent/path fields dropped",
+    "preciseCoordinateHits": 0
+  },
+  "runnerSHA256": "8bcac255b860b3560ca10cafa28b95e0291e5d451e4da76d296e7aec6cf3ef9c",
+  "runDirectory": ".local/anomaly-triage/mwo89dk89519",
+  "limits": [
+    "Walks, keyring states and PANIC times are synthetic and designed by the same team that set the model parameters; the sample is six evenings, no clinical claim.",
+    "Location fixes come from the ETSI MEC Sandbox GIS position set by the replay, so MEC013 returns the generated point; real network positioning error is absent.",
+    "The guardian decision is scripted and immediate after the agent stops; human response time is not modelled."
+  ],
+  "notes": [
+    "First full Claude run on dayofcare before the server-side action floor; C6 (keyring left at home) was triaged observe, so the guardian received no notice. The DEVICE_SEPARATION floor (checkIn) was added after this run and the six cases were run again (anomaly-triage.json)."
+  ]
+}

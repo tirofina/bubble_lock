@@ -1,0 +1,2 @@
+case,expect_alert,routine_alerts,triage_action,guardian_alert,first_guardian_alert,time_to_alert_s,lead_time_vs_panic_s,false_alarms,missed,agent_tools_onem2m,agent_tools_mec,agent_tools_audit,baseline5_alerts,baseline5_false_alarms,baseline5_missed,baseline5_lead_s,baseline10_alerts,baseline10_false_alarms,baseline10_missed,baseline10_lead_s
+"C5-tunnel-gap","false","SIGNAL_GAP","observe","false","","","","0","false","readAlert readRoutineProfile readDeviceState submitTriage","queryUeLocation","readExecution appendTriageEvidence","1","1","false","","0","0","false",""
