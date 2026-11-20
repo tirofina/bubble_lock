@@ -2,7 +2,11 @@ import { randomUUID } from 'node:crypto';
 
 const QUERY_KEYS = new Set(['fu', 'ty', 'cnd', 'gmty', 'gsf', 'geom', 'lbl', 'lim', 'rcn', 'drt']);
 
-/** Minimal oneM2M HTTP binding client acting as one originator (AE-ID). */
+/**
+ * Minimal oneM2M HTTP binding client acting as one originator (AE-ID). The endpoint may carry a path
+ * prefix of a reverse proxy: endpoint https://cse.example:8443/onem2m with cseBase /Mobius addresses
+ * https://cse.example:8443/onem2m/Mobius/...; resource paths and notification `sur` stay CSE-relative.
+ */
 export class Onem2mHttpClient {
   constructor({ endpoint, cseBase = '/Mobius', originator, fetchImpl = globalThis.fetch, timeoutMs = 5000, rvi = '4' } = {}) {
     const url = new URL(endpoint);

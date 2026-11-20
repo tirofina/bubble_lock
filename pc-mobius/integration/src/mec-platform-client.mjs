@@ -1,6 +1,7 @@
 import { request as httpRequest } from 'node:http';
 import { request as httpsRequest } from 'node:https';
 import { readFileSync } from 'node:fs';
+import { isIP } from 'node:net';
 import { approvalHash } from './integration-utils.mjs';
 
 /** MEC sandbox connection settings. Every value is pluggable through the environment. */
@@ -24,18 +25,58 @@ export function mecSandboxConfig(env = process.env) {
   };
 }
 
-/** fetch with a pinned CA bundle (k8s ingress CA) or, for local tests only, TLS verification off. */
-export function createMecFetch({ ca = null, caFile = null, insecureTls = false } = {}) {
+/**
+ * oneM2M CSE connection settings of an IPE on a MEC host. The CSE is reached over HTTPS with a pinned
+ * CA and, behind an originator-binding proxy, with a client certificate:
+ *   ONEM2M_CSE_URL (may carry a path prefix, e.g. https://cse.example:8443/onem2m), ONEM2M_CSE_BASE
+ *   (/Mobius), ONEM2M_CSE_ID, ONEM2M_CA_FILE (default: the MEC CA), ONEM2M_CLIENT_CERT_FILE,
+ *   ONEM2M_CLIENT_KEY_FILE and ONEM2M_SERVERNAME (TLS SNI and Host; default: the URL host).
+ */
+export function onem2mCseConfig(env = process.env, { fallbackCaFile = null } = {}) {
+  return {
+    endpoint: env.ONEM2M_CSE_URL ? env.ONEM2M_CSE_URL.replace(/\/+$/, '') : null,
+    cseBase: env.ONEM2M_CSE_BASE || '/Mobius',
+    cseId: env.ONEM2M_CSE_ID || null,
+    caFile: env.ONEM2M_CA_FILE || fallbackCaFile || null,
+    certFile: env.ONEM2M_CLIENT_CERT_FILE || null,
+    keyFile: env.ONEM2M_CLIENT_KEY_FILE || null,
+    servername: env.ONEM2M_SERVERNAME || null,
+  };
+}
+
+/**
+ * fetch with a pinned CA bundle (k8s ingress CA, CSE trust bundle), an optional client certificate
+ * (mTLS to an originator-binding proxy) and an optional TLS server name, or, for local tests only,
+ * TLS verification off. `servername` sets SNI, the certificate name check and the Host header, so a
+ * client can dial an IP address and still present the DNS name that the server certificate carries.
+ * Without a servername, SNI follows the URL host (none for an IP address).
+ * `connectHost` dials another address (an IP or a name) than the URL host while SNI, the certificate
+ * name check and the Host header keep the URL host (or the servername), so no hosts-file entry is needed
+ * when the DNS name of the server resolves elsewhere (a public address seen from inside the LAN).
+ */
+export function createMecFetch({ ca = null, caFile = null, cert = null, certFile = null, key = null, keyFile = null, servername = null, connectHost = null, insecureTls = false } = {}) {
   const authority = caFile ? readFileSync(caFile) : ca;
-  if (!authority && !insecureTls) return globalThis.fetch;
+  const clientCert = certFile ? readFileSync(certFile) : cert;
+  const clientKey = keyFile ? readFileSync(keyFile) : key;
+  if (Boolean(clientCert) !== Boolean(clientKey)) throw new Error('client certificate and key are configured together');
+  if (connectHost !== null && (typeof connectHost !== 'string' || !/^(\[[0-9a-fA-F:.]+\]|[0-9a-fA-F:.]+|[A-Za-z0-9]([A-Za-z0-9.-]{0,251}[A-Za-z0-9])?)$/.test(connectHost))) throw new Error('connectHost is a host name or an IP address');
+  if (!authority && !insecureTls && !clientCert && !servername && !connectHost) return globalThis.fetch;
   return (input, init = {}) => new Promise((resolve, reject) => {
     const url = new URL(input);
-    const transport = url.protocol === 'https:' ? httpsRequest : httpRequest;
+    const https = url.protocol === 'https:';
+    const transport = https ? httpsRequest : httpRequest;
     const body = init.body === undefined || init.body === null ? null : Buffer.from(init.body);
     const headers = { ...(init.headers ?? {}) };
     if (body) headers['content-length'] = String(body.length);
-    const tls = url.protocol === 'https:' ? { ca: authority ?? undefined, rejectUnauthorized: !insecureTls, minVersion: 'TLSv1.2' } : {};
-    const outgoing = transport(url, { method: init.method ?? 'GET', headers, signal: init.signal, ...tls }, (incoming) => {
+    const hostName = https && servername ? servername : url.hostname;
+    if (connectHost || (https && servername && servername !== url.hostname)) {
+      for (const name of Object.keys(headers)) if (name.toLowerCase() === 'host') delete headers[name];
+      headers.host = url.port ? `${hostName}:${url.port}` : hostName;
+    }
+    const sni = servername ?? (isIP(url.hostname.replace(/^\[|\]$/g, '')) ? null : url.hostname);
+    const tls = https ? { ca: authority ?? undefined, rejectUnauthorized: !insecureTls, minVersion: 'TLSv1.2', ...(sni ? { servername: sni } : {}), ...(clientCert ? { cert: clientCert, key: clientKey } : {}) } : {};
+    const dial = connectHost ? { hostname: connectHost.replace(/^\[|\]$/g, '') } : {};
+    const outgoing = transport(url, { method: init.method ?? 'GET', headers, signal: init.signal, ...dial, ...tls }, (incoming) => {
       const chunks = []; let size = 0;
       incoming.on('data', (chunk) => { size += chunk.length; if (size > 2 * 1024 * 1024) { outgoing.destroy(new Error('MEC_RESPONSE_SIZE_REVIEW')); return; } chunks.push(chunk); });
       incoming.on('end', () => {

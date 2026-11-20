@@ -1,0 +1,413 @@
+{
+  "status": "PASS",
+  "rubric": "R14",
+  "docRevision": "2.0.0",
+  "generatedAt": "2026-11-20T11:26:28.639Z",
+  "runtimeMode": "LOCAL_STF685_VM_SERVER_CSE",
+  "simulation": false,
+  "syntheticData": true,
+  "estimedExecution": false,
+  "simulatedComponents": [
+    "dataset: documented synthetic task privacy-motion-8-heterogeneous-v1 (worker-private seeds)",
+    "compute time: trainDelayMs=3000 per selected round (stop window)"
+  ],
+  "hosts": [
+    {
+      "role": "coordinator",
+      "hostnameSha256": "55856d95e8dc9ca98b6a12bd823455d266ab0d40a884ac2ec894e83b3cfcaa6a",
+      "os": "Windows 11 Pro",
+      "kernel": "10.0.22631",
+      "arch": "x64",
+      "node": "v22.19.0"
+    },
+    {
+      "role": "workers",
+      "hostnameSha256": "6c013eb7b6f986887cbd07af9a5e27b6df5ed3b4bc0b0b15a7dda8041ea662a4",
+      "os": "Ubuntu 22.04.5 LTS",
+      "kernel": "5.15.0-204-generic",
+      "arch": "x86_64",
+      "node": "v24.18.0",
+      "ntpSynchronized": "no",
+      "units": [
+        "bubble-fl-worker-w1 (transient systemd unit, user mec)",
+        "bubble-fl-worker-w2 (transient systemd unit, user mec)",
+        "bubble-fl-worker-w3 (transient systemd unit, user mec)"
+      ],
+      "clockOffsetVsPcMs": -73,
+      "clockOffsetRttMs": 191
+    }
+  ],
+  "hostCount": 2,
+  "cse": {
+    "cseId": "/bubble-cse",
+    "implementation": "Mobius (Mobius4 4.25.0 image of the server owner)",
+    "baseUrl": "https://<SERVER_DOMAIN>:8443/onem2m",
+    "cseBase": "/Mobius",
+    "transport": "oneM2M HTTP binding over HTTPS with mTLS to the nginx originator-binding route (X-M2M-Origin forced per client certificate, Authorization cleared)",
+    "coordinatorTls": {
+      "scheme": "https",
+      "mutualTls": true,
+      "pinnedCa": true,
+      "servername": "<SERVER_DOMAIN>",
+      "connectHost": "192.168.0.103"
+    },
+    "workerTls": {
+      "servername": "<SERVER_DOMAIN>",
+      "connectHost": "127.0.0.1",
+      "clientCertificates": "deployment CA, RSA 2048, clientAuth, read in place on the VM"
+    },
+    "forcedOriginators": {
+      "coordinator": "Cpb-fl-coord",
+      "workers": [
+        "Cpb-fl-w1",
+        "Cpb-fl-w2",
+        "Cpb-fl-w3"
+      ]
+    },
+    "frontEndRefusals": {
+      "cseBaseGet": 403,
+      "cseBaseAcpGet": 403
+    },
+    "notifications": "none (polling only)"
+  },
+  "task": {
+    "taskId": "privacy-motion",
+    "flAePath": "/Mobius/fl-privacy-motion",
+    "targetRounds": 6,
+    "maxParticipants": 3,
+    "minUpdates": 2,
+    "roundDeadlineMs": 15000,
+    "heartbeatTtlMs": 10000,
+    "workers": {
+      "w1": {
+        "profile": "home-dwell",
+        "splitHash": "084af313ec70ece51430464cddeb95fdd7a4f746543b782666169180fa4c0c46"
+      },
+      "w2": {
+        "profile": "commute",
+        "splitHash": "3db22c2228751e9fe5baf9d14170d8e29efc83cd528beddbca63e2f63d9e471e"
+      },
+      "w3": {
+        "profile": "relay-sparse",
+        "splitHash": "1b1773043b07b62fd20348d91e2825cc333d676e61d24612991dd4a1393d5451"
+      }
+    }
+  },
+  "rounds": [
+    {
+      "roundNumber": 1,
+      "state": "COMPLETED",
+      "trigger": "ALL_SELECTED_RESPONDED",
+      "selected": [
+        "w1",
+        "w2",
+        "w3"
+      ],
+      "accepted": [
+        "w1",
+        "w2",
+        "w3"
+      ],
+      "dropped": [],
+      "excluded": [],
+      "federatedEvaluationOfBaseModel": {
+        "baseModelVersion": 0,
+        "accuracy": 0.4556,
+        "crossEntropy": 1.0967,
+        "samples": 360,
+        "participants": 3
+      },
+      "oracleOfRoundModel": {
+        "accuracy": 0.9472,
+        "crossEntropy": 0.9209
+      },
+      "updateCreators": {
+        "w3": "Cpb-fl-w3",
+        "w2": "Cpb-fl-w2",
+        "w1": "Cpb-fl-w1"
+      }
+    },
+    {
+      "roundNumber": 2,
+      "state": "COMPLETED",
+      "trigger": "ALL_SELECTED_RESPONDED",
+      "selected": [
+        "w2",
+        "w1",
+        "w3"
+      ],
+      "accepted": [
+        "w1",
+        "w2",
+        "w3"
+      ],
+      "dropped": [],
+      "excluded": [],
+      "federatedEvaluationOfBaseModel": {
+        "baseModelVersion": 1,
+        "accuracy": 0.9472,
+        "crossEntropy": 0.9209,
+        "samples": 360,
+        "participants": 3
+      },
+      "oracleOfRoundModel": {
+        "accuracy": 0.9528,
+        "crossEntropy": 0.7919
+      },
+      "updateCreators": {
+        "w3": "Cpb-fl-w3",
+        "w2": "Cpb-fl-w2",
+        "w1": "Cpb-fl-w1"
+      }
+    },
+    {
+      "roundNumber": 3,
+      "state": "COMPLETED",
+      "trigger": "DEADLINE",
+      "selected": [
+        "w1",
+        "w3",
+        "w2"
+      ],
+      "accepted": [
+        "w1",
+        "w3"
+      ],
+      "dropped": [
+        {
+          "reason": "NO_UPDATE_BY_DEADLINE",
+          "participantId": "w2"
+        }
+      ],
+      "excluded": [],
+      "federatedEvaluationOfBaseModel": {
+        "baseModelVersion": 2,
+        "accuracy": 0.9542,
+        "crossEntropy": 0.8049,
+        "samples": 240,
+        "participants": 2
+      },
+      "oracleOfRoundModel": {
+        "accuracy": 0.8972,
+        "crossEntropy": 0.7207
+      },
+      "updateCreators": {
+        "w1": "Cpb-fl-w1",
+        "w3": "Cpb-fl-w3"
+      }
+    },
+    {
+      "roundNumber": 4,
+      "state": "COMPLETED",
+      "trigger": "ALL_SELECTED_RESPONDED",
+      "selected": [
+        "w1",
+        "w3"
+      ],
+      "accepted": [
+        "w1",
+        "w3"
+      ],
+      "dropped": [],
+      "excluded": [
+        {
+          "ageMs": 15012,
+          "reason": "HEARTBEAT_STALE",
+          "participantId": "w2"
+        }
+      ],
+      "federatedEvaluationOfBaseModel": {
+        "baseModelVersion": 3,
+        "accuracy": 0.925,
+        "crossEntropy": 0.6777,
+        "samples": 240,
+        "participants": 2
+      },
+      "oracleOfRoundModel": {
+        "accuracy": 0.8694,
+        "crossEntropy": 0.6658
+      },
+      "updateCreators": {
+        "w3": "Cpb-fl-w3",
+        "w1": "Cpb-fl-w1"
+      }
+    },
+    {
+      "roundNumber": 5,
+      "state": "COMPLETED",
+      "trigger": "ALL_SELECTED_RESPONDED",
+      "selected": [
+        "w2",
+        "w1",
+        "w3"
+      ],
+      "accepted": [
+        "w1",
+        "w2",
+        "w3"
+      ],
+      "dropped": [],
+      "excluded": [],
+      "federatedEvaluationOfBaseModel": {
+        "baseModelVersion": 4,
+        "accuracy": 0.8694,
+        "crossEntropy": 0.6658,
+        "samples": 360,
+        "participants": 3
+      },
+      "oracleOfRoundModel": {
+        "accuracy": 0.9389,
+        "crossEntropy": 0.5765
+      },
+      "updateCreators": {
+        "w1": "Cpb-fl-w1",
+        "w3": "Cpb-fl-w3",
+        "w2": "Cpb-fl-w2"
+      }
+    },
+    {
+      "roundNumber": 6,
+      "state": "COMPLETED",
+      "trigger": "ALL_SELECTED_RESPONDED",
+      "selected": [
+        "w2",
+        "w3",
+        "w1"
+      ],
+      "accepted": [
+        "w1",
+        "w2",
+        "w3"
+      ],
+      "dropped": [],
+      "excluded": [],
+      "federatedEvaluationOfBaseModel": {
+        "baseModelVersion": 5,
+        "accuracy": 0.9389,
+        "crossEntropy": 0.5765,
+        "samples": 360,
+        "participants": 3
+      },
+      "oracleOfRoundModel": {
+        "accuracy": 0.95,
+        "crossEntropy": 0.5243
+      },
+      "updateCreators": {
+        "w1": "Cpb-fl-w1",
+        "w2": "Cpb-fl-w2",
+        "w3": "Cpb-fl-w3"
+      }
+    }
+  ],
+  "resilience": {
+    "kind": "worker stopped mid-round and started again (systemctl stop, systemd-run)",
+    "participantId": "w2",
+    "stoppedInRound": 3,
+    "stoppedAt": "2026-11-20T11:25:42.700Z",
+    "workerEvent": {
+      "event": "ROUND_ABANDONED",
+      "reason": "STOP_REQUESTED",
+      "roundNumber": 3
+    },
+    "roundTrigger": "DEADLINE",
+    "roundAccepted": [
+      "w1",
+      "w3"
+    ],
+    "roundMissing": [
+      {
+        "participantId": "w2",
+        "reason": "NO_UPDATE_BY_DEADLINE"
+      }
+    ],
+    "nextRound": 4,
+    "nextRoundSelected": [
+      "w1",
+      "w3"
+    ],
+    "nextRoundExcluded": [
+      {
+        "participantId": "w2",
+        "reason": "HEARTBEAT_STALE",
+        "ageMs": 15012
+      }
+    ],
+    "restartedDuringRound": 4,
+    "selectedAgainInRound": 5
+  },
+  "finalAccuracy": {
+    "pooledTestW1W3": {
+      "accuracy": 0.95,
+      "crossEntropy": 0.5243
+    },
+    "earlierPool480Rows": {
+      "accuracy": 0.9375,
+      "crossEntropy": 0.5244
+    },
+    "earlierLocalRun": {
+      "receipt": "docs/verification-evidence/2026-11-19/fl-onem2m-real-cse.json",
+      "round6PooledTest": {
+        "accuracy": 0.9396,
+        "crossEntropy": 0.5161,
+        "macroF1": 0.9396
+      },
+      "round12PooledTest": {
+        "accuracy": 0.9396,
+        "crossEntropy": 0.3919,
+        "macroF1": 0.9394
+      },
+      "pool": "480 rows (w1-w4 test splits); w1-w3 seeds and profiles are the same here"
+    }
+  },
+  "fedAvgReadback": {
+    "signatures": 14,
+    "signatureFailures": 0,
+    "reaggregationMatches": 6,
+    "reaggregationMismatches": 0,
+    "lineageBreaks": 0,
+    "acceptedUpdatesReadBack": 16,
+    "acceptedUpdatesMissing": 0,
+    "check": true
+  },
+  "dataLocality": {
+    "scannedContents": 53,
+    "leakFindings": 0,
+    "rule": "no feature arrays and no row ids in any CSE content"
+  },
+  "epochs": [
+    {
+      "coordinatorEpoch": 1,
+      "instanceId": "0ae10a2b-96b3-4539-941a-839dd00c5a80",
+      "at": "2026-11-20T11:25:29.035Z"
+    }
+  ],
+  "lifetimes": [
+    {
+      "label": "coordinator#1",
+      "host": "pc",
+      "startedAt": "2026-11-20T11:25:28.685Z",
+      "exitCode": 0,
+      "exitedAt": "2026-11-20T11:26:11.900Z"
+    }
+  ],
+  "checks": {
+    "completedRounds6": true,
+    "signaturesValid": true,
+    "fedAvgReadbackMatches": true,
+    "lineageUnbroken": true,
+    "currentModelMatchesLastRound": true,
+    "noRawRowsInCse": true,
+    "updateCreatorsAreForcedOriginators": true,
+    "dropoutClosedByDeadlineQuorum": true,
+    "stoppedWorkerExcludedNextRound": true,
+    "restartedWorkerSelectedAgain": true
+  },
+  "durationSeconds": 64,
+  "trace": {
+    "path": "docs/verification-evidence/2026-11-20/fl-server-cse-trace.jsonl",
+    "sha256": "943ca1e45d813fc6fa73e15bcbda51832d09cfdc75348f880e583414ad78b7aa",
+    "events": 114
+  },
+  "reproduce": "node pc-mobius/scripts/run-fl-onem2m-server-cse.mjs --deploy=<deploy dir>",
+  "publicationRedaction": "The team server public domain was replaced with <SERVER_DOMAIN> in this receipt, its trace and the runner before publication; hashes of edited files were recomputed after the replacement."
+}

@@ -247,6 +247,45 @@ mep1 instance: `confirm_termination` 204, node gone 0.9 s after `REMOVE`.
 Receipt `docs/verification-evidence/2026-11-20/mec-day-of-care.json`, trace
 `mec-day-of-care-trace.jsonl`; details in `docs/rubric-work/R13.md`.
 
+## Connecting the IPE to the server CSE
+
+The IPE pod can serve the team's server CSE (Mobius4 `/bubble-cse`, Docker compose project
+`bubblelock-nocert` on the same VM) instead of a PC CSE. It reaches the CSE through the nginx
+originator-binding route `https://<SERVER_DOMAIN>:8443/onem2m/Mobius` with mutual TLS; nginx sets
+`X-M2M-Origin: Cpb-mec-ipe` and admits only `pb-mec-ipe(/...)`, AE registration and
+`bubble-household-1/<x>/(location|rnis)(/...)`.
+
+| Step | Tool | Result |
+|---|---|---|
+| 1. Device containers and ACP | `ssh mec@192.168.0.103 'bash -s' < ipe/provision-server-cse.sh` (docker exec inside the cse container, admin originator from that container's environment) | `/Mobius/bubble-household-1/resident-relay` with `location` and `rnis`, all with ACP `resident-relay-mec-access`: `Cpb-mec-ipe` 7, `Cpb-dash-guardian` 50, `Cpb-dash-operator` 34. The household AE and its acpi stay as they are |
+| 2. Image | `ipe/publish-image.sh` (`MEC_CA_PEM` overrides the lab CA path) | Only the public lab CA is baked in; the script refuses a build context that holds a private key |
+| 3. Pod wiring | `ssh mec@192.168.0.103 'bash -s' < ipe/attach-server-cse.sh` | Secret `pb-ipe-server-cse` (client certificate, key, server trust bundle) created on the VM from the server deployment files; every `pb-ipe-mep*` deployment gets the secret volume, `hostAliases` `<SERVER_DOMAIN>` -> 192.168.0.103, `ONEM2M_CSE_URL=https://<SERVER_DOMAIN>:8443/onem2m`, `ONEM2M_CSE_ID=/bubble-cse`, `ONEM2M_CA_FILE`, `ONEM2M_CLIENT_CERT_FILE`, `ONEM2M_CLIENT_KEY_FILE` and the requester, reader and orchestrator lists |
+| 4. Ownership and requests | `npm --prefix pc-mobius run integration:mec-ipe-server-cse` | `Cpb-orchestrator` writes the ownership epoch, `Cguardian-app` writes Location and RNIS request cins with `deviceAe: bubble-household-1/resident-relay` |
+
+Code: `createMecFetch` takes `cert`/`key` (or files) and `servername` (SNI, certificate name check and
+Host); `onem2mCseConfig` reads `ONEM2M_CSE_URL` (path prefix allowed), `ONEM2M_CSE_BASE`, `ONEM2M_CSE_ID`,
+`ONEM2M_CA_FILE`, `ONEM2M_CLIENT_CERT_FILE`, `ONEM2M_CLIENT_KEY_FILE` and `ONEM2M_SERVERNAME` (default: the
+URL host). A request `deviceAe` is an AE name or `<ae>/<container>`. The pod retries a refused start every
+15 s (`MEC_IPE_START_RETRY_MS`) instead of exiting.
+
+The CSE sends notifications only to the origins in its `NOTIFICATION_ALLOWED_ORIGINS`
+(`http://192.168.0.103:31881`, `:31882` and the PC listener `http://192.168.0.106:18096`); with an empty
+list every subscription answers 4000 `notification target origin denied`.
+
+Run on 2026-11-20 (receipt `docs/verification-evidence/2026-11-20/mec-ipe-server-cse.json`, status
+PARTIAL, stopped during the walk on request): the IPE registered `/Mobius/pb-mec-ipe` (2001) through mTLS,
+both request cins became MEC013 and MEC012 subscriptions on mep1 (201), 9 Location notifications became
+cins under `/Mobius/bubble-household-1/resident-relay/location` (first cin `rijtgz1eax`), the
+`Cpb-dash-guardian` subscription notified the PC listener, and each subscription was renewed once (PUT
+200). The IPE pod and both MEC subscriptions stay active. The device-deletion watch on
+`bubble-household-1/resident-relay` gets 403 from nginx, which the IPE records as `DEVICE_WATCH_REVIEW`.
+
+The `pb-ipe-mep*` deployments are Helm releases of the virt-engine. A scenario re-activation or a
+`SCENARIO-UPDATE ADD` (for example `pb-ipe-mep2` during R13 relocation) renders them from the scenario
+yaml again, so `attach-server-cse.sh` is re-run afterwards (`ONLY=pb-ipe-mep2`). The scenario yaml keeps
+the PC CSE defaults because the R13 runner starts its own CSE; the server CSE settings live in the attach
+script.
+
 ## Operating notes
 
 - Two sandboxes share the VM: `bubble` (dep-opt-b, 37 pods) and `dayofcare`

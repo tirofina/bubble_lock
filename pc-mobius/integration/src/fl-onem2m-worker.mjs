@@ -11,14 +11,16 @@ const summary = (m) => ({ samples: m.samples, accuracy: 1 - m.errorRate, crossEn
 export const hostTag = () => createHash('sha256').update(hostname()).digest('hex').slice(0, 12);
 
 export class FlOneM2mWorker {
-  constructor({ client, credentials, dataset, taskId, flAeName = null, zone = 'lab', trainDelayMs = 0, heartbeatMs = 1000, consentTtlSec = 86400, retentionDays = 30, log = () => {}, now = () => Date.now() }) {
+  // exitOnTaskComplete=false keeps a service worker (systemd) running after the task completes: it
+  // stays registered, polls the status every standbyPollMs and keeps a STANDBY heartbeat at that pace.
+  constructor({ client, credentials, dataset, taskId, flAeName = null, zone = 'lab', trainDelayMs = 0, heartbeatMs = 1000, consentTtlSec = 86400, retentionDays = 30, exitOnTaskComplete = true, standbyPollMs = 30000, log = () => {}, now = () => Date.now() }) {
     const c = credentials ?? {};
     if (!client || !c.participantId || !c.aeId || !c.privateKeyPem || !c.publicKeyPem || !c.enrollment || !c.coordinatorAeId || !c.coordinatorPublicKeyPem) fail('FL_WORKER_CREDENTIALS');
     if (client.originator !== c.aeId) fail('FL_WORKER_ORIGINATOR');
     if (!dataset?.metadata || !dataset.train?.length || !dataset.test?.length) fail('FL_WORKER_DATASET');
-    Object.assign(this, { client, credentials: c, dataset, taskId, flAeName, zone, trainDelayMs, heartbeatMs, consentTtlSec, retentionDays, log, now });
+    Object.assign(this, { client, credentials: c, dataset, taskId, flAeName, zone, trainDelayMs, heartbeatMs, consentTtlSec, retentionDays, exitOnTaskComplete, standbyPollMs, log, now });
     this.participantId = c.participantId; this.aePath = `${client.cseBase}/${workerAeName(c.participantId)}`; this.heartbeatPath = `${this.aePath}/${LAYOUT.workerHeartbeat}`;
-    this.consentRevision = c.consentRevision ?? 1; this.handled = new Set(); this.seq = 0; this.lastHeartbeat = 0; this.admitted = false; this.revoked = false; this.training = false; this.tamperNext = false; this.lastState = null; this.lastRound = null;
+    this.consentRevision = c.consentRevision ?? 1; this.handled = new Set(); this.seq = 0; this.lastHeartbeat = 0; this.admitted = false; this.revoked = false; this.training = false; this.tamperNext = false; this.lastState = null; this.lastRound = null; this.standby = false; this.signal = null;
     this.counters = { updatesWritten: 0, updatesDenied: 0, notSelected: 0, heartbeats: 0, statusDenied: 0 };
   }
 
@@ -81,7 +83,7 @@ export class FlOneM2mWorker {
 
   async tick() {
     if (this.revoked) return { done: true };
-    if (this.now() - this.lastHeartbeat >= this.heartbeatMs) await this.heartbeat(this.training ? 'TRAINING' : 'IDLE');
+    if (this.now() - this.lastHeartbeat >= this.heartbeatMs) await this.heartbeat(this.training ? 'TRAINING' : this.standby ? 'STANDBY' : 'IDLE');
     const read = await this.client.latest(this.paths.status);
     if (!read.ok) {
       if (read.rsc === 4103) this.counters.statusDenied++;
@@ -91,7 +93,12 @@ export class FlOneM2mWorker {
     const status = cinContent(read);
     if (!this.coordinatorSigned(status)) { this.logState('STATUS_SIGNATURE_INVALID'); return { done: false }; }
     if (!this.admitted) { this.admitted = true; this.log({ event: 'ADMISSION_OBSERVED', participantId: this.participantId, coordinatorEpoch: status.coordinatorEpoch }); }
-    if (status.state === 'COMPLETED') { this.logState('TASK_COMPLETED', { modelVersion: status.modelVersion }); return { done: true }; }
+    if (status.state === 'COMPLETED') {
+      this.logState('TASK_COMPLETED', { modelVersion: status.modelVersion, standby: !this.exitOnTaskComplete });
+      if (this.exitOnTaskComplete) return { done: true };
+      this.standby = true; return { done: false, standby: true };
+    }
+    this.standby = false;
     const n = status.openRound?.roundNumber;
     if (Number.isSafeInteger(n) && !this.handled.has(n)) {
       this.handled.add(n);
@@ -117,7 +124,10 @@ export class FlOneM2mWorker {
     this.training = true; this.lastRound = n; this.lastState = null;
     this.log({ event: 'TRAINING_STARTED', participantId: this.participantId, roundNumber: n, baseModelVersion: config.baseModel.version });
     await this.heartbeat('TRAINING');
-    if (this.trainDelayMs > 0) await delay(this.trainDelayMs);
+    if (this.trainDelayMs > 0) await delay(this.trainDelayMs, undefined, this.signal ? { signal: this.signal } : undefined).catch(() => {});
+    // A stop request (SIGTERM from systemctl stop) during local work abandons the round: no update is
+    // written, so the coordinator closes the round by deadline and quorum without this participant.
+    if (this.signal?.aborted) { this.training = false; this.log({ event: 'ROUND_ABANDONED', participantId: this.participantId, roundNumber: n, reason: 'STOP_REQUESTED' }); return 'ROUND_ABANDONED'; }
     const startedAt = this.iso();
     const baseTest = summary(evaluateModel(base, this.dataset.test));
     const trained = trainModel(base, this.dataset.train, TRAINING);
@@ -136,11 +146,12 @@ export class FlOneM2mWorker {
   }
 
   async run({ pollMs = 250, signal } = {}) {
+    this.signal = signal ?? null;
     while (!signal?.aborted) {
-      let done = false;
-      try { ({ done } = await this.tick()); } catch (error) { this.log({ event: 'TICK_ERROR', participantId: this.participantId, reason: error.code ?? error.message }); }
+      let done = false; let standby = false;
+      try { ({ done, standby = false } = await this.tick()); } catch (error) { this.log({ event: 'TICK_ERROR', participantId: this.participantId, reason: error.code ?? error.message }); }
       if (done) return this.counters;
-      await delay(pollMs);
+      await delay(standby ? this.standbyPollMs : pollMs, undefined, signal ? { signal } : undefined).catch(() => {});
     }
     return this.counters;
   }

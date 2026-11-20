@@ -17,6 +17,7 @@
     "integration:mec-ipe-real": "node scripts/run-mec-ipe-real.mjs",
     "integration:mec-ipe-sandbox": "node scripts/run-mec-ipe-sandbox.mjs",
     "integration:mec-day-of-care": "node scripts/run-mec-day-of-care.mjs",
+    "integration:mec-ipe-server-cse": "node scripts/run-mec-ipe-server-cse.mjs",
     "mec:ipe-pod": "node scripts/run-mec-ipe-pod.mjs",
     "fl:verify": "node scripts/run-fl-verification.mjs",
     "fl:worker": "node scripts/run-fl-worker.mjs",

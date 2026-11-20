@@ -25,6 +25,17 @@ export const MEC_IPE_SPECIALIZATIONS = {
   },
 };
 const RN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
+const VIRTUAL = new Set(['la', 'ol', 'fopt', 'pcu']);
+/**
+ * Device reference of a request: a device AE (`keyring-1`) or a device container under a household AE
+ * (`bubble-household-1/resident-relay`, exactly one slash). Location and RNIS cins go to
+ * <cseBase>/<deviceAe>/location and .../rnis.
+ */
+export function isDeviceRef(value) {
+  if (typeof value !== 'string') return false;
+  const parts = value.split('/');
+  return parts.length <= 2 && parts.every((part) => RN.test(part) && !VIRTUAL.has(part));
+}
 const REQUEST_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const TYPES = { Location: ['periodic', 'userTracking', 'zone'], RNIS: ['cellChange'] };
 const CONTAINERS = { Location: 'location', RNIS: 'rnis' };
@@ -39,7 +50,7 @@ export function parseMecRequest(service, con, { maxDurationSec = 3600 } = {}) {
   if (typeof con.requestId !== 'string' || !REQUEST_ID.test(con.requestId)) throw new Error('request-id');
   const request = { op, requestId: con.requestId };
   if (op !== 'subscribe') return request;
-  if (typeof con.deviceAe !== 'string' || !RN.test(con.deviceAe)) throw new Error('request-device');
+  if (!isDeviceRef(con.deviceAe)) throw new Error('request-device');
   if (typeof con.ueAddress !== 'string' || !con.ueAddress || con.ueAddress.length > 128) throw new Error('request-ue');
   const type = con.type ?? TYPES[service][0];
   if (!TYPES[service].includes(type)) throw new Error('request-type');

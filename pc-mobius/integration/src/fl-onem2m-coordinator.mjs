@@ -66,9 +66,14 @@ export class FlOneM2mCoordinator {
     // The AE carries acpi from creation: a CSEBase-level ACP grants the coordinator full access and
     // everyone DISCOVERY only, so workers can find the task by label. (Mobius4 4.24.5 cannot add
     // acpi to a resource that was created without one unless the request comes from the CSE admin.)
+    const discoveryPath = `${this.client.cseBase}/acp-${this.flAeName}`;
     const discovery = await this.client.create(this.client.cseBase, 1, { 'm2m:acp': { rn: `acp-${this.flAeName}`, pv: { acr: [{ acor: [C], acop: ACOP.ALL }, { acor: ['all'], acop: ACOP.DISCOVERY }] }, pvs: { acr: [{ acor: [C], acop: ACOP.ALL }] } } });
-    const discoveryRead = discovery.ok ? discovery : await this.client.retrieve(`${this.client.cseBase}/acp-${this.flAeName}`);
-    this.acp.discovery = discoveryRead.ok ? { path: `${this.client.cseBase}/acp-${this.flAeName}`, ri: discoveryRead.payload['m2m:acp'].ri } : null;
+    const discoveryRead = discovery.ok ? discovery : await this.client.retrieve(discoveryPath);
+    // A front end may allow CREATE under the CSEBase (registration route) but no RETRIEVE of other
+    // CSEBase children. An ACP that already exists (4105) is then referenced by its CSE-relative
+    // structured ID, which acpi accepts as well as the unstructured ri.
+    this.acp.discovery = discoveryRead.ok ? { path: discoveryPath, ri: discoveryRead.payload['m2m:acp'].ri, by: discovery.ok ? 'created' : 'read' }
+      : discovery.rsc === 4105 ? { path: discoveryPath, ri: discoveryPath.slice(1), by: 'structured-id' } : null;
     const ae = await this.client.create(this.client.cseBase, 2, { 'm2m:ae': { rn: this.flAeName, api: 'N.privacy.bubble.fl', rr: true, srv: ['4'], lbl: ['fl-plane:coordinator', taskLabel(taskId)], ...(this.acp.discovery ? { acpi: [this.acp.discovery.ri] } : {}) } });
     if (!ae.ok) { const read = await this.client.retrieve(this.aePath); if (!read.ok || read.payload?.['m2m:ae']?.aei !== C) fail('FL_AE_OWNERSHIP', { rsc: ae.rsc, readRsc: read.rsc }); }
     this.acp.coordinator = await this.ensureAcp(ACP_NAMES.coordinator, []);
@@ -114,7 +119,7 @@ export class FlOneM2mCoordinator {
     const resumed = await this.rebuildRounds();
     await this.ensureSubscription(this.paths.participants, 'sub-coordinator');
     if (this.current) await this.ensureSubscription(this.current.updatesPath, 'sub-updates');
-    const summary = { resumed: Boolean(previous), previousEpoch: previous?.coordinatorEpoch ?? null, coordinatorEpoch: this.epoch, completedRounds: this.completedRounds, lastRoundNumber: this.lastRoundNumber, openRound: this.current?.roundNumber ?? null, modelVersion: this.model.version, members: [...this.participants.values()].filter((p) => !p.revoked).map((p) => p.participantId), ...resumed };
+    const summary = { resumed: Boolean(previous), previousEpoch: previous?.coordinatorEpoch ?? null, coordinatorEpoch: this.epoch, completedRounds: this.completedRounds, lastRoundNumber: this.lastRoundNumber, openRound: this.current?.roundNumber ?? null, modelVersion: this.model.version, members: [...this.participants.values()].filter((p) => !p.revoked).map((p) => p.participantId), discoveryAcp: this.acp.discovery?.by ?? null, ...resumed };
     await this.writeStatus(previous ? 'RESUMED' : 'BOOTSTRAPPED', { resume: summary });
     this.log({ event: previous ? 'RESUMED' : 'BOOTSTRAPPED', ...summary });
     return summary;

@@ -1,0 +1,246 @@
+{
+  "status": "PARTIAL",
+  "statusReason": "Run stopped on request during the walk (wrap-up). Location and RNIS requests became MEC013/MEC012 subscriptions on mep1, Location notifications became cins on /bubble-cse and reached the listener; the RNIS cell change step, the full renewal count and teardown were not reached. The IPE pod and both MEC subscriptions stay active on purpose.",
+  "generatedAt": "2026-11-20T10:34:20.698Z",
+  "docRevision": "2.0.0",
+  "rubricIds": [
+    "R15",
+    "R16"
+  ],
+  "simulation": {
+    "mec": false,
+    "ue": "sandbox-scenario",
+    "cse": false
+  },
+  "transport": {
+    "cse": "https mTLS via nginx originator binding",
+    "ipeRoute": "https://<SERVER_DOMAIN>:8443/onem2m/Mobius (pod hostAlias <SERVER_DOMAIN> -> 192.168.0.103; SNI and Host <SERVER_DOMAIN>; client certificate CN pb-mec-ipe, EKU clientAuth, from the k8s secret pb-ipe-server-cse; server trust bundle from the server deployment; nginx sets X-M2M-Origin Cpb-mec-ipe)",
+    "requesterPath": "http://192.168.0.103:17599 (server owner LAN relay, CSE takes X-M2M-Origin as sent; PC and pod CIDR only; used for Cguardian-app, Cpb-orchestrator and Cpb-dash-guardian; retired after this run)",
+    "notificationsFromCse": "CSE allowlist NOTIFICATION_ALLOWED_ORIGINS http://192.168.0.103:31881, http://192.168.0.103:31882, http://192.168.0.106:18096",
+    "mec": "https://192.168.0.103/dayofcare/mep1 through the sandbox ingress with the pinned lab CA"
+  },
+  "hosts": [
+    {
+      "host": "pc",
+      "address": "192.168.0.106",
+      "os": "Windows 11",
+      "roles": [
+        "run driver pc-mobius/scripts/run-mec-ipe-server-cse.mjs",
+        "notification listener :18096",
+        "requester Cguardian-app, orchestrator Cpb-orchestrator, dashboard reader Cpb-dash-guardian (through the relay)"
+      ]
+    },
+    {
+      "host": "vm mec-sandbox",
+      "address": "192.168.0.103",
+      "os": "Ubuntu 22.04 (single-node kubeadm)",
+      "roles": [
+        "ETSI MEC Sandbox STF_685, sandbox dayofcare (scenario day-of-care)",
+        "IPE pod pb-ipe-mep1 on mep1",
+        "server CSE Mobius4 /bubble-cse (Docker compose project bubblelock-nocert) behind nginx :8443"
+      ]
+    }
+  ],
+  "cse": {
+    "cseId": "/bubble-cse",
+    "base": "/Mobius",
+    "implementation": "Mobius4 (CSEBase lbl Mobius4)",
+    "modifiedByThisWork": false
+  },
+  "provisioning": {
+    "script": "deploy/mec-sandbox/ipe/provision-server-cse.sh (docker exec inside the cse container; first run used the relay, re-run through docker exec answered 4105/2004)",
+    "acp": {
+      "path": "/Mobius/bubble-household-1/resident-relay-mec-access",
+      "ri": "oqghl8l0he",
+      "privileges": [
+        {
+          "originator": "[admin]",
+          "acop": 63
+        },
+        {
+          "originator": "Cpb-mec-ipe",
+          "acop": 7
+        },
+        {
+          "originator": "Cpb-dash-guardian",
+          "acop": 50
+        },
+        {
+          "originator": "Cpb-dash-operator",
+          "acop": 34
+        }
+      ]
+    },
+    "containers": [
+      "/Mobius/bubble-household-1/resident-relay",
+      "/Mobius/bubble-household-1/resident-relay/location",
+      "/Mobius/bubble-household-1/resident-relay/rnis"
+    ],
+    "selfCheck": {
+      "ipeRetrieveLocation": 2000,
+      "guardianRetrieveLocation": 2000,
+      "operatorRetrieveLocation": 2000,
+      "unlistedRetrieveLocation": 4103,
+      "householdAcpiUnchanged": true
+    },
+    "ipeOwnResources": "AE /Mobius/pb-mec-ipe (aei Cpb-mec-ipe) with locationRequests, rnisRequests, requestStatus, mecServices, ownership, lifecycle and its ACPs, created by the IPE through its mTLS route"
+  },
+  "ipe": {
+    "pod": "pb-ipe-mep1-7466dfb7b5-ln52v",
+    "image": "meep-docker-registry:30001/pb-onem2m-ipe@sha256:36933831fb71e406b671e3af62f1116e067b0a3811c7ceb97b24ada26e533c44",
+    "ae": "/Mobius/pb-mec-ipe",
+    "aei": "Cpb-mec-ipe",
+    "aeRegistrationRsc": 2001,
+    "appInstanceId": "0d0c0a00-0000-4000-8000-0000000001a1",
+    "mep": "mep1",
+    "nodePort": 31881,
+    "confirmReady": 204,
+    "attach": "deploy/mec-sandbox/ipe/attach-server-cse.sh",
+    "ownership": {
+      "epoch": 1,
+      "writer": "Cpb-orchestrator"
+    }
+  },
+  "requests": {
+    "location": {
+      "requestId": "loc-periodic-ab48b1",
+      "requestRi": "v0cak4eyf8",
+      "creator": "Cguardian-app",
+      "type": "periodic",
+      "mecApi": "MEC013",
+      "mecSubscriptionId": "1",
+      "httpStatus": 201
+    },
+    "rnis": {
+      "requestId": "rnis-ab48b1",
+      "requestRi": "0xb1etmda8",
+      "creator": "Cguardian-app",
+      "type": "cellChange",
+      "mecApi": "MEC012",
+      "mecSubscriptionId": "1",
+      "httpStatus": 201
+    }
+  },
+  "observations": {
+    "ipeWrites": {
+      "location": 9,
+      "rnis": 0
+    },
+    "firstLocationCin": {
+      "ri": "rijtgz1eax",
+      "path": "/Mobius/bubble-household-1/resident-relay/location/cin-UqS75ejMAX",
+      "rsc": 2001,
+      "loc": "[7.418,43.737]",
+      "observedAt": "2026-11-20T10:32:48.000Z",
+      "zoneId": null
+    },
+    "firstRnisCin": null,
+    "deviceWatch": [
+      {
+        "devicePath": "/Mobius/bubble-household-1/resident-relay",
+        "rsc": 0,
+        "note": "nginx admits only <x>/(location|rnis) under bubble-household-1 for the IPE certificate, so the device-deletion watch subscription is refused; observations are not affected"
+      },
+      {
+        "devicePath": "/Mobius/bubble-household-1/resident-relay",
+        "rsc": 0,
+        "note": "nginx admits only <x>/(location|rnis) under bubble-household-1 for the IPE certificate, so the device-deletion watch subscription is refused; observations are not affected"
+      }
+    ]
+  },
+  "notificationToListener": {
+    "method": "subscription by Cpb-dash-guardian (dashboard guardian reader, acop 50) through the relay; nu http://192.168.0.106:18096/location",
+    "received": "yes",
+    "firstNotifiedCinRi": "rijtgz1eax",
+    "creatorSeen": "Cpb-mec-ipe"
+  },
+  "renewals": {
+    "location": 1,
+    "rnis": 1,
+    "leaseSec": 60,
+    "renewBeforeSec": 15,
+    "httpStatus": [
+      200
+    ]
+  },
+  "teardown": {
+    "performed": false,
+    "reason": "wrap-up request: MEC subscriptions and the IPE pod stay active; the run subscriptions of Cpb-dash-guardian, Cguardian-app and Cpb-orchestrator carry et = run start + 30 min"
+  },
+  "restore": {
+    "ue": "resident-relay",
+    "position": [
+      7.417915,
+      43.736945
+    ],
+    "sighting": "home-wifi, home-district",
+    "mobilityAutomation": "back to inactive (its state before the run)"
+  },
+  "checks": [
+    {
+      "name": "sandbox-scenario-active",
+      "status": "PASS"
+    },
+    {
+      "name": "ipe-pod-attached-to-server-cse",
+      "status": "PASS"
+    },
+    {
+      "name": "ipe-registered-on-server-cse-via-mtls",
+      "status": "PASS"
+    },
+    {
+      "name": "ipe-lifecycle-readable-by-orchestrator",
+      "status": "PASS"
+    },
+    {
+      "name": "guardian-reader-subscribes-location-and-rnis",
+      "status": "PASS"
+    },
+    {
+      "name": "requester-subscribes-request-status",
+      "status": "PASS"
+    },
+    {
+      "name": "orchestrator-subscribes-ipe-lifecycle",
+      "status": "PASS"
+    },
+    {
+      "name": "ipe-owner-of-epoch",
+      "status": "PASS"
+    },
+    {
+      "name": "requests-become-mec-subscriptions",
+      "status": "PASS"
+    },
+    {
+      "name": "mec-subscriptions-listed-on-mep1",
+      "status": "PASS"
+    },
+    {
+      "name": "first-location-cin-notified-to-guardian",
+      "status": "PASS"
+    }
+  ],
+  "caseCount": 11,
+  "passed": 11,
+  "failed": 0,
+  "notReached": [
+    "location-observations-follow-the-walk",
+    "rnis-cell-change-cin-notified-to-guardian",
+    "renewals-per-request-at-least-2",
+    "latest-location-cin-readable-by-guardian",
+    "unsubscribe-deletes-mec-subscriptions",
+    "mec-subscriptions-gone-on-mep1",
+    "run-subscriptions-deleted"
+  ],
+  "artifacts": {
+    "trace": "docs/verification-evidence/2026-11-20/mec-ipe-server-cse-trace.jsonl",
+    "traceSHA256": "6ef10b0b5d16f24a402bd3a2c8c96ffdfcd0c76d07919c7d330701e56013fcd5",
+    "traceEntries": 47,
+    "traceSource": "kubectl logs of pb-ipe-mep1-7466dfb7b5-ln52v (route tokens redacted); runner check lines are in checks"
+  },
+  "runnerSHA256": "81a95355d7456a23909980ce80541f7e230917e52fede4014e0f573386abaf8b",
+  "secrets": "none: no certificate, key, admin originator or password is in this receipt or the trace",
+  "publicationRedaction": "The team server public domain was replaced with <SERVER_DOMAIN> in this receipt, its trace and the runner before publication; hashes of edited files were recomputed after the replacement."
+}

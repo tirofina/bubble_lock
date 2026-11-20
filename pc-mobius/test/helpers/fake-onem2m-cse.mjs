@@ -22,7 +22,8 @@ export async function startFakeCse({ cseBase = '/Mobius' } = {}) {
     if (node.ty === 5) return op === OP.CREATE || op === OP.DISCOVERY || op === OP.RETRIEVE;
     if (node.ty === 1) return allows(node.attrs.pvs?.acr, originator, op);
     if (node.ty === 4 || node.ty === 23) return permitted(nodes.get(node.parent), originator, op);
-    if (node.attrs.acpi?.length) return node.attrs.acpi.some((id) => allows(byRi.get(id)?.attrs.pv?.acr, originator, op));
+    // acpi entries are unstructured ri or CSE-relative structured IDs (Mobius4 resolves both).
+    if (node.attrs.acpi?.length) return node.attrs.acpi.some((id) => allows((byRi.get(id) ?? nodes.get(`/${id}`))?.attrs.pv?.acr, originator, op));
     return node.attrs.int_cr === originator;
   };
   const view = (node) => { const { int_cr, ...attrs } = node.attrs; return { [KEY[node.ty] ?? 'm2m:cb']: { ty: node.ty, ...attrs } }; };

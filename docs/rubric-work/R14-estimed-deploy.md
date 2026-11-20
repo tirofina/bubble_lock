@@ -82,6 +82,21 @@ sudo install -d -m 0750 -o bubblefl -g bubblefl /var/lib/bubble-fl
 - jsonl 한 줄 형식은 `{"x":[8개 실수],"y":0|1|2}`이며 100행 이상이 필요함. 이 파일은 VM 안에만 둠.
 - 합성 shard로 시험할 때는 `"dataset": {"source":"synthetic-shard","seed":<비공개 정수>,"profile":"commute","datasetId":"w1-local"}`를 씀.
 
+### 서버 CSE mTLS 설정 키 (2026-11-20 실행에서 사용한 값)
+
+| 키 | coordinator (PC) | worker (VM) |
+|---|---|---|
+| `cseUrl`, `cseBase` | `https://<SERVER_DOMAIN>:8443/onem2m`, `/Mobius` | 같음 |
+| `caFile` | `.local-fl-certs/fl-coord/trust-bundle.pem` | `~/bubblelock-nocert/repo/.local/deployment/fl/fl-wN/trust-bundle.pem` |
+| `clientCertFile`, `clientKeyFile` | `fl-coord.pem`, `fl-coord.key` | `fl-wN.pem`, `fl-wN.key` (VM 안에서 그대로 읽음) |
+| `servername`, `connectHost` | `<SERVER_DOMAIN>`, `192.168.0.103` | `<SERVER_DOMAIN>`, `127.0.0.1` |
+| `flAeName` | `fl-privacy-motion` | `fl-privacy-motion` (worker는 FL AE 이름을 직접 사용함) |
+| 기타 | `pollMs` 500, `inboxPollMs` 2000, `timeoutMs` 8000, `notify` null, task `targetRounds` 6, `roundDeadlineMs` 15000, `heartbeatTtlMs` 10000 | `pollMs` 1000, `heartbeatMs` 2000, `trainDelayMs` 3000, `exitOnTaskComplete` false, `standbyPollMs` 30000 |
+
+- 신원 발급: `fl-onem2m-provision.mjs --coordinator-ae-id=Cpb-fl-coord --worker-ae-id-prefix=Cpb-fl-`로 enrollment의 AE-ID를 nginx가 고정하는 originator와 맞춤.
+- worker 기동: `systemd-run --unit=bubble-fl-worker-wN --uid=mec -p Restart=on-failure`로 transient 단위를 띄움. `systemctl stop`을 받은 worker는 학습 중인 라운드를 update 쓰기 전에 종료함.
+- 실행: `node pc-mobius/scripts/run-fl-onem2m-server-cse.mjs --deploy=<배포 디렉터리>`.
+
 ## 4. systemd 단위
 
 `/etc/systemd/system/bubble-fl-coordinator.service`:

@@ -18,7 +18,9 @@
 //     acp-self, heartbeat                   cnt  worker heartbeat cin (coordinator RETRIEVE only)
 import { sign, verify, createPublicKey, generateKeyPairSync, randomUUID, createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
+import { resolve as resolvePath } from 'node:path';
 import { approvalHash } from './integration-utils.mjs';
+import { createMecFetch } from './mec-platform-client.mjs';
 import { MODEL_FORMAT, TRAINING, FEATURE_VERSION, digest, decodeModel, modelBytes } from './fl-numerics.mjs';
 import { generateShard } from './fl-shards.mjs';
 
@@ -114,13 +116,19 @@ export function enrollmentProblem(enrollment, operatorPublicKeyPem, { participan
   return null;
 }
 
-/** Provisions operator, coordinator and worker identities for one FL task. Private keys stay in the returned objects. */
-export function provisionIdentities({ taskId, participantIds, runTag = randomUUID().slice(0, 8), ttlSec = 30 * 86400 }) {
+/**
+ * Provisions operator, coordinator and worker identities for one FL task. Private keys stay in the returned objects.
+ * AE-IDs default to Cfl-<runTag>-<role>. `aeIds` pins them instead ({ coordinator, workers: { <participantId>: aeId } }),
+ * for a CSE front end that forces X-M2M-Origin per client certificate (the enrollment must name that AE-ID).
+ */
+export function provisionIdentities({ taskId, participantIds, runTag = randomUUID().slice(0, 8), ttlSec = 30 * 86400, aeIds = {} }) {
   if (!ID_PATTERN.test(taskId) || !/^[a-z0-9]{1,16}$/i.test(runTag)) fail('FL_PROVISION_INPUT');
+  const pinned = [aeIds.coordinator, ...Object.values(aeIds.workers ?? {})].filter((value) => value !== undefined);
+  if (pinned.some((value) => !AE_ID_PATTERN.test(value ?? '')) || new Set(pinned).size !== pinned.length) fail('FL_PROVISION_AE_ID');
   const operator = generateIdentity();
-  const coordinator = { role: 'coordinator', aeId: `Cfl-${runTag}-coordinator`, ...generateIdentity(), operatorPublicKeyPem: operator.publicKeyPem, taskId };
+  const coordinator = { role: 'coordinator', aeId: aeIds.coordinator ?? `Cfl-${runTag}-coordinator`, ...generateIdentity(), operatorPublicKeyPem: operator.publicKeyPem, taskId };
   const workers = participantIds.map((participantId) => {
-    const identity = generateIdentity(); const aeId = `Cfl-${runTag}-${participantId}`;
+    const identity = generateIdentity(); const aeId = aeIds.workers?.[participantId] ?? `Cfl-${runTag}-${participantId}`;
     return { role: 'worker', participantId, aeId, ...identity, taskId, coordinatorAeId: coordinator.aeId, coordinatorPublicKeyPem: coordinator.publicKeyPem, enrollment: issueEnrollment({ operatorPrivateKeyPem: operator.privateKeyPem, participantId, aeId, publicKeyPem: identity.publicKeyPem, taskId, ttlSec }) };
   });
   return { runTag, operator, coordinator, workers };
@@ -145,15 +153,44 @@ export async function loadLocalDataset(spec) {
   return fail('FL_DATASET_SOURCE');
 }
 
+/**
+ * Transport for an FL role from its config file. TLS keys (paths resolve against the config directory):
+ *   caFile          PEM trust anchors for the CSE (or its TLS front end); default: the Node trust store
+ *   clientCertFile  PEM client certificate for mTLS (an originator-binding proxy maps it to X-M2M-Origin)
+ *   clientKeyFile   PEM key of the client certificate
+ *   servername      TLS SNI, certificate name check and Host header; default: the cseUrl host
+ *   connectHost     address to dial instead of the cseUrl host (no hosts-file entry needed)
+ * cseUrl may carry a path prefix (https://cse.example:8443/onem2m); request paths are cseBase-rooted.
+ */
+export function flCseTransport(config = {}, baseDir = '.') {
+  const file = (value, key) => { if (value === undefined || value === null) return null; if (typeof value !== 'string' || !value) fail('FL_CSE_TLS_CONFIG', { key }); return resolvePath(baseDir, value); };
+  const caFile = file(config.caFile, 'caFile'); const certFile = file(config.clientCertFile, 'clientCertFile'); const keyFile = file(config.clientKeyFile, 'clientKeyFile');
+  if (Boolean(certFile) !== Boolean(keyFile)) fail('FL_CSE_TLS_CONFIG', { key: 'clientCertFile/clientKeyFile' });
+  for (const key of ['servername', 'connectHost']) if (config[key] !== undefined && config[key] !== null && (typeof config[key] !== 'string' || !config[key])) fail('FL_CSE_TLS_CONFIG', { key });
+  const tlsKeys = { caFile, certFile, keyFile, servername: config.servername ?? null, connectHost: config.connectHost ?? null };
+  if ((certFile || caFile || tlsKeys.servername) && new URL(config.cseUrl).protocol !== 'https:') fail('FL_CSE_TLS_CONFIG', { key: 'cseUrl' });
+  const fetchImpl = createMecFetch(tlsKeys);
+  return { fetchImpl, summary: { scheme: new URL(config.cseUrl).protocol.replace(':', ''), mutualTls: Boolean(certFile), pinnedCa: Boolean(caFile), servername: tlsKeys.servername, connectHost: tlsKeys.connectHost } };
+}
+
+/** FlCseClient for one role from its config file (cseUrl, cseBase, TLS keys, allowPlainHttp, timeoutMs). */
+export function flCseClientFromConfig(config, { baseDir = '.', originator, trace = null } = {}) {
+  const { fetchImpl, summary } = flCseTransport(config, baseDir);
+  const client = new FlCseClient({ endpoint: config.cseUrl, cseBase: config.cseBase ?? '/Mobius', originator, fetchImpl, allowPlainHttp: config.allowPlainHttp === true, timeoutMs: config.timeoutMs ?? 5000, trace });
+  client.transport = summary;
+  return client;
+}
+
 /** Minimal oneM2M HTTP client used by both coordinator and workers (one originator per instance). */
 export class FlCseClient {
-  constructor({ endpoint, cseBase = '/Mobius', originator, fetchImpl = globalThis.fetch, timeoutMs = 5000, allowPlainHttp = false, rvi = '4', trace = null }) {
+  constructor({ endpoint, cseBase = '/Mobius', originator, fetchImpl = globalThis.fetch, timeoutMs = 5000, allowPlainHttp = false, rvi = '4', trace = null, busyRetries = 3, busyRetryMs = 400 }) {
     const url = new URL(endpoint);
     if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) fail('FL_CSE_ENDPOINT');
     if (url.protocol === 'http:' && !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) && !allowPlainHttp) fail('FL_CSE_HTTPS_REQUIRED');
     if (!originator || !/^[CS][A-Za-z0-9._-]{1,63}$/.test(originator)) fail('FL_CSE_ORIGINATOR');
-    Object.assign(this, { endpoint: endpoint.replace(/\/$/, ''), cseBase: cseBase.replace(/\/$/, ''), originator, fetchImpl, timeoutMs, rvi, trace });
-    this.stats = { requests: 0, byRsc: {} };
+    if (!/^\/[A-Za-z0-9._-]+$/.test(cseBase.replace(/\/$/, ''))) fail('FL_CSE_BASE');
+    Object.assign(this, { endpoint: endpoint.replace(/\/+$/, ''), cseBase: cseBase.replace(/\/$/, ''), originator, fetchImpl, timeoutMs, rvi, trace, busyRetries, busyRetryMs });
+    this.stats = { requests: 0, byRsc: {}, busyRetries: 0 };
   }
   checkPath(path) {
     if (typeof path !== 'string' || (path !== this.cseBase && !path.startsWith(`${this.cseBase}/`)) || /[?#%\\\s]/.test(path) || path.split('/').some((part) => part === '..' || part === '.')) fail('FL_CSE_PATH', { path });
@@ -162,20 +199,29 @@ export class FlCseClient {
   async request(method, path, { body, ty, query } = {}) {
     const url = new URL(`${this.endpoint}${this.checkPath(path)}`);
     for (const [key, value] of Object.entries(query ?? {})) { if (!['fu', 'ty', 'lbl', 'rcn', 'lim'].includes(key)) fail('FL_CSE_QUERY'); url.searchParams.set(key, String(value)); }
-    const rqi = randomUUID(); let response;
-    try {
-      response = await this.fetchImpl(url.href, { method, redirect: 'error', signal: AbortSignal.timeout(this.timeoutMs), headers: { accept: 'application/json', 'X-M2M-Origin': this.originator, 'X-M2M-RI': rqi, 'X-M2M-RVI': this.rvi, ...(body ? { 'content-type': `application/json${ty ? `;ty=${ty}` : ''}` } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
-    } catch (error) { throw Object.assign(new FlPlaneError('FL_CSE_TRANSPORT', { method, path }), { cause: error }); }
-    const text = await response.text();
-    if (Buffer.byteLength(text) > 4 * 1024 * 1024) fail('FL_CSE_RESPONSE_SIZE');
-    let payload = null; try { payload = text ? JSON.parse(text) : null; } catch { fail('FL_CSE_RESPONSE_JSON'); }
-    const rsc = Number(response.headers.get('X-M2M-RSC'));
-    const echoed = response.headers.get('X-M2M-RI');
-    if (echoed && echoed !== rqi) fail('FL_CSE_REQUEST_ID');
-    this.stats.requests++; this.stats.byRsc[rsc] = (this.stats.byRsc[rsc] ?? 0) + 1;
-    const result = { ok: [2000, 2001, 2002, 2004].includes(rsc), status: response.status, rsc, payload, rqi };
-    this.trace?.({ method, path, ty: ty ?? null, rsc, originator: this.originator });
-    return result;
+    for (let attempt = 0; ; attempt++) {
+      const rqi = randomUUID(); let response;
+      try {
+        response = await this.fetchImpl(url.href, { method, redirect: 'error', signal: AbortSignal.timeout(this.timeoutMs), headers: { accept: 'application/json', 'X-M2M-Origin': this.originator, 'X-M2M-RI': rqi, 'X-M2M-RVI': this.rvi, ...(body ? { 'content-type': `application/json${ty ? `;ty=${ty}` : ''}` } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
+      } catch (error) { throw Object.assign(new FlPlaneError('FL_CSE_TRANSPORT', { method, path }), { cause: error }); }
+      const text = await response.text();
+      if (Buffer.byteLength(text) > 4 * 1024 * 1024) fail('FL_CSE_RESPONSE_SIZE');
+      const rscHeader = response.headers.get('X-M2M-RSC');
+      // A front end (TLS proxy, rate limiter) may answer by itself: no X-M2M-RSC and an HTML body.
+      // That is a refused request (rsc null, httpStatus kept), not a protocol error of the CSE.
+      let payload = null; try { payload = text ? JSON.parse(text) : null; } catch { if (rscHeader !== null || response.ok) fail('FL_CSE_RESPONSE_JSON'); }
+      const rsc = rscHeader === null ? null : Number(rscHeader);
+      // 429 without an RSC comes from the front end's rate limit before the CSE saw the request,
+      // so every method (including CREATE) is safe to send again after a short pause.
+      if (rsc === null && response.status === 429 && attempt < this.busyRetries) { this.stats.busyRetries++; await new Promise((done) => setTimeout(done, this.busyRetryMs * (attempt + 1))); continue; }
+      const echoed = response.headers.get('X-M2M-RI');
+      if (echoed && echoed !== rqi) fail('FL_CSE_REQUEST_ID');
+      const key = rsc ?? `http-${response.status}`;
+      this.stats.requests++; this.stats.byRsc[key] = (this.stats.byRsc[key] ?? 0) + 1;
+      const result = { ok: [2000, 2001, 2002, 2004].includes(rsc), status: response.status, rsc, payload, rqi };
+      this.trace?.({ method, path, ty: ty ?? null, rsc, httpStatus: response.status, originator: this.originator });
+      return result;
+    }
   }
   create(parent, ty, resource) { return this.request('POST', parent, { body: resource, ty }); }
   retrieve(path, query) { return this.request('GET', path, { query }); }
