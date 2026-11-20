@@ -24,7 +24,7 @@ if (!existsSync(join(dist, 'index.html'))) throw new Error('dist/ is missing; ru
 async function freePort() { const probe = netServer(); probe.listen(0, '127.0.0.1'); await once(probe, 'listening'); const { port } = probe.address(); await new Promise((done) => probe.close(done)); return port; }
 
 const apiPort = external ? Number(new URL(external).port) : await freePort();
-const api = external ? null : spawn(process.execPath, ['server/cli.ts'], { cwd: dashboard, env: { ...process.env, DASHBOARD_PORT: String(apiPort), ALERT_SOURCE: 'replay', ALERT_REPLAY_VARIANT: args.variant ?? 'claude', ALERT_REPLAY_START: 'alert' }, stdio: ['ignore', 'pipe', 'pipe', 'ipc'], windowsHide: true });
+const api = external ? null : spawn(process.execPath, ['server/cli.ts'], { cwd: dashboard, env: { ...process.env, DASHBOARD_PORT: String(apiPort), ALERT_SOURCE: 'replay', CAREGIVER_DEMO: '1', ALERT_REPLAY_VARIANT: args.variant ?? 'claude', ALERT_REPLAY_START: 'alert' }, stdio: ['ignore', 'pipe', 'pipe', 'ipc'], windowsHide: true });
 let apiLog = ''; if (api) { api.stdout.on('data', (chunk) => { apiLog += chunk; }); api.stderr.on('data', (chunk) => { apiLog += chunk; }); }
 if (api) await new Promise((resolve, reject) => { const timer = setTimeout(() => reject(new Error(`server start timeout\n${apiLog}`)), 30000); api.on('message', (message) => { if (message?.type === 'ready') { clearTimeout(timer); resolve(); } }); api.once('exit', (code) => reject(new Error(`server exited ${code}\n${apiLog}`))); });
 const apiUrl = `http://127.0.0.1:${apiPort}`;
@@ -71,6 +71,7 @@ try {
       send, close: () => socket.close(),
       async open(hash, wait = 3500) { await send('Page.navigate', { url: `${previewUrl}/?lang=${lang}${hash}` }); await delay(wait); },
       async click(selector, wait = 2500) { const result = await send('Runtime.evaluate', { expression: `(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (!el) return false; el.click(); return true; })()`, returnByValue: true }); if (!result.result?.result?.value) throw new Error(`no element ${selector}`); await delay(wait); },
+      async role(value) { await send('Runtime.evaluate', { expression: `(() => { const select = document.querySelector('.compact-label select'); const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set; setter.call(select, ${JSON.stringify(value)}); select.dispatchEvent(new Event('change', { bubbles: true })); })()` }); await delay(3500); },
       async scrollTo(selector) { await send('Runtime.evaluate', { expression: `document.querySelector(${JSON.stringify(selector)})?.scrollIntoView({block:'start'})` }); await delay(400); },
       async shot(name, { full = true, clipSelector = null } = {}) {
         let clip;
@@ -126,6 +127,21 @@ try {
   await desk.open('#/user/overview', 3500);
   await desk.click('.alert-actions .quiet-button', 2500);
   await desk.shot(`user-alert-dismissed-1440-${lang}`);
+  // 7. Caregiver delegation: Living Room On while the grant is valid, REJECTED after expiry, operator receipts
+  const caregiver = async (body) => (await fetch(`${apiUrl}/api/portal/caregiver`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })).json();
+  await caregiver({ action: 'renew', ttlSec: 600 });
+  await phone.open('#/user/overview', 3000); await phone.role('visitor');
+  await phone.shot(`caregiver-ready-390-${lang}`, { full: false });
+  await phone.click('.caregiver-card .alert-actions button.primary', 4000);
+  await phone.shot(`caregiver-applied-390-${lang}`);
+  await operator.open('#/operator/commands', 4500);
+  await operator.shot(`operator-group-command-applied-1440-${lang}`, { full: false });
+  await caregiver({ action: 'renew', ttlSec: 10 }); await delay(11000);
+  await phone.click('.caregiver-card .alert-actions button.primary', 4000);
+  await phone.shot(`caregiver-rejected-390-${lang}`);
+  await operator.open('#/operator/commands', 4500);
+  await operator.shot(`operator-group-command-rejected-1440-${lang}`, { full: false });
+  await caregiver({ action: 'renew', ttlSec: 600 });
   for (const item of [desk, phone, operator]) item.close();
   const manifest = { generatedAt: new Date().toISOString(), browser: version.Browser, mode: external ? `live (${external}, pc-mobius/scripts/run-video-live.mjs, real Mobius4, emulated devices and triage runtime, simulation true)` : 'replay (ALERT_SOURCE=replay, fixtures/guardian-alert-story.json, simulation true)', variant: args.variant ?? 'claude', lang, command: 'node web-dashboard/scripts/capture-alert-card.mjs', captured };
   await writeFile(join(outDir, `capture-manifest-${lang}.json`), `${JSON.stringify(manifest, null, 2)}\n`);

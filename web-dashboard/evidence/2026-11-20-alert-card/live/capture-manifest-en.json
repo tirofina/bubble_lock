@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-20T02:59:26.266Z",
+  "generatedAt": "2026-11-20T03:17:06.499Z",
   "browser": "Chrome/157.0.8103.79",
   "mode": "live (http://127.0.0.1:47411, pc-mobius/scripts/run-video-live.mjs, real Mobius4, emulated devices and triage runtime, simulation true)",
   "variant": "claude",
@@ -11,70 +11,112 @@
       "width": 1440,
       "lang": "en",
       "file": "user-alert-new-1440-en.png",
-      "sha256": "969c12eefa6ef592b7733a741b4d5ccc83f44c4afd90042a4b2179c6d4bbbbe4"
+      "sha256": "62db05617a241dc8024b13820b7afd0f74b5e49069beb8282824e9d55ce99626"
     },
     {
       "name": "user-alert-new-390-en",
       "width": 390,
       "lang": "en",
       "file": "user-alert-new-390-en.png",
-      "sha256": "ab99b4feaba662f822394b016b9505e00be1cb71e8a82be474087f1f23cbdc41"
+      "sha256": "9b1771411d16c7efdbac4dddde1c5fa86d17303a9482fc7e6704ec30a59c2f46"
     },
     {
       "name": "user-alert-approved-1440-en",
       "width": 1440,
       "lang": "en",
       "file": "user-alert-approved-1440-en.png",
-      "sha256": "aaf8f28bb66d410a5597c30718c46973d11e3c463f39440ba90bee76c55e7ad7"
+      "sha256": "522e43f801e445ad82216c6ce1ca37e4a1d06bbd3a2d63fb896f0e6207a96e0e"
     },
     {
       "name": "user-alert-approved-390-en",
       "width": 390,
       "lang": "en",
       "file": "user-alert-approved-390-en.png",
-      "sha256": "96388ec698f300549eee3c031199379cca73643c767609bb5ddb1769588039dd"
+      "sha256": "17f37053b0b28bb83aa03a9b28d8d0b4db378573f0901a13e1ea49554058fef9"
     },
     {
       "name": "user-map-shared-1440-en",
       "width": 1440,
       "lang": "en",
       "file": "user-map-shared-1440-en.png",
-      "sha256": "10db429d097fd28048e6500f2dd87c33bd3cc88f2287d53c07f93cbb9740b17e"
+      "sha256": "bf0e671a1e8a530a10702eb8b94e69d49528771933c6ce5fa4bf4c525e05c0f3"
     },
     {
       "name": "user-alert-escalated-1440-en",
       "width": 1440,
       "lang": "en",
       "file": "user-alert-escalated-1440-en.png",
-      "sha256": "b613869955dd0227d5c7b7d2eb8b69ad56a131c008295d2d578b9e8b10ce91f6"
+      "sha256": "ef147927b50ee92659e330969b7ac824d0b6be64207047ca77f8d969ba6d2fa8"
     },
     {
       "name": "user-alert-escalated-390-en",
       "width": 390,
       "lang": "en",
       "file": "user-alert-escalated-390-en.png",
-      "sha256": "1b8a9b6e143b33f331f92fdefa7d23d9c7317fbe2cd880fda77ba5f41ddde36a"
+      "sha256": "5d2292d23bde6f7204fac0183f34bd22e0200ce711a86ad69cbc646b3144ba14"
     },
     {
       "name": "operator-services-1440-en",
       "width": 1440,
       "lang": "en",
       "file": "operator-services-1440-en.png",
-      "sha256": "25adf13eb0bba9f77185b0307076bf763f4625bf9fcc25c9526b398a697d8ce7"
+      "sha256": "30a1d9b9ef819c68ecf7e31563d8785d8678adb4e2a16f6c859fa867fb0811a6"
+    },
+    {
+      "name": "operator-audit-1440-en",
+      "width": 1440,
+      "lang": "en",
+      "file": "operator-audit-1440-en.png",
+      "sha256": "23c81e6669eeb5a342ea1d21bbfac558b378f48419a42d218555f150b50b3e5d"
     },
     {
       "name": "user-status-moving-1440-en",
       "width": 1440,
       "lang": "en",
       "file": "user-status-moving-1440-en.png",
-      "sha256": "e900958b450ea2abd0c58b852dcc0617dc04990973d6f56934832c02a68ae228"
+      "sha256": "1fd44bf5bd98b92c67117933012033395afb94ea6b2a9e5214c8c2d6045313d2"
     },
     {
       "name": "user-alert-dismissed-1440-en",
       "width": 1440,
       "lang": "en",
       "file": "user-alert-dismissed-1440-en.png",
-      "sha256": "4cc903ea69b1631ed60a5b0d1b86b322b2f59a9ac88ee26c75a739fa39e4b88e"
+      "sha256": "b2ddc57573641360d118c9fef3030fcc33e632315913b7f0ed627aa24c061edd"
+    },
+    {
+      "name": "caregiver-ready-390-en",
+      "width": 390,
+      "lang": "en",
+      "file": "caregiver-ready-390-en.png",
+      "sha256": "84e42c3b53e89df8bc14295ccd7d6d52d9ee5dd75fbb29b2afb6064bff1c98aa"
+    },
+    {
+      "name": "caregiver-applied-390-en",
+      "width": 390,
+      "lang": "en",
+      "file": "caregiver-applied-390-en.png",
+      "sha256": "c7536f3bc69370308872c25e19777baf9f2cc1844b76b5a9fe7cd56ab387ff12"
+    },
+    {
+      "name": "operator-group-command-applied-1440-en",
+      "width": 1440,
+      "lang": "en",
+      "file": "operator-group-command-applied-1440-en.png",
+      "sha256": "bc149cacc8826d37c2b265ed8db92810f19f360780caefeb0a8447935d82558e"
+    },
+    {
+      "name": "caregiver-rejected-390-en",
+      "width": 390,
+      "lang": "en",
+      "file": "caregiver-rejected-390-en.png",
+      "sha256": "fbf417fd02dfe48006418caccb2d1f791129480ec05cfabae6b76979abf85613"
+    },
+    {
+      "name": "operator-group-command-rejected-1440-en",
+      "width": 1440,
+      "lang": "en",
+      "file": "operator-group-command-rejected-1440-en.png",
+      "sha256": "b6281b83575d0f39cc72702465837c072441078ca9da91109648e89d2362ede3"
     }
   ]
 }

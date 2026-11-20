@@ -2,7 +2,7 @@
  * Live recording environment for the demo video (DOC-REV 2.0.0): one command starts a real Mobius4 CSE,
  * seeds the AEs and resources, and starts the web-dashboard server against it (DASHBOARD_SOURCE=cse-live).
  *
- *   MOBIUS4_ROOT=<mobius4> node pc-mobius/scripts/run-video-live.mjs [--port=4174] [--start=park|home|walk|alert]
+ *   MOBIUS4_ROOT=<mobius4> node pc-mobius/scripts/run-video-live.mjs [--port=4174] [--start=park|home|walk|alert] [--delegation-sec=600]
  *   then: npm --prefix web-dashboard run dev  (http://127.0.0.1:5173/?lang=en#/user/overview)
  *
  * Real: Mobius4 4.24.5 + PostgreSQL, every AE registration, ACP, container, subscription, notification and
@@ -26,6 +26,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { startMobius, repositoryRoot as root } from '../multiapp/mobius-launcher.mjs';
 import { Onem2mHttp, normalizeSid, payloadHash, startNotificationServer, toOneM2mTime } from '../multiapp/onem2m-http.mjs';
 import { startAutomation } from '../multiapp/automation-ae.mjs';
+import { encodeBinarySwitch } from '../src/sdt-adapter.mjs';
 
 const args = Object.fromEntries(process.argv.slice(2).map((arg) => { const [key, ...value] = arg.replace(/^--/, '').split('='); return [key, value.join('=') || true]; }));
 const dashboardPort = Number(args.port ?? process.env.DASHBOARD_PORT ?? 4174);
@@ -215,6 +216,31 @@ try {
   await new Promise((resolve) => control.listen(0, '127.0.0.1', resolve));
   const controlUrl = `http://127.0.0.1:${control.address().port}/step`;
 
+  // Caregiver living room group (R04/R06/R07): central AE, light and fan member AEs with binarySwitch flexContainers,
+  // member ACPs, macp and ACK containers on the same Mobius4, as in pc-mobius/scripts/run-group-command-real.mjs.
+  const admin = new Onem2mHttp({ endpoint: cse.endpoint, originator: cse.admin });
+  const adminAe = async (rn, api) => { const originator = `C${rn.replace(/[^A-Za-z0-9]/g, '')}${run}`; const made = await new Onem2mHttp({ endpoint: cse.endpoint, originator }).registerAe(cse.cseBase, { rn, api, poa: [], lbl: ['pb-simulation'] }); return { path: made.path, aei: made.aei ?? originator }; };
+  const adminAcp = async (parent, rn, rules) => (await admin.ensure(parent, 1, { 'm2m:acp': { rn, pv: { acr: [{ acor: [cse.admin], acop: 63 }, ...rules] }, pvs: { acr: [{ acor: [cse.admin], acop: 63 }] } } })).payload['m2m:acp'].ri;
+  const central = await adminAe('pb-central-living-room', 'N.privacy.bubble.central');
+  const centralAcp = await adminAcp(central.path, 'central-acp', [{ acor: [central.aei], acop: 63 }]);
+  await admin.request('PUT', central.path, { body: { 'm2m:ae': { acpi: [centralAcp] } } });
+  const macp = await adminAcp(central.path, 'household-macp', [{ acor: [central.aei], acop: 6 }]);
+  const groupAudit = (await admin.ensure(central.path, 3, { 'm2m:cnt': { rn: 'groupCommands', mni: 10, acpi: [centralAcp] } })).path;
+  const memberResources = {}; const ackContainers = {};
+  for (const [deviceId, rn] of [['living-room-light', 'lr-light'], ['living-room-fan', 'lr-fan']]) {
+    const device = await adminAe(rn, 'N.privacy.bubble.emulated-appliance');
+    const deviceAcp = await adminAcp(device.path, 'device-acp', [{ acor: [central.aei], acop: 34 }]);
+    await admin.request('PUT', device.path, { body: { 'm2m:ae': { acpi: [deviceAcp] } } });
+    const switchAcp = await adminAcp(device.path, 'switch-acp', [{ acor: [central.aei], acop: 39 }]);
+    const ackAcp = await adminAcp(device.path, 'ack-acp', [{ acor: [central.aei], acop: 3 }]);
+    memberResources[deviceId] = (await admin.ensure(device.path, 28, encodeBinarySwitch({ rn: 'binarySwitch', state: false, acpi: [switchAcp], lbl: [`pb-device:${deviceId}`, 'pb-simulation'] }, { operation: 'CREATE' }))).path;
+    ackContainers[deviceId] = (await admin.ensure(device.path, 3, { 'm2m:cnt': { rn: 'commandAcks', mni: 1, acpi: [ackAcp] } })).path;
+  }
+  const coreConfig = { livingRoom: { delegationSec: Number(args['delegation-sec'] ?? 600), storyExpiryLocal: '16:00', cse: { cseId: cse.cseId, version: cse.version },
+    groupCommand: { cse: { endpoint: cse.endpoint, cseBase: cse.cseBase, originator: central.aei, timeoutMs: 8000 }, groupParent: central.path, memberResources, ackContainers, auditContainer: groupAudit, macp: [macp], acpi: [centralAcp] } } };
+  await writeFile(join(runDir, 'portal-core.json'), JSON.stringify(coreConfig, null, 2));
+  log('LIVING_ROOM_GROUP_PROVISIONED', { central: central.path, members: memberResources, macp: 'central acop 6 (RETRIEVE, UPDATE)', simulation: 'devices emulated' });
+
   // web-dashboard server against the same CSE (operator and guardian AEs, keyring and resident feed subscriptions).
   const liveConfig = {
     cse: cseConfig, simulation: true, gatewayAeId: ids.gateway, automationAeId: ids.automation, refreshMs: 3000,
@@ -224,7 +250,7 @@ try {
   await writeFile(join(runDir, 'dashboard-live.json'), JSON.stringify(liveConfig, null, 2));
   const dashboard = spawnChild('web-dashboard-server', [join(root, 'web-dashboard/server/cli.ts')], { cwd: join(root, 'web-dashboard'), env: {
     DASHBOARD_SOURCE: 'cse-live', CSE_LIVE_CONFIG: join(runDir, 'dashboard-live.json'), DASHBOARD_PORT: String(dashboardPort), PORTAL_DEMO_STATE: join(runDir, 'portal-state.json'),
-    ALERT_SOURCE: 'cse-live', ALERT_STORY_CONTROL_URL: controlUrl,
+    ALERT_SOURCE: 'cse-live', ALERT_STORY_CONTROL_URL: controlUrl, PORTAL_CORE_CONFIG: join(runDir, 'portal-core.json'),
   } });
   const ready = await dashboard.once('ready', 60000);
   log('DASHBOARD_READY', { url: ready.url, source: ready.source, subscriptions: ready.live?.subscriptions, keyrings: ready.live?.keyrings, denied: ready.live?.subscriptionsDenied });

@@ -23,6 +23,8 @@ export function useAlertFeed(url: string | null) {
   const last = useRef(0);
   const reconnect = useCallback(() => { last.current = 0; setEvents([]); setGeneration((value) => value + 1); }, []);
   useEffect(() => {
+    // A role or page without this feed starts empty (no cards from the previous role).
+    last.current = 0; setEvents([]);
     if (!url) return;
     let disposed = false; let retry: ReturnType<typeof setTimeout> | undefined;
     const source = new EventSource(`${url}?lastSequence=${last.current}`);
@@ -130,7 +132,7 @@ export function AlertCardView({ card, source, now }: { readonly card: AlertCard;
     } catch (cause) { setError(cause instanceof Error ? cause.message : tr('요청을 보내지 못했어요.', 'The request did not reach the server.')); }
     finally { setPending(null); }
   };
-  const canShare = card.notified && !card.decision && !card.review && (!card.draft || card.draft.findings.length === 0);
+  const canShare = card.notified && card.state !== 'dismissed' && !card.decision && !card.review && (!card.draft || card.draft.findings.length === 0);
   const sharePurpose = card.draft ? purpose : label(lang === 'en' ? leasePurposeLabelsEn : leasePurposeLabels, 'emergency-rescue');
   const canDismiss = card.state !== 'escalated' && card.state !== 'dismissed' && card.kind !== 'PANIC';
   const tone = card.state === 'escalated' || card.kind === 'PANIC' ? 'danger' : card.state === 'dismissed' ? '' : card.state === 'approved' ? 'success' : card.severity === 'urgent' ? 'danger' : 'warning';
