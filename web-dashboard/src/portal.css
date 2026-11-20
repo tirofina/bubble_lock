@@ -450,3 +450,5 @@ a.workspace-info:hover { background: rgb(255 255 255 / .1); text-decoration: non
 .enrollment-list .mini-device > div { flex: 1; min-width: 0; }
 .notification-row a.notification-link { color: inherit; flex: 1; min-width: 0; text-decoration: none; }
 .notification-row a.notification-link:hover strong { text-decoration: underline; }
+
+.auth-gate-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); width: 100%; }
