@@ -1,10 +1,14 @@
 # KEYRING 완료 조건과 남은 증거
 
-ROLE KEYRING / 남호 · DOC-REV2.0.0 · 2026-11-10.
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · 2026-11-12.
+
+2026-11-12 개발·로컬 검증 기준은 Gateway 0.2.122와 r18 0.7.25다. 현장 전원·BLE·LCD·명령과 운영 전환 등 남은 수용 항목은 제작 PCB 조립 이후로 이월했다. [로컬 검증 결과와 인계](evidence/2026-11-12-local-handoff/README.md)
+
+Feather 0.2.0과 Pi Gateway 0.2.43의 격리 시험에서 두 명령의 ACK, GPIO readback, 후속 관측, Mobius4와 중앙 정산이 일치했다. 운영자는 LED 점등 변화를 보지 못했다. Feather 0.2.1의 화면은 GPIO 상태를 `CMD ON` 또는 `CMD OFF`로 표시하도록 구현했고 로컬 빌드를 마쳤다. 새 화면의 실물 검증과 제작 PCB 수용은 남아 있다. [격리 시험 기록](evidence/2026-11-11-feather-visual/receipt.json) · [화면 기록 절차](raspberry-pi-gateway/TESTING.md#실물-명령-증거-대조)
 
 Gateway 0.2.5는 Pi 임시 사용자 systemd에서 실제 Feather 관측 27개와 상태 16개를 격리 Mobius4에 저장했다. 재시작 전 대기 관측 한 건의 payload도 CSE에서 일치했다. 기본 63개와 모의 GATT 명령 통합 2개는 앞선 별도 시험 결과다. 실제 명령·물리 출력, 배포용 systemd, CORE/앱/웹 정산은 남아 있다. [Pi 전체 데몬](evidence/2026-11-10-pi-full-daemon/README.md) · [중앙 명령 시험](evidence/2026-11-10-central-dispatch/README.md)
 
-최신 루트 계획서의 담당 산출물·7개 완료 자료·첫 통합 조건을 ESP32-S3 firmware0.7.0, Feather 벤치0.1.1, Gateway0.2.4의 소스와 실행 evidence에 대조했다. 2026-11-10 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 화면·Feather·버튼 두 개와 실물 Pi의 BLE 연결, 버튼 입력·화면 유지, 90초간45개 관측 수신을 확인하고 `686f7b4`로 업로드했다. 실물 관측의 Pi→격리 Mobius4 저장·readback도 확보했으며 제작 PCB·전체 daemon·중앙 명령과 앱/웹·release는 미완료다.
+2026-11-10에 루트 계획서의 담당 산출물·7개 완료 자료·첫 통합 조건을 ESP32-S3 firmware0.7.0, Feather 벤치0.1.1, Gateway0.2.4의 당시 소스와 실행 evidence에 대조했다. 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 화면·Feather·버튼 두 개와 실물 Pi의 BLE 연결, 버튼 입력·화면 유지, 90초간45개 관측 수신을 확인하고 `686f7b4`로 업로드했다. 실물 관측의 Pi→격리 Mobius4 저장·readback도 확보했다.
 
 최신 [Pi→CSE 실물 관측 증거](evidence/2026-11-10-pi-cse/)는 HTTPS 경로의5개씩3회 저장·readback 일치, CSE 중단 중 pending5개 보존 후 복구·전달5개, 정상 MQTT 전달5개·HTTPS fallback0개, broker 중단 후 MQTT0개·HTTPS fallback15개를 포함한다. 총35개 관측의 CSE readback이 일치했다. 이번 CSE 시험 관측은 모두 `released`이며 버튼 `confirm/panic`·화면·90초 연속 수신은 [Pi·Feather 증거](evidence/2026-11-10-pi-feather/README.md)에 별도로 남겼다. 시험은 새 관측 container·시험 인증서·새 Pi SQLite를 사용하며, 전체 Gateway daemon과 명령 실행 loop는 시작하지 않았다.
 
@@ -14,13 +18,13 @@ Gateway 0.2.5는 Pi 임시 사용자 systemd에서 실제 Feather 관측 27개�
 
 | 계획서 요구 | 현재 자료/실행 증거 | 남은 작업·입력 |
 |---|---|---|
-| KiCad schematic/PCB/BOM/assembly revision | [r18 snapshot/inventory](pcb/r18/README.md), [핀 정정](pcb/HARDWARE_FIRMWARE_MAP.md), 원본222개 파일 보존 | 실제 조립 revision·배선·부품·패널 식별과 실물 수용 |
+| KiCad schematic/PCB/BOM/assembly revision | [r18 snapshot/inventory](pcb/r18/README.md), [핀 정정](pcb/HARDWARE_FIRMWARE_MAP.md), 원본222개 파일 보존, [실물 조립 기록 도구](pcb/BRING_UP.md#실물-조립-기록) 소스 | 실제 조립 revision·배선·부품·패널 식별과 실물 수용 |
 | firmware source/build/flash 명령 | [소스](firmware/README.md), [기본/ST7789/JD9853 빌드3개](firmware/BUILD_PROFILES.md), Feather0.1.1 실제 flash·부팅·버튼·화면 유지 | 제작 PCB의 provisioning·flash·동작 결과. ESP32-S3의 기존3개는 unprovisioned compile |
 | GATT/profile/payload schema | [인터페이스](INTERFACE_NOTES.md), [schema](../contracts/keyring/README.md), [BLE 세션 회귀](evidence/2026-10-30-ble-sessions/README.md), 실제 Pi/Feather pairing·identity·fragment 수신과90초45개 관측 | 제작 PCB의 CORE 확장 수용·명령·재연결 수용시험 |
 | sensor/button/LED/battery/charger | Feather의 두 버튼 입력·ST7789 화면 전환/유지 확인, [센서/GPIO](firmware/README.md), [INA219](firmware/POWER_MONITOR.md), [주변장치](firmware/PERIPHERALS.md), [DAC standby](firmware/HEADPHONE_STANDBY.md) | 제작 PCB의 센서 calibration/오류/wake/출력·전력 측정·구매 JD9853 init/geometry. LED·충전·온도 gate는 하드웨어 경로 |
 | Raspberry Pi Gateway daemon | [설치/config/systemd](raspberry-pi-gateway/README.md), 실제 Pi에서 0.2.5 임시 사용자 systemd·BlueZ·시험 mTLS·재시작 | 배포용 systemd unit·실물 명령·운영 인증서/등록 |
 | MQTT/HTTPS transport | 기존 TLS/mTLS·ACL6개와 Mobius4 주소 범위 시험, 실물 Pi 관측의 HTTPS5개씩3회·정상 MQTT5개·broker 중단 후 HTTPS fallback15개와 CSE readback 전체 일치. 2026-11-19 PC에서 전체 daemon과 모의 GATT 키링 24대, 실제 Mobius4와 aedes 브로커로 조건별 MQTT/HTTPS 선택을 측정하고 관측 509건 readback 일치([R02](../docs/rubric-work/R02.md)) | 운영 PKI·principal→AE/Originator·ACP/grant·capability 합의. 시험 인증서·개발 mapping과 운영 승인 구분 |
-| queue/dedup/ACK/readback | 기존 SQLite reopen·exit73/WAL 복구·충돌 보존과 Linux CLI10개, 실물 Pi에서 CSE 중단 중 pending5개 보존→복구 전달5개·관측 readback 일치 | 실제 장치 명령 ACK/readback·Pi 전원 손실·운영 DB·중앙 settlement/checkpoint·journal reclaim·복구 승인/활성화 |
+| queue/dedup/ACK/readback | 기존 SQLite reopen·exit73/WAL 복구·충돌 보존과 Linux CLI10개, 실물 Pi에서 CSE 중단 중 pending5개 보존→복구 전달5개·관측 readback 일치, 격리 Feather ON/OFF ACK와 정산 확인 | 제작 PCB의 명령 ACK/readback, 최신 중앙 API와 실제 Pi 연동, Pi 전원 손실·운영 DB·중앙 복구·journal reclaim |
 | power/range/reconnect/command 시험 | 모의 BLE·기한/fence/명령 회귀, 실제 로컬 전송 복구, [Pi 거리·재연결 기록 도구 소스](raspberry-pi-gateway/TESTING.md#실물-ble-거리재연결-기록) | 실제 전원·BLE 거리·명령·회수·journal 장애·재연결 측정 |
 | PCB·Gateway·앱 연동 영상 | 코드/config/로컬 로그·hash와 실제 Feather→Pi→CSE 관측 receipt | 제작 PCB→Pi→CSE→앱/웹·5분 미만 영상·공개/제출 evidence |
 
@@ -38,7 +42,7 @@ Gateway 0.2.5는 Pi 임시 사용자 systemd에서 실제 Feather 관측 27개�
 
 ## 첫 통합 데모 조건
 
-실제 Feather BLE→Pi→격리 Mobius4의 일반 cin 관측 저장·readback을 검증했다. 이 벤치는 화면·Feather·버튼 두 개를 사용하며 센서나 출력 장치는 연결하지 않았다. 계획서가 요구하는 pb:binarySwitch/state SDT 저장·제어, 앱 승인 Group 명령, 장치 ACK/readback, 웹 시각 표시, 최신 grant 회수 판정, MEC callback, 동일 commandId receipt 정산은 전체 경로로 아직 검증되지 않았다. 기존 합성 receipt/outbox와 중앙 mTLS 승인·회수 시험은 각 경계의 증거로 유지한다.
+실제 Feather BLE→Pi→격리 Mobius4의 일반 cin 관측 저장·readback과 별도의 격리 ON/OFF 명령 ACK를 검증했다. 첫 통합 데모 수용에는 제작 PCB로 pb:binarySwitch/state SDT 저장·제어, 앱 승인 Group 명령, 장치 ACK/readback, 웹 시각 표시, 최신 grant 회수 판정, MEC callback, 동일 commandId receipt 정산이 하나의 경로에서 확인되어야 한다. 기존 합성 receipt/outbox와 중앙 mTLS 승인·회수 시험은 각 경계의 증거로 유지한다.
 
 ## 지정 원문
 

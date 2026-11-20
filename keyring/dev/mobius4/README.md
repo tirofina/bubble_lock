@@ -41,7 +41,7 @@ docker compose --env-file ./keyring/dev/mobius4/.local/compose.env -f ./keyring/
 
 관측/receipt/health container와 binarySwitch 자원은 CORE owner가 준비해야 한다. 포함한 specialization registry는 두 가지다. `specializations.canonical.json`은 TS-0023 정본 `cod:binSh`(`r4-common-1.0`)이고 새 scoped 배포의 기본값이다. `specializations.json`은 `pb:binarySwitch`(`pb-legacy-1.0`)이며 deprecated 상태로 기존 bench volume을 위해 유지한다. Mobius4 registry는 containerDefinition 하나에 envelope 하나를 연결하므로 `compose.env`의 `KEYRING_SDT_PROFILE`과 `KEYRING_SDT_REGISTRY`가 CSE registry, `bootstrap.mjs` 생성 body, scoped consumer UPDATE body를 같은 profile로 맞춘다. 두 변수가 없는 기존 `compose.env`는 legacy profile로 그대로 동작한다. profile 정의는 `sdt-profile.mjs`, 비교 설명은 [SDT 문서](../../../pc-mobius/SDT.md#키링-bench의-이중-표현)에 있다. CORE 제공 하니스의 `create-state`는 현재 ty=4로 기록돼 있어 flexContainer ty=28과 불일치한다. 이 차이는 [인수 메모](../../CORE_INTEGRATION.md)에 기록했고 팀 원본은 보존했다.
 
-나중에 실제 Mobius 서버로 바꿀 때는 `M2M_CSE_URL`/RVI/Originator/container/CA·credential과 `PC_API_URL`을 교체한다. 운영 서버의 별도 데이터 저장소에는 새 `M2M_CSE_DEPLOYMENT_ID`와 새 `GATEWAY_DATABASE`를 지정한다. [배포 전환](../../raspberry-pi-gateway/STATE_RECOVERY.md#cse-배포-전환)
+나중에 실제 Mobius 서버로 바꿀 때는 `M2M_CSE_URL`/RVI/Originator/container/CA·credential과 `PC_API_URL`을 교체한다. 운영 서버의 별도 데이터 저장소에는 새 `M2M_CSE_DEPLOYMENT_ID`와 새 `GATEWAY_DATABASE`를 지정한다. 새 중앙 API 저장소에는 `PC_API_DEPLOYMENT_ID`를 배정한다. [Mobius4 배포 전환](../../raspberry-pi-gateway/STATE_RECOVERY.md#cse-배포-전환) · [중앙 API 배포 전환](../../raspberry-pi-gateway/STATE_RECOVERY.md#중앙-api-배포-전환)
 
 ## Epoch 전용 MQTT 프로필
 
@@ -168,6 +168,8 @@ node "$tool/inspect.mjs" --gateway gw-a --command $issuedCommandId
 node "$tool/inspect.mjs" --gateway gw-a --journal-report $privateReportPath
 ```
 
+같은 부팅의 명령 한 건을 지정한 보고서는 수집한 보드·펌웨어 revision, 명령 ID, 적용 uptime과 ACK를 함께 반환한다. 중앙 정산·Pi 전달·최초 `APPLIED` ACK가 모두 확인되면 `originalApplicationMatched`가 참이다. [r18 명령 대조](../../JOURNAL_RETENTION.md#r18-실물-명령-한-건-대조)
+
 ### Feather 벤치 명령 API
 
 PC의 `https://127.0.0.1:8787`에 팀 main `715ef58`의 mTLS API를 띄운다. 런처는 로컬 Git 객체에서 해당 팀 소스를 추출하고 scoped CA로 벤치 운영자 인증서를 발급한다. Git for Windows의 OpenSSL을 기본으로 사용한다. 첫 시작에 `gw-a`의 `keyring-feather-lab`과 벤치 주체 `scoped-feather-bench`를 등록한다. 이후 시작은 같은 등록을 읽고 저장된 자격 상태를 유지한다.
@@ -191,7 +193,94 @@ Pi에는 scoped CA의 `ca.pem`, `gateway-a.pem`, `gateway-a.key`를 소유자 �
 
 명령 프로필의 관측은 `gw-a` 전용 `command-observations-a`에, 영수증은 `command-receipts-a`에 보낸다. 이미 시작한 scoped 프로필에서는 발행을 마친 뒤 `prepare-scoped-command-receipts.ps1 -FeatherObservationsOnly`로 관측 컨테이너만 준비한다. [관측 컨테이너 배치 증거](../../evidence/2026-11-10-scoped-feather-led-cycle/provisioning.json)
 
+관측 자원 ID 고정을 쓰는 새 Pi 세션에는 발행을 멈춘 뒤 아래 명령으로 기존 컨테이너의 `ri`를 조회한다. 격리 프록시는 `gw-a`의 컨테이너 이름 GET과 해당 ID의 POST를 허용한다. 기존에 고정한 `ri`와 다른 자원이 조회되면 프록시 갱신 전에 멈춘다.
+
+```powershell
+./keyring/dev/mobius4/prepare-scoped-command-receipts.ps1 -PinObservationRoute
+```
+
+출력의 `SCOPED_OBSERVATION_PIN gw-a` 뒤 ID를 새 Pi 세션의 `--observation-container-ri`에 넣는다. 영수증 ID는 `-PinReceiptRoutes`로 별도로 확인한다. [Pi 명령 세션](../../raspberry-pi-gateway/TESTING.md#pi-명령-세션)
+
 정산 명령의 `--team-root`에는 `.local/scoped/command-api/team-source`, `--state`에는 같은 폴더의 `runtime.json`을 넣는다. 다른 연결 설정은 [Feather 명령 프로필](../../firmware/feather_probe/README.md#내장-led를-쓰는-명령-프로필)과 [Scoped LED 시험 절차](../../raspberry-pi-gateway/TESTING.md#기존-scoped-mobius4에서-feather-led-시험)를 따른다. 2026-11-10에는 로컬 API 리스너와 장치 등록까지 준비했다. [API 배치 증거](../../evidence/2026-11-10-scoped-command-api/provisioning.json)
+
+#### 최신 INTEGRATION API 벤치
+
+팀 main `bc2a45d`는 새 포트 `127.0.0.1:8788`과 `.local/scoped/command-api-integration/`을 사용한다. 이 폴더에 고정한 팀 소스, 계약, 운영자 인증서와 중앙 상태를 둔다. 첫 실행에서 `gw-a`, 시험용 가구와 장치 `keyring-feather-lab`을 등록한다. 기존 등록은 동일한 Gateway·가구·장치인지 대조한다.
+
+```powershell
+$tool = './keyring/dev/mobius4'
+& "$tool/start-scoped-command-api.ps1" -Mode integration -PrepareOnly
+npm --prefix "$tool/.local/scoped/command-api-integration/team-source/pc-mobius" ci --omit=dev --ignore-scripts
+& "$tool/start-scoped-command-api.ps1" -Mode integration
+```
+
+PC에 pnpm이 설치돼 있으면 패키지 설치 단계에서 팀의 `package-lock.json`을 읽어 같은 프로필에 pnpm 잠금 파일을 만들 수 있다.
+
+```powershell
+$teamPackage = "$tool/.local/scoped/command-api-integration/team-source/pc-mobius"
+pnpm --dir $teamPackage import
+pnpm --dir $teamPackage install --frozen-lockfile --prod --ignore-scripts
+```
+
+`READY`의 `mode`가 `integration`이면, Pi의 시험 세션을 새로 준비하면서 `--api-mode integration`을 지정한다. SSH 포워딩의 PC·Pi API 포트는 둘 다 `8788`을 사용한다. 이 모드는 Gateway 0.2.47 이상의 `dispatch-start`, 중앙 영수증과 중앙 관측을 켠다. PC의 LED 도구에도 `--api-mode integration`을 사용한다. [Pi 세션 설정](../../raspberry-pi-gateway/TESTING.md#pi-명령-세션)
+
+통합 런처의 `GET /api/v1/gateways/gw-a/bench-capabilities`는 시험 Gateway 인증서에 모드와 팀 커밋, 지원 경로를 반환한다. Pi는 이 응답을 확인한 뒤 시작한다.
+
+중앙 정산의 정본은 최신 프로필의 `runtime.json`에 있는 `gatewayCommands`와 `gatewayDeviceReceipts`다. `gatewayTelemetry`에는 수용한 관측의 식별자와 암호화된 위치 참조가 남는다. 기존 벤치의 콜백·PostgreSQL 정산 도구는 기존 프로필을 읽는다.
+
+통합 모드의 LED 도구는 같은 명령이 중앙에서 `APPLIED_VERIFIED`로 정산된 뒤 다음 단계로 넘어간다. 완료 증거는 Pi SQLite 사본과 이 프로필의 중앙 상태 사본을 읽어 대조한다. [최신 중앙 API 시험 결과 대조](../../raspberry-pi-gateway/TESTING.md#최신-중앙-api의-시험-결과-대조)
+
+2026-11-11에 잠금 파일로 Node 패키지를 설치하고 `8788`의 루프백 리스너와 시험 Gateway·가구·장치 등록을 확인했다. [준비 기록](../../evidence/2026-11-11-current-central-bench/provisioning.json)
+
+#### r18 격리 명령 API
+
+`r18` 프로필은 PC의 `127.0.0.1:8789`와 `.local/scoped/command-api-r18/`을 사용한다. `gw-b` 인증서에 `keyring-r18-lab`과 시험 주체 `scoped-r18-bench`를 등록한다. 최신 프로필을 시작하면 `READY`와 Pi의 인증된 기능 조회에 `r18-hand-solder`, `keyring-0.7.25`가 함께 표시된다. 이전 revision으로 실행 중인 API는 새 0.7.25 Pi 명령 세션을 시작하기 전에 갱신한다.
+
+```powershell
+$tool = './keyring/dev/mobius4'
+& "$tool/start-scoped-command-api.ps1" -Mode r18 -PrepareOnly
+npm --prefix "$tool/.local/scoped/command-api-r18/team-source/pc-mobius" ci --omit=dev --ignore-scripts
+& "$tool/start-scoped-command-api.ps1" -Mode r18
+```
+
+절전 빌드로 명령 시험을 할 때는 기존 r18 루프백 API를 종료한 뒤 `-Mode r18 -FirmwareRevision keyring-0.7.25-sleep`으로 시작한다. 이 값은 같은 배치의 `READY`와 Gateway B 인증서로 읽는 기능 응답에 표시된다. 옵션을 생략하면 기본 `keyring-0.7.25`로 시작한다. [Pi와 펄스 도구 설정](../../raspberry-pi-gateway/TESTING.md#r18-pi-명령-세션)
+
+격리 Mobius4에서 발행을 멈춘 뒤 아래 명령으로 `command-receipts-b`, `command-observations-b`, `command-health-b`를 준비한다. `SCOPED_RECEIPT_PIN gw-b`, `SCOPED_OBSERVATION_PIN gw-b`, `SCOPED_HEALTH_PIN gw-b`에서 세 ID를 기록한다. Gateway 0.2.79의 health 고정 경로는 `-PinR18HealthRoute`가 만드는 Gateway B 전용 이름 조회와 자원 ID 쓰기 권한을 사용한다. 기존 배치의 이전 실행 결과는 [배치 증거](../../evidence/2026-11-11-scoped-r18-enrollment/provisioning.json)에 있다.
+
+```powershell
+& "$tool/prepare-scoped-command-receipts.ps1"
+& "$tool/prepare-scoped-command-receipts.ps1" -R18TelemetryOnly
+& "$tool/prepare-scoped-command-receipts.ps1" -PinReceiptRoutes
+& "$tool/prepare-scoped-command-receipts.ps1" -PinR18ObservationRoute
+& "$tool/prepare-scoped-command-receipts.ps1" -PinR18HealthRoute
+```
+
+Pi loopback에 기존 CSE 포트와 API `8789`를 전달한다. Pi에서는 Gateway B 인증서와 고정 ID를 넣어 [r18 Pi 명령 세션](../../raspberry-pi-gateway/TESTING.md#r18-pi-명령-세션)을 준비한다. 작업자가 시작하는 명령 한 건은 [r18 단일 펄스 시험](../../raspberry-pi-gateway/TESTING.md#r18-단일-펄스-시험)을 따른다. 중앙 상태 사본은 `command-api-r18/runtime.json`에서 확보한다.
+
+2026-11-11에 PC의 `8789`를 시작하고 Gateway B 인증서로 기능 응답, `ACTIVE` 자격과 대기 명령 0건을 확인했다. 동일한 팀 잠금 파일의 의존성 63개를 pnpm 오프라인 캐시에서 설치했다. 격리 Mobius4에서 B의 관측·영수증 ID를 읽었고 Feather·r18의 교차 조회는 각각 403이었다. Pi 접속과 실물 명령은 미실행이다. [실행 기록](../../evidence/2026-11-11-scoped-r18-enrollment/provisioning.json)
+
+##### r18 관측 MQTT 중계
+
+격리 프로필에서 Pi의 oneM2M MQTT CREATE를 받는 선택 기능이다. 브로커는 Gateway B 인증서에 해당 요청 토픽의 쓰기와 응답 토픽의 읽기를 부여한다. 소비자는 시작할 때 r18 관측·health 이름과 고정 ID를 CSE에서 확인하고, 요청의 Originator·작업·자원 타입·고정 ID를 대조한 뒤 같은 요청 ID와 본문을 Mobius4에 HTTPS로 전달한다. Pi에는 실제 CSE 응답을 MQTT로 돌려준다. 이 배치의 전송 경로는 Pi→브로커 MQTT와 소비자→Mobius4 HTTPS다. Mobius4의 내장 MQTT 리스너는 별도 개발 프로필에서 사용한다.
+
+시험용 발행자를 멈춘 뒤 다음 명령으로 기존 CSE에서 두 컨테이너를 조회한다. 준비 명령은 두 고정 ID를 `.local/scoped/config/r18-mqtt.json`과 Gateway B의 HTTPS 경로에 반영하고 격리 TLS 프록시를 갱신한다. 기존 설정이 CSE와 다르면 중단한다.
+
+```powershell
+& "$tool/prepare-scoped-command-receipts.ps1" -PrepareR18Mqtt
+& "$tool/start-scoped.ps1" -RefreshIngress
+```
+
+준비 명령이 출력한 `SCOPED_OBSERVATION_PIN gw-b`, `SCOPED_HEALTH_PIN gw-b`를 Pi 세션 설정에 사용한다. `-RefreshIngress`는 소비자 로그의 `SCOPED_R18_MQTT_SUBSCRIBED`까지 기다린다. 파일이 없는 배치는 기존 epoch 토픽만 구독한다. Pi의 브로커 포트는 CSE·중앙 API와 별도 터널로 전달한다. [Pi 시험 절차](../../raspberry-pi-gateway/TESTING.md#r18-mqtt와-https-fallback-시험)
+
+##### r18 격리 위치 시험
+
+기존 r18 API를 정상 종료한 뒤 같은 PC 루프백 프로필에 위치 시험 옵션을 붙여 시작한다. 기존 `gw-b` 등록·텔레메트리와 Pi 포트는 그대로 사용한다.
+
+```powershell
+& './keyring/dev/mobius4/start-scoped-command-api.ps1' -Mode r18 -EnableLocationTrial
+```
+
+추가 경로는 r18 보호자 시험 인증서에만 열리며 팀 API의 현재 consent·grant·사건·lease 검사를 사용한다. lease는 지정된 r18 장치 한 개와 같은 보호자 수신자에 최대 60초를 허용한다. [PC 위치 응답 수집](../../raspberry-pi-gateway/TESTING.md#중앙-위치-api와-웹-응답-대조)은 팀 API에서 승인과 회수를 수행한다. 웹 OIDC 세션과 별도 앱의 배치는 팀 환경을 사용한다. 이 시험 옵션의 실제 실행은 미수행이다.
 
 ### 격리 소유권 전환
 

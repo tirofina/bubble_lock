@@ -6,19 +6,47 @@ import json
 import random
 import sqlite3
 import time
+from datetime import datetime
 from pathlib import Path
 from typing import Callable
 
-from .model import canonical, iso_time
+from .model import (MAX_UPTIME_MS, ObservationHead, button_presses_regressed, canonical, central_observation_id,
+                    iso_time, observation_button_presses)
 from .core_bridge import telemetry, measurable, acknowledgement
 from .state_identity import preflight, install
 
 MAX_PENDING_CREDENTIAL_RECEIPTS = 1024
 RETAIN_DELIVERED_CREDENTIAL_RECEIPTS = 128
 
+# Reused by plan-cutover so its epoch counts match the daemon's queue selection.
+CORE_TELEMETRY_ROWS = """
+    SELECT rowid, CASE WHEN json_valid(payload) THEN payload END AS message
+    FROM outbox WHERE container='@core/telemetry'
+"""
+CORE_TELEMETRY_EPOCH_MATCH = """
+    json_type(message)='object' AND CASE WHEN ?1 IS NULL THEN json_type(message, '$.ownershipEpoch') IS NULL
+        ELSE json_type(message, '$.ownershipEpoch')='integer' AND EXISTS (
+            SELECT 1 FROM json_each(?1) AS assignment
+            WHERE assignment.key=json_extract(message, '$.deviceId')
+              AND assignment.value=json_extract(message, '$.ownershipEpoch')
+        ) END
+"""
+
 
 class CapacityError(RuntimeError):
     pass
+
+
+def _stored_button_presses(row: sqlite3.Row) -> tuple[int, int] | None:
+    # An older Gateway can advance the observation boot without writing the new columns.
+    confirm, panic = row["confirm_presses"], row["panic_presses"]
+    if row["button_presses_boot_id"] != row["boot_id"] or type(confirm) is not int or type(panic) is not int:
+        return None
+    return confirm, panic
+
+
+def _stored_uptime(row: sqlite3.Row) -> int | None:
+    return row["device_uptime_ms"] if row["device_uptime_boot_id"] == row["boot_id"] else None
 
 
 class Store:
@@ -35,6 +63,8 @@ class Store:
             CREATE TABLE IF NOT EXISTS commands (
                 command_id TEXT PRIMARY KEY, payload_hash TEXT NOT NULL,
                 payload TEXT NOT NULL, status TEXT NOT NULL,
+                device_id TEXT,
+                ble_final_write_started INTEGER CHECK(ble_final_write_started IN (0,1)),
                 received_at TEXT NOT NULL, receipt TEXT,
                 receipt_delivered INTEGER NOT NULL DEFAULT 0,
                 central_receipt_staged INTEGER NOT NULL DEFAULT 0
@@ -43,16 +73,22 @@ class Store:
                 device_id TEXT PRIMARY KEY, epoch INTEGER NOT NULL, revision INTEGER NOT NULL
             );
             CREATE TABLE IF NOT EXISTS observations (
-                device_id TEXT PRIMARY KEY, boot_id TEXT NOT NULL, sequence INTEGER NOT NULL
+                device_id TEXT PRIMARY KEY, boot_id TEXT NOT NULL, sequence INTEGER NOT NULL,
+                button_presses_boot_id TEXT,
+                confirm_presses INTEGER CHECK(confirm_presses BETWEEN 0 AND 4294967295),
+                panic_presses INTEGER CHECK(panic_presses BETWEEN 0 AND 4294967295),
+                device_uptime_boot_id TEXT,
+                device_uptime_ms INTEGER CHECK(device_uptime_ms BETWEEN 0 AND 9007199254740991)
             );
             CREATE TABLE IF NOT EXISTS outbox (
                 rqi TEXT PRIMARY KEY, container TEXT NOT NULL, payload TEXT NOT NULL,
                 payload_bytes INTEGER NOT NULL, created_at TEXT NOT NULL,
                 attempts INTEGER NOT NULL DEFAULT 0, next_attempt REAL NOT NULL DEFAULT 0,
-                command_id TEXT
+                command_id TEXT, native_observation_device_id TEXT
             );
             CREATE INDEX IF NOT EXISTS outbox_due ON outbox(next_attempt, created_at);
             CREATE INDEX IF NOT EXISTS outbox_core_pending ON outbox(container) WHERE container='@core/telemetry';
+            CREATE INDEX IF NOT EXISTS outbox_central_pending ON outbox(container) WHERE container='@central/telemetry';
             CREATE INDEX IF NOT EXISTS outbox_native_receipt ON outbox(command_id) WHERE command_id IS NOT NULL;
             CREATE INDEX IF NOT EXISTS commands_pending_receipt ON commands(receipt_delivered)
                 WHERE receipt IS NOT NULL AND receipt_delivered=0;
@@ -63,14 +99,68 @@ class Store:
                 sequence INTEGER PRIMARY KEY, rqi TEXT NOT NULL UNIQUE,
                 payload TEXT NOT NULL, delivered_at TEXT
             );
+            CREATE TABLE IF NOT EXISTS http_retry_windows (
+                host TEXT NOT NULL, port INTEGER NOT NULL,
+                system_boot_id TEXT NOT NULL, deadline REAL NOT NULL CHECK(deadline > 0),
+                status INTEGER NOT NULL CHECK(status IN (429, 503)),
+                PRIMARY KEY(host, port)
+            );
         """)
-        columns = {row["name"] for row in self.db.execute("PRAGMA table_info(commands)")}
-        if "central_receipt_staged" not in columns:
-            self.db.execute("ALTER TABLE commands ADD COLUMN central_receipt_staged INTEGER NOT NULL DEFAULT 0")
         try:
             with self.db:
                 self.db.execute("BEGIN IMMEDIATE")
                 install(self.db, binding)
+                columns = {row["name"] for row in self.db.execute("PRAGMA table_info(commands)")}
+                if "central_receipt_staged" not in columns:
+                    self.db.execute("ALTER TABLE commands ADD COLUMN central_receipt_staged INTEGER NOT NULL DEFAULT 0")
+                if "device_id" not in columns:
+                    self.db.execute("ALTER TABLE commands ADD COLUMN device_id TEXT")
+                if "ble_final_write_started" not in columns:
+                    self.db.execute("ALTER TABLE commands ADD COLUMN ble_final_write_started INTEGER "
+                                    "CHECK(ble_final_write_started IN (0,1))")
+                outbox_columns = {row["name"] for row in self.db.execute("PRAGMA table_info(outbox)")}
+                if "native_observation_device_id" not in outbox_columns:
+                    self.db.execute("ALTER TABLE outbox ADD COLUMN native_observation_device_id TEXT")
+                self.db.execute("""
+                    UPDATE outbox SET native_observation_device_id=json_extract(payload, '$.deviceId')
+                    WHERE container=? AND command_id IS NULL AND native_observation_device_id IS NULL
+                      AND CASE WHEN json_valid(payload) THEN
+                          json_type(payload, '$.deviceId')='text'
+                          AND json_type(payload, '$.bootId')='text'
+                          AND json_type(payload, '$.sequence')='integer'
+                          AND json_type(payload, '$.sensorValues')='object'
+                          AND json_extract(payload, '$.timestampSource')='gateway-received'
+                      ELSE 0 END
+                """, (binding["observationContainer"],))
+                self.db.execute("""
+                    CREATE INDEX IF NOT EXISTS outbox_native_observation_device
+                    ON outbox(container,native_observation_device_id)
+                    WHERE native_observation_device_id IS NOT NULL
+                """)
+                self.db.execute("""
+                    CREATE INDEX IF NOT EXISTS commands_pending_device ON commands(device_id) WHERE status='RECEIVED'
+                """)
+                self.db.execute("""
+                    UPDATE commands SET device_id=CASE WHEN json_valid(payload) THEN
+                        CASE WHEN json_type(payload,'$.deviceId')='text' THEN json_extract(payload,'$.deviceId') END END
+                    WHERE status='RECEIVED' AND device_id IS NULL
+                """)
+                observation_columns = {row["name"] for row in self.db.execute("PRAGMA table_info(observations)")}
+                if "button_presses_boot_id" not in observation_columns:
+                    self.db.execute("ALTER TABLE observations ADD COLUMN button_presses_boot_id TEXT")
+                for name in ("confirm_presses", "panic_presses"):
+                    if name not in observation_columns:
+                        self.db.execute(f"ALTER TABLE observations ADD COLUMN {name} INTEGER "
+                                        f"CHECK({name} BETWEEN 0 AND 4294967295)")
+                if "device_uptime_boot_id" not in observation_columns:
+                    self.db.execute("ALTER TABLE observations ADD COLUMN device_uptime_boot_id TEXT")
+                if "device_uptime_ms" not in observation_columns:
+                    self.db.execute("ALTER TABLE observations ADD COLUMN device_uptime_ms INTEGER "
+                                    f"CHECK(device_uptime_ms BETWEEN 0 AND {MAX_UPTIME_MS})")
+                self.db.execute("""
+                    CREATE INDEX IF NOT EXISTS commands_pending_central_receipt ON commands(central_receipt_staged)
+                    WHERE receipt IS NOT NULL AND central_receipt_staged=0
+                """)
         except Exception:
             self.db.close()
             raise
@@ -79,6 +169,23 @@ class Store:
     @staticmethod
     def request_id(kind: str, identity: str) -> str:
         return "kr-" + hashlib.sha256(f"{kind}:{identity}".encode("utf-8")).hexdigest()[:48]
+
+    def restore_http_retry_windows(self, system_boot_id: str, now: float) -> dict[tuple[str, int], tuple[float, int]]:
+        with self.db:
+            self.db.execute("DELETE FROM http_retry_windows WHERE system_boot_id<>? OR deadline<=?",
+                            (system_boot_id, now))
+            rows = self.db.execute("SELECT host,port,deadline,status FROM http_retry_windows").fetchall()
+        return {(row["host"], row["port"]): (row["deadline"], row["status"]) for row in rows}
+
+    def save_http_retry_window(self, origin: tuple[str, int], system_boot_id: str, deadline: float, status: int) -> None:
+        with self.db:
+            self.db.execute("""
+                INSERT INTO http_retry_windows(host,port,system_boot_id,deadline,status) VALUES(?,?,?,?,?)
+                ON CONFLICT(host,port) DO UPDATE SET system_boot_id=excluded.system_boot_id,
+                    deadline=excluded.deadline,status=excluded.status
+                WHERE http_retry_windows.system_boot_id<>excluded.system_boot_id
+                   OR http_retry_windows.deadline<=excluded.deadline
+            """, (*origin, system_boot_id, deadline, status))
 
     def accept(self, command: dict, digest: str) -> str:
         """Never replace a journal entry for an existing commandId."""
@@ -89,15 +196,26 @@ class Store:
             count = self.db.execute("SELECT COUNT(*) FROM commands").fetchone()[0]
             if count >= self.max_commands:
                 raise CapacityError("Command journal full; explicit archival/reprovisioning required")
-            self.db.execute("INSERT INTO commands(command_id,payload_hash,payload,status,received_at) VALUES(?,?,?,'RECEIVED',?)",
-                            (command["commandId"], digest, canonical(command), iso_time()))
+            self.db.execute("INSERT INTO commands(command_id,payload_hash,payload,device_id,status,received_at) "
+                            "VALUES(?,?,?,?,'RECEIVED',?)",
+                            (command["commandId"], digest, canonical(command), command["deviceId"], iso_time()))
         return "NEW"
 
     def pending(self, limit: int = 16, *, after_rowid: int = 0,
-                through_rowid: int = 2**63 - 1) -> list[dict]:
+                through_rowid: int = 2**63 - 1, device_id: str | None = None,
+                excluded_devices: tuple[str, ...] = ()) -> list[dict]:
+        scope = ""
+        parameters = [after_rowid, through_rowid]
+        if device_id is not None:
+            scope = "AND device_id=? "
+            parameters.append(device_id)
+        elif excluded_devices:
+            scope = "AND (device_id IS NULL OR device_id NOT IN (SELECT value FROM json_each(?))) "
+            parameters.append(canonical(excluded_devices))
         rows = self.db.execute(
-            "SELECT rowid,payload,payload_hash FROM commands WHERE status='RECEIVED' AND rowid>? AND rowid<=? "
-            "ORDER BY rowid LIMIT ?", (after_rowid, through_rowid, limit))
+            "SELECT rowid,payload,payload_hash FROM commands INDEXED BY commands_pending_device "
+            "WHERE status='RECEIVED' AND rowid>? AND rowid<=? " + scope + "ORDER BY rowid LIMIT ?",
+            (*parameters, limit))
         return [{"command": json.loads(row["payload"]), "digest": row["payload_hash"], "rowid": row["rowid"]}
                 for row in rows]
 
@@ -105,8 +223,9 @@ class Store:
         return self.db.execute("SELECT COALESCE(MAX(rowid),0) FROM commands").fetchone()[0]
 
     def interrupted(self) -> list[dict]:
-        rows = self.db.execute("SELECT payload,payload_hash FROM commands WHERE status='DISPATCHING'")
-        return [{"command": json.loads(row["payload"]), "digest": row["payload_hash"]} for row in rows]
+        rows = self.db.execute("SELECT payload,payload_hash,ble_final_write_started FROM commands WHERE status='DISPATCHING'")
+        return [{"command": json.loads(row["payload"]), "digest": row["payload_hash"],
+                 "ble_final_write_started": row["ble_final_write_started"]} for row in rows]
 
     def begin_dispatch(self, command: dict) -> str | None:
         """Persist execution intent and accepted ownership fence before BLE writes."""
@@ -117,13 +236,24 @@ class Store:
                     return "STALE_EPOCH"
                 if command["grantRevision"] < fence["revision"]:
                     return "STALE_GRANT"
-            changed = self.db.execute("UPDATE commands SET status='DISPATCHING' WHERE command_id=? AND status='RECEIVED'",
+            changed = self.db.execute("UPDATE commands SET status='DISPATCHING',ble_final_write_started=0 "
+                                      "WHERE command_id=? AND status='RECEIVED'",
                                       (command["commandId"],)).rowcount
             if changed != 1:
                 return "ALREADY_DISPATCHED"
             self.db.execute("INSERT INTO fences(device_id,epoch,revision) VALUES(?,?,?) ON CONFLICT(device_id) DO UPDATE SET epoch=excluded.epoch,revision=excluded.revision",
                             (command["deviceId"], command["ownershipEpoch"], command["grantRevision"]))
         return None
+
+    def mark_ble_final_write(self, command_id: str, digest: str) -> bool:
+        """Commit the possible-execution boundary before the LF-terminated GATT write."""
+        with self.db:
+            result = self.db.execute("""
+                UPDATE commands SET ble_final_write_started=1
+                WHERE command_id=? AND payload_hash=? AND status='DISPATCHING'
+                  AND receipt IS NULL AND ble_final_write_started=0
+            """, (command_id, digest))
+        return result.rowcount == 1
 
     def finish(self, command_id: str, receipt: dict) -> bool:
         """Receipt remains in the command journal even if the outbox is full."""
@@ -132,7 +262,8 @@ class Store:
                                      (receipt["status"], canonical(receipt), command_id))
         return result.rowcount == 1
 
-    def _enqueue(self, rqi: str, container: str, payload: dict, critical: bool = False, command_id: str | None = None) -> bool:
+    def _enqueue(self, rqi: str, container: str, payload: dict, critical: bool = False, command_id: str | None = None,
+                 *, native_observation_device_id: str | None = None) -> bool:
         if self.db.execute("SELECT 1 FROM outbox WHERE rqi=?", (rqi,)).fetchone():
             return False
         encoded = canonical(payload)
@@ -141,13 +272,33 @@ class Store:
         fraction = 1 if critical else 0.9
         if count >= int(self.max_rows * fraction) or total + size > int(self.max_bytes * fraction):
             raise CapacityError("Outbox capacity exceeded")
-        self.db.execute("INSERT INTO outbox(rqi,container,payload,payload_bytes,created_at,command_id) VALUES(?,?,?,?,?,?)",
-                        (rqi, container, encoded, size, iso_time(), command_id))
+        self.db.execute("""
+            INSERT INTO outbox(rqi,container,payload,payload_bytes,created_at,command_id,native_observation_device_id)
+            VALUES(?,?,?,?,?,?,?)
+        """, (rqi, container, encoded, size, iso_time(), command_id, native_observation_device_id))
         return True
 
     def enqueue(self, kind: str, identity: str, container: str, payload: dict, critical: bool = False) -> None:
         with self.db:
             self._enqueue(self.request_id(kind, identity), container, payload, critical)
+
+    def enqueue_heartbeat(self, payload: dict) -> bool:
+        """Keep one unresolved periodic health snapshot without changing its request body."""
+        with self.db:
+            self.db.execute("BEGIN IMMEDIATE")
+            pending = self.db.execute("""
+                SELECT 1 FROM outbox WHERE container=? AND command_id IS NULL
+                  AND CASE WHEN json_valid(payload) THEN
+                      json_type(payload, '$.uptimeSeconds')='integer'
+                      AND json_type(payload, '$.outboxDepth')='integer'
+                      AND json_type(payload, '$.credentialTransition') IS NULL
+                  ELSE 0 END
+                LIMIT 1
+            """, (self._health_container,)).fetchone()
+            if pending is not None:
+                return False
+            identity = f"{payload['bootId']}:{payload['observedAt']}"
+            return self._enqueue(self.request_id("health", identity), self._health_container, payload)
 
     def record_credential_status(self, current: dict, health_snapshot: Callable[[], dict]) -> bool:
         """Record an authenticated central status before relying on it locally."""
@@ -181,13 +332,29 @@ class Store:
                 pass  # Still in the independent journal; retry after outbox space opens.
 
     def observation(self, container: str, payload: dict, core_enabled: bool = False, *,
-                    central_enabled: bool = False, core_epochs: dict[str, int] | None = None) -> bool:
+                    core_epochs: dict[str, int] | None = None, central_enabled: bool = False,
+                    device_uptime_ms: int | None = None) -> bool:
+        if device_uptime_ms is not None and (type(device_uptime_ms) is not int or not 0 <= device_uptime_ms <= MAX_UPTIME_MS):
+            raise ValueError("Invalid device observation uptime")
+        presses = observation_button_presses(payload["sensorValues"])
         with self.db:
-            previous = self.db.execute("SELECT boot_id,sequence FROM observations WHERE device_id=?", (payload["deviceId"],)).fetchone()
-            if previous and previous["boot_id"] == payload["bootId"] and payload["sequence"] <= previous["sequence"]:
-                return False
+            previous = self.db.execute("SELECT * FROM observations WHERE device_id=?", (payload["deviceId"],)).fetchone()
+            if previous is not None and previous["boot_id"] == payload["bootId"]:
+                if payload["sequence"] <= previous["sequence"]:
+                    return False
+                previous_uptime = _stored_uptime(previous)
+                if device_uptime_ms is None:
+                    device_uptime_ms = previous_uptime
+                elif previous_uptime is not None and device_uptime_ms < previous_uptime:
+                    raise ValueError("Observation uptime regressed within the same boot")
+                previous_presses = _stored_button_presses(previous)
+                if button_presses_regressed(previous_presses, presses):
+                    raise ValueError("Button press counts regressed within the same boot")
+                if presses is None:
+                    presses = previous_presses
             identity = f"{payload['deviceId']}:{payload['bootId']}:{payload['sequence']}"
-            self._enqueue(self.request_id("observation", identity), container, payload)
+            self._enqueue(self.request_id("observation", identity), container, payload,
+                          native_observation_device_id=payload["deviceId"])
             if core_enabled and (core_epochs is not None or measurable(payload)):
                 previous_core = self.db.execute("SELECT wire_sequence FROM core_sequences WHERE device_id=?", (payload["deviceId"],)).fetchone()
                 wire_sequence = previous_core["wire_sequence"] + 1 if previous_core else 0
@@ -200,80 +367,161 @@ class Store:
                 self.db.execute("INSERT INTO core_sequences(device_id,wire_sequence) VALUES(?,?) ON CONFLICT(device_id) DO UPDATE SET wire_sequence=excluded.wire_sequence",
                                 (payload["deviceId"], wire_sequence))
             if central_enabled:
-                self._enqueue(self.request_id("central-telemetry", identity), "@central/telemetry", payload)
-            self.db.execute("INSERT INTO observations(device_id,boot_id,sequence) VALUES(?,?,?) ON CONFLICT(device_id) DO UPDATE SET boot_id=excluded.boot_id,sequence=excluded.sequence",
-                            (payload["deviceId"], payload["bootId"], payload["sequence"]))
+                rqi = self.request_id("central-telemetry", central_observation_id(payload))
+                self._enqueue(rqi, "@central/telemetry", payload)
+            presses_boot = payload["bootId"] if presses is not None else None
+            uptime_boot = payload["bootId"] if device_uptime_ms is not None else None
+            self.db.execute("""
+                INSERT INTO observations(device_id,boot_id,sequence,button_presses_boot_id,confirm_presses,panic_presses,
+                    device_uptime_boot_id,device_uptime_ms)
+                VALUES(?,?,?,?,?,?,?,?)
+                ON CONFLICT(device_id) DO UPDATE SET boot_id=excluded.boot_id,sequence=excluded.sequence,
+                    button_presses_boot_id=excluded.button_presses_boot_id,
+                    confirm_presses=excluded.confirm_presses,panic_presses=excluded.panic_presses,
+                    device_uptime_boot_id=excluded.device_uptime_boot_id,device_uptime_ms=excluded.device_uptime_ms
+            """, (payload["deviceId"], payload["bootId"], payload["sequence"], presses_boot,
+                  *(presses or (None, None)), uptime_boot, device_uptime_ms))
         return True
 
-    def observation_heads(self) -> dict[str, tuple[str, int]]:
-        return {row["device_id"]: (row["boot_id"], row["sequence"])
-                for row in self.db.execute("SELECT device_id,boot_id,sequence FROM observations")}
+    def observation_heads(self, *, include_button_presses: bool = False,
+                          include_device_uptime: bool = False) -> dict[str, ObservationHead]:
+        heads: dict[str, ObservationHead] = {}
+        for row in self.db.execute("SELECT * FROM observations"):
+            head = (row["boot_id"], row["sequence"])
+            presses = _stored_button_presses(row) if include_button_presses else None
+            if include_device_uptime:
+                heads[row["device_id"]] = (*head, presses, _stored_uptime(row))
+            else:
+                heads[row["device_id"]] = (*head, presses) if presses is not None else head
+        return heads
 
-    def stage_receipts(self, container: str, core_enabled: bool = False, central_enabled: bool = False) -> None:
-        """Choose both routes atomically on first staging, not on every retry."""
+    def stage_receipts(self, container: str, core_enabled: bool = False) -> None:
+        """Stage the native receipt and its optional CORE ACK in one transaction."""
         # Already staged native receipts can remain undelivered during backoff.
         # They must not consume slots in the batch of receipts that still need staging.
         rows = self.db.execute("""
-            SELECT command_id,receipt,receipt_delivered FROM commands
+            SELECT command_id,receipt FROM commands
             WHERE receipt IS NOT NULL AND receipt_delivered=0
               AND NOT EXISTS (SELECT 1 FROM outbox WHERE outbox.command_id=commands.command_id)
             ORDER BY commands.rowid LIMIT 128
         """).fetchall()
-        if central_enabled:
-            extra = self.db.execute("SELECT command_id,receipt,receipt_delivered FROM commands WHERE receipt IS NOT NULL AND central_receipt_staged=0 ORDER BY rowid LIMIT 128").fetchall()
-            seen = {row["command_id"] for row in rows}
-            rows.extend(row for row in extra if row["command_id"] not in seen)
         for row in rows:
             try:
                 with self.db:
                     receipt = json.loads(row["receipt"])
-                    created = False
-                    if not row["receipt_delivered"]:
-                        created = self._enqueue(self.request_id("receipt", row["command_id"]), container,
-                                                receipt, True, row["command_id"])
+                    command_id = row["command_id"]
+                    created = self._enqueue(self.request_id("receipt", command_id), container,
+                                            receipt, True, command_id)
                     # The retained native row (then receipt_delivered after its
                     # confirmation) is the durable staging marker. Recreating a
                     # completed ACK here would bypass the native retry backoff.
                     if created and core_enabled:
                         projected = acknowledgement(receipt)
                         if projected is not None:
-                            self._enqueue(self.request_id("core-ack", row["command_id"]), "@core/ack", projected, True)
-                    if central_enabled and not self.db.execute("SELECT central_receipt_staged FROM commands WHERE command_id=?", (row["command_id"],)).fetchone()[0]:
-                        self._enqueue(self.request_id("central-receipt", row["command_id"]), "@central/receipt", receipt, True)
-                        self.db.execute("UPDATE commands SET central_receipt_staged=1 WHERE command_id=?", (row["command_id"],))
+                            self._enqueue(self.request_id("core-ack", command_id), "@core/ack", projected, True)
             except CapacityError:
                 break
 
+    def stage_central_receipts(self) -> None:
+        """Stage the central route and its durable marker together."""
+        rows = self.db.execute("""
+            SELECT command_id,receipt FROM commands
+            WHERE receipt IS NOT NULL AND central_receipt_staged=0
+            ORDER BY commands.rowid LIMIT 128
+        """).fetchall()
+        for row in rows:
+            try:
+                with self.db:
+                    command_id = row["command_id"]
+                    self._enqueue(self.request_id("central-receipt", command_id), "@central/receipt",
+                                  json.loads(row["receipt"]), True)
+                    self.db.execute("UPDATE commands SET central_receipt_staged=1 WHERE command_id=?", (command_id,))
+            except CapacityError:
+                break
+
+    def central_receipt_claim(self, receipt: dict) -> str:
+        row = self.db.execute("SELECT payload,receipt FROM commands WHERE command_id=?",
+                              (receipt["commandId"],)).fetchone()
+        if row is None or row["receipt"] != canonical(receipt):
+            raise ValueError("Central receipt does not match the local command journal")
+        return json.loads(row["payload"])["claimId"]
+
     def due(self, *, core_epochs: dict[str, int] | None = None, scoped_only: bool = False,
-            prefer_receipts: bool | None = None, skip_native: bool = False,
-            held_receipt_container: str | None = None, hold_credential_receipts: bool = False) -> dict | None:
+            prefer_receipts: bool | None = None, skip_native: bool = False, skip_core: bool = False,
+            held_receipt_container: str | None = None, hold_credential_receipts: bool = False,
+            held_observation_container: str | None = None,
+            held_health_container: str | None = None,
+            disabled_command_receipt_container: str | None = None) -> dict | None:
         # Old ownership routes stay on disk and cannot block the active route.
         # Within the active route, only the oldest projection per device can run.
         epochs = canonical(core_epochs) if core_epochs is not None else None
-        row = self.db.execute("""
-            WITH core_rows AS (
-                SELECT rowid, CASE WHEN json_valid(payload) THEN payload ELSE '{}' END AS message
-                FROM outbox WHERE container='@core/telemetry'
-            ), core_heads AS (
+        row = self.db.execute(f"""
+            WITH core_rows AS ({CORE_TELEMETRY_ROWS}), core_heads AS (
                 SELECT MIN(rowid) AS head FROM core_rows
-                WHERE CASE WHEN ?1 IS NULL THEN json_type(message, '$.ownershipEpoch') IS NULL
-                    ELSE json_type(message, '$.ownershipEpoch') = 'integer' AND EXISTS (
-                       SELECT 1 FROM json_each(?1) AS assignment
-                       WHERE assignment.key = json_extract(message, '$.deviceId')
-                         AND assignment.value = json_extract(message, '$.ownershipEpoch')
-                    ) END
+                WHERE ?10=0 AND ({CORE_TELEMETRY_EPOCH_MATCH})
                 GROUP BY json_extract(message, '$.deviceId')
             )
             SELECT *, (command_id IS NOT NULL OR container='@core/ack') AS is_receipt
             FROM outbox WHERE next_attempt<=?2
               AND (container<>'@core/telemetry' OR rowid IN (SELECT head FROM core_heads))
+              AND (native_observation_device_id IS NULL OR NOT EXISTS (
+                  SELECT 1 FROM outbox AS older
+                  WHERE older.container=outbox.container AND older.rowid<outbox.rowid
+                    AND older.native_observation_device_id=outbox.native_observation_device_id
+              ))
+              AND container NOT IN ('@central/telemetry', '@central/receipt')
               AND (?3=0 OR container='@core/telemetry')
               AND (?5=0 OR container IN ('@core/ack', '@core/telemetry'))
               AND (?6 IS NULL OR container<>?6)
               AND (?7=0 OR NOT EXISTS (SELECT 1 FROM credential_receipts AS credentials WHERE credentials.rqi=outbox.rqi))
+              AND (?8 IS NULL OR container<>?8)
+              AND (?9 IS NULL OR (command_id IS NULL AND container NOT IN ('@core/ack', ?9)))
+              AND (?10=0 OR container NOT IN ('@core/ack', '@core/telemetry'))
+              AND (?11 IS NULL OR container<>?11)
             ORDER BY CASE WHEN is_receipt=?4 THEN 0 ELSE 1 END, created_at,rqi LIMIT 1
         """, (epochs, time.time(), scoped_only, prefer_receipts, skip_native,
-              held_receipt_container, hold_credential_receipts)).fetchone()
+              held_receipt_container, hold_credential_receipts, held_observation_container,
+              disabled_command_receipt_container, skip_core, held_health_container)).fetchone()
+        return self._outbox_row(row)
+
+    def due_central_receipt(self) -> dict | None:
+        row = self.db.execute("""
+            SELECT * FROM outbox WHERE container='@central/receipt' AND next_attempt<=?
+            ORDER BY created_at,rqi LIMIT 1
+        """, (time.time(),)).fetchone()
+        return self._outbox_row(row)
+
+    def due_core_ack(self) -> dict | None:
+        row = self.db.execute("""
+            SELECT * FROM outbox WHERE container='@core/ack' AND next_attempt<=?
+            ORDER BY created_at,rqi LIMIT 1
+        """, (time.time(),)).fetchone()
+        return self._outbox_row(row)
+
+    def due_central_telemetry(self) -> dict | None:
+        # Include deferred heads so a retry cannot reorder a device's observations.
+        row = self.db.execute("""
+            SELECT * FROM outbox WHERE next_attempt<=? AND rowid IN (
+                SELECT MIN(rowid) FROM outbox WHERE container='@central/telemetry'
+                GROUP BY CASE WHEN json_valid(payload) THEN json_extract(payload, '$.deviceId') END
+            ) ORDER BY created_at,rqi LIMIT 1
+        """, (time.time(),)).fetchone()
+        return self._outbox_row(row)
+
+    def expire_central_telemetry(self, before: datetime, limit: int) -> int:
+        """Release expired central copies independently of their retry eligibility."""
+        with self.db:
+            return self.db.execute("""
+                DELETE FROM outbox WHERE rowid IN (
+                    SELECT rowid FROM outbox WHERE container='@central/telemetry'
+                      AND julianday(CASE WHEN json_valid(payload) THEN json_extract(payload, '$.observedAt') END)
+                          < julianday(?)
+                    ORDER BY rowid LIMIT ?
+                )
+            """, (iso_time(before), limit)).rowcount
+
+    @staticmethod
+    def _outbox_row(row: sqlite3.Row | None) -> dict | None:
         if row is None:
             return None
         result = dict(row)
@@ -295,6 +543,12 @@ class Store:
                         )
                     """, (RETAIN_DELIVERED_CREDENTIAL_RECEIPTS,))
             self.db.execute("DELETE FROM outbox WHERE rqi=?", (rqi,))
+
+    def mark_receipt_attempt(self, rqi: str) -> None:
+        """Persist the first send attempt before the CSE can create the receipt."""
+        with self.db:
+            self.db.execute("UPDATE outbox SET attempts=1 WHERE rqi=? AND command_id IS NOT NULL AND attempts=0",
+                            (rqi,))
 
     def retry(self, rqi: str, attempts: int, *, minimum_delay: float = 0.0) -> None:
         delay = min(300, 2 ** min(attempts + 1, 8)) * random.uniform(0.8, 1.2)

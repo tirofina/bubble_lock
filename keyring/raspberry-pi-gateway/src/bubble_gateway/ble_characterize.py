@@ -12,7 +12,8 @@ import time
 from pathlib import Path
 from types import SimpleNamespace
 
-from .ble import BleFleet, _r18_bringup
+from .assembly_evidence import assembly_reference
+from .ble import BleFleet, BleProtocolError, _r18_bringup
 from .config import ID
 from .model import canonical, iso_time, valid_button_presses
 
@@ -24,9 +25,89 @@ WAKE_CASES = {"confirm": ("button", 1 << 6), "panic": ("button", 1 << 7),
 BATTERY_THRESHOLDS = (20, 25)
 BATTERY_STAGES = ("initialClear", "clearInBand", "lowAlert", "alertInBand", "recovered")
 BRINGUP_BUTTON_STATES = ("released", "confirm", "released", "panic", "released")
+USB_LOG_LIMIT = 1 << 20
+R18_APP_IMAGE_LIMIT = 0x600000  # Factory app partition in keyring/firmware/partitions.csv.
+USB_BOOT_LINE = re.compile(
+    r"KEYRING bringup: board=(?P<board>\S+) firmware=(?P<firmware>\S+) boot=(?P<boot>[0-9a-f]{32}) "
+    r"motor=(?P<motor>[01]) aux=(?P<aux>[01]) fault=(?P<fault>[01]) "
+    r"fuel=(?P<batteryStatus>ok|unavailable) accel=(?P<accelStatus>ok|unavailable) "
+    r"motion=(?P<motion>ready|unavailable)(?: panel=(?P<panel>st7789|jd9853))?"
+    r"(?: appSha256=(?P<app>[0-9a-f]{64}|unavailable))?"
+)
+BRINGUP_SENSOR_STATUS = ("batteryStatus", "accelStatus", "motion")
+DISPLAY_TEST_PROFILES = {f"keyring-{revision}-{panel}-bringup": panel
+                         for revision in ("0.7.16", "0.7.17", "0.7.18", "0.7.21", "0.7.22", "0.7.23", "0.7.24", "0.7.25")
+                         for panel in ("st7789", "jd9853")}
+BRINGUP_DISPLAY_PROFILES = {
+    "keyring-0.7.15-st7789-bringup": "st7789", "keyring-0.7.15-jd9853-bringup": "jd9853",
+    **DISPLAY_TEST_PROFILES,
+}
+APP_DIGEST_PROFILES = {
+    "keyring-0.7.18-bringup", "keyring-0.7.18-st7789-bringup", "keyring-0.7.18-jd9853-bringup",
+    "keyring-0.7.21-bringup", "keyring-0.7.21-st7789-bringup", "keyring-0.7.21-jd9853-bringup",
+    "keyring-0.7.22-bringup", "keyring-0.7.22-st7789-bringup", "keyring-0.7.22-jd9853-bringup",
+    "keyring-0.7.23-bringup", "keyring-0.7.23-st7789-bringup", "keyring-0.7.23-jd9853-bringup",
+    "keyring-0.7.24-st7789-bringup", "keyring-0.7.24-jd9853-bringup",
+    "keyring-0.7.25-bringup", "keyring-0.7.25-st7789-bringup", "keyring-0.7.25-jd9853-bringup",
+}
 
 
-def wake_result(sessions: list[dict], rows: list[dict], expected: str, release_ms: int | None) -> dict:
+def read_usb_boot(path: Path, board: str, firmware: str) -> dict:
+    with path.open("rb") as stream:
+        raw = stream.read(USB_LOG_LIMIT + 1)
+    if len(raw) > USB_LOG_LIMIT:
+        raise ValueError("USB log exceeds the bring-up log limit")
+    lines = {line for line in raw.decode("utf-8-sig", errors="replace").splitlines()
+             if line.startswith("KEYRING bringup:")}
+    record = USB_BOOT_LINE.fullmatch(lines.pop()) if len(lines) == 1 else None
+    if (record is None or record["board"] != board or record["firmware"] != firmware
+            or record["panel"] != BRINGUP_DISPLAY_PROFILES.get(firmware)
+            or (record["app"] is not None) != (firmware in APP_DIGEST_PROFILES)):
+        raise ValueError("USB log must contain one matching r18 bring-up record")
+    evidence = {"bootId": record["boot"], "logSha256": hashlib.sha256(raw).hexdigest(),
+                "motorActive": record["motor"] == "1", "auxEnabled": record["aux"] == "1",
+                "mainFault": record["fault"] == "1", "sensorStatus": {key: record[key] for key in BRINGUP_SENSOR_STATUS}}
+    if record["panel"] is not None:
+        evidence["displayProfile"] = record["panel"]
+    if record["app"] is not None:
+        evidence["appSha256"] = record["app"]
+    return evidence
+
+
+def read_firmware_image(path: Path, usb_boot: dict) -> dict:
+    running_digest = usb_boot.get("appSha256")
+    if running_digest in (None, "unavailable"):
+        raise ValueError("USB record has no running app image digest")
+    with path.open("rb") as stream:
+        image = stream.read(R18_APP_IMAGE_LIMIT + 1)
+    # ESP32-S3 application image, with the app descriptor in its first segment.
+    if (not 80 <= len(image) <= R18_APP_IMAGE_LIMIT or image[0] != 0xe9 or not 1 <= image[1] <= 16
+            or image[12:14] != b"\x09\x00" or image[23] != 1 or image[32:36] != b"\x32\x54\xcd\xab"):
+        raise ValueError("Expected an ESP32-S3 app image with a SHA-256 footer")
+    offset = 24
+    payload_end = len(image) - 32
+    for _ in range(image[1]):
+        if offset + 8 > payload_end:
+            raise ValueError("Invalid ESP32-S3 image segment layout")
+        offset += 8 + int.from_bytes(image[offset + 4:offset + 8], "little")
+    # One checksum byte ends the padded 16-byte block, immediately before the hash.
+    checksum_end = (offset + 16) & ~15
+    if checksum_end != payload_end:
+        raise ValueError("Expected an unsigned app image with no trailing data")
+    digest = hashlib.sha256(memoryview(image)[:payload_end]).digest()
+    if digest != image[payload_end:]:
+        raise ValueError("Firmware image SHA-256 footer does not match its contents")
+    if digest.hex() != running_digest:
+        raise ValueError("Firmware image differs from the running app in the USB log")
+    return {"fileSha256": hashlib.sha256(image).hexdigest(), "sizeBytes": len(image)}
+
+
+def boot_id_sha256(boot_id: str) -> str:
+    return hashlib.sha256(boot_id.encode("ascii")).hexdigest()
+
+
+def wake_result(sessions: list[dict], rows: list[dict], expected: str, release_ms: int | None,
+                boot_ids: dict[int, str]) -> dict:
     baseline = next((s for s in sessions if s["phase"] == "baseline" and s["notificationCount"]), None)
     after = next((s for s in sessions if s["phase"] == "after-wake" and s["notificationCount"]), None)
     new_boot = None if baseline is None or after is None else baseline["boot"] != after["boot"]
@@ -47,6 +128,8 @@ def wake_result(sessions: list[dict], rows: list[dict], expected: str, release_m
     if health is not None:
         report.update(cause=health["wakeCause"], pins=health["wakePins"], deviceUptimeMs=health["deviceUptimeMs"],
                       matched=new_boot is True and (health["wakeCause"], health["wakePins"]) == WAKE_CASES[expected])
+        if report["matched"]:
+            report.update(bootIdSha256=boot_id_sha256(boot_ids[after["boot"]]), sequence=health["sequence"])
     return report
 
 
@@ -141,25 +224,36 @@ def button_fields(frame: dict) -> dict:
 
 def bringup_fields(frame: dict) -> dict:
     sensors = frame["sensorValues"]
+    detail = sensors.get("detail")
     axes = sensors.get("accelerationG")
     axes_valid = (isinstance(axes, list) and len(axes) == 3
                   and all(type(value) in (int, float) and -float("inf") < value < float("inf") for value in axes))
     fault = sensors.get("fault")
-    battery_status, accel_status, motion = (sensors.get(key) for key in ("batteryStatus", "accelStatus", "motion"))
+    battery_status, accel_status, motion = (sensors.get(key) for key in BRINGUP_SENSOR_STATUS)
     journal = sensors.get("journal")
-    return {
+    result = {
         **button_fields(frame),
+        "detail": detail if detail in ("sensors", "energy", "health") else None,
         "state": frame["state"], "mainFault": fault if type(fault) is bool else None,
         "batteryPercent": frame["battery"], "accelerationG": axes if axes_valid else None,
         "batteryStatus": battery_status if battery_status in ("ok", "unavailable") else None,
         "accelStatus": accel_status if accel_status in ("ok", "unavailable") else None,
         "motion": motion if motion in ("ready", "unavailable") else None,
-        "sensorsReady": (sensors.get("detail") == "sensors" and battery_status == "ok"
+        "sensorsReady": (detail == "sensors" and battery_status == "ok"
                          and accel_status == "ok" and motion == "ready"
                          and frame["battery"] is not None and axes_valid),
         "journal": journal if journal in ("disabled", "ready", "error") else None,
-        "sleepDisabled": sensors.get("detail") == "health" and sensors.get("power") == "disabled",
+        "sleepDisabled": detail == "health" and sensors.get("power") == "disabled",
     }
+    if detail == "health":
+        status = sensors.get("display")
+        if status in ("starting", "disabled", "bus_error", "worker_error", "geometry_error",
+                      "power_output_error", "st7789_unverified", "jd9853_unverified"):
+            result["displayStatus"] = status
+        drawn = sensors.get("displayDrawnPresses")
+        if valid_button_presses(drawn):
+            result["displayDrawnPresses"] = drawn
+    return result
 
 
 def bringup_buttons(rows: list[dict]) -> tuple[list[int], bool]:
@@ -185,7 +279,23 @@ def bringup_buttons(rows: list[dict]) -> tuple[list[int], bool]:
     return [row["sequence"] for row in markers], regressed
 
 
-def bringup_result(sessions: list[dict], rows: list[dict]) -> dict:
+def bringup_display_result(rows: list[dict], buttons: list[int], panel: str) -> tuple[dict, bool]:
+    health_rows = [row for row in rows if row.get("detail") == "health"]
+    latest = health_rows[-1] if health_rows else {}
+    expected_status = f"{panel}_unverified"
+    expected_presses = None
+    if len(buttons) == len(BRINGUP_BUTTON_STATES):
+        counts = {row["sequence"]: row["buttonPresses"] for row in rows if row["sequence"] in buttons}
+        expected_presses = [counts[buttons[1]][0], counts[buttons[3]][1]]
+    drawn = latest.get("displayDrawnPresses")
+    matched = (expected_presses is not None and valid_button_presses(drawn) and drawn == expected_presses
+               and latest["sequence"] >= buttons[4] and latest.get("displayStatus") == expected_status)
+    mismatch = any(row.get("displayStatus") not in (None, "starting", expected_status) for row in health_rows)
+    return {"profile": panel, "healthSequence": latest.get("sequence"), "softwareStatus": latest.get("displayStatus"),
+            "expectedPresses": expected_presses, "drawnPresses": drawn, "buttonFramesMatched": matched}, mismatch
+
+
+def bringup_result(sessions: list[dict], rows: list[dict], *, expected_display: str | None = None) -> dict:
     first = next((session for session in sessions if session["notificationCount"]), None)
     session_id = first["session"] if first else None
     notifications = [row for row in rows if row["event"] == "notification"]
@@ -194,11 +304,25 @@ def bringup_result(sessions: list[dict], rows: list[dict]) -> dict:
     sensors = next((row["sequence"] for row in selected if row.get("sensorsReady")), None)
     power = next((row["sequence"] for row in selected if (row.get("ina219") or {}).get("status") == "ok"), None)
     health = next((row["sequence"] for row in selected if row.get("journal") == "disabled" and row.get("sleepDisabled")), None)
+    last_sensor_row = next((row for row in reversed(selected) if row.get("detail") == "sensors"), None)
+    last_power_row = next((row for row in reversed(selected) if "ina219" in row or row.get("detail") == "energy"), None)
+    latest_sensor = None
+    if last_sensor_row is not None:
+        latest_sensor = {"sequence": last_sensor_row["sequence"], "ready": last_sensor_row["sensorsReady"],
+                         **{key: last_sensor_row[key] for key in BRINGUP_SENSOR_STATUS}}
+    latest_power = None
+    if last_power_row is not None:
+        latest_power = {"sequence": last_power_row["sequence"], "status": (last_power_row.get("ina219") or {}).get("status")}
+    sensor_regressed = (sensors is not None and latest_sensor is not None
+                        and any(latest_sensor[key] == "unavailable" for key in BRINGUP_SENSOR_STATUS))
+    power_regressed = power is not None and latest_power is not None and latest_power["status"] not in (None, "ok")
     missing = [name for name, present in (
         ("commandDisabled", first is not None and first["commandReady"] is False),
         ("safeOutputs", selected and all(row.get("state") is False and row.get("mainFault") is False for row in selected)),
         ("buttons", len(buttons) == len(BRINGUP_BUTTON_STATES)),
-        ("sensors", sensors is not None), ("power", power is not None), ("health", health is not None),
+        ("sensors", latest_sensor is not None and latest_sensor["ready"]),
+        ("power", latest_power is not None and latest_power["status"] == "ok"),
+        ("health", health is not None),
     ) if not present]
     mismatches = [name for name, observed in (
         ("commandReady", any(session["commandReady"] is True for session in sessions)),
@@ -206,9 +330,22 @@ def bringup_result(sessions: list[dict], rows: list[dict]) -> dict:
         ("mainFault", any(row.get("mainFault") is True for row in notifications)),
         ("journalEnabled", any(row.get("journal") in ("ready", "error") for row in notifications)),
         ("buttonCounterRegressed", regressed),
+        ("sensorUnavailableAfterReady", sensor_regressed),
+        ("powerUnavailableAfterReady", power_regressed),
     ) if observed]
-    return {"session": session_id, "buttonSequences": buttons, "sensorSequence": sensors,
-            "powerSequence": power, "healthSequence": health, "missing": missing, "mismatches": mismatches}
+    report = {"session": session_id, "buttonSequences": buttons, "sensorSequence": sensors,
+              "powerSequence": power, "healthSequence": health, "latestSensor": latest_sensor, "latestPower": latest_power,
+              "missing": missing, "mismatches": mismatches}
+    if expected_display is not None:
+        display, mismatch = bringup_display_result(selected, buttons, expected_display)
+        if display["softwareStatus"] != f"{expected_display}_unverified":
+            missing.append("displayHealth")
+        if not display["buttonFramesMatched"]:
+            missing.append("displayButtonFrames")
+        if mismatch:
+            mismatches.append("displayHealth")
+        report["displayTest"] = display
+    return report
 
 
 def reconnect_results(sessions: list[dict]) -> list[dict]:
@@ -272,7 +409,8 @@ def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mo
               truncated: bool, dropped: int, expected_wake: str | None = None,
               release_ms: int | None = None, include_power: bool = False,
               battery_thresholds: tuple[int, int] = BATTERY_THRESHOLDS,
-              verify_button_continuity: bool = False) -> dict:
+              verify_button_continuity: bool = False, usb_boot: dict | None = None,
+              firmware_revision: str | None = None, assembly: dict | None = None) -> dict:
     sessions = {}
     boots = {}
     rows = []
@@ -334,10 +472,32 @@ def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mo
     measured = list(sessions.values())
     reconnects = reconnect_results(measured)
     notifications = sum(session["notificationCount"] for session in measured)
-    wake = wake_result(measured, rows, expected_wake, release_ms) if expected_wake is not None else None
+    wake = (wake_result(measured, rows, expected_wake, release_ms, {ordinal: boot_id for boot_id, ordinal in boots.items()})
+            if expected_wake is not None else None)
     power = power_result(measured, rows, mode) if include_power else None
     battery = battery_result(rows, *battery_thresholds) if mode == "battery" else None
-    bringup = bringup_result(measured, rows) if mode == "bringup" else None
+    bringup = (bringup_result(measured, rows, expected_display=DISPLAY_TEST_PROFILES.get(firmware_revision))
+               if mode == "bringup" else None)
+    if bringup is not None and usb_boot is not None:
+        observed_boots = {session["boot"] for session in measured if session["notificationCount"]}
+        same_boot = observed_boots == {boots.get(usb_boot["bootId"])} if observed_boots else None
+        pins_safe = not (usb_boot["motorActive"] or usb_boot["auxEnabled"] or usb_boot["mainFault"])
+        bringup["usbBoot"] = {key: usb_boot[key] for key in ("logSha256", "motorActive", "auxEnabled", "mainFault", "sensorStatus")}
+        if "displayProfile" in usb_boot:
+            bringup["usbBoot"]["displayProfile"] = usb_boot["displayProfile"]
+        if "appSha256" in usb_boot:
+            bringup["usbBoot"]["appSha256"] = usb_boot["appSha256"]
+        if "firmwareImage" in usb_boot:
+            bringup["usbBoot"]["firmwareImage"] = usb_boot["firmwareImage"]
+        bringup["usbBoot"].update(sameBoot=same_boot, pinsSafe=pins_safe)
+        if same_boot is True and assembly is not None:
+            bringup["assemblyEvidence"] = assembly
+        if same_boot is None:
+            bringup["missing"].append("usbBootMatch")
+        elif not same_boot:
+            bringup["mismatches"].append("usbBootMismatch")
+        if not pins_safe:
+            bringup["mismatches"].append("usbPinsUnsafe")
     continuity = button_continuity_result(measured, reconnects, rows) if verify_button_continuity else None
     status = "RECORDED"
     if truncated:
@@ -369,7 +529,7 @@ def summarize(events: list[dict], start_ns: int, stop_ns: int, *, board: str, mo
     return report
 
 
-async def characterize(args: argparse.Namespace) -> dict:
+async def characterize(args: argparse.Namespace, *, usb_boot: dict | None = None, assembly: dict | None = None) -> dict:
     board = BOARD_REVISIONS[args.hardware]
     config = SimpleNamespace(
         gateway_id=args.gateway_id, ble_devices={args.device_id: args.address},
@@ -389,10 +549,11 @@ async def characterize(args: argparse.Namespace) -> dict:
         receiving = set()
         initial_generation = None
         baseline_announced = False
+        last_marked_read = -1
         capturing = True
 
         def trace(event: dict) -> None:
-            nonlocal truncated, initial_generation, baseline_announced
+            nonlocal truncated, initial_generation, baseline_announced, last_marked_read
             if not capturing:
                 return
             if len(events) < MAX_EVENTS:
@@ -418,6 +579,11 @@ async def characterize(args: argparse.Namespace) -> dict:
                 reading = event.get("ina219")
                 if reading is not None and reading["status"] == "ok":
                     first_power.set()
+                    if (args.print_power_markers and usb_boot is not None and event["bootId"] == usb_boot["bootId"]
+                            and event["generation"] == initial_generation and not truncated
+                            and reading["readUptimeMs"] > last_marked_read):
+                        last_marked_read = reading["readUptimeMs"]
+                        print(f"R18_POWER_SAMPLE sequence={event['sequence']} readUptimeMs={last_marked_read}", flush=True)
 
         await fleet.start(discard_observation, trace=trace,
                           trace_observation=args.mode == "bringup" or args.verify_button_continuity)
@@ -458,7 +624,8 @@ async def characterize(args: argparse.Namespace) -> dict:
                           truncated=truncated, dropped=dropped, expected_wake=args.expect_wake,
                           release_ms=release_ms, include_power=args.include_power,
                           battery_thresholds=tuple(args.battery_thresholds or BATTERY_THRESHOLDS),
-                          verify_button_continuity=args.verify_button_continuity)}
+                          verify_button_continuity=args.verify_button_continuity, usb_boot=usb_boot,
+                          firmware_revision=args.firmware_revision, assembly=assembly)}
     if args.mode == "wake":
         report["wake"].update(operatorIdleSeconds=args.idle_seconds, releaseAtMs=release_ms)
     if args.mode == "battery":
@@ -484,6 +651,11 @@ def main() -> None:
     parser.add_argument("--battery-source", choices=("physical-pack", "gauge-fixture"), help="battery mode only")
     parser.add_argument("--battery-thresholds", nargs=2, type=int, metavar=("WARN", "RECOVER"),
                         help="battery mode only; firmware percentages (default: 20 25)")
+    parser.add_argument("--usb-boot-log", type=Path, help="private USB CDC capture from one r18 bring-up boot")
+    parser.add_argument("--firmware-image", type=Path, help="local r18 firmware.bin to match against the USB app digest")
+    parser.add_argument("--assembly-record", type=Path, help="private r18 intake record for the PCB under test")
+    parser.add_argument("--assembly-board-tag", help="board tag read again at the start of this capture")
+    parser.add_argument("--print-power-markers", action="store_true", help="print new INA219 samples from the USB-matched bring-up session")
     parser.add_argument("--database", type=Path, required=True, help="Gateway state path; used only to find its lock")
     parser.add_argument("--output", type=Path, required=True, help="new private JSON file under an existing directory")
     args = parser.parse_args()
@@ -514,6 +686,37 @@ def main() -> None:
     if args.mode == "bringup" and not _r18_bringup({
             "boardRevision": BOARD_REVISIONS[args.hardware], "firmwareRevision": args.firmware_revision}):
         parser.error("bringup mode requires r18-pcb and an observation-only -bringup firmware revision")
+    if args.print_power_markers and (args.mode != "bringup" or args.usb_boot_log is None):
+        parser.error("--print-power-markers requires bringup mode and --usb-boot-log")
+    if args.firmware_image is not None and (args.mode != "bringup" or args.usb_boot_log is None):
+        parser.error("--firmware-image requires bringup mode and --usb-boot-log")
+    if args.assembly_record is not None or args.assembly_board_tag is not None:
+        if not (args.assembly_record and args.assembly_board_tag and args.firmware_image):
+            parser.error("assembly evidence requires both assembly options and the bring-up USB log and firmware image")
+    usb_boot = None
+    if args.usb_boot_log is not None:
+        if args.mode != "bringup" or not args.usb_boot_log.is_file():
+            parser.error("--usb-boot-log requires bringup mode and an existing capture file")
+        try:
+            usb_boot = read_usb_boot(args.usb_boot_log, BOARD_REVISIONS[args.hardware], args.firmware_revision)
+        except ValueError as exc:
+            parser.error(str(exc))
+        except OSError:
+            parser.error("could not read the USB capture file")
+    if args.firmware_image is not None:
+        try:
+            usb_boot["firmwareImage"] = read_firmware_image(args.firmware_image, usb_boot)
+        except ValueError as exc:
+            parser.error(str(exc))
+        except OSError:
+            parser.error("could not read the firmware image file")
+    assembly = None
+    if args.assembly_record is not None:
+        try:
+            assembly = assembly_reference(args.assembly_record, args.assembly_board_tag, BOARD_REVISIONS[args.hardware],
+                                          usb_boot.get("displayProfile"))
+        except (OSError, ValueError, KeyError, TypeError, AttributeError, BleProtocolError):
+            parser.error("assembly record does not match the board tag, r18 revision or USB display profile")
     lock_path = args.database.with_suffix(".lock")
     if (args.output.exists() or args.output.is_symlink() or not args.output.parent.is_dir()
             or args.output.resolve() in {args.database.resolve(), lock_path.resolve()}):
@@ -533,7 +736,7 @@ def main() -> None:
             else:
                 print("BLE capture started. For reconnect mode, wait for observations, interrupt the link and restore it.",
                       flush=True)
-            report = asyncio.run(characterize(args))
+            report = asyncio.run(characterize(args, usb_boot=usb_boot, assembly=assembly))
         content = (canonical(report) + "\n").encode("utf-8")
         with args.output.open("xb") as handle:
             handle.write(content)

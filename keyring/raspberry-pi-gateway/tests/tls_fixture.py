@@ -65,7 +65,7 @@ class Handler(BaseHTTPRequestHandler):
         self.server.records.append(dict(method=self.command, path=self.path, headers=dict(self.headers),
                                         body=json.loads(raw) if raw else None,
                                         tls=self.connection.version(), peer=self.connection.getpeercert()))
-        status = 302 if self.server.redirect else 201
+        status = 302 if self.server.redirect else self.server.response_status
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", "2")
@@ -83,17 +83,19 @@ class Handler(BaseHTTPRequestHandler):
 
 
 class LoopbackTlsServer:
-    def __init__(self, pki, *, certificate="server", tls12=False, redirect=False):
+    def __init__(self, pki, *, certificate="server", client_ca="trusted", tls12=False, redirect=False,
+                 response_status=201):
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         context.minimum_version = ssl.TLSVersion.TLSv1_2 if tls12 else ssl.TLSVersion.TLSv1_3
         if tls12:
             context.maximum_version = ssl.TLSVersion.TLSv1_2
         context.verify_mode = ssl.CERT_REQUIRED
-        context.load_verify_locations(cafile=str(pki.path("trusted")))
+        context.load_verify_locations(cafile=str(pki.path(client_ca)))
         context.load_cert_chain(str(pki.path(certificate)), str(pki.path(certificate, "key")))
         self.server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
         self.server.daemon_threads = True
         self.server.records, self.server.redirect = [], redirect
+        self.server.response_status = response_status
         self.origin = self.server.origin = f"https://127.0.0.1:{self.server.server_port}"
         self.server.socket = context.wrap_socket(self.server.socket, server_side=True)
         self.thread = threading.Thread(target=self.server.serve_forever, kwargs={"poll_interval": 0.01}, daemon=True)

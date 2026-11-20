@@ -1,18 +1,20 @@
 """Synthetic dual-route receipts: retries must not regenerate delivered CORE ACKs."""
 import asyncio
 import json
+import sqlite3
 import tempfile
 import unittest
 from collections import Counter
+from datetime import timedelta
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
-from bubble_gateway.model import iso_time, payload_hash
+from bubble_gateway.model import iso_time, payload_hash, utc_now
 from bubble_gateway.service import Gateway
 from bubble_gateway.store import Store
-from bubble_gateway.transport import NativeDeliveryHold
-from helpers import BINDING, command, config
+from bubble_gateway.transport import HttpRetryDeferred, NativeConfirmation, NativeDeliveryHold, RemoteResponseError
+from helpers import BINDING, command, config, observation
 
 
 class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
@@ -62,6 +64,145 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.queued("@core/ack"), 0)
         self.assertEqual(self.queued(BINDING["receiptContainer"]), 1)
         self.assertEqual(self.native_delivered(), 0)
+
+    async def test_observation_only_keeps_old_command_receipts_and_delivers_native_observations(self):
+        self.stage()
+        self.store.enqueue("conflict", "prior-conflict", BINDING["receiptContainer"], {"existing": True})
+        sample = observation()
+        self.store.observation(BINDING["observationContainer"], sample)
+        rqi = self.store.request_id("observation", f"{sample['deviceId']}:{sample['bootId']}:{sample['sequence']}")
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.config.commands_enabled = False
+        gateway.config.native_observation_trace = True
+        gateway.boot_id = "gateway-test-boot"
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+        gateway.transport = SimpleNamespace(publish=AsyncMock(return_value=NativeConfirmation("https", True)),
+                                            native_delivery_hold=NativeDeliveryHold)
+
+        async def idle(_seconds):
+            gateway.stop.set()
+
+        gateway._pause = idle
+        with self.assertLogs("bubble_gateway.service", level="INFO") as logged:
+            async with asyncio.timeout(1):
+                await gateway._outbox_loop()
+        gateway.transport.publish.assert_awaited_once_with(rqi, BINDING["observationContainer"], sample)
+        self.assertIn(f"rqi={rqi} payloadSha256={payload_hash(sample)} route=https created=true gatewayBootId=gateway-test-boot",
+                      logged.output[0])
+        self.assertEqual(self.queued(BINDING["observationContainer"]), 0)
+        self.assertEqual(self.queued(BINDING["receiptContainer"]), 2)
+        self.assertEqual(self.queued("@core/ack"), 1)
+        self.assertEqual(self.native_delivered(), 0)
+
+    async def test_disabled_core_preserves_queued_rows_until_reenabled(self):
+        self.stage()
+        self.store.observation(BINDING["observationContainer"], observation(), core_enabled=True)
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.config.core_bridge_enabled = False
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+        gateway.transport = SimpleNamespace(publish=AsyncMock(), native_delivery_hold=NativeDeliveryHold)
+
+        async def idle(_seconds):
+            gateway.stop.set()
+
+        gateway._pause = idle
+        async with asyncio.timeout(1):
+            await gateway._outbox_loop()
+        published = {call.args[1] for call in gateway.transport.publish.await_args_list}
+        self.assertEqual(published, {BINDING["receiptContainer"], BINDING["observationContainer"]})
+        rows = self.store.db.execute("SELECT container,attempts FROM outbox").fetchall()
+        self.assertCountEqual([tuple(row) for row in rows], [("@core/ack", 0), ("@core/telemetry", 0)])
+
+        gateway.config.core_bridge_enabled = True
+        gateway.stop.clear()
+        gateway.transport.publish.reset_mock()
+        async with asyncio.timeout(1):
+            await gateway._outbox_loop(core_route="ack")
+            gateway.stop.clear()
+            await gateway._outbox_loop(core_route="telemetry")
+        published = {call.args[1] for call in gateway.transport.publish.await_args_list}
+        self.assertEqual(published, {"@core/ack", "@core/telemetry"})
+        self.assertEqual(self.store.counts()[0], 0)
+
+    async def test_observation_only_daemon_skips_command_recovery_and_workers(self):
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.stop = config(), asyncio.Event()
+        gateway.config.commands_enabled = False
+        gateway.config.central_receipts_enabled = True
+        gateway.config.central_telemetry_enabled = True
+        gateway.store = Mock(observation_heads=Mock(return_value={}))
+        gateway.transport = SimpleNamespace(start=AsyncMock(), close=AsyncMock())
+        gateway.ble = SimpleNamespace(start=AsyncMock(), close=AsyncMock())
+        gateway._poll_loop, gateway._dispatch_loop = Mock(), Mock()
+        routes = []
+
+        async def park():
+            await gateway.stop.wait()
+
+        async def record_route(*, core_route=None, central_route=None):
+            routes.append((core_route, central_route))
+            if central_route == "telemetry":
+                gateway.stop.set()
+            await park()
+
+        gateway._credentials_loop = gateway._health_loop = park
+        gateway._outbox_loop = record_route
+        async with asyncio.timeout(1):
+            await gateway.run()
+        gateway.store.interrupted.assert_not_called()
+        gateway._poll_loop.assert_not_called()
+        gateway._dispatch_loop.assert_not_called()
+        self.assertCountEqual(routes, [(None, None), ("telemetry", None), (None, "telemetry")])
+        gateway.ble.start.assert_awaited_once()
+
+    async def test_pinned_receipt_send_attempt_survives_restart_before_local_confirmation(self):
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.config.receipt_container_ri = "cnt-test"
+        gateway.config.core_bridge_enabled = False
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+
+        async def interrupted_publish(*_args):
+            self.assertEqual(self.store.due()["attempts"], 1)
+            raise asyncio.CancelledError
+
+        gateway.transport = SimpleNamespace(publish=AsyncMock(side_effect=interrupted_publish),
+                                             native_delivery_hold=NativeDeliveryHold)
+        mark_attempt = self.store.mark_receipt_attempt
+
+        def persist_attempt(rqi):
+            self.assertEqual(self.store.due()["attempts"], 0)
+            gateway.transport.publish.assert_not_awaited()
+            if gateway.counters["outbox_attempt_write_retries"] == 0:
+                raise sqlite3.OperationalError("synthetic attempt write error")
+            mark_attempt(rqi)
+
+        with (patch.object(self.store, "mark_receipt_attempt", side_effect=persist_attempt),
+              patch("bubble_gateway.service.OUTBOX_STATE_WRITE_RETRY_INTERVAL", 0),
+              self.assertLogs("bubble_gateway.service", level="WARNING"),
+              self.assertRaises(asyncio.CancelledError)):
+            async with asyncio.timeout(1):
+                await gateway._outbox_loop()
+        self.assertEqual(gateway.counters["outbox_attempt_write_retries"], 1)
+        args = (self.native_rqi, BINDING["receiptContainer"], self.receipt)
+        gateway.transport.publish.assert_awaited_once_with(*args)
+        self.assertEqual(self.native_delivered(), 0)
+
+        self.store.close()
+        gateway.store = self.store = self.open_store()
+        gateway.transport.publish = AsyncMock()
+
+        async def idle(_seconds):
+            gateway.stop.set()
+
+        gateway._pause = idle
+        async with asyncio.timeout(1):
+            await gateway._outbox_loop()
+        gateway.transport.publish.assert_awaited_once_with(*args, confirm_existing=True)
+        self.assertEqual(self.native_delivered(), 1)
+        self.assertEqual(self.store.counts()[0], 0)
 
     async def test_backed_off_receipts_do_not_hide_later_unstaged_receipts_after_restart(self):
         self.store.max_rows = 300
@@ -120,32 +261,417 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         self.stage()
         self.assertEqual(self.store.counts()[0], 2)
 
-    async def test_three_routes_commit_atomically_and_central_delivery_survives_restart(self):
-        self.store.max_rows = 2
-        self.store.stage_receipts(BINDING["receiptContainer"], True, True)
-        self.assertEqual(self.store.counts()[0], 0)
-        self.assertEqual(self.store.db.execute("SELECT central_receipt_staged FROM commands").fetchone()[0], 0)
-        self.store.max_rows = 3
-        self.store.stage_receipts(BINDING["receiptContainer"], True, True)
-        self.assertEqual(self.store.counts()[0], 3)
+    async def test_native_pair_stages_when_central_copy_cannot_fit_and_restart_preserves_each_route(self):
         central_rqi = self.store.request_id("central-receipt", self.cmd["commandId"])
+        self.store.max_rows = 2
+        self.stage()
+        self.store.stage_central_receipts()
+        self.assertEqual(self.queued(BINDING["receiptContainer"]), 1)
+        self.assertEqual(self.queued("@core/ack"), 1)
+        self.assertEqual(self.queued("@central/receipt"), 0)
+        self.assertEqual(self.store.db.execute("SELECT central_receipt_staged FROM commands").fetchone()[0], 0)
+
+        self.store.delivered(self.ack_rqi)
+        self.store.stage_central_receipts()
+        self.assertEqual(self.store.due_central_receipt()["rqi"], central_rqi)
         self.store.delivered(central_rqi)
         self.store.close()
         self.store = self.open_store()
-        self.store.stage_receipts(BINDING["receiptContainer"], True, True)
+        self.stage()
+        self.store.stage_central_receipts()
+        self.assertEqual(self.native_delivered(), 0)
         self.assertEqual(self.queued("@central/receipt"), 0)
-        self.assertEqual(self.queued("@core/ack"), 1)
+        self.assertEqual(self.queued("@core/ack"), 0)
         self.assertEqual(self.queued(BINDING["receiptContainer"]), 1)
 
-    async def test_enabling_central_receipts_catches_up_an_already_delivered_native_receipt(self):
+    async def test_central_copy_stages_even_when_native_pair_cannot_fit(self):
+        self.store.max_rows = 1
+        self.stage()
+        self.store.stage_central_receipts()
+        item = self.store.due_central_receipt()
+        self.assertEqual(item["payload"], self.receipt)
+        self.assertEqual(self.queued(BINDING["receiptContainer"]), 0)
+        self.assertEqual(self.queued("@core/ack"), 0)
+        self.store.delivered(item["rqi"])
+
+        self.store.max_rows = 2
+        self.stage()
+        self.store.stage_central_receipts()
+        self.assertEqual(self.queued(BINDING["receiptContainer"]), 1)
+        self.assertEqual(self.queued("@core/ack"), 1)
+        self.assertIsNone(self.store.due_central_receipt())
+
+    async def test_central_route_can_stage_receipt_already_confirmed_by_native_cse(self):
         self.stage()
         self.store.delivered(self.native_rqi)
         self.store.delivered(self.ack_rqi)
-        self.store.stage_receipts(BINDING["receiptContainer"], True, True)
+        with self.store.db:
+            self.store.db.execute("DROP INDEX commands_pending_central_receipt")
+            self.store.db.execute("ALTER TABLE commands DROP COLUMN central_receipt_staged")
+        self.store.close()
+        self.store = self.open_store()
+        self.store.stage_central_receipts()
         self.assertEqual(self.native_delivered(), 1)
         self.assertEqual(self.queued("@central/receipt"), 1)
-        self.assertEqual(self.queued("@core/ack"), 0)
-        self.assertEqual(self.queued(BINDING["receiptContainer"]), 0)
+        self.assertIsNone(self.store.due())
+        item = self.store.due_central_receipt()
+        self.assertEqual(item["payload"], self.receipt)
+        self.assertEqual(self.store.central_receipt_claim(item["payload"]), self.cmd["claimId"])
+
+    async def test_central_worker_retries_same_receipt_while_native_cse_is_held(self):
+        self.store.stage_receipts(BINDING["receiptContainer"])
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.config.central_receipts_enabled = True
+        gateway.config.core_bridge_enabled = False
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+        gateway.transport = SimpleNamespace(publish=AsyncMock(side_effect=RemoteResponseError("unmatched")),
+                                             central_delivery_held=Mock(return_value=False),
+                                             native_delivery_hold=Mock(return_value=NativeDeliveryHold(all_native=True)))
+
+        async def idle(_seconds):
+            gateway.stop.set()
+
+        gateway._pause = idle
+        with patch("bubble_gateway.store.time.time", return_value=1000):
+            async with asyncio.timeout(1):
+                await gateway._outbox_loop(central_route="receipt")
+        rqi = self.store.request_id("central-receipt", self.cmd["commandId"])
+        args = (rqi, "@central/receipt", self.receipt)
+        gateway.transport.publish.assert_awaited_once_with(*args, expected_claim_id=self.cmd["claimId"])
+        self.assertEqual(self.queued("@central/receipt"), 1)
+
+        self.store.close()
+        gateway.store = self.store = self.open_store()
+        gateway.stop.clear()
+        gateway.transport.publish = AsyncMock()
+        with patch("bubble_gateway.store.time.time", return_value=2000):
+            async with asyncio.timeout(1):
+                await gateway._outbox_loop(central_route="receipt")
+        gateway.transport.publish.assert_awaited_once_with(*args, expected_claim_id=self.cmd["claimId"])
+        self.assertEqual(self.queued("@central/receipt"), 0)
+        self.assertEqual(self.queued(BINDING["receiptContainer"]), 1)
+        self.assertEqual(self.native_delivered(), 0)
+
+    async def test_native_receipt_confirms_while_central_receipt_response_is_pending(self):
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.config.central_receipts_enabled = True
+        gateway.config.core_bridge_enabled = False
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+        awaiting_central, release_central, native_sent = asyncio.Event(), asyncio.Event(), asyncio.Event()
+
+        async def publish(_rqi, container, _payload, **_options):
+            if container == "@central/receipt":
+                awaiting_central.set()
+                await release_central.wait()
+            elif container == gateway.config.receipt_container:
+                native_sent.set()
+
+        gateway.transport = SimpleNamespace(publish=AsyncMock(side_effect=publish),
+                                             central_delivery_held=Mock(return_value=False),
+                                             native_delivery_hold=Mock(return_value=NativeDeliveryHold()))
+        async with asyncio.timeout(1), asyncio.TaskGroup() as workers:
+            workers.create_task(gateway._outbox_loop(central_route="receipt"))
+            await awaiting_central.wait()
+            workers.create_task(gateway._outbox_loop())
+            await native_sent.wait()
+            self.assertEqual(self.native_delivered(), 1)
+            self.assertEqual(self.queued("@central/receipt"), 1)
+            gateway.stop.set()
+            release_central.set()
+
+        self.assertEqual(self.queued("@central/receipt"), 0)
+        self.assertEqual(gateway.counters["central_receipts_confirmed"], 1)
+        self.assertEqual(gateway.transport.publish.await_count, 2)
+
+    async def test_confirmed_central_receipt_retries_only_local_write_while_native_delivers(self):
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.config.central_receipts_enabled = True
+        gateway.config.core_bridge_enabled = False
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+        gateway.transport = SimpleNamespace(publish=AsyncMock(),
+                                             central_delivery_held=Mock(return_value=False),
+                                             native_delivery_hold=NativeDeliveryHold)
+        central_rqi = self.store.request_id("central-receipt", self.cmd["commandId"])
+        write_failed, native_committed = asyncio.Event(), asyncio.Event()
+        delivered = self.store.delivered
+
+        def commit(rqi):
+            if rqi == central_rqi and not native_committed.is_set():
+                write_failed.set()
+                raise sqlite3.OperationalError("synthetic completion write error")
+            delivered(rqi)
+            if rqi == self.native_rqi:
+                native_committed.set()
+            elif rqi == central_rqi:
+                gateway.stop.set()
+
+        with (patch.object(self.store, "delivered", side_effect=commit),
+              patch("bubble_gateway.service.OUTBOX_STATE_WRITE_RETRY_INTERVAL", 0),
+              self.assertLogs("bubble_gateway.service", level="WARNING")):
+            async with asyncio.timeout(1), asyncio.TaskGroup() as workers:
+                workers.create_task(gateway._outbox_loop(central_route="receipt"))
+                await write_failed.wait()
+                self.assertEqual(self.queued("@central/receipt"), 1)
+                self.assertEqual(gateway.counters["central_receipts_confirmed"], 0)
+                workers.create_task(gateway._outbox_loop())
+
+        self.assertEqual([call.args[0] for call in gateway.transport.publish.await_args_list],
+                         [central_rqi, self.native_rqi])
+        self.assertEqual(self.queued("@central/receipt"), 0)
+        self.assertEqual(self.native_delivered(), 1)
+        self.assertGreaterEqual(gateway.counters["outbox_confirmation_write_retries"], 1)
+        self.assertEqual(gateway.counters["central_receipts_confirmed"], 1)
+        self.assertEqual(gateway.counters["publish_retries"], 0)
+
+    async def test_failed_central_send_persists_retry_after_a_local_write_failure(self):
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.config.central_receipts_enabled = True
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+        gateway.transport = SimpleNamespace(
+            central_delivery_held=Mock(return_value=False),
+            publish=AsyncMock(side_effect=HttpRetryDeferred(503, 30)),
+        )
+        original_retry = self.store.retry
+
+        def persist_retry(rqi, attempts, *, minimum_delay):
+            self.assertGreater(minimum_delay, 28)
+            if gateway.counters["outbox_retry_write_retries"] == 0:
+                raise sqlite3.OperationalError("synthetic retry write error")
+            original_retry(rqi, attempts, minimum_delay=minimum_delay)
+            gateway.stop.set()
+
+        with (patch.object(self.store, "retry", side_effect=persist_retry),
+              patch("bubble_gateway.service.OUTBOX_STATE_WRITE_RETRY_INTERVAL", 0),
+              self.assertLogs("bubble_gateway.service", level="WARNING")):
+            async with asyncio.timeout(1):
+                await gateway._outbox_loop(central_route="receipt")
+
+        rqi = self.store.request_id("central-receipt", self.cmd["commandId"])
+        gateway.transport.publish.assert_awaited_once_with(rqi, "@central/receipt", self.receipt,
+                                                         expected_claim_id=self.cmd["claimId"])
+        self.assertEqual(gateway.counters["outbox_retry_write_retries"], 1)
+        self.assertEqual(gateway.counters["publish_retries"], 1)
+        self.store.close()
+        self.store = self.open_store()
+        self.assertIsNone(self.store.due_central_receipt())
+        row = self.store.db.execute("SELECT payload,attempts,next_attempt FROM outbox WHERE rqi=?", (rqi,)).fetchone()
+        self.assertEqual(json.loads(row["payload"]), self.receipt)
+        self.assertEqual(row["attempts"], 1)
+        self.assertGreater(row["next_attempt"], utc_now().timestamp() + 27)
+
+    async def test_shutdown_retries_confirmation_and_preserves_row_when_storage_is_unavailable(self):
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.config.central_receipts_enabled = True
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+        gateway.transport = SimpleNamespace(publish=AsyncMock(), central_delivery_held=Mock(return_value=False))
+        write_failed = asyncio.Event()
+
+        def unavailable(_rqi):
+            write_failed.set()
+            raise sqlite3.OperationalError("synthetic completion write error")
+
+        with (patch.object(self.store, "delivered", side_effect=unavailable) as writes,
+              self.assertLogs("bubble_gateway.service", level="WARNING")):
+            task = asyncio.create_task(gateway._outbox_loop(central_route="receipt"))
+            try:
+                await asyncio.wait_for(write_failed.wait(), timeout=1)
+            finally:
+                task.cancel()
+                with self.assertRaises(asyncio.CancelledError):
+                    await task
+
+        gateway.transport.publish.assert_awaited_once()
+        self.assertEqual(writes.call_count, 2)
+        self.assertEqual(self.queued("@central/receipt"), 1)
+        self.assertEqual(gateway.counters["central_receipts_confirmed"], 0)
+
+    async def test_central_worker_expires_old_projection_and_finishes_bound_stale_observation(self):
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.config.central_telemetry_enabled = True
+        gateway.config.central_telemetry_retention_seconds = 60
+        gateway.config.core_bridge_enabled = False
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+        gateway._clock_ok = Mock(return_value=True)
+        gateway.transport = SimpleNamespace(publish=AsyncMock(return_value={"status": "STALE"}),
+                                             central_delivery_held=Mock(return_value=False),
+                                             native_delivery_hold=Mock(return_value=NativeDeliveryHold(all_native=True)))
+        expired_at = iso_time(utc_now() - timedelta(minutes=5))
+        old = observation(observedAt=expired_at, receivedAt=expired_at)
+        fresh = observation(sequence=2)
+        self.store.observation(BINDING["observationContainer"], old, central_enabled=True)
+        await gateway.observation(fresh)
+        self.store.retry(self.store.due_central_telemetry()["rqi"], 0, minimum_delay=3600)
+
+        async def idle(_seconds):
+            gateway.stop.set()
+
+        gateway._pause = idle
+        async with asyncio.timeout(1):
+            await gateway._outbox_loop(central_route="telemetry")
+        gateway.transport.publish.assert_awaited_once()
+        self.assertEqual(gateway.transport.publish.await_args.args[1:], ("@central/telemetry", fresh))
+        self.assertEqual(gateway.counters["central_telemetry_expired"], 1)
+        self.assertEqual(gateway.counters["central_telemetry_stale"], 1)
+        self.assertEqual(self.queued("@central/telemetry"), 0)
+        self.assertEqual(self.queued(BINDING["observationContainer"]), 2)
+
+    async def test_already_expired_observation_still_stages_native_without_a_central_copy(self):
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.config.central_telemetry_enabled = True
+        gateway.config.central_telemetry_retention_seconds = 60
+        gateway.config.core_bridge_enabled = False
+        gateway.counters = Counter()
+        gateway._clock_ok = Mock(return_value=True)
+        expired_at = iso_time(utc_now() - timedelta(minutes=5))
+        old = observation(observedAt=expired_at, receivedAt=expired_at)
+        await gateway.observation(old, 500)
+        await gateway.observation(old, 500)
+        self.assertEqual(self.queued(BINDING["observationContainer"]), 1)
+        self.assertEqual(self.queued("@central/telemetry"), 0)
+        self.assertEqual(gateway.counters["central_telemetry_expired"], 1)
+        self.assertEqual(gateway.counters["observations_duplicate"], 1)
+        self.assertEqual(self.store.observation_heads(include_device_uptime=True), {"kr-test": ("boot-test", 1, None, 500)})
+
+    async def test_expired_central_backlog_frees_capacity_for_an_atomic_observation_retry(self):
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.config.central_telemetry_enabled = True
+        gateway.config.central_telemetry_retention_seconds = 60
+        gateway.config.core_bridge_enabled = False
+        gateway.counters = Counter()
+        gateway._clock_ok = Mock(return_value=True)
+        self.store.max_rows = 6  # Five noncritical slots.
+        container = BINDING["observationContainer"]
+        expired_at = iso_time(utc_now() - timedelta(minutes=5))
+        for sequence in (1, 2):
+            old = observation(sequence=sequence, observedAt=expired_at, receivedAt=expired_at)
+            self.store.observation(container, old, central_enabled=True)
+        self.store.retry(self.store.due_central_telemetry()["rqi"], 0, minimum_delay=3600)
+        self.store.delivered(Store.request_id("observation", "kr-test:boot-test:1"))
+        self.stage()  # Fill the remaining noncritical headroom with the receipt pair.
+
+        fresh = observation(sequence=3)
+        await gateway.observation(fresh)
+        self.assertEqual(self.queued(container), 2)
+        self.assertEqual(self.queued(BINDING["receiptContainer"]), 1)
+        self.assertEqual(self.store.due_central_telemetry()["payload"], fresh)
+        self.assertEqual(gateway.counters["central_telemetry_expired"], 2)
+        self.assertEqual(gateway.counters["observations_deferred_capacity"], 0)
+        self.assertEqual(self.store.observation_heads(), {"kr-test": ("boot-test", 3)})
+
+    async def test_untrusted_clock_keeps_central_rows_waiting_for_retry(self):
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.config.central_telemetry_enabled = True
+        gateway.config.core_bridge_enabled = False
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+        gateway._clock_ok = Mock(return_value=False)
+        gateway.transport = SimpleNamespace(publish=AsyncMock(), central_delivery_held=Mock(return_value=False))
+        expired_at = iso_time(utc_now() - timedelta(hours=25))
+        await gateway.observation(observation(observedAt=expired_at, receivedAt=expired_at))
+        first = self.store.due_central_telemetry()
+        self.store.retry(first["rqi"], 0, minimum_delay=3600)
+
+        async def idle(_seconds):
+            gateway.stop.set()
+
+        gateway._pause = idle
+        async with asyncio.timeout(1):
+            await gateway._outbox_loop(central_route="telemetry")
+        gateway.transport.publish.assert_not_awaited()
+        self.assertEqual(gateway.counters["central_telemetry_expired"], 0)
+        self.assertEqual(self.queued("@central/telemetry"), 1)
+
+    async def test_native_delivery_continues_while_central_observation_awaits_confirmation(self):
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.config.central_telemetry_enabled = True
+        gateway.config.core_bridge_enabled = False
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+        gateway._clock_ok = Mock(return_value=True)
+        awaiting_central, release_central = asyncio.Event(), asyncio.Event()
+        native_observation_sent = asyncio.Event()
+
+        async def publish(_rqi, container, _payload, **_options):
+            if container == "@central/telemetry":
+                awaiting_central.set()
+                await release_central.wait()
+                return {"status": "ACCEPTED"}
+            if container == gateway.config.observation_container:
+                native_observation_sent.set()
+
+        gateway.transport = SimpleNamespace(publish=AsyncMock(side_effect=publish),
+                                             central_delivery_held=Mock(return_value=False),
+                                             native_delivery_hold=Mock(return_value=NativeDeliveryHold()))
+        await gateway.observation(observation())
+        async with asyncio.timeout(1), asyncio.TaskGroup() as workers:
+            workers.create_task(gateway._outbox_loop(central_route="telemetry"))
+            await awaiting_central.wait()
+            workers.create_task(gateway._outbox_loop())
+            await native_observation_sent.wait()
+            self.assertEqual(self.native_delivered(), 1)
+            self.assertEqual(self.queued(gateway.config.observation_container), 0)
+            self.assertEqual(self.queued("@central/telemetry"), 1)
+            gateway.stop.set()
+            release_central.set()
+
+        self.assertEqual(self.queued("@central/telemetry"), 0)
+        self.assertEqual(gateway.counters["central_telemetry_confirmed"], 1)
+        self.assertEqual(gateway.transport.publish.await_count, 3)
+
+    async def test_central_hold_preserves_attempts_and_allows_expiry_and_native_delivery(self):
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.config.central_receipts_enabled = gateway.config.central_telemetry_enabled = True
+        gateway.config.central_telemetry_retention_seconds = 60
+        gateway.config.core_bridge_enabled = False
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+        gateway._clock_ok = Mock(return_value=True)
+        gateway.transport = SimpleNamespace(publish=AsyncMock(return_value={"status": "ACCEPTED"}),
+                                             central_delivery_held=Mock(return_value=True),
+                                             native_delivery_hold=NativeDeliveryHold)
+        expired_at = iso_time(utc_now() - timedelta(minutes=5))
+        old = observation(observedAt=expired_at, receivedAt=expired_at)
+        self.store.observation(BINDING["observationContainer"], old, central_enabled=True)
+        fresh = observation(sequence=2)
+        await gateway.observation(fresh)
+
+        async def idle(_seconds):
+            gateway.stop.set()
+
+        gateway._pause = idle
+        async with asyncio.timeout(1):
+            await gateway._outbox_loop(central_route="receipt")
+            self.assertIsNone(self.store.due_central_receipt())
+            gateway.stop.clear()
+            await gateway._outbox_loop(central_route="telemetry")
+            gateway.transport.publish.assert_not_awaited()
+            self.assertEqual(self.store.due_central_telemetry()["attempts"], 0)
+            self.assertEqual(self.queued("@central/telemetry"), 1)
+            self.assertEqual(gateway.counters["central_telemetry_expired"], 1)
+
+            gateway.stop.clear()
+            await gateway._outbox_loop()
+            self.assertEqual(self.native_delivered(), 1)
+            self.assertEqual(self.queued(gateway.config.observation_container), 0)
+
+            gateway.transport.central_delivery_held.return_value = False
+            gateway.stop.clear()
+            await gateway._outbox_loop(central_route="receipt")
+            self.assertEqual(gateway.counters["central_receipts_confirmed"], 1)
+            gateway.stop.clear()
+            await gateway._outbox_loop(central_route="telemetry")
+            self.assertEqual(gateway.transport.publish.await_args.args[1:], ("@central/telemetry", fresh))
+
+        self.assertEqual(gateway.counters["publish_retries"], 0)
+        self.assertEqual(self.store.counts()[0], 0)
 
     async def test_outbox_worker_does_not_spin_publishing_ack_while_native_is_backed_off(self):
         gateway = Gateway.__new__(Gateway)
@@ -169,15 +695,54 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         with patch("bubble_gateway.store.time.time", return_value=1000):
             async with asyncio.timeout(1):
                 await gateway._outbox_loop()
+                gateway.stop.clear()
+                await gateway._outbox_loop(core_route="ack")
         self.assertEqual(published_acks, [self.ack_rqi])
         self.assertEqual(self.native_delivered(), 0)
         self.assertEqual(self.queued(BINDING["receiptContainer"]), 1)
+
+    async def test_core_ack_and_legacy_telemetry_progress_while_native_waits_for_cse(self):
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.store = config(), self.store
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+        native_started, release_native = asyncio.Event(), asyncio.Event()
+        ack_sent, telemetry_sent = asyncio.Event(), asyncio.Event()
+        next_command = command(commandId="completed-during-native-wait")
+        next_digest = payload_hash(next_command)
+
+        async def publish(rqi, route, payload):
+            if rqi == self.native_rqi:
+                native_started.set()
+                await release_native.wait()
+            elif route == "@core/ack" and payload["commandId"] == next_command["commandId"]:
+                ack_sent.set()
+            elif route == "@core/telemetry":
+                telemetry_sent.set()
+
+        gateway.transport = SimpleNamespace(publish=AsyncMock(side_effect=publish), native_delivery_hold=NativeDeliveryHold)
+        self.store.observation(BINDING["observationContainer"], observation(), core_enabled=True)
+        async with asyncio.timeout(1), asyncio.TaskGroup() as workers:
+            workers.create_task(gateway._outbox_loop())
+            await native_started.wait()
+            self.store.accept(next_command, next_digest)
+            self.store.finish(next_command["commandId"], dict(
+                self.receipt, commandId=next_command["commandId"], payloadHash=next_digest))
+            workers.create_task(gateway._outbox_loop(core_route="ack"))
+            workers.create_task(gateway._outbox_loop(core_route="telemetry"))
+            await ack_sent.wait()
+            await telemetry_sent.wait()
+            self.assertEqual(self.queued("@core/ack"), 0)
+            self.assertEqual(self.queued("@core/telemetry"), 0)
+            self.assertEqual(self.queued(BINDING["receiptContainer"]), 2)
+            self.assertFalse(release_native.is_set())
+            gateway.stop.set()
+            release_native.set()
 
     async def test_due_receipts_jump_older_observations_without_starving_them(self):
         with patch("bubble_gateway.store.iso_time", return_value="2020-01-01T00:00:00Z"):
             self.store.enqueue("observation", "older", BINDING["observationContainer"], {"sequence": 1})
         observation_rqi = self.store.request_id("observation", "older")
-        for index in range(3):
+        for index in range(5):
             cmd = command(commandId=f"queued-{index}")
             digest = payload_hash(cmd)
             self.store.accept(cmd, digest)
@@ -199,9 +764,9 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
                 await gateway._outbox_loop()
 
         attempts = [call.args[0] for call in gateway.transport.publish.await_args_list]
-        self.assertEqual(len(attempts), 8)  # Seven due receipts and one observation.
+        self.assertEqual(len(attempts), 6)  # Five due native receipts and one observation.
         self.assertEqual(attempts[4], observation_rqi)
-        self.assertIn(self.ack_rqi, attempts)
+        self.assertNotIn(self.ack_rqi, attempts)
         self.assertNotIn(self.native_rqi, attempts)
         self.assertEqual(self.queued(BINDING["receiptContainer"]), 1)
 
@@ -221,6 +786,8 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         gateway._pause = idle
         async with asyncio.timeout(1):
             await gateway._outbox_loop()
+            gateway.stop.clear()
+            await gateway._outbox_loop(core_route="ack")
             self.assertEqual([call.args[0] for call in gateway.transport.publish.await_args_list], [self.ack_rqi])
             queued = self.store.db.execute("SELECT rqi,attempts,next_attempt FROM outbox").fetchall()
             self.assertEqual({tuple(row) for row in queued}, {(self.native_rqi, 0, 0), (observation_rqi, 0, 0)})
@@ -258,7 +825,8 @@ class ReceiptOutboxTests(unittest.IsolatedAsyncioTestCase):
         async with asyncio.timeout(1):
             await gateway._outbox_loop()
             attempted = [entry.args[0] for entry in gateway.transport.publish.await_args_list]
-            self.assertEqual(attempted, [self.ack_rqi, self.store.request_id("health", "ordinary")])
+            self.assertEqual(attempted, [self.store.request_id("health", "ordinary")])
+            self.assertEqual(self.queued("@core/ack"), 1)
             credential = self.store.db.execute("SELECT attempts,next_attempt FROM outbox WHERE rqi=?",
                                                (credential_rqi,)).fetchone()
             self.assertEqual(tuple(credential), (0, 0))

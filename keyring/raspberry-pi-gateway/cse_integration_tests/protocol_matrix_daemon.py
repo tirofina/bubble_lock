@@ -150,14 +150,14 @@ async def control(gateway, emulator, output, commands, files):
     stored = {}
     original_publish, original_observation = transport.publish, gateway.observation
 
-    async def observed(raw):
-        await original_observation(raw)
+    async def observed(raw, *args, **options):
+        await original_observation(raw, *args, **options)
         stored[(raw.get("deviceId"), raw.get("bootId"), raw.get("sequence"))] = time.time_ns()
 
-    async def timed(rqi, container, payload):
+    async def timed(rqi, container, payload, **options):
         before, started, error = Counter(transport.route_counters), time.time_ns(), None
         try:
-            return await original_publish(rqi, container, payload)
+            return await original_publish(rqi, container, payload, **options)
         except BaseException as exc:
             error = type(exc).__name__
             raise

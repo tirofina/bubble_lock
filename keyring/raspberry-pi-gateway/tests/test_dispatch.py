@@ -12,10 +12,10 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
 from bubble_gateway.ble import BleFleet
-from bubble_gateway.model import iso_time, payload_hash, utc_now
+from bubble_gateway.model import iso_time, parse_time, payload_hash, utc_now
 from bubble_gateway.service import Gateway
 from bubble_gateway.store import Store
-from bubble_gateway.transport import NativeDeliveryHold
+from bubble_gateway.transport import NativeDeliveryHold, RemoteResponseError
 from helpers import BINDING, command, config, device_receipt
 
 
@@ -75,6 +75,111 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
         status, receipt = await self.dispatch()
         self.assertEqual((status, receipt["ackCode"]), ("REJECTED", "EXPIRED"))
         self.gateway.ble.execute.assert_not_awaited()
+
+    async def test_authorization_wait_is_cancelled_at_command_deadline(self):
+        request = asyncio.get_running_loop().create_future()
+
+        async def authorize(_command, _digest):
+            return await request
+
+        self.gateway.transport.authorize.side_effect = authorize
+        near_deadline = parse_time(self.cmd["deadline"]) - timedelta(milliseconds=20)
+        with patch("bubble_gateway.service.utc_now", return_value=near_deadline):
+            async with asyncio.timeout(1):
+                status, receipt = await self.dispatch()
+        self.assertTrue(request.cancelled())
+        self.assertEqual((status, receipt["ackCode"]), ("REJECTED", "EXPIRED"))
+        self.assertEqual(self.store.interrupted(), [])
+        self.gateway.ble.execute.assert_not_awaited()
+
+    async def test_short_authorization_request_timeout_leaves_command_pending(self):
+        request = asyncio.get_running_loop().create_future()
+
+        async def authorize(_command, _digest):
+            return await request
+
+        self.gateway.config.request_timeout = 0.02
+        self.gateway.transport.authorize.side_effect = authorize
+        async with asyncio.timeout(1):
+            self.assertEqual(await self.dispatch(), ("RECEIVED", None))
+        self.assertTrue(request.cancelled())
+        self.assertEqual(self.gateway.counters["authorization_unavailable"], 1)
+        self.gateway.ble.execute.assert_not_awaited()
+
+    async def test_late_authorization_response_does_not_record_dispatch_intent(self):
+        deadline = parse_time(self.cmd["deadline"])
+        current = deadline - timedelta(seconds=1)
+
+        async def authorize(_command, _digest):
+            nonlocal current
+            current = deadline + timedelta(milliseconds=1)
+            return self.authorization
+
+        self.gateway.transport.authorize.side_effect = authorize
+        with patch("bubble_gateway.service.utc_now", side_effect=lambda: current):
+            status, receipt = await self.dispatch()
+        self.assertEqual((status, receipt["ackCode"]), ("REJECTED", "EXPIRED"))
+        self.assertEqual(self.store.interrupted(), [])
+        self.gateway.ble.execute.assert_not_awaited()
+
+    async def test_dispatch_start_requires_durable_intent_and_shortens_ble_budget(self):
+        self.gateway.config.pc_dispatch_start_required = True
+
+        async def start(_command, _digest):
+            self.gateway.transport.authorize.assert_awaited_once_with(self.cmd, self.digest)
+            self.gateway.ble.execute.assert_not_awaited()
+            self.assertEqual(len(self.store.interrupted()), 1)
+            return dict(self.authorization, expiresAt=iso_time(utc_now() + timedelta(seconds=3)))
+
+        self.gateway.transport.dispatch_start = AsyncMock(side_effect=start)
+        status, _ = await self.dispatch()
+        self.assertEqual(status, "APPLIED")
+        self.gateway.transport.dispatch_start.assert_awaited_once_with(self.cmd, self.digest)
+        self.assertLessEqual(self.gateway.ble.execute.await_args.args[1], 2750)
+
+    async def test_dispatch_start_with_wrong_claim_blocks_ble(self):
+        self.gateway.config.pc_dispatch_start_required = True
+        self.gateway.transport.dispatch_start = AsyncMock(return_value=dict(self.authorization, claimId="wrong"))
+        status, receipt = await self.dispatch()
+        self.assertEqual((status, receipt["ackCode"]), ("REJECTED", "NOT_AUTHORIZED"))
+        self.gateway.ble.execute.assert_not_awaited()
+
+    async def test_dispatch_start_with_expired_deadline_blocks_ble(self):
+        self.gateway.config.pc_dispatch_start_required = True
+        expired = iso_time(utc_now() - timedelta(seconds=1))
+        self.gateway.transport.dispatch_start = AsyncMock(return_value=dict(self.authorization, expiresAt=expired))
+        status, receipt = await self.dispatch()
+        self.assertEqual((status, receipt["ackCode"]), ("REJECTED", "EXPIRED"))
+        self.gateway.ble.execute.assert_not_awaited()
+
+    async def test_missing_dispatch_start_route_has_no_legacy_fallback(self):
+        self.gateway.config.pc_dispatch_start_required = True
+        self.gateway.transport.dispatch_start = AsyncMock(side_effect=RemoteResponseError("missing", status_code=404))
+        status, receipt = await self.dispatch()
+        self.assertEqual((status, receipt["ackCode"]), ("REJECTED", "DISPATCH_NOT_SENT"))
+        self.gateway.ble.execute.assert_not_awaited()
+        self.assertEqual(self.store.pending(), [])
+
+    async def test_session_change_during_dispatch_start_blocks_ble(self):
+        self.gateway.config.pc_dispatch_start_required = True
+
+        async def start(_command, _digest):
+            self.gateway.ble.command_session.return_value = 2
+            return self.authorization
+
+        self.gateway.transport.dispatch_start = AsyncMock(side_effect=start)
+        status, receipt = await self.dispatch()
+        self.assertEqual((status, receipt["ackCode"]), ("REJECTED", "DISPATCH_NOT_SENT"))
+        self.gateway.ble.execute.assert_not_awaited()
+
+    async def test_cancellation_during_dispatch_start_records_unsent_command(self):
+        self.gateway.config.pc_dispatch_start_required = True
+        self.gateway.transport.dispatch_start = AsyncMock(side_effect=asyncio.CancelledError)
+        with self.assertRaises(asyncio.CancelledError):
+            await self.dispatch()
+        self.gateway.ble.execute.assert_not_awaited()
+        status, encoded = self.store.db.execute("SELECT status,receipt FROM commands").fetchone()
+        self.assertEqual((status, json.loads(encoded)["ackCode"]), ("REJECTED", "DISPATCH_NOT_SENT"))
 
     async def test_waits_for_command_session_before_authorizing_or_recording_intent(self):
         self.gateway.ble.command_session.return_value = None
@@ -228,6 +333,51 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
         self.gateway.ble.execute.assert_awaited_once()
         self.assertEqual(len(self.store.pending()), 16)
 
+    async def test_slow_authorization_does_not_block_another_device_or_reorder_its_own_commands(self):
+        self.gateway.config.ble_devices = {**self.gateway.config.ble_devices, "kr-other": "00:00:00:00:00:02"}
+        next_cmd = command(commandId="next-on-first-device")
+        other = command(commandId="other-device", deviceId="kr-other")
+        self.store.accept(next_cmd, payload_hash(next_cmd))
+        self.store.accept(other, payload_hash(other))
+        first_waiting, release_first = asyncio.Event(), asyncio.Event()
+        other_executed, second_executed = asyncio.Event(), asyncio.Event()
+        started = []
+
+        async def authorize(cmd, digest):
+            started.append(cmd["commandId"])
+            if cmd["commandId"] == self.cmd["commandId"]:
+                first_waiting.set()
+                await release_first.wait()
+            return {**{key: cmd[key] for key in ("commandId", "deviceId", "claimId", "grantRevision", "ownershipEpoch")},
+                    "allowed": True, "payloadHash": digest, "expiresAt": cmd["deadline"]}
+
+        async def execute(cmd, _budget, digest, **_options):
+            if cmd["commandId"] == other["commandId"]:
+                other_executed.set()
+            if cmd["commandId"] == next_cmd["commandId"]:
+                second_executed.set()
+            return device_receipt(cmd, digest)
+
+        self.gateway.transport.authorize.side_effect = authorize
+        self.gateway.ble.execute.side_effect = execute
+        task = asyncio.create_task(self.gateway._dispatch_loop())
+        try:
+            async with asyncio.timeout(1):
+                await first_waiting.wait()
+                await other_executed.wait()
+                self.assertEqual(started, [self.cmd["commandId"], other["commandId"]])
+                self.assertEqual(self.store.interrupted(), [])
+                release_first.set()
+                await second_executed.wait()
+                self.gateway.stop.set()
+                await task
+        finally:
+            if not task.done():
+                task.cancel()
+                await asyncio.gather(task, return_exceptions=True)
+        self.assertEqual(started, [self.cmd["commandId"], other["commandId"], next_cmd["commandId"]])
+        self.assertEqual(self.store.pending(), [])
+
     async def test_intent_is_durable_before_ble_and_repeat_does_not_replay(self):
         async def execute(*args, **kwargs):
             self.assertEqual(len(self.store.interrupted()), 1)
@@ -260,10 +410,64 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
 
         async def write(_uuid, data, *, response):
             if data.endswith(b"\n"):
+                self.assertEqual(self.store.interrupted()[0]["ble_final_write_started"], 1)
                 fleet._receipt_fragment(peer, bytearray((json.dumps(result) + "\n").encode()), peer.generation)
                 await after_notification()
 
         peer.client = SimpleNamespace(is_connected=True, write_gatt_char=AsyncMock(side_effect=write))
+
+    async def test_interrupted_ble_before_terminator_settles_dispatch_not_sent(self):
+        self.use_ble_notification(AsyncMock())
+        peer = self.gateway.ble._peers[self.cmd["deviceId"]]
+        write = peer.client.write_gatt_char
+        write.side_effect = [None, TimeoutError("synthetic partial write timeout")]
+
+        status, receipt = await self.dispatch()
+        self.assertEqual((status, receipt["ackCode"]), ("REJECTED", "DISPATCH_NOT_SENT"))
+        self.assertIsNone(receipt["readback"])
+        self.assertEqual(write.await_count, 2)
+        self.assertTrue(all(not call.args[1].endswith(b"\n") for call in write.await_args_list))
+        self.assertFalse(peer.ready.is_set())
+        self.assertEqual(self.store.pending(), [])
+
+    async def test_failed_final_write_marker_prevents_the_terminating_fragment(self):
+        self.use_ble_notification(AsyncMock())
+        peer = self.gateway.ble._peers[self.cmd["deviceId"]]
+        with patch.object(self.store, "mark_ble_final_write", side_effect=sqlite3.OperationalError("synthetic WAL failure")):
+            status, receipt = await self.dispatch()
+
+        self.assertEqual((status, receipt["ackCode"]), ("REJECTED", "DISPATCH_NOT_SENT"))
+        self.assertGreater(peer.client.write_gatt_char.await_count, 0)
+        self.assertTrue(all(not call.args[1].endswith(b"\n") for call in peer.client.write_gatt_char.await_args_list))
+
+    async def test_clock_jump_during_final_write_marker_prevents_the_terminating_fragment(self):
+        self.use_ble_notification(AsyncMock())
+        peer = self.gateway.ble._peers[self.cmd["deviceId"]]
+        mark = self.store.mark_ble_final_write
+
+        def write_marker(command_id, digest):
+            result = mark(command_id, digest)
+            self.gateway.clock_anchor += 10
+            return result
+
+        with patch.object(self.store, "mark_ble_final_write", side_effect=write_marker):
+            status, receipt = await self.dispatch()
+        self.assertEqual((status, receipt["ackCode"]), ("REJECTED", "DISPATCH_NOT_SENT"))
+        self.assertTrue(all(not call.args[1].endswith(b"\n") for call in peer.client.write_gatt_char.await_args_list))
+
+    async def test_terminator_write_timeout_remains_uncertain_without_device_receipt(self):
+        self.use_ble_notification(AsyncMock())
+        peer = self.gateway.ble._peers[self.cmd["deviceId"]]
+
+        async def write(_uuid, data, *, response):
+            if data.endswith(b"\n"):
+                raise TimeoutError("synthetic lost final write response")
+
+        peer.client.write_gatt_char.side_effect = write
+        status, receipt = await self.dispatch()
+        self.assertEqual((status, receipt["ackCode"]), ("TIMEOUT", "TIMEOUT"))
+        self.assertTrue(peer.client.write_gatt_char.await_args.args[1].endswith(b"\n"))
+        self.assertEqual(self.store.pending(), [])
 
     async def test_dispatch_keeps_confirmed_receipt_when_final_gatt_response_is_lost(self):
         async def lose_response():
@@ -320,6 +524,64 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((status, receipt["ackCode"]), ("APPLIED", "APPLIED"))
         self.assertEqual(self.store.interrupted(), [])
 
+    async def test_repeated_receipt_write_errors_keep_first_result_after_ble_timeout(self):
+        arrived = iso_time()
+        raw = device_receipt(self.cmd, self.digest, receivedAt=arrived, acceptedAt=arrived, appliedAt=arrived,
+                             timestampSource="gateway-estimated")
+
+        async def execute(*args, on_receipt, **kwargs):
+            on_receipt(raw)
+            self.gateway.clock_anchor += 10
+            raise asyncio.TimeoutError
+
+        self.gateway.ble.execute.side_effect = execute
+        finish = self.store.finish
+        storage_error = sqlite3.OperationalError("synthetic storage error")
+        storage_check = Mock(side_effect=[storage_error, storage_error, None])
+
+        def save_when_ready(command_id, receipt):
+            storage_check()
+            return finish(command_id, receipt)
+
+        with patch.object(self.store, "finish", side_effect=save_when_ready) as writes, \
+                patch("bubble_gateway.service.DEVICE_RECEIPT_RETRY_INTERVAL", 0), \
+                self.assertLogs("bubble_gateway.service", level="WARNING"):
+            status, receipt = await self.dispatch()
+        self.assertEqual((status, receipt["ackCode"], receipt["receivedAt"]), ("APPLIED", "APPLIED", arrived))
+        self.assertEqual((receipt["acceptedAt"], receipt["appliedAt"], receipt["timestampSource"]),
+                         (arrived, arrived, "gateway-estimated"))
+        self.assertEqual([call.args for call in writes.call_args_list], [(self.cmd["commandId"], receipt)] * 3)
+        self.gateway.ble.execute.assert_awaited_once()
+        self.assertEqual(self.gateway.counters, {"command_applied": 1})
+
+    async def test_shutdown_retries_observed_receipt_before_cancelling_worker(self):
+        waiting = asyncio.Event()
+        finish = self.store.finish
+        attempts = 0
+
+        def finish_after_cancel(command_id, receipt):
+            nonlocal attempts
+            attempts += 1
+            if attempts == 2:
+                waiting.set()
+            if attempts <= 2:
+                raise sqlite3.OperationalError("synthetic storage error")
+            return finish(command_id, receipt)
+
+        with patch.object(self.store, "finish", side_effect=finish_after_cancel), \
+                self.assertLogs("bubble_gateway.service", level="WARNING"):
+            task = asyncio.create_task(self.dispatch())
+            try:
+                await asyncio.wait_for(waiting.wait(), timeout=1)
+            finally:
+                task.cancel()
+                with self.assertRaises(asyncio.CancelledError):
+                    await task
+        status, encoded = self.store.db.execute("SELECT status,receipt FROM commands").fetchone()
+        self.assertEqual((status, json.loads(encoded)["ackCode"]), ("APPLIED", "APPLIED"))
+        self.assertEqual(attempts, 3)
+        self.gateway.ble.execute.assert_awaited_once()
+
     async def test_clock_step_after_write_keeps_device_result_without_estimates(self):
         arrived = iso_time()
 
@@ -345,6 +607,32 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.store.pending(), [])
         await self.dispatch()
         self.assertEqual(self.gateway.ble.execute.await_count, 1)
+
+    async def test_restart_distinguishes_unsent_possible_and_legacy_dispatches(self):
+        self.assertIsNone(self.store.begin_dispatch(self.cmd))
+        marked = command(commandId="marked")
+        legacy = command(commandId="legacy")
+        for item in (marked, legacy):
+            self.store.accept(item, payload_hash(item))
+            self.assertIsNone(self.store.begin_dispatch(item))
+        self.assertTrue(self.store.mark_ble_final_write(marked["commandId"], payload_hash(marked)))
+        with self.store.db:
+            self.store.db.execute("UPDATE commands SET ble_final_write_started=NULL WHERE command_id=?", (legacy["commandId"],))
+        self.store.close()
+
+        with closing(Store(Path(self.temp.name) / "synthetic.sqlite3", 100, 100000, 20, BINDING)) as restarted:
+            self.gateway.store = restarted
+            self.gateway._recover_interrupted_commands()
+            results = {row["command_id"]: (row["status"], json.loads(row["receipt"])["ackCode"])
+                       for row in restarted.db.execute("SELECT command_id,status,receipt FROM commands")}
+            self.assertEqual(results, {
+                self.cmd["commandId"]: ("REJECTED", "DISPATCH_NOT_SENT"),
+                marked["commandId"]: ("INDETERMINATE", "RESTART_INTERRUPTED"),
+                legacy["commandId"]: ("INDETERMINATE", "RESTART_INTERRUPTED"),
+            })
+            self.assertEqual(restarted.pending(), [])
+            self.assertEqual(restarted.interrupted(), [])
+        self.gateway.ble.execute.assert_not_awaited()
 
     async def test_publish_failure_keeps_receipt_undelivered(self):
         await self.dispatch()

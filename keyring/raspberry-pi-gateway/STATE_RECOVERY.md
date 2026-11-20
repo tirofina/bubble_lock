@@ -10,6 +10,14 @@ SQLite journal/outbox/fence/dedup/CORE sequence를 보관하고 다른 Gateway �
 
 Gateway 0.2.35는 기존 binding과 기본 테이블을 확인한 뒤 `credential_receipts`를 추가한다. 보관본에는 이 테이블과 행 수가 포함된다. 이전 버전의 보관 도구로 열려면 0.2.35 적용 전 보관본을 사용한다. [자격 전환 영수증](RECEIPT_ROUTING.md#자격-상태-전환-영수증)
 
+Gateway 0.2.46은 기존 binding 확인 뒤 `commands`에 중앙 영수증 등록 표시를 추가한다. 보관본은 이 표시와 아직 전송 중인 중앙 outbox 행을 함께 보존한다. 새 중앙 배포에는 새 Gateway DB 경로를 사용한다. [중앙 명령 영수증 정산](RECEIPT_ROUTING.md#중앙-명령-영수증-정산)
+
+Gateway 0.2.57은 기존 DB에 `http_retry_windows` 테이블을 추가한다. SQLite 보관본에 이 테이블도 포함된다. 대기는 같은 Linux 부팅의 동일한 HTTPS 호스트와 포트에 적용한다. 0.2.56 이하의 스키마 검사는 이 테이블이 추가된 DB를 거절한다.
+
+Gateway 0.2.83은 `observations`에 버튼 누계와 해당 부팅 ID를 저장하는 열을 추가한다. 업그레이드 전 관측의 누계는 비어 있으며, 같은 부팅의 다음 유효한 `buttonPresses`부터 기록한다. 새 누계는 관측·전송 대기열과 같은 트랜잭션으로 저장된다. 이전 Gateway가 순번과 부팅 ID만 갱신한 DB에서는 현재 부팅과 일치하는 누계만 사용한다.
+
+Gateway 0.2.86은 `commands`에 장치별 대기열 조회에 쓰는 `device_id`를 추가한다. 대기 중인 기존 명령은 저장된 `deviceId`에서 이 값을 채운다. 기존 명령 본문·payload hash·영수증·실행 상태는 그대로 보존한다.
+
 이 binding은 **로컬 설정·파일 일관성**이다. 중앙 신원 인증·grant·lease·attestation이나 rollback 방지 checkpoint가 아니다. mTLS·credential status·실행 직전 authorize·장치 NVS journal은 계속 필요하다. 동일한 CSE ID를 다른 서버에서 재사용하면 이 metadata만으로 같은 실제 서버라고 확인할 수 없다.
 
 endpoint URL·broker 주소·인증서 경로는 binding에 넣지 않아 주소/credential 교체는 설정으로 가능하다. Gateway principal/CSE 자원 경로를 바꾸는 경우에는 이전 state를 그대로 새 정체성에 연결하지 않는다. 새로운 realm에는 새 DB 경로를 사용하고 이전 파일·fence·미정산 자료를 보존한다. 테스트 서버의 데이터·credential을 운영 환경에 자동 이관하지 않는다.
@@ -29,6 +37,83 @@ Gateway 0.2.23의 선택 설정 `M2M_RECEIPT_CONTAINER_RI`에는 CSE 관리자�
 전송 전 Gateway가 mTLS HTTPS로 이름 경로를 조회해 요청 ID, 응답 코드, container 타입과 `ri`를 확인한다. MQTT와 HTTPS fallback은 확인한 자원 ID에 직접 CREATE한다. Gateway 0.2.27부터는 CREATE 응답의 contentInstance 타입·부모 ID·이름·자원 ID를 확인하고, 같은 영수증을 HTTPS GET으로 다시 읽어 자원 ID와 본문이 일치할 때만 전달 완료로 기록한다. 중복 CREATE 응답은 기존 자원의 타입·부모 ID·이름·본문을 대조한다. 조회 오류와 불일치 때는 원래 요청 ID를 큐에 보존한다. MQTT CREATE 성공 뒤 GET이 실패하면 그 시도에서 HTTPS CREATE를 추가로 보내지 않는다.
 
 설정 전 Gateway 자격에 이름 경로 GET, 자원 ID로 contentInstance CREATE, 원래 이름 경로의 자식 GET을 허용한다. 격리 벤치에서는 [컨테이너 권한 준비](../dev/mobius4/README.md#명령-영수증-정산-준비)를 완료한 뒤 새 세션에 해당 Gateway의 ID를 지정한다.
+
+### 관측 컨테이너 ID 고정
+
+Gateway 0.2.55의 선택 설정 `M2M_OBSERVATION_CONTAINER_RI`는 CSE에서 관측 컨테이너의 `ri`를 확인한 뒤 새 DB에 지정한다. ID를 바꾸거나 빼면 `STATE_OBSERVATION_CONTAINER_MISMATCH`로 시작을 중단한다. 관측과 영수증이 한 컨테이너를 공유하면 지정된 ID가 같은 경로에 적용된다. 두 설정을 함께 지정할 때는 ID가 같아야 한다.
+
+Gateway는 전송 전에 HTTPS GET으로 컨테이너 이름과 `ri`의 일치를 확인한다. MQTT와 HTTPS는 확인된 ID로 관측을 생성하고, 응답 및 저장본의 부모·자원 ID·본문을 대조한 뒤 완료를 기록한다. 같은 이름에 다른 자원이 생겼거나 확인에 실패하면 관측은 원래 요청 ID로 SQLite에 남는다. `--check-command-route`도 관측 ID가 설정돼 있으면 중앙 요청 전에 이를 검사한다. 이름 경로 GET, 자원 ID CREATE와 자식 GET에 Gateway 권한을 부여한다.
+
+### Gateway 상태 컨테이너 ID 고정
+
+Gateway 0.2.79의 선택 설정 `M2M_HEALTH_CONTAINER_RI`는 heartbeat와 자격 상태 전환 영수증을 기존 CSE 컨테이너에 연결한다. `M2M_CSE_DEPLOYMENT_ID`와 새 DB 경로를 함께 사용한다. 기존 DB의 값이 바뀌거나 빠지면 `STATE_HEALTH_CONTAINER_MISMATCH`로 시작을 중단한다. 여러 경로가 같은 컨테이너 이름을 공유하면 그 이름에 지정된 ID가 모두 일치해야 하며, 해당 이름의 전송은 같은 ID로 보호된다.
+
+전송 전에 이름 경로로 ID를 확인하고, 자원 ID로 CREATE한 뒤 저장된 원본의 부모·ID·본문을 다시 대조한다. 경로가 교체되거나 HTTPS 재시도가 대기 중이면 기존 행을 SQLite에 남긴다. `--check-command-route`는 health ID가 설정된 경우 중앙 API를 읽기 전에 확인한다. Gateway에 이름 경로 GET, ID 경로 CREATE 및 자식 GET 권한을 부여한다.
+
+## 중앙 API 배포 전환
+
+Gateway 0.2.54는 새 DB에서 `PC_API_DEPLOYMENT_ID`를 지정하면 중앙 API 저장소의 운영자 배정 ID를 binding v3에 기록한다. 동일한 Mobius4를 쓰는 경우에도 중앙 저장소 ID가 달라지거나 설정에서 빠지면 `STATE_PC_API_DEPLOYMENT_MISMATCH`로 중단한다. `--check-config`와 `--check-command-route`는 기존 DB의 binding을 읽기 전용으로 먼저 검사한다. 명령·관측 재전송은 데몬 시작 때 같은 검사를 통과해야 한다.
+
+같은 중앙 저장소의 주소만 바뀌면 `PC_API_URL`을 갱신하고 ID를 유지한다. 별도 중앙 저장소에는 새 ID와 새 `GATEWAY_DATABASE`를 지정한다. 이미 ID 없이 만든 DB는 기존 설정으로 전송·보관하며, 새 ID를 넣어 기존 DB의 소유를 바꾸는 경로는 없다. 이 값은 로컬 일관성 확인에 사용한다. 서버의 mTLS·자격 상태·실행 승인은 별도로 확인한다.
+
+### 전환 전 대기열 확인
+
+Gateway 0.2.75의 `plan-cutover`는 현재 SQLite를 읽기 전용으로 열고 두 설정을 비교한다. 기존 데몬을 중지한 유지보수 창에서 원본 DB의 daemon lock으로 보호한다. 두 환경 파일은 각각 완전한 설정이어야 한다. 프로세스의 환경 변수나 다른 파일의 값을 가져오지 않는다.
+
+```sh
+sudo -u bubble-gateway /opt/bubble_lock/keyring/raspberry-pi-gateway/.venv/bin/bubble-gateway-state plan-cutover \
+  --env-file /etc/privacy-bubble/gateway.env \
+  --target-env-file /etc/privacy-bubble/gateway-next.env
+```
+
+- `databaseAction`이 `reuse-existing`이면 설정상 동일한 binding과 기존 DB 경로를 사용한다. URL이나 MQTT 주소가 바뀌면 팀의 CSE·중앙 API·브로커와 실제 저장소의 동일성을 확인한다. `targetMissingDeploymentIds`는 설정에 빠진 배포 ID를 보여준다.
+- `use-new-database`이면 binding이 바뀌고 새 DB 경로가 비어 있다. 기존 DB에 다른 binding을 지정하거나 같은 binding으로 별도 빈 DB를 지정하면 오류가 난다. 새 DB 경로에 파일이나 SQLite WAL·SHM·journal이 있어도 오류가 난다.
+- `outboxByRoute`는 native 관측·health, native 명령 영수증, credential 영수증, CORE telemetry·ACK, 중앙 telemetry·영수증의 저장 행 수다. 표시되지 않는 경로는 0건이다. `journal`에는 수신·dispatch 중 명령, outbox 등록 전 native 영수증, 중앙 등록 표시가 없는 명령 영수증과 미전달 credential 영수증이 포함된다. 각 단계에 같은 영수증이 포함될 수 있다. `sourceCentralReceiptStagingEnabled`로 중앙 등록 경로가 켜져 있었는지 확인한다.
+- Gateway 0.2.76의 `targetHolds`는 기존 DB를 재사용할 때 후보 설정에 의해 보류될 건수를 보여준다. CORE 브리지·명령·중앙 전송 경로의 비활성화와 CORE telemetry의 epoch 불일치를 반영한다. 기존 중앙 영수증 경로가 활성화돼 있었다면 중앙 등록 전 명령 영수증도 센다. 새 DB를 사용할 때 값은 `null`이며 기존 큐는 원본 DB에 남는다.
+- Gateway 0.2.94의 `journal.dispatchingByFinalBleWrite`는 `DISPATCHING`을 마지막 BLE 조각 미시도 `notStarted`, 전송 가능 `possiblyStarted`, 기록 없음 `unknown`으로 집계한다. 열이 없는 이전 DB는 `unknown`으로 집계한다.
+- Gateway 0.2.104의 `coreSequenceContinuity`는 새 DB로 이어받을 CORE 순번이 있는 장치 수, 새 설정의 토픽·epoch와 겹치는 원본 대기 건수, uint32 순번을 소진한 장치 수를 보여준다. 기존 DB를 재사용하는 경우에는 `null`이다.
+
+CORE 브리지를 끈 데몬은 기존 CORE telemetry와 ACK를 SQLite에 남기고 native 전송을 이어간다. 같은 배포에서 브리지를 다시 켜면 설정된 epoch에 해당하는 telemetry와 활성화된 명령 경로의 ACK가 재전송 대상에 들어간다. 보류 행은 계속 outbox 용량에 포함된다.
+
+보고서는 집계와 변경된 설정 이름을 stdout에 출력한다. 새 DB를 초기화하거나 기존 큐를 복사·삭제·전송하는 동작은 없다. 배포 전 기존 큐와 dispatch 중 명령을 원래 배포에서 대조하고 필요한 상태를 [격리 snapshot](#수동-snapshot)으로 보관한다. 집계가 비어 있어도 중앙 정산과 새 배포의 실제 신원·권한 확인은 남는다. 팀 저장소와 실제 Pi에서의 전환 시험은 대기 중이다.
+
+#### 새 배포 DB에 CORE 순번 이어받기
+
+`plan-cutover`가 `use-new-database`를 보고하고 후보 설정에도 등록된 키링의 CORE 순번이 있으면, 원본 Gateway를 중지한 유지보수 창에서 새 DB를 준비한다. Gateway 0.2.120은 Gateway ID가 바뀌는 경우에도 같은 키링의 순번을 이어받는다. CORE v1의 중복 기준은 `deviceId:sequence`다. 기존 배포에서 새 CORE 범위와 겹치는 전송을 먼저 확인한다. 새 DB의 상위 디렉터리는 Gateway 계정이 쓸 수 있어야 한다.
+
+```sh
+sudo -u bubble-gateway /opt/bubble_lock/keyring/raspberry-pi-gateway/.venv/bin/bubble-gateway-state prepare-cutover \
+  --env-file /etc/privacy-bubble/gateway.env \
+  --target-env-file /etc/privacy-bubble/gateway-next.env
+```
+
+이 명령은 양쪽 데몬 잠금을 확인하고 새 binding의 DB에 유지할 장치별 마지막 할당 순번만 기록한다. 다음 관측은 그 순번에 1을 더해 전송된다. 후보 설정에서 CORE가 꺼져 있어도 나중에 켤 때를 위해 순번을 보존한다. 새 설정과 같은 범위에 원본 CORE 관측이 대기 중이거나 활성 후보 장치의 순번을 소진했으면 중단한다. 대기열·명령·영수증·권한 기록은 원래 배포 DB에 남는다.
+
+새 DB 준비는 전환 전 로컬 작업이다. 준비한 뒤 대상 환경으로 `--check-config`를 수행한다. Gateway 0.2.121의 `--check-cse-routes`는 같은 DB binding을 먼저 확인하고, 대상 CSE의 관측·health와 명령이 활성화된 경우의 영수증 컨테이너를 HTTPS GET으로 대조한다. 중앙 API가 준비되면 `--check-command-route`로 중앙 자격과 활성 명령도 확인한다. CSE 점검의 성공은 설정한 컨테이너를 조회했다는 뜻이다. MQTT 전달과 CREATE 권한은 별도 통합시험에서 확인한다. 새 Gateway가 관측을 전송하기 시작하면 같은 CORE 범위로 이전 Gateway를 다시 시작하기 전에 팀과 현재 순번 및 소유권을 대조한다.
+
+### 기존 배포의 명령과 키링 저널 대조
+
+Gateway 0.2.77의 `bubble-keyring-reconcile`은 전체 기기 비교에서 키링 보관본에 없는 Gateway 명령도 확인한다. 원본 배포 환경 파일과 같은 기기의 키링 저널, 격리 SQLite snapshot을 지정한다. 기존 Mobius4에 연결할 수 없는 경우 보관본만 비교한다.
+
+```sh
+bubble-keyring-reconcile --archive-only --env-file gateway-old.env \
+  --gateway-archive /path/to/gateway-archive --device-archive /path/to/device-archive
+```
+
+원래 환경 파일의 TLS 경로 선언은 유지할 수 있으며 보관본 비교에는 실제 인증서와 개인키가 필요 없다. `deviceComparison`은 키링 기록과 Pi 영수증의 대조 결과다. 이 모드에서 Mobius4 영수증은 `nativeReceiptSource: not-checked`로 남는다. `gatewayOnlyPending`은 키링 저널에 없는 해당 기기의 수신·dispatch 중 명령과 미전달 native·중앙 영수증을 보여준다. `count`에는 전체 건수, `commands`에는 최대 128개 명령 ID·payload hash·로컬 상태가 들어가며 전체 건수가 `reviewCount`에 포함된다. 이 결과만으로 명령이 장치에 전달됐는지나 중앙에서 정산됐는지 판정할 수 없다. 출력은 기기 명령 식별자를 포함하므로 원본 보관본과 함께 보관한다.
+
+`gatewayOnlyPending.commands`의 `DISPATCHING` 행은 `bleFinalWriteMayHaveStarted`에 미시도 `false`, 전송 가능 `true`, 기록 없음 `null`을 표시한다. `true`인 명령은 기기·CSE·중앙 기록을 대조해 실제 전달 여부를 확인한다. 각 행은 원래 검토 건수에 포함된다.
+
+Gateway 0.2.95에서 위 `--archive-only` 명령에 `--team-state /path/to/runtime.json`을 추가하면 같은 원래 배포에서 보관한 중앙 정산 기록도 읽는다. `gatewayOnlyPending.commands[].centralReceipt`에는 명령과 영수증 본문·해시·claim·소유권 epoch가 팀의 `GATEWAY_RECEIPT_SETTLED` 이벤트와 일치하는지 표시한다. 일치하면 중앙 실행 상태와 이벤트 ID를 출력한다. Pi 영수증, 중앙 명령, 중앙 영수증이 각각 빠진 경우와 기록 불일치도 구분한다. 이 옵션은 네트워크 없이 보관본을 비교하며 검토 대상 건수를 유지한다.
+
+기존 CSE를 읽을 수 있으면 Gateway 0.2.78의 `--check-gateway-only-native`를 사용한다. 원래 배포 환경 파일의 `M2M_RECEIPT_CONTAINER_RI`와 mTLS 설정을 사용하며 프로세스 환경 변수는 가져오지 않는다.
+
+```sh
+bubble-keyring-reconcile --check-gateway-only-native --env-file gateway-old.env \
+  --gateway-archive /path/to/gateway-archive --device-archive /path/to/device-archive
+```
+
+격리 SQLite의 로컬 명령·영수증을 확인하고 기존 CSE 컨테이너 ID를 검증한 뒤 원래 요청 ID로 각 `contentInstance`를 조회한다. `gatewayOnlyPending.commands[].nativeReceipt`에 일치, 본문 불일치, 로컬 또는 CSE 영수증 누락을 기록한다. 읽어온 원본 ID와 시각은 본문 해시와 함께 남긴다. 일치한 행도 `reviewCount`에 남으며 기존 Pi 전달 상태와 중앙 정산은 이 명령에서 변경하지 않는다.
 
 ## 수동 snapshot
 
@@ -96,7 +181,9 @@ sudo -u bubble-gateway /opt/bubble_lock/keyring/raspberry-pi-gateway/.venv/bin/b
 - outbox의 실제 oneM2M receipt·dedup 상태와 CORE sequence의 현재 상한. 오래된 sequence를 새 상태로 사용하지 않음.
 - checkpoint 검증/적용/활성화 사이 crash·재시도·rollback 처리 및 signed/인증된 복구 승인 계약.
 
-원래 DB를 그대로 재시작하는 기존 경로는 유지한다. DISPATCHING이 남아 있으면 기존 service가 INDETERMINATE receipt를 만들고 동작을 재실행하지 않는다. 새 백업을 활성 상태로 가장하지 않는다.
+Gateway 0.2.93은 원래 DB로 재시작할 때 `DISPATCHING`의 마지막 BLE 조각 기록을 확인한다. 실행 의도 트랜잭션은 `ble_final_write_started=0`을 저장한다. 마지막 조각을 보내기 전 별도 트랜잭션에서 값을 `1`로 바꾸고, 커밋이 끝난 뒤 권한과 전송 기한을 다시 확인한다.
+
+재시작 시 값이 `0`이면 `REJECTED / DISPATCH_NOT_SENT`를 남긴다. 값이 `1`이면 마지막 조각이 전달됐을 가능성이 있으므로 `INDETERMINATE / RESTART_INTERRUPTED`를 남긴다. 열이 없던 DB의 기존 행은 업그레이드 후에도 `null`이며 같은 미확정 경로를 사용한다. 명령은 재시작에서 자동으로 재실행하지 않는다. 보관본의 활성화 조건은 위 절차를 따른다.
 
 ## 인수 항목의 현재 증거
 

@@ -6,3 +6,5 @@ export const scopedCommandReceiptContainers = Object.freeze({
 });
 
 export const scopedFeatherCommandObservationContainer = '/Mobius/privacy-bubble-test-ae/command-observations-a';
+export const scopedR18CommandObservationContainer = '/Mobius/privacy-bubble-test-ae/command-observations-b';
+export const scopedR18CommandHealthContainer = '/Mobius/privacy-bubble-test-ae/command-health-b';

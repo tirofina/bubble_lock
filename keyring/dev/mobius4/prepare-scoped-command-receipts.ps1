@@ -1,7 +1,12 @@
-param([switch]$FeatherObservationsOnly, [switch]$PinReceiptRoutes)
+param([switch]$FeatherObservationsOnly, [switch]$R18TelemetryOnly,
+  [switch]$PinReceiptRoutes, [switch]$PinObservationRoute, [switch]$PinR18ObservationRoute, [switch]$PinR18HealthRoute,
+  [switch]$PrepareR18Mqtt)
 
 $ErrorActionPreference = 'Stop'
-if ($FeatherObservationsOnly -and $PinReceiptRoutes) { throw 'Select one scoped operation.' }
+$selectedOperations = @($FeatherObservationsOnly, $R18TelemetryOnly, $PinReceiptRoutes,
+  $PinObservationRoute, $PinR18ObservationRoute, $PinR18HealthRoute, $PrepareR18Mqtt) | Where-Object { $_.IsPresent }
+if (@($selectedOperations).Count -gt 1) { throw 'Select one scoped operation.' }
+$pinning = $PinReceiptRoutes -or $PinObservationRoute -or $PinR18ObservationRoute -or $PinR18HealthRoute -or $PrepareR18Mqtt
 $environmentPath = Join-Path $PSScriptRoot '.local/scoped/compose.env'
 if (-not (Test-Path -LiteralPath $environmentPath)) { throw 'Run prepare-scoped.ps1 first.' }
 foreach ($key in @('MOBIUS4_ROOT', 'SCOPED_TEAM_STORE', 'DB_PW', 'CSE_ADMIN', 'KEYRING_CSE_TLS_PORT', 'KEYRING_MQTT_TLS_PORT')) {
@@ -16,15 +21,32 @@ try {
   if ($LASTEXITCODE -ne 0 -or $running -notcontains 'postgres' -or $running -notcontains 'mobius4') {
     throw 'Start the scoped database and CSE before preparing command resources.'
   }
-  if ($PinReceiptRoutes) {
-    if ($running -notcontains 'tls') { throw 'Start the scoped TLS proxy before pinning existing receipt routes.' }
-    node (Join-Path $PSScriptRoot 'bootstrap.mjs') --scoped-pin-command-receipts
-    if ($LASTEXITCODE -ne 0) { throw 'Scoped receipt pinning stopped before TLS refresh.' }
+  if ($pinning) {
+    if ($running -notcontains 'tls') { throw 'Start the scoped TLS proxy before pinning existing routes.' }
+    $pinScope = if ($PrepareR18Mqtt) {
+      '--scoped-prepare-r18-mqtt'
+    } elseif ($PinObservationRoute) {
+      '--scoped-pin-command-observation'
+    } elseif ($PinR18ObservationRoute) {
+      '--scoped-pin-r18-observation'
+    } elseif ($PinR18HealthRoute) {
+      '--scoped-pin-r18-health'
+    } else {
+      '--scoped-pin-command-receipts'
+    }
+    node (Join-Path $PSScriptRoot 'bootstrap.mjs') $pinScope
+    if ($LASTEXITCODE -ne 0) { throw 'Scoped resource pinning stopped before TLS refresh.' }
   }
   docker compose @compose up -d --no-deps --no-build --pull never --force-recreate --wait --wait-timeout 30 tls
   if ($LASTEXITCODE -ne 0) { throw 'Scoped TLS route refresh failed.' }
-  if ($PinReceiptRoutes) { return }
-  $scope = if ($FeatherObservationsOnly) { '--scoped-feather-command-observation' } else { '--scoped-command-receipts' }
+  if ($pinning) { return }
+  $scope = if ($FeatherObservationsOnly) {
+    '--scoped-feather-command-observation'
+  } elseif ($R18TelemetryOnly) {
+    '--scoped-r18-telemetry'
+  } else {
+    '--scoped-command-receipts'
+  }
   node (Join-Path $PSScriptRoot 'bootstrap.mjs') $scope
   if ($LASTEXITCODE -ne 0) { throw 'Scoped command resource provisioning stopped. Existing CSE data was retained.' }
 } finally {

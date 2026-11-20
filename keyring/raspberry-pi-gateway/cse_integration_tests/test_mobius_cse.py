@@ -254,11 +254,13 @@ class MobiusCseTests(unittest.IsolatedAsyncioTestCase):
         frame = dict(version=1, deviceId="kr-test", bootId="boot-test", sequence=4, uptimeMs=150,
                      battery=None, buttonState="released", sensorValues={"buttonPresses": [1, 2]}, state=False)
         fleet._queue_observation(peer, frame)
-        normalized = peer.observations.get_nowait()
-        await gateway.observation(normalized)
+        normalized, uptime = peer.observations.get_nowait()
+        await gateway.observation(normalized, uptime)
         rqi = self.queued(store)["rqi"]
         store.close()
         store = reopen()
+        self.assertEqual(store.observation_heads(include_button_presses=True, include_device_uptime=True),
+                         {"kr-test": ("boot-test", 4, (1, 2), 150)})
         self.assertEqual(await self.drain_due(store), {"published": 1})
         result = (await self.stored(rqi))["con"]
         self.assertEqual(result, normalized)

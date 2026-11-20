@@ -25,6 +25,13 @@
 #include "peripherals.h"
 #include "supply_monitor.h"
 #include "headphone_standby.h"
+#if defined(KEYRING_R26_OTA)
+#include "r26_ota.h"
+#endif
+#if KEYRING_R18_BRINGUP
+#include <esp_ota_ops.h>
+#include <esp_partition.h>
+#endif
 
 static bool journalNvsNeedsRecovery = false;
 extern "C" esp_err_t __real_nvs_flash_init();
@@ -41,9 +48,41 @@ extern "C" esp_err_t __wrap_nvs_flash_init() {
 
 namespace {
 #if KEYRING_R18_BRINGUP
-constexpr char FirmwareRevision[] = "keyring-0.7.13-bringup";
+#if KEYRING_R18_BRINGUP_DISPLAY == 1
+#if defined(KEYRING_R26_FRONT)
+#if defined(KEYRING_R26_OTA)
+constexpr char FirmwareRevision[] = "keyring-0.7.31-r26-st7789-ota";
 #else
-constexpr char FirmwareRevision[] = "keyring-0.7.13";
+constexpr char FirmwareRevision[] = "keyring-0.7.31-r26-st7789-bringup";
+#endif
+#else
+constexpr char FirmwareRevision[] = "keyring-0.7.25-st7789-bringup";
+#endif
+constexpr char BringupPanelField[] = " panel=st7789";
+#elif KEYRING_R18_BRINGUP_DISPLAY == 2
+constexpr char FirmwareRevision[] = "keyring-0.7.25-jd9853-bringup";
+constexpr char BringupPanelField[] = " panel=jd9853";
+#else
+constexpr char FirmwareRevision[] = "keyring-0.7.25-bringup";
+constexpr char BringupPanelField[] = "";
+#endif
+char bringupBootRecord[320] = {};
+
+void readRunningImageDigest(char (&hex)[65]) {
+  uint8_t digest[32];
+  const esp_partition_t *running = esp_ota_get_running_partition();
+  if (!running || esp_partition_get_sha256(running, digest) != ESP_OK) return;
+  constexpr char digits[] = "0123456789abcdef";
+  for (size_t index = 0; index < sizeof(digest); ++index) {
+    hex[index * 2] = digits[digest[index] >> 4];
+    hex[index * 2 + 1] = digits[digest[index] & 0x0f];
+  }
+  hex[64] = '\0';
+}
+#elif KEYRING_ENABLE_SLEEP
+constexpr char FirmwareRevision[] = "keyring-0.7.25-sleep";
+#else
+constexpr char FirmwareRevision[] = "keyring-0.7.25";
 #endif
 constexpr bool ObservationOnly = KEYRING_R18_BRINGUP != 0;
 #if defined(KEYRING_LEGACY_GATT) && KEYRING_LEGACY_GATT
@@ -86,6 +125,7 @@ volatile uint32_t connectionGeneration = 0;
 uint8_t peerAddress[6] = {};
 uint16_t peerConnection = 0;
 uint16_t peerMtu = 23; // Protected by linkMux.
+esp_gatt_if_t gattInterface = ESP_GATT_IF_NONE; // Protected by linkMux.
 portMUX_TYPE linkMux = portMUX_INITIALIZER_UNLOCKED;
 uint32_t maxEpoch = 0, maxGrant = 0, sequence = 0;
 uint64_t motorStopAt = 0, lastObservation = 0;
@@ -250,8 +290,10 @@ void loadJournal() {
 }
 
 void output(int pin, int level) { digitalWrite(pin, level); pinMode(pin, OUTPUT); }
-bool readState() { return gpio_get_level(static_cast<gpio_num_t>(board::Motor)) != 0; }
+bool readState() { return !board::FrontAssembly && gpio_get_level(static_cast<gpio_num_t>(board::Motor)) != 0; }
+bool mainFaultActive() { return !board::FrontAssembly && digitalRead(board::MainFaultN) == LOW; }
 void stopMotor() {
+  if (board::FrontAssembly) return;
   gpio_set_level(static_cast<gpio_num_t>(board::Motor), 0);
   audio.stop();
   auxRail::alert(false);
@@ -277,6 +319,7 @@ bool motorGateOpen(uint32_t generation, uint32_t subscription, uint64_t stopAtUs
   // Caller holds linkMux, shared with disconnect and timer expiry.
   return commandChannelOpen(generation, subscription) && !motorTimerFired &&
       gpio_get_level(static_cast<gpio_num_t>(board::MainFaultN)) != 0 &&
+      !auxRail::alertInterrupted() &&
       static_cast<uint64_t>(esp_timer_get_time()) < stopAtUs;
 }
 bool startMotor(uint64_t commandDeadlineUs, uint32_t generation, uint32_t subscription) {
@@ -300,12 +343,21 @@ bool startMotor(uint64_t commandDeadlineUs, uint32_t generation, uint32_t subscr
   return started;
 }
 void safePins() {
+  if (board::FrontAssembly) {
+    output(board::LcdBacklight, HIGH);
+    gpio_set_direction(static_cast<gpio_num_t>(board::LcdBacklight), GPIO_MODE_INPUT_OUTPUT);
+    output(board::LcdCs, HIGH);
+    pinMode(board::Confirm, INPUT_PULLUP);
+    pinMode(board::Panic, INPUT_PULLUP);
+    return;
+  }
   output(board::Motor, LOW);
   gpio_set_direction(static_cast<gpio_num_t>(board::Motor), GPIO_MODE_INPUT_OUTPUT);
   output(board::AuxEnable, LOW);
   gpio_set_direction(static_cast<gpio_num_t>(board::AuxEnable), GPIO_MODE_INPUT_OUTPUT);
   output(board::AmpMute, HIGH);
   output(board::LcdBacklight, HIGH);
+  gpio_set_direction(static_cast<gpio_num_t>(board::LcdBacklight), GPIO_MODE_INPUT_OUTPUT);
   output(board::UsbEn1, LOW); // USB100. This firmware never opts into USB500.
   output(board::UsbEn2, LOW);
   output(board::LcdCs, HIGH);
@@ -367,6 +419,7 @@ struct Sensors {
   float battery = 0, volts = 0, xyz[3] = {};
 } sensors;
 void recoverAccelerometer(uint64_t now) {
+  if (board::FrontAssembly) return;
   if ((accelReady && motion.ready()) || now < nextAccelRetry) return;
   const bool configureAxes = !accelReady;
   if (configureAxes) accelReady = configureAccelerometer();
@@ -375,6 +428,7 @@ void recoverAccelerometer(uint64_t now) {
   if ((configureAxes && accelReady) || motionRestored) observationDirty = true;
 }
 void sampleSensors() {
+  if (board::FrontAssembly) { lastSensorRead = uptime(); return; }
   uint8_t data[6] = {};
   sensors.fuel = readRegisters(board::FuelAddress, 0x02, data, 4);
   if (sensors.fuel) {
@@ -418,14 +472,33 @@ struct Tx {
   uint32_t queuedGeneration = 0, queuedSubscription = 0;
   std::string pending, active;
   GattReadValue readValue;
-  std::string sections[3];
-  uint64_t sectionOrder[3] = {}, enqueueOrder = 0;
+  struct ObservationFrame {
+    std::string data;
+    uint64_t order = 0;
+  };
+  static constexpr unsigned ButtonQueueCapacity = 8;
+  ObservationFrame sections[3], buttonQueue[ButtonQueueCapacity];
+  unsigned buttonHead = 0, buttonCount = 0;
+  uint64_t enqueueOrder = 0;
+  bool observationReadStarted = false; // Protected by linkMux.
+  uint32_t observationWindow = 0, activeObservationWindow = 0; // The callback owns observationWindow.
   size_t offset = 0;
   uint64_t nextAt = 0;
   void setSubscribed(bool enabled) { // Caller holds linkMux.
+    if (!scopedReceipt && !enabled && (subscribed || observationReadStarted)) {
+      observationReadStarted = false;
+      ++observationWindow;
+    }
     if (subscribed != enabled) {
       subscribed = enabled; ++subscription;
       if (scopedReceipt) readValue.reset();
+    }
+  }
+  void startObservationRead() { // Caller holds linkMux.
+    if (!subscribed) {
+      // Offset zero freezes a new baseline. Later transitions belong to this read.
+      observationReadStarted = true;
+      ++observationWindow;
     }
   }
   void queueReceipt(const std::string &frame, uint32_t generation, uint32_t subscriptionId) {
@@ -436,47 +509,79 @@ struct Tx {
     if (!current) return;
     pending = frame; queuedGeneration = generation; queuedSubscription = subscriptionId;
   }
-  void queueSection(uint8_t section, const std::string &frame) {
-    sections[section] = frame; sectionOrder[section] = ++enqueueOrder;
-    setGattReadValue(readValue, frame);
+  void resetObservationQueue(uint32_t window) {
+    activeObservationWindow = window;
+    active.clear(); offset = 0; nextAt = 0;
+    for (auto &section : sections) section.data.clear();
+    for (auto &button : buttonQueue) button.data.clear();
+    buttonHead = 0; buttonCount = 0; enqueueOrder = 0;
+  }
+  void queueSection(uint8_t section, const std::string &frame, bool buttonTransition) {
+    portENTER_CRITICAL(&linkMux);
+    readValue.replace(frame.data(), frame.size());
+    const bool eligible = connected && authenticated &&
+        (subscribed || (observationReadStarted && buttonTransition));
+    const uint32_t window = observationWindow;
+    portEXIT_CRITICAL(&linkMux);
+    if (activeObservationWindow != window) resetObservationQueue(window);
+    if (!eligible) return;
+    ObservationFrame *target = &sections[section];
+    if (buttonTransition) {
+      // Preserve the oldest waiting edges and the latest state when the bounded queue fills.
+      if (buttonCount < ButtonQueueCapacity) ++buttonCount;
+      const unsigned tail = (buttonHead + buttonCount - 1) % ButtonQueueCapacity;
+      target = &buttonQueue[tail];
+    }
+    target->data = frame;
+    target->order = ++enqueueOrder;
   }
   void clear() {
-    pending.clear(); active.clear(); offset = 0; nextAt = 0;
-    for (unsigned i = 0; i < 3; ++i) { sections[i].clear(); sectionOrder[i] = 0; }
+    pending.clear();
+    resetObservationQueue(activeObservationWindow);
     setGattReadValue(readValue, {});
   }
   void tick(uint64_t now) {
     portENTER_CRITICAL(&linkMux);
     const bool ready = connected && authenticated && subscribed;
     const uint16_t connection = peerConnection;
+    const auto interfaceId = gattInterface;
     const uint32_t generation = connectionGeneration;
     const uint32_t currentSubscription = subscription;
+    const uint32_t window = observationWindow;
     portEXIT_CRITICAL(&linkMux);
     if (scopedReceipt && (queuedGeneration != generation || queuedSubscription != currentSubscription)) {
       pending.clear(); active.clear(); offset = 0;
     }
-    if (activeSubscription != currentSubscription) { offset = 0; activeSubscription = currentSubscription; }
+    if (scopedReceipt && activeSubscription != currentSubscription) {
+      offset = 0; activeSubscription = currentSubscription;
+    }
+    if (!scopedReceipt && activeObservationWindow != window) resetObservationQueue(window);
     if (!ready || now < nextAt) return;
     if (active.empty()) {
       active.swap(pending); offset = 0;
       if (active.empty()) {
-        // Select by publication order, never round-robin older sequence frames
-        // after newer ones. Replacements retain the newest value for each detail.
-        int selected = -1;
-        for (unsigned i = 0; i < 3; ++i)
-          if (!sections[i].empty() && (selected < 0 || sectionOrder[i] < sectionOrder[selected])) selected = i;
-        if (selected >= 0) { active.swap(sections[selected]); sectionOrder[selected] = 0; }
+        // The Gateway drops observations older than its current sequence.
+        auto *button = buttonCount ? &buttonQueue[buttonHead] : nullptr;
+        auto *selected = button;
+        for (auto &section : sections)
+          if (!section.data.empty() && (!selected || section.order < selected->order)) selected = &section;
+        if (selected) {
+          active.swap(selected->data);
+          if (selected == button) {
+            buttonHead = (buttonHead + 1) % ButtonQueueCapacity;
+            --buttonCount;
+          }
+        }
       }
     }
     if (active.empty()) return;
     const auto count = static_cast<uint16_t>(min(static_cast<size_t>(20), active.size() - offset));
-    const auto interfaceId = static_cast<esp_gatt_if_t>(server->getGattsIf());
-    if (scopedReceipt) {
-      portENTER_CRITICAL(&linkMux);
-      const bool current = commandChannelOpen(queuedGeneration, queuedSubscription);
-      portEXIT_CRITICAL(&linkMux);
-      if (!current) return;
-    }
+    portENTER_CRITICAL(&linkMux);
+    const bool current = scopedReceipt ? commandChannelOpen(queuedGeneration, queuedSubscription) :
+        connected && authenticated && subscribed && connectionGeneration == generation &&
+        subscription == currentSubscription && observationWindow == window;
+    portEXIT_CRITICAL(&linkMux);
+    if (!current) return;
     nextAt = now + 15;
     if (interfaceId == ESP_GATT_IF_NONE ||
         esp_ble_gatts_send_indicate(interfaceId, connection, characteristic->getHandle(), count,
@@ -498,11 +603,11 @@ bool commandChannelReady(const Frame &frame) {
   return ready;
 }
 
-void publishObservation() {
+void publishObservation(bool buttonTransition = false) {
   StaticJsonDocument<1536> doc;
   const uint32_t observationSequence = sequence++;
   const uint64_t now = uptime();
-  const bool outputState = readState(), fault = digitalRead(board::MainFaultN) == LOW;
+  const bool outputState = readState(), fault = mainFaultActive();
   const uint8_t section = detailSection; detailSection = (detailSection + 1) % 3;
   const char *detail = section == 0 ? "sensors" : section == 1 ? "energy" : "health";
   auto base = [&]() -> JsonObject {
@@ -524,6 +629,15 @@ void publishObservation() {
     values["wakePins"] = powerState::wakePins();
     values["power"] = powerState::status();
   };
+#if KEYRING_R18_BRINGUP_DISPLAY
+  auto appendDisplayTest = [](JsonObject values) {
+    const auto display = peripherals.displayTest();
+    values["display"] = display.status;
+    JsonArray presses = values.createNestedArray("displayDrawnPresses");
+    presses.add(display.confirmPress);
+    presses.add(display.panicPress);
+  };
+#endif
   JsonObject values = base();
   if (section == 0) {
     values["batteryStatus"] = sensors.fuel ? "ok" : "unavailable";
@@ -547,6 +661,10 @@ void publishObservation() {
       for (const char *key : {"busVoltageMv", "currentUa", "loadPowerUw", "shuntVoltageUv", "readUptimeMs"}) monitor[key] = nullptr;
     }
   } else {
+#if KEYRING_R18_BRINGUP_DISPLAY
+    appendWake(values);
+    appendDisplayTest(values);
+#else
     unsigned used = 0, prepared = 0;
     for (unsigned slot = 0; slot < JournalSlots; ++slot) if (occupied[slot]) {
       ++used; if (journal[slot].phase == Prepared) ++prepared;
@@ -559,15 +677,18 @@ void publishObservation() {
     values["headphone"] = headphone.status();
     values["display"] = peripherals.displayStatus(); values["sd"] = peripherals.sdStatus();
     values["sdDropped"] = peripherals.droppedLogs();
+#endif
   }
   std::string frame = jsonText(doc);
   if (frame.size() > 512 && !doc.overflowed()) {
     // Sensor detail is optional; identity/battery/button/output stay in every frame.
     values.remove("accelerationG"); values.remove("voltage");
     values.remove("batteryStatus"); values.remove("accelStatus");
+#if !KEYRING_R18_BRINGUP_DISPLAY
     if (section == 2) {
       values.remove("audio"); values.remove("display"); values.remove("sdDropped");
     }
+#endif
     values["truncated"] = true;
     frame = jsonText(doc);
   }
@@ -575,12 +696,17 @@ void publishObservation() {
     // Keep identity, sequence, buttons, state and uptime. Do not invent readings
     // when the full sensor object exceeds the READ attribute budget.
     values = base(); values["status"] = "payload_too_large";
-    if (section == 2) appendWake(values);
+    if (section == 2) {
+      appendWake(values);
+#if KEYRING_R18_BRINGUP_DISPLAY
+      appendDisplayTest(values);
+#endif
+    }
     frame = jsonText(doc);
   }
   // Enforce the wire bound at runtime even if a future identity/field expansion
   // also makes the minimal observation too large.
-  if (frame.size() <= 512 && !doc.overflowed()) observationTx.queueSection(section, frame);
+  if (frame.size() <= 512 && !doc.overflowed()) observationTx.queueSection(section, frame, buttonTransition);
   observationDirty = false; lastObservation = uptime();
 }
 
@@ -663,7 +789,11 @@ void processCommand(const Frame &frame) {
   if (desired && !startMotor((frame.firstAt + remaining) * 1000, frame.generation, frame.subscription)) {
     stopMotor(); publishReceipt(frame, id, hash, "INDETERMINATE", &r); return;
   }
-  r.appliedAt = uptime(); r.readback = readState(); r.phase = Completed;
+  r.appliedAt = uptime(); r.readback = readState();
+  if (desired && auxRail::alertInterrupted()) {
+    stopMotor(); publishReceipt(frame, id, hash, "INDETERMINATE", &journal[freeSlot]); return;
+  }
+  r.phase = Completed;
   r.result = static_cast<uint8_t>(r.readback == r.desired ? Result::Applied : Result::ReadbackMismatch);
   if (r.readback != r.desired) stopMotor();
   if (!storeRecord(freeSlot, r)) {
@@ -671,7 +801,7 @@ void processCommand(const Frame &frame) {
     // Keep the last verified PREPARED copy in RAM. The flash result is uncertain.
     publishReceipt(frame, id, hash, "INDETERMINATE", &journal[freeSlot]); return;
   }
-  if (desired && commandChannelReady(frame) &&
+  if (desired && commandChannelReady(frame) && !auxRail::alertInterrupted() &&
       r.result == static_cast<uint8_t>(Result::Applied) && readState())
     audio.startUntil(motorStopAt);
   publishReceipt(frame, id, hash, r.result == static_cast<uint8_t>(Result::Applied) ? "APPLIED" : "READBACK_MISMATCH", &r);
@@ -834,6 +964,8 @@ bool handleProtectedGattRead(esp_gatt_if_t interfaceId, const esp_ble_gatts_cb_p
     const bool ok = value->chunk(connectionGeneration, request.offset, peerMtu - 1,
                                  response.attr_value.value, response.attr_value.len);
     status = ok ? ESP_GATT_OK : ESP_GATT_INVALID_OFFSET;
+    if (ok && request.offset == 0 && response.attr_value.len && value == &observationTx.readValue)
+      observationTx.startObservationRead();
   }
   portEXIT_CRITICAL(&linkMux);
   esp_ble_gatts_send_response(interfaceId, request.conn_id, request.trans_id, status, &response);
@@ -842,6 +974,12 @@ bool handleProtectedGattRead(esp_gatt_if_t interfaceId, const esp_ble_gatts_cb_p
 
 esp_gatts_cb_t arduinoGattEvents = nullptr;
 void dispatchGattEvents(esp_gatts_cb_event_t event, esp_gatt_if_t interfaceId, esp_ble_gatts_cb_param_t *param) {
+  if (event == ESP_GATTS_REG_EVT && param->reg.status == ESP_GATT_OK) {
+    // The firmware creates one GATT server. Its public registration event carries the interface.
+    portENTER_CRITICAL(&linkMux);
+    if (gattInterface == ESP_GATT_IF_NONE) gattInterface = interfaceId;
+    portEXIT_CRITICAL(&linkMux);
+  }
   if (event == ESP_GATTS_READ_EVT && handleProtectedGattRead(interfaceId, *param)) return;
   arduinoGattEvents(event, interfaceId, param);
 }
@@ -980,11 +1118,14 @@ void considerSleep(uint64_t now) {
 
 void setup() {
   safePins();
-  powerState::begin(); // Release sleep holds after writing safe output latches.
+  if (!board::FrontAssembly) powerState::begin(); // Release sleep holds after writing safe output latches.
   safePins();
   Serial.begin(115200); // Native USB CDC only; GPIO43 is reserved for LCD reset.
   if (journalNvsNeedsRecovery) {
     Serial.println("KEYRING LOCKED: default NVS needs recovery; command journal preserved.");
+#if defined(KEYRING_R26_OTA)
+    r26ota::rejectPending();
+#endif
     return;
   }
   uint64_t mac = ESP.getEfuseMac();
@@ -996,9 +1137,11 @@ void setup() {
   snprintf(bootId, sizeof(bootId), "%08lx%08lx%08lx%08lx", static_cast<unsigned long>(esp_random()),
       static_cast<unsigned long>(esp_random()), static_cast<unsigned long>(esp_random()), static_cast<unsigned long>(esp_random()));
   if (!ObservationOnly) loadJournal();
-  initSensors();
-  headphone.begin(readRegisters, writeRegister);
-  supply.begin(readRegisters, writeRegister16);
+  if (!board::FrontAssembly) {
+    initSensors();
+    headphone.begin(readRegisters, writeRegister);
+    supply.begin(readRegisters, writeRegister16);
+  }
   recoverAccelerometer(uptime());
   if (!ObservationOnly) {
     esp_timer_create_args_t timerArgs = {};
@@ -1011,24 +1154,52 @@ void setup() {
       && (ObservationOnly || (commandQueue && journalRequests));
   if (!provisioned) {
     Serial.println("KEYRING LOCKED: set a per-device passkey and valid identity before enabling BLE.");
+#if defined(KEYRING_R26_OTA)
+    r26ota::rejectPending();
+#endif
     return;
   }
   initializeAudioWhenQuiet(); // I2S installation also waits for the other receiver's quiet state.
-  if (!ObservationOnly) auxRail::begin();
+  if (!ObservationOnly || KEYRING_R18_BRINGUP_DISPLAY) auxRail::begin();
   peripherals.begin();
-  initBle(); sampleSensors(); publishObservation();
+  sampleSensors(); publishObservation(); // Freeze a readable observation before advertising.
+  initBle();
+#if defined(KEYRING_R26_OTA)
+  r26ota::begin([]() { return strcmp(peripherals.displayStatus(), "st7789_unverified") == 0; });
+#endif
   Serial.printf("KEYRING ready: %s, storage=%s, radioSleep=%s\n", deviceId,
       ObservationOnly ? "disabled" : storageHealthy ? "ready" : "error",
       radioSleepEnabled ? "enabled" : "unavailable");
-  if (ObservationOnly) {
-    Serial.printf("KEYRING bringup: motor=%d aux=%d fault=%d fuel=%s accel=%s motion=%s\n",
-        static_cast<int>(readState()), gpio_get_level(static_cast<gpio_num_t>(board::AuxEnable)),
-        digitalRead(board::MainFaultN) == LOW, sensors.fuel ? "ok" : "unavailable",
-        sensors.accel ? "ok" : "unavailable", motion.ready() ? "ready" : "unavailable");
+#if KEYRING_R18_BRINGUP
+  // Retain the initial readbacks even if the USB console attaches after setup.
+  const int motor = readState();
+  const int aux = !board::FrontAssembly && gpio_get_level(static_cast<gpio_num_t>(board::AuxEnable));
+  const int fault = mainFaultActive();
+  char imageDigest[65] = "unavailable";
+  readRunningImageDigest(imageDigest);
+  const int length = snprintf(bringupBootRecord, sizeof(bringupBootRecord),
+      "KEYRING bringup: board=%s firmware=%s boot=%s motor=%d aux=%d fault=%d fuel=%s accel=%s motion=%s%s appSha256=%s",
+      board::Revision, FirmwareRevision, bootId, motor, aux, fault, sensors.fuel ? "ok" : "unavailable",
+      sensors.accel ? "ok" : "unavailable", motion.ready() ? "ready" : "unavailable", BringupPanelField, imageDigest);
+  if (length > 0 && static_cast<size_t>(length) < sizeof(bringupBootRecord)) {
+    Serial.println(bringupBootRecord);
+  } else {
+    bringupBootRecord[0] = '\0';
   }
+#endif
 }
 void loop() {
   if (!provisioned) { delay(100); return; }
+#if KEYRING_R18_BRINGUP
+  if (Serial.available() > 0 && Serial.read() == '?' && bringupBootRecord[0] != '\0') {
+    Serial.println(bringupBootRecord);
+    if (board::FrontAssembly) {
+      const auto screen = peripherals.displayTest();
+      Serial.printf("KEYRING display=%s confirmDrawn=%lu panicDrawn=%lu\n", screen.status,
+                    static_cast<unsigned long>(screen.confirmPress), static_cast<unsigned long>(screen.panicPress));
+    }
+  }
+#endif
   uint64_t now = uptime();
   if (headphone.poll(now)) observationDirty = true;
   if (!headphone.speakerAllowed()) audio.stop();
@@ -1050,12 +1221,29 @@ void loop() {
   motorTimerFired = false;
   portEXIT_CRITICAL(&linkMux);
   if (motorExpiredNow || (motorStopAt && now >= motorStopAt) ||
-      (!authenticated && readState()) || (digitalRead(board::MainFaultN) == LOW && readState())) {
+      (!ObservationOnly && auxRail::alertInterrupted()) ||
+      (!authenticated && readState()) || (mainFaultActive() && readState())) {
     stopMotor();
   }
+  const bool previousPanic = panic.pressed;
+  const bool previousConfirm = confirm.pressed && !previousPanic;
   bool changedConfirm = confirm.update(now), changedPanic = panic.update(now);
-  buttonPresses.record(changedConfirm && confirm.pressed, changedPanic && panic.pressed, panic.pressed);
-  if ((changedConfirm && confirm.pressed) || (changedPanic && panic.pressed)) peripherals.show();
+  const bool buttonTransition = previousPanic != panic.pressed ||
+      previousConfirm != (confirm.pressed && !panic.pressed);
+  const bool pressedButton = buttonPresses.record(changedConfirm && confirm.pressed,
+                                                  changedPanic && panic.pressed, panic.pressed);
+  bool requestDisplay = KEYRING_DISPLAY_PROFILE && pressedButton && !mainFaultActive();
+#if defined(KEYRING_R26_OTA)
+  const uint8_t wifiLevel = r26ota::wifiLevel();
+  static uint8_t displayedWifiLevel = 255;
+  if (wifiLevel != displayedWifiLevel) {
+    requestDisplay = true;
+    displayedWifiLevel = wifiLevel;
+  }
+#endif
+  if (board::FrontAssembly && buttonTransition) {
+    Serial.printf("KEYRING button=%s\n", panic.pressed ? "panic" : confirm.pressed ? "confirm" : "released");
+  }
   if (changedConfirm || changedPanic) observationDirty = true;
   if (confirm.pressed || panic.pressed || changedConfirm || changedPanic) powerState::activity(now);
   if (motion.poll(now)) { powerState::activity(now); observationDirty = true; }
@@ -1071,22 +1259,30 @@ void loop() {
       setGattReadValue(journalRead, {});
     }
   }
-  supply.poll(uptime());
+  if (!board::FrontAssembly) supply.poll(uptime());
   recoverAccelerometer(uptime());
   if (uptime() - lastSensorRead >= board::ObserveMs) { sampleSensors(); observationDirty = true; }
   if (uptime() - lastObservation >= board::ObserveMs) observationDirty = true;
-  if (observationDirty) publishObservation();
-  if (!ObservationOnly) auxRail::service();
-  if (now >= nextScreenAt) {
+  if (observationDirty) publishObservation(buttonTransition);
+  if (!ObservationOnly || KEYRING_R18_BRINGUP_DISPLAY) auxRail::service();
+  if (requestDisplay || now >= nextScreenAt) {
     KeyringScreen screen;
+#if defined(KEYRING_R26_OTA)
+    screen.wifiLevel = wifiLevel;
+#endif
     screen.linked = connected; screen.authenticated = authenticated;
     screen.batteryValid = sensors.fuel; screen.battery = sensors.battery; screen.batteryLow = sensors.batteryLow;
-    screen.confirm = confirm.pressed; screen.panic = panic.pressed;
-    screen.motor = readState(); screen.fault = digitalRead(board::MainFaultN) == LOW;
+    screen.confirm = buttonPresses.last == ButtonPress::Confirm;
+    screen.panic = buttonPresses.last == ButtonPress::Panic;
+#if KEYRING_R18_BRINGUP_DISPLAY
+    screen.confirmPress = buttonPresses.confirm;
+    screen.panicPress = buttonPresses.panic;
+#endif
+    screen.motor = readState(); screen.fault = mainFaultActive();
     screen.journal = storageHealthy; screen.motionEvents = motion.events();
     screen.supplyValid = supply.valid(uptime()); screen.supplyCurrentMa = supply.reading().currentUa / 1000.0f;
     screen.supplyReadAt = supply.reading().readAt;
-    peripherals.update(screen); nextScreenAt = now + 250;
+    peripherals.update(screen, requestDisplay); nextScreenAt = now + 250;
   }
   if (!ObservationOnly) receiptTx.tick(now);
   observationTx.tick(now);

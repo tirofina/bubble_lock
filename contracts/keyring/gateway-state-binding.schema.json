@@ -7,7 +7,7 @@
   "properties": {
     "bindingVersion": {
       "type": "integer",
-      "enum": [1, 2]
+      "enum": [1, 2, 3]
     },
     "gatewayId": {
       "type": "string",
@@ -25,6 +25,10 @@
       "type": "string",
       "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$"
     },
+    "pcApiDeploymentId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$"
+    },
     "rvi": {
       "type": "string",
       "minLength": 1
@@ -32,6 +36,10 @@
     "observationContainer": {
       "type": "string",
       "pattern": "^/"
+    },
+    "observationContainerRi": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$"
     },
     "receiptContainer": {
       "type": "string",
@@ -44,6 +52,10 @@
     "healthContainer": {
       "type": "string",
       "pattern": "^/"
+    },
+    "healthContainerRi": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$"
     }
   },
   "required": [
@@ -56,8 +68,16 @@
     "receiptContainer",
     "healthContainer"
   ],
-  "if": { "properties": { "bindingVersion": { "const": 2 } } },
-  "then": { "required": ["cseDeploymentId"] },
-  "else": { "not": { "anyOf": [{ "required": ["cseDeploymentId"] }, { "required": ["receiptContainerRi"] }] } },
+  "dependentRequired": {
+    "receiptContainerRi": ["cseDeploymentId"], "observationContainerRi": ["cseDeploymentId"],
+    "healthContainerRi": ["cseDeploymentId"]
+  },
+  "oneOf": [
+    { "properties": { "bindingVersion": { "const": 1 } },
+      "not": { "anyOf": [{ "required": ["cseDeploymentId"] }, { "required": ["pcApiDeploymentId"] }] } },
+    { "properties": { "bindingVersion": { "const": 2 } }, "required": ["cseDeploymentId"],
+      "not": { "required": ["pcApiDeploymentId"] } },
+    { "properties": { "bindingVersion": { "const": 3 } }, "required": ["pcApiDeploymentId"] }
+  ],
   "additionalProperties": false
 }

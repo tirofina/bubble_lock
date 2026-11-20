@@ -99,6 +99,48 @@ env -i PATH=/usr/bin:/bin /opt/bubble_lock/keyring/raspberry-pi-gateway/.venv/bi
 
 보고서의 정산 상태는 `not-settled`다. 중앙 승인과 장치 journal 회수는 아래 계약을 따른다. [격리 Mobius4 시험](evidence/2026-11-10-journal-reconcile/README.md)
 
+### Pi 중단 뒤 장치 완료 기록 찾기
+
+Gateway 0.2.109부터 장치 저널의 완료 기록과 Pi 명령의 ID·본문 해시·grant revision·epoch·요청 상태가 일치하면 `recoveryEvidence`를 남긴다. 마지막 BLE 쓰기가 시작됐거나 이전 버전에서 기록 여부를 알 수 없는 명령이 대상이다. Pi에 명령 실행 중 상태만 남은 경우는 `device_completed_gateway_receipt_missing`, Pi가 타임아웃·중단으로 자체 불확정 영수증을 만든 경우는 `device_completed_gateway_uncertain`으로 표시한다. 장치 ACK가 `READBACK_MISMATCH`면 그 코드도 함께 표시한다.
+
+```sh
+bubble-keyring-reconcile --archive-only --env-file gateway-old.env \
+  --device-archive /path/to/device-archive --gateway-archive /path/to/gateway-archive \
+  --same-boot-command "$COMMAND_ID" --board-revision r18-hand-solder \
+  --firmware-revision "$FIRMWARE_REVISION" --team-state /path/to/runtime.json
+```
+
+중앙 보관본이 있으면 Pi 영수증의 해시·claim·epoch와 중앙 `GATEWAY_RECEIPT_SETTLED` 기록을 대조한다. 중앙이 불확정 영수증을 받았다면 해당 수용 기록의 `DISPATCH_UNCERTAIN`을 보고한다. Gateway 0.2.116은 후속 영수증이나 중앙 readback 정산도 확인해 `currentExecutionState`와 `currentSettlementEventId`를 함께 표시한다. 후속 영수증이 보관돼 있으면 그 해시도 남긴다. 기존 수용과 후속 정산의 결속이나 시각이 맞지 않으면 불일치로 기록한다. 보고서는 검토 대상으로 유지되며 네트워크 요청, 명령 재실행 및 기존 영수증 변경 없이 읽기 전용으로 생성한다.
+
+### r18 실물 명령 한 건 대조
+
+Pi 벤치에서는 [r18 Pi 시험 증거 보관](raspberry-pi-gateway/TESTING.md#r18-pi-시험-증거-보관)의 `export-env`와 `capture-r18`을 사용해 기존 세션 설정을 장치 저널·SQLite 보관본에 연결한다.
+
+Gateway 0.2.60은 장치 저널을 수집한 부팅에서 실행한 명령 한 건을 골라 비교한다. 정식 r18 펌웨어로 실행한 시험의 정확한 command ID와 저널을 수집할 때의 보드·펌웨어 revision을 지정한다. 최신 정식 r18 펌웨어 revision은 `keyring-0.7.25`이며 이전 기록은 당시 revision을 사용한다.
+
+```sh
+bubble-keyring-reconcile --env-file "$GATEWAY_ENV" \
+  --device-archive "$DEVICE_ARCHIVE" --gateway-archive "$GATEWAY_ARCHIVE" \
+  --same-boot-command "$COMMAND_ID" --board-revision r18-hand-solder \
+  --firmware-revision keyring-0.7.25
+```
+
+대상 명령이 없거나 다른 부팅에서 실행됐거나 수집한 identity의 revision이 다르면 CSE 조회 전에 중단한다. `selectedCommand`에는 장치 저널의 수신·적용 uptime이, 명령 결과에는 Gateway ACK 코드와 Mobius4 원본 영수증 대조가 남는다. 완료 기록의 영수증 펌웨어도 수집 identity와 일치해야 `matched_applied`가 된다. 최초 적용을 확인할 때는 `gatewayAckCode: APPLIED`와 `gatewayDelivered: true`를 함께 확인한다.
+
+r18의 ON은 최대 1,000ms의 펄스다. 펄스 길이와 출력이 꺼지는 시점은 계측기로 기록하고 같은 command ID를 붙인다. 계측 CSV를 최초 Mobius4 영수증에 연결할 수 있다. [r18 펄스 계측값 연결](raspberry-pi-gateway/TESTING.md#r18-펄스-계측값-연결) 이후 중앙 정산은 아래 절차로 대조한다.
+
+#### 저장한 Mobius4 영수증으로 오프라인 대조
+
+Gateway 0.2.67 이상에서 실행한 r18 펄스의 `pulse-receipt.json` 사본을 위 명령의 `--native-receipt "$PULSE_RECEIPT_COPY"`로 지정한다. 같은 시험의 `gateway.env`와 장치·Pi 보관본을 사용한다. 비교 도구는 저장된 CIN 유형·이름·부모 ID를 명령 ID와 Pi의 고정 컨테이너 ID에 대조한 뒤, 영수증 본문을 Pi 보관본과 비교한다. 이 모드의 대조는 Mobius4와 중앙 API 접속 없이 실행된다. 중앙 정산까지 대조할 때는 아래의 상태 사본도 지정한다.
+
+보고서의 `nativeReceiptSource: captured`와 `nativeReceiptArtifactSha256`은 비교에 사용한 사본을 식별한다. 원본 자원 유형·이름이 없는 이전 펄스 기록은 위 기본 명령으로 Mobius4에서 다시 읽는다.
+
+#### 최신 중앙 API 상태 대조
+
+[r18 격리 중앙 API](dev/mobius4/README.md#r18-격리-명령-api)로 실행한 경우, 해당 시험의 `.local/scoped/command-api-r18/runtime.json`을 비공개 위치에 복사한다. Gateway 0.2.61의 위 단일 명령 대조에 `--team-state "$TEAM_STATE_COPY"`를 추가한다. 장치·Pi·Mobius4 기록이 먼저 일치해야 중앙 명령 해시, 영수증 본문, 실행 시작·정산 이벤트와 시각을 대조한다. 보고서에는 두 이벤트 ID와 상태 사본의 SHA-256을 남긴다.
+
+`integrationSettlement.status`는 정산 일치, 누락 또는 불일치를 표시한다. 정산이 일치하고 Pi의 Mobius4 영수증 전달이 완료됐으며 ACK가 `APPLIED`이면 `integrationSettlement.originalApplicationMatched`가 참이다. 출력 펄스의 물리 계측은 같은 명령 ID로 보관한다.
+
 ### 격리 PostgreSQL 정산 기록 대조
 
 위 비교 도구의 최신 소스는 장치 기록 파일의 SHA256과 CSE 원본의 `ri`·`ct`도 기록한다. 그 JSON을 비공개 파일에 저장하면 [격리 DB 조회](dev/mobius4/README.md#명령별-영수증-증거-조회)에서 같은 장치·Gateway·명령의 정산 기록을 한 번에 비교할 수 있다. 발급 명령 전체를 결속하는 payload hash, 영수증 hash, readback, CSE 원본 ID와 생성 시각을 확인한다.
@@ -106,6 +148,8 @@ env -i PATH=/usr/bin:/bin /opt/bubble_lock/keyring/raspberry-pi-gateway/.venv/bi
 - `settlement_matched`는 장치·Gateway·CSE가 비교된 적용 기록과 격리 DB의 정산 행이 일치함을 뜻한다. Gateway 전송 완료 표시가 없으면 검토 건수에 남는다.
 - `settlement_missing`은 비교된 적용 기록에 중앙 정산 행이 없음을 뜻한다. `settlement_mismatch`는 불일치 필드를 반환한다. `journal_review_required`에는 PREPARED, readback 실패 등 기존 검토 건이 남는다.
 - `settlement_source_unbound`는 기존 중앙 행에 CSE 키와 원본 경로가 기록되지 않은 경우다. 둘 중 한 필드가 누락됐거나 격리 CSE 설정과 다르면 불일치로 분류한다.
+
+같은 부팅의 명령 한 건을 비교한 보고서를 사용하면 중앙 조회 결과에 `selectedCommand`와 `gatewayAckCode`가 남는다. `originalApplicationMatched`는 해당 명령의 정산이 일치하고 Pi 영수증 전달이 완료됐으며 ACK가 `APPLIED`일 때만 참이다. `DUPLICATE`는 기존 정산과 일치할 수 있으며 최초 적용 확인에서는 검토로 남는다.
 
 출력은 원본 비교 보고서의 SHA256을 포함한다. 이 해시는 두 보고서를 연결하며 보관본의 발급자 인증은 별도다. 결과가 모두 일치해도 장치 journal 정산 상태는 `not-settled`로 남는다. 회수에는 아래 중앙 계약이 필요하다.
 

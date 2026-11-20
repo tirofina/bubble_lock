@@ -21,6 +21,12 @@ ROLE KEYRING / 남호 · DOC-REV 2.0.0 · firmware keyring-0.4.0 · implemented 
 
 화면은 BLE 연결/인증, 실제 배터리 또는 `--`, 버튼, 모터 GPIO, motion event 수, journal/fault, SD 상태를 표시한다. grant 승인·물리적 진동 확인을 뜻하지 않는다. passkey·장치 ID·command ID·사용자 위치를 화면에 표시하지 않는다. 폰트는 라이브러리 기본 ASCII이며 한국어 폰트는 포함하지 않았다.
 
+r18 0.7.23에서 확인·비상을 누르면 두 LCD의 정식 프로필에 `Last: CONFIRM` 또는 `Last: PANIC`이 표시된다. 버튼을 떼어도 다음 유효 입력이나 재부팅까지 마지막 값을 기억한다. BLE `buttonState`는 누름과 해제를 그대로 알린다. 버튼 요청은 즉시 그리기 대상으로 등록되며 LCD 초기화가 끝나면 처리된다. 백라이트는 설정 시간이 지나면 꺼진다.
+
+두 LCD의 0.7.24 첫 구동 프로필은 회전을 적용한 논리 화면 크기가 144×120보다 작으면 `geometry_error`를 보고한다. 시험 패턴과 버튼 문구의 그리기를 마친 시점에도 백라이트가 켜질 조건을 만족할 때 그리기 누계를 기록한다. 화면에 실제로 나온 색·문구는 현장에서 확인한다.
+
+r18 0.7.25는 AUX_EN(GPIO4)이 HIGH로 읽힌 다음에 LCD_BL(GPIO2)을 LOW로 구동한다. 두 핀의 읽기값이 맞을 때 화면을 그리고 첫 구동의 그리기 누계를 기록한다. 출력 쓰기나 읽기값 확인에 실패하면 표시 요청을 취소하고 BLE health에 `power_output_error`를 보고한다. 모터가 AUX를 쓰기 전에는 백라이트가 꺼진 상태(GPIO2 HIGH)를 확인한다. 핀 읽기값은 전원 레일 전압이나 패널 밝기 측정을 대신하지 못한다.
+
 SPI GPIO는 MOSI38/SCK39, LCD CS18/DC8/RESET43이다. UART0 TX는 RESET43과 충돌하므로 USB CDC만 사용한다. LCD logic VDD는 main +3V3, 백라이트 공급은 별도 LCD_BL_SUPPLY다.
 
 ### JD9853 미확인 범위
@@ -46,6 +52,10 @@ I2S LRCLK40/BCLK41/DOUT42, 16kHz/16bit, 좌우 동일 PCM을 사용하는 FreeRT
 ## 공용 전원·SPI·절전
 
 TPS2553 보조 전원에는 모터·스피커·백라이트가 연결된다. `aux_rail`은 alert와 display 소유자를 관리하며 alert 중 백라이트를 끈다. 모터가 끝나도 유효한 화면 창은 복구한다. 별도10ms ESP timer가 창 만료·fault를 처리하므로 SD/화면 I/O를 기다리지 않는다. 이는 설정 주기이며 실측 차단 지연이 아니다. 실제 돌입/구속/음향/백라이트 전류와 결합 부하는 미확인이다.
+
+`keyring-0.7.14`는 alert 중 타이머가 `MAIN_FAULT_N`의 LOW를 감지하면 보조 전원을 차단하고 인터럽트 상태를 유지한다. 신호가 먼저 정상으로 돌아와도 모터 GPIO를 LOW로 내리고 확인한 뒤에만 화면 요청이 보조 전원을 켤 수 있다. 적용 확인 시점에 이 상태를 발견한 ON 명령은 `INDETERMINATE`를 반환한다. 활성 화면의 주기 갱신은 백라이트를 끄는 GPIO 전이를 만들지 않는다.
+
+`keyring-0.7.19`는 alert 시작 시 `AuxEnable` GPIO 쓰기와 HIGH 읽기값을 확인한다. 쓰기 실패·LOW 읽기 또는 작동 중 LOW 검출 시 보조 전원을 끄고 기존 인터럽트 처리로 이어진다. 적용 확인에서 실패하면 모터를 정지하고 `INDETERMINATE`로 처리한다. 읽기값은 enable GPIO에서 얻으며 실제 보조 전원 전압과 모터 구동은 실물에서 계측한다.
 
 `peripherals` worker 하나가 LCD와 microSD I/O를 모두 소유한다. CS18/10은 초기 HIGH이며 SPI transaction이 mode/속도를 전환한다. SD MISO11도 공통 SPI에 연결한다. 다른 task에서 이 SPI나 SD API를 직접 호출하면 안 된다. 모터 타이머·BLE callback에는 SPI/filesystem 작업이 없다. 절전은 audio/보조 전원/I/O/로그 queue가 유휴일 때만 진행하고 예약 시 worker 신규 I/O를 막는다. 긴 카드 지연은 절전을 막을 수 있다.
 

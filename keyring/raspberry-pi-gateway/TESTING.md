@@ -1,6 +1,72 @@
 # Gateway 로컬 시험
 
-Gateway 0.2.44는 Windows Python 3.12 소스 트리에서 기본 suite 167개를 통과했다. 새 시험 11개는 크기 기준 HTTPS 선택, 브로커 세션 끊김, 새 세션 probe, 응답 시간 초과 뒤 probe 복귀, probe 간격 두 배 증가, 설정 범위를 다룬다. 실제 CSE와 브로커를 쓰는 전송 행렬은 `node pc-mobius/scripts/run-protocol-matrix-real.mjs`로 실행한다. 전체 daemon과 모의 GATT 키링 24대를 Mobius4 4.24.5, aedes 1.2.0 브로커, 중앙 API에 연결한다. [실행 기록](../../docs/rubric-work/R02.md)
+Gateway 0.2.124와 main의 R02 전송 선택을 합친 병합본은 Windows Python 3.12 소스 트리에서 기본 suite 278개를 통과했다. 병합본은 R02의 조건별 MQTT/HTTPS 선택, MQTT 응답 probe, 경로 카운터, MQTT 크기 한도와 KEYRING의 Mobius 이름 경로, 고정 자원의 HTTPS 쓰기, 중앙 전달 보류, 응답 확인 형식을 함께 사용한다. 고정 자원 쓰기는 `native_https_pinned` 경로로 집계한다.
+
+main 브랜치의 R02 전송 선택 작업(당시 Gateway 0.2.44 표기)은 Windows Python 3.12 소스 트리에서 기본 suite 167개를 통과했다. 새 시험 11개는 크기 기준 HTTPS 선택, 브로커 세션 끊김, 새 세션 probe, 응답 시간 초과 뒤 probe 복귀, probe 간격 두 배 증가, 설정 범위를 다룬다. 실제 CSE와 브로커를 쓰는 전송 행렬은 `node pc-mobius/scripts/run-protocol-matrix-real.mjs`로 실행한다. 전체 daemon과 모의 GATT 키링 24대를 Mobius4 4.24.5, aedes 1.2.0 브로커, 중앙 API에 연결한다. [실행 기록](../../docs/rubric-work/R02.md)
+
+Gateway 0.2.74의 격리 r18 위치 시험은 Mobius4 관측과 포털 응답을 병행 수집한다. 포털 조회 전후 중앙 관측 ID가 같은 경우에만 후보로 보관하고, 같은 시각·RSSI를 가진 다른 순번과 엇갈린 응답을 다루는 회귀시험 소스를 추가했다. 빌드·시험·서버 실행은 미실행이다.
+
+Gateway 0.2.73의 격리 r18 위치 시험은 기존 팀 API의 단기 위치 승인으로 실제 조회 응답을 저장하고 종료 때 회수 여부를 대조한다. 회귀시험 소스는 수신자·기기 범위, 시험 경로, 회수 전후 조회를 다룬다. 빌드·시험·서버 실행은 미실행이다.
+
+Gateway 0.2.72의 r18 관측 도구는 RSSI가 있는 샘플과 중앙 위치 API·LIVE 웹 응답을 대조한다. 권한 거절, 만료, 다른 RSSI와 출처 혼합을 다루는 회귀시험 소스를 추가했다. 빌드·시험·실제 위치 조회는 미실행이다.
+
+Gateway 0.2.71의 r18 관측 대조 도구는 같은 USB 부팅의 Mobius4 관측·health, Pi SQLite 순번과 중앙 수용 이벤트를 연결한다. 중앙 수용 지연, 본문 해시 불일치와 다른 부팅·컨테이너를 다루는 회귀시험 소스를 추가했다. 빌드·시험·실제 관측 전달은 미실행이다.
+
+Gateway 0.2.70은 r18 첫 구동의 Pi 관측 전용 세션을 제공한다. 기존 명령 영수증 보존, 관측 전송, 명령 목록을 조회하지 않는 사전 확인의 회귀시험 소스를 추가했다. 빌드·시험·Pi 실행은 미실행이다.
+
+Gateway 0.2.69는 r18 첫 구동 중 같은 USB 부팅의 INA219 샘플 번호를 표시하고 외부 계측값을 오프라인에서 연결한다. 다른 캡처·다른 BLE 세션의 샘플과 측정 지점 혼용을 다루는 회귀시험 소스를 추가했다. 빌드·시험·Pi 실행은 미실행이다.
+
+Gateway 0.2.68은 r18 화면 점검 펌웨어 두 종류의 USB 로그에서 패널 선택값과 revision을 대조한다. 같은 부팅의 Pi 기록에 `displayProfile`을 남긴다. 빌드·회귀시험·실물 화면 확인은 미실행이다. [r18 화면 점검](../pcb/BRING_UP.md#화면만-연결한-두-번째-구동)
+
+Gateway 0.2.67은 펄스 시험에서 저장한 Mobius4 영수증을 장치 저널·Pi 보관본과 오프라인으로 대조한다. 사본의 부모나 자원 이름이 바뀐 경우, 본문이 Pi와 다른 경우의 회귀시험 소스를 추가했다. 빌드·시험·Pi 실행은 미실행이다.
+
+Gateway 0.2.66의 r18 벤치는 펄스 뒤의 Mobius4 OFF 관측을 중앙 API의 수용 이벤트와 대조한다. 회귀시험 소스는 중앙 수용 지연, 본문 해시 불일치, grant 회수 뒤 대조를 다룬다. 빌드·시험·Pi 실행은 미실행이다.
+
+Gateway 0.2.65의 r18 벤치는 관측·health·영수증의 컨테이너 ID를 고정한다. 교체된 health·영수증 경로에서 발급을 중단하고, 다른 부모에서 읽은 영수증과 Pi SQLite를 거절하는 회귀시험 소스를 추가했다. 빌드·시험·Pi 실행은 미실행이다.
+
+Gateway 0.2.64는 r18 명령 발급 응답이 끊겼을 때 저장된 명령 ID로 [시험 증거를 대조](#중단된-r18-펄스-시험-대조)한다. 회귀시험은 응답 유실, 중앙 상태 사본에 없는 발급, 변조된 요청, CSE와 중앙 영수증 불일치를 다룬다.
+
+Gateway 로컬 시험 190개, 격리 벤치 모의 시험 25개와 wheel 빌드가 통과했다. 합성 입력으로 r18 CLI의 발급 복구와 요청 해시 불일치 거부를 확인했다. Pi·BLE·실물 시험은 이번 변경에서 미실행이다.
+
+Gateway 0.2.63의 회귀시험 소스는 Pi 세션의 환경 파일 내보내기, 기존 파일 보존, r18 저널 캡처의 시험 잠금과 장치 설정 전달을 다룬다. 빌드·시험·Pi 실행은 미실행이다.
+
+r18 단일 펄스 벤치의 회귀시험 소스는 준비 신호 이후 한 건 발급, 같은 부팅의 후속 OFF 관측, 응답 유실 뒤 grant 회수와 중단 신호를 다룬다. 빌드·시험·실제 명령 발급은 미실행이다.
+
+Gateway 0.2.62의 회귀시험 소스는 r18 Pi의 `gw-b` 인증서·전용 컨테이너·중앙 API 프로필 선택과 BLE 보드 revision 불일치 차단을 다룬다. 빌드·시험·실제 Pi 연동은 미실행이다.
+
+Gateway 0.2.61은 r18 단일 명령을 최신 격리 중앙 API의 상태 사본과 대조하는 `--team-state`를 추가했다. 회귀시험 소스는 같은 영수증의 실행 시작·정산 확인과 잘못된 claim을 다룬다. [최신 중앙 API 상태 대조](../JOURNAL_RETENTION.md#최신-중앙-api-상태-대조). 빌드·시험·실물 연동은 미실행이다.
+
+Gateway 0.2.60의 회귀시험 소스는 [r18 단일 명령 대조](../JOURNAL_RETENTION.md#r18-실물-명령-한-건-대조)에서 같은 부팅의 기록 선택, 이전 부팅·장치 revision·영수증 펌웨어 불일치를 다룬다. 빌드·시험·실제 Pi 연동은 미실행이다.
+
+Gateway 0.2.59의 r18 회귀시험 소스는 초기 USB 센서 상태 보존, 이후 BLE 복구, 정상 관측 뒤 센서·INA219 상태 악화, 마지막 필드 누락을 다룬다. 빌드·시험·실제 Pi 연동은 미실행이다.
+
+Gateway 0.2.58의 r18 회귀시험 소스는 USB 로그에서 동일한 부팅 기록의 반복 출력, 다른 부팅 ID, 변경된 GPIO 상태와 잘린 기록을 다룬다. 빌드·시험·실제 Pi 연동은 미실행이다.
+
+Gateway 0.2.57의 회귀시험 소스는 SQLite를 닫고 다시 열었을 때 서버별 `Retry-After`의 남은 시간, 다른 포트의 전송, 기한 만료와 새 Linux 부팅을 다룬다. 빌드·시험·실제 Pi 연동은 미실행이다.
+
+Gateway 0.2.56의 회귀시험 소스는 중앙 API `Retry-After` 동안 전송 시도 횟수 보존, 중앙 관측 만료, Mobius4 전송 지속과 중앙 보류 해제 후 재개를 다룬다. 빌드·시험·실제 Pi 연동은 미실행이다.
+
+Gateway 0.2.55의 회귀시험 소스는 관측 컨테이너 이름이 재사용될 때 CREATE 차단, 고정 ID의 MQTT→HTTPS 전환과 저장본 대조, 로컬 DB·사전 검사 및 HTTPS 보류를 다룬다. 빌드·시험·실제 Pi 연동은 미실행이다.
+
+Gateway 0.2.54의 회귀시험 소스는 중앙 배포 ID가 다른 SQLite로 시작하는 경우, 같은 배포에서 API 주소만 바뀌는 경우, 격리 보관본의 배포 ID 보존과 사전 검사에서의 네트워크 호출 차단을 다룬다. 빌드·시험·실제 Pi 연동은 미실행이다.
+
+Gateway 0.2.53의 회귀시험 소스는 일반 상태 보고가 재시도 중인 상태에서 Pi 데몬을 재시작하는 경우, 기존 본문·재시도 시각 보존, 공용 컨테이너의 관측과 자격 전환 영수증을 다룬다. 빌드·시험·실제 Pi 연동은 미실행이다.
+
+Gateway 0.2.52의 회귀시험 소스는 SQLite에 두 자리만 남은 경우의 Mobius4·CORE 등록, 한 자리만 남은 경우의 중앙 등록, 재시작 뒤 기존 전달을 중복 등록하지 않는 경로를 다룬다. 빌드·시험·실제 Pi 연동은 미실행이다.
+
+Gateway 0.2.51의 회귀시험 소스는 중앙 명령 영수증 응답을 보류한 상태에서 Mobius4 영수증의 전달 완료와 중앙 대기열 보존을 다룬다. CSE 보류·재시작 후 중앙 영수증 재시도도 전용 작업을 사용한다. 빌드·시험·실제 Pi 연동은 미실행이다.
+
+Gateway 0.2.50의 회귀시험 소스는 재시도 대기 중인 중앙 관측의 만료, 팀 서버와 같은 단축 보관 기간, UTC 오프셋·기한 경계, Mobius4 복제본 유지와 시계를 신뢰할 수 없을 때의 보존을 다룬다. 빌드·시험·실제 Pi 연동은 미실행이다.
+
+Gateway 0.2.49의 회귀시험 소스는 중앙 관측 응답을 보류하는 동안 Mobius4 관측과 명령 영수증을 전송하고, 중앙 확인이 올 때까지 해당 SQLite 행을 유지하는 경로를 다룬다. 장치별 중앙 관측 순서와 재시작 회귀도 같은 전용 조회 경로를 사용한다. 빌드·시험·Pi 연동은 미실행이다.
+
+Gateway 0.2.47의 회귀시험 소스는 중앙 관측과 Mobius4 항목의 동시 저장, 재시작과 장치별 전송 순서, 중앙 응답 ID, `STALE`과 보관 기한 초과 처리를 다룬다. 빌드·시험·실제 중앙 API 연결은 미실행이다.
+
+Gateway 0.2.46의 회귀시험 소스는 중앙 영수증의 대기열 등록·용량 부족, 기존 DB에서 과거 영수증 등록, 재시작 후 동일 전송, CSE 보류 중 중앙 정산, 중앙 응답 바인딩을 다룬다. 빌드·시험·실제 중앙 API 연결은 미실행이다.
+
+Gateway 0.2.45의 회귀시험 소스는 `dispatch-start` 요청의 claim 바인딩, SQLite 실행 의도 기록 순서, 더 짧아진 기한, 세션 교체, 요청 취소와 미지원 API 차단을 다룬다. 빌드·시험·중앙 API 연결·Pi 확인은 미실행이다.
+
+Gateway 0.2.44의 회귀시험 소스는 전송 시도 기록 후 취소와 DB 재개, 기존 영수증 확인 시 CREATE 생략, CSE가 자원 부재를 확인한 뒤 동일 요청 ID로 CREATE, 본문·부모 불일치와 조회 거절을 다룬다. 이번 빌드·시험·Pi 및 CSE 확인은 미실행이다.
 
 Gateway 0.2.43은 Windows Python 3.11에서 wheel을 빌드하고 해당 설치본으로 기본 suite 153개를 통과했다. 모의 GATT가 마지막 쓰기 응답을 보류하는 동안 별도 SQLite 연결에서 커밋된 영수증을 읽었다. 이후 작업 취소로 결과가 덮이지 않는 경우와 일시적인 SQLite 저장 오류를 재시도하는 경우도 확인했다. Pi·BlueZ에서 이 버전을 실행하는 시험은 남아 있다.
 
@@ -12,20 +78,56 @@ Gateway 0.2.40의 회귀시험 소스는 재연결의 이전 READ·알림, 같�
 
 Gateway 0.2.37의 회귀시험 소스는 BlueZ가 쓰기 특성을 캐시한 상황에서 r18 관측 전용 revision의 관측은 받고 명령·저널 쓰기는 거절하는지 다룬다. [PCB 초기 구동](../pcb/BRING_UP.md)의 실물 실행은 미수행이다.
 
+Gateway 0.2.84는 관측 전용 세션에서 영수증 알림 구독을 생략한다. 명령 특성이 있지만 영수증 알림 특성이 빠진 장치는 `connected:true`, `commandReady:false`, `lastError:receipt_characteristic_unavailable`로 보고한다. 명령 경로는 두 특성이 있고 영수증 구독이 성공한 뒤 열린다. 실제 BlueZ 연결과 장치별 특성 확인은 대기 중이다.
+
 ## r18 초기 구동 기록
 
-Gateway 0.2.38의 `--mode bringup`은 페어링된 r18과 `-bringup` 펌웨어에서 인증된 BLE 알림을 수집한다. 기존 Gateway를 중지하고 그 서비스와 같은 `--database` 경로를 지정한다. 기록 도구는 그 경로에서 잠금 이름만 얻는다. Mobius나 중앙 API에 연결하지 않고 새 로컬 JSON을 기록한다.
+Gateway의 `--mode bringup`은 페어링된 r18과 `-bringup` 펌웨어에서 인증된 BLE 알림을 수집한다. 기존 Gateway를 중지하고 그 서비스와 같은 `--database` 경로를 지정한다. 기록 도구는 그 경로에서 잠금 이름만 얻는다. Mobius나 중앙 API에 연결하지 않고 새 로컬 JSON을 기록한다. USB 모니터에서 `?`를 보내 초기 구동 기록을 요청하고 UTF-8 로그로 저장한다. `--usb-boot-log`는 이 로그와 BLE 부팅을 대조한다. 한 로그에 같은 줄이 반복되면 허용하고 다른 부팅 ID나 다른 값이 섞이면 거절한다. 아래 명령을 실행할 때까지 같은 보드 전원을 유지한다.
 
 ```sh
 bubble-keyring-ble-characterize --mode bringup --hardware r18-pcb \
   --gateway-id "$GATEWAY_ID" --device-id "$KEYRING_ID" --address "$KEYRING_ADDRESS" \
-  --firmware-revision keyring-0.7.13-bringup --distance-cm "$MEASURED_DISTANCE_CM" --seconds 90 \
+  --firmware-revision keyring-0.7.25-bringup --distance-cm "$MEASURED_DISTANCE_CM" --seconds 90 \
+  --usb-boot-log "$PRIVATE_EVIDENCE/r18-usb.log" \
+  --firmware-image "$PRIVATE_EVIDENCE/firmware.bin" \
   --database "$GATEWAY_DATABASE" --output "$PRIVATE_EVIDENCE/r18-bringup.json"
 ```
 
 첫 알림 안내까지 두 버튼을 뗀 채 기다린다. 이후 확인 버튼을 약 2초 누르고 떼고, 약 2초 뒤 비상 버튼을 같은 방식으로 한 번 누르고 뗀다. 최초 알림부터 같은 BLE 세션에서 각 눌림과 떼기, 해당 누계 증가, 배터리·3축·움직임 설정, INA219 정상 샘플, 장치 저널·절전 비활성, `commandReady:false`와 출력·fault 상태를 대조한다. 재연결 뒤 받은 관측으로 빠진 단계를 채우지 않는다. 수집된 출력 또는 fault가 활성화됐거나 명령이 준비됐으면 `MISMATCH`를 기록한다. 필요한 관측이 빠지면 `INSUFFICIENT`다.
 
-`RECORDED`는 위 항목을 한 세션에서 수신했다는 뜻이다. INA219는 3.3V 부하 측 계측이며 입력·충전 전류는 별도 실측으로 남긴다. JSON은 단계별 sequence와 필요한 진단 필드만 남기고 BLE 주소와 원래 boot ID를 내보내지 않는다. 빌드·회귀시험·실물 캡처는 미실행이다.
+`RECORDED`는 위 항목을 한 세션에서 수신했고 마지막 BLE 센서·INA219 상태가 정상이라는 뜻이다. Gateway 0.2.59는 첫 정상 순번과 마지막 센서·INA219 상태를 기록한다. 정상 관측 후 마지막에 센서가 `unavailable`이거나 INA219 오류가 오면 `MISMATCH`다. 마지막 프레임에 필요한 값이 없으면 `INSUFFICIENT`다. USB 로그를 공급하면 `bringup.usbBoot`에 파일 SHA-256, GPIO, 초기 센서 상태와 부팅 일치 여부가 추가된다. USB와 BLE의 부팅이 다르거나 수집 중 새 부팅의 알림이 들어오거나 USB 출력·fault가 활성 상태이면 `MISMATCH`다. INA219는 3.3V 부하 측 계측이며 입력·충전 전류는 별도 실측으로 남긴다. JSON은 BLE 주소와 원래 부팅 ID를 내보내지 않는다. 빌드·회귀시험·실물 캡처는 미실행이다.
+
+Gateway 0.2.99의 `--firmware-image`에 업로드에 사용한 서명 없는 ESP32-S3 앱 `firmware.bin`을 지정한다. 파일 끝의 SHA-256을 다시 계산하고 0.7.18·0.7.21~0.7.25 USB 로그의 `appSha256`과 대조한다. 해시 불일치나 실행 이미지 해시를 읽지 못한 경우 BLE 수집 시작 전에 종료한다. 파일 전체의 SHA-256과 크기는 `bringup.usbBoot.firmwareImage`에 남고 `sameBoot`는 USB와 BLE 부팅의 일치 여부를 나타낸다. 이전 펌웨어 기록은 `--firmware-image`를 생략해 수집한다. 바이너리는 비공개로 보관한다. [Espressif 앱 이미지 형식](https://docs.espressif.com/projects/esptool/en/latest/esp32s3/advanced-topics/firmware-image-format.html)
+
+Gateway 0.2.117에서 실물 조립 기록을 연결하려면 위 명령에 `--assembly-record "$PRIVATE_EVIDENCE/r18-assembly.json" --assembly-board-tag "$OBSERVED_BOARD_TAG"`를 추가한다. 식별표는 시험 직전에 보드에서 읽는다. 도구는 기록의 보드 revision과 식별표를 확인하고, 조립 기록과 USB 로그에 LCD 모델이 있으면 두 값도 대조한다. USB와 BLE가 같은 부팅일 때 `bringup.assemblyEvidence`에 조립 기록 해시와 작업자 확인 정보를 남긴다. LCD 관찰 보고서에는 연결된 조립 기록 해시가 `assemblyRecordSha256`으로 이어진다.
+
+0.7.16~0.7.18 및 0.7.21~0.7.25 ST7789·JD9853 프로필은 마지막 `health` 프레임의 화면 상태와 `displayDrawnPresses`도 확인한다. 각 패턴을 확인할 시간을 두고 버튼을 순서대로 누르고 뗀다. Gateway 0.2.115는 비상 버튼 해제를 포함하거나 그 뒤에 도착한 `health`에서 시험의 그리기 누계를 확인한다. 화면 작업자·버스·화면 크기 오류, GPIO 출력 오류(`power_output_error`) 또는 다른 프로필은 `MISMATCH`다. 버튼 해제 이후 대조할 그리기 기록이 없으면 `INSUFFICIENT`다. 실제 화면의 테두리·색·글자는 별도 사진이나 영상에 남긴다.
+
+0.7.21 이상에서 짧은 버튼 입력은 [r18 버튼 사건 시험](#r18-버튼-사건-시험)에서 Pi와 중앙을 함께 대조한다.
+
+### r18 화면 관찰 기록 연결
+
+같은 PCB 전원을 유지하고 USB 로그를 지정해 Pi 초기 구동 기록을 만든다. 확인 버튼을 뗀 직후 다음 버튼을 누르기 전에 `CONFIRM`을 찍고, 비상 버튼을 뗀 직후 `PANIC`을 찍는다. 두 장의 사진이나 두 장면이 담긴 영상 한 개를 사용할 수 있다. 화면이 보이지 않으면 관찰한 상태만 적는다.
+
+관찰 JSON의 `captureSha256`에는 Pi JSON 원본의 SHA-256을 소문자로 넣는다. `releaseSequence`는 `bringup.buttonSequences`의 세 번째와 다섯 번째 값이다. `displaySize`는 화면에 표시된 가로·세로를 적고, `borderVisible`은 테두리 네 변이 보이는지 기록한다. 판독할 수 없는 항목은 `null`로 남긴다. 예시의 해시와 순번은 실제 값으로 바꾼다. [관찰 JSON Schema](../../contracts/keyring/r18-display-observations.schema.json)
+
+```json
+{
+  "version": 1,
+  "captureSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "observations": [
+    {"button": "confirm", "releaseSequence": 22, "panelLabel": "ST7789 LCD", "screenText": "CONFIRM", "borderVisible": true, "colorOrder": ["red", "green", "blue"], "displaySize": [240, 240], "mediaOffsetMs": null},
+    {"button": "panic", "releaseSequence": 24, "panelLabel": "ST7789 LCD", "screenText": "PANIC", "borderVisible": true, "colorOrder": ["red", "green", "blue"], "displaySize": [240, 240], "mediaOffsetMs": null}
+  ]
+}
+```
+
+```sh
+bubble-keyring-display-evidence --capture r18-bringup.json --observations lcd-observations.json \
+  --confirm-media confirm.jpg --panic-media panic.jpg --output lcd-evidence.json
+```
+
+한 영상을 사용하면 두 인자에 같은 파일을 지정하고 각 장면의 영상 시작 기준 시각을 `mediaOffsetMs`에 밀리초로 넣는다. 결과에는 USB·Pi·관찰 기록·미디어의 해시와 `operatorObservationStatus`, `buttonFramesMatched`, `healthSequence`가 들어간다. `displayEvidenceStatus=MATCHED`는 작업자 기록이 일치하고 Pi 기록이 `RECORDED`이며 같은 세션의 비상 버튼 해제부터 유효한 화면 상태·그리기 누계가 확보된 경우에만 나온다. Pi나 작업자 기록에 불일치가 있으면 `MISMATCH`다. 수집 중단이나 화면 상태·관찰값 누락은 `INSUFFICIENT`다. 저장된 Pi 보고서도 BLE 이벤트를 다시 읽어 판정한다. 영상 프레임과 패널의 실제 해상도는 별도로 확인하고 원본 사진과 영상은 비공개로 보관한다.
 
 Gateway 0.2.36의 자격 전환 영수증 회귀시험 소스는 MQTT·HTTPS 생성 후 조회, 중복, 인스턴스·부모·본문 불일치, 조회 시간 초과, HTTPS 보류 중 일반 heartbeat의 독립 전송을 다룬다. 격리 Mobius4 시험 소스는 두 전송 경로에서 실제 저장 조회가 발생하는지 확인한다. 이번 빌드·시험·Pi 배포·CSE 연결은 미실행이다.
 
@@ -95,7 +197,7 @@ Gateway 0.2.39의 `--verify-button-continuity`는 첫 알림이 있던 연결의
 ```sh
 bubble-keyring-ble-characterize --mode reconnect --hardware r18-pcb --verify-button-continuity \
   --gateway-id "$GATEWAY_ID" --device-id "$KEYRING_ID" --address "$KEYRING_ADDRESS" \
-  --firmware-revision keyring-0.7.13-bringup --distance-cm "$MEASURED_DISTANCE_CM" --seconds 90 \
+  --firmware-revision keyring-0.7.25-bringup --distance-cm "$MEASURED_DISTANCE_CM" --seconds 90 \
   --database "$GATEWAY_DATABASE" --output "$PRIVATE_EVIDENCE/r18-reconnect.json"
 ```
 
@@ -105,17 +207,17 @@ bubble-keyring-ble-characterize --mode reconnect --hardware r18-pcb --verify-but
 
 ### r18 wake 기록
 
-Gateway 0.2.17의 `--mode wake`는 r18 전용이다. 로컬 provisioning에서 sleep을 켠 keyring-0.7.4를 대상으로 한다. 먼저 연결해서 알림을 받은 뒤 BLE를 닫고 `--idle-seconds` 동안 기다린다. 다른 BLE 클라이언트가 붙어 있거나 움직임이 감지되면 실제 절전 진입이 늦어질 수 있다. 도구의 wake 안내가 나오면 해당 자극을 가한다. 버튼·움직임 시험은 장치가 실제로 절전한 뒤 타이머로 먼저 깨기 전에 진행한다. 타이머 시험은 안내 후 장치를 움직이지 않는다.
+Gateway의 `--mode wake`는 r18 전용이다. 최신 소스는 로컬 provisioning에서 sleep을 켠 빌드를 `keyring-0.7.25-sleep`으로 보고한다. 먼저 연결해서 알림을 받은 뒤 BLE를 닫고 `--idle-seconds` 동안 기다린다. 다른 BLE 클라이언트가 붙어 있거나 움직임이 감지되면 실제 절전 진입이 늦어질 수 있다. 도구의 wake 안내가 나오면 해당 자극을 가한다. 버튼·움직임 시험은 장치가 실제로 절전한 뒤 타이머로 먼저 깨기 전에 진행한다. 타이머 시험은 안내 후 장치를 움직이지 않는다.
 
 ```sh
 bubble-keyring-ble-characterize --mode wake --hardware r18-pcb \
   --gateway-id "$GATEWAY_ID" --device-id "$KEYRING_ID" --address "$KEYRING_ADDRESS" \
-  --firmware-revision keyring-0.7.4 --distance-cm "$MEASURED_DISTANCE_CM" \
+  --firmware-revision keyring-0.7.25-sleep --distance-cm "$MEASURED_DISTANCE_CM" \
   --idle-seconds "$IDLE_SECONDS" --expect-wake confirm --seconds 90 \
   --database "$GATEWAY_DATABASE" --output "$PRIVATE_EVIDENCE/r18-wake-confirm.json"
 ```
 
-`--expect-wake`는 `confirm`, `panic`, `motion`, `timer`를 선택한다. 최초 복구 알림의 부팅이 이전과 달라야 하고, 같은 부팅의 health 알림에 기대 원인과 핀 마스크가 있어야 한다. 확인 GPIO6은 64, 비상 GPIO7은 128이며 두 핀이 함께 보고되면 개별 버튼 항목에 맞지 않는다. 나중에 다른 부팅에서 받은 원인은 첫 복구 기록에 합치지 않는다. 초기 연결과 복구 수신에 각각 최대 `--seconds`를 사용한다. BLE 해제 후 첫 알림까지의 값에는 의도한 유휴 대기 시간이 포함된다. 실제 절전 진입 시각·소비전류는 외부 계측으로 기록한다.
+`--expect-wake`는 `confirm`, `panic`, `motion`, `timer`를 선택한다. 최초 복구 알림의 부팅이 이전과 달라야 하고, 같은 부팅의 health 알림에 기대 원인과 핀 마스크가 있어야 한다. 확인 GPIO6은 64, 비상 GPIO7은 128이며 두 핀이 함께 보고되면 개별 버튼 항목에 맞지 않는다. 나중에 다른 부팅에서 받은 원인은 첫 복구 기록에 합치지 않는다. Gateway 0.2.102는 일치한 부팅의 `bootIdSha256`과 health 관측 순번을 `wake`에 기록한다. 초기 연결과 복구 수신에 각각 최대 `--seconds`를 사용한다. BLE 해제 후 첫 알림까지의 값에는 의도한 유휴 대기 시간이 포함된다. 실제 절전 진입 시각·소비전류는 외부 계측으로 기록한다.
 
 ### r18 BLE 시험의 전원 샘플
 
@@ -124,6 +226,29 @@ Gateway 0.2.25에서 `--hardware r18-pcb --include-power`를 거리·재연결·
 wake 모드에서는 BLE를 해제하기 전에 유효 계측값을 최대 `--seconds` 동안 기다린다. wake 판정과 함께 기록을 인정하려면 baseline과 복구 양쪽의 첫 알림 부팅에서 유효 계측값이 있어야 한다. 이후 별도 재부팅에서 온 샘플도 로그에는 남지만 누락된 부팅을 대신하지 못한다. 거리·재연결 시험은 전체 기록에 유효 샘플이 하나 이상 있어야 한다. 부족한 구간은 `power.missingPhases`와 `INSUFFICIENT`로 표시된다.
 
 이 계측은 BLE가 연결된 동안 보드의 3.3V 부하 측을 관측한다. BLE를 해제한 동안의 sleep 소비전류, 배터리 입력 및 충전 전류는 외부 계측으로 기록한다. [전력 측정 지점 설명](../firmware/POWER_MONITOR.md)
+
+### r18 첫 구동의 외부 계측값 연결
+
+[r18 초기 구동 기록](#r18-초기-구동-기록)에 `--print-power-markers`를 추가한다. USB 로그와 일치하는 첫 BLE 세션에서 유효한 INA219 샘플이 새로 기록되면 `R18_POWER_SAMPLE` 줄에 `sequence`와 `readUptimeMs`가 표시된다. 같은 안정 구간에서 읽은 계측기 값에 두 값을 붙이고, 캡처가 끝나면 최종 출력의 SHA-256을 아래 입력에 적는다.
+
+```json
+{
+  "version": 1,
+  "captureSha256": "<Pi 캡처의 SHA-256>",
+  "readings": [
+    {"sequence": 8, "readUptimeMs": 700, "point": "load-3v3", "voltageMv": 3290, "currentUa": null}
+  ]
+}
+```
+
+위 숫자는 입력 형식 예시다. 측정한 전압은 mV, 전류는 µA 정수로 기록하고 읽지 않은 값은 `null`을 쓴다. `load-3v3`은 INA219와 같은 3.3V 부하 측 지점이며 `usb-input`과 `battery-terminal`은 해당 입력 지점이다. 원본 계측 기록은 같은 시험 폴더에 보관한다.
+
+```sh
+bubble-keyring-power-evidence --capture "$PRIVATE_EVIDENCE/r18-bringup.json" \
+  --meter "$PRIVATE_EVIDENCE/r18-meter.json" --output "$PRIVATE_EVIDENCE/r18-power-paired.json"
+```
+
+도구는 USB 부팅 일치, Pi 캡처 해시, 첫 세션의 순번과 계측 uptime을 대조한다. Gateway 0.2.118은 동일 INA219 샘플이 여러 BLE 알림에 실려도 같은 측정 지점의 입력을 한 건만 받는다. 같은 샘플 시각에 서로 다른 INA219 값이 있으면 해당 실측 대조를 중단한다. 첫 구동에 조립 기록을 연결했다면 전력 보고서에도 `assemblyRecordSha256`을 남긴다. `meterMinusIna219`는 `load-3v3`의 계측기 값에서 INA219 값을 뺀 값이다. USB 입력과 배터리 단자 측정값은 해당 지점으로 기록한다. 연결 시각은 작업자가 대응시킨 샘플 번호를 근거로 하며, 동시 계측과 허용 오차는 실물 시험에서 확인한다.
 
 ### r18 배터리 경보 기록
 
@@ -152,6 +277,8 @@ LCD의 `LOW` 표시와 해제, 실제 충전 표시는 측정 단계의 시각�
 ## Feather LED ON/OFF 시험
 
 2026-11-11에 Feather 0.2.0과 실제 Pi의 ON/OFF 두 건을 같은 부팅에서 실행했다. GPIO readback·Pi SQLite·Mobius4 원본·인증 콜백·격리 PostgreSQL 정산을 대조했다. 실제 LED 육안 확인은 증거에서 별도로 관리한다. [실행 결과와 해시](../evidence/2026-11-11-scoped-feather-led/receipt.json)
+
+같은 날 Pi Gateway 0.2.43으로 다시 시험했다. ON과 OFF 모두 `APPLIED`였고 GPIO readback, 후속 관측, Mobius4 원본과 중앙 정산이 일치했다. 운영자는 보드에서 빨간 LED를 식별하지 못했고 두 명령에서 눈에 보이는 변화를 관찰하지 못했다. [재시험 결과와 해시](../evidence/2026-11-11-feather-visual/receipt.json)
 
 Feather 명령 펌웨어 0.2.0과 [Pi 벤치 연결 절차](../evidence/2026-11-10-pi-full-daemon/README.md#재현-절차)를 사용한다. PC의 시험 fixture는 새 CA·Mobius4 컨테이너·팀 중앙 API를 열고, Gateway와 Guardian에 별도 인증서를 발급한다. Guardian은 PC에만 두고 Pi에는 Gateway bundle을 전달한다. 현재 PC 시험 도구에는 Gateway 0.2.29 이상과 `HEARTBEAT_INTERVAL=5`가 필요하다. 새 SQLite, `FIRMWARE_REVISION_ALLOWLIST=feather-probe-0.2.0`, `MQTT_ENABLED=false`, `CORE_BRIDGE_ENABLED=false`로 시작한다.
 
@@ -187,11 +314,28 @@ $env:PYTHONPATH = Join-Path $PWD 'keyring/raspberry-pi-gateway/src'
 python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_led_cycle.py --output $bench
 ```
 
+보드에서 LED 변화를 볼 수 없었던 Feather는 1.54인치 화면으로 확인한다. `feather-probe-0.2.1`을 올린 뒤 Pi의 `scoped_feather_pi.py prepare`와 PC의 `scoped_feather_led_cycle.py`에 모두 `--firmware-revision feather-probe-0.2.1`을 지정한다. 시작 시 `CMD OFF`를 확인한다. `LED_ON_RECORDED`와 `LED_OFF_RECORDED`가 각각 나온 뒤, 다음 명령을 보내거나 Pi 시험을 끝내기 전에 눈으로 본 화면을 기록한다. 기본 옵션은 기존 `feather-probe-0.2.0` 절차에 맞춰져 있다.
+
+화면을 본 직후 별도 PC 터미널에서 해당 단계만 기록한다. 아래 문구는 예시다. 다른 문구가 표시되면 실제로 읽은 `CMD ON`, `CMD OFF`, `CMD GPIO ERROR` 중 하나를 사용한다. 문구를 확인할 수 없으면 `NOT_VISIBLE`을 입력한다.
+
+```powershell
+# LED_ON_RECORDED 이후, LED_OFF 파일을 만들기 전에 실행
+python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_led_cycle.py `
+  --output $bench --record-display ON --screen-text 'CMD ON'
+
+# LED_OFF_RECORDED 이후, Pi 시험을 종료하기 전에 실행
+python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_led_cycle.py `
+  --output $bench --record-display OFF --screen-text 'CMD OFF'
+```
+
+기록 모드는 기존 readback과 grant 회수 응답을 읽고 `display-on.json`, `display-off.json`을 한 건씩 만든다. 명령 ID는 readback에서 가져오고 시각은 입력 명령을 실행한 PC의 UTC를 사용한다. 이 모드는 장치나 서버에 연결하지 않는다.
+
 `LED_ON_READY`, `LED_OFF_READY`가 각각 출력된 뒤에만 `$bench`에 해당 이름의 `LED_ON`, `LED_OFF` 파일을 만든다. 각 단계는 같은 부팅 세션의 명령 전 관측을 읽고, 팀 API에서 60초 grant를 받은 뒤 25초 기한의 명령을 발급한다. 실제 LED를 눈으로 확인한 결과는 따로 기록한다. 도구는 Mobius4 원본 영수증과 명령 후 관측을 확인하고 단계별 grant 회수 응답을 로컬에 저장한다.
 
 명령 발급 요청 전의 `led-*-intent.json`에 command ID와 CSE 자원명이 있다. 응답을 받기 전에 중단되면 새 명령을 보내기 전에 이 ID로 팀 상태와 원본 영수증을 대조한다. [격리 PostgreSQL 정산 작업자](../dev/mobius4/README.md#격리-postgresql-정산-실행)가 원본을 처리한 뒤 아래 절차로 증거를 묶는다. 중간에 중단하려면 `STOP` 파일을 만들고 실제 LED 상태를 확인한다.
 
 시험이 중단돼 `led-cycle.json`이 없으면 중단 뒤에 확보한 팀 상태와 Pi DB 사본으로 각 단계를 대조한다.
+출력 디렉터리에 `display-on.json`이나 `display-off.json`이 있으면 해당 단계의 명령 ID, GPIO readback, grant 회수 기록과 함께 대조한다. OFF 명령이 발급됐으면 ON 화면 기록은 발급 시각보다 앞서야 한다. 화면이 한 단계만 기록됐으면 해당 단계의 `commandDisplayObserved`에 결과가 나오고 전체 `commandDisplayMatched`는 `null`이다.
 
 ```powershell
 python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_evidence.py `
@@ -204,6 +348,8 @@ Pi 사본이 없으면 `--database`를 생략한다. 발급 요청의 응답 파
 
 두 명령이 끝나면 Pi SQLite 사본을 준비하고 `led-cycle.json`의 각 command ID로 [읽기 전용 정산 조회](../dev/mobius4/README.md#명령별-영수증-증거-조회)를 저장한다. `$teamState`는 같은 시험에서 팀 명령 API가 저장한 `runtime.json`의 사본이다. 운영자가 실제 LED를 확인한 경우에만 `--operator-observations`로 ON/OFF 순서의 JSON 배열을 공급한다. 각 항목은 `commandId`, `ledOn` 불리언, 시간대가 있는 `observedAt`을 포함한다.
 
+화면을 기록했다면 아래 명령에 `--display-observations $bench`를 추가한다. 기존 ON/OFF 순서의 JSON 배열 파일도 지정할 수 있다. 도구는 두 명령 ID와 후속 관측 시각을 대조하고 ON 화면을 OFF 발급 전에 기록했는지 확인한다. `commandDisplayMatched`는 두 문구의 일치 여부이며 화면 입력을 생략하면 `null`이다.
+
 ```powershell
 python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_evidence.py `
   --cycle (Join-Path $bench 'led-cycle.json') --database $piDatabaseCopy `
@@ -213,6 +359,24 @@ python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_evidenc
 도구는 Pi SQLite의 명령·영수증 해시와 CSE 원본의 `ri`·`ct`를 팀 발급·승인 기록과 PostgreSQL 정산에 대조한다. 정산 행에는 격리 CSE 키와 원본 경로도 필요하므로 시험 전에 최신 격리 작업자를 준비한다. `centralSettlementVerified`, `cseCallbackRecorded`, `physicalLedMatched`를 분리한다. 운영자가 실제 LED를 기록하지 않으면 물리 항목은 `null`이다. 승인과 CSE 보관 순서를 판정할 수 없어 정산이 `REVIEW`라면 원래 검토 상태를 보고한다.
 
 같은 Pi DB에서 재시도한 경우 이전 기한 만료 명령의 정확한 ID를 `--prior-expired-command`로 명시한다. 비교 도구는 성공한 ON/OFF 두 건과 명시한 이전 거절만 허용한다. 이전 거절의 명령 해시와 영수증, 기한 만료 순서, 전달 완료, 장치 ACK 및 readback 필드가 비어 있는지를 확인한다.
+
+#### 최신 중앙 API의 시험 결과 대조
+
+PC의 `scoped_feather_led_cycle.py`를 `--api-mode integration`으로 실행하면 각 단계에서 Mobius4의 영수증·관측과 중앙의 `APPLIED_VERIFIED` 기록을 확인한 뒤 완료를 표시한다. ON의 중앙 정산을 확인한 뒤 OFF 준비를 시작한다. OFF 기록과 단계 grant 회수를 마치면 `led-cycle.json`을 저장하고, 두 관측의 중앙 수용 이벤트를 최대 35초 기다린다. 두 해시와 수용 순번이 일치하면 `central-telemetry.json`을 저장하고 `LED_CYCLE_CENTRAL_TELEMETRY_VERIFIED`를 표시한다. 수용 이벤트 대기가 중단되거나 기한을 넘기면 `led-cycle.json`은 후속 대조에 사용할 수 있다.
+
+중앙 관측까지 전달된 뒤 같은 시험의 Pi SQLite와 `.local/scoped/command-api-integration/runtime.json` 사본을 준비한다. Pi 세션은 `--receipt-container-ri`로 고정한 컨테이너를 사용해야 한다.
+
+```powershell
+python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_evidence.py `
+  --api-mode integration --cycle (Join-Path $bench 'led-cycle.json') `
+  --database $piDatabaseCopy --team-state $teamState
+```
+
+보고서는 명령별 중앙 실행 시작·정산·관측 수용 이벤트 ID를 반환한다. Pi의 컨테이너 ID와 중앙 영수증 대기열, 중앙 영수증 해시와 읽어 온 장치 상태, 중앙 관측의 부팅 ID·순번·시각을 대조한다. 직접 본 LED 상태에는 `--operator-observations`를, 0.2.1 화면 문구에는 `--display-observations`를 사용한다. 현재 도구의 실행과 실제 Pi 연동 시험은 남아 있다.
+
+새 실행에서는 명령 전·후 관측의 Mobius4 인스턴스 유형, 이름, 자원 ID와 부모 ID를 `led-cycle.json`에 기록한다. Pi DB에 `observationContainerRi`가 있으면 관측마다 부모 ID와 장치·부팅·순번에서 만든 자원 이름을 대조하고 해당 요청이 Pi outbox에 남아 있는지 확인한다. 모두 일치하면 `observationContainerVerified`가 `true`다. 관측 ID를 고정하지 않은 이전 세션에서는 이 필드가 `null`이다.
+
+PC 시험 도구는 Node.js로 준비된 팀 소스의 `approvalHash`를 불러와 각 명령 후의 Mobius4 관측 본문을 해시한다. 기록에는 본문 대신 해시를 저장한다. ON과 OFF의 해시가 모두 중앙 `GATEWAY_TELEMETRY_ACCEPTED` 이벤트와 일치하면 `centralTelemetryPayloadVerified`가 `true`다. 해시를 저장하지 않은 이전 기록은 `null`이고, 한쪽 해시가 빠지거나 값이 불일치하면 대조가 실패한다.
 
 #### Pi 명령 세션
 
@@ -224,9 +388,13 @@ tool=keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_pi.py
   --address-file "$paired_address_file" --tls-dir "$scoped_gateway_tls"
 ```
 
-`prepare`는 로컬 TLS 파일을 읽고 `~/.local/state/privacy-bubble-feather-command/<세션>/profile.json`을 만든다. Pi 포워딩 포트가 8760과 8787과 다르면 `--cse-port`와 `--api-port`를 함께 지정한다. 실행 단계에서 상속된 Gateway 환경변수를 사용하지 않는다.
+`prepare`는 로컬 TLS 파일을 읽고 `~/.local/state/privacy-bubble-feather-command/<세션>/profile.json`을 만든다. 포워딩 포트를 바꿀 때는 `--cse-port` 또는 `--api-port`를 지정한다. 실행 환경은 저장한 프로필에서 구성한다.
+
+최신 팀 API를 쓰는 새 세션에는 `--api-mode integration`을 지정한다. 기본 포워딩 포트는 CSE `8760`, API `8788`이며, PC의 `scoped_feather_led_cycle.py`에도 같은 모드를 지정한다. 기존 세션은 프로필의 기본 모드 `legacy`로 실행된다. [최신 중앙 벤치](../dev/mobius4/README.md#최신-integration-api-벤치)
 
 격리 TLS 프록시에 컨테이너 권한을 준비한 경우, 새 세션의 `prepare`에 `--receipt-container-ri "$gw_a_receipt_ri"`를 추가한다. 이 값에는 PC 준비 도구의 `SCOPED_RECEIPT_PIN gw-a` 출력에서 읽은 ID를 넣는다.
+
+관측 ID를 고정하려면 PC의 `-PinObservationRoute` 출력에서 `SCOPED_OBSERVATION_PIN gw-a` 뒤의 값을 읽어 같은 `prepare`에 `--observation-container-ri "$gw_a_observation_ri"`를 추가한다. 중앙 저장소를 새로 구분할 때는 `--pc-api-deployment-id "$central_datastore_id"`도 넣는다. 이 ID는 운영자가 배정하고 중앙 팀 소스 커밋은 `--api-team-revision`에서 별도로 대조한다. 기존 세션의 DB와 다른 고정값을 쓰려면 새 세션을 준비한다. [PC 관측 권한 준비](../dev/mobius4/README.md#feather-벤치-명령-api)
 
 핀을 지정한 세션은 두 SSH 포워딩이 열린 상태에서 아래 명령으로 전송 경로를 점검한다.
 
@@ -236,6 +404,8 @@ tool=keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_pi.py
 
 Pi 인증서로 HTTPS GET만 보내 컨테이너 ID 일치, 중앙 자격 `ACTIVE`, 중앙 API의 활성 명령 0건을 확인한다. 성공하면 세 항목과 확인 시각을 JSON 한 줄로 출력한다. SQLite를 열거나 Gateway·BLE를 시작하는 단계는 다음 `run`이다. 실제 장치 준비 여부는 PC 명령 도구에서 같은 Feather 부팅의 최신 관측을 다시 확인한다.
 
+통합 모드는 `preflight`와 `run`에서 Pi 인증서로 `bench-capabilities`를 먼저 읽는다. 모드, 고정 팀 커밋, Gateway·장치 ID 및 `dispatch-start`·`receipts`·`telemetry`가 프로필과 모두 일치해야 진행한다. 기존 통합 세션의 기본 커밋은 `bc2a45d`다. 팀 커밋을 바꾸는 배포에서는 새 세션을 준비할 때 `--api-team-revision`에 전체 SHA를 넣는다.
+
 Feather 명령 프로필 `0.2.0`과 두 SSH 포워딩이 준비되면 같은 Feather를 쓰는 관측 프로세스를 종료한 뒤 아래 명령을 실행한다. 실행한 Gateway는 해당 세션의 `gateway.sqlite3`를 사용한다. Pi 사용자당 명령 벤치 한 개가 실행되며, 기본 Gateway의 SQLite 잠금도 유지한다.
 
 ```sh
@@ -243,6 +413,199 @@ Feather 명령 프로필 `0.2.0`과 두 SSH 포워딩이 준비되면 같은 Fea
 ```
 
 재시작할 때는 같은 세션명을 사용한다. 시험 종료 뒤 Gateway를 정상 종료하고 SQLite backup으로 사본을 만든다. 미전송 행이 있으면 원래 세션과 CSE 자원에서 대조한다.
+
+#### r18 Pi 관측 전용 세션
+
+첫 구동 보드의 BLE 관측을 Pi에서 격리 Mobius4와 중앙 API에 전달한다. `gw-b` 인증서, 중앙 등록 장치 ID `keyring-r18-lab`, 같은 배치에서 고정한 관측·영수증 ID를 사용한다. 새 세션에는 장착한 펌웨어 revision을 명시한다. 화면 없이 구동할 때는 `keyring-0.7.25-bringup`, 화면 점검 중에는 `keyring-0.7.25-st7789-bringup` 또는 `keyring-0.7.25-jd9853-bringup`을 선택한다. revision을 생략해 생성된 기존 세션은 `keyring-0.7.15-bringup`을 사용한다.
+
+```sh
+tool=keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_pi.py
+r18_bringup_firmware=keyring-0.7.25-bringup
+"$pi_python" "$tool" prepare --session "$r18_observation_session" --api-mode r18 --observe-only \
+  --firmware-revision "$r18_bringup_firmware" \
+  --address-file "$r18_address_file" --tls-dir "$scoped_gateway_b_tls" \
+  --receipt-container-ri "$gw_b_receipt_ri" --observation-container-ri "$gw_b_observation_ri" \
+  --health-container-ri "$gw_b_health_ri"
+"$pi_python" "$tool" preflight --session "$r18_observation_session"
+(umask 077; "$pi_python" "$tool" run --session "$r18_observation_session" > "$r18_gateway_log" 2>&1)
+```
+
+사전 확인은 지정된 컨테이너 ID와 중앙 자격을 대조해 `commandsEnabled:false`를 보고한다. 실행 중에는 BLE 관측·health와 중앙 텔레메트리를 전송하며, 명령 조회·실행·장치 명령 영수증 전송은 중지 상태다. 같은 BLE 장치를 쓰는 초기 구동 기록 도구와 Gateway는 순차적으로 실행한다. 실제 연결은 `command-health-b`에서 `commandReady:false`를, 전송은 `command-observations-b`와 중앙 `GATEWAY_TELEMETRY_ACCEPTED`에서 같은 관측을 확인한다. `$r18_gateway_log`는 해당 세션의 새 비공개 파일로 지정한다. 위 기본 설정의 관측은 HTTPS 확인 경로를 남긴다. 명령 시험에는 별도의 [r18 Pi 명령 세션](#r18-pi-명령-세션)을 준비한다.
+
+##### r18 버튼 사건 시험
+
+0.7.21~0.7.25 계열의 bring-up 펌웨어로 관측 전용 Pi 세션을 연다. 두 버튼을 뗀 상태에서 아래 [관측 캡처](#관측-전달-증거-대조)의 `capture`로 기준 파일을 만든다. 같은 장치·Pi 부팅을 유지하고 확인 버튼을 짧게 눌렀다 뗀 뒤 비상 버튼도 같은 방식으로 누른다. 각 누름과 해제는 35ms 디바운스 구간을 넘긴다. 관측 전송이 끝나면 Pi Gateway를 정상 종료하고 같은 세션의 로그와 SQLite 사본, 격리 r18 API의 `runtime.json` 사본을 준비한다. 로그와 원본 관측은 Git 밖에 보관한다.
+
+```powershell
+$buttonsTool = 'keyring/raspberry-pi-gateway/cse_integration_tests/scoped_r18_buttons.py'
+python $buttonsTool --baseline $r18Baseline --usb-boot-log $r18UsbLog --pi-log $r18GatewayLogCopy `
+  capture --output $r18ButtonCapture
+python $buttonsTool --baseline $r18Baseline --usb-boot-log $r18UsbLog --pi-log $r18GatewayLogCopy `
+  compare --button-capture $r18ButtonCapture --database $piDatabaseCopy --team-state $teamStateCopy
+```
+
+`capture`는 Pi 로그에서 기준 관측 이후 최대 64개의 완료 요청 ID를 읽고 Mobius4에서 해당 자원을 조회한다. `compare`는 `released → confirm → released → panic → released`의 순번과 누계를 대조한다. 중앙의 관측 수용 순서, 동일 비상 관측 ID의 `DEVICE_PANIC_RECONCILED` 영수증 및 같은 기기의 안전 사건이 모두 있어야 통과한다. 중앙의 사건 처리 시한은 관측 후 30초다. 보고서는 새 사건 생성과 열린 사건 재사용을 결과 코드로 표시한다.
+
+##### r18 MQTT와 HTTPS fallback 시험
+
+[격리 r18 MQTT 중계](../dev/mobius4/README.md#r18-관측-mqtt-중계)의 구독 준비를 확인한다. PC의 MQTT `127.0.0.1:8884`를 Pi의 `127.0.0.1:8884`에 전달하는 SSH 역방향 터널을 CSE·API 터널과 별도로 연다. 위 `prepare` 명령에서 새 세션 이름과 `--mqtt-port 8884`를 지정한다. Pi는 같은 Gateway B 인증서와 고정 ID를 사용한다.
+
+보드 전원과 Pi Gateway 0.2.101 이상 프로세스를 유지한 채 첫 관측을 수집하고, 같은 관측의 Pi 완료 로그에 `route=mqtt created=true`가 기록됐는지 확인한다. MQTT 터널만 종료한 뒤 새 관측을 별도 파일로 수집한다. CSE·API 터널은 유지하고 새 관측의 완료 로그에서 `route=https-fallback created=true`를 확인한다. Gateway를 종료하고 같은 세션의 SQLite와 Pi 로그, 중앙 상태를 복사한 뒤 두 관측을 대조한다.
+
+```powershell
+python $tool compare --firmware-revision $r18BringupFirmware --usb-boot-log $r18UsbLog `
+  --capture $r18MqttCapture --fallback-capture $r18FallbackCapture `
+  --database $piDatabaseCopy --team-state $teamStateCopy --pi-log $r18GatewayLogCopy
+```
+
+`--fallback-capture`를 쓰면 두 관측의 장치와 Gateway 부팅, 컨테이너 고정 ID, Pi 완료 로그를 대조한다. 두 경로에서 각각 새 자원을 만들고 BLE와 중앙 순번이 증가해야 `transportTransitionMatched:true`를 반환한다. 두 중앙 이벤트 모두 `simulation:false`가 필요하다. `created:false`는 기존 자원을 확인한 경우다. 이 절차의 MQTT와 fallback 실물 시험은 미실행이다.
+
+##### 관측 전달 증거 대조
+
+제작 PCB의 첫 구동 기록을 연결하려면 `gw-b`, `keyring-r18-lab`, `core-v1`로 만든 [초기 구동 보고서](#r18-초기-구동-기록)와 업로드에 사용한 `firmware.bin`을 확보한다. PCB 전원을 유지한 채 Pi 관측 전용 세션을 시작한다. PC에서 첫 구동 보고서에 사용한 그대로의 USB 로그와 준비한 관측·health ID를 지정한다. PC와 Pi 시계를 맞춘 상태에서 실행한다. `capture`는 시험을 시작한 뒤 들어온 Mobius4 관측과 상태를 HTTPS GET으로 읽는다. 같은 부팅과 펌웨어, 출력 OFF·fault 해제, `commandReady:false`를 확인한 뒤 비공개 JSON을 쓴다.
+
+```powershell
+$tool = 'keyring/raspberry-pi-gateway/cse_integration_tests/scoped_r18_observation.py'
+python $tool capture --firmware-revision $r18BringupFirmware --usb-boot-log $r18UsbLog `
+  --observation-container-ri $gwBObservationRi --health-container-ri $gwBHealthRi `
+  --output $r18ObservationCapture
+```
+
+Gateway를 정상 종료한 뒤 같은 세션의 SQLite 사본, Pi 로그와 격리 r18 API의 `runtime.json` 사본을 확보한다. Pi DB는 [시험 증거 보관](#r18-pi-시험-증거-보관)의 `export-env`와 `state_archive snapshot`으로 확보할 수 있다.
+
+```powershell
+python $tool compare --firmware-revision $r18BringupFirmware --usb-boot-log $r18UsbLog `
+  --capture $r18ObservationCapture --database $piDatabaseCopy --team-state $teamStateCopy --require-physical `
+  --bringup-report $r18BringupReport --firmware-image $r18FirmwareBin --pi-log $r18GatewayLogCopy
+```
+
+`compare`는 Pi의 같은 부팅에서 관측 순번이 저장됐는지 확인하고, 관측·health 컨테이너를 SQLite에 고정한 자원 ID와 대조한다. 해당 관측이나 health가 Pi 전송 큐에 남아 있으면 본문도 비교한다. 기존 health ID 미고정 세션은 `healthContainerVerified:null`로 보고한다.
+
+`--bringup-report`와 `--firmware-image`는 함께 지정한다. 도구는 첫 구동 보고서가 `RECORDED`인지, 같은 USB 로그와 실행 이미지 해시가 들어 있는지, Mobius4 관측 순번이 첫 구동에서 받은 순번보다 큰지 확인한다. 일치하면 첫 구동 보고서와 펌웨어 파일의 해시를 `firstBringupEvidence`에 남긴다. 이전 펌웨어 또는 관측 전송만 진단할 때는 두 옵션을 생략할 수 있다.
+
+같은 보드의 [실물 조립 기록](../pcb/BRING_UP.md#실물-조립-기록)이 있으면 `compare`에 `--assembly-record $r18AssemblyRecord --assembly-board-tag $observedBoardTag`를 함께 지정한다. 첫 구동에 같은 기록이 있으면 해시와 작업자 확인 정보를 대조하고 `assemblyEvidence.firstCaptureMatched=true`로 남긴다. 다른 기록이면 비교를 중단한다. 조립 기록 연결 전에 저장한 첫 구동 보고서는 `firstCaptureMatched=false`로 남긴다. 조립 기록에 적힌 LCD 모델과 USB 부팅의 패널 프로필이 모두 알려져 있으면 두 값도 대조한다.
+
+`--pi-log`는 Gateway 0.2.100 이후의 완료 로그에서 같은 요청 ID와 관측 본문 해시를 찾아 `nativeDelivery`에 연결한다. 0.2.101부터는 완료 로그와 health의 Gateway 부팅 ID도 대조한다. `mqtt`는 MQTT 응답으로, `https`는 HTTPS 전용 설정에서, `https-fallback`은 MQTT가 설정돼 있었지만 HTTPS CREATE 요청 응답으로 완료된 경로다. `created:false`이면 CSE에 있던 동일 자원을 확인한 결과다. 처음 생성한 경로를 이 값으로 판정할 수 없다. SQLite에 관측이 아직 대기 중이거나 로그의 경로가 충돌하면 대조가 실패한다. 기존 세션의 로그가 없으면 옵션을 생략한다.
+
+중앙 수용은 고정 팀 소스의 해시 함수로 Mobius4 관측 본문과 대조한다. `physicalRelayEvidenceMatched`는 Pi의 health 고정 ID가 맞고 같은 중앙 수용 이벤트에 `simulation:false`가 기록됐을 때 `true`다. `--require-physical`은 이 값이 `true`여야 성공 코드 0을 반환한다. 모의 이벤트, health ID 미고정 세션, 중앙 이벤트 미도착은 보고서를 출력하고 종료 코드 1을 반환한다. 중앙 수용만 진단할 때는 옵션을 생략하고 `centralTelemetryAccepted`를 확인한다. 최신 중앙 사본으로 같은 기록을 다시 대조할 수 있다.
+
+##### 중앙 위치 API와 웹 응답 대조
+
+위치 화면까지 확인할 때는 새 BLE 연결 직전에 `capture --require-rssi`를 시작한다. Pi의 광고 RSSI 보존 시간 안에 같은 부팅의 관측을 확보하면 `R18_LOCATION_SAMPLE`에 관측 시각이 출력된다. 위치 API와 웹은 최신 관측을 제공하므로 두 응답에서 그 시각의 자료를 확보한다.
+
+격리 PC에서 중앙 응답을 수집하려면 r18 API를 [위치 시험 옵션](../dev/mobius4/README.md#r18-격리-위치-시험)으로 시작한다. 아래 도구를 먼저 실행하고 `R18_LOCATION_LEASE_READY`가 표시되면 같은 부팅의 Pi 관측 전용 세션을 시작한다.
+
+```powershell
+python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_r18_portal_capture.py `
+  --live-observation --firmware-revision $r18BringupFirmware --usb-boot-log $r18UsbLog `
+  --observation-container-ri $gwBObservationRi --health-container-ri $gwBHealthRi `
+  --output $privateLocationTrial
+```
+
+도구는 포털 조회 전후 중앙 상태의 관측 ID를 확인하며, 두 경로의 최근 후보에서 동일한 관측을 찾는다. 일치한 `observation.json`과 `portal-response.json`을 위 `compare`의 `--capture`와 `--portal-response`에 지정한다. 회수 뒤의 응답은 `portal-after-revocation.json`에, lease·grant·consent 회수 및 사건 종료는 `location-trial.json`에 보관한다. 기한 내에 일치한 관측이 없으면 종료 코드 1을 반환한다. 이미 확보한 관측 파일은 기존 `--observation-capture` 옵션으로 사용할 수 있다.
+
+팀 포털을 사용하는 시험은 승인된 사용자 세션과 유효한 위치 grant·lease에서 `GET /v1/portal/locations`와 LIVE 웹의 `GET /api/portal/locations`를 확보한다. 수동 사본에는 인증 헤더·쿠키 없이 `path`, 숫자 `status`, UTC 조회 시각 `capturedAt`, JSON `body`를 기록한다.
+
+위 `compare` 명령에 `--portal-response $portalResponseCopy`와 `--web-response $webResponseCopy` 중 확보한 파일을 추가한다. 결과는 수용 이벤트와 기기·Gateway·관측 시각·RSSI·모의 표시가 일치하면 `matched`를 반환한다. 웹 출처는 `live`의 `portal-api`여야 한다. `combined`는 파일 입력도 섞이므로 출처 미확인으로 남긴다. 화면 표시와 별도 앱의 실물 연동은 각각 화면 증거를 남긴다.
+
+#### r18 Pi 명령 세션
+
+[r18 격리 명령 API](../dev/mobius4/README.md#r18-격리-명령-api)의 `gw-b` 인증서와 컨테이너 ID를 사용한다. 정식 r18 시험 펌웨어의 로컬 provisioning에서 장치 ID를 `keyring-r18-lab`으로 설정한다. 짝지은 r18 주소와 `ca.pem`, `gateway-b.pem`, `gateway-b.key`를 기존 Pi 세션과 같은 방식으로 소유자 전용 위치에 둔다.
+
+```sh
+tool=keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_pi.py
+"$pi_python" "$tool" prepare --session "$r18_session" --api-mode r18 \
+  --address-file "$r18_address_file" --tls-dir "$scoped_gateway_b_tls" \
+  --receipt-container-ri "$gw_b_receipt_ri" --observation-container-ri "$gw_b_observation_ri" \
+  --health-container-ri "$gw_b_health_ri"
+"$pi_python" "$tool" preflight --session "$r18_session"
+```
+
+r18 모드는 중앙 API 포트 `8789`와 `gw-b` 전용 경로를 사용한다. 새 명령 세션은 `keyring-0.7.25`를 고정한다. Pi는 BLE 장치 ID, `r18-hand-solder` 보드와 지정한 펌웨어 revision을 대조하고 중앙 API의 기능 응답도 같은 revision으로 확인한다. 이전 0.7.14·0.7.19·0.7.20-sleep·0.7.21~0.7.23 계열 명령 세션은 그 revision을 이어서 사용한다. 관측 또는 영수증 ID가 없는 이전 r18 세션은 검증된 두 ID로 새 세션을 만든다. `preflight` 후 승인된 시험에서만 `run`으로 해당 세션을 시작한다. Feather 명령 시험과 r18 명령 시험은 Pi 사용자당 같은 실행 잠금을 사용한다. r18의 모터 펄스는 [실물 명령 대조](../JOURNAL_RETENTION.md#r18-실물-명령-한-건-대조)의 절차에 연결한다.
+
+`keyring-0.7.25-sleep`으로 절전 후 명령 경로까지 확인할 때는 [격리 API](../dev/mobius4/README.md#r18-격리-명령-api)를 같은 revision으로 시작하고, Pi `prepare`에 `--firmware-revision keyring-0.7.25-sleep`을 추가해 새 세션을 만든다. 아래 펄스 도구에도 같은 옵션을 넘긴다. 장치 저널 수집은 저장된 Pi 세션의 revision을 사용한다.
+
+깨운 부팅에서 실행했음을 확인하려면 먼저 `gw-b`·`keyring-r18-lab`으로 [wake 보고서](#r18-wake-기록)를 만든다. 도구가 BLE를 닫으면 보드 전원을 유지하고 다시 잠들기 전에 Pi 명령 세션을 시작한다. 펄스 도구에 `--wake-report $r18WakeReport`를 추가한다. 보고서와 같은 부팅에서 새로 받은 OFF health의 깨우기 원인과 핀 마스크를 대조한다. 중앙이 그 Mobius4 원본과 같은 해시의 관측을 15초 안에 수용하면 `pulse-wake-observation.json`을 저장한 뒤 `R18_PULSE_READY`를 출력한다. 관측이 모의 입력이거나 원인·핀이 다르면 grant 발급 전에 중단한다. 명령 발급 직전의 health도 같은 깨우기 원인과 핀을 보고해야 한다.
+
+#### r18 단일 펄스 시험
+
+격리 r18 API와 Pi 세션을 시작하고, 출력 계측기를 준비한 뒤 PC에서 새 비공개 폴더를 출력 경로로 지정한다. 관측·영수증은 Pi `preflight`에서 일치한 ID를, health는 같은 [Mobius4 배치](../dev/mobius4/README.md#r18-격리-명령-api)의 확인값을 쓴다.
+
+```powershell
+python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_r18_pulse.py --output $privatePulseEvidence `
+  --observation-container-ri $gwBObservationRi --receipt-container-ri $gwBReceiptRi `
+  --health-container-ri $gwBHealthRi
+```
+
+`R18_PULSE_READY`가 나오면 실제 시험을 시작할 때 다른 터미널에서 같은 폴더에 빈 `PULSE` 파일을 만든다. 도구는 같은 부팅에서 출력 OFF·fault 없음·Pi 명령 준비와 장치 저널의 정상 상태 및 빈 슬롯을 다시 읽는다. 저널 상태는 순환 관측의 `health` 프레임에서 확인한다. grant 발급 뒤 최신 프레임을 최대 15초 기다리고 영수증 경로의 고정 ID를 재확인한 뒤 명령 한 건을 발급한다. `STOP`, 저널 오류·가득 참 또는 기한 내 상태 미수신으로 중단되면 발급된 grant의 회수를 시도한다.
+
+도구는 시험 폴더를 만들기 전에 Gateway B 인증서로 실행 중인 API의 기능 응답을 읽어 지정한 명령 firmware revision과 대조한다.
+
+발급 전에 `pulse-intent.json`을 저장하고, OFF 기준 관측의 `baseline.journal`에 사용·PREPARED·전체 슬롯 수를 남긴다. `R18_PULSE_RECORDED`는 장치 ACK의 적용 당시 ON, 중앙 실행 시작·정산, 같은 부팅의 더 새 OFF 관측과 grant 회수가 확인된 경우에 출력된다. 응답이 끊기면 `pulse-intent.json`의 command ID로 원래 명령을 조회한다. 시험 도구는 그 명령을 자동으로 다시 발급하지 않는다. 펄스 길이와 종료 시점은 계측기로 기록하고 같은 command ID로 [장치 저널 대조](../JOURNAL_RETENTION.md#r18-실물-명령-한-건-대조)에 연결한다.
+
+권한 회수 뒤, 고정된 팀 소스의 Node 해시 함수로 Mobius4의 OFF 관측 본문 해시를 계산해 `pulse-observation.json`에 저장한다. 중앙 이벤트와 관측 ID·해시·시각이 일치하면 `pulse-central-telemetry.json`을 쓰고 `R18_PULSE_CENTRAL_TELEMETRY_VERIFIED`를 출력한다. 중앙 이벤트 대기는 최대 35초이며 세션 전체 기한의 적용을 받는다. 중앙 대기가 끝나도 이미 저장한 `pulse-result.json`과 `pulse-observation.json`으로 뒤늦게 받은 중앙 상태 사본을 대조할 수 있다.
+
+#### 중단된 r18 펄스 시험 대조
+
+PC 시험 폴더와 격리 r18 API의 `runtime.json` 사본을 준비한다. Pi SQLite 사본을 확보했으면 `--database`에 지정한다. 도구는 로컬 사본을 읽어 기존 명령의 발급·실행·정산을 조회한다.
+
+```powershell
+python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_r18_evidence.py `
+  --output-directory $privatePulseEvidence --team-state $teamStateCopy `
+  --database $piDatabaseCopy
+```
+
+`issuanceInTeamSnapshot`이 `false`면 제공한 상태 사본에 발급 기록이 없다. `centralApplicationVerified`가 `true`면 같은 명령의 적용 영수증과 중앙 실행·정산 기록이 일치한다. `pulse-scope.json`이 있으면 저장된 관측·health·영수증의 부모와 선택한 Pi DB의 관측·영수증 ID를 대조한다. 이전 기록은 `cseContainerPinsCaptured: false`로 표시한다. `postPulseCentralTelemetryVerified`가 `true`면 해당 명령 뒤의 OFF 관측 해시가 중앙 상태 사본의 이벤트와 일치한다. 계측 파일을 지정하지 않으면 `physicalPulseMeasured`는 비워 둔다.
+
+wake 보고서를 사용한 펄스는 오프라인 대조에도 원본을 `--wake-report $r18WakeReport`로 지정한다. 새 펄스 기록은 격리 r18 API에 고정한 팀 소스의 해시 함수로 Mobius4 원본을 다시 해시하고 중앙 수용 이벤트와 비교한다. 같은 부팅·순번·원인·핀이 연결되면 `wakeRelayVerified:true`를 반환한다. 이 기록에 최초 `APPLIED` Mobius4 영수증과 중앙 정산이 일치해야 `postWakeApplicationVerified:true`가 된다. 이전 펄스 기록에는 중앙 wake 관측 증거가 없으므로 `wakeRelayVerified:false`로 남는다.
+
+##### r18 펄스 계측값 연결
+
+같은 시험의 J6 모터 부하 양단 전압을 시간 오프셋(ms)과 전압(V) 두 열의 UTF-8 CSV로 보관한다. 헤더는 `offsetMs,voltageV`를 사용하고 상승 전과 하강 후의 샘플도 포함한다. 계측기 원본은 함께 비공개로 보관한다. 진동을 확인한 영상은 별도 실물 증거에 연결한다.
+
+먼저 계측 옵션 없이 대조한 결과의 `commandId`, `cseResourceId`, `cseReceiptSha256`을 아래 JSON에 넣는다. `traceSha256`은 `Get-FileHash -Algorithm SHA256`으로 구한 CSV 해시의 소문자 값이다. `highThresholdV`에는 같은 계측에서 사용한 HIGH 판정 기준을 적는다.
+
+```json
+{
+  "version": 1,
+  "commandId": "<commandId>",
+  "cseResourceId": "<cseResourceId>",
+  "receiptSha256": "<cseReceiptSha256>",
+  "measurementPoint": "J6-motor-load",
+  "traceSha256": "<traceSha256>",
+  "highThresholdV": 1.5
+}
+```
+
+```powershell
+python keyring/raspberry-pi-gateway/cse_integration_tests/scoped_r18_evidence.py `
+  --output-directory $privatePulseEvidence --team-state $teamStateCopy --database $piDatabaseCopy `
+  --pulse-trace $r18MotorCsv --pulse-trace-metadata $r18MotorMetadata
+```
+
+도구는 최초 `APPLIED` Mobius4 영수증에 계측을 연결한다. 상승·하강을 각각 인접 샘플의 시간 범위로 표현하고 이로부터 `durationBoundsMs`를 계산한다. 길이 상한이 1,000ms 이하면 `within-limit`, 하한이 1,000ms보다 크면 `over-limit`, 두 경계 사이에 한도가 있으면 `inconclusive`다. 두 에지가 모두 들어온 단일 펄스에서만 길이를 판정한다. `within-limit`일 때 계측 옵션의 종료 코드는 0이다. 샘플 사이의 관측 한계는 `maxSampleGapMs`로 남기고 명령과 계측 파일의 연결은 작업자 기록을 근거로 표시한다.
+
+#### r18 Pi 시험 증거 보관
+
+시험 Gateway를 정상 종료한 뒤 r18 전원을 유지한다. `$private_r18_evidence`는 Pi에서 이미 만든 소유자 전용 폴더다. `$team_state_copy`와 `$pulse_receipt_copy`는 PC에서 같은 시험의 `runtime.json`과 `pulse-receipt.json`을 복사한 경로다. `$pulse_command_id`에는 PC의 `pulse-intent.json`에 저장된 명령 ID를 지정한다.
+
+```sh
+tool=keyring/raspberry-pi-gateway/cse_integration_tests/scoped_feather_pi.py
+"$pi_python" "$tool" export-env --session "$r18_session"
+"$pi_python" "$tool" capture-r18 --session "$r18_session" --output "$private_r18_evidence/device"
+
+gateway_env="$HOME/.local/state/privacy-bubble-feather-command/$r18_session/gateway.env"
+source_path="$PWD/keyring/raspberry-pi-gateway/src"
+env -i PATH=/usr/bin:/bin PYTHONPATH="$source_path" "$pi_python" -m bubble_gateway.state_archive snapshot \
+  --env-file "$gateway_env" --output "$private_r18_evidence/gateway"
+env -i PATH=/usr/bin:/bin PYTHONPATH="$source_path" "$pi_python" -m bubble_gateway.journal_reconcile \
+  --env-file "$gateway_env" --device-archive "$private_r18_evidence/device" \
+  --gateway-archive "$private_r18_evidence/gateway" --same-boot-command "$pulse_command_id" \
+  --board-revision r18-hand-solder --firmware-revision keyring-0.7.25 \
+  --team-state "$team_state_copy" --native-receipt "$pulse_receipt_copy"
+```
+
+`export-env`는 세션의 DB·인증서 파일 경로와 컨테이너 ID를 `gateway.env`에 저장한다. 장치 주소도 포함하므로 시험 폴더 안에 둔다. 기존 환경 파일은 다시 사용한다. `capture-r18`은 같은 시험 잠금과 DB 잠금을 사용하며, 지정한 장치·보드·펌웨어가 맞을 때 저널을 보관한다. `--native-receipt`를 쓰는 마지막 대조는 Pi의 Mobius4 loopback 전달을 닫은 뒤에도 실행할 수 있다. 이전 버전의 영수증을 사용할 때는 이 옵션을 빼고 loopback 전달을 유지한다.
 
 ## 이전 시험 기록
 

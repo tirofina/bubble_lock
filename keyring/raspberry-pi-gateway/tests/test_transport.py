@@ -1,4 +1,6 @@
 import asyncio
+from collections import Counter
+from contextlib import closing
 import hashlib
 import json
 import os
@@ -15,9 +17,11 @@ import httpx
 from bubble_gateway.config import GatewayConfig
 from bubble_gateway.core_bridge import telemetry
 from bubble_gateway.model import iso_time, payload_hash, utc_now
-from bubble_gateway.transport import (MAX_RETRY_AFTER_SECONDS, HttpRetryDeferred, NativeDeliveryHold, ReceiptParentMismatch,
+from bubble_gateway.service import Gateway
+from bubble_gateway.store import Store
+from bubble_gateway.transport import (MAX_RETRY_AFTER_SECONDS, HttpRetryDeferred, NativeConfirmation, NativeDeliveryHold, ReceiptParentMismatch,
                                       RemoteResponseError, TransportHub, _mqtt_to, _retry_after)
-from helpers import command, config, observation
+from helpers import BINDING, command, config, observation
 
 
 class HttpRetryAfterTests(unittest.IsolatedAsyncioTestCase):
@@ -68,8 +72,16 @@ class HttpRetryAfterTests(unittest.IsolatedAsyncioTestCase):
                 cfg.receipt_container_ri = "cnt-pinned"
                 self.assertEqual(hub.native_delivery_hold(), NativeDeliveryHold(
                     receipt_container=cfg.receipt_container, credential_receipts=True))
+                cfg.observation_container_ri = "cnt-observation"
+                self.assertEqual(hub.native_delivery_hold(), NativeDeliveryHold(
+                    receipt_container=cfg.receipt_container, credential_receipts=True,
+                    observation_container=cfg.observation_container))
+                cfg.health_container_ri = "cnt-health"
+                self.assertEqual(hub.native_delivery_hold().health_container, cfg.health_container)
                 hub._mqtt = None
                 cfg.receipt_container_ri = None
+                cfg.observation_container_ri = None
+                cfg.health_container_ri = None
 
                 clock.return_value = 145.0
                 self.assertEqual(hub.native_delivery_hold(), NativeDeliveryHold())
@@ -78,6 +90,80 @@ class HttpRetryAfterTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([request.url.host for request in requests], ["cse.invalid", "api.invalid", "cse.invalid"])
         self.assertEqual(requests[0].headers["X-M2M-RI"], requests[-1].headers["X-M2M-RI"])
         self.assertEqual(requests[0].content, requests[-1].content)
+
+    async def test_team_api_delay_leaves_the_distinct_cse_origin_available(self):
+        cfg = config()
+        cfg.api_url, cfg.cse_url = "https://api.invalid", "https://cse.invalid"
+        cfg.request_timeout = 1
+        hub = TransportHub(cfg)
+        hosts = []
+
+        def respond(request):
+            hosts.append(request.url.host)
+            if request.url.host == "cse.invalid":
+                return httpx.Response(201, headers={"X-M2M-RI": request.headers["X-M2M-RI"], "X-M2M-RSC": "2001"})
+            if len(hosts) == 1:
+                return httpx.Response(429, headers={"Retry-After": "30"})
+            return httpx.Response(200, json={"status": "ACTIVE"})
+
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            hub._http = client
+            with patch("bubble_gateway.transport.monotonic", return_value=100.0) as clock:
+                with self.assertRaises(HttpRetryDeferred):
+                    await hub.credential_status()
+                self.assertTrue(hub.central_delivery_held())
+                self.assertEqual(hub.native_delivery_hold(), NativeDeliveryHold())
+                await hub.publish("native-request", "/test/observations", {"synthetic": True})
+                clock.return_value = 130.0
+                self.assertFalse(hub.central_delivery_held())
+                self.assertEqual(await hub.credential_status(), {"status": "ACTIVE"})
+        self.assertEqual(hosts, ["api.invalid", "cse.invalid", "api.invalid"])
+
+    async def test_origin_hold_survives_daemon_restart_only_in_the_same_system_boot(self):
+        cfg = config()
+        cfg.api_url, cfg.cse_url = "https://peer.invalid:8443", "https://peer.invalid"
+        cfg.request_timeout = 1
+        requests = []
+
+        def respond(request):
+            requests.append(request.url.port)
+            if request.url.port is None:
+                return httpx.Response(201, headers={"X-M2M-RI": request.headers["X-M2M-RI"], "X-M2M-RSC": "2001"})
+            if requests == [8443]:
+                return httpx.Response(503, headers={"Retry-After": "30"})
+            return httpx.Response(200, json={"status": "ACTIVE"})
+
+        with (
+            tempfile.TemporaryDirectory() as folder,
+            patch("bubble_gateway.transport._system_boot_id", return_value="boot-one") as boot,
+            patch("bubble_gateway.transport.monotonic", return_value=100.0) as clock,
+        ):
+            database = Path(folder) / "gateway.sqlite3"
+            async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+                with closing(Store(database, 100, 100000, 20, BINDING)) as store:
+                    hub = TransportHub(cfg, retry_store=store)
+                    hub._http = client
+                    with self.assertRaises(HttpRetryDeferred):
+                        await hub.credential_status()
+
+                clock.return_value = 112.0
+                with closing(Store(database, 100, 100000, 20, BINDING)) as store:
+                    restarted = TransportHub(cfg, retry_store=store)
+                    restarted._http = client
+                    with self.assertRaises(HttpRetryDeferred) as deferred:
+                        await restarted.credential_status()
+                    self.assertEqual((deferred.exception.status_code, deferred.exception.retry_after), (503, 18))
+                    await restarted.publish("native-request", "/test/observations", {"synthetic": True})
+                    clock.return_value = 130.0
+                    self.assertFalse(restarted.central_delivery_held())
+
+                boot.return_value = "boot-two"
+                clock.return_value = 5.0
+                with closing(Store(database, 100, 100000, 20, BINDING)) as store:
+                    rebooted = TransportHub(cfg, retry_store=store)
+                    rebooted._http = client
+                    self.assertEqual(await rebooted.credential_status(), {"status": "ACTIVE"})
+        self.assertEqual(requests, [8443, None, 8443])
 
 
 class ProtocolSelectionTests(unittest.IsolatedAsyncioTestCase):
@@ -311,21 +397,38 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_mqtt_application_receipt_avoids_http(self):
         self.mqtt(2001)
-        await self.hub.publish(self.rqi, self.container, self.payload)
+        result = await self.hub.publish(self.rqi, self.container, self.payload)
+        self.assertEqual(result, NativeConfirmation("mqtt", True))
         self.hub._http_json.assert_not_awaited()
         self.assertEqual(self.hub._pending, {})
 
+    async def test_deployment_bridge_mqtt_uses_named_mobius_path(self):
+        self.hub.config.mqtt_mobius_named_paths = True
+        container = "/Mobius/household/gateway-1/observations"
+        self.mqtt(2001, target=container)
+        result = await self.hub.publish(self.rqi, container, self.payload)
+        self.assertEqual(result, NativeConfirmation("mqtt", True))
+        self.hub._http_json.assert_not_awaited()
+        self.assertEqual(self.hub.route_counters, {"native_mqtt": 1})
+
     async def test_broker_acceptance_without_application_receipt_uses_same_cin_http(self):
         self.mqtt()
-        await self.hub.publish(self.rqi, self.container, self.payload)
+        result = await self.hub.publish(self.rqi, self.container, self.payload)
+        self.assertEqual(result, NativeConfirmation("https-fallback", True))
         self.hub._http_json.assert_awaited_once()
         _, kwargs = self.hub._http_json.call_args
         mqtt_cin = json.loads(self.hub._mqtt.publish.call_args.kwargs["payload"])["m2m:rqp"]["pc"]
         self.assertEqual(kwargs["body"], mqtt_cin)
         self.assertEqual(self.hub._pending, {})
 
-    def pin_receipt_container(self, observed_ri, *, readback_changes=None, readback_error=None):
-        self.hub.config.receipt_container_ri = "cnt-original"
+    async def test_https_only_confirmation_is_not_counted_as_fallback(self):
+        self.hub.config.m2m_mqtt_enabled = False
+        result = await self.hub.publish(self.rqi, self.container, self.payload)
+        self.assertEqual(result, NativeConfirmation("https", True))
+
+    def pin_container(self, observed_ri, *, readback_changes=None, readback_error=None, route="receipt"):
+        self.container = getattr(self.hub.config, f"{route}_container")
+        setattr(self.hub.config, f"{route}_container_ri", "cnt-original")
 
         async def exchange(method, url, *, headers, body=None):
             response = httpx.Headers({"X-M2M-RI": headers["X-M2M-RI"]})
@@ -342,6 +445,26 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
 
         self.hub._http_json.side_effect = exchange
 
+    def pin_receipt_container(self, observed_ri, **options):
+        self.pin_container(observed_ri, **options)
+
+    async def test_observation_pin_blocks_create_on_recreated_container(self):
+        self.pin_container("cnt-recreated", route="observation")
+        self.mqtt(2001)
+        with self.assertRaises(ReceiptParentMismatch):
+            await self.hub.publish(self.rqi, self.container, self.payload)
+        self.hub._mqtt.publish.assert_not_called()
+        self.assertEqual([entry.args for entry in self.hub._http_json.await_args_list],
+                         [("GET", "https://cse.invalid/test/observations")])
+
+    async def test_observation_pin_uses_pinned_target_and_confirms_readback(self):
+        self.pin_container("cnt-original", route="observation")
+        self.mqtt(target="cnt-original")
+        await self.hub.publish(self.rqi, self.container, self.payload)
+        self.assertEqual([entry.args for entry in self.hub._http_json.await_args_list],
+                         [("GET", "https://cse.invalid/test/observations"), ("POST", "https://cse.invalid/cnt-original"),
+                          ("GET", "https://cse.invalid/test/observations/" + self.rn)])
+
     async def test_pin_blocks_create_when_named_container_is_recreated(self):
         self.pin_receipt_container("cnt-recreated")
         self.mqtt(2001)
@@ -351,6 +474,23 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([entry.args for entry in self.hub._http_json.await_args_list],
                          [("GET", "https://cse.invalid/test/receipts")])
 
+    async def test_health_pin_blocks_recreated_route_and_confirms_credential_receipt(self):
+        self.pin_container("cnt-recreated", route="health")
+        self.mqtt(2001)
+        with self.assertRaises(ReceiptParentMismatch):
+            await self.hub.publish(self.rqi, self.container, self.payload)
+        self.hub._mqtt.publish.assert_not_called()
+
+        self.hub._http_json.reset_mock()
+        self.payload = {"credentialTransition": {"sequence": 1}}
+        self.pin_container("cnt-original", route="health")
+        self.mqtt(2001, target="cnt-original", confirmation_parent="cnt-original")
+        await self.hub.publish(self.rqi, self.container, self.payload)
+        self.hub._mqtt.publish.assert_called_once()
+        self.assertEqual([entry.args for entry in self.hub._http_json.await_args_list], [
+            ("GET", "https://cse.invalid/test/health"), ("GET", "https://cse.invalid/test/health/" + self.rn),
+        ])
+
     async def test_pin_uses_same_native_target_on_mqtt_timeout_and_https_fallback(self):
         self.pin_receipt_container("cnt-original")
         self.mqtt(target="cnt-original")
@@ -358,6 +498,16 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([entry.args for entry in self.hub._http_json.await_args_list],
                          [("GET", "https://cse.invalid/test/receipts"), ("POST", "https://cse.invalid/cnt-original"),
                           ("GET", "https://cse.invalid/test/receipts/" + self.rn)])
+
+    async def test_deployment_bridge_keeps_pinned_create_on_https(self):
+        self.hub.config.mqtt_mobius_named_paths = True
+        self.pin_receipt_container("cnt-original")
+        self.mqtt(2001)
+        await self.hub.publish(self.rqi, self.container, self.payload)
+        self.hub._mqtt.publish.assert_not_called()
+        self.assertEqual(self.hub._http_json.await_args_list[1].args,
+                         ("POST", "https://cse.invalid/cnt-original"))
+        self.assertEqual(self.hub.route_counters, {"native_https_pinned": 1})
 
     async def test_pin_requires_mqtt_confirmation_from_the_expected_parent(self):
         self.pin_receipt_container("cnt-original")
@@ -383,6 +533,53 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
                          [("GET", "https://cse.invalid/test/receipts"),
                           ("GET", "https://cse.invalid/test/receipts/" + self.rn)])
         self.assertEqual(self.hub._pending, {})
+
+    async def test_pinned_retry_confirms_existing_instance_without_create(self):
+        self.pin_receipt_container("cnt-original")
+        self.mqtt(target="cnt-original")
+        result = await self.hub.publish(self.rqi, self.container, self.payload, confirm_existing=True)
+        self.assertEqual(result, NativeConfirmation("https-readback", False))
+        self.assertEqual([entry.args for entry in self.hub._http_json.await_args_list],
+                         [("GET", "https://cse.invalid/test/receipts"),
+                          ("GET", "https://cse.invalid/test/receipts/" + self.rn)])
+        self.hub._mqtt.publish.assert_not_called()
+
+    async def test_pinned_retry_creates_only_after_authenticated_not_found(self):
+        self.pin_receipt_container("cnt-original")
+        exchange = self.hub._http_json.side_effect
+        missing = True
+
+        async def missing_once(method, url, *, headers, body=None):
+            nonlocal missing
+            if missing and method == "GET" and url.endswith("/" + self.rn):
+                missing = False
+                return 404, httpx.Headers({"X-M2M-RI": headers["X-M2M-RI"], "X-M2M-RSC": "4004"}), {}
+            return await exchange(method, url, headers=headers, body=body)
+
+        self.hub._http_json.side_effect = missing_once
+        await self.hub.publish(self.rqi, self.container, self.payload, confirm_existing=True)
+        self.assertEqual([entry.args for entry in self.hub._http_json.await_args_list],
+                         [("GET", "https://cse.invalid/test/receipts"),
+                          ("GET", "https://cse.invalid/test/receipts/" + self.rn),
+                          ("POST", "https://cse.invalid/cnt-original"),
+                          ("GET", "https://cse.invalid/test/receipts/" + self.rn)])
+        create = self.hub._http_json.await_args_list[2].kwargs
+        self.assertEqual(create["headers"]["X-M2M-RI"], self.rqi)
+        self.assertEqual(create["body"]["m2m:cin"]["rn"], self.rn)
+
+    async def test_pinned_retry_keeps_receipt_queued_if_lookup_cannot_establish_absence(self):
+        for changes, lookup_error in (
+            ({"con": {"synthetic": False}}, None),
+            ({"pi": "cnt-recreated"}, None),
+            (None, RemoteResponseError("permission denied", 4103, 403)),
+            (None, RemoteResponseError("wrong oneM2M code", 4103, 404)),
+        ):
+            with self.subTest(changes=changes, lookup_error=lookup_error):
+                self.hub._http_json.reset_mock()
+                self.pin_receipt_container("cnt-original", readback_changes=changes, readback_error=lookup_error)
+                with self.assertRaises(RemoteResponseError):
+                    await self.hub.publish(self.rqi, self.container, self.payload, confirm_existing=True)
+                self.assertEqual([entry.args[0] for entry in self.hub._http_json.await_args_list], ["GET", "GET"])
 
     def credential_exchange(self, *, readback_changes=None, readback_error=None):
         self.container = self.hub.config.health_container
@@ -475,6 +672,88 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(RemoteResponseError):
             await self.hub.publish(self.rqi, self.container, self.payload)
 
+    async def test_dispatch_start_posts_same_command_binding_as_authorize(self):
+        cmd = command()
+        digest = payload_hash(cmd)
+        self.hub._api = AsyncMock(return_value={"allowed": True})
+        await self.hub.authorize(cmd, digest)
+        await self.hub.dispatch_start(cmd, digest)
+        body = {key: cmd[key] for key in ("commandId", "deviceId", "claimId", "grantRevision", "ownershipEpoch")}
+        body["payloadHash"] = digest
+        self.assertEqual(self.hub._api.await_args_list,
+                         [call("POST", "/authorize", body, cmd["commandId"]),
+                          call("POST", "/dispatch-start", body, cmd["commandId"])])
+
+    async def test_central_receipt_retries_with_stable_key_and_exact_binding(self):
+        self.hub.config.central_receipts_enabled = True
+        cmd = command()
+        receipt = {"commandId": cmd["commandId"], "status": "APPLIED", "ackCode": "APPLIED"}
+        confirmation = {"status": "ACCEPTED", "commandId": cmd["commandId"],
+                        "claimId": cmd["claimId"], "receiptHash": payload_hash(receipt),
+                        "executionState": "APPLIED_VERIFIED"}
+        for status in ("ACCEPTED", "DUPLICATE"):
+            with self.subTest(status=status):
+                self.hub._http_json.return_value = (200, httpx.Headers(), dict(confirmation, status=status))
+                result = await self.hub.publish(self.rqi, "@central/receipt", receipt, expected_claim_id=cmd["claimId"])
+                self.assertEqual(result["status"], status)
+                exchange = self.hub._http_json.await_args
+                self.assertEqual(exchange.args, ("POST", "https://api.invalid/api/v1/gateways/gw-test/receipts"))
+                self.assertEqual(exchange.kwargs["headers"]["Idempotency-Key"], self.rqi)
+                self.assertEqual(exchange.kwargs["headers"]["X-Correlation-ID"], self.rqi)
+                self.assertEqual(exchange.kwargs["body"], receipt)
+        for key in ("status", "commandId", "claimId", "receiptHash", "executionState"):
+            with self.subTest(mismatch=key):
+                self.hub._http_json.return_value = (200, httpx.Headers(), dict(confirmation, **{key: "wrong"}))
+                with self.assertRaises(RemoteResponseError):
+                    await self.hub.publish(self.rqi, "@central/receipt", receipt, expected_claim_id=cmd["claimId"])
+
+    async def test_uncertain_receipt_replay_can_confirm_a_later_central_settlement(self):
+        self.hub.config.central_receipts_enabled = True
+        cmd = command()
+        for local_status, ack, initial_state in (
+                ("INDETERMINATE", "RESTART_INTERRUPTED", "DISPATCH_UNCERTAIN"),
+                ("TIMEOUT", "TIMEOUT", "DISPATCH_UNCERTAIN"),
+                ("REJECTED", "ALREADY_DISPATCHED", "DISPATCH_UNCERTAIN"),
+                ("REJECTED", "DISPATCH_NOT_SENT", "SETTLED_CANCELLED")):
+            with self.subTest(local_status=local_status, ack=ack):
+                receipt = {"commandId": cmd["commandId"], "status": local_status, "ackCode": ack, "appliedAt": None}
+                reply = {"status": "ACCEPTED", "commandId": cmd["commandId"], "claimId": cmd["claimId"],
+                         "receiptHash": payload_hash(receipt), "executionState": initial_state}
+                self.hub._http_json.return_value = (200, httpx.Headers(), reply)
+                result = await self.hub.publish(self.rqi, "@central/receipt", receipt, expected_claim_id=cmd["claimId"])
+                self.assertEqual(result["executionState"], initial_state)
+                self.hub._http_json.return_value = (200, httpx.Headers(), dict(reply, executionState="APPLIED_VERIFIED"))
+                with self.assertRaises(RemoteResponseError):
+                    await self.hub.publish(self.rqi, "@central/receipt", receipt, expected_claim_id=cmd["claimId"])
+                self.hub._http_json.return_value = (200, httpx.Headers(), dict(reply, status="DUPLICATE",
+                                                                             executionState="APPLIED_VERIFIED"))
+                if initial_state == "DISPATCH_UNCERTAIN":
+                    result = await self.hub.publish(self.rqi, "@central/receipt", receipt, expected_claim_id=cmd["claimId"])
+                    self.assertEqual(result["executionState"], "APPLIED_VERIFIED")
+                else:
+                    with self.assertRaises(RemoteResponseError):
+                        await self.hub.publish(self.rqi, "@central/receipt", receipt, expected_claim_id=cmd["claimId"])
+
+    async def test_central_telemetry_requires_the_bound_observation_id(self):
+        self.hub.config.central_telemetry_enabled = True
+        payload = observation(bootId="boot-test-2", sequence=0)
+        identity = {"gatewayId": "gw-test", "deviceId": "kr-test", "bootId": "boot-test-2", "sequence": 0}
+        response = {"status": "ACCEPTED", "deviceId": "kr-test", "observationId": payload_hash(identity)}
+        for status in ("ACCEPTED", "DUPLICATE", "STALE"):
+            with self.subTest(status=status):
+                self.hub._http_json.return_value = (200, httpx.Headers(), dict(response, status=status))
+                result = await self.hub.publish(self.rqi, "@central/telemetry", payload)
+                self.assertEqual(result["status"], status)
+                exchange = self.hub._http_json.await_args
+                self.assertEqual(exchange.args, ("POST", "https://api.invalid/api/v1/gateways/gw-test/telemetry"))
+                self.assertEqual(exchange.kwargs["headers"]["Idempotency-Key"], self.rqi)
+                self.assertEqual(exchange.kwargs["body"], payload)
+        for key in ("status", "deviceId", "observationId"):
+            with self.subTest(mismatch=key):
+                self.hub._http_json.return_value = (200, httpx.Headers(), dict(response, **{key: "wrong"}))
+                with self.assertRaises(RemoteResponseError):
+                    await self.hub.publish(self.rqi, "@central/telemetry", payload)
+
     async def test_conflict_requires_exact_existing_content(self):
         rn = "gw-" + hashlib.sha256(self.rqi.encode()).hexdigest()
         read_rqi = "read-" + hashlib.sha256(self.rqi.encode()).hexdigest()
@@ -509,6 +788,62 @@ class TransportMockTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(await self.hub.poll_commands(), [issued])
         self.hub._api.assert_awaited_once_with("GET", "/commands?limit=16")
+
+    async def test_gateway_journals_https_batch_while_core_approval_is_pending(self):
+        issued = command(commandId="https-issued")
+        core = command(commandId="mqtt-copy")
+        self.hub._queue_command(core)
+        self.hub.config.request_timeout = 1
+        self.hub.config.poll_interval = 1
+        approval_started, release_approval = asyncio.Event(), asyncio.Event()
+
+        async def api(method, suffix, body=None, correlation_id=None):
+            if method == "GET":
+                return {"commands": [issued]}
+            self.assertEqual((suffix, body["commandId"]), ("/authorize", core["commandId"]))
+            approval_started.set()
+            await release_approval.wait()
+            return dict(body, allowed=True, expiresAt=core["deadline"])
+
+        self.hub._api = AsyncMock(side_effect=api)
+        gateway = Gateway.__new__(Gateway)
+        gateway.config, gateway.transport = self.hub.config, self.hub
+        gateway.stop, gateway.counters = asyncio.Event(), Counter()
+
+        async def stop_after_poll(_seconds):
+            gateway.stop.set()
+
+        gateway._pause = stop_after_poll
+        with tempfile.TemporaryDirectory() as folder:
+            with closing(Store(Path(folder) / "synthetic.sqlite3", 100, 100000, 20, BINDING)) as store:
+                gateway.store = store
+                async with asyncio.timeout(1), asyncio.TaskGroup() as tasks:
+                    tasks.create_task(gateway._poll_loop())
+                    await approval_started.wait()
+                    self.assertEqual([row["command"] for row in store.pending()], [issued])
+                    release_approval.set()
+                self.assertEqual([row["command"] for row in store.pending()], [issued, core])
+        self.assertEqual(gateway.counters["ingress_new"], 2)
+
+    async def test_poll_and_each_fallback_authorization_have_total_timeouts(self):
+        slow = command(commandId="slow-copy")
+        approved = command(commandId="approved-copy")
+        self.hub._queue_command(slow)
+        self.hub._queue_command(approved)
+        cancelled = set()
+
+        async def api(method, suffix, body=None, correlation_id=None):
+            if method == "GET" or body["commandId"] == slow["commandId"]:
+                try:
+                    await asyncio.Future()
+                finally:
+                    cancelled.add(method)
+            return dict(body, allowed=True, expiresAt=approved["deadline"])
+
+        self.hub._api = AsyncMock(side_effect=api)
+        async with asyncio.timeout(1):
+            self.assertEqual(await self.hub.poll_commands(), [approved])
+        self.assertEqual(cancelled, {"GET", "POST"})
 
     async def test_core_fallback_requires_exact_unexpired_central_approval(self):
         issued = command()

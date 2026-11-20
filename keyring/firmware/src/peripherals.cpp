@@ -11,6 +11,9 @@
 #if KEYRING_DISPLAY_PROFILE
 #include <Arduino_GFX_Library.h>
 #include "jd9853_display.h"
+#if defined(KEYRING_R26_FRONT)
+#include "r26_display.h"
+#endif
 #endif
 #if KEYRING_ENABLE_SD_LOG
 #include <SD.h>
@@ -30,7 +33,14 @@ Arduino_ST7789 display(&displayBus, board::LcdReset, KEYRING_LCD_ROTATION, true,
 #else
 KeyringJD9853 display(&displayBus);
 #endif
-constexpr uint16_t Black = 0x0000, White = 0xffff, Red = 0xf800, Cyan = 0x07ff;
+#if !defined(KEYRING_R26_FRONT)
+constexpr uint16_t Black = 0x0000, White = 0xffff, Red = 0xf800;
+#if KEYRING_R18_BRINGUP_DISPLAY
+constexpr uint16_t Green = 0x07e0, Blue = 0x001f;
+#else
+constexpr uint16_t Cyan = 0x07ff;
+#endif
+#endif
 #endif
 #if KEYRING_ENABLE_SD_LOG
 constexpr char LogPath[] = "/keyring-receipts.jsonl";
@@ -55,12 +65,23 @@ void Peripherals::begin() {
     if (logs) { vQueueDelete(logs); logs = nullptr; }
   }
 }
-void Peripherals::update(const KeyringScreen &screen) {
-  portENTER_CRITICAL(&mux); snapshot = screen; portEXIT_CRITICAL(&mux);
+void Peripherals::update(const KeyringScreen &screen, bool requestDisplay) {
+  portENTER_CRITICAL(&mux);
+  snapshot = screen;
+  if (requestDisplay) displayRequested = true;
+  portEXIT_CRITICAL(&mux);
+  if (requestDisplay && worker) xTaskNotifyGive(worker);
 }
-void Peripherals::show() {
-  portENTER_CRITICAL(&mux); const bool ready = displayReady; portEXIT_CRITICAL(&mux);
-  if (ready) { auxRail::displayFor(KEYRING_LCD_SHOW_MS); xTaskNotifyGive(worker); }
+bool Peripherals::takeScreen(KeyringScreen &screen, bool due, bool &requestDisplay) {
+  portENTER_CRITICAL(&mux);
+  const bool available = displayReady && (due || displayRequested);
+  if (available) {
+    screen = snapshot;
+    requestDisplay = displayRequested;
+    displayRequested = false;
+  }
+  portEXIT_CRITICAL(&mux);
+  return available;
 }
 void Peripherals::logReceipt(const char *jsonLine, size_t length) {
   if (!KEYRING_ENABLE_SD_LOG) return;
@@ -90,7 +111,19 @@ void Peripherals::resume() {
   portENTER_CRITICAL(&mux); sleeping = false; portEXIT_CRITICAL(&mux);
 }
 const char *Peripherals::displayStatus() {
-  portENTER_CRITICAL(&mux); const char *result = displayState; portEXIT_CRITICAL(&mux); return result;
+  portENTER_CRITICAL(&mux);
+  const char *result = displayState;
+  const bool ready = displayReady;
+  portEXIT_CRITICAL(&mux);
+  return ready && auxRail::displayOutputFault() ? "power_output_error" : result;
+}
+KeyringDisplayTest Peripherals::displayTest() {
+  portENTER_CRITICAL(&mux);
+  KeyringDisplayTest result{displayState, drawnConfirmPress, drawnPanicPress};
+  const bool ready = displayReady;
+  portEXIT_CRITICAL(&mux);
+  if (ready && auxRail::displayOutputFault()) result.status = "power_output_error";
+  return result;
 }
 const char *Peripherals::sdStatus() {
   portENTER_CRITICAL(&mux); const char *result = sdState; portEXIT_CRITICAL(&mux); return result;
@@ -115,19 +148,34 @@ void Peripherals::entry(void *context) { static_cast<Peripherals *>(context)->ru
 void Peripherals::run() {
 #if KEYRING_DISPLAY_PROFILE || KEYRING_ENABLE_SD_LOG
   // Both CS pins are inactive before configuring the common SPI signals.
-  digitalWrite(board::LcdCs, HIGH); digitalWrite(board::SdCs, HIGH);
-  sharedSpi.begin(board::LcdSck, board::SdMiso, board::LcdMosi);
+  digitalWrite(board::LcdCs, HIGH);
+  if (!board::FrontAssembly) digitalWrite(board::SdCs, HIGH);
+  sharedSpi.begin(board::LcdSck, board::FrontAssembly ? -1 : board::SdMiso, board::LcdMosi);
 #endif
 #if KEYRING_DISPLAY_PROFILE
   const bool screenStarted = display.begin(KEYRING_LCD_SPI_HZ);
+#if defined(KEYRING_R26_FRONT)
+  const bool screenUsable = screenStarted && display.width() == 240 && display.height() == 240;
+#elif KEYRING_R18_BRINGUP_DISPLAY
+  // The fixed test pattern needs room for the panel label and all button text.
+  const bool screenUsable = screenStarted && display.width() >= 144 && display.height() >= 120;
+#else
+  const bool screenUsable = screenStarted;
+#endif
+  const char *status = KEYRING_DISPLAY_PROFILE == 1 ? "st7789_unverified" : "jd9853_unverified";
+  if (!screenStarted) status = "bus_error";
+  else if (!screenUsable) status = "geometry_error";
   portENTER_CRITICAL(&mux);
-  displayReady = screenStarted;
+  displayReady = screenUsable;
+  if (board::FrontAssembly && screenUsable) displayRequested = true;
   // A write-only panel has no identification/readback path on this connector.
-  displayState = screenStarted ? (KEYRING_DISPLAY_PROFILE == 1 ? "st7789_unverified" : "jd9853_unverified") : "bus_error";
+  displayState = status;
   portEXIT_CRITICAL(&mux);
-  if (screenStarted) {
+  if (screenUsable) {
     display.setTextWrap(false); display.setTextSize(2);
+#if !KEYRING_R18_BRINGUP_DISPLAY
     auxRail::displayFor(KEYRING_LCD_SHOW_MS);
+#endif
   }
 #endif
 #if KEYRING_ENABLE_SD_LOG
@@ -140,15 +188,46 @@ void Peripherals::run() {
 #endif
   setIo(false);
   uint64_t nextDraw = 0;
+  bool firstDraw = true;
+#if defined(KEYRING_R26_FRONT) && KEYRING_DISPLAY_PROFILE
+  bool panelAsleep = false;
+  constexpr uint32_t IdleDisplayMs = 15000;
+#endif
   for (;;) {
     ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(100));
     const uint64_t now = nowMs();
-    if (displayReady && auxRail::displayVisible() && now >= nextDraw) {
-      KeyringScreen screen;
-      portENTER_CRITICAL(&mux); screen = snapshot; portEXIT_CRITICAL(&mux);
-      if (setIo(true)) { draw(screen); setIo(false); }
-      nextDraw = nowMs() + 1000;
+    KeyringScreen screen;
+    bool requestDisplay = false;
+    const bool periodicDraw = !board::FrontAssembly && now >= nextDraw && auxRail::displayVisible();
+    if (displayReady && takeScreen(screen, periodicDraw, requestDisplay)) {
+#if defined(KEYRING_R26_FRONT) && KEYRING_DISPLAY_PROFILE
+      // Wi-Fi redraws share the worker notification but never extend the light timer.
+      const bool activity = firstDraw || screen.confirmPress != renderedScreen.confirmPress ||
+                            screen.panicPress != renderedScreen.panicPress;
+      if (activity) {
+        if (panelAsleep) {
+          display.displayOn();
+          panelAsleep = false;
+          renderedScreenValid = false;
+        }
+        auxRail::displayFor(IdleDisplayMs, screen.panic);
+      }
+#else
+      if (requestDisplay) auxRail::displayFor(KEYRING_LCD_SHOW_MS);
+#endif
+      if (auxRail::displayVisible() && setIo(true)) {
+        draw(screen, !board::FrontAssembly || firstDraw);
+        firstDraw = false;
+        setIo(false);
+        nextDraw = nowMs() + 1000;
+      }
     }
+#if defined(KEYRING_R26_FRONT) && KEYRING_DISPLAY_PROFILE
+    if (displayReady && !firstDraw && !panelAsleep && !auxRail::displayVisible()) {
+      display.displayOff();
+      panelAsleep = true;
+    }
+#endif
     LogLine line = {};
     // Mark busy before dequeueing so sleep cannot slip into the queue/I/O gap.
     if (setIo(true)) {
@@ -157,9 +236,32 @@ void Peripherals::run() {
     }
   }
 }
-void Peripherals::draw(const KeyringScreen &screen) {
+void Peripherals::draw(const KeyringScreen &screen, bool fullDraw) {
 #if KEYRING_DISPLAY_PROFILE
-  display.fillScreen(Black);
+#if defined(KEYRING_R26_FRONT)
+  drawR26Display(display, screen, fullDraw || !renderedScreenValid ? nullptr : &renderedScreen);
+  renderedScreen = screen;
+  renderedScreenValid = true;
+#else
+  if (fullDraw) display.fillScreen(Black);
+#if KEYRING_R18_BRINGUP_DISPLAY
+  if (fullDraw) {
+    const int16_t width = display.width(), height = display.height();
+    display.drawRect(0, 0, width, height, White);
+    const int16_t barWidth = (width - 24) / 3;
+    display.fillRect(12, 61, barWidth, 25, Red);
+    display.fillRect(12 + barWidth, 61, barWidth, 25, Green);
+    display.fillRect(12 + 2 * barWidth, 61, barWidth, 25, Blue);
+    display.setTextColor(White); display.setCursor(12, 12);
+    display.print(KEYRING_DISPLAY_PROFILE == 1 ? "ST7789 LCD" : "JD9853 LCD");
+    display.setCursor(12, 36);
+    display.print(width); display.print('x'); display.print(height);
+  } else {
+    display.fillRect(12, 97, 84, 16, Black);
+  }
+  display.setCursor(12, 97);
+  display.print(screen.panic ? "PANIC" : screen.confirm ? "CONFIRM" : "READY");
+#else
   display.setTextColor(Cyan); display.setCursor(8, 8); display.print("PRIVACY BUBBLE");
   display.setTextColor(White); display.setCursor(8, 38);
   display.print(screen.authenticated ? "BLE: BONDED" : screen.linked ? "BLE: PAIRING" : "BLE: OFFLINE");
@@ -170,7 +272,7 @@ void Peripherals::draw(const KeyringScreen &screen) {
     if (screen.batteryLow) display.print(" LOW");
   } else display.print("--");
   display.setTextColor(White); display.setCursor(8, 90);
-  display.print(screen.panic ? "Button: PANIC" : screen.confirm ? "Button: CONFIRM" : "Button: RELEASED");
+  display.print(screen.panic ? "Last: PANIC" : screen.confirm ? "Last: CONFIRM" : "Last: --");
   display.setCursor(8, 116); display.print(screen.motor ? "Motor GPIO: ON" : "Motor GPIO: OFF");
   display.setCursor(8, 142); display.print("Motion: "); display.print(screen.motionEvents);
   display.setCursor(8, 168); display.setTextColor(screen.fault || !screen.journal ? Red : White);
@@ -182,6 +284,16 @@ void Peripherals::draw(const KeyringScreen &screen) {
       currentTime - screen.supplyReadAt <= static_cast<uint64_t>(KEYRING_POWER_SAMPLE_MS) * 2 + 100;
   if (freshSupply) { display.print(screen.supplyCurrentMa, 1); display.print(" mA"); }
   else display.print("--");
+#endif
+#endif
+#if KEYRING_R18_BRINGUP_DISPLAY
+  if (auxRail::displayVisible()) {
+    portENTER_CRITICAL(&mux);
+    if (screen.panic) drawnPanicPress = screen.panicPress;
+    else if (screen.confirm) drawnConfirmPress = screen.confirmPress;
+    portEXIT_CRITICAL(&mux);
+  }
+#endif
 #else
   (void)screen;
 #endif

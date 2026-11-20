@@ -32,7 +32,7 @@ static_assert(KEYRING_FEATHER_PASSKEY == 0 ||
 namespace {
 constexpr char DeviceId[] = "keyring-feather-lab";
 #if KEYRING_FEATHER_ENABLE_COMMANDS
-constexpr char FirmwareRevision[] = "feather-probe-0.2.0";
+constexpr char FirmwareRevision[] = "feather-probe-0.2.1";
 constexpr char CommandId[] = "7f8a0003-4b6e-4f4e-9b0a-505249564255";
 constexpr auto LedPin = static_cast<gpio_num_t>(LED_BUILTIN);
 static_assert(LED_BUILTIN == 13, "Confirm the Feather V2 onboard LED pin");
@@ -208,7 +208,7 @@ bool applyLed(uint32_t generation, bool desired, uint64_t deadline, uint64_t &ap
   portENTER_CRITICAL(&linkMux);
   const auto now = FeatherCommands::nowMs();
   bool applied = false;
-  if (link.connected && link.trusted && link.receiptSubscribed && link.generation == generation &&
+  if (ledConfigured && link.connected && link.trusted && link.receiptSubscribed && link.generation == generation &&
       now < deadline && gpio_set_level(LedPin, desired) == ESP_OK) {
     appliedAt = now;
     readback = readLed();
@@ -260,13 +260,18 @@ void render(ButtonState button, bool trusted) {
                 button == ButtonState::Confirm ? "A0 CONFIRMED" : "READY");
 }
 
-void sample(ButtonState button) {
+#if KEYRING_FEATHER_ENABLE_COMMANDS
+void renderCommandState(bool state) {
+  display.fillRect(8, 190, 224, 25, ST77XX_BLACK);
+  display.setCursor(8, 192);
+  display.setTextColor(ledConfigured && state ? ST77XX_GREEN : ST77XX_WHITE);
+  display.print(!ledConfigured ? "CMD GPIO ERROR" : state ? "CMD ON" : "CMD OFF");
+}
+#endif
+
+void sample(ButtonState button, bool state) {
   const char *value = button == ButtonState::Panic ? "panic" :
                       button == ButtonState::Confirm ? "confirm" : "released";
-  bool state = false;
-#if KEYRING_FEATHER_ENABLE_COMMANDS
-  state = readLed();
-#endif
   const int length = snprintf(frame, sizeof(frame),
       "{\"version\":1,\"deviceId\":\"%s\",\"bootId\":\"%s\",\"sequence\":%lu,\"uptimeMs\":%llu,"
       "\"battery\":null,\"buttonState\":\"%s\",\"sensorValues\":{},\"state\":%s}\n",
@@ -371,7 +376,12 @@ void setup() {
   display.setTextColor(ST77XX_WHITE);
   display.print("KEYRING FEATHER");
   render(ButtonState::Released, false);
-  sample(ButtonState::Released);
+  bool state = false;
+#if KEYRING_FEATHER_ENABLE_COMMANDS
+  state = readLed();
+  renderCommandState(state);
+#endif
+  sample(ButtonState::Released, state);
   if (Provisioned) initBle();
   Serial.println(Provisioned ? "FEATHER PROBE READY" : "FEATHER PROBE READY (BLE LOCKED)");
 }
@@ -392,16 +402,18 @@ void loop() {
   else if (confirm.pressed && !confirmWasPressed && !panic.pressed) nextDisplay = ButtonState::Confirm;
   const auto session = currentLink();
   if (nextDisplay != displayed || session.trusted != wasTrusted) render(nextDisplay, session.trusted);
+  bool state = false;
   bool outputChanged = false;
 #if KEYRING_FEATHER_ENABLE_COMMANDS
   static bool previousLed;
   pumpCommands();
-  const bool led = readLed();
-  outputChanged = led != previousLed;
-  previousLed = led;
+  state = readLed();
+  outputChanged = state != previousLed;
+  if (outputChanged) renderCommandState(state);
+  previousLed = state;
 #endif
   if (button != previous || outputChanged || now - lastSample >= 2000) {
-    sample(button);
+    sample(button, state);
     lastSample = now;
   }
   previous = button;

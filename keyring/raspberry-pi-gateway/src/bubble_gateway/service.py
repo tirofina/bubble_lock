@@ -8,18 +8,24 @@ import sqlite3
 import time
 import uuid
 from collections import Counter
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Callable, Literal
 
-from .ble import BleFleet
-from .config import GatewayConfig, ID
+from .ble import BleCommandNotSent, BleFleet
+from .config import GatewayConfig, ID, configured_container_pins
 from .model import (authorization_deadline, canonical, iso_time, parse_time, payload_hash, utc_now,
                     validate_command, validate_credential_status, validate_observation)
 from .store import CapacityError, Store
-from .transport import HttpRetryDeferred, NativeDeliveryHold, TransportHub
+from .transport import COMMAND_BATCH, HttpRetryDeferred, NativeConfirmation, TransportHub
 
 LOG = logging.getLogger(__name__)
 RECEIPT_BURST = 4
+DEVICE_RECEIPT_RETRY_INTERVAL = 1.0
+OUTBOX_STATE_WRITE_RETRY_INTERVAL = 1.0
+CENTRAL_TELEMETRY_CLOCK_MARGIN = 2
+CENTRAL_TELEMETRY_EXPIRY_INTERVAL = 5.0
+CENTRAL_TELEMETRY_EXPIRY_BATCH = 128
 DEVICE_ACKS = {"APPLIED", "DUPLICATE", "REJECTED_EPOCH", "REJECTED_GRANT", "EXPIRED",
                "CONFLICT", "INVALID", "JOURNAL_FULL", "STORAGE_ERROR", "INDETERMINATE", "READBACK_MISMATCH"}
 
@@ -34,7 +40,7 @@ class Gateway:
         from .state_identity import configured_binding
         self.store = Store(config.database, config.max_outbox_rows, config.max_outbox_bytes,
                            config.max_commands, configured_binding(config))
-        self.transport = TransportHub(config)
+        self.transport = TransportHub(config, retry_store=self.store)
         self.ble = BleFleet(config)
         self.stop = asyncio.Event()
         self.boot_id = str(uuid.uuid4())
@@ -58,7 +64,15 @@ class Gateway:
             "cseId": self.config.cse_id, "cseUrl": self.config.cse_url,
             "cseDeploymentId": self.config.cse_deployment_id,
             "receiptContainerRi": self.config.receipt_container_ri,
-            "apiUrl": self.config.api_url, "rvi": self.config.rvi,
+            "observationContainerRi": self.config.observation_container_ri,
+            "healthContainerRi": getattr(self.config, "health_container_ri", None),
+            "apiUrl": self.config.api_url, "pcDispatchStartRequired": self.config.pc_dispatch_start_required,
+            "commandsEnabled": self.config.commands_enabled,
+            "pcApiDeploymentId": self.config.pc_api_deployment_id,
+            "centralReceiptsEnabled": self.config.central_receipts_enabled,
+            "centralTelemetryEnabled": self.config.central_telemetry_enabled,
+            "centralTelemetryRetentionSeconds": self.config.central_telemetry_retention_seconds,
+            "rvi": self.config.rvi,
             "mqttEnabled": self.config.mqtt_enabled, "mqttHost": self.config.mqtt_host,
             "m2mMqttEnabled": self.config.m2m_mqtt_enabled,
             "mqttWrappedPrimitive": self.config.mqtt_wrapped_primitive,
@@ -67,9 +81,13 @@ class Gateway:
             "coreBridgeEnabled": self.config.core_bridge_enabled,
             "coreTelemetryEpochs": self.config.core_telemetry_epochs,
             "bleGattProfile": self.config.ble_gatt_profile,
+            "bleObservationTimeoutSeconds": self.config.ble_observation_timeout,
+            "bleBoardRevision": self.config.ble_board_revision,
             "devices": self.config.ble_devices,
             "firmwareAllowlist": self.config.firmware_revision_allowlist,
         }
+        if getattr(self.config, "mqtt_mobius_named_paths", False):
+            public_configuration["mqttMobiusNamedPaths"] = True
         digest.update(canonical(public_configuration).encode("utf-8"))
         # Public certificate digest helps distinguish rotations; never read the private key here.
         digest.update(self.config.cert_file.read_bytes())
@@ -115,17 +133,43 @@ class Gateway:
                     receipt.update(acceptedAt=accepted, appliedAt=applied, timestampSource="gateway-estimated")
         return receipt
 
-    def _finish(self, command: dict, digest: str, status: str, code: str,
-                detail: str | None = None, device: dict | None = None) -> None:
-        if self.store.finish(command["commandId"], self._receipt(command, digest, status, code, detail, device)):
-            self.counters[f"command_{status.lower()}"] += 1
+    def _finish(self, command: dict, digest: str, status: str, code: str, detail: str | None = None) -> None:
+        self._save_receipt(self._receipt(command, digest, status, code, detail))
 
-    async def observation(self, raw: dict) -> None:
+    def _save_receipt(self, receipt: dict) -> None:
+        if self.store.finish(receipt["commandId"], receipt):
+            self.counters[f"command_{receipt['status'].lower()}"] += 1
+
+    def _central_telemetry_cutoff(self) -> datetime | None:
+        if not self._clock_ok():
+            return None
+        return utc_now() - timedelta(seconds=self.config.central_telemetry_retention_seconds + CENTRAL_TELEMETRY_CLOCK_MARGIN)
+
+    def _expire_central_telemetry(self, cutoff: datetime | None) -> int:
+        expired = self.store.expire_central_telemetry(cutoff, CENTRAL_TELEMETRY_EXPIRY_BATCH) if cutoff is not None else 0
+        self.counters["central_telemetry_expired"] += expired
+        return expired
+
+    async def observation(self, raw: dict, device_uptime_ms: int | None = None) -> None:
         try:
             payload = validate_observation(raw, self.config.gateway_id, self.config.ble_devices)
-            if self.store.observation(self.config.observation_container, payload, self.config.core_bridge_enabled,
-                                      core_epochs=self.config.core_telemetry_epochs):
+            central_enabled = self.config.central_telemetry_enabled
+            cutoff = self._central_telemetry_cutoff() if central_enabled else None
+            already_expired = cutoff is not None and parse_time(payload["observedAt"]) < cutoff
+            args = (self.config.observation_container, payload, self.config.core_bridge_enabled)
+            options = dict(core_epochs=self.config.core_telemetry_epochs,
+                           central_enabled=central_enabled and not already_expired,
+                           device_uptime_ms=device_uptime_ms)
+            try:
+                queued = self.store.observation(*args, **options)
+            except CapacityError:
+                if cutoff is None or not self._expire_central_telemetry(cutoff):
+                    raise
+                queued = self.store.observation(*args, **options)
+            if queued:
                 self.counters["observations_queued"] += 1
+                if already_expired:
+                    self.counters["central_telemetry_expired"] += 1
             else:
                 self.counters["observations_duplicate"] += 1
         except CapacityError:
@@ -175,24 +219,25 @@ class Gateway:
     async def _poll_loop(self) -> None:
         while not self.stop.is_set():
             try:
-                commands = await self.transport.poll_commands()
-                if not isinstance(commands, list) or len(commands) > 16:
-                    raise ValueError("Command poll contract mismatch")
-                for raw in commands:
-                    try:
-                        command = validate_command(raw, self.config.gateway_id, self.config.ble_devices)
-                        digest = payload_hash(command)
-                        result = self.store.accept(command, digest)
-                        self.counters[f"ingress_{result.lower()}"] += 1
-                        if result == "CONFLICT":
-                            conflict = self._receipt(command, digest, "REJECTED", "CONFLICT", "Existing commandId has another payload; original journal preserved")
-                            self.store.enqueue("conflict", f"{command['commandId']}:{digest}", self.config.receipt_container, conflict, True)
-                    except (ValueError, TypeError, OverflowError):
-                        self.counters["commands_invalid"] += 1
-                        LOG.warning("Rejected command with invalid schema or local binding")
-                    except CapacityError:
-                        self.counters["ingress_capacity_errors"] += 1
-                        LOG.error("Command journal/outbox capacity reached; command not executed")
+                async for commands in self.transport.command_batches():
+                    if not isinstance(commands, list) or len(commands) > COMMAND_BATCH:
+                        raise ValueError("Command poll contract mismatch")
+                    for raw in commands:
+                        try:
+                            command = validate_command(raw, self.config.gateway_id, self.config.ble_devices)
+                            digest = payload_hash(command)
+                            result = self.store.accept(command, digest)
+                            self.counters[f"ingress_{result.lower()}"] += 1
+                            if result == "CONFLICT":
+                                conflict = self._receipt(command, digest, "REJECTED", "CONFLICT",
+                                                         "Existing commandId has another payload; original journal preserved")
+                                self.store.enqueue("conflict", f"{command['commandId']}:{digest}", self.config.receipt_container, conflict, True)
+                        except (ValueError, TypeError, OverflowError):
+                            self.counters["commands_invalid"] += 1
+                            LOG.warning("Rejected command with invalid schema or local binding")
+                        except CapacityError:
+                            self.counters["ingress_capacity_errors"] += 1
+                            LOG.error("Command journal/outbox capacity reached; command not executed")
             except asyncio.CancelledError:
                 raise
             except Exception as exc:
@@ -224,28 +269,45 @@ class Gateway:
         if "receivedAt" in raw:
             parse_time(raw["receivedAt"])
 
-    def _finish_device_result(self, command: dict, digest: str, raw: dict) -> None:
+    def _device_receipt(self, command: dict, digest: str, raw: dict) -> dict:
         try:
             self._validate_device_result(raw, command, digest)
             code = raw["ackCode"]
             if code in {"APPLIED", "DUPLICATE"}:
                 if raw["readback"]["state"] != command["desiredState"]["state"] or raw.get("appliedUptimeMs") is None:
-                    self._finish(command, digest, "INDETERMINATE", "READBACK_MISMATCH", "Device did not confirm requested output at application time", raw)
-                else:
-                    self._finish(command, digest, "APPLIED", code, device=raw)
-            elif code in {"INDETERMINATE", "STORAGE_ERROR", "READBACK_MISMATCH"}:
-                self._finish(command, digest, "INDETERMINATE", code, device=raw)
-            else:
-                self._finish(command, digest, "REJECTED", code, device=raw)
+                    return self._receipt(command, digest, "INDETERMINATE", "READBACK_MISMATCH",
+                                         "Device did not confirm requested output at application time", raw)
+                return self._receipt(command, digest, "APPLIED", code, device=raw)
+            if code in {"INDETERMINATE", "STORAGE_ERROR", "READBACK_MISMATCH"}:
+                return self._receipt(command, digest, "INDETERMINATE", code, device=raw)
+            return self._receipt(command, digest, "REJECTED", code, device=raw)
         except (ValueError, TypeError, KeyError, OverflowError):
-            self._finish(command, digest, "INDETERMINATE", "INVALID_RECEIPT", "Device receipt could not establish a valid result")
+            return self._receipt(command, digest, "INDETERMINATE", "INVALID_RECEIPT",
+                                 "Device receipt could not establish a valid result")
+
+    async def _dispatch_start_deadline(self, command: dict, digest: str, expires: float) -> datetime:
+        remaining = expires - time.monotonic()
+        if remaining <= 0:
+            raise DispatchBlocked("EXPIRED")
+        try:
+            async with asyncio.timeout(remaining):
+                response = await self.transport.dispatch_start(command, digest)
+        except Exception as exc:
+            self.counters["dispatch_start_unconfirmed"] += 1
+            LOG.warning("Central dispatch start unconfirmed (%s)", type(exc).__name__)
+            raise DispatchBlocked("DISPATCH_NOT_SENT") from exc
+        try:
+            return authorization_deadline(command, digest, response)
+        except (ValueError, PermissionError, TypeError, OverflowError) as exc:
+            raise DispatchBlocked("NOT_AUTHORIZED") from exc
 
     async def _dispatch_one(self, command: dict, digest: str) -> None:
         if not self._clock_ok():
             self._finish(command, digest, "REJECTED", "CLOCK_UNTRUSTED", "Wall clock jumped; synchronize clock and restart gateway")
             return
         now = utc_now()
-        if parse_time(command["deadline"]) <= now:
+        command_deadline = parse_time(command["deadline"])
+        if command_deadline <= now:
             self._finish(command, digest, "REJECTED", "EXPIRED")
             return
         if (parse_time(command["issuedAt"]) - now).total_seconds() > 2:
@@ -262,15 +324,32 @@ class Gateway:
         if generation is None:
             self.counters["dispatch_deferred_ble"] += 1
             return
+        remaining = (command_deadline - utc_now()).total_seconds()
+        if remaining <= 0:
+            if self._clock_ok():
+                self._finish(command, digest, "REJECTED", "EXPIRED")
+            return
+        request_timeout = self.config.request_timeout
+        authorization_timeout = asyncio.timeout(min(remaining, request_timeout))
         try:
-            response = await self.transport.authorize(command, digest)
+            async with authorization_timeout:
+                response = await self.transport.authorize(command, digest)
         except asyncio.CancelledError:
             raise
         except Exception as exc:
+            deadline_elapsed = authorization_timeout.expired() and remaining <= request_timeout
+            if self._clock_ok() and (deadline_elapsed or command_deadline <= utc_now()):
+                self._finish(command, digest, "REJECTED", "EXPIRED", "Command expired while awaiting authorization")
+                return
             self.counters["authorization_unavailable"] += 1
             LOG.warning("Authorization unavailable (%s); execution deferred", type(exc).__name__)
             return
-        if not self._credentials_active(credential_generation) or not self._clock_ok():
+        if not self._clock_ok():
+            return
+        if command_deadline <= utc_now():
+            self._finish(command, digest, "REJECTED", "EXPIRED", "Command expired while awaiting authorization")
+            return
+        if not self._credentials_active(credential_generation):
             return
         try:
             deadline = authorization_deadline(command, digest, response)
@@ -303,56 +382,113 @@ class Gateway:
             return
         try:
             require_write_authority()
+            if self.config.pc_dispatch_start_required:
+                if self.ble.command_session(device_id) != generation:
+                    raise DispatchBlocked("DISPATCH_NOT_SENT")
+                dispatch_deadline = await self._dispatch_start_deadline(command, digest, expires)
+                deadline = min(deadline, dispatch_deadline)
+                require_write_authority()
+                if self.ble.command_session(device_id) != generation:
+                    raise DispatchBlocked("DISPATCH_NOT_SENT")
+                expires = min(expires, time.monotonic() + (deadline - utc_now() - margin).total_seconds())
+        except asyncio.CancelledError:
+            self._finish(command, digest, "REJECTED", "DISPATCH_NOT_SENT", "Shutdown before BLE transmission")
+            raise
         except DispatchBlocked as exc:
-            self._finish(command, digest, "REJECTED", str(exc), "Authorization changed before BLE transmission")
+            code = str(exc)
+            if self.config.pc_dispatch_start_required and code == "CREDENTIAL_CHANGED":
+                code = "DISPATCH_NOT_SENT"
+            self._finish(command, digest, "REJECTED", code, "Dispatch blocked before BLE transmission")
             return
         budget_ms = int((expires - time.monotonic()) * 1000)
         if budget_ms <= 0:
             self._finish(command, digest, "REJECTED", "EXPIRED", "Deadline elapsed during durable intent recording; BLE not sent")
             return
 
-        observed_result = None
+        observed_receipt = None
         receipt_saved = False
+        final_write_marked = False
 
-        def record_receipt(raw: dict) -> None:
-            nonlocal observed_result, receipt_saved
-            observed_result = raw
+        def record_final_write() -> None:
+            nonlocal final_write_marked
+            if not self.store.mark_ble_final_write(command["commandId"], digest):
+                raise DispatchBlocked("DISPATCH_NOT_SENT")
+            final_write_marked = True
+
+        def save_observed_receipt(receipt: dict) -> None:
+            nonlocal receipt_saved
             try:
-                self._finish_device_result(command, digest, raw)
+                self._save_receipt(receipt)
             except sqlite3.Error as exc:
                 LOG.warning("SQLite receipt write failed (%s); keeping result for retry", type(exc).__name__)
             else:
                 receipt_saved = True
 
+        def record_receipt(raw: dict) -> None:
+            nonlocal observed_receipt
+            if observed_receipt is None:
+                observed_receipt = self._device_receipt(command, digest, raw)
+                save_observed_receipt(observed_receipt)
+
+        failure = None
         try:
-            raw = await self.ble.execute(command, budget_ms, digest, expected_generation=generation,
-                                         deadline_monotonic=expires, before_write=require_write_authority,
-                                         on_receipt=record_receipt)
-        except DispatchBlocked as exc:
-            self._finish(command, digest, "INDETERMINATE", str(exc), "BLE transmission stopped after an authorization change; no automatic replay")
-        except asyncio.TimeoutError:
-            self._finish(command, digest, "TIMEOUT", "TIMEOUT", "No matching device receipt before timeout; execution may have occurred; no automatic replay")
+            try:
+                raw = await self.ble.execute(command, budget_ms, digest, expected_generation=generation,
+                                             deadline_monotonic=expires, before_write=require_write_authority,
+                                             before_final_write=record_final_write,
+                                             on_receipt=record_receipt)
+            except BleCommandNotSent:
+                failure = ("REJECTED", "DISPATCH_NOT_SENT",
+                           "BLE transmission stopped before the terminating fragment was attempted")
+            except DispatchBlocked as exc:
+                failure = ("INDETERMINATE", str(exc),
+                           "BLE transmission stopped after an authorization change; no automatic replay")
+            except asyncio.TimeoutError:
+                failure = ("TIMEOUT", "TIMEOUT",
+                           "No matching device receipt before timeout; execution may have occurred; no automatic replay")
+            except (ValueError, TypeError, KeyError, OverflowError):
+                failure = ("INDETERMINATE", "INVALID_RECEIPT", "Device receipt could not establish a valid result")
+            except Exception as exc:
+                failure = ("INDETERMINATE", "DEVICE_UNAVAILABLE",
+                           f"Dispatch interrupted ({type(exc).__name__}); execution may have occurred")
+            else:
+                record_receipt(raw)
+            if observed_receipt is None:
+                assert failure is not None
+                self._finish(command, digest, *failure)
+                return
+            while not receipt_saved:
+                save_observed_receipt(observed_receipt)
+                if not receipt_saved:
+                    await asyncio.sleep(DEVICE_RECEIPT_RETRY_INTERVAL)
         except asyncio.CancelledError:
-            if observed_result is None:
-                self._finish(command, digest, "INDETERMINATE", "CANCELLED", "Shutdown interrupted dispatch; no automatic replay")
+            if observed_receipt is None:
+                if final_write_marked:
+                    self._finish(command, digest, "INDETERMINATE", "CANCELLED", "Shutdown interrupted dispatch; no automatic replay")
+                else:
+                    self._finish(command, digest, "REJECTED", "DISPATCH_NOT_SENT",
+                                 "Shutdown interrupted BLE before the terminating fragment")
             elif not receipt_saved:
-                record_receipt(observed_result)
+                save_observed_receipt(observed_receipt)
             raise
-        except (ValueError, TypeError, KeyError, OverflowError):
-            self._finish(command, digest, "INDETERMINATE", "INVALID_RECEIPT", "Device receipt could not establish a valid result")
-        except Exception as exc:
-            self._finish(command, digest, "INDETERMINATE", "DEVICE_UNAVAILABLE", f"Dispatch interrupted ({type(exc).__name__}); execution may have occurred")
-        else:
-            if not receipt_saved:
-                self._finish_device_result(command, digest, raw)
 
     async def _dispatch_loop(self) -> None:
+        enrolled = tuple(self.config.ble_devices)
+        async with asyncio.TaskGroup() as tasks:
+            for device_id in enrolled:
+                tasks.create_task(self._dispatch_device_loop(device_id=device_id), name=f"dispatch-{device_id}")
+            # Rows from an earlier enrollment still reach the existing expiry path.
+            tasks.create_task(self._dispatch_device_loop(excluded_devices=enrolled), name="dispatch-unassigned")
+
+    async def _dispatch_device_loop(self, *, device_id: str | None = None,
+                                    excluded_devices: tuple[str, ...] = ()) -> None:
         cursor = through = 0
         batch_size = 16
         while not self.stop.is_set():
             if cursor == 0:
                 through = self.store.command_high_water()
-            batch = self.store.pending(batch_size, after_rowid=cursor, through_rowid=through)
+            batch = self.store.pending(batch_size, after_rowid=cursor, through_rowid=through,
+                                       device_id=device_id, excluded_devices=excluded_devices)
             for item in batch:
                 if self.stop.is_set():
                     return
@@ -361,39 +497,109 @@ class Gateway:
             cursor = batch[-1]["rowid"] if len(batch) == batch_size and batch[-1]["rowid"] < through else 0
             await self._pause(1)
 
-    async def _outbox_loop(self, *, scoped: bool = False) -> None:
+    async def _write_outbox_state(self, write: Callable[[], None], kind: str) -> None:
+        # Keep this row in its route worker until the local write is durable.
+        while True:
+            try:
+                write()
+                return
+            except sqlite3.Error as exc:
+                self.counters[f"outbox_{kind}_write_retries"] += 1
+                LOG.warning("SQLite outbox %s write failed (%s); retrying locally", kind, type(exc).__name__)
+            try:
+                await asyncio.sleep(OUTBOX_STATE_WRITE_RETRY_INTERVAL)
+            except asyncio.CancelledError:
+                try:
+                    write()
+                except sqlite3.Error as exc:
+                    LOG.warning("SQLite outbox %s write remains pending at shutdown (%s)", kind, type(exc).__name__)
+                raise
+
+    async def _outbox_loop(self, *, core_route: Literal["ack", "telemetry"] | None = None,
+                           central_route: Literal["telemetry", "receipt"] | None = None) -> None:
         epochs = self.config.core_telemetry_epochs
+        commands_enabled = getattr(self.config, "commands_enabled", True)
         receipt_attempts = 0
-        if not scoped and epochs is not None:
-            # The scoped worker owns this lane, so awaiting its receipt never
-            # holds the native observation or command-receipt worker.
-            epochs = {}
+        next_expiry_check = 0.0
         while not self.stop.is_set():
-            if not scoped:
+            if central_route == "receipt":
+                item = None
+                if not self.transport.central_delivery_held():
+                    self.store.stage_central_receipts()
+                    item = self.store.due_central_receipt()
+            elif central_route == "telemetry":
+                now = time.monotonic()
+                if now >= next_expiry_check:
+                    expired = self._expire_central_telemetry(self._central_telemetry_cutoff())
+                    next_expiry_check = now if expired == CENTRAL_TELEMETRY_EXPIRY_BATCH else now + CENTRAL_TELEMETRY_EXPIRY_INTERVAL
+                item = None if self.transport.central_delivery_held() else self.store.due_central_telemetry()
+            elif core_route == "ack":
+                # Either worker can stage the same atomic pair while the other
+                # is waiting for its transport response.
                 self.store.stage_receipts(self.config.receipt_container, self.config.core_bridge_enabled)
+                item = self.store.due_core_ack()
+            elif core_route == "telemetry":
+                item = self.store.due(core_epochs=epochs, scoped_only=True)
+            else:
+                if commands_enabled:
+                    self.store.stage_receipts(self.config.receipt_container, self.config.core_bridge_enabled)
                 self.store.stage_credential_receipt()
-            prefer_receipts = None if scoped else receipt_attempts < RECEIPT_BURST
-            hold = NativeDeliveryHold() if scoped else self.transport.native_delivery_hold()
-            item = self.store.due(core_epochs=epochs, scoped_only=scoped, prefer_receipts=prefer_receipts,
-                                  skip_native=hold.all_native, held_receipt_container=hold.receipt_container,
-                                  hold_credential_receipts=hold.credential_receipts)
+                hold = self.transport.native_delivery_hold()
+                item = self.store.due(prefer_receipts=receipt_attempts < RECEIPT_BURST,
+                                      skip_native=hold.all_native, skip_core=True,
+                                      held_receipt_container=hold.receipt_container,
+                                      hold_credential_receipts=hold.credential_receipts,
+                                      held_observation_container=hold.observation_container,
+                                      held_health_container=hold.health_container,
+                                      disabled_command_receipt_container=None if commands_enabled else self.config.receipt_container)
             if item is None:
                 await self._pause(0.5)
                 continue
-            receipt_attempts = min(receipt_attempts + 1, RECEIPT_BURST) if item["is_receipt"] else 0
+            if central_route is None and core_route is None:
+                receipt_attempts = min(receipt_attempts + 1, RECEIPT_BURST) if item["is_receipt"] else 0
+            delivery_options = {}
+            if (item["command_id"] is not None and item["container"] == self.config.receipt_container
+                    and self.config.receipt_container in configured_container_pins(self.config)):
+                if item["attempts"]:
+                    delivery_options["confirm_existing"] = True
+                else:
+                    await self._write_outbox_state(lambda: self.store.mark_receipt_attempt(item["rqi"]), "attempt")
+                    if self.stop.is_set():
+                        return
             try:
-                await self.transport.publish(item["rqi"], item["container"], item["payload"])
+                cutoff = self._central_telemetry_cutoff() if central_route == "telemetry" else None
+                if cutoff is not None and parse_time(item["payload"]["observedAt"]) < cutoff:
+                    self.store.delivered(item["rqi"])
+                    self.counters["central_telemetry_expired"] += 1
+                    continue
+                if item["container"] == "@central/receipt":
+                    delivery_options["expected_claim_id"] = self.store.central_receipt_claim(item["payload"])
+                confirmation = await self.transport.publish(item["rqi"], item["container"], item["payload"], **delivery_options)
             except asyncio.CancelledError:
                 raise
             except Exception as exc:
                 self.counters["publish_retries"] += 1
-                minimum_delay = exc.retry_after if isinstance(exc, HttpRetryDeferred) else 0.0
-                self.store.retry(item["rqi"], item["attempts"], minimum_delay=minimum_delay)
                 LOG.warning("Gateway delivery deferred (%s)", type(exc).__name__)
+                retry_at = time.monotonic() + exc.retry_after if isinstance(exc, HttpRetryDeferred) else 0.0
+                await self._write_outbox_state(
+                    lambda: self.store.retry(item["rqi"], item["attempts"],
+                                             minimum_delay=max(0.0, retry_at - time.monotonic())),
+                    "retry",
+                )
             else:
-                self.store.delivered(item["rqi"])
+                await self._write_outbox_state(lambda: self.store.delivered(item["rqi"]), "confirmation")
                 self.counters["published"] += 1
-                if scoped:
+                if (getattr(self.config, "native_observation_trace", False)
+                        and isinstance(confirmation, NativeConfirmation) and item.get("native_observation_device_id")):
+                    LOG.info("Native observation confirmed rqi=%s payloadSha256=%s route=%s created=%s gatewayBootId=%s",
+                             item["rqi"], payload_hash(item["payload"]), confirmation.route,
+                             "true" if confirmation.created else "false", self.boot_id)
+                if item["container"] == "@central/receipt":
+                    self.counters["central_receipts_confirmed"] += 1
+                if item["container"] == "@central/telemetry":
+                    outcome = "stale" if confirmation["status"] == "STALE" else "confirmed"
+                    self.counters[f"central_telemetry_{outcome}"] += 1
+                if core_route == "telemetry" and epochs is not None:
                     self.counters["core_applied_confirmed"] += 1
 
     def _health_payload(self) -> dict:
@@ -412,7 +618,8 @@ class Gateway:
     def _enqueue_health(self) -> None:
         payload = self._health_payload()
         try:
-            self.store.enqueue("health", f"{self.boot_id}:{payload['observedAt']}", self.config.health_container, payload)
+            if not self.store.enqueue_heartbeat(payload):
+                self.counters["health_deferred_pending"] += 1
         except CapacityError:
             self.counters["health_dropped_capacity"] += 1
 
@@ -421,18 +628,36 @@ class Gateway:
             self._enqueue_health()
             await self._pause(self.config.heartbeat_interval)
 
+    def _recover_interrupted_commands(self) -> None:
+        for item in self.store.interrupted():
+            if item["ble_final_write_started"] == 0:
+                self._finish(item["command"], item["digest"], "REJECTED", "DISPATCH_NOT_SENT",
+                             "Previous process stopped before the BLE terminating fragment was committed for transmission")
+            else:
+                self._finish(item["command"], item["digest"], "INDETERMINATE", "RESTART_INTERRUPTED",
+                             "Previous process ended during dispatch; journal preserved and command not replayed")
+
     async def run(self) -> None:
         tasks: list[asyncio.Task] = []
         try:
-            for item in self.store.interrupted():
-                self._finish(item["command"], item["digest"], "INDETERMINATE", "RESTART_INTERRUPTED",
-                             "Previous process ended during dispatch; journal preserved and command not replayed")
+            commands_enabled = self.config.commands_enabled
+            workers = [self._credentials_loop]
+            if commands_enabled:
+                self._recover_interrupted_commands()
+                workers.extend((self._poll_loop, self._dispatch_loop))
+            workers.extend((self._outbox_loop, self._health_loop))
             await self.transport.start()
-            await self.ble.start(self.observation, observation_heads=self.store.observation_heads())
-            tasks = [asyncio.create_task(worker(), name=worker.__name__) for worker in (
-                self._credentials_loop, self._poll_loop, self._dispatch_loop, self._outbox_loop, self._health_loop)]
-            if self.config.core_telemetry_epochs is not None:
-                tasks.append(asyncio.create_task(self._outbox_loop(scoped=True), name="scoped_outbox"))
+            heads = self.store.observation_heads(include_button_presses=True, include_device_uptime=True)
+            await self.ble.start(self.observation, pass_device_uptime=True, observation_heads=heads)
+            tasks = [asyncio.create_task(worker(), name=worker.__name__) for worker in workers]
+            if self.config.core_bridge_enabled:
+                tasks.append(asyncio.create_task(self._outbox_loop(core_route="telemetry"), name="core_telemetry_outbox"))
+                if commands_enabled:
+                    tasks.append(asyncio.create_task(self._outbox_loop(core_route="ack"), name="core_ack_outbox"))
+            if self.config.central_telemetry_enabled:
+                tasks.append(asyncio.create_task(self._outbox_loop(central_route="telemetry"), name="central_telemetry_outbox"))
+            if commands_enabled and self.config.central_receipts_enabled:
+                tasks.append(asyncio.create_task(self._outbox_loop(central_route="receipt"), name="central_receipt_outbox"))
             stop_task = asyncio.create_task(self.stop.wait(), name="stop")
             tasks.append(stop_task)
             done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)

@@ -26,6 +26,7 @@ services:
       KEYRING_SDT_PROFILE: ${KEYRING_SDT_PROFILE:-pb-legacy-1.0}
     volumes:
       - ./scoped-telemetry/consumer.mjs:/scoped/consumer.mjs:ro
+      - ./scoped-telemetry/r18-mqtt-ingress.mjs:/scoped/r18-mqtt-ingress.mjs:ro
       - ../../integration-candidate:/scoped/integration-candidate:ro
       - ${SCOPED_TEAM_STORE:?Set the pinned team IntegrationStore path}:/scoped/integration-store.mjs:ro
       - ./.local/scoped/config:/scoped/config:ro

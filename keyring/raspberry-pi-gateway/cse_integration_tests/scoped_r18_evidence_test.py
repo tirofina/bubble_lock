@@ -1,0 +1,242 @@
+from contextlib import closing
+import hashlib
+import json
+from pathlib import Path
+import tempfile
+import unittest
+
+from bubble_gateway.model import central_observation_id, payload_hash
+from bubble_gateway.store import Store
+from helpers import BINDING, observation
+from pi_led_cycle import content_name, receipt_name, write_new_json
+from r18_pulse_trace import inspect_pulse_trace
+from scoped_r18_evidence import inspect_pulse
+from scoped_feather_pi import R18_LEGACY_COMMAND_FIRMWARE, R18_SLEEP_COMMAND_FIRMWARE
+from scoped_r18_pulse import GATEWAY, PATHS, R18_BOARD, R18_DEVICE, TELEMETRY_EVENT_FIELDS
+
+
+class R18EvidenceTests(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.output = Path(temporary.name)
+        self.command_id, self.boot_id = "r18-pulse-test", "r18-boot"
+        self.start = "2026-11-11T09:00:00.000Z"
+        self.deadline = "2026-11-11T09:00:25.000Z"
+        self.intent = {"deviceId": R18_DEVICE, "commandId": self.command_id, "grantId": "grant-a",
+                       "desiredState": {"state": True}, "deadline": self.deadline}
+        self.command = {key: value for key, value in self.intent.items() if key != "grantId"}
+        self.command.update(version=1, gatewayId=GATEWAY, claimId="claim-a", grantRevision=1, ownershipEpoch=1,
+                            issuedAt=self.start)
+        self.command_hash = payload_hash(self.command)
+        baseline_rqi = Store.request_id("observation", f"{R18_DEVICE}:{self.boot_id}:1")
+        baseline = {"bootId": self.boot_id, "sequence": 1, "state": False, "receivedAt": self.start,
+                    "cseResource": {"ty": 4, "rn": content_name(baseline_rqi), "ri": "cin-base", "pi": "cnt-obs"}}
+        write_new_json(self.output / "pulse-intent.json", {"gatewayId": GATEWAY, "request": self.intent,
+                       "cseReceiptName": receipt_name(self.command_id), "baseline": baseline})
+        self.record = {"command": self.command, "payloadHash": self.command_hash, "grantId": "grant-a",
+                       "intentHash": payload_hash({**self.intent, "gatewayId": GATEWAY}), "desiredGeneration": 1,
+                       "reservedAt": self.start, "reservationExpiresAt": "2026-11-11T09:00:05.000Z",
+                       "executionState": "RESERVED"}
+        self.envelope = {"contractId": "privacy-bubble.integration.v1", "docRevision": "2.0.0",
+                         "gatewayId": GATEWAY, "commandId": self.command_id, "payloadHash": self.command_hash,
+                         "desiredGeneration": 1, "claimId": "claim-a"}
+        issue = dict(self.envelope, type="GATEWAY_COMMAND_ISSUED", eventId="evt-issued", timestamp=self.start,
+                     owner="PC-MOBIUS-INTEGRATION", deviceId=R18_DEVICE, grantId="grant-a", executionState="RESERVED",
+                     reservedAt=self.start, reservationExpiresAt=self.record["reservationExpiresAt"])
+        self.team = {"gatewayCommands": {self.command_id: self.record}, "receipts": [issue], "gatewayDeviceReceipts": {}}
+
+    def test_recovers_the_original_issuance_without_its_http_response(self):
+        database = self.output / "gateway.sqlite3"
+        binding = dict(BINDING, bindingVersion=3, gatewayId=GATEWAY, originator="Sscoped-r18-gateway-b",
+                       cseId="Mobius4", cseDeploymentId="scoped-mobius4", receiptContainer=PATHS["receipt"],
+                       pcApiDeploymentId="scoped-command-api-r18")
+        with closing(Store(database, 100, 100000, 20, binding)) as store:
+            store.accept(self.command, self.command_hash)
+            store.accept(dict(self.command, commandId="other-command"), "a" * 64)
+        report = inspect_pulse(self.output, self.team, database)
+        self.assertTrue(report["issuanceInTeamSnapshot"])
+        self.assertFalse(report["issuedResponseCaptured"])
+        self.assertEqual(report["issuanceEventId"], "evt-issued")
+        self.assertEqual(report["piCommandState"], "RECEIVED")
+        self.assertFalse(report["cseContainerPinsCaptured"])
+        self.assertIsNone(report["journalReadiness"])
+        self.assertIsNone(report["physicalPulseMeasured"])
+
+    def test_pulse_scope_can_require_the_issued_baseline_journal_counts(self):
+        pins = {"observation": "cnt-obs", "health": "cnt-health", "receipt": "cnt-receipt"}
+        write_new_json(self.output / "pulse-scope.json", {"gatewayId": GATEWAY, "containerPins": pins,
+                       "journalReadinessRequired": True})
+        with self.assertRaisesRegex(ValueError, "lacks valid journal readiness evidence"):
+            inspect_pulse(self.output, self.team)
+
+        path = self.output / "pulse-intent.json"
+        intent = json.loads(path.read_text(encoding="utf-8"))
+        intent["commandReadiness"] = {"cseResource": {"ri": "cin-health", "pi": pins["health"]}}
+        journal = {"detail": "health", "journal": "ready", "journalUsed": 1, "journalPrepared": 0, "journalCapacity": 32}
+        intent["baseline"]["journal"] = journal
+        path.write_text(json.dumps(intent), encoding="utf-8")
+        self.assertEqual(inspect_pulse(self.output, self.team)["journalReadiness"], journal)
+        journal["journalUsed"] = 32
+        path.write_text(json.dumps(intent), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "journal is full"):
+            inspect_pulse(self.output, self.team)
+
+    def test_pinned_trial_requires_matching_pi_container_bindings(self):
+        pins = {"observation": "cnt-obs", "health": "cnt-health", "receipt": "cnt-receipt"}
+        intent_path = self.output / "pulse-intent.json"
+        intent = json.loads(intent_path.read_text(encoding="utf-8"))
+        intent["commandReadiness"] = {"cseResource": {"ri": "cin-health", "pi": pins["health"]}}
+        intent_path.write_text(json.dumps(intent), encoding="utf-8")
+        write_new_json(self.output / "pulse-scope.json", {"gatewayId": GATEWAY, "containerPins": pins})
+        self.assertTrue(inspect_pulse(self.output, self.team)["cseContainerPinsCaptured"])
+
+        database = self.output / "gateway.sqlite3"
+        binding = dict(BINDING, bindingVersion=3, gatewayId=GATEWAY, originator="Sscoped-r18-gateway-b",
+                       cseId="Mobius4", cseDeploymentId="scoped-mobius4", receiptContainer=PATHS["receipt"],
+                       receiptContainerRi=pins["receipt"], observationContainerRi="cnt-different",
+                       pcApiDeploymentId="scoped-command-api-r18")
+        with closing(Store(database, 100, 100000, 20, binding)) as store:
+            store.accept(self.command, self.command_hash)
+        with self.assertRaisesRegex(ValueError, "Pi database does not belong"):
+            inspect_pulse(self.output, self.team, database)
+
+    def test_wake_report_is_bound_to_the_original_pulse_scope_and_baseline(self):
+        wake_report = self.output / "wake.json"
+        wake = {"version": 1, "mode": "wake", "hardware": "r18-pcb", "status": "RECORDED", "gatewayId": GATEWAY,
+                "deviceId": R18_DEVICE, "boardRevision": R18_BOARD, "firmwareRevision": R18_SLEEP_COMMAND_FIRMWARE,
+                "gattProfile": "core-v1", "wake": {"expected": "confirm", "cause": "button", "pins": 64,
+                    "matched": True, "newBoot": True, "bootIdSha256": hashlib.sha256(self.boot_id.encode()).hexdigest(),
+                    "sequence": 0}}
+        raw = json.dumps(wake).encode()
+        wake_report.write_bytes(raw)
+        pins = {"observation": "cnt-obs", "health": "cnt-health", "receipt": "cnt-receipt"}
+        write_new_json(self.output / "pulse-scope.json", {"gatewayId": GATEWAY, "containerPins": pins,
+                       "firmwareRevision": R18_SLEEP_COMMAND_FIRMWARE, "wakeReportSha256": hashlib.sha256(raw).hexdigest()})
+        path = self.output / "pulse-intent.json"
+        intent = json.loads(path.read_text(encoding="utf-8"))
+        intent["commandReadiness"] = {"cseResource": {"ri": "cin-health", "pi": pins["health"]}}
+        path.write_text(json.dumps(intent), encoding="utf-8")
+        result = inspect_pulse(self.output, self.team, wake_report=wake_report)
+        self.assertEqual(result["postWakeEvidence"]["baselineSequence"], 1)
+        self.assertFalse(result["postWakeApplicationVerified"])
+
+        scope_path = self.output / "pulse-scope.json"
+        scope = json.loads(scope_path.read_text(encoding="utf-8"))
+        scope_path.write_text(json.dumps(dict(scope, wakeRelayRequired=True)), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "differs from the pulse scope"):
+            inspect_pulse(self.output, self.team, wake_report=wake_report, observation_hasher=payload_hash)
+        wake_health = {"detail": "health", "wake": "button", "wakePins": 64}
+        relayed = observation(gatewayId=GATEWAY, deviceId=R18_DEVICE, bootId=self.boot_id,
+                              sequence=1, firmwareRevision=R18_SLEEP_COMMAND_FIRMWARE, state=False,
+                              observedAt=self.start, receivedAt=self.start, sensorValues=dict(wake_health, fault=False))
+        event = {"contractId": "privacy-bubble.integration.v1", "docRevision": "2.0.0", "type": "GATEWAY_TELEMETRY_ACCEPTED",
+                 "eventId": "evt-wake", "gatewayId": GATEWAY, "deviceId": R18_DEVICE,
+                 "observationId": central_observation_id(relayed), "payloadHash": payload_hash(relayed),
+                 "sequence": 2, "observedAt": self.start, "timestamp": self.start, "simulation": False}
+        relay_path = self.output / "pulse-wake-observation.json"
+        write_new_json(relay_path, {"observation": relayed, "cseResource": intent["baseline"]["cseResource"],
+                                   "centralEvent": {**{key: event[key] for key in TELEMETRY_EVENT_FIELDS}, "simulation": False}})
+        intent["wakeObservationId"] = event["observationId"]
+        intent["baseline"]["wakeHealth"] = wake_health
+        path.write_text(json.dumps(intent), encoding="utf-8")
+        pending = inspect_pulse(self.output, self.team, wake_report=wake_report, observation_hasher=payload_hash)
+        self.assertFalse(pending["wakeRelayVerified"])
+        self.team["receipts"].append(event)
+        result = inspect_pulse(self.output, self.team, wake_report=wake_report, observation_hasher=payload_hash)
+        self.assertTrue(result["wakeRelayVerified"])
+        self.assertEqual(result["wakeRelay"]["observationId"], event["observationId"])
+        intent["wakeObservationId"] = "other-observation"
+        path.write_text(json.dumps(intent), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "does not follow its wake relay"):
+            inspect_pulse(self.output, self.team, wake_report=wake_report, observation_hasher=payload_hash)
+        wake_report.write_bytes(raw + b"\n")
+        with self.assertRaisesRegex(ValueError, "differs from the one selected"):
+            inspect_pulse(self.output, self.team, wake_report=wake_report)
+
+    def test_snapshot_absence_and_tampered_intent_are_distinct(self):
+        report = inspect_pulse(self.output, {"gatewayCommands": {}, "receipts": []})
+        self.assertFalse(report["issuanceInTeamSnapshot"])
+        self.assertFalse(report["centralApplicationVerified"])
+        self.record["intentHash"] = "f" * 64
+        with self.assertRaisesRegex(ValueError, "does not match the bench intent"):
+            inspect_pulse(self.output, self.team)
+
+    def test_matches_central_application_but_rejects_conflicting_native_receipt(self):
+        receipt = {key: self.command[key] for key in ("gatewayId", "deviceId", "commandId", "grantRevision", "ownershipEpoch")}
+        receipt.update(version=1, payloadHash=self.command_hash, status="APPLIED", ackCode="APPLIED",
+                       readback={"state": True}, bootId=self.boot_id, firmwareRevision=R18_LEGACY_COMMAND_FIRMWARE,
+                       receivedAt="2026-11-11T09:00:04.000Z")
+        digest = payload_hash(receipt)
+        self.record.update(executionState="APPLIED_VERIFIED", lastReceiptHash=digest, readback={"state": True},
+                           claimCommittedAt="2026-11-11T09:00:01.000Z", dispatchStartedAt="2026-11-11T09:00:02.000Z",
+                           claimExpiresAt="2026-11-11T09:00:15.000Z", settledAt="2026-11-11T09:00:05.000Z")
+        started = self.record["dispatchStartedAt"]
+        settled = self.record["settledAt"]
+        self.team["receipts"] += [
+            dict(self.envelope, type="GATEWAY_DISPATCH_STARTED", eventId="evt-dispatch", timestamp=started,
+                 deviceId=R18_DEVICE, grantRevision=1, ownershipEpoch=1, executionState="IN_FLIGHT",
+                 dispatchStartedAt=started, claimCommittedAt=self.record["claimCommittedAt"]),
+            dict(self.envelope, type="GATEWAY_RECEIPT_SETTLED", eventId="evt-settlement", timestamp=settled,
+                 ueId=R18_DEVICE, epoch=1, executionState="APPLIED_VERIFIED", receiptHash=digest),
+        ]
+        self.team["gatewayDeviceReceipts"][self.command_id] = {"receipt": receipt, "receiptHash": digest, "receivedAt": settled}
+        report = inspect_pulse(self.output, self.team)
+        self.assertTrue(report["centralApplicationVerified"])
+        self.assertFalse(report["cseReceiptCaptured"])
+        self.assertEqual(report["settlementEventId"], "evt-settlement")
+        receipt_path = self.output / "pulse-receipt.json"
+        native_receipt = {"cseResource": {"ri": "cin-r18", "pi": "cnt-r18", "ct": "20261111T090005"},
+                          "cseReceipt": receipt}
+        write_new_json(receipt_path, native_receipt)
+        rqi = Store.request_id("observation", f"{R18_DEVICE}:{self.boot_id}:2")
+        final = {"bootId": self.boot_id, "sequence": 2, "state": False, "observedAt": settled,
+                 "receivedAt": settled, "cseResource": {"ty": 4, "rn": content_name(rqi), "ri": "cin-off", "pi": "cnt-obs"}}
+        write_new_json(self.output / "pulse-result.json", {"commandId": self.command_id, "postPulseObservation": final})
+        observation = dict(final, gatewayId=GATEWAY, deviceId=R18_DEVICE, payloadHash="a" * 64)
+        write_new_json(self.output / "pulse-observation.json", {"commandId": self.command_id, "observation": observation})
+        pending = inspect_pulse(self.output, self.team)
+        self.assertTrue(pending["postPulseObservationCaptured"])
+        self.assertFalse(pending["postPulseCentralTelemetryVerified"])
+        event = {"contractId": "privacy-bubble.integration.v1", "docRevision": "2.0.0", "type": "GATEWAY_TELEMETRY_ACCEPTED",
+                 "eventId": "evt-telemetry", "gatewayId": GATEWAY, "deviceId": R18_DEVICE, "timestamp": settled,
+                 "observedAt": settled, "observationId": central_observation_id(observation), "payloadHash": "a" * 64,
+                 "sequence": 9}
+        self.team["receipts"].append(event)
+        self.assertTrue(inspect_pulse(self.output, self.team)["postPulseCentralTelemetryVerified"])
+        trace = self.output / "load.csv"
+        raw = b"offsetMs,voltageV\n0,0\n1,3\n998,3\n999,0\n"
+        trace.write_bytes(raw)
+        metadata = {"version": 1, "commandId": self.command_id, "cseResourceId": "cin-r18", "receiptSha256": digest,
+                    "measurementPoint": "J6-motor-load", "highThresholdV": 1.5,
+                    "traceSha256": hashlib.sha256(raw).hexdigest()}
+        report = inspect_pulse(self.output, self.team, trace_path=trace, trace_metadata=metadata)
+        self.assertTrue(report["physicalPulseMeasured"])
+        self.assertEqual(report["pulseTrace"]["durationStatus"], "within-limit")
+        self.assertEqual(report["pulseTrace"]["durationBoundsMs"], [997, 999])
+        with self.assertRaisesRegex(ValueError, "metadata differs from the applied r18 receipt"):
+            inspect_pulse(self.output, self.team, trace_path=trace, trace_metadata=dict(metadata, cseResourceId="other"))
+        event["payloadHash"] = "b" * 64
+        with self.assertRaisesRegex(ValueError, "inconsistent GATEWAY_TELEMETRY_ACCEPTED"):
+            inspect_pulse(self.output, self.team)
+        native_receipt["cseReceipt"] = dict(receipt, receivedAt="2026-11-11T09:00:04.100Z")
+        receipt_path.write_text(json.dumps(native_receipt), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "receipt bodies differ"):
+            inspect_pulse(self.output, self.team)
+
+    def test_trace_does_not_pass_uncertain_edges_or_multiple_pulses(self):
+        trace = self.output / "load.csv"
+        receipt_sha = "b" * 64
+        for rows, measurement, duration in (
+                (b"0,0\n1,3\n1002,3\n1003,0\n", "measured", "over-limit"),
+                (b"0,0\n1,3\n999,3\n1001,0\n", "measured", "inconclusive"),
+                (b"0,3\n1,3\n2,0\n", "missing-edge", None),
+                (b"0,0\n1,3\n2,0\n3,3\n4,0\n", "multiple-pulses", None)):
+            with self.subTest(measurement=measurement, duration=duration):
+                raw = b"offsetMs,voltageV\n" + rows
+                trace.write_bytes(raw)
+                metadata = {"version": 1, "commandId": self.command_id, "cseResourceId": "cin-r18",
+                            "receiptSha256": receipt_sha, "measurementPoint": "J6-motor-load", "highThresholdV": 1.5,
+                            "traceSha256": hashlib.sha256(raw).hexdigest()}
+                report = inspect_pulse_trace(trace, metadata, self.command_id, "cin-r18", receipt_sha)
+                self.assertEqual((report["measurementStatus"], report.get("durationStatus")), (measurement, duration))

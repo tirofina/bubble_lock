@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
-from bubble_gateway.ble import BleFleet, BleProtocolError, BleUnavailable, _Frames, _object, _power_reading
+from bubble_gateway.ble import BleCommandNotSent, BleFleet, BleProtocolError, BleUnavailable, _Frames, _object, _power_reading
 from bubble_gateway.core_bridge import command as core_command
 from bubble_gateway.model import authorization_deadline, parse_time, payload_hash, validate_command, validate_observation
 from helpers import DEVICES, command, config, device_receipt, observation
@@ -296,7 +296,7 @@ class BleMockTests(unittest.IsolatedAsyncioTestCase):
     async def test_deadline_is_not_rebased_on_late_execute(self):
         self.peer.client = SimpleNamespace(is_connected=True, write_gatt_char=AsyncMock())
         cmd = command()
-        with self.assertRaises(TimeoutError):
+        with self.assertRaisesRegex(BleCommandNotSent, "deadline elapsed before BLE"):
             await self.fleet.execute(cmd, 1000, payload_hash(cmd), deadline_monotonic=time.monotonic() - 0.1)
         self.peer.client.write_gatt_char.assert_not_awaited()
         self.assertTrue(self.peer.ready.is_set())
@@ -313,7 +313,7 @@ class BleMockTests(unittest.IsolatedAsyncioTestCase):
         self.peer.client = client
         cmd = command()
         clock = SimpleNamespace(monotonic=lambda: now)
-        with patch("bubble_gateway.ble.time", clock), self.assertRaises(TimeoutError):
+        with patch("bubble_gateway.ble.time", clock), self.assertRaises(BleCommandNotSent):
             await self.fleet.execute(cmd, 1000, payload_hash(cmd), deadline_monotonic=100.5)
         client.write_gatt_char.assert_awaited_once()
         self.assertFalse(self.peer.ready.is_set())
@@ -326,7 +326,8 @@ class BleMockTests(unittest.IsolatedAsyncioTestCase):
         self.fleet._queue_observation(self.peer, frame)
         self.fleet._queue_observation(self.peer, deepcopy(frame))
         self.assertEqual(self.peer.observations.qsize(), 1)
-        result = self.peer.observations.get_nowait()
+        result, uptime = self.peer.observations.get_nowait()
+        self.assertEqual(uptime, 100)
         self.assertIsNone(result["battery"])
         self.assertIsNone(result["rssi"])
 
@@ -339,9 +340,11 @@ class BleMockTests(unittest.IsolatedAsyncioTestCase):
         self.fleet._queue_observation(self.peer, next_frame)
         self.assertEqual(self.peer.observation_watermark, ("boot-test", 1, 100))
         self.assertIsNone(self.peer.anchor)
-        self.assertEqual(self.peer.observations.get_nowait()["sequence"], 1)
+        first, _ = self.peer.observations.get_nowait()
+        self.assertEqual(first["sequence"], 1)
         self.fleet._queue_observation(self.peer, next_frame)
-        self.assertEqual(self.peer.observations.get_nowait()["sequence"], 2)
+        second, _ = self.peer.observations.get_nowait()
+        self.assertEqual(second["sequence"], 2)
 
     async def test_ble_rejects_alert_claim_when_battery_is_unavailable(self):
         frame = dict(version=1, deviceId="kr-test", bootId="boot-test", sequence=1, uptimeMs=100,

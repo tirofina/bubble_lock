@@ -9,19 +9,26 @@ import json
 import logging
 import math
 import re
+import sqlite3
+import ssl
 import uuid
 from collections import Counter
 from datetime import timezone
 from email.utils import parsedate_to_datetime
+from pathlib import Path
 from time import monotonic
-from typing import Any, NamedTuple
+from typing import TYPE_CHECKING, Any, AsyncIterator, NamedTuple
 from urllib.parse import quote, urlsplit
 
 import httpx
 import paho.mqtt.client as mqtt
-from .config import ID, tls_context
+from .config import ID, configured_container_pins, tls_context
 from .core_bridge import command as core_command
-from .model import authorization_deadline, parse_time, payload_hash, utc_now
+from .model import (authorization_deadline, central_observation_id, central_receipt_execution_state,
+                    parse_time, payload_hash, utc_now)
+
+if TYPE_CHECKING:
+    from .store import Store
 
 LOG = logging.getLogger(__name__)
 MAX_BODY = 256 * 1024
@@ -56,6 +63,13 @@ class NativeDeliveryHold(NamedTuple):
     all_native: bool = False
     receipt_container: str | None = None
     credential_receipts: bool = False
+    observation_container: str | None = None
+    health_container: str | None = None
+
+
+class NativeConfirmation(NamedTuple):
+    route: str
+    created: bool
 
 
 def _retry_after(value: str | None) -> float | None:
@@ -114,18 +128,27 @@ def _json(value: Any) -> bytes:
                       separators=(",", ":")).encode("utf-8")
 
 
-def _https_base(value: str, *, origin_only: bool = False) -> str:
+def _https_base(value: str, *, cse: bool = False) -> str:
     parsed = urlsplit(value)
     if (parsed.scheme != "https" or not parsed.hostname or parsed.username is not None
             or parsed.password is not None or parsed.query or parsed.fragment
-            or (origin_only and parsed.path not in ("", "/"))):
-        raise ValueError("endpoint must be an HTTPS origin without credentials/query/fragment")
+            or (cse and parsed.path.rstrip("/") not in ("", "/onem2m"))):
+        raise ValueError("invalid HTTPS endpoint")
     return value.rstrip("/")
 
 
-def _https_origin(url: str) -> tuple[str | None, int]:
+def _https_origin(url: str) -> tuple[str, int]:
     endpoint = urlsplit(url)
+    if endpoint.hostname is None:
+        raise ValueError("HTTPS origin requires a host")
     return endpoint.hostname, endpoint.port or 443
+
+
+def _system_boot_id() -> str | None:
+    try:
+        return str(uuid.UUID(Path("/proc/sys/kernel/random/boot_id").read_text(encoding="ascii").strip()))
+    except (OSError, ValueError):
+        return None
 
 
 def _resource_path(path: str) -> str:
@@ -152,10 +175,11 @@ def _mqtt_to(http_path: str) -> str:
 
 
 class TransportHub:
-    def __init__(self, config: Any):
+    def __init__(self, config: Any, *, retry_store: Store | None = None):
         self.config = config
         self._api_url = _https_base(config.api_url)
-        self._cse_url = _https_base(config.cse_url, origin_only=True)
+        self._cse_url = _https_base(config.cse_url, cse=True)
+        self._api_origin = _https_origin(self._api_url)
         self._cse_origin = _https_origin(self._cse_url)
         for segment in (config.originator, config.cse_id):
             if not isinstance(segment, str) or not segment or any(char in segment for char in "/+#\x00"):
@@ -166,7 +190,15 @@ class TransportHub:
         self._core_root = f"privacy-bubble/gateway/{config.gateway_id}"
         self._commands: asyncio.Queue = asyncio.Queue(maxsize=128)
         self._http: httpx.AsyncClient | None = None
-        self._http_retry_until: dict[tuple[str | None, int], tuple[float, int]] = {}
+        self._pc_http: httpx.AsyncClient | None = None
+        self._pc_api_enabled = True
+        self._http_retry_until: dict[tuple[str, int], tuple[float, int]] = {}
+        self._retry_store = retry_store
+        self._retry_boot_id = _system_boot_id() if retry_store is not None else None
+        if retry_store is not None and self._retry_boot_id is not None:
+            saved = retry_store.restore_http_retry_windows(self._retry_boot_id, monotonic())
+            self._http_retry_until = {origin: saved[origin] for origin in {self._api_origin, self._cse_origin}
+                                      if origin in saved}
         self._mqtt: mqtt.Client | None = None
         self._loop: asyncio.AbstractEventLoop | None = None
         self._ready = asyncio.Event()
@@ -187,15 +219,18 @@ class TransportHub:
         self._route: str | None = None
         self.route_counters: Counter[str] = Counter()
 
-    async def start(self) -> None:
+    async def start(self, *, enable_pc_api: bool = True) -> None:
         if self._http is not None:
             raise RuntimeError("transport already started")
         self._closing = False
+        self._pc_api_enabled = enable_pc_api
         self._loop = asyncio.get_running_loop()
         context = tls_context(self.config)
-        self._http = httpx.AsyncClient(verify=context, follow_redirects=False, trust_env=False,
-                                      timeout=httpx.Timeout(self.config.request_timeout),
-                                      limits=httpx.Limits(max_connections=8, max_keepalive_connections=4))
+        pc_context = (tls_context(self.config, pc_api=True)
+                      if enable_pc_api and getattr(self.config, "pc_api_tls_files", None) is not None else None)
+        self._http = self._http_client(context)
+        if pc_context is not None:
+            self._pc_http = self._http_client(pc_context)
         if not self.config.mqtt_enabled:
             return
         client_id = (f"pb-gateway-{self.config.gateway_id}" if self.config.core_bridge_enabled
@@ -219,6 +254,11 @@ class TransportHub:
                                 self.config.mqtt_port, self.config.mqtt_keepalive)
         await asyncio.to_thread(client.loop_start)
 
+    def _http_client(self, context: ssl.SSLContext) -> httpx.AsyncClient:
+        return httpx.AsyncClient(verify=context, follow_redirects=False, trust_env=False,
+                                 timeout=httpx.Timeout(self.config.request_timeout),
+                                 limits=httpx.Limits(max_connections=8, max_keepalive_connections=4))
+
     def _schedule(self, callback: Any, *args: Any) -> None:
         loop = self._loop
         if loop is not None and not loop.is_closed() and not self._closing:
@@ -233,9 +273,13 @@ class TransportHub:
             return
         subscriptions = [(self._response_topic, 1)] if self.config.m2m_mqtt_enabled else []
         if self.config.core_bridge_enabled:
-            subscriptions.append((self._core_root + "/command", 1))
+            if getattr(self.config, "commands_enabled", True):
+                subscriptions.append((self._core_root + "/command", 1))
             subscriptions.extend((self._core_receipt_topic(device, epoch), 1)
                                  for device, epoch in (self.config.core_telemetry_epochs or {}).items())
+        if not subscriptions:
+            self._schedule(self._ready.set)
+            return
         result, mid = client.subscribe(subscriptions)
         if result == mqtt.MQTT_ERR_SUCCESS:
             self._subscribe_mid = mid
@@ -277,6 +321,8 @@ class TransportHub:
             self._handle_core_receipt(message.topic, message.payload)
             return
         if self.config.core_bridge_enabled and message.topic == self._core_root + "/command":
+            if not getattr(self.config, "commands_enabled", True):
+                return
             try:
                 command = core_command(_object(message.payload), self.config.gateway_id, self.config.ble_devices)
                 self._schedule(self._queue_command, command)
@@ -340,7 +386,7 @@ class TransportHub:
         except asyncio.QueueFull:
             LOG.error("CORE command ingress full; command was not durably accepted or executed")
 
-    def _http_deferral(self, origin: tuple[str | None, int]) -> HttpRetryDeferred | None:
+    def _http_deferral(self, origin: tuple[str, int]) -> HttpRetryDeferred | None:
         hold = self._http_retry_until.get(origin)
         if hold is not None:
             remaining = hold[0] - monotonic()
@@ -349,8 +395,10 @@ class TransportHub:
         return None
 
     async def _http_json(self, method: str, url: str, *, headers: dict[str, str],
-                         body: dict[str, Any] | None = None) -> tuple[int, httpx.Headers, dict[str, Any]]:
-        if self._http is None:
+                         body: dict[str, Any] | None = None,
+                         client: httpx.AsyncClient | None = None) -> tuple[int, httpx.Headers, dict[str, Any]]:
+        client = self._http if client is None else client
+        if client is None:
             raise RuntimeError("transport is not started")
         origin = _https_origin(url)
         deferred = self._http_deferral(origin)
@@ -359,7 +407,7 @@ class TransportHub:
         encoded = _json(body) if body is not None else None
         if encoded is not None and len(encoded) > MAX_BODY:
             raise ValueError("outgoing payload exceeds size limit")
-        async with asyncio.timeout(self.config.request_timeout), self._http.stream(
+        async with asyncio.timeout(self.config.request_timeout), client.stream(
                 method, url, headers=headers, content=encoded) as response:
             if response.status_code in {429, 503}:
                 retry_after = _retry_after(response.headers.get("Retry-After"))
@@ -369,6 +417,11 @@ class TransportHub:
                     if now + retry_after >= retry_until:
                         retry_until, retry_status = now + retry_after, response.status_code
                         self._http_retry_until[origin] = (retry_until, retry_status)
+                        if retry_after > 0 and self._retry_store is not None and self._retry_boot_id is not None:
+                            try:
+                                self._retry_store.save_http_retry_window(origin, self._retry_boot_id, retry_until, retry_status)
+                            except sqlite3.Error:
+                                LOG.warning("HTTPS retry window could not be saved; current process still honors it")
                     raise HttpRetryDeferred(retry_status, retry_until - now)
             raw = bytearray()
             async for chunk in response.aiter_bytes():
@@ -393,11 +446,13 @@ class TransportHub:
             raise RemoteResponseError("oneM2M HTTP response has no valid result code", status_code=status) from exc
         return rsc
 
-    def _receipt_pin(self, container: str) -> str | None:
-        return self.config.receipt_container_ri if container == self.config.receipt_container else None
-
     def _native_mqtt_ready(self) -> bool:
         return self.config.m2m_mqtt_enabled and self._mqtt is not None and self._ready.is_set()
+
+    def _native_mqtt_to(self, target: str) -> str:
+        if getattr(self.config, "mqtt_mobius_named_paths", False) and target.startswith("/Mobius/"):
+            return target
+        return _mqtt_to(target)
 
     def _native_route(self) -> str:
         """Pick the binding for one native request from the current link conditions."""
@@ -452,7 +507,7 @@ class TransportHub:
         rqi = "mqtt-probe-" + uuid.uuid4().hex
         future = asyncio.get_running_loop().create_future()
         self._pending[rqi] = future
-        primitive = {"op": 2, "to": _mqtt_to(self.config.observation_container),
+        primitive = {"op": 2, "to": self._native_mqtt_to(self.config.observation_container),
                      "fr": self.config.originator, "rqi": rqi, "rvi": self.config.rvi}
         try:
             wire = {"m2m:rqp": primitive} if self.config.mqtt_wrapped_primitive else primitive
@@ -477,43 +532,65 @@ class TransportHub:
             elif not future.cancelled():
                 future.exception()
 
+    def central_delivery_held(self) -> bool:
+        return self._http_deferral(self._api_origin) is not None
+
     def native_delivery_hold(self) -> NativeDeliveryHold:
         if self._http_deferral(self._cse_origin) is None:
             return NativeDeliveryHold()
         if not self._native_mqtt_ready():
             return NativeDeliveryHold(all_native=True)
         # These routes require HTTPS verification even when MQTT can create the CIN.
-        receipt_container = self.config.receipt_container if self.config.receipt_container_ri is not None else None
-        return NativeDeliveryHold(receipt_container=receipt_container, credential_receipts=True)
+        pins = configured_container_pins(self.config)
+        return NativeDeliveryHold(
+            receipt_container=self.config.receipt_container if self.config.receipt_container in pins else None,
+            credential_receipts=True,
+            observation_container=self.config.observation_container if self.config.observation_container in pins else None,
+            health_container=self.config.health_container if self.config.health_container in pins else None,
+        )
 
-    async def _verify_receipt_container(self, path: str, pin: str) -> None:
+    async def _verify_container(self, path: str, pin: str) -> None:
         rqi = "receipt-parent-" + uuid.uuid4().hex
         status, headers, document = await self._http_json("GET", self._cse_url + path, headers=self._m2m_headers(rqi))
         rsc = self._response_rsc(status, headers, rqi)
         parent = document.get("m2m:cnt")
         if (status != 200 or rsc != 2000 or not isinstance(parent, dict)
                 or type(parent.get("ty")) is not int or parent["ty"] != 3 or parent.get("ri") != pin):
-            raise ReceiptParentMismatch("oneM2M receipt container identity mismatch", rsc, status)
+            raise ReceiptParentMismatch("oneM2M container identity mismatch", rsc, status)
 
     async def verify_receipt_route(self) -> str:
         pin = self.config.receipt_container_ri
         if pin is None:
             raise ValueError("A receipt container ID is required")
-        await self._verify_receipt_container(_resource_path(self.config.receipt_container), pin)
+        await self._verify_container(_resource_path(self.config.receipt_container), pin)
+        return pin
+
+    async def verify_observation_route(self) -> str:
+        pin = self.config.observation_container_ri
+        if pin is None:
+            raise ValueError("An observation container ID is required")
+        await self._verify_container(_resource_path(self.config.observation_container), pin)
+        return pin
+
+    async def verify_health_route(self) -> str:
+        pin = self.config.health_container_ri
+        if pin is None:
+            raise ValueError("A health container ID is required")
+        await self._verify_container(_resource_path(self.config.health_container), pin)
         return pin
 
     @staticmethod
     def _receipt_content_identity(cin: Any, rn: str, rsc: int, status: int | None = None, *,
                                   pin: str | None = None) -> tuple[str, str]:
         if pin is not None and (not isinstance(cin, dict) or cin.get("pi") != pin):
-            raise ReceiptParentMismatch("oneM2M receipt instance parent mismatch", rsc, status)
+            raise ReceiptParentMismatch("oneM2M content instance parent mismatch", rsc, status)
         if not isinstance(cin, dict):
-            raise RemoteResponseError("oneM2M receipt instance identity mismatch", rsc, status)
+            raise RemoteResponseError("oneM2M content instance identity mismatch", rsc, status)
         ri, parent = cin.get("ri"), cin.get("pi")
         if (cin.get("rn") != rn or type(cin.get("ty")) is not int or cin["ty"] != 4
                 or not isinstance(ri, str) or ID.fullmatch(ri) is None
                 or not isinstance(parent, str) or ID.fullmatch(parent) is None):
-            raise RemoteResponseError("oneM2M receipt instance identity mismatch", rsc, status)
+            raise RemoteResponseError("oneM2M content instance identity mismatch", rsc, status)
         return ri, parent
 
     async def read_content(self, rqi: str, container: str) -> Any:
@@ -532,7 +609,7 @@ class TransportHub:
         if (status != 200 or rsc != 2000 or not isinstance(existing, dict)
                 or existing.get("rn") != rn or "con" not in existing):
             raise RemoteResponseError("unable to establish existing content identity", rsc, status)
-        pin = self._receipt_pin(container)
+        pin = configured_container_pins(self.config).get(container)
         if pin is not None:
             self._receipt_content_identity(existing, rn, rsc, status, pin=pin)
         return existing
@@ -545,9 +622,9 @@ class TransportHub:
             self._receipt_content_identity(existing, existing["rn"], 2000, 200)
         if created_identity is not None:
             if existing.get("ri") != created_identity[0]:
-                raise RemoteResponseError("stored receipt resource ID differs from CREATE response", 2000, 200)
+                raise RemoteResponseError("stored content resource ID differs from CREATE response", 2000, 200)
             if existing.get("pi") != created_identity[1]:
-                raise ReceiptParentMismatch("stored receipt parent differs from CREATE response", 2000, 200)
+                raise ReceiptParentMismatch("stored content parent differs from CREATE response", 2000, 200)
         if _json(existing["con"]) != _json(payload):
             rsc = 4105 if conflict else 2000
             raise RemoteResponseError("existing oneM2M resource has different content", rsc, 200)
@@ -563,25 +640,23 @@ class TransportHub:
         await self._confirm_stored(rqi, container, payload, created_identity=identity,
                                    credential_receipt=credential_receipt)
 
-    async def publish(self, rqi: str, container: str, payload: dict[str, Any]) -> dict[str, Any] | None:
-        if container in {"@central/telemetry", "@central/receipt"}:
-            route = "/telemetry" if container == "@central/telemetry" else "/receipts"
-            result = await self._api("POST", route, payload, rqi)
-            if result.get("status") not in {"ACCEPTED", "DUPLICATE"}:
-                raise RemoteResponseError("central API rejected payload")
-            if container == "@central/telemetry" and result.get("deviceId") != payload.get("deviceId"):
-                raise RemoteResponseError("central API device identity mismatch")
-            return result
+    async def publish(self, rqi: str, container: str, payload: dict[str, Any], *,
+                      confirm_existing: bool = False,
+                      expected_claim_id: str | None = None) -> NativeConfirmation | dict[str, Any] | None:
         if container.startswith("@core/"):
             return await self._publish_core(container, payload)
         if not isinstance(rqi, str) or not 1 <= len(rqi) <= 128:
             raise ValueError("invalid request ID")
+        if container == "@central/receipt":
+            return await self._publish_central_receipt(rqi, payload, expected_claim_id)
+        if container == "@central/telemetry":
+            return await self._publish_central_telemetry(rqi, payload)
         path = _resource_path(container)
         rn = "gw-" + hashlib.sha256(rqi.encode("utf-8")).hexdigest()
         cin = {"rn": rn, "cnf": "application/json:0", "con": payload}
         if len(_json(cin)) > MAX_BODY:
             raise ValueError("outgoing content exceeds size limit")
-        pin = self._receipt_pin(container)
+        pin = configured_container_pins(self.config).get(container)
         credential_receipt = "credentialTransition" in payload and container == self.config.health_container
         if credential_receipt:
             deferred = self._http_deferral(self._cse_origin)
@@ -589,13 +664,26 @@ class TransportHub:
                 raise deferred
         target = container
         if pin is not None:
-            await self._verify_receipt_container(path, pin)
+            await self._verify_container(path, pin)
+            if confirm_existing:
+                try:
+                    await self._confirm_stored(rqi, container, payload, conflict=True)
+                except RemoteResponseError as exc:
+                    if (exc.status_code, exc.rsc) != (404, 4004):
+                        raise
+                else:
+                    return NativeConfirmation("https-readback", False)
             # Write to the verified resource itself even if its name is later rebound.
             target = f"/{pin}"
             path = _resource_path(target)
+        named_mobius_paths = getattr(self.config, "mqtt_mobius_named_paths", False)
         route = self._native_route()
+        # The deployment bridge accepts named /Mobius resources. Pinned writes
+        # use the resource ID over HTTPS to retain their parent identity check.
+        if route == "mqtt" and named_mobius_paths and pin is not None:
+            route = "https_pinned"
         if route == "mqtt":
-            primitive = {"op": 1, "to": _mqtt_to(target), "fr": self.config.originator,
+            primitive = {"op": 1, "to": self._native_mqtt_to(target), "fr": self.config.originator,
                          "rqi": rqi, "ty": 4, "rvi": self.config.rvi, "pc": {"m2m:cin": cin}}
             wire = _json({"m2m:rqp": primitive} if self.config.mqtt_wrapped_primitive else primitive)
             if self._mqtt_budget and len(wire) > self._mqtt_budget:
@@ -627,11 +715,11 @@ class TransportHub:
                 if rsc == 2001:
                     await self._confirm_create(rqi, container, payload, rn, response.get("pc"), pin=pin,
                                                credential_receipt=credential_receipt)
-                    return
+                    return NativeConfirmation("mqtt", True)
                 if rsc == 4105:
                     await self._confirm_stored(rqi, container, payload, credential_receipt=credential_receipt,
                                                conflict=True)
-                    return
+                    return NativeConfirmation("mqtt", False)
                 # A real CSE rejection is terminal for this attempt. HTTPS is a
                 # network fallback, not a second route around permission denial.
                 raise RemoteResponseError("oneM2M MQTT request rejected", rsc)
@@ -645,14 +733,46 @@ class TransportHub:
         status, headers, document = await self._http_json(
             "POST", self._cse_url + path, headers=self._m2m_headers(rqi, create=True), body={"m2m:cin": cin})
         rsc = self._response_rsc(status, headers, rqi)
+        confirmed_via = "https-fallback" if self.config.m2m_mqtt_enabled else "https"
         if 200 <= status < 300 and rsc == 2001:
             await self._confirm_create(rqi, container, payload, rn, document, pin=pin,
                                        credential_receipt=credential_receipt, status=status)
-            return
+            return NativeConfirmation(confirmed_via, True)
         if rsc == 4105:
             await self._confirm_stored(rqi, container, payload, credential_receipt=credential_receipt, conflict=True)
-            return
+            return NativeConfirmation(confirmed_via, False)
         raise RemoteResponseError("oneM2M HTTPS request rejected", rsc, status)
+
+    async def _publish_central_receipt(self, rqi: str, receipt: dict[str, Any],
+                                       claim_id: str | None) -> dict[str, Any]:
+        if not self.config.central_receipts_enabled or not isinstance(claim_id, str) or not ID.fullmatch(claim_id):
+            raise ValueError("Central receipt route requires an enabled route and a bound claim")
+        expected_state = central_receipt_execution_state(receipt)
+        result = await self._api("POST", "/receipts", receipt, rqi, idempotency_key=rqi)
+        status, state = result.get("status"), result.get("executionState")
+        # Replaying an uncertain receipt can return a later settlement for the
+        # same command. The original receipt hash is still required below.
+        state_matches = state == expected_state or (
+            status == "DUPLICATE" and expected_state == "DISPATCH_UNCERTAIN"
+            and state in ("APPLIED_VERIFIED", "SETTLED_CANCELLED")
+        )
+        if (status not in ("ACCEPTED", "DUPLICATE") or not state_matches
+                or result.get("commandId") != receipt["commandId"]
+                or result.get("claimId") != claim_id
+                or result.get("receiptHash") != payload_hash(receipt)):
+            raise RemoteResponseError("Central receipt confirmation does not match the queued receipt")
+        return result
+
+    async def _publish_central_telemetry(self, rqi: str, observation: dict[str, Any]) -> dict[str, Any]:
+        if not self.config.central_telemetry_enabled or observation["gatewayId"] != self.config.gateway_id:
+            raise ValueError("Central telemetry route requires an enabled route and the configured gateway")
+        observation_id = central_observation_id(observation)
+        result = await self._api("POST", "/telemetry", observation, rqi, idempotency_key=rqi)
+        if (result.get("status") not in ("ACCEPTED", "DUPLICATE", "STALE")
+                or result.get("deviceId") != observation["deviceId"]
+                or result.get("observationId") != observation_id):
+            raise RemoteResponseError("Central telemetry confirmation does not match the queued observation")
+        return result
 
     async def _publish_core(self, target: str, payload: dict[str, Any]) -> dict[str, Any] | None:
         if target not in {"@core/telemetry", "@core/ack"} or not self.config.core_bridge_enabled:
@@ -706,21 +826,39 @@ class TransportHub:
                 future.exception()
 
     async def _api(self, method: str, suffix: str, body: dict[str, Any] | None = None,
-                    correlation_id: str | None = None) -> dict[str, Any]:
+                   correlation_id: str | None = None, *, idempotency_key: str | None = None) -> dict[str, Any]:
+        if not self._pc_api_enabled:
+            raise RuntimeError("PC API transport is disabled")
         request_id = str(uuid.uuid4())
         headers = {"Accept": "application/json", "Content-Type": "application/json",
                    "X-Request-ID": request_id, "X-Correlation-ID": correlation_id or request_id,
                    "Cache-Control": "no-store"}
+        if idempotency_key is not None:
+            headers["Idempotency-Key"] = idempotency_key
+        options = {}
+        if getattr(self.config, "pc_api_tls_files", None) is not None:
+            if self._pc_http is None:
+                raise RuntimeError("PC API TLS transport is not started")
+            options["client"] = self._pc_http
         status, _, document = await self._http_json(
-            method, self._api_url + self._gateway_path + suffix, headers=headers, body=body)
+            method, self._api_url + self._gateway_path + suffix, headers=headers, body=body, **options)
         if status != 200:
             raise RemoteResponseError("PC API request rejected", status_code=status)
         return document
 
     async def poll_commands(self) -> list[dict[str, Any]]:
+        """Collect a complete poll for callers that need a single result."""
+        commands = []
+        async for batch in self.command_batches():
+            commands.extend(batch)
+        return commands
+
+    async def command_batches(self) -> AsyncIterator[list[dict[str, Any]]]:
+        """Yield the authoritative HTTPS list before checking CORE copies."""
         poll_error = None
         try:
-            document = await self._api("GET", f"/commands?limit={COMMAND_BATCH}")
+            async with asyncio.timeout(self.config.request_timeout):
+                document = await self._api("GET", f"/commands?limit={COMMAND_BATCH}")
             commands = document.get("commands")
             if (not isinstance(commands, list) or len(commands) > COMMAND_BATCH
                     or any(not isinstance(item, dict) for item in commands)):
@@ -731,6 +869,8 @@ class TransportHub:
 
         issued_ids = {item["commandId"] for item in commands if isinstance(item.get("commandId"), str)}
         available = COMMAND_BATCH - len(commands)
+        if commands:
+            yield commands
         candidates = {}
         for _ in range(min(self._commands.qsize(), COMMAND_BATCH)):
             command = self._commands.get_nowait()
@@ -747,25 +887,34 @@ class TransportHub:
             if len(approved) != len(candidates):
                 LOG.warning("Ignored %d CORE commands without a current central binding",
                             len(candidates) - len(approved))
-            commands = commands + approved[:available]
-        if poll_error is not None and not commands:
+            if approved:
+                yield approved[:available]
+                return
+        if poll_error is not None:
             raise poll_error
-        return commands
 
     async def _approve_core_command(self, command: dict[str, Any], digest: str) -> bool:
         try:
-            if parse_time(command["deadline"]) <= utc_now():
+            remaining = (parse_time(command["deadline"]) - utc_now()).total_seconds()
+            if remaining <= 0:
                 return False
-            response = await self.authorize(command, digest)
+            async with asyncio.timeout(min(remaining, self.config.request_timeout)):
+                response = await self.authorize(command, digest)
             return authorization_deadline(command, digest, response) > utc_now()
         except (RemoteResponseError, httpx.HTTPError, OSError, ValueError, OverflowError):
             return False
 
     async def authorize(self, command_dict: dict[str, Any], payload_hash: str) -> dict[str, Any]:
+        return await self._command_authority("/authorize", command_dict, payload_hash)
+
+    async def dispatch_start(self, command_dict: dict[str, Any], payload_hash: str) -> dict[str, Any]:
+        return await self._command_authority("/dispatch-start", command_dict, payload_hash)
+
+    async def _command_authority(self, route: str, command_dict: dict[str, Any], payload_hash: str) -> dict[str, Any]:
         body = {key: command_dict[key] for key in
                 ("commandId", "deviceId", "claimId", "grantRevision", "ownershipEpoch")}
         body["payloadHash"] = payload_hash
-        return await self._api("POST", "/authorize", body, command_dict["commandId"])
+        return await self._api("POST", route, body, command_dict["commandId"])
 
     async def dispatch_start(self, command_dict: dict[str, Any], payload_hash: str) -> dict[str, Any]:
         """Commit the dispatch-start fence immediately before the BLE write."""
@@ -792,6 +941,11 @@ class TransportHub:
             await asyncio.to_thread(self._mqtt.disconnect)
             await asyncio.to_thread(self._mqtt.loop_stop)
             self._mqtt = None
-        if self._http is not None:
-            await self._http.aclose()
-            self._http = None
+        cse_http, pc_http = self._http, self._pc_http
+        self._http = self._pc_http = None
+        try:
+            if cse_http is not None:
+                await cse_http.aclose()
+        finally:
+            if pc_http is not None:
+                await pc_http.aclose()

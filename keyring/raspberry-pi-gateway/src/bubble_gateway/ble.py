@@ -16,11 +16,13 @@ import re
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Any, Awaitable, Callable
+from typing import Any, AsyncIterator, Awaitable, Callable
 
 from bleak import BleakClient, BleakScanner
+from bleak.exc import BleakError
 from .core_bridge import CORE_SERVICE, CORE_IDENTITY, CORE_OBSERVATION, CORE_COMMAND, CORE_RECEIPT
-from .model import iso_time, utc_now, valid_battery_alert
+from .model import (MAX_UPTIME_MS, ObservationHead, button_presses_regressed, iso_time, observation_button_presses,
+                    utc_now, valid_battery_alert)
 
 LOG = logging.getLogger(__name__)
 SERVICE = "8b8f0001-8e7a-4f36-a8c2-1c9b5d620001"
@@ -30,8 +32,9 @@ COMMAND = "8b8f0004-8e7a-4f36-a8c2-1c9b5d620001"
 RECEIPT = "8b8f0005-8e7a-4f36-a8c2-1c9b5d620001"
 MAX_FRAME = 4096
 FRAME_TIMEOUT = 5.0
+GATT_SETUP_TIMEOUT = 30.0
+BLE_DISCONNECT_TIMEOUT = 15.0
 IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,63}\Z")
-MAX_UPTIME_MS = 9007199254740991
 RECEIPT_ANCHOR_MAX_AGE = 60.0
 RECEIPT_CLOCK_STEP_TOLERANCE = 2.0
 ACK_CODES = frozenset({
@@ -47,6 +50,14 @@ class BleProtocolError(RuntimeError):
 
 class BleUnavailable(ConnectionError):
     """An enrolled keyring currently has no authenticated GATT session."""
+
+
+class BleHandshakeTimeout(BleUnavailable):
+    """The connected keyring did not finish GATT setup in time."""
+
+
+class BleCommandNotSent(BleUnavailable):
+    """The final GATT fragment that completes a command was never attempted."""
 
 def _r18_bringup(identity: dict[str, Any]) -> bool:
     return identity["boardRevision"] == "r18-hand-solder" and identity["firmwareRevision"].endswith("-bringup")
@@ -151,8 +162,9 @@ class _Peer:
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
     identity: dict[str, Any] = field(default_factory=dict)
     observation_frames: _Frames = field(default_factory=_Frames)
+    observation_timeout: asyncio.Timeout | None = None
     receipt_frames: _Frames = field(default_factory=_Frames)
-    observations: asyncio.Queue = field(default_factory=lambda: asyncio.Queue(maxsize=128))
+    observations: asyncio.Queue[tuple[dict[str, Any], int]] = field(default_factory=lambda: asyncio.Queue(maxsize=128))
     pending: asyncio.Future | None = None
     pending_command: str | None = None
     pending_hash: str | None = None
@@ -162,6 +174,7 @@ class _Peer:
     anchor: tuple[str, int, datetime, float] | None = None
     # The latest queued boot, sequence and uptime survive a BLE reconnect.
     observation_watermark: tuple[str, int, int | None] | None = None
+    button_presses: tuple[int, int] | None = None
     rssi: int | None = None
     rssi_monotonic: float | None = None
     last_error: str | None = None
@@ -171,6 +184,7 @@ class _Peer:
 class BleFleet:
     def __init__(self, config: Any):
         self.config = config
+        self._observation_timeout = getattr(config, "ble_observation_timeout", 30.0)
         if config.ble_gatt_profile == "core-v1":
             self.service, self.identity_uuid, self.observation_uuid, self.command_uuid, self.receipt_uuid = (
                 CORE_SERVICE, CORE_IDENTITY, CORE_OBSERVATION, CORE_COMMAND, CORE_RECEIPT)
@@ -182,26 +196,31 @@ class BleFleet:
         self._by_address = {peer.address.casefold(): peer for peer in self._peers.values()}
         self._scanner: Any = None
         self._tasks: list[asyncio.Task] = []
-        self._callback: Callable[[dict[str, Any]], Awaitable[None]] | None = None
+        self._callback: Callable[[dict[str, Any], int], Awaitable[None]] | None = None
         self._trace: Callable[[dict[str, Any]], None] | None = None
         self._trace_observation = False
         self._closed = asyncio.Event()
 
-    async def start(self, observation_callback: Callable[[dict[str, Any]], Awaitable[None]], *,
+    async def start(self, observation_callback: Callable[..., Awaitable[None]], *,
                     trace: Callable[[dict[str, Any]], None] | None = None,
                     trace_observation: bool = False,
-                    observation_heads: dict[str, tuple[str, int]] | None = None) -> None:
+                    pass_device_uptime: bool = False,
+                    observation_heads: dict[str, ObservationHead] | None = None) -> None:
         if self._tasks:
             raise RuntimeError("BLE fleet already started")
         self._closed.clear()
-        self._callback = observation_callback
+        if pass_device_uptime:
+            self._callback = observation_callback
+        else:
+            self._callback = lambda observation, _uptime: observation_callback(observation)
         self._trace = trace
         self._trace_observation = trace_observation
         committed = observation_heads or {}
         self._tasks.append(asyncio.create_task(self._scan(), name="ble-scan"))
         for peer in self._peers.values():
             head = committed.get(peer.device_id)
-            peer.observation_watermark = (*head, None) if head is not None else None
+            peer.observation_watermark = (head[0], head[1], head[3] if len(head) == 4 else None) if head is not None else None
+            peer.button_presses = head[2] if head is not None and len(head) >= 3 else None
             self._tasks.append(asyncio.create_task(self._watch(peer), name=f"ble-{peer.device_id}"))
             self._tasks.append(asyncio.create_task(self._deliver(peer), name=f"ble-data-{peer.device_id}"))
 
@@ -271,8 +290,74 @@ class BleFleet:
     def _require_session(peer: _Peer, client: Any, generation: int, *, ready: bool = True) -> None:
         if (peer.generation != generation or peer.client is not client or client is None
                 or peer.disconnected.is_set() or not client.is_connected
-                or (ready and not peer.ready.is_set())):
+                or (ready and not peer.ready.is_set())
+                or (peer.observation_timeout is not None and peer.observation_timeout.expired())):
             raise BleUnavailable("authenticated BLE session changed")
+
+    @contextlib.asynccontextmanager
+    async def _connection(self, peer: _Peer, client: Any, generation: int) -> AsyncIterator[None]:
+        try:
+            await client.connect()
+            peer.client = client
+            yield
+        finally:
+            # Fence the old callbacks even if BlueZ does not complete disconnect.
+            self._lost(peer, generation)
+            try:
+                async with asyncio.timeout(BLE_DISCONNECT_TIMEOUT):
+                    await client.disconnect()
+            except Exception as exc:
+                LOG.warning("BLE disconnect incomplete for %s (%s)", peer.device_id, type(exc).__name__)
+
+    async def _prepare_gatt(self, peer: _Peer, client: Any, generation: int) -> tuple[bool, str | None]:
+        self._require_session(peer, client, generation, ready=False)
+        service = client.services.get_service(self.service)
+        if service is None:
+            raise BleProtocolError("required service missing")
+        identity = _object(await client.read_gatt_char(self.identity_uuid), 512)
+        self._require_session(peer, client, generation, ready=False)
+        required = {"version", "deviceId", "firmwareRevision", "boardRevision", "bootId"}
+        if set(identity) != required or type(identity.get("version")) is not int or identity["version"] != 1:
+            raise BleProtocolError("invalid identity shape")
+        if identity.get("deviceId") != peer.device_id:
+            raise BleProtocolError("identity does not match enrollment")
+        if any(not isinstance(identity.get(key), str) or not 1 <= len(identity[key]) <= 64
+               for key in ("firmwareRevision", "boardRevision", "bootId")):
+            raise BleProtocolError("invalid identity revision")
+        if IDENTIFIER.fullmatch(identity["bootId"]) is None:
+            raise BleProtocolError("invalid identity boot ID")
+        allowed = self.config.firmware_revision_allowlist
+        if allowed and identity["firmwareRevision"] not in allowed:
+            raise BleProtocolError("firmware revision not allowed")
+        board = getattr(self.config, "ble_board_revision", None)
+        if board is not None and identity["boardRevision"] != board:
+            raise BleProtocolError("board revision does not match enrollment")
+        peer.identity = identity
+        command_ready = False
+        handshake_error = None
+        # BlueZ may still list writable handles from the full image.
+        r26_observation_only = identity["boardRevision"] == "r26-front-assembly"
+        if getattr(self.config, "commands_enabled", True) and not (_r18_bringup(identity) or r26_observation_only):
+            command = service.get_characteristic(self.command_uuid)
+            if command is not None and "write" in command.properties:
+                receipt = service.get_characteristic(self.receipt_uuid)
+                if receipt is not None and not {"notify", "indicate"}.isdisjoint(receipt.properties):
+                    await client.start_notify(self.receipt_uuid,
+                        lambda _, data: self._receipt_fragment(peer, data, generation))
+                    self._require_session(peer, client, generation, ready=False)
+                    command_ready = True
+                else:
+                    handshake_error = "receipt_characteristic_unavailable"
+        # BlueZ emits READ values through PropertiesChanged as well. Read before
+        # subscribing so full JSON cannot enter the LF-framed notification buffer.
+        current = _object(await client.read_gatt_char(self.observation_uuid), 512)
+        self._require_session(peer, client, generation, ready=False)
+        self._queue_observation(peer, current)
+        self._require_session(peer, client, generation, ready=False)
+        await client.start_notify(self.observation_uuid,
+            lambda _, data: self._observation_fragment(peer, data, generation))
+        self._require_session(peer, client, generation, ready=False)
+        return command_ready, handshake_error
 
     async def _watch(self, peer: _Peer) -> None:
         delay = 1.0
@@ -292,47 +377,15 @@ class BleFleet:
                 client = BleakClient(peer.discovered, pair=self.config.ble_pair,
                                      timeout=max(30.0, self.config.request_timeout),
                                      disconnected_callback=lambda _, session=generation: self._lost(peer, session))
-                async with client:
-                    peer.client = client
-                    self._require_session(peer, client, generation, ready=False)
-                    service = client.services.get_service(self.service)
-                    if service is None:
-                        raise BleProtocolError("required service missing")
-                    identity = _object(await client.read_gatt_char(self.identity_uuid), 512)
-                    self._require_session(peer, client, generation, ready=False)
-                    required = {"version", "deviceId", "firmwareRevision", "boardRevision", "bootId"}
-                    if set(identity) != required or type(identity.get("version")) is not int or identity["version"] != 1:
-                        raise BleProtocolError("invalid identity shape")
-                    if identity.get("deviceId") != peer.device_id:
-                        raise BleProtocolError("identity does not match enrollment")
-                    if any(not isinstance(identity.get(key), str) or not 1 <= len(identity[key]) <= 64
-                           for key in ("firmwareRevision", "boardRevision", "bootId")):
-                        raise BleProtocolError("invalid identity revision")
-                    if IDENTIFIER.fullmatch(identity["bootId"]) is None:
-                        raise BleProtocolError("invalid identity boot ID")
-                    allowed = self.config.firmware_revision_allowlist
-                    if allowed and identity["firmwareRevision"] not in allowed:
-                        raise BleProtocolError("firmware revision not allowed")
-                    peer.identity = identity
-                    await client.start_notify(self.receipt_uuid,
-                        lambda _, data, session=generation: self._receipt_fragment(peer, data, session))
-                    self._require_session(peer, client, generation, ready=False)
-                    # BlueZ also publishes READ values through PropertiesChanged.
-                    # Read before subscribing so full JSON cannot enter the LF-
-                    # framed notification buffer through the notify callback.
-                    current = _object(await client.read_gatt_char(self.observation_uuid), 512)
-                    self._require_session(peer, client, generation, ready=False)
-                    self._queue_observation(peer, current)
-                    self._require_session(peer, client, generation, ready=False)
-                    await client.start_notify(self.observation_uuid,
-                        lambda _, data, session=generation: self._observation_fragment(peer, data, session))
-                    self._require_session(peer, client, generation, ready=False)
-                    command = service.get_characteristic(self.command_uuid)
-                    # BlueZ may still list writable handles from the full image.
-                    peer.command_writable = (not _r18_bringup(identity)
-                                             and command is not None and "write" in command.properties)
+                async with self._connection(peer, client, generation):
+                    try:
+                        async with asyncio.timeout(GATT_SETUP_TIMEOUT):
+                            command_ready, handshake_error = await self._prepare_gatt(peer, client, generation)
+                    except TimeoutError as exc:
+                        raise BleHandshakeTimeout("GATT setup did not complete before its deadline") from exc
+                    peer.command_writable = command_ready
                     peer.ready.set()
-                    peer.last_error = None
+                    peer.last_error = handshake_error
                     if self._trace is not None:
                         age = None if peer.rssi_monotonic is None else time.monotonic() - peer.rssi_monotonic
                         fresh = peer.rssi is not None and age is not None and 0 <= age <= 30
@@ -340,7 +393,15 @@ class BleFleet:
                                           advertisingRssiDbm=peer.rssi if fresh else None,
                                           advertisingAgeMs=round(age * 1000) if fresh else None)
                     delay = 1.0
-                    await peer.disconnected.wait()
+                    try:
+                        async with asyncio.timeout(self._observation_timeout) as timeout:
+                            peer.observation_timeout = timeout
+                            await peer.disconnected.wait()
+                    except TimeoutError:
+                        self._protocol_failure(peer, "observation_notification_timeout")
+                        LOG.warning("BLE observation notifications timed out for %s", peer.device_id)
+                    finally:
+                        peer.observation_timeout = None
             except asyncio.CancelledError:
                 raise
             except Exception as exc:
@@ -384,12 +445,17 @@ class BleFleet:
         if "ina219" in frame["sensorValues"]:
             _power_reading(frame["sensorValues"]["ina219"], frame["uptimeMs"])
         boot_id, sequence, device_uptime = frame["bootId"], frame["sequence"], frame["uptimeMs"]
+        presses = observation_button_presses(frame["sensorValues"])
         previous = peer.observation_watermark
+        previous_presses = None
         if previous is not None and previous[0] == boot_id:
             if sequence <= previous[1]:
                 return
             if previous[2] is not None and device_uptime < previous[2]:
                 raise BleProtocolError("observation uptime regressed within the same boot")
+            previous_presses = peer.button_presses
+            if button_presses_regressed(previous_presses, presses):
+                raise BleProtocolError("button press counts regressed within the same boot")
         received = utc_now()
         received_monotonic = time.monotonic()
         rssi_fresh = (peer.rssi_monotonic is not None
@@ -404,14 +470,18 @@ class BleFleet:
             "timestampSource": "gateway-received",
         }
         try:
-            peer.observations.put_nowait(normalized)
+            peer.observations.put_nowait((normalized, device_uptime))
         except asyncio.QueueFull:
             peer.dropped_observations += 1
             self._protocol_failure(peer, "observation_backpressure")
             LOG.error("BLE observation queue full for %s; session interrupted", peer.device_id)
         else:
             peer.observation_watermark = (boot_id, sequence, device_uptime)
+            peer.button_presses = presses if presses is not None else previous_presses
             peer.anchor = (boot_id, device_uptime, received, received_monotonic)
+            timeout = peer.observation_timeout
+            if notification and timeout is not None and not timeout.expired():
+                timeout.reschedule(asyncio.get_running_loop().time() + self._observation_timeout)
             if notification and peer.ready.is_set() and self._trace is not None:
                 fields = {"sequence": frame["sequence"]}
                 sensor = frame["sensorValues"]
@@ -431,11 +501,11 @@ class BleFleet:
         # Keep the current observation in memory until the durable queue accepts
         # it. A full queue disconnects the peer instead of growing unboundedly.
         while not self._closed.is_set():
-            observation = await peer.observations.get()
+            observation, device_uptime = await peer.observations.get()
             while not self._closed.is_set():
                 try:
                     assert self._callback is not None
-                    await self._callback(observation)
+                    await self._callback(observation, device_uptime)
                     break
                 except asyncio.CancelledError:
                     raise
@@ -537,10 +607,11 @@ class BleFleet:
     async def execute(self, command_dict: dict[str, Any], remaining_ms: int, payload_hash: str,
                       *, expected_generation: int | None = None, deadline_monotonic: float | None = None,
                       before_write: Callable[[], None] | None = None,
+                      before_final_write: Callable[[], None] | None = None,
                       on_receipt: Callable[[dict[str, Any]], None] | None = None) -> dict[str, Any]:
         peer = self._peers.get(command_dict["deviceId"])
         if peer is None:
-            raise BleUnavailable("device is not enrolled")
+            raise BleCommandNotSent("device is not enrolled")
         if not _integer(remaining_ms, 1, 30_000):
             raise ValueError("remaining_ms must be between 1 and 30000")
         now = time.monotonic()
@@ -548,9 +619,11 @@ class BleFleet:
         if deadline_monotonic is not None:
             expires = min(expires, deadline_monotonic)
         if expires <= now:
-            raise asyncio.TimeoutError("dispatch deadline elapsed before BLE")
+            raise BleCommandNotSent("dispatch deadline elapsed before BLE")
         timeout = min(self.config.ble_command_timeout, expires - now)
+        write_deadline = now + timeout
         pending = asyncio.get_running_loop().create_future()
+        final_write_started = False
         try:
             async with asyncio.timeout(timeout), peer.lock:
                 client = peer.client
@@ -573,20 +646,38 @@ class BleFleet:
                 peer.pending = pending
                 peer.pending_command, peer.pending_hash = command_dict["commandId"], payload_hash
                 peer.pending_final_write_at = None
-                peer.pending_receipt_deadline = now + timeout
+                peer.pending_receipt_deadline = write_deadline
                 peer.pending_on_receipt = on_receipt
                 try:
                     for offset in range(0, len(raw), 20):
                         self._require_session(peer, client, generation)
                         if before_write is not None:
                             before_write()
-                        write_at = time.monotonic()
-                        if write_at >= expires:
-                            raise asyncio.TimeoutError("dispatch deadline elapsed during BLE")
                         final = offset + 20 >= len(raw)
+                        if final and before_final_write is not None:
+                            before_final_write()
+                            self._require_session(peer, client, generation)
+                            if before_write is not None:
+                                before_write()
+                        write_at = time.monotonic()
+                        if write_at >= write_deadline:
+                            raise asyncio.TimeoutError("dispatch deadline elapsed during BLE")
                         if final:
                             peer.pending_final_write_at = write_at
-                        await client.write_gatt_char(self.command_uuid, raw[offset:offset + 20], response=True)
+                            final_write_started = True
+                        try:
+                            await client.write_gatt_char(self.command_uuid, raw[offset:offset + 20], response=True)
+                        except (BleakError, OSError) as exc:
+                            if not final or pending.done():
+                                raise
+                            self._require_session(peer, client, generation)
+                            # The last fragment may have reached the device. Keep only
+                            # this session's matching notification eligible until its deadline.
+                            LOG.info("Waiting for device receipt after final GATT write error (%s)", type(exc).__name__)
+                            try:
+                                return await pending
+                            finally:
+                                self._lost(peer, generation)
                         if not final or not pending.done():
                             self._require_session(peer, client, generation)
                     return await pending
@@ -611,6 +702,10 @@ class BleFleet:
             if pending.done() and not pending.cancelled() and pending.exception() is None:
                 LOG.info("BLE transport ended after a matching receipt (%s)", type(exc).__name__)
                 return pending.result()
+            if not final_write_started:
+                if isinstance(exc, BleUnavailable):
+                    raise BleCommandNotSent(str(exc)) from exc
+                raise BleCommandNotSent("BLE command stopped before the terminating fragment") from exc
             raise
 
     async def capture_journal(self, device_id: str) -> dict[str, Any]:

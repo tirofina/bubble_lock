@@ -1,0 +1,251 @@
+from contextlib import closing
+import hashlib
+import json
+from pathlib import Path
+import tempfile
+import unittest
+
+from bubble_gateway.model import central_observation_id, payload_hash
+from bubble_gateway.store import Store
+from helpers import BINDING, observation
+from pi_led_cycle import content_name
+from scoped_r18_observation import compare_observation, compare_transport_transition, comparison_passed, inspect_location_response
+from scoped_r18_pulse import GATEWAY, PATHS, R18_BOARD, R18_DEVICE
+
+
+class ScopedR18ObservationTests(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.database = Path(temporary.name) / "pi.sqlite3"
+        self.firmware = "keyring-0.7.18-bringup"
+        stamp = "2026-11-11T09:00:02.000Z"
+        self.usb = {"bootId": "r18-boot", "logSha256": "a" * 64}
+        self.observation = observation(gatewayId=GATEWAY, deviceId=R18_DEVICE, bootId=self.usb["bootId"],
+                                       sequence=8, observedAt=stamp, receivedAt=stamp, firmwareRevision=self.firmware,
+                                       sensorValues={"fault": False, "journal": "disabled", "batteryAlert": False})
+        rqi = Store.request_id("observation", f"{R18_DEVICE}:r18-boot:8")
+        native = {"ty": 4, "rn": content_name(rqi), "ri": "cin-observation", "pi": "cnt-observation",
+                  "con": self.observation}
+        heartbeat = {"gatewayId": GATEWAY, "bootId": "gateway-boot", "observedAt": stamp,
+                     "credentialStatus": "ACTIVE", "commandCount": 0, "devices": [
+                         {"deviceId": R18_DEVICE, "bootId": self.usb["bootId"], "boardRevision": R18_BOARD,
+                          "firmwareRevision": self.firmware, "connected": True, "commandReady": False}]}
+        health = {"ty": 4, "rn": content_name(Store.request_id("health", f"gateway-boot:{stamp}")),
+                  "ri": "cin-health", "pi": "cnt-health", "con": heartbeat}
+        self.capture = {"startedAt": "2026-11-11T09:00:00.000Z", "capturedAt": stamp, "firmwareRevision": self.firmware,
+                        "usbLogSha256": self.usb["logSha256"], "observationContainerRi": "cnt-observation",
+                        "healthContainerRi": "cnt-health", "native": native, "health": health}
+        self.event = {"type": "GATEWAY_TELEMETRY_ACCEPTED", "contractId": "privacy-bubble.integration.v1",
+                      "docRevision": "2.0.0", "eventId": "telemetry-a", "gatewayId": GATEWAY, "deviceId": R18_DEVICE,
+                      "observationId": central_observation_id(self.observation), "payloadHash": payload_hash(self.observation),
+                      "observedAt": stamp, "timestamp": stamp, "sequence": 21, "simulation": False}
+        self.binding = dict(BINDING, bindingVersion=3, gatewayId=GATEWAY, originator="Sscoped-r18-gateway-b", cseId="Mobius4",
+                            cseDeploymentId="scoped-mobius4", pcApiDeploymentId="scoped-command-api-r18",
+                            observationContainer=PATHS["observation"], observationContainerRi="cnt-observation",
+                            healthContainer=PATHS["health"], healthContainerRi="cnt-health")
+        self.create_database(self.database, self.binding)
+
+    def create_database(self, database, binding):
+        with closing(Store(database, 100, 100000, 20, binding)) as store:
+            store.observation(PATHS["observation"], self.observation, central_enabled=True)
+            store.delivered(Store.request_id("observation", f"{R18_DEVICE}:{self.usb['bootId']}:{self.observation['sequence']}"))
+
+    def compare(self, events):
+        return compare_observation(self.capture, self.usb, self.database, {"receipts": events}, payload_hash)
+
+    def test_central_acceptance_binds_content_and_keeps_pending_pi_state(self):
+        pending = self.compare([])
+        self.assertFalse(pending["centralTelemetryAccepted"])
+        self.assertFalse(comparison_passed(pending, require_physical=True))
+        report = self.compare([self.event])
+        self.assertTrue(report["centralTelemetryAccepted"])
+        self.assertFalse(report["nativePendingOnPi"])
+        self.assertTrue(report["centralPendingOnPi"])
+        self.assertTrue(report["healthContainerVerified"])
+        self.assertTrue(report["physicalRelayEvidenceMatched"])
+        self.assertTrue(comparison_passed(report, require_physical=True))
+        self.assertEqual(report["piWatermarkSequence"], 8)
+        self.assertEqual(report["centralEvent"]["eventId"], "telemetry-a")
+        with self.assertRaisesRegex(ValueError, "inconsistent GATEWAY_TELEMETRY_ACCEPTED"):
+            self.compare([dict(self.event, payloadHash="b" * 64)])
+
+    def test_rejects_another_usb_boot_and_mismatched_health_container(self):
+        with self.assertRaisesRegex(ValueError, "captured USB boot"):
+            compare_observation(self.capture, dict(self.usb, bootId="foreign-boot"), self.database,
+                                {"receipts": []}, payload_hash)
+        self.capture["health"]["pi"] = "cnt-other"
+        with self.assertRaisesRegex(ValueError, "pinned container"):
+            self.compare([self.event])
+        self.capture["healthContainerRi"] = "cnt-other"
+        with self.assertRaisesRegex(ValueError, "differs from the Pi database binding"):
+            self.compare([self.event])
+
+    def test_scoped_comparison_links_first_bringup_image_and_later_ble_sequence(self):
+        header = bytearray(24)
+        header[0], header[1], header[12], header[23] = 0xe9, 1, 9, 1
+        segment = b"\x32\x54\xcd\xab" + bytes(252)
+        body = bytes(header) + bytes(4) + len(segment).to_bytes(4, "little") + segment + bytes(15) + b"\xef"
+        digest = hashlib.sha256(body).digest()
+        image = body + digest
+        self.usb["appSha256"] = digest.hex()
+        binary = self.database.with_name("firmware.bin")
+        binary.write_bytes(image)
+        path = self.database.with_name("bringup.json")
+        image_report = {"fileSha256": hashlib.sha256(image).hexdigest(), "sizeBytes": len(image)}
+        usb_report = {"sameBoot": True, "pinsSafe": True, "logSha256": self.usb["logSha256"],
+                      "appSha256": digest.hex(), "firmwareImage": image_report}
+        sessions = [{"session": 1, "notificationCount": 5, "lastSequence": 4, "commandReady": False},
+                    {"session": 2, "notificationCount": 1, "lastSequence": 6, "commandReady": False}]
+        first_report = {"version": 1, "mode": "bringup", "hardware": "r18-pcb", "status": "RECORDED",
+                        "gatewayId": GATEWAY, "deviceId": R18_DEVICE, "boardRevision": R18_BOARD,
+                        "firmwareRevision": self.firmware, "gattProfile": "core-v1", "sessions": sessions,
+                        "bringup": {"session": 1, "usbBoot": usb_report}}
+
+        def compare(assembly=None):
+            return compare_observation(self.capture, self.usb, self.database, {"receipts": [self.event]}, payload_hash,
+                                       bringup_report=path, firmware_image=binary, assembly=assembly)
+
+        raw = (json.dumps(first_report) + "\n").encode()
+        path.write_bytes(raw)
+        result = compare()
+        self.assertTrue(result["physicalRelayEvidenceMatched"])
+        self.assertEqual(result["firstBringupEvidence"], {"reportSha256": hashlib.sha256(raw).hexdigest(),
+                         "appSha256": digest.hex(), "firmwareImage": image_report, "lastBleSequence": 6})
+        assembly = {"recordSha256": "d" * 64, "boardTag": "r18-01"}
+        self.assertNotIn("assemblyRecordSha256", compare(assembly)["firstBringupEvidence"])
+        first_report["bringup"]["assemblyEvidence"] = assembly
+        path.write_text(json.dumps(first_report), encoding="utf-8")
+        self.assertEqual(compare(assembly)["firstBringupEvidence"]["assemblyRecordSha256"], assembly["recordSha256"])
+        with self.assertRaisesRegex(ValueError, "Assembly record differs"):
+            compare(dict(assembly, recordSha256="e" * 64))
+
+        for key, value, error in (("logSha256", "b" * 64, "does not match the scoped USB boot"),
+                                  ("firmwareImage", {"fileSha256": "c" * 64}, "does not match the firmware image")):
+            with self.subTest(field=key):
+                first_report["bringup"]["usbBoot"] = dict(usb_report, **{key: value})
+                path.write_text(json.dumps(first_report), encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, error):
+                    compare()
+        first_report["bringup"]["usbBoot"] = usb_report
+        sessions[1]["lastSequence"] = self.observation["sequence"]
+        path.write_text(json.dumps(first_report), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "does not follow the first bring-up BLE observations"):
+            compare()
+
+    def test_pending_health_body_is_compared_with_mobius4(self):
+        with closing(Store(self.database, 100, 100000, 20, self.binding)) as store:
+            store.enqueue_heartbeat(self.capture["health"]["con"])
+        self.assertTrue(self.compare([self.event])["healthPendingOnPi"])
+        self.capture["health"]["con"]["outboxDepth"] = 7
+        with self.assertRaisesRegex(ValueError, "Pending Pi payload .* differs"):
+            self.compare([self.event])
+
+    def test_pi_log_binds_the_native_confirmation_and_distinguishes_existing_content(self):
+        path = self.database.with_name("gateway.log")
+        rqi = Store.request_id("observation", f"{R18_DEVICE}:{self.usb['bootId']}:{self.observation['sequence']}")
+        prefix = f"INFO bubble_gateway.service Native observation confirmed rqi={rqi} payloadSha256="
+        line = f"{prefix}{payload_hash(self.observation)} route=https-fallback created=false\n"
+        path.write_bytes(line.encode())
+
+        def compare():
+            return compare_observation(self.capture, self.usb, self.database, {"receipts": [self.event]},
+                                       payload_hash, pi_log=path)
+
+        self.assertEqual(compare()["nativeDelivery"], {"requestId": rqi, "route": "https-fallback", "created": False,
+                                                        "logSha256": hashlib.sha256(line.encode()).hexdigest()})
+        path.write_bytes((line + line.replace("https-fallback", "mqtt")).encode())
+        with self.assertRaisesRegex(ValueError, "one unambiguous native confirmation"):
+            compare()
+        path.write_bytes(f"{prefix}{'b' * 64} route=https created=true\n".encode())
+        with self.assertRaisesRegex(ValueError, "conflicts with the scoped observation"):
+            compare()
+
+    def test_transport_transition_requires_two_creates_in_the_same_gateway_boot(self):
+        path = self.database.with_name("gateway.log")
+        first_rqi = Store.request_id("observation", f"{R18_DEVICE}:{self.usb['bootId']}:8")
+        second_rqi = Store.request_id("observation", f"{R18_DEVICE}:{self.usb['bootId']}:9")
+        stamp = "2026-11-11T09:00:06.000Z"
+        second = dict(self.observation, sequence=9, observedAt=stamp, receivedAt=stamp)
+        gateway_boot = self.capture["health"]["con"]["bootId"]
+        health_rqi = Store.request_id("health", f"{gateway_boot}:{stamp}")
+        fallback = dict(self.capture, startedAt="2026-11-11T09:00:04.000Z", capturedAt=stamp,
+                        native=dict(self.capture["native"], ri="cin-fallback", rn=content_name(second_rqi), con=second),
+                        health=dict(self.capture["health"], ri="cin-health-fallback", rn=content_name(health_rqi),
+                                    con=dict(self.capture["health"]["con"], observedAt=stamp)))
+        second_event = dict(self.event, eventId="telemetry-b", sequence=22, observationId=central_observation_id(second),
+                            observedAt=stamp, timestamp=stamp, payloadHash=payload_hash(second))
+        with closing(Store(self.database, 100, 100000, 20, self.binding)) as store:
+            store.observation(PATHS["observation"], second, central_enabled=True)
+            store.delivered(second_rqi)
+
+        first_line = (f"Native observation confirmed rqi={first_rqi} payloadSha256={payload_hash(self.observation)} "
+                      f"route=mqtt created=true gatewayBootId={gateway_boot}\n")
+        second_line = (f"Native observation confirmed rqi={second_rqi} payloadSha256={payload_hash(second)} "
+                       f"route=https-fallback created=true gatewayBootId={gateway_boot}\n")
+
+        def compare(events):
+            return compare_transport_transition(self.capture, fallback, self.usb, self.database, {"receipts": events},
+                                                payload_hash, pi_log=path)
+
+        path.write_bytes((first_line + second_line).encode())
+        report = compare([self.event, second_event])
+        self.assertTrue(report["transportTransitionMatched"])
+        self.assertTrue(report["httpsFallback"]["nativeDelivery"]["gatewayBootMatched"])
+        self.assertFalse(compare([self.event])["transportTransitionMatched"])
+        path.write_bytes((first_line + second_line.replace("created=true", "created=false")).encode())
+        self.assertFalse(compare([self.event, second_event])["transportTransitionMatched"])
+        path.write_bytes((first_line + second_line.replace(gateway_boot, "another-boot")).encode())
+        with self.assertRaisesRegex(ValueError, "belongs to another Gateway boot"):
+            compare([self.event, second_event])
+        fallback["health"]["con"]["bootId"] = "another-boot"
+        with self.assertRaisesRegex(ValueError, "do not share the scoped device and Gateway boot"):
+            compare([self.event, second_event])
+
+    def test_simulated_central_acceptance_and_old_unpinned_database_do_not_match_physical_evidence(self):
+        report = self.compare([dict(self.event, simulation=True)])
+        self.assertTrue(report["centralTelemetryAccepted"])
+        self.assertTrue(report["centralEvent"]["simulation"])
+        self.assertFalse(report["physicalRelayEvidenceMatched"])
+        self.assertFalse(comparison_passed(report, require_physical=True))
+        self.assertTrue(comparison_passed(report, require_physical=False))
+
+        old_db = self.database.with_name("unpinned.sqlite3")
+        old_binding = dict(self.binding)
+        old_binding.pop("healthContainerRi")
+        self.create_database(old_db, old_binding)
+        report = compare_observation(self.capture, self.usb, old_db, {"receipts": [self.event]}, payload_hash)
+        self.assertTrue(report["centralTelemetryAccepted"])
+        self.assertIsNone(report["healthContainerVerified"])
+        self.assertFalse(report["physicalRelayEvidenceMatched"])
+        self.assertFalse(comparison_passed(report, require_physical=True))
+        self.assertTrue(comparison_passed(report, require_physical=False))
+
+    def test_location_projection_matches_both_routes_and_checks_scope_and_expiry(self):
+        stamp = self.observation["observedAt"]
+        ble = {"gatewayId": GATEWAY, "observedAt": stamp, "rssiDbm": self.observation["rssi"], "simulation": False}
+        portal = {"path": "/v1/portal/locations", "status": 200, "capturedAt": stamp,
+                  "body": {"deviceIds": [R18_DEVICE], "readExpiresAt": "2026-11-11T09:00:07.000Z",
+                           "observations": [dict(ble, deviceId=R18_DEVICE)]}}
+        web = {"path": "/api/portal/locations", "status": 200, "capturedAt": stamp,
+               "body": {"mode": "live", "source": "portal-api", "readExpiresAt": portal["body"]["readExpiresAt"],
+                        "devices": [{"deviceId": R18_DEVICE, "ble": ble}]}}
+        report = compare_observation(self.capture, self.usb, self.database, {"receipts": [self.event]}, payload_hash,
+                                     portal_response=portal, web_response=web)
+        self.assertEqual(report["portalLocationResponse"]["status"], "matched")
+        self.assertEqual(report["webLocationResponse"]["status"], "matched")
+        self.assertTrue(comparison_passed(report, require_physical=True))
+        report["webLocationResponse"]["status"] = "observation-missing"
+        self.assertFalse(comparison_passed(report, require_physical=True))
+
+        cases = [(dict(portal, status=403), False, "access-denied"),
+                 (dict(portal, body=dict(portal["body"], deviceIds=[])), False, "device-outside-response-scope"),
+                 (dict(portal, capturedAt=portal["body"]["readExpiresAt"]), False, "expired-at-capture"),
+                 (dict(web, body=dict(web["body"], source="combined")), True, "source-unconfirmed")]
+        for response, is_web, expected in cases:
+            with self.subTest(expected=expected):
+                result = inspect_location_response(response, self.observation, self.event, web=is_web)
+                self.assertEqual(result["status"], expected)
+        ble["rssiDbm"] -= 1
+        self.assertEqual(inspect_location_response(web, self.observation, self.event, web=True)["status"],
+                         "observation-missing")

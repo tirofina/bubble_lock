@@ -1,0 +1,52 @@
+{
+  "role": "KEYRING",
+  "documentRevision": "2.0.0",
+  "localDate": "2026-11-11",
+  "scope": "Feather command firmware, Pi Zero 2 W and isolated Mobius4",
+  "gatewaySourceCommit": "bd1d5ec6c7c566520e3f82a91fa24ea7a25e3b98",
+  "gatewayVersion": "0.2.43",
+  "firmwareVersion": "feather-probe-0.2.0",
+  "firmwareCommandPin": 13,
+  "scopedTeamApiRevision": "715ef58df6c901480eb71fb3b9278e8df6547d93",
+  "preflight": {
+    "strictTls": true,
+    "pinnedReceiptContainerMatched": true,
+    "credentialStatus": "ACTIVE",
+    "activeCommands": 0
+  },
+  "steps": [
+    {
+      "requestedState": true,
+      "ackCode": "APPLIED",
+      "gpioReadback": true,
+      "postCommandObservation": true,
+      "cseReceiptReceivedAt": "2026-11-11T06:26:32.016Z",
+      "centralSettlement": "SETTLED",
+      "visibleRedLedChangeReported": false
+    },
+    {
+      "requestedState": false,
+      "ackCode": "APPLIED",
+      "gpioReadback": false,
+      "postCommandObservation": false,
+      "cseReceiptReceivedAt": "2026-11-11T06:27:22.238Z",
+      "centralSettlement": "SETTLED",
+      "visibleRedLedChangeReported": false
+    }
+  ],
+  "bothCommandsOnSameFeatherBoot": true,
+  "piCseBindingVerified": true,
+  "centralSettlementVerified": true,
+  "cseCallbackRecorded": true,
+  "physicalLedMatched": false,
+  "visualObservation": "Operator could not identify a red LED on the board and reported no visible change during either command.",
+  "piCommandReceiptOutboxRemaining": 0,
+  "piTemporaryDaemonStopped": true,
+  "temporarySshTunnelClosed": true,
+  "privateArtifactHashes": {
+    "ledCycleSha256": "a818b7bb9460c7012699c41470ba805690b083a0a2995983d0c699505b222639",
+    "piDatabaseCopySha256": "334561016f12a9f89b7bd932130a0d4b779057500846c7e1e2a681729cccf859",
+    "operatorObservationsSha256": "44d53ad676794e0a610f8376cf6d3f0a6abe8564e47c4076176dfcde8674daf9",
+    "bindingReportSha256": "953e6c8edacb0da30525c1a883a4d22af9d626dfc427fe9e09d951d3826383e9"
+  }
+}

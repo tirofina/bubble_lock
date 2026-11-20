@@ -54,3 +54,38 @@ test('a replaced native resource, missing settlement and undelivered archive rem
   assert.equal(undelivered.matchedCount, 1);
   assert.equal(undelivered.reviewCount, 1);
 });
+
+test('same-boot evidence must bind the selected command, phase, timing and ACK', () => {
+  const row = { ...applied, gatewayAckCode: 'APPLIED' };
+  const selected = { commandId: row.commandId, boardRevision: 'r18-hand-solder', firmwareRevision: 'keyring-0.7.14',
+    sameBoot: true, sourceRecordCount: 3, desiredState: false, acceptedUptimeMs: 100, appliedUptimeMs: 101 };
+  const report = { ...reportFor(row), selectedCommand: selected };
+  assert.doesNotThrow(() => requireScopedJournalReport(report, gatewayId, receiptContainer));
+  const matched = compareJournalSettlements(report, [central]);
+  assert.deepEqual(matched.selectedCommand, selected);
+  assert.equal(matched.results[0].gatewayAckCode, 'APPLIED');
+  assert.equal(matched.originalApplicationMatched, true);
+
+  const duplicate = { ...report, results: [{ ...row, gatewayAckCode: 'DUPLICATE' }] };
+  assert.doesNotThrow(() => requireScopedJournalReport(duplicate, gatewayId, receiptContainer));
+  const duplicateResult = compareJournalSettlements(duplicate, [central]);
+  assert.equal(duplicateResult.results[0].centralResult, 'settlement_matched');
+  assert.equal(duplicateResult.originalApplicationMatched, false);
+  assert.equal(duplicateResult.reviewCount, 1);
+  assert.equal(compareJournalSettlements(report, [{ ...central, settlement: null }]).originalApplicationMatched, false);
+  assert.equal(compareJournalSettlements({ ...report, results: [{ ...row, gatewayDelivered: false }] },
+    [central]).originalApplicationMatched, false);
+
+  const invalid = [
+    [{ commandId: 'other' }, /JOURNAL_SELECTED_COMMAND_BINDING/],
+    [{ sameBoot: false }, /JOURNAL_SELECTED_COMMAND_BINDING/],
+    [{ appliedUptimeMs: 99 }, /JOURNAL_SELECTED_COMMAND_UPTIME/],
+    [{ desiredState: true }, /JOURNAL_SELECTED_COMMAND_ACK/],
+  ];
+  for (const [fields, error] of invalid) {
+    assert.throws(() => requireScopedJournalReport({ ...report, selectedCommand: { ...selected, ...fields } },
+      gatewayId, receiptContainer), error);
+  }
+  assert.throws(() => requireScopedJournalReport({ ...report, results: [applied] }, gatewayId, receiptContainer),
+    /JOURNAL_SELECTED_COMMAND_ACK/);
+});

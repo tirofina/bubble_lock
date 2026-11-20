@@ -9,12 +9,16 @@ topic read privacy-bubble/gateway/gw-a/telemetry-result/kr-handover/9
 topic read privacy-bubble/gateway/gw-a/telemetry-result/keyring-feather-lab/1
 
 user scoped-gateway-b
+topic write /oneM2M/req/Sscoped-r18-gateway-b/Mobius4/json
+topic read /oneM2M/resp/Sscoped-r18-gateway-b/Mobius4/json
 topic write privacy-bubble/gateway/gw-b/telemetry-epoch/kr-handover/8
 topic write privacy-bubble/gateway/gw-b/ack
 topic read privacy-bubble/gateway/gw-b/command
 topic read privacy-bubble/gateway/gw-b/telemetry-result/kr-handover/8
 
 user scoped-core
+topic read /oneM2M/req/Sscoped-r18-gateway-b/Mobius4/json
+topic write /oneM2M/resp/Sscoped-r18-gateway-b/Mobius4/json
 topic read privacy-bubble/gateway/+/telemetry-epoch/+/+
 topic write privacy-bubble/gateway/gw-a/telemetry-result/kr-handover/7
 topic write privacy-bubble/gateway/gw-a/telemetry-result/kr-handover/9

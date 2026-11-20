@@ -65,6 +65,29 @@ class HttpsTlsTests(unittest.IsolatedAsyncioTestCase):
             await hub.publish("bad-ca", "/test/receipts", {})
         self.assertEqual(server.records, [])
 
+    async def test_separate_pc_api_tls_uses_the_correct_issuer_and_client_certificate(self):
+        self.pki.leaf("api-server", "rogue", 6, "serverAuth", "127.0.0.1")
+        self.pki.leaf("api-client", "rogue", 7, "clientAuth", subject="gw-api-test")
+        cse = self.server()
+        api = self.server(certificate="api-server", client_ca="rogue", response_status=200)
+        cfg = config()
+        cfg.cse_url, cfg.api_url = cse.origin, api.origin
+        cfg.mqtt_enabled, cfg.request_timeout = False, 1
+        cfg.ca_file, cfg.cert_file, cfg.key_file = (self.pki.path("trusted"), self.pki.path("client"),
+                                                   self.pki.path("client", "key"))
+        cfg.pc_api_tls_files = (self.pki.path("rogue"), self.pki.path("api-client"), self.pki.path("api-client", "key"))
+        hub = TransportHub(cfg)
+        self.addAsyncCleanup(hub.close)
+        await hub.start()
+
+        await hub.publish("split-tls", "/test/receipts", {})
+        await hub.credential_status()
+        for server, common_name, method in ((cse, "gw-test", "POST"), (api, "gw-api-test", "GET")):
+            self.assertEqual(len(server.records), 1)
+            record = server.records[0]
+            subject = dict(item for group in record["peer"]["subject"] for item in group)
+            self.assertEqual((record["tls"], subject["commonName"], record["method"]), ("TLSv1.3", common_name, method))
+
     async def test_untrusted_client_is_rejected_before_http(self):
         server = self.server()
         hub = await self.hub(server, client="rogue-client")

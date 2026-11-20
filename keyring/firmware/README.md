@@ -6,7 +6,7 @@ ESP32-S3-WROOM-1-N16R8 / r18-hand-solder 보드를 대상으로 작성한 소스
 
 배송 대기 중에는 Adafruit Feather ESP32 V2와 1.54인치 ST7789에서 화면·버튼·BLE 관측을 [별도 벤치 스케치](feather_probe/README.md)로 시험한다.
 
-r18 제작 PCB의 첫 구동에는 `keyring_r18_bringup`을 사용한다. 별도 BLE revision `keyring-0.7.13-bringup`으로 버튼·센서·전원 관측을 제공하고 출력 명령과 장치 저널은 비활성화한다. [초기 구동 절차](../pcb/BRING_UP.md)
+r18 제작 PCB의 첫 구동에는 `keyring_r18_bringup`을 사용한다. BLE revision `keyring-0.7.18-bringup`으로 버튼·센서·전원 관측을 제공하고 출력 명령과 장치 저널은 비활성화한다. USB 모니터에서 `?`를 보내면 현재 부팅의 초기 기록을 재출력한다. Pi 기록 도구가 USB의 부팅 ID를 BLE와, 실행 중인 앱의 SHA-256을 빌드 파일과 대조한다. [초기 구동 절차](../pcb/BRING_UP.md)
 
 ## 구성과 준비
 
@@ -81,5 +81,9 @@ keyring-0.7.11은 가속도계 초기화나 축 읽기가 실패하면 약 5초 
 확인/비상 버튼은 active-low, debounce35ms이며 panic을 우선한다. 관측 의도를 전송하며 자체적으로 grant나 보호자 승인을 생성하지 않는다. 관측은2초 주기 또는 버튼/출력/움직임 변화 때 갱신한다. radio controller sleep 요청과 idle yield 외에 선택형 deep sleep·motion/버튼/timer wake 경로를 작성했다. `KEYRING_ENABLE_SLEEP` 기본값은0이며 연결 중에는 절전하지 않는다. 상세 설정·제약·미실행 인수 항목은 [POWER_WAKE.md](POWER_WAKE.md)에 있다. 화면·오디오·microSD는 기본 비활성 옵션으로 소스를 추가했으며 [PERIPHERALS.md](PERIPHERALS.md)에 두 화면 선택, JD9853 패널 초기화 미확인, 공용 전원·SPI와 SD 평문 기록 제약을 설명한다. 실물 주변장치 동작과 배터리 수명·소비전류·깨우기 동작은 미확인이다.
 
 keyring-0.7.3은 `sensorValues.buttonPresses`에 부팅별 확인·비상 누름을 순서대로 담는다. 버튼을 뗀 뒤에도 다음 관측에서 횟수를 읽을 수 있다. 동시에 눌리거나 비상 버튼이 눌린 동안 확인 버튼을 눌렀다면 비상을 우선한다. 누계는 uint32 최댓값에서 유지되며 재부팅하면 새 bootId와 함께 0부터 시작한다. [버튼 프레임 시험](../evidence/2026-11-10-button-presses/README.md)
+
+r18 0.7.21은 인증된 관측 구독에서 `buttonState` 전이를 최대 8건 대기시키고, 센서 관측과 함께 생성 순번대로 알린다. 대기열이 가득 차면 먼저 쌓인 7건을 보존하고 마지막 대기 건을 최신 전이로 교체한다. 센서 상세는 유형별로 최신 관측을 유지하고 GATT 읽기에는 최신 전체 관측을 제공한다. 구독을 끊으면 대기 중인 전이는 폐기한다. 짧은 누름의 수용 시험은 같은 부팅에서 확인·해제·비상·해제 순번을 Pi와 중앙에서 대조한다. [호스트 회귀시험 소스](tests/run_motor_gate_host.py)
+
+r18 0.7.22는 첫 BLE 광고 전에 관측을 준비한다. Pi가 인증된 GATT 읽기를 시작하면 읽기 스냅샷 이후의 버튼 전이도 같은 대기열에 보존하고, 같은 연결에서 구독이 열리면 순번대로 보낸다. 구독 전 offset 0을 다시 읽으면 새 읽기값이 기준이 된다. 연결 해제 또는 구독 취소는 이전 대기열을 폐기한다. [Pi 초기 구동 절차](../raspberry-pi-gateway/TESTING.md#r18-초기-구동-기록)
 
 충전 전류 모드는 USB100 기본값을 유지한다. 충전기·온도 보호·충전 LED는 하드웨어 회로이며 펌웨어가 충전 LED를 제어했다고 표시하지 않는다.

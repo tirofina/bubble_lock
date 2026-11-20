@@ -9,6 +9,29 @@ const isSha256 = (value) => exact(/^[a-f0-9]{64}$/, value);
 const isNativeTime = (value) => exact(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.000Z$/, value)
   && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
 
+function requireSelectedCommand(selected, rows) {
+  const row = rows[0];
+  if (rows.length !== 1 || !selected || typeof selected !== 'object'
+      || Object.keys(selected).length !== 8 || selected.commandId !== row.commandId
+      || !receiptIdentifier(selected.boardRevision) || !receiptIdentifier(selected.firmwareRevision)
+      || selected.sameBoot !== true || typeof selected.desiredState !== 'boolean'
+      || !Number.isInteger(selected.sourceRecordCount) || selected.sourceRecordCount < 1 || selected.sourceRecordCount > 32
+      || !Number.isSafeInteger(selected.acceptedUptimeMs) || selected.acceptedUptimeMs < 0) {
+    throw new Error('JOURNAL_SELECTED_COMMAND_BINDING');
+  }
+  const appliedTimeValid = row.devicePhase === 'prepared'
+    ? selected.appliedUptimeMs === null
+    : Number.isSafeInteger(selected.appliedUptimeMs) && selected.appliedUptimeMs >= selected.acceptedUptimeMs;
+  if (!appliedTimeValid) throw new Error('JOURNAL_SELECTED_COMMAND_UPTIME');
+  if (Object.hasOwn(row, 'gatewayAckCode') && !receiptIdentifier(row.gatewayAckCode)) {
+    throw new Error('JOURNAL_SELECTED_COMMAND_ACK');
+  }
+  if (row.result === 'matched_applied' && (selected.desiredState !== row.deviceReadbackState
+      || !['APPLIED', 'DUPLICATE'].includes(row.gatewayAckCode))) {
+    throw new Error('JOURNAL_SELECTED_COMMAND_ACK');
+  }
+}
+
 export async function readJournalReport(path) {
   const chunks = [];
   for await (const chunk of createReadStream(path, { end: maxReportBytes })) chunks.push(chunk);
@@ -44,11 +67,12 @@ export function requireScopedJournalReport(report, gatewayId, receiptContainer) 
       throw new Error('JOURNAL_REPORT_APPLIED_BINDING');
     }
   }
+  if (Object.hasOwn(report, 'selectedCommand')) requireSelectedCommand(report.selectedCommand, rows);
 }
 
 export function compareJournalSettlements(report, records) {
   const { gatewayId, deviceId, cseId, cseDeploymentId = null, receiptContainer, gatewayArchiveId,
-    deviceSnapshotId, deviceRecordsSha256, recordCount } = report;
+    deviceSnapshotId, deviceRecordsSha256, recordCount, selectedCommand } = report;
   if (records.length !== recordCount) throw new Error('JOURNAL_INSPECTION_ROW_BINDING');
   const results = report.results.map((row, index) => {
     const central = records[index];
@@ -56,6 +80,7 @@ export function compareJournalSettlements(report, records) {
     const { nativeRef, inbox, settlement } = central;
     const result = { commandId: row.commandId, nativeRef, journalResult: row.result,
       gatewayDelivered: row.gatewayDelivered, settlementPresent: settlement !== null, inbox };
+    if (selectedCommand) result.gatewayAckCode = row.gatewayAckCode ?? null;
     if (row.result !== 'matched_applied') return { ...result, centralResult: 'journal_review_required' };
     if (settlement === null) return { ...result, centralResult: 'settlement_missing' };
     const expected = { version: 1, gatewayId, deviceId, commandId: row.commandId, payloadHash: row.payloadHash,
@@ -72,10 +97,12 @@ export function compareJournalSettlements(report, records) {
     if (!sourceBound) return { ...result, centralResult: 'settlement_source_unbound' };
     return { ...result, centralResult: 'settlement_matched', authorizationEventId: settlement.authorizationEventId };
   });
+  const reviewCount = results.filter((row) => row.centralResult !== 'settlement_matched' || !row.gatewayDelivered
+    || (selectedCommand && row.gatewayAckCode !== 'APPLIED')).length;
   return { reportVersion: 1, checkedAt: new Date().toISOString(), gatewayId, deviceId, cseId, cseDeploymentId,
     receiptContainer, gatewayArchiveId,
     deviceSnapshotId, deviceRecordsSha256, recordCount, settlementStatus: 'not-settled', deviceJournalModified: false,
+    ...(selectedCommand ? { selectedCommand, originalApplicationMatched: results.length === 1 && reviewCount === 0 } : {}),
     matchedCount: results.filter((row) => row.centralResult === 'settlement_matched').length,
-    reviewCount: results.filter((row) => row.centralResult !== 'settlement_matched' || !row.gatewayDelivered).length,
-    results };
+    reviewCount, results };
 }

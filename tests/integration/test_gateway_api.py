@@ -44,6 +44,7 @@ class CentralGatewayTests(unittest.IsolatedAsyncioTestCase):
         cfg = config()
         cfg.api_url = cfg.cse_url = ready["origin"]
         cfg.mqtt_enabled, cfg.request_timeout = False, 2
+        cfg.central_telemetry_enabled = cfg.central_receipts_enabled = True
         cfg.ca_file, cfg.cert_file, cfg.key_file = pki.path("trusted"), pki.path("client"), pki.path("client", "key")
         hub = TransportHub(cfg)
         self.addAsyncCleanup(hub.close)
@@ -118,20 +119,25 @@ class CentralGatewayTests(unittest.IsolatedAsyncioTestCase):
         store = Store(database, 100, 100000, 20, BINDING)
         store.accept(command, digest)
         store.finish(command["commandId"], receipt)
-        store.stage_receipts(BINDING["receiptContainer"], central_enabled=True)
+        store.stage_receipts(BINDING["receiptContainer"])
+        store.stage_central_receipts()
         central_rqi = store.request_id("central-receipt", command["commandId"])
         store.close()
         store = Store(database, 100, 100000, 20, BINDING)
         self.addCleanup(store.close)
         retained = store.db.execute("SELECT payload FROM outbox WHERE rqi=?", (central_rqi,)).fetchone()
         self.assertEqual(json.loads(retained["payload"]), receipt)
+        claim_id = store.central_receipt_claim(receipt)
+        self.assertEqual(claim_id, command["claimId"])
         with self.assertRaises(RemoteResponseError):
-            await hub.publish(central_rqi, "@central/receipt", {**receipt, "readback": {"state": False}})
+            await hub.publish(central_rqi, "@central/receipt", {**receipt, "readback": {"state": False}},
+                              expected_claim_id=claim_id)
         self.assertEqual(len((await inspect("snapshot"))["activeLanes"]), 1)
-        await hub.publish(central_rqi, "@central/receipt", receipt)
-        await hub.publish(central_rqi, "@central/receipt", receipt)
+        await hub.publish(central_rqi, "@central/receipt", receipt, expected_claim_id=claim_id)
+        await hub.publish(central_rqi, "@central/receipt", receipt, expected_claim_id=claim_id)
         store.delivered(central_rqi)
-        store.stage_receipts(BINDING["receiptContainer"], central_enabled=True)
+        store.stage_receipts(BINDING["receiptContainer"])
+        store.stage_central_receipts()
         self.assertEqual(store.db.execute("SELECT COUNT(*) FROM outbox WHERE container='@central/receipt'").fetchone()[0], 0)
         snapshot = await inspect("snapshot")
         self.assertEqual(snapshot["command"]["executionState"], "APPLIED_VERIFIED")

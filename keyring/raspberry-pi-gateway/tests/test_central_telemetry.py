@@ -2,8 +2,10 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
+from bubble_gateway.model import central_observation_id
 from bubble_gateway.store import Store
 from bubble_gateway.transport import TransportHub, RemoteResponseError
 from helpers import BINDING, observation
@@ -25,10 +27,14 @@ class CentralTelemetryTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual({row["container"] for row in rows}, {BINDING["observationContainer"], "@central/telemetry"})
                 self.assertEqual([json.loads(row["payload"]) for row in rows], [value, value])
                 hub = object.__new__(TransportHub)
-                hub._api = AsyncMock(return_value={"status": "ACCEPTED", "deviceId": value["deviceId"], "observationId": "test"})
+                hub.config = SimpleNamespace(central_telemetry_enabled=True, gateway_id=value["gatewayId"])
+                accepted = {"status": "ACCEPTED", "deviceId": value["deviceId"],
+                            "observationId": central_observation_id(value)}
+                hub._api = AsyncMock(return_value=accepted)
                 await hub.publish("central-rqi", "@central/telemetry", value)
-                hub._api.assert_awaited_once_with("POST", "/telemetry", value, "central-rqi")
-                hub._api.return_value = {"status": "ACCEPTED", "deviceId": "another-device"}
+                hub._api.assert_awaited_once_with("POST", "/telemetry", value, "central-rqi",
+                                                  idempotency_key="central-rqi")
+                hub._api.return_value = {**accepted, "deviceId": "another-device"}
                 with self.assertRaises(RemoteResponseError):
                     await hub.publish("central-rqi", "@central/telemetry", value)
             finally:

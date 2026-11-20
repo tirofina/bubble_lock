@@ -5,11 +5,15 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from contextlib import closing
 from unittest.mock import AsyncMock, patch
 
 import httpx
 
 from bubble_gateway.__main__ import main
+from bubble_gateway.config import GatewayConfig
+from bubble_gateway.state_identity import configured_binding
+from bubble_gateway.store import Store
 from tls_fixture import TestPki
 
 
@@ -39,6 +43,7 @@ class PreflightTests(unittest.TestCase):
         self.addCleanup(os.umask, old_mask)
 
     def invoke(self, *, expected_error=None):
+        existing = set(self.state.iterdir())
         with (patch.dict(os.environ, self.env, clear=True),
               patch.object(sys, "argv", ["bubble-gateway", "--check-config"]),
               patch("bubble_gateway.__main__.logging.basicConfig")):
@@ -52,15 +57,17 @@ class PreflightTests(unittest.TestCase):
                     main()
                     self.assertIn("Gateway configuration check passed", log.output[-1])
             self.assertNotIn(str(self.root), "\n".join(log.output))
-        self.assertEqual(list(self.state.iterdir()), [])
+        self.assertEqual(set(self.state.iterdir()), existing)
 
     def test_valid_tls_and_state_config_never_open_database_or_start_gateway(self):
         self.invoke()
 
     def check_route(self, *, credential_status="ACTIVE", commands=None, observed_parent="cnt-pinned",
-                    expected_error=None):
-        self.env.update(M2M_CSE_DEPLOYMENT_ID="scoped-mobius4", M2M_RECEIPT_CONTAINER_RI="cnt-pinned",
-                        MQTT_ENABLED="true", MQTT_HOST="broker.invalid")
+                    observed_observation_parent="cnt-observation", observed_health_parent="cnt-health",
+                    expected_error=None, cse_only=False):
+        self.env.update(M2M_CSE_DEPLOYMENT_ID="scoped-mobius4", MQTT_ENABLED="true", MQTT_HOST="broker.invalid")
+        if not cse_only:
+            self.env["M2M_RECEIPT_CONTAINER_RI"] = "cnt-pinned"
         endpoints = []
 
         def exchange(method, url, *, headers, body=None):
@@ -71,6 +78,15 @@ class PreflightTests(unittest.TestCase):
                 return 200, httpx.Headers({"X-M2M-RI": headers["X-M2M-RI"], "X-M2M-RSC": "2000"}), {
                     "m2m:cnt": {"ty": 3, "ri": observed_parent},
                 }
+            if url.endswith("/test/obs"):
+                return 200, httpx.Headers({"X-M2M-RI": headers["X-M2M-RI"], "X-M2M-RSC": "2000"}), {
+                    "m2m:cnt": {"ty": 3, "ri": observed_observation_parent},
+                }
+            if url.endswith("/test/health"):
+                return 200, httpx.Headers({"X-M2M-RI": headers["X-M2M-RI"], "X-M2M-RSC": "2000"}), {
+                    "m2m:cnt": {"ty": 3, "ri": observed_health_parent},
+                }
+            self.assertFalse(cse_only, "CSE-only preflight attempted a central request")
             if url.endswith("/credentials/status"):
                 return 200, httpx.Headers(), {
                     "gatewayId": "gw-test", "credentialRevision": "rev-1", "status": credential_status,
@@ -78,8 +94,9 @@ class PreflightTests(unittest.TestCase):
             self.assertTrue(url.endswith("/commands?limit=16"))
             return 200, httpx.Headers(), {"commands": commands or []}
 
+        flag = "--check-cse-routes" if cse_only else "--check-command-route"
         with (patch.dict(os.environ, self.env, clear=True),
-              patch.object(sys, "argv", ["bubble-gateway", "--check-command-route"]),
+              patch.object(sys, "argv", ["bubble-gateway", flag]),
               patch("bubble_gateway.__main__.logging.basicConfig"),
               patch("bubble_gateway.__main__.serve", new_callable=AsyncMock) as daemon,
               patch("bubble_gateway.transport.mqtt.Client") as mqtt_client,
@@ -94,8 +111,23 @@ class PreflightTests(unittest.TestCase):
             else:
                 main()
                 report = json.loads(output.call_args.args[0])
-                self.assertEqual((report["receiptContainerRi"], report["credentialStatus"], report["activeCommands"]),
-                                 ("cnt-pinned", "ACTIVE", 0))
+                if cse_only:
+                    enabled = self.env.get("COMMANDS_ENABLED") != "false"
+                    self.assertIs(report["commandsEnabled"], enabled)
+                    self.assertEqual(report.get("receiptContainerRi"), "cnt-pinned" if enabled else None)
+                    self.assertNotIn("credentialStatus", report)
+                    self.assertNotIn("activeCommands", report)
+                else:
+                    self.assertEqual((report["receiptContainerRi"], report["credentialStatus"]), ("cnt-pinned", "ACTIVE"))
+                    if self.env.get("COMMANDS_ENABLED") == "false":
+                        self.assertIs(report["commandsEnabled"], False)
+                        self.assertNotIn("activeCommands", report)
+                    else:
+                        self.assertEqual(report["activeCommands"], 0)
+                if "M2M_OBSERVATION_CONTAINER_RI" in self.env:
+                    self.assertEqual(report["observationContainerRi"], self.env["M2M_OBSERVATION_CONTAINER_RI"])
+                if "M2M_HEALTH_CONTAINER_RI" in self.env:
+                    self.assertEqual(report["healthContainerRi"], self.env["M2M_HEALTH_CONTAINER_RI"])
             daemon.assert_not_awaited()
             mqtt_client.assert_not_called()
         self.assertEqual(list(self.state.iterdir()), [])
@@ -108,16 +140,101 @@ class PreflightTests(unittest.TestCase):
             "https://example.invalid/api/v1/gateways/gw-test/commands?limit=16",
         ])
 
+    def test_cse_reverse_proxy_keeps_the_onem2m_prefix(self):
+        self.env["M2M_CSE_URL"] = "https://example.invalid/onem2m"
+        self.assertEqual(self.check_route()[0], "https://example.invalid/onem2m/test/receipts")
+        self.env["M2M_CSE_URL"] = "https://example.invalid/onem2m/../other"
+        with self.assertRaisesRegex(ValueError, "M2M_CSE_URL"):
+            GatewayConfig.from_env(self.env)
+
     def test_command_route_stops_before_poll_on_wrong_parent_or_inactive_credential(self):
         self.assertEqual(len(self.check_route(observed_parent="cnt-other", expected_error="ReceiptParentMismatch")), 1)
         self.assertEqual(len(self.check_route(credential_status="REVOKED", expected_error="credential is not ACTIVE")), 2)
+
+    def test_command_route_checks_pinned_observation_before_central_api(self):
+        self.env["M2M_OBSERVATION_CONTAINER_RI"] = "cnt-observation"
+        self.assertEqual(self.check_route()[:2], ["https://example.invalid/test/receipts", "https://example.invalid/test/obs"])
+        self.assertEqual(len(self.check_route(observed_observation_parent="cnt-replaced",
+                                              expected_error="CSE observation parent lookup failed")), 2)
 
     def test_command_route_reports_existing_active_commands(self):
         self.assertEqual(len(self.check_route(commands=[{"commandId": "existing"}],
                                               expected_error="command list is not empty")), 3)
 
+    def test_command_route_checks_pinned_health_before_central_api(self):
+        self.env["M2M_HEALTH_CONTAINER_RI"] = "cnt-health"
+        self.assertEqual(self.check_route()[:2], ["https://example.invalid/test/receipts", "https://example.invalid/test/health"])
+        self.assertEqual(len(self.check_route(observed_health_parent="cnt-replaced",
+                                              expected_error="CSE health parent lookup failed")), 2)
+
+    def test_health_pin_requires_deployment_and_matches_shared_path(self):
+        self.env["M2M_HEALTH_CONTAINER_RI"] = "cnt-health"
+        with self.assertRaisesRegex(ValueError, "M2M_HEALTH_CONTAINER_RI requires M2M_CSE_DEPLOYMENT_ID"):
+            GatewayConfig.from_env(self.env)
+        self.env.update(M2M_CSE_DEPLOYMENT_ID="scoped-mobius4", M2M_OBSERVATION_CONTAINER_RI="cnt-other",
+                        M2M_OBSERVATION_CONTAINER=self.env["M2M_HEALTH_CONTAINER"])
+        with self.assertRaisesRegex(ValueError, "Shared native container requires matching resource IDs"):
+            GatewayConfig.from_env(self.env)
+        self.env["M2M_OBSERVATION_CONTAINER_RI"] = "cnt-health"
+        self.assertEqual(GatewayConfig.from_env(self.env).health_container_ri, "cnt-health")
+
+    def test_observation_only_preflight_never_reads_commands(self):
+        self.env.update(COMMANDS_ENABLED="false", M2M_OBSERVATION_CONTAINER_RI="cnt-observation")
+        self.assertEqual(self.check_route(commands=[{"commandId": "existing"}]), [
+            "https://example.invalid/test/receipts",
+            "https://example.invalid/test/obs",
+            "https://example.invalid/api/v1/gateways/gw-test/credentials/status",
+        ])
+
+    def test_cse_only_preflight_reads_all_active_native_routes_without_central_access(self):
+        self.env.update(COMMANDS_ENABLED="false", M2M_OBSERVATION_CONTAINER_RI="cnt-observation",
+                        M2M_HEALTH_CONTAINER_RI="cnt-health",
+                        PC_API_TLS_CA_FILE=str(self.pki.path("trusted")),
+                        PC_API_TLS_CERT_FILE=str(self.pki.path("client")),
+                        PC_API_TLS_KEY_FILE=str(self.pki.path("rogue-client", "key")))
+        self.assertEqual(self.check_route(cse_only=True), [
+            "https://example.invalid/test/obs", "https://example.invalid/test/health",
+        ])
+        self.env.update(COMMANDS_ENABLED="true", M2M_RECEIPT_CONTAINER_RI="cnt-pinned")
+        self.assertEqual(self.check_route(cse_only=True), [
+            "https://example.invalid/test/receipts", "https://example.invalid/test/obs",
+            "https://example.invalid/test/health",
+        ])
+        self.assertEqual(len(self.check_route(cse_only=True, observed_health_parent="cnt-replaced",
+                                              expected_error="CSE health parent lookup failed")), 3)
+        del self.env["M2M_HEALTH_CONTAINER_RI"]
+        self.assertEqual(self.check_route(cse_only=True, expected_error="M2M_HEALTH_CONTAINER_RI"), [])
+
+    def test_preflight_rejects_a_changed_pc_deployment_before_remote_requests(self):
+        self.env["PC_API_DEPLOYMENT_ID"] = "original-central"
+        with patch.dict(os.environ, self.env, clear=True):
+            config = GatewayConfig.from_env()
+        with closing(Store(config.database, 100, 100000, 20, configured_binding(config))):
+            pass
+
+        self.env["PC_API_DEPLOYMENT_ID"] = "new-central"
+        for flag in ("--check-config", "--check-command-route", "--check-cse-routes"):
+            with (self.subTest(flag=flag), patch.dict(os.environ, self.env, clear=True),
+                  patch.object(sys, "argv", ["bubble-gateway", flag]),
+                  patch("bubble_gateway.__main__.logging.basicConfig"),
+                  patch("bubble_gateway.__main__.check_command_route", new_callable=AsyncMock) as route,
+                  self.assertLogs("bubble_gateway.__main__", level="ERROR") as logs,
+                  self.assertRaises(SystemExit) as raised):
+                main()
+            self.assertEqual(raised.exception.code, 1)
+            self.assertIn("STATE_PC_API_DEPLOYMENT_MISMATCH", logs.output[-1])
+            route.assert_not_awaited()
+
     def test_wrong_private_key_is_reported_before_database_creation(self):
         self.env["TLS_KEY_FILE"] = str(self.pki.path("rogue-client", "key"))
+        self.invoke(expected_error="TLS file check failed (SSLError)")
+
+    def test_optional_pc_api_tls_settings_require_a_complete_keypair(self):
+        self.env["PC_API_TLS_CA_FILE"] = str(self.pki.path("trusted"))
+        with self.assertRaisesRegex(ValueError, "must be set together"):
+            GatewayConfig.from_env(self.env)
+        self.env.update(PC_API_TLS_CERT_FILE=str(self.pki.path("client")),
+                        PC_API_TLS_KEY_FILE=str(self.pki.path("rogue-client", "key")))
         self.invoke(expected_error="TLS file check failed (SSLError)")
 
     def test_database_and_lock_must_stay_under_systemd_state_directory(self):
@@ -129,3 +246,24 @@ class PreflightTests(unittest.TestCase):
     def test_database_cannot_be_its_own_lifetime_lock(self):
         self.env["GATEWAY_DATABASE"] = str(self.state / "gateway.lock")
         self.invoke(expected_error="different files")
+
+    def test_missing_nested_database_directory_is_not_created(self):
+        self.env["GATEWAY_DATABASE"] = str(self.state / "gateway-a" / "gateway.sqlite3")
+        self.invoke()
+
+    def test_service_account_needs_writable_state_directory(self):
+        with patch("bubble_gateway.config.os.access", return_value=False) as access:
+            self.invoke(expected_error="cannot write to or traverse the SQLite state directory")
+        access.assert_called_once_with(self.state, os.W_OK | os.X_OK)
+
+    def test_existing_sqlite_wal_must_be_writable_by_service_account(self):
+        wal = self.state / "gateway.sqlite3-wal"
+        wal.write_bytes(b"existing synthetic WAL")
+        access = os.access
+        with patch("bubble_gateway.config.os.access", side_effect=lambda path, mode: path != wal and access(path, mode)):
+            self.invoke(expected_error="lacks required access to the SQLite WAL")
+        self.assertEqual(wal.read_bytes(), b"existing synthetic WAL")
+
+    def test_sqlite_sidecar_must_be_a_regular_file(self):
+        (self.state / "gateway.sqlite3-shm").mkdir()
+        self.invoke(expected_error="SQLite shared memory must be a regular file inside STATE_DIRECTORY")

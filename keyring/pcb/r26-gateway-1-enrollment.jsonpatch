@@ -1,0 +1,6 @@
+[
+  { "op": "test", "path": "/gateways/0/gatewayId", "value": "gateway-1" },
+  { "op": "test", "path": "/gateways/0/status", "value": "ACTIVE" },
+  { "op": "test", "path": "/gateways/0/devices", "value": { "keyring-A": "household-1", "keyring-B": "household-1" } },
+  { "op": "add", "path": "/gateways/0/devices/keyring-<CHIP_ID>", "value": "household-1" }
+]

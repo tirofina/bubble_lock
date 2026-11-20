@@ -1140,3 +1140,1036 @@ DOC-REV 2.0.0과 원격 main `715ef58`, CORE `d54a43a`, WEB `80ed37f`를 확인�
 - 사용자가 승인한 Feather 0.2.0·Pi 0.2.28 격리 시험은 이전에 수행했다. ON/OFF 모두 GPIO readback, Mobius4 원본과 중앙 정산이 일치했다. [실물 시험 기록](../keyring/evidence/2026-11-11-scoped-feather-led/receipt.json)
 
 소스 commit `596e44ce7ff2857d015d057ce82f6236a985d34a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `6af2279..596e44c`다. goal은 active/progress다.
+
+## 2026-11-11 — 고정 영수증 재전송과 Feather 육안 시험
+
+일시 중지 직전에 Gateway 0.2.44 소스와 회귀시험을 작업 트리에 남겼다. 재개 뒤 DOC-REV 2.0.0 및 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. main의 새 INTEGRATION 계약에 `dispatch-start`와 중앙 영수증·관측 수집이 추가됐다. 현재 역할 브랜치의 Gateway 실행 경로와 새 중앙 API를 잇는 작업이 남아 있다.
+
+- Gateway `0.2.44`는 고정 컨테이너의 최초 명령 영수증 전송 시도를 SQLite에 기록한다. 재시도에서는 기존 영수증의 부모·이름·유형·본문을 먼저 확인하고, 확인된 부재에 한해 같은 이름으로 CREATE를 진행한다. 회귀시험 소스를 함께 올렸다. 이 버전의 빌드·시험·배포는 미실행이다. [영수증 대기열](../keyring/raspberry-pi-gateway/RECEIPT_ROUTING.md)
+- 실제 Pi Gateway `0.2.43`으로 Feather `0.2.0`의 ON/OFF를 다시 실행했다. 고정 컨테이너와 활성 자격을 확인했고 두 건 모두 장치 ACK·GPIO readback·후속 관측·Mobius4·인증 콜백·중앙 정산이 일치했다. 사용자는 빨간 LED를 식별하지 못했고 ON/OFF에서 점등 변화를 관찰하지 못했다. Pi의 명령 영수증 대기열은 0건이었고 시험 데몬과 SSH 터널을 종료했다. [실물 시험 결과](../keyring/evidence/2026-11-11-feather-visual/receipt.json)
+
+소스 commit `36276bd62467c409a1c8c4778b379f89da02983a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `bd1d5ec..36276bd`다. goal은 active/progress다.
+
+## 2026-11-11 — 중앙 dispatch-start와 BLE 명령 연결
+
+직전 goal turn은 고정 영수증 재전송 구현을 올리고 Feather 육안 시험 결과를 기록한 progress다. DOC-REV 2.0.0과 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 head는 직전과 같다.
+
+- Gateway `0.2.45`는 `PC_DISPATCH_START_REQUIRED=true` 설정에서 최초 승인과 SQLite 실행 의도 저장 뒤 같은 claim으로 중앙 `dispatch-start`를 호출한다. 두 응답 중 이른 기한을 적용하고 BLE 세션과 자격을 다시 확인한다. 연결 실패, 경로 부재, 승인 거절이나 불일치 시 BLE 명령을 보내기 전에 거절 영수증을 남긴다. 기존 격리 프로필은 기본값 `false`를 사용한다. [승인 및 전송 경계](../keyring/raspberry-pi-gateway/BLE_SESSIONS.md#승인-기한과-gatt-전송)
+- 요청 바인딩, 로컬 실행 의도 기록 순서, 기한 단축·만료, 세션 교체, 취소와 경로 부재를 다루는 회귀시험 소스를 추가했다. 빌드·시험·중앙 API 연결·Pi 시험은 미실행이다. 새 중앙 `/receipts`와 `/telemetry` 전송 경로 및 실제 연동 시험이 남아 있다.
+
+소스 commit `1d9dd4fc9bb94bf2a9f953090d0f274827953cac`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `bac1c3f..1d9dd4f`다. goal은 active/progress다.
+
+## 2026-11-11 — 중앙 명령 영수증 정산 경로
+
+직전 goal turn은 중앙 `dispatch-start` 연동을 올린 progress다. DOC-REV 2.0.0과 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 중앙 `/receipts`의 반환 상태, command ID·claim ID 및 영수증 해시 계약을 읽었다.
+
+- Gateway `0.2.46`은 `CENTRAL_RECEIPTS_ENABLED=true` 설정에서 중앙용 영수증과 등록 표시를 같은 SQLite 트랜잭션에 저장한다. 기존 Mobius4 전달 완료 영수증도 같은 중앙 배포에서 등록할 수 있다. 재전송에는 동일 본문과 `Idempotency-Key`를 사용하고, 중앙 응답의 command ID·claim ID·영수증 SHA-256을 확인한다. Mobius4 전송 완료 상태는 해당 경로의 응답으로 관리한다. [중앙 영수증 정산](../keyring/raspberry-pi-gateway/RECEIPT_ROUTING.md#중앙-명령-영수증-정산)
+- 기존 DB 열기, 용량 부족, 재시작 후 재전송, CSE 보류 중 중앙 송신, 응답 불일치 회귀시험 소스를 추가했다. 빌드·시험·DB 업그레이드 실행·실제 중앙 API와 Pi 검증은 미실행이다. 새 중앙 `/telemetry` 전달 경로가 남아 있다.
+
+소스 commit `af8fae600965eeff31ba120407c6cd1d48d63cc0`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1e8d322..af8fae6`다. goal은 active/progress다.
+
+## 2026-11-11 — 중앙 BLE 관측 전달
+
+직전 goal turn은 중앙 명령 영수증 정산 경로를 올린 progress다. DOC-REV 2.0.0과 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 중앙 `/telemetry`의 관측 식별자, 상태 응답과 보관 기한을 읽었다.
+
+- Gateway `0.2.47`은 `CENTRAL_TELEMETRY_ENABLED=true`에서 중앙용 BLE 관측을 Mobius4용 항목과 관측 커서와 함께 저장한다. 장치별 미전송 관측을 저장 순서로 처리하고 재전송에 같은 본문과 `Idempotency-Key`를 쓴다. 장치 ID와 `observationId`가 일치하는 `ACCEPTED`, `DUPLICATE`, `STALE` 응답을 처리한다. 시계가 정상이고 관측이 24시간 2초를 넘으면 중앙용 항목을 만료로 집계한다. [중앙 관측 전달](../keyring/raspberry-pi-gateway/IO_NOTES.md#중앙-관측-전달)
+- SQLite 용량과 재시작, 장치별 순서, 중앙 응답 ID, `STALE`과 만료를 다루는 회귀시험 소스를 추가했다. 빌드·시험·중앙 API 연결·Pi 검증은 미실행이다. 최신 중앙 배포의 Gateway·장치·가구 등록을 적용한 실제 연동 증거가 남아 있다.
+
+소스 commit `fe03e8ddb64a319d61a50328f526f45bce15084c`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `c7f7cab..fe03e8d`다. goal은 active/progress다.
+
+## 2026-11-11 — 최신 중앙 API 격리 벤치 준비
+
+직전 goal turn은 중앙 BLE 관측 전달을 올린 progress다. DOC-REV 2.0.0과 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 최신 런타임의 가구·장치 등록과 mTLS 경로를 읽었다.
+
+- 새 `integration` 프로필은 최신 팀 소스·계약을 `.local/scoped/command-api-integration/`에 고정하고, 루프백 `8788`에서 시험용 Gateway·가구·장치를 등록하도록 구성했다. 해당 인증서에만 중앙 승인·영수증·관측 경로를 허용한다. Pi 프로필과 PC LED 도구에 같은 모드 선택을 추가했다. [격리 API 준비](../keyring/dev/mobius4/README.md#최신-integration-api-벤치)
+- `start-scoped-command-api.ps1 -Mode integration -PrepareOnly`가 exit 0을 반환했다. 팀 소스·계약 아카이브 SHA-256은 `d71f006b9a64576376115303227d8e9b4aa9e8ce5010429e98316cb3f3475b3a`다. 로컬 시험용 운영자 인증서를 발급했다. 팀 Node 의존성 설치와 새 API 시작·등록, 테스트·빌드·Pi 실행은 미실행이다.
+
+소스 commit `fbac3d11035c3de3275e858140a7364fb861f362`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `647696d..fbac3d1`다. goal은 active/progress다.
+
+## 2026-11-11 — 최신 중앙 API 루프백 시작 및 시험 장치 등록
+
+직전 goal turn은 최신 중앙 API 프로필을 준비한 progress다. DOC-REV 2.0.0과 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 head는 직전과 같다.
+
+- 팀 `package-lock.json`을 pnpm 잠금 파일로 변환했다. 일부 패키지가 로컬 캐시에 없어 고정 잠금 파일을 유지하고 공식 npm 레지스트리에서 필요한 패키지를 받았다. 프로덕션 의존성 설치는 exit 0이었고 패키지 스크립트 실행은 껐다.
+- 격리 런처가 `127.0.0.1:8788`에서 `READY`를 반환했다. 로컬 상태에서 `gw-a`의 활성 자격, 운영자 보호자 등록과 시험 장치의 Gateway·가구 연결을 확인했다. 발급 명령과 관측은 각각 0건이다. 빌드·시험·Pi 실행은 미실행이다. [시작 기록과 잠금 파일 해시](../keyring/evidence/2026-11-11-current-central-bench/provisioning.json)
+
+사용한 런처 소스는 원격 역할 브랜치에 반영된 `fbac3d11035c3de3275e858140a7364fb861f362`다. goal은 active/progress다.
+
+## 2026-11-11 — 최신 중앙 API의 Feather 시험 증거 대조
+
+직전 goal turn은 최신 중앙 API를 루프백에 시작하고 등록을 확인한 progress다. DOC-REV 2.0.0과 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 중앙의 `GATEWAY_DISPATCH_STARTED`, `GATEWAY_RECEIPT_SETTLED`, `GATEWAY_TELEMETRY_ACCEPTED` 기록을 읽었다.
+
+- 통합 모드 LED 시험은 Mobius4 원본과 일치하는 중앙 `APPLIED_VERIFIED` 기록을 확인한 뒤 다음 단계로 넘어간다. 증거 도구는 Pi SQLite의 컨테이너 고정 ID와 전송 상태를 대조하고 중앙 실행 시작·정산·관측 이벤트 ID를 출력한다. 운영자 육안 기록은 독립 항목이다. [최신 중앙 API 시험 결과 대조](../keyring/raspberry-pi-gateway/TESTING.md#최신-중앙-api의-시험-결과-대조)
+- 중앙 정산 대기, 잘못된 claim·영수증 해시·관측 시각을 다루는 회귀시험 소스를 추가했다. 빌드·시험·증거 도구 실행·실제 Pi 연동은 미실행이다.
+
+소스 commit `be596de96ce9c61625af052fd3bc13e7717fb6ab`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `62b81c3..be596de`다. goal은 active/progress다.
+
+## 2026-11-11 — Pi 시작 전 격리 중앙 API 확인
+
+직전 goal turn은 최신 중앙 API의 Feather 시험 및 증거 대조 코드를 올린 progress다. DOC-REV 2.0.0과 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 head는 직전과 같다.
+
+- 통합 벤치는 시험 Gateway 인증서에 `bench-capabilities` 조회를 제공한다. Pi의 `preflight`와 `run`은 모드, 고정 팀 커밋, Gateway·장치 ID와 세 기능을 대조한다. 불일치하면 Gateway와 BLE 시작을 중단한다. [Pi 명령 세션](../keyring/raspberry-pi-gateway/TESTING.md#pi-명령-세션)
+- 기존 루프백 리스너의 소유 프로세스와 빈 명령·관측 상태를 확인하고 격리 API를 재시작했다. `127.0.0.1:8788`에서 `READY`와 `dispatch-start`, `receipts`, `telemetry` 목록을 수신했다. Pi의 인증 조회, 회귀시험과 빌드는 미실행이다.
+
+소스 commit `00ee7747efcef1bcdbfe4163b238d138363f65dd`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `d6cae41..00ee774`다. goal은 active/progress다.
+
+## 2026-11-11 — Feather 화면에 명령 상태 표시 및 r18 보조 전원 차단
+
+DOC-REV 2.0.0과 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 사용자는 Feather의 ON/OFF 시험에서 모두 LED 변화가 없었다고 확인했다. 기존 기록에는 GPIO readback, Mobius4 영수증과 중앙 정산이 있다. [기존 실물 기록](../keyring/evidence/2026-11-11-feather-visual/receipt.json)
+
+- Feather `0.2.1`은 1.54인치 ST7789에서 `CMD ON`, `CMD OFF`, GPIO 초기화 오류를 표시한다. BLE 관측과 화면은 같은 GPIO 표본을 쓰며 마지막 A0/A1 입력 표시는 별도 줄에 유지한다. Pi와 PC 격리 도구는 선택한 펌웨어 하나를 대조한다. 과거 `0.2.0` 설정과 증거를 계속 읽는다. [격리 시험 절차](../keyring/raspberry-pi-gateway/TESTING.md#기존-scoped-mobius4에서-feather-led-시험)
+- r18 `0.7.14`는 타이머가 alert 고장을 감지하면 모터 GPIO가 LOW로 내려갈 때까지 화면 요청에 의한 보조 전원 재인가를 막는다. 활성 화면의 주기 갱신에서 백라이트를 껐다 켜는 GPIO 전이를 없앴다. 첫 빌드에서 발견한 비공개 `getGattsIf()` 호출을 공개 GATT 등록 이벤트로 교체했다. [보조 전원 설명](../keyring/firmware/PERIPHERALS.md#공용-전원spi절전)
+- r18 기본·ST7789·JD9853 빌드와 Feather 기본 관측·명령 빌드가 모두 통과했다. Feather는 Git 밖의 임시 소스 사본에 합성 PIN을 넣어 컴파일했다. r18 및 Feather 호스트 회귀 17개, 벤치 Python 회귀 12개, Gateway 로컬 시험 172개가 통과했다. 모의 ON/OFF 영수증 대조는 0.2.1을 받아들이고 버전이 섞인 기록을 거절했다. Gateway 첫 전체 실행에서 OpenSSL 경로가 빠져 TLS fixture 두 개가 시작되지 않았다. 설치된 Git OpenSSL을 지정한 최종 실행에서 전체가 통과했다. 새 펌웨어의 flash와 화면 육안 확인, 실제 Pi 연동 및 r18 실물 시험은 미실행이다. [빌드 SHA-256](../keyring/implementation-status.json)
+
+소스 commit `916ff1ef1f82daacf1481e057fbf9babb77be3e8` 및 `5e6598fc1931e4fc642b82d6d6e0cbf1ef941806`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `d4fbb06..5e6598f`다. goal은 active/progress다.
+
+## 2026-11-11 — Feather 명령 화면 관측 증거
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01~R03, R05. 직전 goal turn은 Feather 화면·r18 보조 전원 구현, 로컬 빌드와 시험 증거를 올린 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 조회했다. 팀 커밋과 중앙 실행·정산 경계는 직전과 같다.
+
+- 격리 증거 도구는 `--display-observations`로 0.2.1의 실제 화면 문구를 받는다. ON/OFF의 command ID와 후속 관측 시각을 확인하고, ON 기록은 다음 명령 발급 전에 들어와야 한다. 잘못된 문구·GPIO 오류·화면 미표시는 관측대로 남기고 불일치로 판정한다. LED 육안 결과는 별도 필드를 유지한다. [화면 기록 절차](../keyring/raspberry-pi-gateway/TESTING.md#실물-명령-증거-대조)
+- 기존 0.2.0의 GPIO·Mobius4·중앙 정산 증거를 완료 상태 표에 반영했다. 0.2.1 화면 관측과 잘못된 명령·시각을 다루는 회귀시험 소스를 추가했다. 이번 도구 실행·빌드·회귀시험·flash·실물 검증은 미실행이다. 제작 PCB와 최신 중앙 API의 실물 통합은 대기 중이다.
+
+소스 commit `426ec9d25344f53f75686490e67f46db37699c7e`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `fec9536..426ec9d`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 USB 부팅과 Pi BLE 기록 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R05. 직전 goal turn은 Feather 화면 관측과 명령 증거 연결을 올린 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`에서 Gateway 등록, BLE 계약과 웹 영수증 매핑을 확인했다. 팀 head는 직전과 같다.
+
+- `keyring-0.7.14-bringup`은 USB CDC에 보드·펌웨어 revision, BLE에 사용하는 부팅 ID와 motor·aux·fault 상태를 기록한다. Gateway `0.2.48`의 `--usb-boot-log`는 한 번의 부팅 로그를 읽고, 알림을 수집한 모든 BLE 세션이 그 부팅인지 대조한다. 다른 부팅 또는 USB 출력·fault 활성은 `MISMATCH`로 보고한다. 결과에는 로그 SHA-256과 일치 여부를 기록하며 원본 부팅 ID는 로컬 로그에만 둔다. [r18 첫 구동](../keyring/pcb/BRING_UP.md)
+- 로그 형식 오류, 다른 부팅, 두 번째 부팅의 알림, 출력 활성과 부팅 ID 비공개를 다루는 회귀시험 소스를 추가했다. 빌드·회귀시험·캡처 도구 실행·flash·전원 인가·Pi 접속은 미실행이다. 제작 PCB가 도착하면 USB와 BLE 기록, 전원 레일의 실측이 필요하다.
+
+소스 commit `9644be7a19dfb6c9aa39b774be2549cd3d7c64c0`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `0c12529..9644be7`다. goal은 active/progress다.
+
+## 2026-11-11 — 중앙 관측과 Mobius4 영수증의 독립 전송
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 r18 USB·BLE 첫 부팅 기록을 연결한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`의 중앙 `telemetry`·`receipts`와 CORE 경로, 웹 영수증 계약을 확인했다. 팀 head는 직전과 같다.
+
+- Gateway `0.2.49`는 중앙 BLE 관측을 전용 전송 작업에서 처리한다. 중앙 관측 응답을 기다리는 동안 Mobius4 관측과 명령 영수증을 기존 작업에서 보낼 수 있다. SQLite 등록, 동일 요청 ID, 장치별 미전송 순서, API origin의 `Retry-After`를 유지한다. [중앙 관측 전달](../keyring/raspberry-pi-gateway/IO_NOTES.md#중앙-관측-전달)
+- 중앙 응답을 보류한 동안 Mobius4 관측·명령 영수증 전송과 중앙 항목 보존을 확인하는 회귀시험 소스를 추가했다. 빌드·회귀시험·Pi 실행·실물 연동은 미실행이다. 현재 중앙 API와 실제 Pi의 전송 및 제작 PCB 검증은 남아 있다.
+
+소스 commit `b15b4403e1ea31463412947e7985936939d044d4`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `5870cd2..b15b440`다. goal은 active/progress다.
+
+## 2026-11-11 — 재시도 대기 중인 중앙 관측 만료
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R15. 직전 goal turn은 중앙 관측 전송을 독립시킨 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`가 직전과 같다. 중앙의 관측 시각 기반 보관 기간과 CORE·웹 영수증 경계를 확인했다.
+
+- Gateway `0.2.50`은 시계를 신뢰할 때 재시도 예정 시각과 별개로 만료된 중앙 관측 복제본을 SQLite에서 정리한다. `CENTRAL_TELEMETRY_RETENTION_SECONDS`로 배포별 중앙 보관 기간을 맞추며 기본은 24시간이다. Mobius4 관측과 영수증은 각 전송 규칙을 적용한다. 만료되지 않은 행으로 용량을 채우면 기존 제한이 적용된다. [중앙 관측 전달](../keyring/raspberry-pi-gateway/IO_NOTES.md#중앙-관측-전달)
+- UTC 오프셋·만료 경계, 재시도 대기, 용량 반환, 시계 불신 상태를 다루는 회귀시험 소스를 추가했다. 빌드·회귀시험·Pi 실행·실물 연동은 미실행이다. 제작 PCB와 실제 Pi의 통합 증거가 남아 있다.
+
+소스 commit `d8ce9e0ba6ce5e5eee3e2bdf1800a524a38d2a0f`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `e2c8e12..d8ce9e0`다. goal은 active/progress다.
+
+## 2026-11-11 — 중앙 명령 영수증의 독립 전송
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01~R03, R10. 직전 goal turn은 중앙 관측 만료 처리를 추가한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 중앙 응답의 command ID·claim ID·영수증 해시 경계를 확인했다. 팀 head는 직전과 같다.
+
+- Gateway `0.2.51`은 중앙 명령 영수증을 전용 작업에서 보낸다. Mobius4 요청과 중앙 요청은 각자의 응답을 기다린다. 두 작업은 같은 SQLite 명령 저널에서 원자적으로 전송을 등록하고 각각 자기 경로의 행을 전송한다. 재시작 뒤 같은 요청 ID와 backoff를 사용한다. [중앙 영수증 정산](../keyring/raspberry-pi-gateway/RECEIPT_ROUTING.md#중앙-명령-영수증-정산)
+- 중앙 응답 대기 중 Mobius4 영수증 완료와 중앙 행 보존을 확인하는 회귀시험 소스를 추가했다. 빌드·회귀시험·실제 Pi 연동은 미실행이다. 두 서버와 Pi의 실제 영수증 대조 및 제작 PCB 검증이 남아 있다.
+
+소스 commit `8a7377ed8a2c2dfa43d591e50584e3775a919a06`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `b2b0370..8a7377e`다. goal은 active/progress다.
+
+## 2026-11-11 — SQLite 용량 부족 시 영수증 등록 분리
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01~R03, R10. 직전 goal turn은 중앙 영수증의 전송을 분리한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 중앙 중복 판정의 영수증 해시와 CORE ACK·웹 확인 계약을 읽었다.
+
+- Gateway `0.2.52`는 중앙 영수증과 등록 표시를 별도 SQLite 트랜잭션에 저장한다. Mobius4 영수증과 선택형 CORE ACK는 같은 트랜잭션에서 등록한다. 한 경로가 용량 부족으로 롤백돼도 다른 경로는 공간이 허용하는 즉시 등록할 수 있다. 등록을 미룬 원본은 명령 저널에 남으며 각 작업은 같은 요청 ID로 재시도한다. [중앙 영수증 정산](../keyring/raspberry-pi-gateway/RECEIPT_ROUTING.md#중앙-명령-영수증-정산)
+- 빈 자리 한 개·두 개, 공간 회복과 재시작 후 중복 등록 방지를 다루는 회귀시험 소스를 추가했다. 공통 SQLite 용량 상한이 적용된다. 빌드·회귀시험·실제 Pi 연동은 미실행이다. 두 서버와 Pi의 실제 영수증 대조 및 제작 PCB 검증이 남아 있다.
+
+소스 commit `2e0d5607ee7b679012ecea45aa8274a17057b19d`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8312341..2e0d560`다. goal은 active/progress다.
+
+## 2026-11-11 — Mobius4 장애 중 정기 상태 보고 적재 제한
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 SQLite 영수증 등록을 분리한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 중앙 관측 보관, CORE ACK와 웹 수용 경계를 확인했다.
+
+- Gateway `0.2.53`은 일반 상태 보고가 응답을 기다리면 새 정기 보고를 SQLite에 추가하지 않는다. 기존 본문·요청 ID·재시도 시각을 유지하고, 기다리는 동안의 새 보고는 `health_deferred_pending`으로 집계한다. 업그레이드 전 저장한 보고도 보존한다. 자격 상태 전환은 전용 저널과 순서에 따라 전달한다. [Gateway 통신 메모](../keyring/raspberry-pi-gateway/IO_NOTES.md)
+- 재시작과 지연 중 본문 보존, 자격 전환·공용 컨테이너 관측과 동시 적재를 다루는 회귀시험 소스를 추가했다. 빌드·회귀시험·실제 Pi 연동은 미실행이다. Pi와 Mobius4의 실제 장애·복구 및 제작 PCB 검증이 남아 있다.
+
+소스 commit `3f6864a71d03dd5568357ee1c9f23960c20aa177`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `34391f7..3f6864a`다. goal은 active/progress다.
+
+## 2026-11-11 — 중앙 API 저장소를 SQLite에 연결
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 Mobius4 장애 중 정기 상태 보고 적재를 제한한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 중앙 Gateway 인증서 수명주기, CORE 경로와 웹 영수증 매핑을 확인했다.
+
+- Gateway `0.2.54`는 새 SQLite에 선택 설정 `PC_API_DEPLOYMENT_ID`를 binding v3로 기록한다. 다른 중앙 저장소 ID로 기존 DB를 지정하거나 ID를 빼면 쓰기·전송 전에 중단한다. 같은 중앙 저장소의 API 주소 변경은 기존 DB를 사용한다. 두 사전 검사는 네트워크 요청 전에 로컬 binding을 읽고, 보관본은 같은 ID를 담는다. [중앙 API 배포 전환](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#중앙-api-배포-전환)
+- 주소 변경, 다른 배포 ID, 기존 DB의 ID 덧씌우기 거절과 보관본 격리를 다루는 회귀시험 소스를 추가했다. ID는 운영자 배정값이며 서버의 실제 인증은 mTLS와 중앙 정책을 따른다. 빌드·회귀시험·배포 전환·실제 Pi 연동은 미실행이다.
+
+소스 commit `ed770bf0bb50fd08e2091ab185c810b9d1fd3a9a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `6fa4e31..ed770bf`다. goal은 active/progress다.
+
+## 2026-11-11 — Mobius4 관측 컨테이너 자원 ID 고정
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 중앙 API의 DB 연결을 고정한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 중앙의 CSE 자원 ID 검증과 CORE·웹 자원 경로 계약을 확인했다.
+
+- Gateway `0.2.55`의 선택 설정 `M2M_OBSERVATION_CONTAINER_RI`는 새 DB의 관측 컨테이너를 실제 `ri`에 묶는다. HTTPS 이름 조회가 일치할 때만 MQTT 또는 HTTPS로 해당 ID에 전송하며, 저장본의 부모·자원 ID·본문을 대조한다. 같은 이름이 다른 자원에 배정되면 SQLite가 원래 관측을 보존한다. 명령 사전 검사에서도 설정된 관측 ID를 대조한다. [관측 컨테이너 ID 고정](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#관측-컨테이너-id-고정)
+- 이름 재사용, 전송 전환과 readback, DB 재시작·사전 검사 및 HTTPS 보류를 다루는 회귀시험 소스를 추가했다. 실제 배포의 관측 컨테이너 ID와 Gateway 권한이 필요하다. 빌드·회귀시험·Mobius4/Pi 실물 연동은 미실행이다.
+
+소스 commit `aff5ac29b7798f73bf420453f8a54cf11b83b7a5`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `a2a15bd..aff5ac2`다. goal은 active/progress다.
+
+## 2026-11-11 — 격리 관측 ID를 PC와 Pi 설정에 연결
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 Gateway의 관측 자원 ID를 고정한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 중앙의 CSE 자원 조회와 CORE·웹 경로 계약을 확인했다.
+
+- PC 준비 도구의 `-PinObservationRoute`는 기존 `command-observations-a`의 `ri`를 읽고 격리 프록시에 `gw-a`의 이름 GET과 해당 `ri`의 POST 규칙을 추가하도록 구성했다. 이전 `ri`와 다르면 갱신을 중단한다. 새 Pi 프로필은 `--observation-container-ri`와 선택형 `--pc-api-deployment-id`를 Gateway 환경으로 전달한다. [Pi 명령 세션](../keyring/raspberry-pi-gateway/TESTING.md#pi-명령-세션)
+- ID 전달과 잘못된 ID를 다루는 회귀시험 소스를 추가했다. 빌드·회귀시험·PC 프로비저닝·격리 프록시 갱신·Pi 실행은 미실행이다. `gw-a` 권한과 `gw-b` 교차 차단, Pi→Mobius4 저장 대조가 남아 있다.
+
+소스 commit `a761eaac7945f90dd32bab633be83d920e840a56`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `2569d2e..a761eaa`다. goal은 active/progress다.
+
+## 2026-11-11 — Pi 고정 컨테이너와 Mobius4 관측 증거 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R05. 직전 goal turn은 PC·Pi의 격리 관측 ID 설정을 연결한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 중앙의 관측 수용 이벤트와 CORE·웹 자원 경로 계약을 확인했다.
+
+- 새 ON/OFF 시험은 각 명령 전후의 Mobius4 관측에 인스턴스 유형·이름·자원 ID·부모 ID를 기록한다. Pi DB에 관측 ID가 고정돼 있으면 대조 도구는 모든 부모 ID, 장치·부팅·순번에서 계산한 이름, 해당 요청의 outbox 잔류 여부를 검사한다. 이전 비고정 세션의 관측 컨테이너 검증 결과는 `null`이다. [시험 결과 대조](../keyring/raspberry-pi-gateway/TESTING.md#최신-중앙-api의-시험-결과-대조)
+- 다른 부모, 다른 이름·타입, 기록 누락과 대기열 잔류를 다루는 회귀시험 소스를 추가했다. 빌드·회귀시험·증거 도구 실행·실제 Pi–Mobius4 연동은 미실행이다.
+
+소스 commit `e12a8ecf516f4fb764fffad51a283868f09d4319`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `b7ced7e..e12a8ec`다. goal은 active/progress다.
+
+## 2026-11-11 — Mobius4 원본 관측과 중앙 수용 본문 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R05, R15. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 중앙 수용 이벤트가 전체 관측의 `approvalHash`를 기록하고 Pi가 같은 관측 본문을 Mobius4와 중앙 API에 각각 제출하는 것을 소스에서 확인했다.
+
+- PC 격리 시험은 준비된 팀 소스의 해시 함수를 사용해 ON/OFF 직후의 Mobius4 관측을 해시한다. 중앙 수용 이벤트 두 건의 본문 해시와 일치할 때만 본문 대조를 성공으로 보고한다. 시험 기록에는 원본 본문을 추가하지 않는다. [시험 결과 대조](../keyring/raspberry-pi-gateway/TESTING.md#최신-중앙-api의-시험-결과-대조)
+- 기존 0.2.0 실물 시험에서 사용자가 LED 변화가 없었다고 확인한 상태를 유지한다. 0.2.1의 1.54인치 화면 `CMD ON`과 `CMD OFF`는 실물 확인이 남았다. 이번에는 회귀시험 소스만 추가했고 빌드·시험·플래시·Pi 실행은 하지 않았다.
+
+소스 commit `35f9f77a4330713b8a7c2a4e33c240ba2dcf939c`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `7eef6b5..35f9f77`이다. goal은 active/progress다.
+
+## 2026-11-11 — Feather OFF 뒤 중앙 관측 수용 기록
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R05, R15. 직전 goal turn은 본문 해시 대조를 추가한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 팀 API가 수용 이벤트를 커밋된 상태 파일에 함께 기록하는 경로를 확인했다.
+
+- PC 시험 도구는 OFF 적용과 단계 grant 회수 뒤 `led-cycle.json`을 저장하고 두 관측의 중앙 수용 이벤트를 기다린다. ON/OFF의 본문 해시와 수용 순서가 맞으면 명령·관측·이벤트 ID와 해시를 `central-telemetry.json`에 저장한다. 수용 대기가 중단되면 기존 시험 기록을 보존한다. [시험 결과 대조](../keyring/raspberry-pi-gateway/TESTING.md#최신-중앙-api의-시험-결과-대조)
+- 지연 도착과 해시 불일치를 다루는 회귀시험 소스를 추가했다. 빌드·회귀시험·도구 실행·Feather 플래시와 최신 Pi 실물 시험은 미실행이다.
+
+소스 commit `10a3721f400f5ae5ef7b8aa24032cfc876782113`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `80398a0..10a3721`이다. goal은 active/progress다.
+
+## 2026-11-11 — 중앙 API Retry-After 동안 Pi 대기열 유지
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10, R15. 직전 goal turn은 OFF 뒤 중앙 수용 기록을 추가한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 팀 중앙 관측 수용과 CORE·웹의 재전송 경계를 확인했다.
+
+- Gateway `0.2.56`은 중앙 API의 `Retry-After` 동안 새 중앙 전송을 선택하지 않아 기존 행의 시도 횟수와 예약 시각을 보존한다. 새 명령 영수증은 SQLite 명령 저널에 남고 대기가 끝나면 등록한다. 별도 Mobius4 origin은 전송할 수 있고, 신뢰 가능한 시계로 만료된 중앙 관측은 계속 정리한다. origin 대기 자체는 현재 프로세스의 기존 메모리 상태를 사용한다. [중앙 관측 전달](../keyring/raspberry-pi-gateway/IO_NOTES.md#중앙-관측-전달)
+- 중앙 보류 및 해제, 시도 횟수 보존, 만료와 Mobius4 전송을 다루는 회귀시험 소스를 추가했다. 빌드·시험·Pi 실행 및 Feather 0.2.1 화면 검증은 미실행이다.
+
+소스 commit `6ff3fc1cbb99c107c5a5c377c8ffda63d6a9a9ce`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `315c0f0..6ff3fc1`이다. goal은 active/progress다.
+
+## 2026-11-11 — Pi 데몬 재시작 후 HTTPS Retry-After 복원
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 중앙 API 보류 중 대기열 보존을 구현한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 팀 중앙 관측의 중복 처리와 CORE의 HTTPS/MQTT 및 ACK 경계를 확인했다.
+
+- Gateway `0.2.57`은 서버 호스트·포트별 `Retry-After` 대기 종료를 현재 Linux 부팅 ID와 함께 SQLite에 저장한다. 같은 부팅에서 데몬을 재시작하면 남은 시간을 이어받고, 새 Pi 부팅에서는 지난 부팅의 대기를 정리한다. 기존 SQLite는 시작할 때 테이블이 추가된다. 새 테이블을 추가한 DB는 0.2.56 이하의 스키마 검사에서 거절된다. [SQLite 복구](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md)
+- SQLite 재개, 다른 포트, 기한 만료와 새 Linux 부팅을 다루는 회귀시험 소스를 추가했다. 빌드·시험·기존 DB 마이그레이션 실행·Pi 및 Feather 실물 시험은 미실행이다.
+
+소스 commit `5a3248e167f86f5f3b54798831ada69a8e827380`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `320f482..5a3248e`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 USB 초기 구동 기록 재출력
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 Pi의 HTTPS 재시도 대기 복원을 구현한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 팀 관측 schema의 장치 ID·펌웨어 revision과 CORE Gateway 관측 계약을 확인했다.
+
+- `keyring-0.7.15-bringup`은 부팅 때 읽은 GPIO와 첫 센서 상태를 보존한다. USB 모니터에서 `?`를 보내면 보드를 재부팅하지 않고 같은 초기 기록을 재출력한다. Gateway `0.2.58`은 같은 줄의 반복을 허용하며 다른 부팅 ID, 바뀐 값이나 잘린 줄을 거절한다. BLE 시험의 허용 revision과 첫 구동 절차를 갱신했다. [r18 첫 구동](../keyring/pcb/BRING_UP.md)
+- 구버전의 단일 기록, 동일 재출력, 다른 부팅·출력값·잘린 줄을 다루는 회귀시험 소스를 수정했다. 빌드·회귀시험·플래시·USB/BLE 실물 확인은 미실행이다.
+
+소스 commit `cb3675afdc4728cca8d7b68bd9b2e125fc9aaa3b`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `a2ac3e5..cb3675a`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 초기 USB와 마지막 BLE 센서 상태 기록
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05, R15. 직전 goal turn은 r18의 USB 기록 재출력을 추가한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 팀 관측 schema와 CORE 전송 경계를 확인했다.
+
+- Gateway `0.2.59`의 초기 구동 보고서는 USB 첫 센서 상태, 첫 정상 BLE 관측 순번, 같은 세션의 마지막 센서·INA219 상태를 보존한다. 정상 관측 뒤 마지막에 확인된 센서 또는 INA219 오류는 `MISMATCH`다. 마지막 관측값이 빠지면 `INSUFFICIENT`다. USB 초기 센서 오류 뒤 BLE가 복구된 경우는 두 시점의 값을 모두 남긴다. [r18 초기 구동 기록](../keyring/raspberry-pi-gateway/TESTING.md#r18-초기-구동-기록)
+- 회귀시험 소스를 추가했다. 빌드·회귀시험·USB/BLE 실물 캡처와 별도 전원 레일 실측은 미실행이다.
+
+소스 commit `3815c184f4bcb5abbddb462fde2fc4a51bda4d4b`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `f0dc0ba..3815c18`이다. goal은 active/progress다.
+
+## 2026-11-11 — r18 실물 명령 한 건을 같은 부팅과 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R03, R05. 직전 goal turn은 r18 초기·최종 센서 증거를 보강한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. CORE의 ACK/readback 경로, 팀 receipt의 boot ID·시간 필드와 r18 펄스 상한을 확인했다.
+
+- Gateway `0.2.60`의 `bubble-keyring-reconcile --same-boot-command`는 정확한 명령 ID, 수집 boot ID, 보드·펌웨어 revision을 대조한다. 보고서는 장치 저널의 수신·적용 uptime과 Pi ACK, Mobius4 원본 영수증 대조 결과를 남긴다. r18의 펄스 길이와 소등 시점은 계측기로 따로 기록한다. [r18 실물 명령 한 건 대조](../keyring/JOURNAL_RETENTION.md#r18-실물-명령-한-건-대조)
+- 같은 부팅, 명령 누락, 다른 부팅·revision, 영수증 펌웨어 불일치를 다루는 회귀시험 소스를 추가했다. 빌드·회귀시험·Mobius4 조회·Pi 및 r18 실물 시험은 미실행이다.
+
+소스 commit `5a72c9408c1af2bfc288fceae20e76032606382e`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `4efbc5a..5a72c94`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 최초 적용과 격리 중앙 정산 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R03, R05. 직전 goal turn은 r18 단일 명령의 동일 부팅 대조를 추가한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 팀 receipt 계약과 격리 CSE 원본 결속을 확인했다.
+
+- 격리 PostgreSQL 조회는 r18 단일 명령의 ID·보드·펌웨어·부팅 일치·적용 uptime과 ACK를 검증하고 결과에 보존한다. 중앙 정산과 Pi 전달이 일치하고 ACK가 `APPLIED`일 때만 `originalApplicationMatched`가 참이다. `DUPLICATE`가 중앙 정산과 일치하면 최초 적용 확인은 검토로 남는다. [정산 조회](../keyring/JOURNAL_RETENTION.md#격리-postgresql-정산-기록-대조)
+- 명령 ID·시각·readback 변형, 중복 ACK·미전달·정산 누락을 다루는 회귀시험 소스를 추가했다. Gateway 패키지 revision은 `0.2.60`이다. 빌드·회귀시험·PostgreSQL 조회·Pi 및 r18 실물 시험은 미실행이다.
+
+소스 commit `38917ff6970f27372be0f1d00715bdd7b110197c`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `9bda0e7..38917ff`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 명령을 최신 중앙 API 상태와 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R03, R05. 직전 goal turn은 격리 PostgreSQL의 최초 적용 대조를 보강한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 팀 API의 명령·영수증과 실행 시작·정산 이벤트 계약을 확인했다.
+
+- Gateway `0.2.61`에서 r18 단일 명령 비교에 `--team-state`를 추가했다. 장치·Pi·Mobius4 기록이 먼저 일치하면 중앙 상태 사본에서 정확한 발급 명령·영수증 본문·claim·실행 시작·정산과 시각을 대조한다. Feather 최신 API 시험의 같은 비교 코드를 재사용하며, 보고서에는 두 이벤트 ID와 상태 사본 SHA-256을 보존한다. [최신 중앙 API 상태 대조](../keyring/JOURNAL_RETENTION.md#최신-중앙-api-상태-대조)
+- 회귀시험 소스를 추가했다. 격리 명령 발급 프로필의 r18 등록, 빌드·회귀시험·CSE 조회·r18/Pi 실물 명령과 물리 계측은 미실행이다.
+
+소스 commit `b9cbb06ba84f63bd17a5f413a12bb4ea87ef9a1d`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `2a9edb8..b9cbb06`이다. goal은 active/progress다.
+
+## 2026-11-11 — r18 격리 중앙 API·Mobius4·Pi 등록 프로필
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R03, R10. 직전 goal turn은 최신 중앙 API 상태와 r18 명령의 대조를 추가한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 중앙 등록의 인증서·장치·시험 주체 결속과 CORE 관측 경로를 확인했다.
+
+- 격리 API의 `r18` 프로필은 `8789`, 별도 상태 디렉터리, `gw-b` 인증서와 `keyring-r18-lab`을 사용한다. Mobius4 준비 스크립트는 B 전용 관측·상태 컨테이너와 관측 ID를 준비할 수 있다. [r18 격리 명령 API](../keyring/dev/mobius4/README.md#r18-격리-명령-api)
+- Pi Gateway `0.2.62`와 시험 프로필은 중앙 기능 응답의 Gateway·장치·보드·펌웨어를 확인하고 BLE identity에서도 지정한 보드 revision을 확인한다. 명령 펌웨어 `keyring-0.7.14`만 허용한다. 회귀시험 소스를 추가했다. 실제 배치·키 발급·CSE 권한 확인·빌드·시험·Pi 및 r18 실물 실행은 미실행이다. [Pi r18 명령 세션](../keyring/raspberry-pi-gateway/TESTING.md#r18-pi-명령-세션)
+
+소스 commit `2fec0b4164361e1641af109083f2babb2934c92c`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `a3ec3cd..2fec0b4`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 격리 진동 명령 한 건 발급 도구
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R03, R05, R10. 직전 goal turn은 r18 격리 등록 프로필을 추가한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 팀 명령 기한·현재 grant·실행 시작·정산과 CORE ACK/readback 경계를 확인했다.
+
+- PC의 r18 단일 펄스 도구는 현재 부팅·출력 OFF·fault 없음과 Pi 명령 준비를 확인한 뒤 작업자의 `PULSE` 입력을 기다린다. 의도를 저장하고 명령을 한 건 발급한다. 원본 영수증, 중앙 실행 시작·정산, 같은 부팅·컨테이너의 더 새 OFF 관측과 grant 회수를 기록한다. 발급 응답이 끊기면 기존 ID로 증거를 이어 간다. [r18 단일 펄스 시험](../keyring/raspberry-pi-gateway/TESTING.md#r18-단일-펄스-시험)
+- 성공·발급 응답 유실·작업자 중단 회귀시험 소스를 추가했다. Gateway 패키지 revision은 `0.2.62`다. 빌드·회귀시험·서버 실행·실물 명령 및 펄스 계측은 미실행이다.
+
+소스 commit `5011fb98c404bb98a3c28af2145abef2d63065d7`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `ffeaad7..5011fb9`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 임시 서버의 실제 PC 루프백 준비
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 작업자가 시작하는 단일 펄스 도구를 추가한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 고정 팀 소스와 잠금 파일을 재사용했다.
+
+- r18 API의 별도 디렉터리에 운영자 인증서를 준비하고 고정 의존성 63개를 pnpm 캐시에서 설치했다. `127.0.0.1:8789`에서 `gw-b` mTLS 기능 조회, `ACTIVE` 자격과 활성 명령 0건을 확인했다. 해당 루프백 프로세스는 실행 중으로 남겼다.
+- 기존 격리 Mobius4에 `command-observations-b`와 `command-health-b`를 만들고 관측 pin을 등록했다. 기존 TLS 컨테이너에서 두 B 경로와 관측 pin include만 반영해 설정 검사와 reload를 수행했다. B 관측·영수증 조회 성공, A→B 및 B→A 교차 조회 403, 기존 Feather API 응답을 확인했다. [PC 배치 증거](../keyring/evidence/2026-11-11-scoped-r18-enrollment/provisioning.json)
+- 일반 빌드·회귀시험·Pi 접속·BLE·실물 명령·펄스 계측은 미실행이다. 실제 Pi에서 Gateway B TLS 파일, loopback 전달과 r18 장치 연결이 남아 있다.
+
+배치 증거 commit `5369fe34031467ed570bf0f3eaf007d086238c07`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `eb1b4f6..5369fe3`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 Pi 세션 설정으로 시험 증거 보관
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R03, R05. 직전 goal turn은 r18 PC API와 Mobius4 격리 경로를 실제 배치한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같다. 장치 저널 identity와 CORE ACK/readback 경계를 확인했다.
+
+- Pi 세션 런처에 `export-env`와 `capture-r18`을 추가했다. 기존 세션 설정에서 보관·대조에 필요한 `gateway.env`를 소유자 전용으로 만들며 기존 파일을 보존한다. 장치 저널 캡처는 같은 시험 잠금을 이어받고 정확한 r18 보드·펌웨어를 확인한다. SQLite snapshot과 최신 중앙 정산 대조를 같은 세션으로 연결했다. [Pi 시험 증거 보관](../keyring/raspberry-pi-gateway/TESTING.md#r18-pi-시험-증거-보관)
+- Gateway `0.2.63`의 내보내기·잠금·실행 인자 회귀시험 소스를 추가했다. 빌드·회귀시험·Pi 접속·저널 캡처·실물 시험은 미실행이다.
+
+소스 commit `847492ba68d74ccf9b7a8bc10913828e5fe5fcd3`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `551278f..847492b`다. goal은 active/progress다.
+
+## 2026-11-11 — Feather 화면 확인 절차와 중단된 r18 명령 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R03, R05. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다.
+
+- Feather 0.2.0 ON/OFF의 기존 실물 시험에서 GPIO 읽기값과 Mobius4 영수증·중앙 정산이 일치했고 사용자는 LED 변화를 보지 못했다. 1.54인치 ST7789에서 Feather 0.2.1의 `CMD ON`과 `CMD OFF`를 읽는 절차를 보강했다. 새 펌웨어 설치와 화면 실물 확인은 대기 중이다. [Feather 화면 확인](../keyring/raspberry-pi-gateway/TESTING.md#기존-scoped-mobius4에서-feather-led-시험)
+- Gateway 0.2.64는 r18 발급 응답이 끊겨도 저장한 명령 ID와 요청 해시로 중앙 상태·선택한 Pi DB 사본·확보한 CSE 영수증을 대조한다. 발급, 실행, 정산이 각 사본에 어디까지 남았는지 기록한다. [중단 증거 대조](../keyring/raspberry-pi-gateway/TESTING.md#중단된-r18-펄스-시험-대조)
+- Gateway 로컬 190개, 격리 벤치 모의 25개, wheel 빌드와 합성 입력 CLI 확인을 통과했다. 첫 로컬 실행에서 기존 Retry-After 모의 설정에 요청 제한 시간이 빠져 실패했고, 모의 설정을 보완한 뒤 전체를 다시 실행했다. Pi·BLE·실물 실행은 미수행이다.
+
+소스 commit `8cf9a32d0d842833c65bc678d5fd45f92ddc2ba5`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `4abb167..8cf9a32`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 격리 명령 시험의 Mobius4 컨테이너 고정
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01~R03, R05. 직전 goal turn은 Feather 화면 시험과 r18 중단 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`는 직전과 같으며 중앙 발급·실행 및 CORE 영수증 경계를 확인했다.
+
+- Gateway 0.2.65의 r18 Pi 세션은 관측·영수증 컨테이너 ID 두 개를 요구한다. PC 벤치는 health ID까지 받아 관측·health·영수증의 부모를 대조한다. 영수증 경로 자체도 준비 신호와 명령 발급 전에 조회한다. 새 증거는 `pulse-scope.json`에 ID를 저장하며, 이전 증거는 고정 ID가 없다고 표시한 채 읽는다. [r18 시험 절차](../keyring/raspberry-pi-gateway/TESTING.md#r18-단일-펄스-시험)
+- 격리 Mobius4 bootstrap의 r18 모드가 health 컨테이너 ID를 출력하도록 변경했다. 관측·영수증 ID는 기존 고정 경로 출력에서 인수한다. [격리 서버 준비](../keyring/dev/mobius4/README.md#r18-격리-명령-api)
+- health·영수증 경로 교체, 잘못된 부모 영수증과 Pi SQLite를 다루는 회귀시험 소스를 추가했다. 이번에는 빌드·시험·정적 분석·서버 설정 실행·Pi 접속·BLE·실물 시험을 수행하지 않았다.
+
+소스 commit `41dfc0592ccb49f9c45c5cd61f13e877e842bdd3`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8ea6a6f..41dfc05`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 펄스 이후 OFF 관측의 중앙 수용 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01~R03, R05. 직전 goal turn은 r18 Mobius4 컨테이너 고정을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀 중앙 수용 이벤트의 식별자 계산, 본문 해시와 중앙 순번 필드를 읽었다.
+
+- Gateway 0.2.66의 격리 r18 벤치는 grant 회수 뒤 Mobius4의 후속 OFF 관측을 고정된 팀 API 해시 함수로 계산해 `GATEWAY_TELEMETRY_ACCEPTED`에 대조한다. 중앙 응답이 늦어져도 먼저 저장한 펄스 결과와 관측 해시를 남긴다. 중앙 상태 사본으로 뒤늦게 대조할 수 있다. [r18 시험](../keyring/raspberry-pi-gateway/TESTING.md#r18-단일-펄스-시험)
+- 중앙 수용 지연, 본문 해시 불일치, 권한 회수 뒤 대조를 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·Pi 접속·BLE·실물 펄스 및 실제 중앙 수용 확인은 미수행이다.
+
+소스 commit `1899c00a420825642118a67ba4663f894819c1a2`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `c1baf6e..1899c00`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 장치 저널과 저장한 Mobius4 영수증의 오프라인 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01~R03, R05. 직전 goal turn은 펄스 뒤 OFF 관측의 중앙 수용 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. CORE의 실제 ACK/readback 증거와 통합 API의 중앙 정산 이벤트 필드를 확인했다.
+
+- Gateway 0.2.67의 r18 벤치는 CSE 영수증 사본에 CIN 이름·유형을 추가한다. `journal_reconcile --native-receipt`는 같은 부팅의 명령 ID에서 계산한 자원 이름과 Pi 설정의 부모 ID를 대조한 뒤, 장치 저널·Pi SQLite 보관본·CSE 영수증을 네트워크 없이 비교한다. 지정한 중앙 상태 사본과도 대조하며 결과에 사용한 영수증 사본의 SHA-256을 기록한다. [오프라인 대조](../keyring/JOURNAL_RETENTION.md#저장한-mobius4-영수증으로-오프라인-대조)
+- 새 영수증의 오프라인 비교, CSE 부모·이름 교체와 본문 불일치를 다루는 회귀시험 소스를 추가했다. 장치 저널 시험 데이터가 다른 명령으로 중앙 사본을 덮어쓰는 부분도 수정했다. 빌드·시험·정적 분석·Pi 접속·BLE·실물 검증은 미수행이다.
+
+소스 commit `fa6d5abed463794a23c98f6fe0d6fd7fddba9de1`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `09c7904..fa6d5ab`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 ST7789·JD9853 화면 점검 프로필
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R05. 직전 goal turn은 장치 저널과 저장한 Mobius4 영수증의 오프라인 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 중앙 관측 계약의 sensorValues와 기존 CORE Gateway 계약을 대조했다.
+
+- ST7789와 JD9853를 각각 선택하는 r18 관측 전용 프로필을 추가했다. 버튼으로 켜는 백라이트에서 테두리·RGB 막대·패널 이름·크기와 마지막 버튼을 표시한다. BLE 명령·저널·오디오 재생·SD·deep sleep은 비활성화하며, USB 초기 출력과 패널 선택값을 보관한다. [제작 PCB 화면 점검](../keyring/pcb/BRING_UP.md#화면만-연결한-두-번째-구동)
+- Gateway 0.2.68은 USB 패널 값과 펌웨어 revision을 대조하고 같은 부팅의 Pi 보고서에 기록한다. 화면 자체는 육안 확인이 필요하며 구매 JD9853의 초기화·색·크기는 미확인이다. 회귀시험 소스는 추가했으며 빌드·시험·정적 분석·flash·Pi·실물 구동은 미수행이다.
+
+소스 commit `0990c21e31b7e984cd11f9b25b344c5be5f9250c`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1fa3041..0990c21`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 INA219와 외부 계측값 연결
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R05. 직전 goal turn은 두 LCD 점검 프로필을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 중앙 `sensorValues` 계약과 로컬 INA219 부하 측 계측 정의를 대조했다.
+
+- Gateway 0.2.69의 Pi 기록은 USB와 같은 부팅의 첫 BLE 세션에서 INA219 순번·계측 uptime을 표시한다. 오프라인 도구는 운영자 계측 파일을 정확한 Pi 캡처와 샘플에 연결한다. 3.3V 부하 측의 차이만 계산하며 USB 입력·배터리 단자 값은 측정 지점과 함께 기록한다. [외부 계측값 연결](../keyring/raspberry-pi-gateway/TESTING.md#r18-첫-구동의-외부-계측값-연결)
+- 캡처 해시, 다른 세션·다른 샘플, 측정 지점별 계산을 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·Pi 접속·BLE·실물 전원 계측은 미수행이다.
+
+소스 commit `e9f8a41f07ca6b4d8073204e30671a3e32c2a853`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `355b1aa..e9f8a41`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 첫 구동의 Pi 관측 전용 전송
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 INA219와 외부 계측값 연결을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 중앙 텔레메트리 수용의 Gateway·장치 등록과 관측 스키마 검사를 확인했다.
+
+- Gateway 0.2.70에서 `--observe-only` r18 Pi 세션을 추가했다. 첫 구동 및 두 LCD 점검 펌웨어 중 하나를 고정하고 기존 `gw-b` mTLS·컨테이너로 Mobius4 관측·health와 중앙 텔레메트리를 전송한다. 명령 조회·실행·장치 명령 영수증을 중지하고 기존 대기 행을 보존한다. [Pi 관측 전용 세션](../keyring/raspberry-pi-gateway/TESTING.md#r18-pi-관측-전용-세션)
+- 명령 목록을 읽지 않는 사전 확인, 명령 작업 중지, 기존 영수증 보존과 관측 전달의 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·Pi 접속·BLE·실제 관측 전달 및 중앙 수용 확인은 미수행이다.
+
+소스 commit `98b5ad988af171329e226ecdedf4aef29245ec9c`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `229a881..98b5ad9`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 관측 전용 전송 증거 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 관측 전용 Pi Gateway 세션을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`의 현재 계약을 확인했다. 중앙 텔레메트리 수용의 관측 ID·본문 해시·시각을 적용했다.
+
+- Gateway 0.2.71의 r18 도구는 USB와 같은 부팅의 최신 Mobius4 관측·health를 읽어 고정 컨테이너와 명령 비활성 상태를 확인한다. 저장한 Pi SQLite의 마지막 순번과 해당 전송 대기 여부를 대조하고, Mobius4 본문의 팀 해시가 중앙 수용 이벤트에 남았는지 확인한다. 중앙 사본에 이벤트가 없으면 대기 상태를 출력한다. [관측 전달 증거 대조](../keyring/raspberry-pi-gateway/TESTING.md#관측-전달-증거-대조)
+- 중앙 수용 지연, 본문 해시 불일치, 다른 부팅·부모 컨테이너를 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·Pi 접속·BLE·실제 관측 전달과 중앙 수용 검증은 미수행이다.
+
+소스 commit `cf9b7e48d65729a471174b47e8a9857d3166edd7`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1fc4360..cf9b7e4`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 BLE 관측과 팀 위치 조회 응답 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 USB·Pi·Mobius4·중앙 텔레메트리 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 위치 BFF 구현은 통합 main에 있고 원격에서 별도 앱 브랜치는 확인되지 않았다.
+
+- Gateway 0.2.72의 r18 캡처에 RSSI 필수 선택을 추가했다. 중앙 위치 API와 LIVE 웹 BFF의 저장 응답에서 같은 기기·Gateway·시각·RSSI·모의 표시를 대조한다. 접근 범위, 조회 만료와 웹 출처를 확인하며 현 격리 명령 API와 별도로 승인된 팀 포털 배치가 필요하다. [중앙 위치 API와 웹 응답 대조](../keyring/raspberry-pi-gateway/TESTING.md#중앙-위치-api와-웹-응답-대조)
+- 권한 거절·만료·다른 RSSI·혼합 출처를 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·Pi 접속·실제 포털 조회·웹 렌더링·별도 앱은 미확인이다.
+
+소스 commit `c21acb88e623cc5d71b382136095281a62b36103`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `36c9bd9..c21acb8`다. goal은 active/progress다.
+
+## 2026-11-11 — 격리 r18 위치 승인·조회·회수
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 BLE 관측과 위치 응답 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 팀의 위치 consent·grant·진행 중 사건·수신자별 lease 계약을 적용했다.
+
+- 격리 PC r18 프로필에 선택형 위치 시험 경로를 추가했다. 기존 시험 보호자 인증서, r18 장치 한 개와 최대 60초 lease로 범위를 제한한다. PC 도구는 같은 RSSI 관측의 중앙 위치 응답을 저장하고 lease·grant·consent 회수와 사건 종료 뒤 해당 장치가 조회에서 빠졌는지 다시 읽는다. [격리 위치 시험](../keyring/dev/mobius4/README.md#r18-격리-위치-시험)
+- 수신자·기기 범위, 혼합 grant와 회수 전후 조회의 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·서버 시작·Pi 접속·실제 위치 조회는 미수행이다. 웹 OIDC와 앱 연동은 팀 배치가 필요하다.
+
+소스 commit `318ef45b914c784587fd3c032cf051b36c883513`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `4ac2c4a..318ef45`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 Mobius4와 포털 위치 관측 동시 수집
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 격리 r18 위치 승인·조회·회수를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 확인했다. 중앙 위치 API의 기기별 최신 관측과 통합 저장소의 스냅샷 교체 동작을 읽었다.
+
+- Gateway 0.2.74는 격리 위치 시험 도구에서 Mobius4와 포털 응답을 병행 수집한다. 포털 조회 전후의 중앙 관측 ID가 유지된 응답을 선택하고, Mobius4의 동일 ID·시각·RSSI를 찾으면 두 파일을 함께 저장한다. 사전 캡처 파일을 사용하는 절차도 제공한다. [위치 응답 대조](../keyring/raspberry-pi-gateway/TESTING.md#중앙-위치-api와-웹-응답-대조)
+- 조회 중 최신 관측 교체, 늦은 Mobius4 관측과 동일 시각·RSSI의 다른 ID를 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·서버 실행·Pi 접속·실제 응답 대조는 미수행이다.
+
+소스 commit `fa149ec91d45e2ea8a5cad1043aa6375a9ac8a8a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `a5f0551..fa149ec`다. goal은 active/progress다.
+
+## 2026-11-11 — 임시 Mobius4에서 팀 서버로 전환하기 전 Pi 상태 확인
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R11, R12. 직전 goal turn은 r18 위치 관측 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 CORE Gateway·중앙 영수증 계약을 확인했다.
+
+- Gateway 0.2.75의 `bubble-gateway-state plan-cutover`는 독립적으로 읽은 환경 파일 두 개와 원본 SQLite binding을 대조한다. 같은 binding의 기존 DB 재사용과 변경된 binding의 새 DB 경로를 판별하고, DB·WAL·SHM·journal이 남아 있는 새 경로를 거절한다. [전환 전 대기열 확인](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#전환-전-대기열-확인)
+- native·CORE·중앙 outbox, 수신·dispatch 명령, outbox 등록 전 영수증과 미전달 credential 영수증을 집계한다. 저장소 주소와 배포 ID의 실제 동일성, 기존 큐와 명령의 정산, 팀 저장소의 인증·권한 및 Pi 전환은 현장 확인이 남았다. DB 경로 변경과 committed WAL을 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·도구 실행·Pi 접속·배포 전환은 미수행이다.
+
+소스 commit `a0e4819564ec22d90c0fad3d3747aad7feb09358`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `2161057..a0e4819`다. goal은 active/progress다.
+
+## 2026-11-11 — 배포 전환 시 비활성 CORE 경로의 큐 보존
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R11, R12. 직전 goal turn은 배포 전환 전 SQLite 집계를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 CORE 전송 계약을 확인했다.
+
+- Gateway 0.2.76은 CORE 브리지가 비활성화된 동안 기존 CORE telemetry·ACK를 선택하지 않는다. SQLite에 기존 행과 시도 횟수를 보존하고 native 전송을 계속한다. 브리지를 다시 켰을 때는 현재 epoch에 해당하는 telemetry와 활성 명령 경로의 ACK를 선택한다.
+- `plan-cutover`는 기존 DB 재사용 시 브리지·명령·중앙 전송 설정과 CORE epoch에 의해 보류될 건수를 보여준다. daemon과 같은 epoch 선택 조건을 사용한다. 두 모드 전환, native 전송 유지, 이전 epoch 및 비활성 중앙 경로의 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·도구 실행·Pi 접속·배포 전환은 미수행이다. [전환 절차](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#전환-전-대기열-확인)
+
+소스 commit `426d9c5f57ce2a2a32f06d061c80dd680d4d1d96`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `601ef7a..426d9c5`다. goal은 active/progress다.
+
+## 2026-11-11 — 배포 전환 뒤 기존 Gateway·키링 명령 보관본 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R11, R12. 직전 goal turn은 비활성 경로의 큐 보존을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀의 dispatch-start·명령 정산 계약을 확인했다.
+
+- Gateway 0.2.77의 전체 기기 저널 비교는 키링 보관본에 없는 같은 기기의 RECEIVED·DISPATCHING 명령과 미전달 native·중앙 영수증을 추린다. 상세 목록은 최대 128건, 별도 건수에는 전체 일치 건을 기록한다. 키링에 기록이 없다는 사실만으로 실행 여부나 중앙 정산을 확정하지 않는다.
+- `--archive-only`는 원래 배포 환경 파일로 격리 SQLite binding을 확인하고 키링 저널과 로컬 영수증을 비교한다. TLS 파일과 서버 연결 없이 처리하며 native 영수증은 미확인으로 남긴다. Pi에만 남은 명령, 독립 중앙 영수증, 기기 범위와 미접속을 다루는 회귀시험 소스를 추가했다. 빌드·시험·도구 실행·Pi 접속·서버 전환은 미수행이다. [보관본 대조 절차](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#기존-배포의-명령과-키링-저널-대조)
+
+소스 commit `50e26c6596d4549d2decec438cdc4ccbf728469e`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `5a1cf6a..50e26c6`다. goal은 active/progress다.
+
+## 2026-11-11 — Pi에만 남은 명령의 기존 CSE 영수증 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R11, R12. 직전 goal turn은 Pi·키링 보관본 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀의 dispatch-start·명령 영수증 정산 계약을 확인했다.
+
+- Gateway 0.2.78의 `--check-gateway-only-native`는 기존 환경 파일을 독립적으로 읽고 격리 보관본 binding과 기존 CSE의 영수증 컨테이너 ID를 확인한다. 키링 보관본에 없는 명령의 로컬 영수증을 원래 요청 ID의 CSE contentInstance와 대조하고 본문 해시·원본 ID·저장 시각을 기록한다.
+- 로컬·CSE 영수증 누락과 본문 불일치를 별도로 표시하고, 일치한 행도 중앙 정산과 장치 근거를 확인할 목록에 남긴다. 정상·누락·다른 본문·다른 컨테이너를 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·실제 CSE 조회·Pi 접속·배포 전환은 미수행이다. [기존 CSE 대조 절차](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#기존-배포의-명령과-키링-저널-대조)
+
+소스 commit `9b1cad8517b9c62c2a69f4a971441038e788b192`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `912c91f..9b1cad8`다. goal은 active/progress다.
+
+## 2026-11-11 — Gateway 상태 보고의 Mobius4 자원 고정
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11, R12. 직전 goal turn은 Pi에만 남은 명령의 CSE 영수증 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 Gateway 전송 계약을 확인했다.
+
+- Gateway 0.2.79는 `M2M_HEALTH_CONTAINER_RI`로 heartbeat와 credential 상태 전환 영수증을 같은 CSE 자원에 연결한다. SQLite와 snapshot에 ID를 기록하며 경로에 새 컨테이너가 생기면 원래 큐를 보류한다. 이름 조회, 자원 ID CREATE, 원본 재조회 순서와 HTTPS backoff를 기존 관측·명령 영수증 경로와 공유한다.
+- 임시 Mobius4의 `-PinR18HealthRoute`와 새 Pi 세션의 `--health-container-ri`를 연결했다. DB binding 변경·공유 경로 충돌, preflight와 mock MQTT/CSE 재조회 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·ACL 적용·Pi 접속·서버 전환은 미수행이다. [상태 컨테이너 고정](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#gateway-상태-컨테이너-id-고정)
+
+소스 commit `53d1e7658cdef779bade6a6d3cac58e40bdaf9b3`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1e26510..53d1e76`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 ST7789·JD9853 화면 패턴과 BLE 버튼 입력 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R11. 직전 goal turn은 Gateway 상태 컨테이너 고정을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀 GATT 관측 계약을 확인했다.
+
+- r18 화면 초기 구동 프로필 두 개를 0.7.16으로 올렸다. 화면 작업자가 CONFIRM/PANIC 패턴을 그렸을 때의 각 버튼 누계를 `health` 프레임에 보낸다. 무화면 초기 구동과 일반 명령 펌웨어의 revision 및 wire 필드는 유지한다.
+- Gateway 0.2.80은 같은 BLE 세션의 버튼 누계와 마지막 화면 그리기 기록을 대조한다. 이전 USB 로그와 Pi 세션은 계속 읽을 수 있다. 프로필 불일치, 작업자·버스 오류, 누락과 잘못된 버튼 누계를 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·업로드·Pi 접속·실제 화면 확인은 미수행이다. [화면 초기 구동](../keyring/pcb/BRING_UP.md#화면만-연결한-두-번째-구동)
+
+소스 commit `7a3875eb711fb000ae73b920814d75006c77c809`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `9e85efd..7a3875e`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 초기 구동 버튼과 화면 표시 요청의 동기화
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R11. 직전 goal turn은 r18 화면 그리기 기록과 BLE 버튼 입력 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀 GATT 관측 계약을 확인했다.
+
+- r18 화면 초기 구동 0.7.17은 버튼 상태와 표시 요청을 같은 잠금 안에서 기록하고 화면 작업자를 깨운다. 초기화가 아직 진행 중이면 요청을 보관한다. 준비된 작업자는 정기 갱신 기한을 기다리지 않고 새 상태로 그린다. 요청과 백라이트 활성 시 보드 fault를 확인한다.
+- Gateway 0.2.81의 USB/BLE 기록과 격리 세션에 두 0.7.17 revision을 연결했다. 초기화 중 누름, 정기 상태 갱신과 요청 보존, 비상 버튼의 즉시 선택을 다루는 호스트 시험 소스와 USB 호환성 회귀 소스를 반영했다. 빌드·시험·정적 분석·업로드·Pi 접속·화면 확인은 미수행이다. [화면 초기 구동](../keyring/pcb/BRING_UP.md#화면만-연결한-두-번째-구동)
+
+소스 commit `7f5510c2e445419901a0af7dcb2926c3a63cd61e`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `5f38663..7f5510c`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 LCD 실물 관찰과 Pi 버튼 해제 기록 연결
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R05, R11. 직전 goal turn은 r18 화면 상태와 표시 요청 동기화를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 GATT·실물 증거 계약을 확인했다.
+
+- Gateway 0.2.82의 `bubble-keyring-display-evidence`는 USB 부팅이 일치한 Pi 캡처에서 확인·비상 버튼 해제 순번을 대조하고, 작업자 화면 판독과 사진·영상의 해시를 같은 비공개 보고서에 기록한다. 화면 문구·패널 라벨·테두리·색 순서의 판독 결과와 BLE 그리기 결과는 각각 남긴다.
+- 다른 캡처·부팅·세션, 해제 순번 오류와 같은 영상의 시간 역전을 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·실물 사진/영상·Pi 접속·도구 실행은 미수행이다. [화면 관찰 기록 연결](../keyring/raspberry-pi-gateway/TESTING.md#r18-화면-관찰-기록-연결)
+
+소스 commit `74e13423638c5d8fa6958028b5d4befed5fb445a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `b359917..74e1342`다. goal은 active/progress다.
+
+## 2026-11-11 — BLE 재연결과 Pi 재시작 중 같은 부팅의 버튼 누계 보존
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R02, R11. 직전 goal turn은 LCD 관찰과 Pi 버튼 해제 연결을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 Gateway의 순번·저장 계약을 확인했다.
+
+- Gateway 0.2.83은 관측, outbox, 부팅별 확인·비상 버튼 누계를 같은 SQLite 트랜잭션에서 저장한다. 재연결과 Pi 재시작 뒤에도 같은 부팅의 더 높은 순번에서 누계가 역행하면 전송하지 않는다. 누계가 빠진 관측은 기존 값을 유지하고 새 부팅은 독립 누계를 받는다.
+- 기존 DB는 새 열을 추가한 뒤 새 유효 관측부터 누계를 기록한다. 이전 버전이 관측 부팅을 갱신한 경우 다른 부팅에서 남은 누계는 사용하지 않는다. SQLite 업그레이드·재시작·BLE 재연결 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·실제 Pi 접속과 BLE 재연결·운영 DB 업그레이드는 미수행이다. [BLE 통신 메모](../keyring/raspberry-pi-gateway/IO_NOTES.md)
+
+소스 commit `7c7c207a5ff48f238041bb09c36a13821c28bf42`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `f3db5f7..7c7c207`다. goal은 active/progress다.
+
+## 2026-11-11 — BLE 관측 세션과 명령 영수증 구독 조건
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R11. 직전 goal turn은 BLE 재연결·Pi 재시작 후 버튼 누계를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀의 GATT 상태·명령·ACK 특성을 확인했다.
+
+- Gateway 0.2.84는 r18 초기 구동이나 명령 쓰기가 없는 장치에서 관측 특성만 구독한다. 명령 쓰기가 있어도 알림 가능한 영수증 특성이 빠지면 관측을 유지하고 health에 원인을 남긴다. 명령 준비 상태는 같은 인증 세션에서 영수증 구독이 성공한 뒤에만 열린다.
+- 캐시된 명령 특성, 영수증 특성 누락, 구독 실패, 정상 명령 구독을 다루는 회귀시험 소스와 기존 중앙 통합 fixture를 갱신했다. 빌드·시험·정적 분석·실제 Pi 접속·BlueZ 연결·실물 명령은 미수행이다. [BLE 통신 메모](../keyring/raspberry-pi-gateway/IO_NOTES.md)
+
+소스 commit `fbd62e8f0193e2d59afe4b6ac719fa1a5be00260`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1140a9f..fbd62e8`다. goal은 active/progress다.
+
+## 2026-11-11 — 명령 기한에 맞춰 중앙 승인 대기 종료
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R10, R11. 직전 goal turn은 BLE 관측과 명령 영수증 구독 조건을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀의 `EXPIRED` 취소 정산을 확인했다.
+
+- Gateway 0.2.85는 최초 중앙 승인 대기를 명령 기한과 `REQUEST_TIMEOUT` 중 짧은 값으로 제한한다. 명령이 만료되면 실행 의도를 기록하기 전에 `REJECTED / EXPIRED` 영수증을 저장한다. 먼저 요청 제한에 걸리면 명령을 `RECEIVED`로 두고 다음 순회에서 재승인한다.
+- 기한 만료에 의한 요청 취소, 더 짧은 요청 제한, 늦게 도착한 승인 응답의 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·실제 Pi 접속·중앙 API 정산·실물 명령은 미수행이다. [BLE 통신 메모](../keyring/raspberry-pi-gateway/IO_NOTES.md)
+
+소스 commit `fddc45578a3444a4fac94bb7ae742e1b44db68ae`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `afd7aa7..fddc455`다. goal은 active/progress다.
+
+## 2026-11-11 — 장치별 중앙 승인과 BLE 명령 처리
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R10, R11. 직전 goal turn은 명령 기한에 맞춘 승인 대기를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀의 device별 generation·dispatch 계약을 확인했다.
+
+- Gateway 0.2.86은 등록 장치별 명령 처리 루프를 운용한다. 한 장치의 승인이나 BLE 영수증 대기가 다른 장치의 처리를 막지 않으며, 같은 장치 안에서는 기존 순서대로 한 건씩 시도한다. 이전 등록의 대기 명령은 기존 기한 검사를 거친다.
+- SQLite는 기존 대기 명령의 저장 payload에서 조회용 device ID를 채운다. 명령 본문·해시·영수증은 그대로 보존한다. 느린 승인과 별도 장치 처리, 같은 장치 순서, 이전 DB 대기 행을 다루는 회귀시험 소스를 추가했다. 빌드·시험·정적 분석·Pi 접속·실물 명령·운영 DB 업그레이드는 미수행이다. [BLE 통신 메모](../keyring/raspberry-pi-gateway/IO_NOTES.md)
+
+소스 commit `dc18ac12a1da621fb11b37a1651323ad0f93837a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `75dfee3..dc18ac1`다. goal은 active/progress다.
+
+## 2026-11-11 — 수신한 장치 영수증의 SQLite 저장 재시도
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R10, R11. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀의 영수증 정산 계약을 확인했다.
+
+- Feather의 ON/OFF에서 LED 육안 변화가 없었다. 기존 실물 기록에는 GPIO 읽기값, Pi 영수증, Mobius4 및 중앙 정산이 각각 남아 있다. 1.54인치 ST7789에서 Feather 0.2.1의 `CMD ON`과 `CMD OFF`를 확인하는 실물 단계가 남았다. [Feather 시험 기록](../keyring/evidence/2026-11-11-feather-visual/receipt.json)
+- Gateway 0.2.87은 BLE에서 받은 영수증을 최초 수신 시각과 함께 보존하고 SQLite 저장만 재시도한다. 정상 종료 시 마지막 저장을 시도한다. 영수증이 저장되기 전에 프로세스가 종료되면 재시작 시 `INDETERMINATE / RESTART_INTERRUPTED`로 기록한다. [BLE 통신 메모](../keyring/raspberry-pi-gateway/IO_NOTES.md)
+- 연속 SQLite 실패와 BLE 응답 타임아웃, 저장 대기 중 취소를 회귀시험으로 다뤘다. 첫 전체 실행의 기존 관측 마이그레이션 테스트 실패를 변경 전 HEAD에서도 재현했다. 잘못 옮겨진 세 줄을 원래 용량 테스트로 되돌린 뒤 Gateway 단위 테스트 224개와 Python wheel 빌드가 통과했다. Pi 배포와 Feather 재플래시·실물 확인은 미수행이다.
+
+소스 commit `3f5b5a068140a120210b22ea6fcc378fcd129171`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8df2ff2..3f5b5a0`이다. goal은 active/progress다.
+
+## 2026-11-11 — Feather 화면의 단계별 육안 기록
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05, R11. 직전 goal turn은 수신한 장치 영수증의 SQLite 저장 재시도를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 장치 ACK/readback 증거 계약을 확인했다.
+
+- Feather 0.2.1 화면은 각 단계 완료 후 명령 ID와 시각을 복사할 필요 없이 눈으로 본 문구만 입력한다. PC 도구는 해당 단계의 readback과 grant 회수 응답을 대조하고 명령 ID·PC UTC·화면 문구를 기록한다. OFF 발급 의도가 이미 기록된 뒤의 ON 입력과 같은 파일의 덮어쓰기를 거절한다.
+- 기존 증거 대조 도구가 단계별 파일과 이전 JSON 배열을 읽는다. 화면 미표시와 문구 불일치는 관찰값으로 보존한다. 기록 경로의 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·기록 도구 실행·Feather flash·Pi 접속·실제 화면 확인은 미수행이다. [실물 화면 기록 절차](../keyring/raspberry-pi-gateway/TESTING.md#기존-scoped-mobius4에서-feather-led-시험)
+
+소스 commit `657bf8ae6a639062f17ca3c395c01871ef9c37c5`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1798a71..657bf8a`다. goal은 active/progress다.
+
+## 2026-11-11 — Pi 배포 계정의 SQLite 상태 권한 점검
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R11. 직전 goal turn은 Feather 화면 기록 도구를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 명령·영수증 계약을 확인했다.
+
+- Gateway 0.2.88은 systemd의 `STATE_DIRECTORY`를 사용해 DB, 잠금, WAL, 공유 메모리, 롤백 저널의 파일 유형과 위치를 검사한다. 서비스 계정이 SQLite 디렉터리에 쓰고 진입할 수 있는지, 기존 파일에 필요한 접근 권한이 있는지도 확인한다. 오류는 파일 역할을 표시한다.
+- 새 하위 디렉터리를 만들기 전의 사전 점검과 상태 디렉터리 및 WAL 접근 거부, 잘못된 보조 파일 유형의 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·Pi 배포·systemd 실행·실제 SQLite 권한 검증은 미수행이다. [Pi 배포 절차](../keyring/raspberry-pi-gateway/README.md#수동-실행-또는-systemd-배포)
+
+소스 commit `efaeb5698a87af465bf9fcfbf5d958bc0a60af10`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `76d4542..efaeb56`이다. goal은 active/progress다.
+
+## 2026-11-11 — r18 관측의 Pi 상태 경로와 중앙 모의 표시 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05, R15. 직전 goal turn은 Pi 배포 계정의 SQLite 상태 권한 점검을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f` 및 중앙 관측 수용 이벤트의 `simulation` 필드를 확인했다.
+
+- r18 관측 대조 도구는 Mobius4 health의 컨테이너를 Pi DB에 고정한 ID와 비교한다. Pi 전송 큐에 같은 health 요청이 남아 있으면 경로와 본문도 비교한다. ID가 없던 기존 Pi DB는 고정 ID 확인 결과를 `null`로 표시한다.
+- 중앙 수용 여부와 실물 전달 증거 일치를 별도로 보고한다. 고정된 health ID 및 중앙 수용 이벤트의 `simulation:false`가 모두 확인돼야 실물 전달 증거 일치를 표시한다. 바뀐 health ID, 남은 health 본문 불일치, 모의 수용, 이전 DB의 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·대조 도구 실행·r18·Pi·Mobius4 실물 통합은 미수행이다. [관측 전달 증거 대조](../keyring/raspberry-pi-gateway/TESTING.md#관측-전달-증거-대조)
+
+소스 commit `59f784b1b34d711d414e428f490579695a9b33a1`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `f67bae8..59f784b`다. goal은 active/progress다.
+
+## 2026-11-11 — 원격 수신 확인 뒤 Pi 완료 기록 재시도
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 r18 관측의 Pi 상태 경로와 중앙 모의 표시 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀의 수용·중복 응답 계약을 확인했다.
+
+- Gateway 0.2.89는 원격 수신을 확인한 후 SQLite 완료 기록에 실패하면 해당 전송 작업에서 기록을 재시도한다. 완료 집계는 저장 뒤에 반영한다. 정상 종료 시 한 번 더 기록하고, 저장 전에 종료되면 행은 기존 재시작 및 요청 ID 규칙을 따른다.
+- 중앙 영수증 완료 기록을 재시도하는 동안 Mobius4가 진행하는 경우, 중앙 원격 요청이 같은 프로세스에서 한 번만 발생하는 경우와 종료 시에도 저장할 수 없는 경우를 회귀시험 소스에 추가했다. 빌드·테스트·정적 분석·실제 Pi·Mobius4·중앙 API 실행은 미수행이다. [영수증 대기열](../keyring/raspberry-pi-gateway/RECEIPT_ROUTING.md#중앙-명령-영수증-정산)
+
+소스 commit `e04bbf8c88f8eed42cb84ed7348fae7b71ae3039`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `298ae2c..e04bbf8`이다. goal은 active/progress다.
+
+## 2026-11-11 — 관측 알림이 멈춘 BLE 연결 복구
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02. 직전 goal turn은 Pi의 원격 수신 완료 기록 재시도를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀 BLE 관측 계약을 확인했다.
+
+- Gateway 0.2.90은 구독 이후 새로운 관측 알림이 `BLE_OBSERVATION_TIMEOUT` 동안 들어오지 않으면 해당 연결의 명령 준비 상태를 해제하고 다시 연결한다. 기본값은 30초다. 초기 READ, 중복 순번, 이전 연결 알림은 시간을 갱신하지 않는다. 대기 중인 명령은 기존 연결 종료 경로를 거친다.
+- BlueZ 연결이 유지되는 상태에서 알림만 멈춘 경우, 진행 중인 명령 대기 해제, 이전 세션·중복 알림의 시간 갱신 차단을 다루는 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·Pi BlueZ 및 실물 Feather/r18 재연결 시험은 미수행이다. [BLE 재연결](../keyring/raspberry-pi-gateway/BLE_SESSIONS.md#재연결과-관측-시각-기준)
+
+소스 commit `1be3c200ea61994b3777fd94a4dedb300d2a3327`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `7323a88..1be3c20`이다. goal은 active/progress다.
+
+## 2026-11-11 — BLE 초기 GATT 설정과 연결 해제의 대기 제한
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02. 직전 goal turn은 관측 알림이 멈춘 BLE 연결 복구를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀 BLE 관측·영수증 계약을 확인했다.
+
+- Gateway 0.2.91은 연결 뒤 identity와 첫 관측 읽기 및 알림 구독에 총 30초를 적용한다. 설정 제한을 넘으면 이전 세션 콜백을 무효화한 뒤 BlueZ 해제를 최대 15초 기다린다. BlueZ 응답을 받지 못한 경우 로그를 남기고 기존 재접속 대기로 넘어간다.
+- 멈춘 읽기와 구독, 응답 없는 해제, 뒤늦은 이전 알림을 모의 회귀시험 소스에 추가했다. 빌드·테스트·정적 분석·실제 Pi BlueZ와 Feather/r18 재연결은 미수행이다. [BLE 재연결](../keyring/raspberry-pi-gateway/BLE_SESSIONS.md#재연결과-관측-시각-기준)
+
+소스 commit `6e82b5aa28e276db9acbdbaf05c416ae20b08428`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `9866b8e..6e82b5a`다. goal은 active/progress다.
+
+## 2026-11-11 — BLE 명령의 종결 조각 전 실패 정산
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11. 직전 goal turn은 BLE 초기 GATT 설정과 연결 해제 기한을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 중앙 `DISPATCH_NOT_SENT` 정산을 확인했다.
+
+- Gateway 0.2.92는 LF 종결 조각을 시도하기 전 BLE 오류를 `REJECTED / DISPATCH_NOT_SENT`로 남긴다. Feather와 r18 소스는 LF를 받아야 프레임을 처리한다. 종결 조각을 시도한 뒤 영수증을 받지 못하면 기존 미확정·타임아웃 경로를 유지한다.
+- 부분 전송 타임아웃과 최종 조각 응답 타임아웃을 구분하는 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·실제 Pi/Feather/r18 전송과 중앙 정산은 미수행이다. [BLE 전송 및 재연결](../keyring/raspberry-pi-gateway/BLE_SESSIONS.md)
+
+소스 commit `ea72bd3656e85e432b17063da7b52eb59dd7923c`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1a43288..ea72bd3`이다. goal은 active/progress다.
+
+## 2026-11-11 — Pi 재시작 시 마지막 BLE 조각 확인
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11. 직전 goal turn은 종결 조각 전 BLE 실패 정산을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀의 `DISPATCH_NOT_SENT` 수용 규칙을 확인했다.
+
+- Gateway 0.2.93은 실행 의도에 종결 조각 미시도 상태를 저장하고, 마지막 BLE 쓰기 직전에 해당 명령 ID·payload hash로 전송 가능성을 커밋한다. 저장이 실패하면 마지막 조각 쓰기를 차단한다. 저장 후 세션·권한·전송 기한을 다시 확인한다.
+- 재시작 시 마지막 조각 미시도가 확인된 행은 `DISPATCH_NOT_SENT`로 정산한다. 마지막 조각이 전달됐을 수 있는 행과 열이 없던 기존 DB의 행은 `RESTART_INTERRUPTED`를 사용한다. 마이그레이션, 저장 실패, 저장 중 시계 변경, 재시작 분기 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·실제 Pi SQLite 마이그레이션·재시작·BLE·중앙 정산은 미수행이다. [상태 복구](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md)
+
+소스 commit `5646e6c2fe5ab315ac9b5e4562fd8ccc64d8854c`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `25bfd17..5646e6c`다. goal은 active/progress다.
+
+## 2026-11-11 — Mobius 전환 보고서의 마지막 BLE 조각 상태
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11. 직전 goal turn은 재시작 후 마지막 BLE 조각 표시 복구를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f` 및 팀 명령 정산 계약을 확인했다.
+
+- Gateway 0.2.94의 `plan-cutover`가 `DISPATCHING` 상태를 마지막 조각 미시도·전송 가능·기록 없음으로 집계한다. `bubble-keyring-reconcile`은 키링 저널에 없는 전송 중 명령마다 해당 상태를 표시한다. 기존 SQLite와 보관본은 읽기 전용으로 읽고 검토 대상과 건수를 유지한다.
+- 새 값 세 가지와 열이 없는 이전 DB를 다루는 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·도구 실행·실제 Pi 보관본과 팀 서버 전환은 미수행이다. [상태 복구와 배포 전환](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#중앙-api-배포-전환)
+
+소스 commit `402339eaf875a470be0f25e58b402b10ff6eae33`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `7d0ad7b..402339e`다. goal은 active/progress다.
+
+## 2026-11-11 — Pi 보관본과 중앙 명령 정산 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11. 직전 goal turn은 Mobius 전환 보고서에 마지막 BLE 조각 상태를 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀의 중앙 정산 이벤트를 확인했다.
+
+- Gateway 0.2.95의 `bubble-keyring-reconcile --archive-only --team-state`는 키링 저널에 없는 Pi 검토 대상의 영수증을 원래 중앙 배포의 `runtime.json`과 대조한다. 명령·claim·epoch·해시·중앙 이벤트와 시각이 일치하면 중앙 실행 상태와 이벤트 ID를 표시한다.
+- Pi 영수증, 중앙 명령, 중앙 영수증 누락을 구분하고 기존 검토 건수를 유지한다. 성공·취소·실행 미확정과 불일치의 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·대조 도구 실행·실제 Pi 및 팀 보관본 대조는 미수행이다. [기존 배포의 명령과 키링 저널 대조](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#기존-배포의-명령과-키링-저널-대조)
+
+소스 commit `fa98bddd2774b895d499373fb24393df5c7fe0ae`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `4f5052e..fa98bdd`다. goal은 active/progress다.
+
+## 2026-11-11 — MQTT 후보 승인 대기 전 HTTPS 명령 저장
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11. 직전 goal turn은 Pi 보관본과 중앙 정산 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f` 및 팀의 명령 목록·승인 계약을 확인했다.
+
+- Gateway 0.2.96은 HTTPS 명령 목록이 도착하면 유효한 명령을 먼저 SQLite에 저장한다. MQTT 후보는 남은 자리에서 정확한 중앙 binding을 확인한 뒤 저장한다. 기존 전체 배치 조회 도구는 두 경로의 결과를 합쳐 반환한다.
+- 목록 조회와 MQTT 후보 승인에는 전체 대기 기한을 적용한다. MQTT 승인 대기 중 HTTPS 명령 저장과 느린 요청 취소를 회귀시험 소스에 추가했다. 빌드·테스트·정적 분석·실제 Pi와 중앙 HTTPS/MQTT 경로 확인은 미수행이다. [Gateway 명령 수신](../keyring/raspberry-pi-gateway/README.md#저장소권한시간-동작)
+
+소스 commit `53f7ea6705d22e16b9d3c02d48508b6ea40b38f4`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `dd0fb20..53f7ea6`이다. goal은 active/progress다.
+
+## 2026-11-11 — Mobius4 장치별 관측 재전송 순서
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R15. 직전 goal turn은 MQTT 후보 승인 대기 전 HTTPS 명령 저장을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f` 및 oneM2M 관측·중앙 전송 계약을 확인했다.
+
+- Gateway 0.2.97은 같은 Mobius4 컨테이너·장치의 관측을 SQLite 등록 순서대로 보낸다. 먼저 등록된 행이 재시도 대기 중이면 같은 장치의 새 부팅 관측도 그 뒤에서 대기한다. 다른 장치, 명령 영수증과 health는 기존 선택 규칙을 따른다.
+- 이전 native 관측 행은 저장 본문에서 장치 ID를 채운다. 기존 요청 ID, 본문, 재시도 시각과 CORE 보관 fingerprint는 이어서 사용한다. 재시작·부팅 변경·공유 health·영수증 선택을 다루는 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·실제 Pi 마이그레이션과 Mobius4 재전송은 미수행이다. [BLE·중앙 통신 구현 메모](../keyring/raspberry-pi-gateway/IO_NOTES.md)
+
+소스 commit `163fdf3be325eac3243199cce3ad036beae57338`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `aff79c1..163fdf3`이다. goal은 active/progress다.
+
+## 2026-11-11 — Mobius4와 CORE MQTT 전송 작업 분리
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R11. 직전 goal turn은 Mobius4 장치별 관측 재전송 순서를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀 CORE ACK·텔레메트리 계약을 확인했다.
+
+- Gateway 0.2.98은 Mobius4 native 전송, CORE ACK, CORE 텔레메트리를 독립 작업에서 처리한다. Mobius4 응답 대기 중에도 새 명령의 ACK를 기존 SQLite 트랜잭션으로 등록하고 MQTT로 보낼 수 있다. CORE 텔레메트리는 설정된 ownership epoch와 장치별 순서를 유지한다.
+- Mobius4 대기 중 CORE ACK와 기본 텔레메트리 전송, 명령 비활성 모드, native 우선순위와 중복 ACK 회귀시험 소스를 보강했다. 빌드·테스트·정적 분석·실제 Pi·Mobius4·MQTT 브로커 검증은 미수행이다. [영수증과 CORE ACK의 대기열](../keyring/raspberry-pi-gateway/RECEIPT_ROUTING.md)
+
+소스 commit `4a51cc2d262e86c1f6d35535a21f7c63d8094bcd`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `01f86df..4a51cc2`다. goal은 active/progress다.
+
+## 2026-11-11 — 중단된 Feather 화면 시험 기록 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05, R15. 직전 goal turn은 Mobius4·CORE MQTT 전송 작업 분리를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`의 tip과 명령 발급 계약을 확인했다.
+
+- 0.2.0의 ON/OFF 시험에서 운영자는 두 단계 모두 보드 LED 변화를 보지 못했다. 당시 Pi·Mobius4 GPIO readback과 중앙 정산 결과는 기존 기록에 있다. [실물 시험 기록](../keyring/evidence/2026-11-11-feather-visual/receipt.json)
+- Feather 0.2.1 화면 시험이 중단되면 검증 도구가 남아 있는 화면 기록을 명령 ID·GPIO readback·grant 회수에 결합한다. OFF 발급 뒤의 ON 화면 기록은 거부하고 한 단계만 있으면 전체 화면 일치 여부를 비워 둔다. 회귀시험 소스와 절차를 추가했다. 빌드·테스트·정적 분석·장비 업로드·실제 화면 확인은 미수행이다. [중단 복구 절차](../keyring/raspberry-pi-gateway/TESTING.md#기존-scoped-mobius4에서-feather-led-시험)
+
+소스 commit `90b30183bbbba82ddc067319e712b8301bcbd49f`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `5d3266d..90b3018`이다. goal은 active/progress다.
+
+## 2026-11-11 — r18 실물 관측 전달 판정
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R15. 직전 goal turn은 중단된 Feather 화면 기록 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f` 및 main의 중앙 텔레메트리 수용 이벤트에서 `simulation`의 전달을 확인했다.
+
+- r18 실물 관측 대조 절차에 `--require-physical`을 추가했다. Pi DB의 고정 health 컨테이너와 중앙 수용 이벤트의 `simulation:false`가 확인돼야 성공 코드를 반환한다. 모의 이벤트, 기존 health ID 미고정 DB, 중앙 이벤트 미도착, 포털/웹 불일치를 다루는 회귀시험 소스를 보강했다.
+- Pi 관측 세션 준비 명령에 실제로 사용할 펌웨어 revision을 넘기도록 예시를 갱신했다. 빌드·테스트·정적 분석·제작 PCB와 Pi 실물 시험·중앙/웹 실물 연동은 미수행이다. [r18 관측 전달 대조](../keyring/raspberry-pi-gateway/TESTING.md#관측-전달-증거-대조)
+
+소스 commit `f2c3126aefa850089feae80e736a15eff8e96b41`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `0250b64..f2c3126`이다. goal은 active/progress다.
+
+## 2026-11-11 — r18 첫 구동에서 실제 펌웨어 파일 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 r18 실물 관측 전달 판정을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 중앙 관측 수용 계약을 확인했다.
+
+- 화면 없음·ST7789·JD9853의 0.7.18 관측 프로필은 실행 중인 앱 파티션의 SHA-256을 최초 USB 기록과 `?` 재출력에 남긴다. Gateway 0.2.99의 `--firmware-image`는 실제 업로드에 사용한 서명 없는 ESP32-S3 앱 파일의 SHA-256 footer와 USB 해시를 대조하고, 같은 BLE 부팅의 보고서에 파일 전체 해시와 크기를 기록한다.
+- 격리 Pi 도구는 세 새 revision을 선택할 수 있다. 이전 펌웨어 로그, 다른 빌드·손상된 이미지·해시 읽기 실패를 다루는 회귀시험 소스와 첫 구동 절차를 갱신했다. 빌드·테스트·정적 분석·장비 업로드·실물 USB/BLE 해시 대조는 미수행이다. [첫 구동 절차](../keyring/pcb/BRING_UP.md)
+
+소스 commit `65b3e2fb547dbb12f6901c58556442ae822184f5`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `000485a..65b3e2f`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 첫 구동과 중앙 관측 증거 연결
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R05, R15. 직전 goal turn은 실행 이미지 해시의 첫 구동 기록을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f` 및 main의 중앙 관측 수용 계약을 확인했다.
+
+- 격리 관측 대조에 `--bringup-report`와 `--firmware-image`를 함께 지정하면 첫 구동의 장치·펌웨어·USB 로그·실행 이미지와 Mobius4 관측을 묶는다. 첫 구동의 마지막 BLE 순번보다 뒤인 관측만 수용하고, 결과에 첫 구동 보고서와 바이너리의 SHA-256을 남긴다. 기존 중앙 수용 및 물리 전달 판정도 이어서 적용한다.
+- 정상 연결과 USB 로그·바이너리·관측 순번 불일치의 회귀시험 소스 및 절차를 추가했다. 빌드·테스트·정적 분석·실제 PCB/Pi·Mobius4·중앙/웹 연결은 미수행이다. [관측 전달 증거 대조](../keyring/raspberry-pi-gateway/TESTING.md#관측-전달-증거-대조)
+
+소스 commit `b9f119ef306bd82398198d2311397037c8ce68a8`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `a9e1a52..b9f119e`다. goal은 active/progress다.
+
+## 2026-11-11 — Mobius4 관측 전송 경로 기록
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 r18 첫 구동과 중앙 관측 증거의 연결을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 CORE Gateway 계약의 MQTT·HTTPS 경로를 확인했다.
+
+- Gateway 0.2.100은 확인된 관측을 outbox에서 완료한 뒤, 선택한 경우 MQTT·HTTPS 전용·HTTPS fallback 결과와 새 자원 생성 여부를 INFO 로그에 남긴다. r18 관측 전용 세션은 기록을 활성화한다. 격리 세션의 native 전송은 HTTPS다.
+- r18 대조 도구의 `--pi-log`는 동일 요청 ID·관측 본문 해시를 Mobius4 및 Pi DB 상태와 대조한다. 서로 다른 경로가 같은 요청을 완료했다고 기록됐거나 DB에 아직 대기 중이면 실패한다. 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·실물 Pi 및 Mobius4 경로 검증은 미수행이다. [관측 전달 증거 대조](../keyring/raspberry-pi-gateway/TESTING.md#관측-전달-증거-대조)
+
+소스 commit `120c18e1b69f267075b5f195d200e0e213494c74`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `b66e581..120c18e`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 격리 MQTT 관측 중계
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 Mobius4 관측 확인 경로 기록을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 고정 Mobius4 `e8f75b1`의 MQTT·HTTPS 요청 구현을 확인했다.
+
+- Gateway B mTLS 브로커 요청·응답 ACL과 격리 소비자의 선택적 oneM2M MQTT 중계를 추가했다. 시작 시 실제 r18 관측·health의 이름과 고정 ID를 확인하고, 두 컨테이너에 대한 CREATE만 같은 RQI·본문으로 기존 Mobius4 HTTPS에 전달한다. 내장 CSE MQTT listener는 기존 격리 설정을 따른다.
+- Pi 관측 전용 세션에 `--mqtt-port`를 추가했다. 별도 터널을 사용해 HTTPS 경로를 유지하면서 MQTT 연결을 끊는 절차와, 두 관측의 전송 로그 대조 절차를 문서화했다. Originator·고정 ID·명령 차단·중복 응답을 다루는 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·Compose 실행·Pi 및 실물 MQTT/HTTPS 전환은 미수행이다. [격리 설정](../keyring/dev/mobius4/README.md#r18-관측-mqtt-중계)
+
+소스 commit `1bdec28748e68ca0a1695672871f91432c14c3b7`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `333623d..1bdec28`이다. goal은 active/progress다.
+
+## 2026-11-11 — r18 한 부팅의 MQTT와 HTTPS 전환 증거
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R05. 직전 goal turn은 격리 r18 MQTT 중계를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f` 및 CORE 전송·중앙 관측 수용 계약을 확인했다.
+
+- Gateway 0.2.101은 native 관측 완료 로그에 Gateway 부팅 ID를 추가한다. 관측 대조의 `--fallback-capture`는 같은 장치·Gateway 부팅, 같은 고정 컨테이너와 Pi 로그에서 MQTT와 HTTPS fallback으로 각각 생성된 관측을 요구한다. BLE 및 비모의 중앙 수용 순번의 증가와 서로 다른 Mobius4 자원을 확인한다.
+- 정상 경로와 기존 자원, 중앙 수용 대기, 다른 Gateway 부팅을 다루는 회귀시험 소스와 절차를 추가했다. 빌드·테스트·정적 분석·Pi 및 제작 PCB 실물 전송은 미수행이다. [r18 전환 시험](../keyring/raspberry-pi-gateway/TESTING.md#r18-mqtt와-https-fallback-시험)
+
+소스 commit `f3985b26f7dbd6b2f26fdf70a8d03dcc5f326825`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `97f37a5..f3985b2`다. goal은 active/progress다.
+
+## 2026-11-11 — 실행 중인 임시 Mobius4의 r18 MQTT 설정
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 한 부팅의 MQTT/HTTPS 전환 증거 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 CORE 전송 계약을 확인했다.
+
+- `-PrepareR18Mqtt`가 기존 CSE의 관측·health 이름과 고정 ID를 조회하고 로컬 MQTT 설정과 HTTPS 경로를 작성한다. 기존 설정이 실제 ID와 다르면 중단한다. `-RefreshIngress`는 MQTT 설정이 있을 때 r18 구독 준비도 기다린다. [격리 설정](../keyring/dev/mobius4/README.md#r18-관측-mqtt-중계)
+- 기존 임시 Compose에 준비를 실행해 관측 `a8o9yh7miw`, health `d6tq49gt37`의 고정 ID를 읽었다. 격리 TLS 프록시·브로커·소비자를 갱신했다. 두 준비 명령은 exit 0이었으며 소비자가 기존 구독과 r18 MQTT 구독 준비를 모두 보고했다. 로컬 설정과 자격 정보는 Git에 포함하지 않았다. 빌드·회귀시험·정적 분석·Pi 연결·실물 관측 발행·HTTPS 전환은 미수행이다.
+
+소스 commit `2017c3fa4193215cf649b588a4453358706173b4`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `3e382d8..2017c3f`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 단일 펄스의 장치 저널 확인
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11. 직전 goal turn은 임시 Mobius4의 r18 MQTT 설정과 구독 준비를 확인하고 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀 명령 발급·승인 경로를 확인했다.
+
+- 격리 r18 단일 펄스 도구는 같은 부팅의 OFF·fault 없음과 정상 장치 저널·빈 슬롯을 확인한다. grant 발급 후 새 health 관측으로 재확인하고 기준 관측에 슬롯 수를 기록한다. 오류·가득 참·기한 내 관측 부재이면 명령 발급 전에 멈추고, 발급된 grant의 회수를 시도한다.
+- 중단 증거 대조에서 새 시험의 기준 저널 기록을 요구한다. 초기 가득 참, grant 이후 오류, 이전 증거 호환을 다루는 회귀시험 소스와 절차를 추가했다. 빌드·테스트·정적 분석·실제 Pi와 r18 명령 및 grant 회수 검증은 미수행이다. [r18 단일 펄스 시험](../keyring/raspberry-pi-gateway/TESTING.md#r18-단일-펄스-시험)
+
+소스 commit `cde0dce987e8c07bb247cd9a2345fd4b9b2325ef`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `83febd1..cde0dce`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 모터 명령의 보조 전원 GPIO 확인
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11. 직전 goal turn은 r18 단일 펄스의 저널 준비 확인을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀의 `APPLIED` readback 수용 조건을 확인했다.
+
+- 정식 r18 펌웨어 0.7.19는 alert 시작 때 `AuxEnable` GPIO 쓰기 결과와 HIGH 읽기값을 확인한다. 실패하면 보조 전원을 해제하고, 작동 중 LOW 검출도 기존 alert 인터럽트 경로로 처리한다. 적용 시점의 실패는 장치 저널의 PREPARED와 `INDETERMINATE` 흐름을 따른다.
+- 새 Pi 명령 세션·격리 API 프로필은 0.7.19를 고정한다. 이전 0.7.14의 Pi 프로필과 오프라인 기록을 읽는 경로를 유지한다. GPIO 쓰기·읽기 실패와 API revision 불일치 회귀시험 소스를 보강했다. 빌드·테스트·정적 분석·격리 명령 API 재시작·플래시·실물 GPIO/전압·모터 시험은 미수행이다. [보조 전원 동작](../keyring/firmware/PERIPHERALS.md#공용-전원spi절전)
+
+소스 commit `3b2edcc91e19a7812cc93dd6ec1d2cd8fbbd730a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `02a73d3..3b2edcc`다. goal은 active/progress다.
+
+## 2026-11-11 — 격리 r18 명령 API의 0.7.19 전환
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11. 직전 goal turn은 펌웨어의 보조 전원 GPIO 확인과 명령 프로필 변경을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀의 명령 readback 수용 계약을 확인했다.
+
+- `https://127.0.0.1:8789`의 기존 격리 r18 API가 0.7.14 프로필을 사용했고, 연결된 클라이언트와 저장된 명령은 0건이었다. 해당 루프백 프로세스를 종료한 뒤 기존 파일·인증서·팀 소스로 0.7.19 프로필을 시작했다.
+- 새 리스너는 `r18-hand-solder`, `keyring-0.7.19`, 팀 commit `bc2a45d`로 `READY`를 보고했다. 상태 파일 SHA-256은 재시작 전후 같았고 저장된 명령은 0건이다. 빌드·회귀시험·정적 분석·Pi 사전 확인·플래시·실물 명령 시험은 미수행이다. [격리 명령 API](../keyring/dev/mobius4/README.md#r18-격리-명령-api)
+
+배포한 프로필 소스는 `3b2edcc91e19a7812cc93dd6ec1d2cd8fbbd730a`이며 `origin/codex/keyring-namho`에 있다. goal은 active/progress다.
+
+## 2026-11-11 — r18 모터 부하 펄스 계측 연결
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05, R10. 직전 goal turn은 임시 r18 명령 API를 0.7.19 프로필로 전환하고 준비 상태를 기록한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀 명령 readback 계약을 확인했다.
+
+- r18 오프라인 대조가 J6 부하 전압 CSV를 최초 `APPLIED` 영수증에 연결한다. 명령 ID·CSE 자원 ID·영수증 해시·계측 파일 해시를 확인하고, 측정 임계값과 인접 샘플로 상승·하강·지속 시간의 범위를 계산한다. 1,000ms 상한 경계에 걸린 결과와 여러 펄스·잘린 에지를 구분한다.
+- 계측값과 명령의 연결은 작업자 기록을 사용한다. 상한 이내·초과·판정 불가 및 잘못 연결된 영수증의 회귀시험 소스와 절차를 추가했다. 빌드·테스트·정적 분석·실제 J6 전압 및 진동 계측은 미수행이다. [r18 펄스 계측값 연결](../keyring/raspberry-pi-gateway/TESTING.md#r18-펄스-계측값-연결)
+
+소스 commit `b22ecc25b78fa413941c31a598094b67c12aed2a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `aad0f28..b22ecc2`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 저전력 진입 전에 GPIO hold 확인
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 부하 펄스 계측 연결을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀 BLE 관측 계약을 확인했다.
+
+- `KEYRING_ENABLE_SLEEP=1` 빌드 `keyring-0.7.20-sleep`은 BLE 종료 전에 안전 출력 쓰기와 핀별 hold를 완료하고 모터·AUX LOW 및 wake 입력을 다시 확인한다. 준비 실패 시 wake source와 hold를 정리하고 버튼·가속도 입력과 BLE 광고를 복구한다.
+- 출력 쓰기·읽기, 부분 hold, pull-up 실패와 마지막 버튼 입력을 다루는 회귀시험 소스와 wake 기록 절차를 추가했다. 빌드·테스트·정적 분석·플래시·실물 sleep/wake·전류 계측은 미수행이다. [저전력·깨우기](../keyring/firmware/POWER_WAKE.md)
+
+소스 commit `00a65e28dbc3aeab153f6a9d44c495233f76177a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8d489de..00a65e2`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 절전 빌드의 명령 시험 프로필
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R10, R11. 직전 goal turn은 r18 저전력 GPIO hold 수정과 wake 절차를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀의 명령 readback 수용 조건을 확인했다.
+
+- `keyring-0.7.20-sleep`을 격리 API·Pi 명령 세션·펄스 도구에서 명시적으로 선택할 수 있다. 기본 명령 프로필은 0.7.19다. 펄스 도구는 파일 생성과 명령 준비 전에 Gateway B mTLS 인증서로 실행 중인 API의 revision을 확인한다. 장치 저널 및 오프라인 대조는 시험에서 고정한 revision을 사용한다.
+- 0.7.14/0.7.19와 다른 firmware를 광고하는 API 및 0.7.20-sleep 성공 조건을 다루는 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·API 재시작·플래시·실물 wake 후 명령은 미수행이다. [Pi 명령 세션](../keyring/raspberry-pi-gateway/TESTING.md#r18-pi-명령-세션)
+
+소스 commit `3c4569339d1b0b968b4b53d94942b7b84ce8e4bb`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `4d2a95a..3c45693`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 깨우기와 명령 부팅 연결
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05, R10. 직전 goal turn은 절전 빌드의 격리 명령 프로필을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀 영수증의 boot ID·readback 조건을 확인했다.
+
+- Gateway 0.2.102는 wake 원인이 확인된 부팅의 SHA-256과 해당 BLE 순번을 보고한다. r18 절전 펄스의 `--wake-report`는 같은 부팅에서 받은 더 새 기준 관측을 요구하고, 사전 선택한 보고서 해시를 보관한다. 오프라인 도구는 원본 보고서, 기준 관측, 최초 `APPLIED` Mobius4 영수증과 중앙 정산을 대조한다.
+- 일치·다른 부팅·변경된 보고서를 다루는 회귀시험 소스와 절차를 추가했다. 빌드·테스트·정적 분석·실물 wake·이후 명령 검증은 미수행이다. [r18 Pi 명령 세션](../keyring/raspberry-pi-gateway/TESTING.md#r18-pi-명령-세션)
+
+소스 commit `d2314af943b0ee6dccfffef0a9da2d795f9c2b98`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `461b222..d2314af`다. goal은 active/progress다.
+
+## 2026-11-11 — r18 BLE 버튼 전이 순서 보존
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R15. 직전 사용자 응답은 Feather에서 LED 변화를 보지 못했다는 기존 기록을 재확인했다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 조회했다. main의 중앙 사건 처리는 최신 순번과 `buttonState`의 새 `panic`을 사용한다.
+
+- r18 0.7.21은 활성 관측 구독 안에서 버튼 상태 전이 최대 8건을 일반 센서 상세와 별도로 대기시키고, 알림은 같은 생성 순번대로 보낸다. 만석에서는 먼저 쌓인 7건과 최신 상태를 남긴다. GATT 읽기는 최신 관측을 반환하며 이전 구독의 대기 프레임은 새 구독으로 넘어가지 않는다.
+- Gateway 0.2.103, Pi 시험 도구, 격리 API 설정에 0.7.21 계열을 연결했다. 이전 revision은 해당 시험과 기록에서 계속 선택할 수 있다. 알림 조각 전송 중 전이, 큐 만석 및 재구독을 다루는 호스트 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·API 재시작·플래시·r18 버튼 및 중앙 사건 실물 시험은 미수행이다. [실물 시험 절차](../keyring/raspberry-pi-gateway/TESTING.md#r18-초기-구동-기록)
+
+소스 commit `3da95d8d58a6ccebad50eb9a4bd34fce5b6fd14e`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8a93e58..3da95d8`이다. goal은 active/progress다.
+
+## 2026-11-11 — r18 버튼 전이와 중앙 안전 사건 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R15. 직전 goal turn은 r18 BLE 전이 순서 보존을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 조회했다. Pi의 중앙 텔레메트리 SQLite 대기열은 장치별 첫 관측의 재시도 순서를 유지한다. 팀 main은 관측 후 30초까지 비상 사건을 처리하고, 관측 수용과 사건 영수증을 각각 기록한다.
+
+- 0.7.21 bring-up 전용 도구가 Pi의 완료 요청 ID로 격리 Mobius4 원본을 읽는다. 같은 부팅의 버튼 누름·해제 5단계와 누계, Pi SQLite·완료 로그, 중앙 수용 순번, 동일 비상 관측 ID의 `DEVICE_PANIC_RECONCILED`와 안전 사건을 대조한다. 새 사건 생성과 열린 사건 재사용을 보고서에 기록한다.
+- 회귀시험 소스는 관측만 수용된 경우, 수용 순번이 뒤바뀐 경우, 모의 비상 사건을 거절하는 경로를 다룬다. 빌드·테스트·정적 분석·실제 Pi·Mobius4 조회·r18 버튼 시험은 미수행이다. [시험 절차](../keyring/raspberry-pi-gateway/TESTING.md#r18-버튼-사건-시험)
+
+소스 commit `6c46cb3b3d335d06ada928347d831f21ef206a3e`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `82513ab..6c46cb3`이다. goal은 active/progress다.
+
+## 2026-11-11 — 서버 전환 시 CORE 전송 순번 이어받기
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 버튼 전이와 중앙 안전 사건의 대조 도구를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 조회했다.
+
+- Gateway 0.2.104의 `plan-cutover`는 새 배포 DB에서 보존할 CORE 순번과 대상 범위의 원본 대기 건수를 집계한다. `prepare-cutover`는 양쪽 잠금 아래에서 같은 Gateway ID의 유지 장치별 마지막 할당 순번을 새 binding DB에 기록한다. 새 DB와 상위 디렉터리를 동기화하고, 같은 CORE 범위에 대기 건이 있으면 준비를 중단한다. 원본 DB와 대기열·명령·영수증은 기존 배포에 보존한다.
+- 대기 중단, 재실행 보호, 권한, 원본 보존과 이어지는 순번을 다루는 POSIX 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·실제 Pi 준비 명령·서버 전환은 미수행이다. [전환 절차](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#새-배포-db에-core-순번-이어받기)
+
+소스 commit `3a1c423409d324d4a290bf41b13010ca0d2d7611`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `41cd094..3a1c423`이다. goal은 active/progress다.
+
+## 2026-11-11 — r18 조립 기록과 첫 구동 연결
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · PCB schematic/layout/BOM/assembly revision. 직전 goal turn은 새 배포 DB의 CORE 순번 보존을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 조회했다.
+
+- Gateway 0.2.105의 `bubble-keyring-assembly-evidence`는 인계 목록에서 프로젝트·회로도·PCB·reference별 BOM·커넥터 표를 해시로 대조한다. 작업자가 기록한 조립 revision 출처, 실장 상태, 패널과 보드 앞뒤 사진 해시를 새 기록에 남긴다. 조립 revision을 읽지 못했으면 미확인으로 유지한다.
+- 격리 Pi 관측 비교에 작업자가 다시 읽은 보드 식별표를 연결할 수 있다. 조립 기록의 해시를 첫 부팅·펌웨어·Pi 관측 대조 결과에 추가한다. 회귀시험 소스를 추가했으며 테스트·빌드·정적 분석·KiCad 실행·실제 조립 기록 및 첫 구동은 미수행이다. [인수 절차](../keyring/pcb/BRING_UP.md#실물-조립-기록)
+
+소스 commit `e9f4e9d39d166a20c47c731d7d3b71134216561e`를 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `5d7765e..e9f4e9d`이다. goal은 active/progress다.
+
+## 2026-11-11 — r18 깨우기 원인의 중앙 전달 확인
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 조립 인수 기록을 첫 부팅과 관측 대조에 연결해 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`를 조회했다.
+
+- r18 격리 펄스의 `--wake-report`가 같은 부팅의 더 새 OFF health에서 깨우기 원인과 핀을 확인한다. 고정된 Mobius4 자원의 본문 해시를 중앙의 실물 관측 수용 이벤트와 대조한 뒤 명령 준비를 표시한다. 발급 직전에 health를 다시 확인한다.
+- 오프라인 도구는 동일 관측 ID와 원본 해시를 다시 대조한다. 다른 핀·누락 관측·다른 관측 ID를 다루는 회귀시험 소스를 추가했다. 테스트·빌드·정적 분석·실제 Pi/Mobius4·r18 깨우기 및 명령 시험은 미수행이다. [실행 절차](../keyring/raspberry-pi-gateway/TESTING.md#r18-pi-명령-세션)
+
+소스 commit `4ecee4f1f3a13f6c4ceb506aa886333935966b02`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `c8a4e76..4ecee4f`이다. goal은 active/progress다.
+
+## 2026-11-11 — r18 첫 BLE 읽기와 구독 사이의 버튼 전이
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R15. 직전 goal turn은 깨우기 원인과 중앙 관측 연결을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 BLE GATT 관측 계약을 조회했다.
+
+- r18 0.7.22는 센서 관측을 준비한 뒤 첫 BLE 광고를 시작한다. 인증된 관측 읽기의 첫 offset으로 만든 스냅샷 이후에 감지된 버튼 전이는 같은 연결에서 알림 구독이 열릴 때까지 대기한다. 새 읽기 또는 연결 종료가 이전 대기를 폐기한다.
+- Gateway 0.2.106, Pi 시험 도구와 격리 Mobius4 명령 설정에 새 버전을 반영했다. 읽기 중 전이·재읽기·다른 피어 연결을 다루는 호스트 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·API 재시작·플래시·실제 BlueZ 첫 연결 시험은 미수행이다. [펌웨어 설명](../keyring/firmware/README.md#센서버튼저전력)
+
+소스 commit `78fcc9cd41380cf6311d517d42c21b21104c5ef8`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `246b415..78fcc9c`이다. goal은 active/progress다.
+
+## 2026-11-11 — Pi 재시작 뒤 BLE 업타임 연속성
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 첫 GATT 읽기 전후의 버튼 전이 보존을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f` 및 관측 payload 계약을 확인했다.
+
+- Gateway 0.2.107은 BLE 업타임을 해당 부팅과 SQLite 대기열에 함께 저장한다. Pi 재시작 뒤 같은 부팅의 업타임이 감소한 관측을 거절하고, 새 부팅의 업타임은 별도로 시작한다. 이전 DB의 기록이 없는 업타임은 비워 둔다. 영수증 시각 환산에는 새 BLE 세션의 관측이 필요하다.
+- SQLite 이전 스키마, 재열기 후 역행, BLE 시작 시 기준 적용 및 Mobius4 본문의 기존 형식을 다루는 회귀시험 소스를 반영했다. 빌드·테스트·정적 분석·실물 Pi 재시작·Mobius4 확인은 미수행이다. [통신 메모](../keyring/raspberry-pi-gateway/IO_NOTES.md)
+
+소스 commit `9a7e991ceed8b6943de80639378fc5a3930c2328`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `f42b31d..9a7e991`이다. goal은 active/progress다.
+
+## 2026-11-11 — 마지막 BLE 쓰기 응답 오류 뒤 ACK 보존
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 Pi 재시작 뒤 BLE 업타임 연속성을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f` 및 장치 영수증 정산 계약을 확인했다.
+
+- Gateway 0.2.108은 마지막 GATT WRITE 응답 오류 뒤 같은 인증 세션에서 원래 기한까지 일치하는 ACK를 받을 수 있다. ACK가 오면 장치 결과를 기존 SQLite 영수증 경로로 저장한다. 기한 만료·연결 단절에서는 기존 실패 경로로 종료하며 명령을 재전송하지 않는다.
+- 응답 오류 뒤 늦은 유효 ACK, 다른 해시의 ACK, 원래 기한 내 ACK 누락을 다루는 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·실제 BlueZ 오류/ACK 시험·장비 실행은 미수행이다. [통신 메모](../keyring/raspberry-pi-gateway/IO_NOTES.md)
+
+소스 commit `6109701b7b3b9853b8e881835f5a7d023bb923d9`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `3ede1a8..6109701`이다. goal은 active/progress다.
+
+## 2026-11-11 — Pi 불확정 영수증과 장치 완료 기록 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 마지막 GATT 응답 오류 뒤 유효 ACK 보존을 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 중앙의 `DISPATCH_UNCERTAIN` 영수증 계약을 확인했다.
+
+- Gateway 0.2.109의 저널 대조에서 명령 해시·grant revision·epoch·요청 상태가 맞는 장치 완료 기록을 Pi 미기록 또는 자체 불확정 영수증과 연결한다. `--archive-only`에서 같은 부팅의 명령 하나와 중앙 보관본을 함께 읽을 수 있다. 장치 적용 기록과 기존 중앙 불확정 수용을 보존하고 검토 상태를 유지한다.
+- 불확정·영수증 미기록·마지막 쓰기 미시도를 다루는 회귀시험 소스를 추가했다. 빌드·테스트·정적 분석·실제 Pi/장치 저널 및 중앙 재정산 시험은 미수행이다. [복구 대조 절차](../keyring/JOURNAL_RETENTION.md#pi-중단-뒤-장치-완료-기록-찾기)
+
+소스 commit `10fa65ccb81598b2a22a832a7d3ce59a56cc1967`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `d9b982b..10fa65c`이다. goal은 active/progress다.
+
+## 2026-11-11 — 중앙 영수증 응답의 정산 상태 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R01, R03. 직전 goal turn은 Pi 불확정 영수증과 장치 저널 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 팀 `POST /receipts` 수용·중복 응답을 확인했다.
+
+- Gateway 0.2.110은 중앙의 `executionState`까지 영수증 결과에 대조한 뒤 대기열을 완료한다. 불확정 영수증의 중복 확인은 같은 명령·claim·본문 해시에 대해 중앙이 나중에 정산한 상태도 받을 수 있다. 상태 불일치에는 원래 영수증과 재시도 정보를 보존한다.
+- 적용·취소·불확정 응답, 잘못된 상태 및 불확정 영수증의 중복 수용을 다루는 회귀시험 소스를 반영했다. 빌드·테스트·정적 분석·실제 Pi와 중앙 API 전송 시험은 미수행이다. [영수증 전달 절차](../keyring/raspberry-pi-gateway/RECEIPT_ROUTING.md)
+
+소스 commit `0131163a26adfbd86c8919a7239a263dfe12c162`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `b20467d..0131163`이다. goal은 active/progress다.
+
+## 2026-11-11 — 관측 대기열 압박에서 만료 중앙 복제본 정리
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 중앙 영수증 응답의 정산 상태 대조를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 중앙 관측 보관 계약을 확인했다.
+
+- Gateway 0.2.111은 신뢰 가능한 시계를 기준으로 보관 기간이 지난 관측의 중앙 전송 항목을 새로 등록하지 않는다. SQLite 한도에 걸리면 이전에 등록한 만료 중앙 복제본만 최대 128건 정리하고 동일 관측의 원자적 저장을 한 번 다시 시도한다. Mobius4 관측과 명령 영수증은 각 경로에 남긴다.
+- 중앙 만료 전 도착·만료 복제본으로 인한 저장 압박·기존 영수증 보존을 다루는 회귀시험 소스를 반영했다. 빌드·테스트·정적 분석·실제 Pi 대기열 및 중앙 장애 시험은 미수행이다. [통신 메모](../keyring/raspberry-pi-gateway/IO_NOTES.md#중앙-관측-전달)
+
+소스 commit `8dc07605c6b28112ed07b7561ead8eb09ff8ac0a`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `c92e6ce..8dc0760`이다. goal은 active/progress다.
+
+## 2026-11-11 — r18 두 LCD에서 마지막 버튼 표시 유지
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 중앙 관측 만료본의 공간 회수를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 장치 관측 계약을 확인했다.
+
+- r18 0.7.23의 ST7789·JD9853 정식 프로필은 유효한 확인·비상 누름으로 즉시 화면 갱신을 요청하고 버튼을 떼도 마지막 입력을 유지한다. BLE는 실제 버튼 상태와 누계를 보낸다. 첫 구동 프로필도 같은 마지막 버튼 상태를 사용한다.
+- Gateway 0.2.112와 격리 Mobius4 시험 설정에 새 버전을 연결하고 화면·관측 호스트 시험 소스를 현재 GATT 구조에 맞췄다. 빌드·테스트·정적 분석·API 재시작·플래시·두 패널 실물 확인은 미수행이다. [주변장치 설명](../keyring/firmware/PERIPHERALS.md)
+
+소스 commit `5f7960db58b31c9c1427314bca2f6d63189ce57d`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `e890490..5f7960d`이다. goal은 active/progress다.
+
+## 2026-11-11 — r18 LCD 첫 구동 패턴 완료 조건
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 r18 두 패널의 마지막 버튼 표시를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 관측 계약을 확인했다.
+
+- ST7789·JD9853의 0.7.24 첫 구동 프로필은 논리 화면 크기가 시험 패턴을 담지 못하면 `geometry_error`를 보낸다. 버튼 그리기 누계는 패턴과 문구 출력 뒤 백라이트 조건이 유지된 때 기록한다. 실물 색과 문구는 작업자가 확인한다.
+- Gateway 0.2.113과 Pi 시험 도구에 두 revision을 추가했다. 회귀시험 소스는 새 USB 프로필과 크기 오류를 다룬다. 빌드·테스트·정적 분석·플래시·패널 화면 확인은 미수행이다. [LCD 설정](../keyring/firmware/PERIPHERALS.md)
+
+소스 commit `873fc6a1d19cda79189d082b6f8fc129ec423243`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8dd1dbc..873fc6a`이다. goal은 active/progress다.
+
+## 2026-11-11~12 — r18 LCD 전원 제어 GPIO 확인
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 관측 계약을 확인했다.
+
+- Feather 0.2.0의 기존 ON/OFF 시험에서 사용자는 LED 변화를 보지 못했다. GPIO와 영수증 증거는 기존 시험 기록에 남아 있다. Feather 0.2.1의 1.54인치 화면에서 `CMD ON`과 `CMD OFF`를 확인하는 실물 단계가 남았다. [Feather 시험 기록](../keyring/evidence/2026-11-11-feather-visual/receipt.json)
+- r18 0.7.25는 AUX_EN과 LCD_BL 읽기값이 맞을 때 화면 그리기와 첫 구동 누계를 진행한다. 출력 오류는 `power_output_error`로 보고하고 백라이트 분리를 확인한 뒤 모터에 공유 레일을 넘긴다. Gateway 0.2.114는 `geometry_error`와 `power_output_error`를 화면 불일치로 판정한다. [주변장치 설명](../keyring/firmware/PERIPHERALS.md)
+- 장치별 설정을 제외하고 기본·ST7789·JD9853 compile profile과 두 LCD의 첫 구동 profile을 빌드했다. JD9853 첫 구동 빌드는 도구 재연결 시 중단된 뒤 재실행에서 통과했다. 호스트 회귀 18개, Gateway 기본 255개 및 격리 모의 55개가 통과했다. Gateway 기본 시험에선 이전 BLE 예산 만료 테스트 두 건의 예상 예외를 현재 `BleCommandNotSent` 계약에 맞췄다. 실제 Pi 배포, 장비 업로드, 패널 표시와 레일 전압 확인은 미수행이다.
+
+소스 commit `3be21df8eb3fe94da4ec7c304a8ddc147fe577a8`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `965f890..3be21df`다. goal은 active/progress다.
+
+## 2026-11-12 — 비상 버튼 해제와 LCD 실물 기록 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 LCD 출력 제어와 로컬 결과를 Git에 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f` 및 Gateway 관측·웹 증거 계약을 확인했다. 계약 변경은 없었다.
+
+- Gateway 0.2.115는 같은 세션의 마지막 비상 버튼 해제를 포함하거나 그 뒤에 수신한 BLE health에서 확인·비상 그리기 누계를 대조한다. 화면 증거 도구는 저장된 이벤트를 다시 읽고 Pi 상태와 작업자 관찰값을 함께 판정한다. 화면 전원 오류는 `MISMATCH`, 버튼을 뗀 뒤의 상태가 없으면 `INSUFFICIENT`다. [화면 기록](../keyring/raspberry-pi-gateway/TESTING.md#r18-화면-관찰-기록-연결)
+- 해제 전 health, 해제와 함께 도착한 health, GPIO 오류, 수집 중단 사례의 회귀시험 소스를 추가했다. 빌드·시험·Pi 배포·실물 촬영·PCB 검증은 미수행이다.
+
+소스 commit `5a0e645d85b6e1960ac88bc8df5aa51862ac7bd9`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `a603dca..5a0e645`다. goal은 active/progress다.
+
+## 2026-11-12 — 최초 불확정 영수증과 후속 중앙 정산 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R03, R10, R12. 직전 goal turn은 LCD와 버튼 해제 증거 대조를 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`의 현재 head와 중앙 Gateway receipt·handover readback 계약을 확인했다.
+
+- Gateway 0.2.116의 읽기 전용 비교는 중앙 정산 이벤트를 Gateway·명령·영수증 해시로 선택한다. 최초 불확정 영수증 뒤 다른 영수증 또는 readback 정산이 확정되면 원래 수용과 현재 상태를 함께 남긴다. 명령 본문·claim·epoch·시각 또는 정확한 이벤트 결속이 맞아야 해당 정산을 표시한다. [보관본 대조](../keyring/JOURNAL_RETENTION.md#pi-중단-뒤-장치-완료-기록-찾기)
+- 동일 명령의 연속 수용, handover readback, 중복 또는 잘못된 결속·시각의 회귀시험 소스를 추가했다. 빌드·시험·Pi 배포·실제 정산 보관본 대조는 미수행이다.
+
+소스 commit `8a70abe2609ed3c42b540d7ac0471d77bdea2313`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8d04c0a..8a70abe`다. goal은 active/progress다.
+
+## 2026-11-12 — r18 조립 기록과 첫 구동 증거 연결
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R05. 직전 goal turn은 중앙 영수증 이력 대조를 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f` 및 관측·웹 증거 계약을 확인했다.
+
+- Gateway 0.2.117은 첫 구동에서 보드 식별표·조립 기록·USB 펌웨어를 확인하고 USB와 BLE가 같은 부팅이면 조립 기록 해시를 남긴다. LCD 관찰 보고서가 해당 해시를 이어받고 Mobius4 전송 대조에서는 첫 구동에 연결한 기록과 다시 제공한 기록이 일치하는지 확인한다. 기존 첫 구동 보고서는 연결 확인 여부를 false로 남긴다. [첫 구동 기록](../keyring/raspberry-pi-gateway/TESTING.md#r18-초기-구동-기록)
+- 같은 부팅, 다른 부팅, 조립 기록 교체, 기존 보고서와 LCD 해시 전달 사례를 다루는 회귀시험 소스를 반영했다. 빌드·시험·Pi 실행과 실제 조립·패널 확인은 미수행이다.
+
+소스 commit `74e15fe9e830953682e3924c9e2f5b71805783f2`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `b5b0405..74e15fe`다. goal은 active/progress다.
+
+## 2026-11-12 — 조립 기록과 r18 전력 실측 샘플 대조
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R05. 직전 goal turn은 조립 기록을 첫 구동과 LCD·Mobius4 증거에 연결한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 중앙 관측·웹 증거 계약을 확인했다.
+
+- Gateway 0.2.118의 전력 보고서는 조립 기록을 연결한 첫 구동의 해시를 이어받는다. 반복 BLE 알림에 포함된 같은 INA219 샘플과 측정 지점은 한 번만 받는다. 같은 샘플 시각의 INA219 값이 상충하면 대조를 중단한다. [외부 계측값 연결](../keyring/raspberry-pi-gateway/TESTING.md#r18-첫-구동의-외부-계측값-연결)
+- 조립 해시, 반복 알림, 측정 지점 구분 및 상충 샘플 회귀시험 소스를 반영했다. 빌드·시험·Pi 실행과 실제 계측기 및 INA219 비교는 미수행이다.
+
+소스 commit `8788250dab55780c7bbbb457fc639f3dd2aa16a8`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `d753720..8788250`다. goal은 active/progress다.
+
+## 2026-11-12 — 영수증 전송 전후 SQLite 쓰기 복구
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 PCB 조립 기록과 전력 실측 샘플 대조를 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 중앙 영수증 및 웹 ACK 계약을 확인했다.
+
+- Gateway 0.2.119는 고정 Mobius4 영수증의 첫 전송 표시와 원격 전송 실패 뒤 재시도 시각을 SQLite에 쓰다가 실패하면 해당 전송 작업에서 로컬 쓰기를 재시도한다. 처음 전송하기 전에 표시가 커밋돼야 하며, 서버의 Retry-After는 로컬 쓰기 대기 중에도 경과한다. [영수증 재시도](../keyring/raspberry-pi-gateway/RECEIPT_ROUTING.md)
+- 전송 전 쓰기 오류, 중앙 HTTPS 보류 시각을 기록할 때의 오류, 재시작 뒤 기존 본문·요청 ID·보류 시각을 읽는 회귀시험 소스를 반영했다. 빌드·시험·실제 Pi·Mobius4 및 중앙 장애 재시작 확인은 미수행이다.
+
+소스 commit `33b6bb0035f85428f4cbc801a8ae8734e9dbf704`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `8b0e7aa..33b6bb0`다. goal은 active/progress다.
+
+## 2026-11-12 — Gateway ID 교체 시 CORE 장치 순번 보존
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 영수증 재시도 SQLite 쓰기 복구를 반영한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 CORE의 `deviceId:sequence` 중복 계약 및 웹 표시 계약을 확인했다.
+
+- Gateway 0.2.120의 전환 도구는 Gateway ID를 바꿀 때도 후보에 등록된 키링의 마지막 CORE 할당 순번을 보존한다. 후보 범위와 겹치는 원본 CORE 관측이 대기 중이면 새 DB 준비를 중단한다. 이전 명령·영수증·대기열과 권한 상태는 원본 DB에 남는다. [새 배포 DB 준비](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#새-배포-db에-core-순번-이어받기)
+- 같은 Gateway ID와 변경된 ID에서 보류 확인, 새 DB 순번 초기화, 새 관측 순번과 원본 상태 보존을 다루는 POSIX CLI 시험 소스를 반영했다. 빌드·시험·Pi 실행·새 서버 전환은 미수행이다.
+
+소스 commit `b0ca19f1a7f1de08759c70acf99f168368b3050d`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `04b96ae..b0ca19f`다. goal은 active/progress다.
+
+## 2026-11-12 — Mobius 컨테이너 독립 사전 점검
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03. 직전 goal turn은 Gateway 교체 시 CORE 장치 순번을 보존한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f` 및 중앙 Gateway API와 웹 관측 계약을 확인했다.
+
+- Gateway 0.2.121의 `--check-cse-routes`는 기존 DB binding을 읽기 전용으로 검사하고 활성 CSE 경로의 고정 ID를 HTTPS GET으로 대조한다. 관측·health는 항상 검사하며 명령을 켠 경우 영수증도 검사한다. 중앙 API와 MQTT에는 연결하지 않는다. [서버 전환 점검](../keyring/raspberry-pi-gateway/STATE_RECOVERY.md#새-배포-db에-core-순번-이어받기)
+- 관측 전용과 명령 설정, 고정 ID 누락·불일치, 이전 DB binding 충돌을 다루는 회귀시험 소스를 반영했다. 빌드·시험·실제 CSE 및 Pi 전환 점검은 미수행이다.
+
+소스 commit `525f81bad1faf61f2760b9da00631e22c4da9c05`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `1dcaef4..525f81b`다. goal은 active/progress다.
+
+## 2026-11-12 — 중앙 API와 Mobius TLS 자격 분리
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0 · R02, R03, R10. 직전 goal turn은 Mobius 컨테이너를 독립 점검할 수 있게 한 progress다. 원격 main `bc2a45d`, CORE `d54a43a`, WEB `80ed37f`와 Gateway mTLS 등록 및 웹 관측 계약을 확인했다.
+
+- Gateway 0.2.122는 중앙 API용 CA·인증서·키를 별도로 지정하면 전용 HTTPS 연결을 사용한다. Mobius HTTPS·MQTT는 기존 TLS 설정을 사용하며, 중앙 전용 설정을 생략하면 기존 공유 방식으로 동작한다. CSE 전용 사전 점검은 중앙 TLS 연결을 준비하지 않는다. [설정 예시](../keyring/raspberry-pi-gateway/.env.example)
+- 서로 다른 CA와 클라이언트 인증서의 loopback 교차 확인, 일부 설정 누락, 키 불일치, CSE 독립 점검의 회귀시험 소스를 반영했다. 빌드·시험·실제 Pi와 두 서버 연결 및 인증서 전환은 미수행이다.
+
+소스 commit `27a2313dc6969778f4f43fb77c24f7be70e49f70`을 `origin/codex/keyring-namho`에 push했다. 결과는 exit 0, `cdd1a5d..27a2313`다. goal은 active/progress다.
+
+## 2026-11-12 — 로컬 개발 기준 확정과 조립 이후 인계
+
+ROLE KEYRING / 남호 · DOC-REV 2.0.0. 사용자 지시에 따라 현재 개발과 로컬 검증 결과를 정리했다. 기준 소스는 원격에 반영된 `27a2313dc6969778f4f43fb77c24f7be70e49f70`이다.
+
+- r18 0.7.25 펌웨어 5개 프로필과 Feather 관측 0.1.1·명령 0.2.1 프로필 2개를 로컬 빌드했다. r18 호스트 18개와 Feather 호스트 4개 시나리오가 통과했다.
+- Gateway 0.2.122 소스의 기본 263건과 격리 모의 55건이 통과했다. 빌드한 wheel의 모듈이 소스와 일치하며, 설치한 wheel로도 기본 263건이 통과했다. Ubuntu WSL의 전용 파일시스템에서 POSIX 13건이 통과했다. [로컬 검증 결과와 로그 해시](../keyring/evidence/2026-11-12-local-handoff/README.md)
+- 제작 PCB 조립 이후 실물 전원·센서·LCD·BLE·명령 및 실제 Pi·Mobius4·중앙 정산, 서버 전환, 앱·웹 연동과 제출 증거를 확인한다. 이번에는 플래시·실물 시험·운영 변경을 수행하지 않았다.
+
+사용자 지시에 따라 남은 목표는 PCB 조립 이후까지 보류한다.
+
+## 2026-11-19 — r26 실물 업로드와 대시보드 확인
+
+- 조립 이후 작업을 재개했다. 팀 통합 브랜치 `4f3899b`의 배포 계약을 읽고 Gateway 0.2.123에 `/onem2m` 프록시 주소를 지원했다. Gateway 기본 시험 264건과 펌웨어 호스트 시나리오 18건을 통과했다. [r26 연결 절차](../keyring/pcb/R26_BRING_UP.md)
+- COM11의 r26에서 기존 플래시 앞 2.5 MiB를 복구용으로 보관한 뒤 `keyring-0.7.26-r26-st7789-bringup`을 올렸다. USB 실행 이미지 해시와 빌드의 SHA-256 푸터가 일치했고, USB에서 확인·비상 누름과 해제를 기록했다. PC에서 인증 BLE로 같은 부팅의 식별 정보와 관측을 받았다. 작업자는 비상 버튼을 뗀 뒤 10초 동안 PANIC 화면이 깜빡이거나 꺼지지 않았다고 확인했다.
+- 보호자와 운영자 대시보드 로그인에 성공했다. 운영 개요는 모의 이벤트를 표시했고, 실서버 자원 조회의 초기 주소는 이 PC의 localhost였다. 학교망 Pi 주소의 SSH와 ping이 응답하지 않아 같은 r26의 Pi → Mobius → 웹 전달은 미확인이다. 운영 측 장치 등록과 Gateway mTLS가 필요하다.
+- 비상 버튼을 누르는 즉시 PANIC으로 전환됐으며, 10초는 버튼을 뗀 뒤 화면 유지 여부를 확인한 시간이다. 운영자 위치 지도에서 키링 위치 관측 대기 상태를 확인했다. 팀 통합 코드에서 운영 지도는 인증된 `/api/portal/locations`를 조회한다. Pi 연결 재확인에서도 이더넷 이웃 상태는 `Unreachable`, SSH는 시간 초과였다.
+- 이후 Pi의 SSH 응답이 복구됐고, 작업자가 로그인한 뒤 PC에서 SSH 연결이 `Established`로 유지되는 것을 확인했다. 운영 지도는 Gateway의 중앙 telemetry 전송과 현재 기기 범위를 기준으로 관측을 조회한다. Pi의 BLE 수신 상태와 운영 사이트의 Mobius 쓰기·중앙 telemetry 수락·지도 노출은 추가 확인이 필요하다.
+- Raspberry Pi Zero 2 W에서 r26 BLE 인증 페어링을 완료했다. 직접 GATT에서 관측 441–445를 받았다. Gateway 0.2.123 wheel의 전송 전후 SHA-256이 일치했고, 기존 벤치 venv와 분리한 패키지 경로에서 `core-v1` 수신기로 관측 517·519–522를 정규화했다. 장치 ID `keyring-r26-c59c`, 펌웨어 `keyring-0.7.26-r26-st7789-bringup`, 부팅 ID `d4ece11e2bc231cd41abfd952c5c97e4`가 PC BLE 기록과 일치했다. Pi 표준 경로에 운영 설정이 없었고 기존 두 Gateway 환경 파일은 루프백 테스트용이었다. 운영 Mobius와 중앙 API 전송 및 지도 수신은 운영 Gateway 설정 확인 뒤 검증한다.
+- 제공받은 `gateway-1` 인증서의 발급 체인과 개인키 일치를 Pi에서 확인했다. 운영 MQTT 8883은 Pi에서 TCP 연결이 시간 초과됐다. HTTPS 443은 도메인에 맞는 자체 서명 서버 인증서를 반환했으며 시스템 CA와 제공받은 CA 모두에서 서버 신뢰 확인에 실패했다. 중앙 API의 Gateway 등록 상태 조회는 TLS 단계에서 멈췄다. 배포 측에서 8883 접근 경로와 HTTPS 서버 신뢰 체인을 확인한 뒤 Mobius·중앙 API·지도 수신을 검증한다.
+- 팀 배포 문서의 내부 전달 주소(사설 IP)도 Pi에서 확인했다. 해당 주소는 Wi-Fi 이웃 해석이 실패했고 TCP 443·8883에 연결되지 않았다. Pi에 운영 배포 문서의 `gateway-1` 설정을 관측 전용으로 준비했고 Gateway 0.2.123의 `--check-config`를 통과했다. Gateway 서비스 시작과 DB 생성은 운영 연결이 확인될 때까지 보류했다.
+- 휴대폰 핫스팟에 연결된 Pi에서 SSH를 확인하고, 핫스팟 경로로 운영 MQTT 8883에 TCP 연결했다. 기본 OpenSSL 검사에서는 브로커 TLS가 통과했으나 Gateway와 같은 Python 3.13 기본 TLS 컨텍스트에서는 CA에 `Key Usage`가 없어 MQTT 핸드셰이크가 거절되었다. `openssl verify -x509_strict`에서도 동일한 CA 오류를 확인했다. HTTPS 443은 핫스팟에서도 자체 서명 인증서 검증에 실패했다.
+- 소스와 화면 수정본 `cd241a5`, `344c8bc`를 `origin/codex/keyring-namho`에 push했다. 최종 소스에서 r18 기본·ST7789·JD9853 회귀 빌드도 모두 통과했다. 빌드·USB·BLE 로그와 복구 이미지는 Git 밖에 보관했다.
+
+## 2026-11-19 — r26 LCD UI 초안
+
+- r26 ST7789의 `READY`, `CONFIRM`, `PANIC` 화면을 상태 카드로 교체했다. LCD의 240×240 해상도에 맞춘 안티앨리어싱 글자 이미지를 사용했다. 버튼 전환 때 카드 내부만 갱신하고, 기존 화면 유지 및 USB의 버튼별 그리기 누계를 사용한다. 호스트 미리보기에서 전체 그리기와 부분 그리기의 최종 픽셀이 일치했다. 실물 업로드와 화면 확인은 남았다.
+- 최종 글자 파일을 재생성해 SHA-256 일치를 확인했다. r26 ST7789 최종 빌드와 r18 ST7789·JD9853 호환 빌드를 통과했다.
+- 제공받은 로고에서 `Keyring` 줄을 제외하고 어두운 헤더에 맞춰 색을 조정했다. r26 앞면 조립판에는 잔량계가 실장되지 않아 배터리 영역에 `No reading`을 표시했다. 장치 설정을 포함한 ESP32-S3 빌드 및 호스트 부분 갱신 비교를 통과했다.
+- r26 업로드 시도에서 Windows는 ESP32-S3 포트를 열거했으나 COM 구성 요청이 Win32 오류 31로 실패했다. 수동 ROM 모드에서도 같은 오류가 발생했고 USB JTAG도 장치를 열지 못했다. 플래시 쓰기 전 단계에서 중단했으며 실물 LCD 글자와 버튼 전환은 확인 대기다.
+- 시연 요청에 따라 LCD에 배터리 다섯 칸을 모두 채운 고정 아이콘을 표시했다. 실제 배터리 관측값은 변경하지 않았다. r26 빌드와 호스트 미리보기의 상태 전환 비교를 통과했다.
+- 여분 r26용 `keyring_r26_front_ota` 프로필을 추가했다. 기존 NVS 주소를 유지하며 OTA 앱 슬롯 두 개를 사용하고, Wi-Fi 목록을 순서대로 시도한다. 새 이미지 확정은 LCD 초기화 상태와 Wi-Fi 연결 뒤에 수행한다. 두 네트워크를 포함한 개인 설정은 저장소 밖에 보관했고, 실제 보드 설치와 OTA 시험은 아직 하지 않았다.
+- 여분 r26에서 기존 16 MiB 플래시를 보관한 뒤 OTA 프로필을 USB로 설치했다. 휴대폰 핫스팟에서 인증된 OTA로 0.7.27에서 0.7.28로 전송하고, 실행 이미지 해시 일치와 두 OTA 슬롯의 valid 상태를 확인했다. 추가 재부팅 뒤에도 0.7.28 실행을 확인했다. USB 기록에서 확인·비상 버튼 이벤트와 화면 그리기 누계를 각각 확인했다.
+- 0.7.29에 Wi-Fi 연결과 RSSI 네 단계를 표시하는 아이콘을 추가했다. 연결 상태를 주기적으로 읽고 변화 때 화면을 갱신한다. 로컬 빌드와 연결 해제·네 신호 단계의 전체/부분 화면 그리기 비교를 통과했고, 휴대폰 핫스팟을 통해 OTA 전송 후 여분 보드의 BLE 식별 정보에서 0.7.29를 확인했다. 실물 아이콘의 시각 확인은 별도다.
+- 0.7.30에서 Wi-Fi 아이콘 크기를 줄이고 RSSI 2초 간격 샘플·4 dB 히스테리시스·연속 3회 확인을 적용했다. 연결 해제는 즉시 표시한다. 아이콘만 바뀌면 해당 28×23 영역만 그리도록 분리했다. 호스트에서 신호 단계 전환 시 해당 영역 밖 쓰기가 없음을 확인했고, 무선 업로드 후 BLE 식별 정보로 0.7.30을 확인했다.
+
+## 2026-11-19 — 교체 인증서로 r26 운영 Mobius 저장 확인
+
+- Pi의 별도 설정에서 새 CA와 `gateway-1` 인증서의 엄격 검증 및 개인키 일치를 확인했다. MQTT 연결은 수락됐다. 같은 운영 컨테이너의 조회에서 `Mobius/...`는 4103, `/Mobius/...`는 2000을 받았다.
+- Gateway 0.2.124에 운영 브리지 이름 경로 설정을 추가했고 Gateway 로컬 시험 266건이 통과했다. 관측 전용으로 34초 실행한 결과 실물 r26 펌웨어 0.7.26의 관측 13건이 운영 Mobius에 저장됐다. 마지막 관측 98번을 MQTT로 재조회해 원본 payload SHA-256과 일치함을 확인했다.
+- 중앙 HTTPS 443은 새 CA에서도 자체 서명 인증서 검증에 실패했다. 운영자 위치 지도는 새로고침 후에도 0개로 표시됐다. HTTPS 서버 신뢰 체인 확보 뒤 중앙 수락과 지도 표시를 검증한다.
+- 여분 r26을 Pi에 새로 BLE 페어링하고 별도 상태 DB로 Gateway 0.2.124를 55초 실행했다. 새 인증서의 MQTT 연결과 Mobius 관측 조회가 성공했으며 여분 보드 0.7.30의 관측 sequence 1512를 재조회했다. 중앙 telemetry 11건은 HTTPS 연결 실패로 대기 상태였다. Pi에서 제공된 CA로 HTTPS 인증서 검증은 실패했고, 운영 지도에는 키링 0개가 표시됐다. 시험 Gateway는 종료했다.
+- getdesign.md의 Apple 디자인 분석을 참고해 r26 화면의 카드 테두리를 없애고 간격과 글자 계층을 조정했다. 파란색 상태 아이콘과 붉은 비상 상태를 사용하며 시연용 배터리 다섯 칸을 유지한다. r26 펌웨어 빌드와 호스트 미리보기의 부분 갱신 비교를 통과했다. 실물 보드 확인은 남았다.
+
+## 2026-11-19 — 여분 r26 Pi Gateway 상시 실행
+
+- Pi에 여분 r26 전용 Gateway 0.2.124 systemd 서비스를 설치하고 자동 시작을 활성화했다. 시작 전 설정 검사와 systemd 단위 검증을 통과했고 서비스 활성 상태와 BLE 관측 수집을 확인했다. 기존 시험 DB는 별도 서비스 DB로 복사했다.
+- 새 클라이언트 인증서로 MQTT에 접속해 운영 Mobius에서 여분 r26 펌웨어 0.7.30의 관측을 조회했다. 중앙 HTTPS 연결 실패와 전송 재시도 로그가 남고 중앙 telemetry가 대기 중이다. 배포 측 HTTPS 신뢰 체인과 중앙 수락 및 대시보드 표시 확인이 필요하다.
+- Pi 재부팅 뒤 학교망 사설 주소에서 자동 시작과 활성 상태, 여분 키링 관측 수집을 확인했다. 학교망에서 MQTT 8883은 연결 시간이 초과됐고 HTTPS 443은 TCP 연결됐다. 기존 핫스팟 우선순위는 100, 학교망은 0이지만 재부팅 뒤 Wi-Fi 검색에 핫스팟이 나타나지 않았다. 학교망 연결 동안 Mobius 관측과 중앙 telemetry 모두 전송 대기열에 쌓였다.
+
+## 2026-11-19 — 교체 HTTPS 신뢰 묶음 적용
+
+- 태용님이 전달한 trust bundle을 Pi에 복사해 중앙 API 전용 신뢰 설정에 적용했다. 기존 MQTT CA와 Gateway 인증서 설정은 유지했고 기존 환경 파일을 백업했다. Python TLS 1.3 검증, HTTPS 응답 200, Gateway 인증 상태 API 응답 200과 서비스 재시작을 확인했다.
+- 기존 대기 관측 한 건을 동일한 멱등 키로 중앙 API에 전송한 결과 HTTP 403과 `등록된 Gateway의 관측 계약을 확인하세요.`가 반환됐다. Gateway 등록·기기 관측 계약의 서버 측 확인이 필요하다. 학교망 MQTT 8883은 여전히 연결 시간이 초과되므로 Mobius 전송도 대기 중이다.
+
+## 2026-11-19 — 대시보드 실제 자원 조회 점검
+
+- 운영 대시보드의 `실시간 연결됨` 표시는 모의 이벤트 재생 연결이었다. 장치와 자원 화면에서 실제 서버 모드와 배포 프록시 경로를 입력해 조회했지만 브라우저 요청은 HTTP 403을 받았다.
+- 동일 운영 Mobius 최신 관측 경로를 PC에서 조회했을 때 Gateway 클라이언트 인증서가 없는 요청은 HTTP 403, 인증서를 사용한 요청은 HTTP 200/oneM2M 2000이었다. 마지막으로 확인된 실물 장치는 r26 키링(칩 주소 기반 ID), 펌웨어는 0.7.30, 관측 시각은 2026-11-19 20:30:15 KST였다. 이 값은 실시간 연결 확인이 아닌 마지막 저장 관측이다.
+- 운영 대시보드에서 안전하게 실제 값을 보려면 서버 측 인증된 Mobius 조회 또는 승인된 중앙 API 연동이 필요하다. 브라우저에 Gateway 개인키를 배포하지 않는다. 대시보드 서버 배포 접근 권한은 확보하지 못했다.
+
+## r26 0.7.31 LCD 절전
+
+READY·확인 상태에서 15초 후 GPIO2 백라이트를 끄고 ST7789에 SLPIN을 보낸다. 버튼 입력은 SLPOUT 후 화면을 갱신하며 PANIC은 확인 버튼까지 유지한다. Wi-Fi 아이콘 변화는 타이머를 연장하지 않는다. OTA 빌드와 r26 타이머·r18 회귀 시험을 통과했고 여분 보드에 인증된 OTA 전송을 완료했다. 소비전류는 계측하지 않았다.

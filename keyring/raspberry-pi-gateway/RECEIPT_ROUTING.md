@@ -10,9 +10,29 @@ KEYRING / 남호 · DOC-REV2.0.0 · Gateway0.2.2 · 2026-10-30.
 
 Gateway 0.2.27에서 컨테이너 ID를 고정한 배포는 native CREATE 뒤 같은 자원을 HTTPS로 조회해 저장된 영수증을 대조한다. 읽기가 실패하면 native 항목이 대기열에 남고 CORE ACK는 독립 상태를 유지한다. [고정 컨테이너 확인 절차](STATE_RECOVERY.md#명령-영수증-컨테이너-id-고정)
 
+Gateway 0.2.44는 컨테이너 ID를 고정한 native 명령 영수증의 첫 전송 시도를 기존 SQLite 행에 기록한다. 완료 확인 전에 종료되거나 재시도에 들어가면 고정 컨테이너와 같은 요청 ID로 만든 자원 이름을 조회한다. 부모 ID·이름·자원 유형·본문이 일치하면 기존 영수증으로 완료 처리한다. 요청 ID가 일치하는 HTTP 404와 oneM2M 4004를 함께 받으면 같은 이름으로 CREATE를 진행한다. 다른 오류나 본문 불일치에서는 영수증을 대기열에 유지한다. CORE ACK와 장치 명령 실행에는 이 절차를 적용하지 않는다.
+
 Gateway 0.2.30의 송신 worker는 재시도 시각이 된 native 명령 영수증과 CORE ACK를 오래된 관측보다 먼저 시도한다. 영수증을 연속 네 번 시도하면 다음 선택에서 일반 항목을 우선한다. 해당 쪽에 전송할 항목이 없으면 준비된 쪽이 계속 진행한다. 기존 SQLite 행으로 구분하며 요청 ID, 재시도 시각, 분리된 scoped CORE telemetry의 장치별 순서를 유지한다. 이 변경의 시험과 배포는 미실행이다.
 
+Gateway 0.2.98은 Mobius4 native 전송, CORE ACK, CORE 텔레메트리를 각각 독립 작업으로 보낸다. Mobius4 응답이 보류돼도 CORE ACK와 기본·scoped 텔레메트리는 자기 전송 경로로 진행한다. 새 native 영수증과 CORE ACK는 기존 한 트랜잭션으로 함께 등록한다. Mobius4 작업과 CORE ACK 작업 모두 이 등록을 시도할 수 있으며, SQLite의 기존 대기 행과 전달 표시가 중복 등록을 막는다. Mobius4 내의 영수증·관측 우선순위는 기존 규칙을 적용한다.
+
 CORE_BRIDGE_ENABLED의 projection 선택은 영수증 최초 staging 시 고정한다. 이미 대기 중인 native 영수증에 설정 변경만으로 CORE ACK를 과거로 소급 생성하지 않는다. 이미 있는 outbox 항목은 유지한다. DB 삭제·수동 outbox 재작성으로 재전송을 유도하지 않는다.
+
+## 중앙 명령 영수증 정산
+
+Gateway 0.2.46에서 `CENTRAL_RECEIPTS_ENABLED=true`를 사용하면 같은 SQLite 명령 저널의 영수증을 중앙 `POST /receipts`에도 보낸다. 재시도와 재시작에는 같은 본문과 `Idempotency-Key`를 사용한다. 중앙의 `ACCEPTED` 또는 `DUPLICATE` 응답이 원래 command ID, claim ID, 영수증 SHA-256과 일치해야 전송을 완료한다.
+
+Gateway 0.2.110은 응답의 `executionState`도 대조한다. 신규 수용 응답은 영수증에 따라 `APPLIED_VERIFIED`, `SETTLED_CANCELLED`, `DISPATCH_UNCERTAIN` 중 해당 값이어야 한다. 불확정 영수증의 중복 응답은 원래 영수증 해시가 같고 중앙이 나중에 적용 또는 취소로 정산한 경우도 확인으로 처리한다. 상태가 누락되거나 일치하지 않으면 대기열에 보존하고 같은 영수증으로 재시도한다.
+
+중앙용 항목과 최초 등록 표시는 같은 SQLite 트랜잭션에 저장한다. 기능을 켜면 기존 Mobius4 전달이 완료된 영수증도 중앙 대기열에 등록한다. 이 설정은 같은 중앙 배포의 DB에 적용한다. 새 중앙 배포를 시험할 때는 새 Gateway 상태 DB를 사용한다. 중앙 응답으로 Mobius4 전달 완료 여부를 바꾸지 않는다. CSE 전송이 보류된 동안에도 중앙 영수증을 보낼 수 있다.
+
+Gateway 0.2.51은 중앙 명령 영수증을 전용 작업에서 보낸다. Mobius4 요청과 중앙 영수증 요청은 각자의 응답을 기다리며, 한 작업이 I/O를 기다리는 동안 다른 작업에서 같은 SQLite 저널의 영수증을 대기열에 등록할 수 있다. 각 전송 작업은 자기 경로의 행만 선택한다. 최초 대기열 등록 트랜잭션과 경로별 재시도 시각은 기존 DB에서 이어진다. 중앙 영수증과 중앙 관측에는 같은 HTTPS origin의 `Retry-After` 규칙을 적용한다.
+
+Gateway 0.2.52부터 중앙 영수증과 등록 표시를 별도 트랜잭션에서 저장한다. Mobius4 영수증과 선택형 CORE ACK는 한 트랜잭션으로 등록한다. 두 행의 자리는 있고 중앙 복제본 자리만 부족하면 Mobius4·CORE가 먼저 진행할 수 있다. 중앙 복제본만 들어갈 때는 중앙 경로가 진행할 수 있다. 용량 부족으로 등록하지 못한 경로는 SQLite 명령 저널에서 다시 등록을 시도한다. 기존 요청 ID와 등록 표시를 이어서 쓰며 전체 outbox 용량 제한을 적용한다.
+
+Gateway 0.2.89는 원격 수신 확인 뒤 SQLite 완료 기록이 실패하면 해당 전송 작업에서 로컬 저장만 다시 시도한다. 저장 실패는 `outbox_confirmation_write_retries`로 집계하고 완료 집계는 커밋 뒤에 올린다. 정상 종료 시 마지막 저장을 시도한다. 저장 전에 프로세스가 종료되면 해당 행은 기존 경로의 요청 ID와 재전송 규칙을 따른다.
+
+Gateway 0.2.119는 고정 Mobius4 영수증의 첫 전송 표시와 실패 뒤 재시도 시각에도 같은 로컬 저장 방식을 적용한다. 첫 전송 표시는 커밋 뒤에 요청을 시작한다. 전송 실패 뒤에는 재시도 시각을 커밋할 때까지 해당 행을 다시 전송하지 않고, 저장을 기다린 시간은 서버가 요청한 `Retry-After`에서 차감한다. 저장 오류는 각각 `outbox_attempt_write_retries`와 `outbox_retry_write_retries`로 집계한다.
 
 ## 회귀 시험
 

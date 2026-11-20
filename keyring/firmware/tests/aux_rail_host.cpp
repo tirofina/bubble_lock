@@ -1,0 +1,159 @@
+#include <cassert>
+#include <cstdint>
+#include <cstdio>
+#include <utility>
+#include <vector>
+#include "aux_rail.h"
+#include "board_r18.h"
+
+using portMUX_TYPE = bool;
+constexpr bool portMUX_INITIALIZER_UNLOCKED = false;
+using gpio_num_t = int;
+using esp_timer_handle_t = void *;
+using esp_err_t = int;
+constexpr int ESP_OK = 0;
+struct esp_timer_create_args_t {
+    void (*callback)(void *);
+    const char *name;
+};
+
+uint64_t timeUs = 100000;
+bool faultHealthy = true;
+bool motorHigh;
+bool auxHigh, forceAuxLow, failAuxWrite;
+bool backlightHigh, forceBacklightHigh, forceBacklightLow, failBacklightOn, failBacklightOff;
+std::vector<std::pair<int, int>> writes;
+void (*timerCallback)(void *);
+
+void portENTER_CRITICAL(portMUX_TYPE *lock) { assert(!*lock); *lock = true; }
+void portEXIT_CRITICAL(portMUX_TYPE *lock) { assert(*lock); *lock = false; }
+uint64_t esp_timer_get_time() { return timeUs; }
+int esp_timer_create(const esp_timer_create_args_t *args, esp_timer_handle_t *) {
+    timerCallback = args->callback;
+    return ESP_OK;
+}
+int esp_timer_start_periodic(esp_timer_handle_t, uint64_t period) {
+    assert(period == 10000);
+    return ESP_OK;
+}
+int gpio_get_level(gpio_num_t pin) {
+    if (pin == board::MainFaultN) return faultHealthy;
+    if (pin == board::Motor) return motorHigh;
+    if (pin == board::LcdBacklight) return (backlightHigh || forceBacklightHigh) && !forceBacklightLow;
+    assert(pin == board::AuxEnable);
+    return auxHigh && !forceAuxLow;
+}
+int gpio_set_level(gpio_num_t pin, int level) {
+    writes.emplace_back(pin, level);
+    if (pin == board::AuxEnable) {
+        if (level && failAuxWrite) return -1;
+        auxHigh = level;
+    } else {
+        assert(pin == board::LcdBacklight);
+        if (level ? failBacklightOff : failBacklightOn) return -1;
+        backlightHigh = level;
+    }
+    return ESP_OK;
+}
+
+#include "aux_rail_subject.inc"
+
+void tick() {
+    timeUs += 10000;
+    timerCallback(nullptr);
+}
+
+int main() {
+    if (board::FrontAssembly) {
+        assert(auxRail::begin() && auxRail::displayFor(15000));
+        timeUs += 14990000;
+        assert(auxRail::displayVisible());
+        tick();
+        assert(!auxRail::displayVisible() && backlightHigh);
+        assert(auxRail::displayFor(15000, true));
+        timeUs += 30000000;
+        tick();
+        assert(auxRail::displayVisible());
+        assert(auxRail::displayFor(15000));
+        timeUs += 15000000;
+        tick();
+        assert(!auxRail::displayVisible() && backlightHigh);
+        std::puts("PASS r26 idle timeout, panic hold and confirm timeout");
+        return 0;
+    }
+    const std::vector<std::pair<int, int>> displayOn{{board::AuxEnable, 1}, {board::LcdBacklight, 0}};
+    const std::vector<std::pair<int, int>> railOff{{board::LcdBacklight, 1}, {board::AuxEnable, 0}};
+    assert(auxRail::begin());
+    assert(auxRail::displayFor(100));
+    writes.clear();
+    tick();
+    assert(auxRail::displayVisible() && writes == displayOn);
+    std::puts("PASS display refresh keeps backlight on");
+
+    assert(auxRail::alert(true));
+    motorHigh = true;
+    assert(!auxRail::displayVisible());
+    faultHealthy = false;
+    writes.clear();
+    tick();
+    assert(auxRail::alertInterrupted() && writes == railOff);
+    faultHealthy = true;
+    writes.clear();
+    assert(auxRail::displayFor(100) && !auxRail::displayVisible() && writes == railOff);
+    assert(!auxRail::alert(true));
+    assert(auxRail::alert(false) && auxRail::alertInterrupted());
+    assert(auxRail::busy() && !auxRail::displayVisible());
+    writes.clear();
+    motorHigh = false;
+    assert(auxRail::alert(false) && !auxRail::alertInterrupted());
+    assert(auxRail::displayVisible() && writes == displayOn);
+    std::puts("PASS transient fault keeps shared rail off until motor GPIO is low");
+
+    faultHealthy = false;
+    tick();
+    faultHealthy = true;
+    writes.clear();
+    tick();
+    assert(!auxRail::busy() && !auxRail::displayVisible() && writes == railOff);
+    std::puts("PASS display-only fault cancels the previous display window");
+
+    failAuxWrite = true;
+    assert(!auxRail::alert(true) && auxRail::alertInterrupted() && !auxHigh);
+    failAuxWrite = false;
+    assert(auxRail::alert(false));
+    forceAuxLow = true;
+    assert(!auxRail::alert(true) && auxRail::alertInterrupted() && !auxHigh);
+    assert(auxRail::alert(false));
+    forceAuxLow = false;
+    assert(auxRail::alert(true) && auxHigh);
+    motorHigh = true;
+    forceAuxLow = true;
+    assert(auxRail::alertInterrupted() && !auxHigh);
+    forceAuxLow = false;
+    assert(auxRail::alert(false) && auxRail::alertInterrupted());
+    motorHigh = false;
+    assert(auxRail::alert(false) && !auxRail::alertInterrupted());
+    std::puts("PASS auxiliary enable write and readback failures prevent or interrupt motor alert");
+
+    for (bool *failure : {&failAuxWrite, &forceAuxLow, &failBacklightOn, &forceBacklightHigh}) {
+        *failure = true;
+        assert(!auxRail::displayFor(100) && !auxRail::displayVisible());
+        assert(auxRail::displayOutputFault() && !auxHigh && backlightHigh);
+        *failure = false;
+        assert(auxRail::displayFor(100) && auxRail::displayVisible() && !auxRail::displayOutputFault());
+    }
+    for (bool *failure : {&failBacklightOff, &forceBacklightLow}) {
+        assert(auxRail::displayFor(100) && auxRail::displayVisible());
+        *failure = true;
+        assert(!auxRail::alert(true) && auxRail::alertInterrupted() && !auxHigh);
+        assert(auxRail::displayOutputFault());
+        *failure = false;
+        assert(auxRail::alert(false) && backlightHigh);
+    }
+    assert(auxRail::alert(true) && auxHigh);
+    forceBacklightLow = true;
+    assert(auxRail::alertInterrupted() && !auxHigh && auxRail::displayOutputFault());
+    forceBacklightLow = false;
+    assert(auxRail::alert(false) && !auxRail::alertInterrupted());
+    std::puts("PASS LCD output failures cancel drawing or block alert handover");
+}

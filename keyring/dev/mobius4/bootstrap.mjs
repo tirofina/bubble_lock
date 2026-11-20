@@ -3,20 +3,29 @@ import https from 'node:https';
 import {link, mkdir, readFile, unlink, writeFile} from 'node:fs/promises';
 import {setTimeout as delay} from 'node:timers/promises';
 import {randomUUID} from 'node:crypto';
-import {scopedCommandReceiptContainers, scopedFeatherCommandObservationContainer} from './scoped-command-receipts.mjs';
+import {scopedCommandReceiptContainers, scopedFeatherCommandObservationContainer,
+  scopedR18CommandObservationContainer, scopedR18CommandHealthContainer} from './scoped-command-receipts.mjs';
 import {receiptIdentifier} from '../../integration-candidate/receipt-authorization.mjs';
 import {describeSwitch, selectSdtProfile, switchResource} from './sdt-profile.mjs';
 
 const args = process.argv.slice(2);
-if (args.length && (args.length !== 1 || !['--scoped', '--scoped-command-receipts',
-  '--scoped-feather-command-observation', '--scoped-pin-command-receipts'].includes(args[0]))) {
-  throw new Error('Usage: node bootstrap.mjs [--scoped | --scoped-command-receipts | --scoped-feather-command-observation | --scoped-pin-command-receipts]');
+const scopedActions = ['--scoped', '--scoped-command-receipts', '--scoped-feather-command-observation',
+  '--scoped-r18-telemetry', '--scoped-pin-command-receipts', '--scoped-pin-command-observation',
+  '--scoped-pin-r18-observation', '--scoped-pin-r18-health', '--scoped-prepare-r18-mqtt'];
+if (args.length && (args.length !== 1 || !scopedActions.includes(args[0]))) {
+  throw new Error(`Usage: node bootstrap.mjs [${scopedActions.join(' | ')}]`);
 }
 const scoped = args.length === 1;
 const commandReceiptsOnly = args[0] === '--scoped-command-receipts';
 const commandObservationOnly = args[0] === '--scoped-feather-command-observation';
+const r18TelemetryOnly = args[0] === '--scoped-r18-telemetry';
 const pinReceiptRoutes = args[0] === '--scoped-pin-command-receipts';
-const fullProfile = !commandReceiptsOnly && !commandObservationOnly && !pinReceiptRoutes;
+const pinObservationRoute = args[0] === '--scoped-pin-command-observation';
+const pinR18ObservationRoute = args[0] === '--scoped-pin-r18-observation';
+const pinR18HealthRoute = args[0] === '--scoped-pin-r18-health';
+const prepareR18Mqtt = args[0] === '--scoped-prepare-r18-mqtt';
+const pinning = pinReceiptRoutes || pinObservationRoute || pinR18ObservationRoute || pinR18HealthRoute || prepareR18Mqtt;
+const fullProfile = !commandReceiptsOnly && !commandObservationOnly && !r18TelemetryOnly && !pinning;
 const root = new URL(scoped ? './.local/scoped/' : './.local/', import.meta.url);
 const environment = Object.fromEntries((await readFile(new URL('compose.env', root), 'utf8'))
   .split(/\r?\n/).filter(line => line && !line.startsWith('#')).map(line => {
@@ -42,8 +51,8 @@ const resources = fullProfile ? [
     rn: 'bubbleState', state: false, lbl: ['dev-bootstrap', 'unobserved'],
   })},
 ] : [];
-if (scoped && !pinReceiptRoutes) {
-  const commandContainers = [
+if (scoped && !pinning) {
+  const commandContainers = r18TelemetryOnly ? [scopedR18CommandObservationContainer, scopedR18CommandHealthContainer] : [
     ...(commandObservationOnly ? [] : Object.values(scopedCommandReceiptContainers)),
     ...(commandReceiptsOnly ? [] : [scopedFeatherCommandObservationContainer]),
   ];
@@ -121,50 +130,83 @@ async function provision(resource) {
     ...(resource.ty === 28 ? {sdtProfile: sdt.name, sdtEnvelope: sdt.envelope, sdtDeprecated: sdt.deprecated} : {})};
 }
 
-async function preparePinnedReceiptRoutes() {
-  const pins = new Map();
-  for (const [gateway, path] of Object.entries(scopedCommandReceiptContainers)) {
-    if (pins.size) await delay(7000);
-    const observed = await exchange('GET', path);
-    if (observed.httpStatus !== 200 || observed.rsc !== 2000 || observed.rqi !== observed.requestId) {
-      throw new Error('Scoped receipt container lookup failed.');
-    }
-    const parent = JSON.parse(observed.content)['m2m:cnt'];
-    if (parent?.ty !== 3 || parent.rn !== path.split('/').at(-1) || !receiptIdentifier(parent.ri)
-        || [...pins.values()].includes(parent.ri)) {
-      throw new Error('Scoped receipt container identity mismatch.');
-    }
-    pins.set(gateway, parent.ri);
+async function readContainerId(path) {
+  const observed = await exchange('GET', path);
+  if (observed.httpStatus !== 200 || observed.rsc !== 2000 || observed.rqi !== observed.requestId) {
+    throw new Error('Scoped container lookup failed.');
   }
+  const parent = JSON.parse(observed.content)['m2m:cnt'];
+  if (parent?.ty !== 3 || parent.rn !== path.split('/').at(-1) || !receiptIdentifier(parent.ri)) {
+    throw new Error('Scoped container identity mismatch.');
+  }
+  return parent.ri;
+}
 
-  const lines = [];
-  for (const [gateway, ri] of pins) {
-    const identity = `CN=scoped-gateway-${gateway.slice(3)}`;
-    const path = scopedCommandReceiptContainers[gateway];
-    lines.push(`"~^${identity}:GET:${path}$" 1;`);
-    lines.push(`"~^${identity}:POST:/${ri.replaceAll('.', '[.]')}$" 1;`);
+async function readPins(containers) {
+  const pins = new Map();
+  for (const [gateway, path] of Object.entries(containers)) {
+    if (pins.size) await delay(7000);
+    const resourceId = await readContainerId(path);
+    if ([...pins.values()].includes(resourceId)) throw new Error('Scoped container identity mismatch.');
+    pins.set(gateway, resourceId);
   }
-  const directory = new URL('receipt-routes/', root);
-  const routes = new URL('receipt-routes.conf', directory);
-  const content = lines.join('\n') + '\n';
+  return pins;
+}
+
+async function writeScopedFile(directory, name, content, mismatch, matches = (previous) => previous === content) {
   await mkdir(directory, {recursive: true});
-  const previous = await readFile(routes, 'utf8').catch(error => {
+  const target = new URL(name, directory);
+  const previous = await readFile(target, 'utf8').catch(error => {
     if (error.code === 'ENOENT') return null;
     throw error;
   });
-  if (previous !== null && previous !== content) {
-    throw new Error('Existing scoped receipt pins differ. Keep the old routes and prepare a separate deployment.');
+  if (previous !== null) {
+    if (!matches(previous)) throw new Error(mismatch);
+    return;
   }
-  if (previous === null) {
-    const staged = new URL(`.${randomUUID()}.tmp`, directory);
-    await writeFile(staged, content, {flag: 'wx', mode: 0o600, flush: true});
-    try {
-      await link(staged, routes);
-    } finally {
-      await unlink(staged);
-    }
+  const staged = new URL(`.${randomUUID()}.tmp`, directory);
+  await writeFile(staged, content, {flag: 'wx', mode: 0o600, flush: true});
+  try {
+    await link(staged, target);
+  } finally {
+    await unlink(staged);
   }
-  for (const [gateway, ri] of pins) console.log(`SCOPED_RECEIPT_PIN ${gateway} ${ri}`);
+}
+
+async function writePinnedRoutes(containers, pins, routeFile, pinLabel) {
+  const lines = [];
+  for (const [gateway, ri] of pins) {
+    const identity = `CN=scoped-gateway-${gateway.slice(3)}`;
+    const path = containers[gateway];
+    lines.push(`"~^${identity}:GET:${path}$" 1;`);
+    lines.push(`"~^${identity}:POST:/${ri.replaceAll('.', '[.]')}$" 1;`);
+  }
+  await writeScopedFile(new URL('receipt-routes/', root), routeFile, lines.join('\n') + '\n',
+    'Existing scoped resource pins differ. Keep the old routes and prepare a separate deployment.');
+  for (const [gateway, ri] of pins) console.log(`${pinLabel} ${gateway} ${ri}`);
+}
+
+async function preparePinnedRoutes(containers, routeFile, pinLabel) {
+  await writePinnedRoutes(containers, await readPins(containers), routeFile, pinLabel);
+}
+
+async function prepareR18MqttRoutes() {
+  const observation = {'gw-b': scopedR18CommandObservationContainer};
+  const health = {'gw-b': scopedR18CommandHealthContainer};
+  const observationPins = await readPins(observation);
+  await delay(7000);
+  const healthPins = await readPins(health);
+  const profile = {observationContainerRi: observationPins.get('gw-b'), healthContainerRi: healthPins.get('gw-b')};
+  if (profile.observationContainerRi === profile.healthContainerRi) throw new Error('Expected distinct r18 container pins.');
+  await writePinnedRoutes(observation, observationPins, 'observation-gw-b.conf', 'SCOPED_OBSERVATION_PIN');
+  await writePinnedRoutes(health, healthPins, 'health-gw-b.conf', 'SCOPED_HEALTH_PIN');
+  await writeScopedFile(new URL('config/', root), 'r18-mqtt.json', JSON.stringify(profile) + '\n',
+    'Existing r18 MQTT profile differs from the scoped CSE pins.', (previous) => {
+      const saved = JSON.parse(previous);
+      return saved != null && Object.keys(saved).length === 2
+        && saved.observationContainerRi === profile.observationContainerRi && saved.healthContainerRi === profile.healthContainerRi;
+    });
+  console.log('SCOPED_R18_MQTT_PROFILE_PREPARED');
 }
 
 async function provisionEmptyResources() {
@@ -173,16 +215,31 @@ async function provisionEmptyResources() {
     if (index) await delay(7000);
     const {requestId, status, httpStatus, rsc, rqi, sdtProfile, sdtEnvelope, sdtDeprecated} = await provision(resource);
     const resourceName = Object.values(resource.body)[0].rn;
-    receipts.push({requestId, parent: resource.path, resourceName, ty: resource.ty, httpStatus, rsc, rqi, status,
+    const path = `${resource.path}/${resourceName}`;
+    const receipt = {requestId, parent: resource.path, resourceName, ty: resource.ty, httpStatus, rsc, rqi, status,
       ...(sdtProfile ? {sdtProfile, sdtEnvelope, sdtDeprecated} : {}),
-      timestamp: new Date().toISOString(), evidenceScope: 'empty-resource-provisioning'});
-    console.log(`${status} ${resource.path}/${resourceName} ty=${resource.ty} HTTP=${httpStatus} rsc=${rsc}`);
+      timestamp: new Date().toISOString(), evidenceScope: 'empty-resource-provisioning'};
+    if (r18TelemetryOnly && path === scopedR18CommandHealthContainer) {
+      await delay(7000);
+      receipt.resourceId = await readContainerId(path);
+      console.log(`SCOPED_R18_HEALTH_RI gw-b ${receipt.resourceId}`);
+    }
+    receipts.push(receipt);
+    console.log(`${status} ${path} ty=${resource.ty} HTTP=${httpStatus} rsc=${rsc}`);
   }
   const receiptName = commandReceiptsOnly ? 'command-receipts-provisioning.json'
-    : commandObservationOnly ? 'feather-command-observation-provisioning.json' : 'resource-provisioning.json';
+    : commandObservationOnly ? 'feather-command-observation-provisioning.json'
+    : r18TelemetryOnly ? 'r18-command-telemetry-provisioning.json' : 'resource-provisioning.json';
   await writeFile(new URL(receiptName, root), JSON.stringify(receipts, null, 2) + '\n');
   console.log('Empty resources prepared. No BLE, device command, observation or end-to-end test was run.');
 }
 
-if (pinReceiptRoutes) await preparePinnedReceiptRoutes();
+if (pinReceiptRoutes) await preparePinnedRoutes(scopedCommandReceiptContainers, 'receipt-routes.conf', 'SCOPED_RECEIPT_PIN');
+else if (pinObservationRoute) await preparePinnedRoutes({'gw-a': scopedFeatherCommandObservationContainer},
+  'observation-gw-a.conf', 'SCOPED_OBSERVATION_PIN');
+else if (pinR18ObservationRoute) await preparePinnedRoutes({'gw-b': scopedR18CommandObservationContainer},
+  'observation-gw-b.conf', 'SCOPED_OBSERVATION_PIN');
+else if (pinR18HealthRoute) await preparePinnedRoutes({'gw-b': scopedR18CommandHealthContainer},
+  'health-gw-b.conf', 'SCOPED_HEALTH_PIN');
+else if (prepareR18Mqtt) await prepareR18MqttRoutes();
 else await provisionEmptyResources();

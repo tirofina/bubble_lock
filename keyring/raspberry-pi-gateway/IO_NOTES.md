@@ -6,9 +6,17 @@
 - 등록한 address를 스캔한 다음 암호화된 GATT identity의 deviceId가 설정과 일치하는지 확인한다. 펌웨어가 요구하는 encrypted/MITM characteristic을 읽고 쓸 수 있어야 한다. 빈 firmware revision allowlist는 revision 제한을 추가하지 않는다는 뜻이며, address/deviceId 등록을 생략할 수 있다는 뜻은 아니다.
 - 스캐너는 전체 fleet에서 하나를 사용한다. 어댑터의 동시 scan/connection 지원은 실제 Raspberry Pi와 BlueZ에서 확인해야 한다. RSSI가 마지막 scan 이후 30초를 넘으면 null을 보낸다. 이 값은 거리 측정값이 아니다.
 - 명령은 장치별 직렬 WRITE with response를 사용하고, 20 byte 조각에 LF 종결 JSON을 전송한다. fragment timeout/overflow, 잘못된 payload, 전송 중단 시 연결을 해제해 다음 명령과 이전 조각이 섞이지 않게 한다.
+- Gateway 0.2.85는 최초 중앙 승인 요청을 남은 명령 기한과 `REQUEST_TIMEOUT` 중 짧은 값으로 제한한다. 명령 기한이 끝나면 `REJECTED / EXPIRED` 영수증을 저장한다. 명령 기한이 남은 상태에서 요청 제한에 도달하면 `RECEIVED`를 유지하고 다음 순회에서 다시 승인받는다.
+- Gateway 0.2.86은 등록 장치별로 명령을 순서대로 처리한다. 한 장치의 중앙 승인이나 BLE 영수증을 기다리는 동안 다른 장치의 명령을 진행한다. 이전 등록에서 남은 명령도 기존 기한 검사 경로를 거친다.
+- Gateway 0.2.84는 r18 초기 구동 revision과 명령 쓰기 특성이 없는 장치에서 관측만 구독한다. 명령 쓰기 특성이 있으면 영수증 알림 특성과 구독 성공을 확인한 뒤 `commandReady`를 연다. 영수증 특성이 없거나 알림을 지원하지 않으면 관측을 이어가며 health의 `lastError`에 `receipt_characteristic_unavailable`을 기록한다. 구독 요청이 실패하면 연결을 다시 시도한다.
 - commandId와 payloadHash가 일치하는 receipt만 해당 명령을 정산한다. 성공·거절 여부의 최종 해석은 Gateway service가 담당한다. BLE timeout은 성공으로 바꾸지 않는다.
+- Gateway 0.2.108은 마지막 GATT 쓰기 응답에 오류가 나면 같은 인증 연결에서 원래 기한까지 해당 명령의 ACK를 기다린다. 일치하는 ACK를 받으면 기존 경로로 저장한다. 기한이 지나거나 연결이 끊기면 기존 실패 영수증을 사용한다. 대기를 마치면 해당 연결을 정리하며 명령을 자동 재전송하지 않는다.
+- Gateway 0.2.87은 수신한 명령 영수증의 최초 수신 시각과 본문을 보존한다. SQLite 기록이 실패하면 해당 장치의 명령 처리에서 저장만 재시도한다. 종료 시 한 번 더 저장을 시도한다. 저장 전에 프로세스가 종료되면 다음 시작에서 남은 실행 의도를 `INDETERMINATE / RESTART_INTERRUPTED`로 정산한다.
 - 같은 bootId의 60초 이내 uptime anchor만 acceptedAt/appliedAt으로 환산한다. UTC를 확정할 수 없으면 null과 timestampSource=unavailable을 남긴다. gateway-estimated 값은 BLE 수신 지연을 포함하는 추정값이다.
 - 순간적인 관측 수신 버퍼는 장치별 128개다. durable queue에 전달하지 못한 현재 항목은 재시도한다. 버퍼 초과 시 명시적으로 drop counter를 늘리고 연결을 끊는다. 프로세스가 비정상 종료되기 전 SQLite에 아직 저장되지 않은 BLE 알림은 복구할 수 없다.
+- Gateway 0.2.83은 `buttonPresses`가 있는 관측의 확인·비상 누계를 부팅 ID와 함께 SQLite에 저장한다. 같은 부팅에서 순번이 늘었지만 어느 한 누계가 줄어들면 BLE 세션을 끊고 해당 관측은 대기열에 넣지 않는다. 이전 누계는 BLE 재연결과 Gateway 재시작을 지나 유지된다. 누계가 빠진 관측은 저장할 수 있으며 기존 누계는 보존된다. 새 부팅에서는 새 누계를 받는다.
+- Gateway 0.2.107은 마지막 BLE 기기 업타임을 부팅 ID 및 관측 대기열과 같은 SQLite 트랜잭션으로 저장한다. 재시작 뒤 같은 부팅에서 순번이 증가해도 업타임이 감소한 관측은 거절한다. 새 부팅은 새 기준을 사용하고, 기존 DB에서 업타임을 수집하기 전까지는 빈 값으로 둔다. 저장한 업타임은 관측 순서 검사에 쓰며 영수증 UTC 환산은 해당 BLE 세션에서 새로 받은 관측을 사용한다.
+- Gateway 0.2.53은 확인을 기다리는 일반 상태 보고가 있으면 새 일반 보고를 저장하지 않고 `health_deferred_pending`으로 집계한다. 기존 보고의 본문·요청 ID·재시도 시각은 재시작 뒤에도 이어진다. 이전 버전에서 쌓인 보고는 전송될 때까지 보존한다. 자격 상태 전환은 별도 저널에 기록하고 각 전환 영수증을 대기열에 등록한다.
 - api_url은 HTTPS base URL이다. 뒤에 `/api/v1/gateways/{gatewayId}`가 붙는다. cse_url은 HTTPS origin이며 container에는 `/Mobius/...`의 전체 resource path를 설정한다.
 - HTTP와 MQTT는 같은 CA/client certificate/private key를 사용하고 TLS 1.3 이상을 요구한다. HTTP redirect와 환경 proxy 자동 사용은 꺼져 있다. 인증서 교체는 데몬 재시작으로 적용한다.
 - MQTT 3.1.1 persistent session/QoS 1을 사용하고 응답 subscription SUBACK 이후 전송한다. Paho 메모리 큐는 32개로 제한하며 영속성은 service의 SQLite outbox가 담당한다. MQTT session만으로 프로세스 재시작 후 전송을 보장하지 않는다.
@@ -18,3 +26,19 @@
 - broker ACL, topic 경로, 실제 CSE ID 표기, RVI, HTTP 응답 헤더, deterministic contentInstance 이름의 재전송 동작은 PC-MOBIUS와 capability probe로 확정해야 한다. 아직 실제 Mobius와 연동한 결과가 없다.
 
 API 작성 참고: [Bleak GATT client](https://bleak.readthedocs.io/en/latest/api/client.html), [Paho MQTT client](https://eclipse.dev/paho/files/paho.mqtt.python/html/client.html). BLE bond 신뢰 정책과 oneM2M 배포 계약은 이 라이브러리 문서만으로 확정되지 않는다.
+
+Gateway 0.2.97은 같은 Mobius4 컨테이너에서 장치별 관측을 SQLite 등록 순서대로 보낸다. 첫 관측이 재시도 대기 중이면 재부팅 뒤 생성된 같은 장치의 관측도 그 뒤에서 대기한다. 다른 장치의 관측, 명령 영수증, health는 기존 규칙에 따라 전송한다. 기존 native 관측 행의 장치 ID는 저장한 본문에서 채우며 요청 ID·본문·재시도 시각은 기존 값을 사용한다.
+
+## 중앙 관측 전달
+
+Gateway 0.2.47에서 `CENTRAL_TELEMETRY_ENABLED=true`를 사용하면 검증한 BLE 관측을 Mobius4용 항목 및 관측 커서와 같은 SQLite 트랜잭션에 중앙용으로 등록한다. 배포 예시 파일은 중앙 경로를 켜고, 기존 격리 프로필은 기본값 `false`를 사용한다. 중앙 API에서 Gateway·장치·가구 등록을 마친 뒤 같은 배포의 상태 DB를 사용한다.
+
+중앙 송신은 장치별로 가장 오래된 미전송 관측부터 처리한다. 재시도 중인 장치가 있어도 다른 장치의 관측은 진행한다. 재시작과 재시도에는 동일 본문과 `Idempotency-Key`를 사용한다. 중앙 응답의 장치 ID와 Gateway·장치·부팅 ID·순번으로 계산한 `observationId`를 확인한다. `ACCEPTED`와 `DUPLICATE`는 확인, `STALE`은 중앙이 더 새 관측을 보유한 결과로 집계한다.
+
+Gateway 0.2.49부터 중앙 관측 전송은 전용 작업에서 중앙 응답을 기다린다. Mobius4 관측과 명령 영수증은 응답 대기 중에도 기존 전송 작업에서 진행할 수 있다. 두 작업은 같은 SQLite 대기열을 사용하며 각 항목은 담당 작업만 선택한다. 중앙 API가 `Retry-After`를 보내면 해당 HTTPS origin의 대기 규칙을 적용한다.
+
+Gateway 0.2.56은 중앙 API origin의 `Retry-After`가 남아 있으면 새 중앙 관측과 명령 영수증을 전송 대상으로 선택하지 않는다. 각 행의 재시도 횟수와 예약 시각은 기존 값을 유지한다. 새 명령 영수증은 SQLite 명령 저널에 보존하고 대기가 끝나면 중앙 전송 대기열에 등록한다. 신뢰 가능한 시계로 만료된 중앙 관측은 대기 중에도 정리한다. Mobius4가 별도 HTTPS origin이면 기존 전송이 계속된다.
+
+Gateway 0.2.50의 `CENTRAL_TELEMETRY_RETENTION_SECONDS`는 팀 서버의 관측 보관 기간과 맞춘다. 기본값은 24시간이다. Pi의 시계를 신뢰할 수 있을 때만 관측 시각에 설정 기간과 시계 오차 여유 2초를 더해 만료를 판정한다. 중앙 관측 전송 작업은 재시도 시각을 기다리는 항목도 묶어서 만료 처리하고 `central_telemetry_expired`로 집계한다. 대상은 중앙 전송용 복제본이며 Mobius4 관측과 명령 영수증은 각자의 전송 규칙을 따른다. 만료되지 않은 관측이 SQLite 한도를 채우면 기존 대기열 용량 제한이 적용된다. 이 경로는 원격 main `bc2a45d`의 INTEGRATION API 계약을 따른다.
+
+Gateway 0.2.111은 Pi 시계를 신뢰할 수 있을 때 저장 시점에 이미 만료된 관측의 중앙 복제본을 만들지 않는다. Mobius4와 해당 CORE 경로는 평소처럼 등록한다. 용량 부족으로 저장이 막히면 보관 기간이 지난 중앙 복제본을 최대 128건 정리하고 같은 관측의 저장을 한 번 다시 시도한다. 이미 만료된 복제본을 생략하거나 정리한 건수는 `central_telemetry_expired`에 합산한다.

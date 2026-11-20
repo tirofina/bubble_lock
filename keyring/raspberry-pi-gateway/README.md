@@ -8,9 +8,13 @@ Gateway 0.2.44는 native oneM2M 요청마다 전송 경로를 조건으로 고�
 
 Gateway 0.2.13에서는 `M2M_MQTT_ENABLED=false`로 native cin을 HTTPS에 고정한 채 CORE MQTT를 별도로 사용할 수 있다. 생략하면 native MQTT는 `MQTT_ENABLED`를 따른다. 이 설정은 oneM2M listener가 없는 [격리 epoch 브로커](../dev/mobius4/README.md#epoch-전용-mqtt-프로필)에 사용한다.
 
+BubbleLock 운영 MQTT 브리지에는 `M2M_MQTT_MOBIUS_NAMED_PATHS=true`를 지정한다. 이름 경로의 선행 슬래시를 유지하여 `/Mobius/...`를 보낸다. 리소스 ID가 고정된 컨테이너는 이 설정에서 HTTPS로 전송하여 고정된 부모를 검증한다.
+
 Gateway 0.2.14부터 epoch 관측은 일치하는 CSE 적용 영수증을 받아야 SQLite에서 완료 처리한다. 일반 관측과 명령 영수증은 scoped 응답 대기와 별도로 전송한다. 중앙 소비자와 응답 토픽 ACL을 같은 변경으로 배치한다. [적용 영수증 계약](../integration-candidate/README.md#epoch-관측의-적용-영수증)
 
 Gateway 0.2.15의 `bubble-gateway-state retire-core`는 전환 뒤 보류된 이전 epoch 행을 운영자가 보관하고 정리할 때 사용한다. daemon을 중지하고 현재보다 낮은 epoch를 명시하면 격리 스냅샷과 보관 계획을 저장한 뒤 해당 CORE 행만 정리한다. [상태 보관 절차](STATE_RECOVERY.md#종료된-core-epoch-보관)
+
+임시 Mobius4에서 팀 서버로 전환하기 전에 `bubble-gateway-state plan-cutover`로 기존 DB의 대기열과 명령 저널을 확인한다. 현재 환경과 전환 후보 환경을 각각 지정한다. [전환 전 대기열 확인](STATE_RECOVERY.md#전환-전-대기열-확인)
 
 Python 3.11 이상과 Linux BlueZ를 사용하는 KEYRING 현장 daemon이다. BLE 관측을 SQLite outbox에 저장하고 MQTT 또는 HTTPS로 oneM2M contentInstance를 생성한다. 중앙에서 받은 명령은 최신 승인·credential·deadline을 확인한 뒤 BLE로 전달한다.
 
@@ -69,11 +73,20 @@ sudoedit /etc/privacy-bubble/gateway.env
 | `M2M_CSE_URL` | `https://host:port` 형태의 origin. `/Mobius`는 넣지 않음 |
 | `M2M_*_CONTAINER` | `/Mobius/{AE}/observations`처럼 전체 oneM2M resource path |
 | `PC_API_URL` | HTTPS base URL. 코드가 `/api/v1/gateways/{GATEWAY_ID}`를 덧붙임. `/api/v1`을 중복 입력하지 않음 |
+| `PC_API_DEPLOYMENT_ID` | 새 DB를 중앙 API 저장소에 연결하는 선택 설정. 같은 저장소의 주소를 바꾸면 ID를 유지하고, 새 저장소에는 새 ID와 DB 경로를 지정함. [중앙 API 배포 전환](STATE_RECOVERY.md#중앙-api-배포-전환) |
+| `PC_DISPATCH_START_REQUIRED` | `true`일 때 BLE 쓰기 전 중앙 `POST /dispatch-start` 승인을 요구함. 기존 고정 벤치 프로필의 기본값은 `false`. [명령 기한](BLE_SESSIONS.md#승인-기한과-gatt-전송) |
+| `COMMANDS_ENABLED` | 기본 `true`. `false`이면 관측·health 전송을 유지하고 명령 조회·실행·장치 명령 영수증 처리를 중지함. 관측·health와 분리된 영수증 컨테이너가 필요함. [r18 관측 전용 세션](TESTING.md#r18-pi-관측-전용-세션) |
+| `NATIVE_OBSERVATION_TRACE` | 기본 `false`. `true`이면 Mobius4 관측 응답을 확인하고 Pi outbox에서 완료 처리한 뒤 INFO 로그에 요청 ID, 본문 해시, 전송 확인 경로, 새 자원 생성 여부와 Gateway 부팅 ID를 기록함. |
+| `CENTRAL_RECEIPTS_ENABLED` | `true`일 때 중앙 `POST /receipts`에 명령 영수증을 보냄. 기본값은 `false`. 같은 중앙 배포에서 기존 DB로 활성화하면 이전 영수증도 전송 대기열에 추가함. [중앙 영수증 정산](RECEIPT_ROUTING.md#중앙-명령-영수증-정산) |
+| `CENTRAL_TELEMETRY_ENABLED` | `true`일 때 새 BLE 관측을 중앙 `POST /telemetry`에도 보냄. 기본값은 `false`. 중앙 배포의 Gateway·장치·가구 등록이 필요함. [중앙 관측 전달](IO_NOTES.md#중앙-관측-전달) |
+| `CENTRAL_TELEMETRY_RETENTION_SECONDS` | 중앙 관측 서버의 보관 기간과 같은 초 단위 값. 기본 `86400`, 범위 `1`~`86400`. Pi는 시계 오차 여유 2초를 더한 뒤 중앙 복제본을 만료 처리함. |
 | `M2M_ORIGINATOR`, `M2M_CSE_ID` | MQTT topic의 단일 segment이면서 중앙과 합의한 식별자 |
 | `M2M_RVI` | 예시 `3`을 그대로 확정값으로 사용하지 않고 Mobius capability probe 결과로 결정 |
 | `MQTT_WRAPPED_PRIMITIVE` | 기본 `false`는 flat oneM2M primitive. PC capability probe에서 `m2m:rqp` wrapper가 필요한 경우에만 `true`로 설정하며 다른 형식의 자동 재시도는 하지 않음 |
 | `BLE_DEVICES` | `deviceId → 실제 BLE 주소` JSON 객체. 1~32대, 중복 주소 불허 |
+| `BLE_OBSERVATION_TIMEOUT` | 새 관측 알림 없이 연결을 유지할 최대 시간. 기본 30초, 범위 5~300초. 초과하면 해당 장치를 다시 연결함. |
 | `FIRMWARE_REVISION_ALLOWLIST` | 쉼표로 구분한 정확한 firmwareRevision. 비워 두면 추가 revision 제한만 생략 |
+| `BLE_BOARD_REVISION` | 설정하면 해당 Gateway의 BLE 장치가 읽어 준 boardRevision이 이 값과 일치해야 구독과 명령 준비가 진행됨 |
 
 ## BlueZ 등록
 
@@ -113,9 +126,13 @@ sudo -u bubble-gateway env STATE_DIRECTORY=/var/lib/privacy-bubble-gateway \
   --env-file /etc/privacy-bubble/gateway.env --check-config
 ```
 
-`--check-config`는 로컬 CA 및 인증서·개인키를 로드하고 키 일치를 확인한다. `STATE_DIRECTORY`가 있으면 SQLite와 잠금 파일의 해석된 경로가 그 안에 있는지 확인한다. 기존 DB를 열거나 생성하지 않는다. 서버 인증, 중앙 등록 상태, BlueZ 권한은 실제 연결 단계에서 확인한다.
+`--check-config`는 로컬 CA 및 인증서·개인키를 로드하고 키 일치를 확인한다. 0.2.88은 `STATE_DIRECTORY`를 지정한 배포에서 DB·잠금 파일과 SQLite의 WAL·공유 메모리·롤백 저널이 해당 경로 안에 있는지 확인한다. 서비스 계정에는 상태 디렉터리의 쓰기·탐색 권한, 기존 SQLite 파일의 읽기·쓰기 권한, 기존 잠금 파일의 쓰기 권한이 필요하다. 기존 DB의 배포 식별자와 스키마는 읽기 전용 연결로 검사한다. 새 DB는 생성하지 않는다. 서버 인증, 중앙 등록 상태, BlueZ 권한은 실제 연결 단계에서 확인한다.
 
 컨테이너 ID를 설정한 명령 Gateway는 같은 환경 파일에서 `--check-command-route`로 CSE 영수증 컨테이너와 중앙 자격, 활성 명령 목록을 HTTPS GET으로 확인할 수 있다. [격리 Pi 사용 절차](TESTING.md#pi-명령-세션)
+
+Gateway 0.2.121의 `bubble-gateway --env-file gateway.env --check-cse-routes`는 새 Mobius의 관측·health 컨테이너 ID를 HTTPS GET으로 대조한다. 명령이 활성화된 설정은 영수증 컨테이너 ID도 요구한다. 중앙 API가 준비되기 전에 Pi에 넣을 CSE 설정을 먼저 확인할 수 있다. [서버 전환 절차](STATE_RECOVERY.md#새-배포-db에-core-순번-이어받기)
+
+Gateway 0.2.122에서 중앙 API의 PKI가 다르면 `PC_API_TLS_CA_FILE`, `PC_API_TLS_CERT_FILE`, `PC_API_TLS_KEY_FILE`을 함께 지정한다. 이 파일은 중앙 API의 HTTPS 연결에 사용한다. Mobius HTTPS와 MQTT는 `TLS_CA_FILE`, `TLS_CERT_FILE`, `TLS_KEY_FILE`을 사용한다. 중앙 전용 설정을 생략하면 세 경로가 기존 TLS 파일을 공유한다. 두 HTTPS 연결 모두 TLS 1.3과 호스트 이름 검증을 적용하며 `--check-config`에서 구성한 인증서와 키를 읽어 확인할 수 있다. [설정 예시](.env.example)
 
 foreground 실행 명령은 다음과 같다. 같은 데이터베이스를 사용하는 프로세스는 하나만 허용한다. systemd 서비스가 이미 실행 중이면 중복으로 실행하지 않는다.
 
@@ -145,6 +162,7 @@ Gateway0.2.0은 DB를 configured Gateway/Originator/CSE 자원 identity에 연�
 - queue가 가득 차면 기존 항목을 삭제하지 않는다. BLE 전달 대기 항목은 메모리에서 재시도하지만 버퍼가 넘치거나 프로세스가 종료되면 아직 저장되지 않은 관측을 복구할 수 없다. [IO 메모](IO_NOTES.md)에 drop counter와 reconnect 경계를 정리했다.
 - 완료한 commandId도 journal에 남긴다. `MAX_COMMANDS` 도달 시 새 명령을 거절하고 자동 삭제하지 않는다. 장치 NVS journal과 Gateway DB의 보존·이관은 중앙의 명령 보존 기간과 함께 정해야 한다. 저장소를 지워 단순히 한도를 초기화하면 중복 실행 방어 근거를 잃는다.
 - 명령 수신 시 매번 중앙 HTTPS 목록을 조회한다. MQTT 대기열은 한 번에 최대 16건을 확인하고, 중앙 목록에 같은 commandId가 있으면 그 목록의 발급본을 사용한다. MQTT로만 들어온 명령은 중앙이 정확한 payloadHash와 현재 권한을 확인한 경우에만 남은 배치 자리에 넣는다. 두 채널의 기존 journal 행은 그대로 보존한다.
+- Gateway 0.2.96은 HTTPS 목록을 받는 즉시 해당 명령을 SQLite에 기록한다. MQTT 후보 승인이 지연되는 동안에도 저장된 명령은 실행 직전 승인 단계로 진행할 수 있다. 목록 조회는 `REQUEST_TIMEOUT`, MQTT 후보 승인 조회는 `REQUEST_TIMEOUT`과 남은 명령 기한 중 짧은 값으로 제한한다.
 - credential 상태 조회 실패 또는 freshness 만료에서는 새 실행을 보류한다. 저장된 명령은 credential이 복구되거나 deadline이 만료될 때까지 pending 상태로 남는다. LOST/REVOKED는 신규 실행을 거절한다.
 - Gateway 0.2.34는 상태 조회 시작부터 credential TTL을 계산한다. 상태·revision 변경, 조회 실패 또는 TTL 단절이 있으면 같은 revision으로 복구돼도 이전 로컬 승인 세대는 무효다. 중앙 응답을 기다리던 명령은 새 승인을 요청한다. BLE 전송 중이면 다음 조각 전에 중단하고 미확정 영수증을 남긴다.
 - Gateway 0.2.35는 mTLS로 확인한 첫 자격 상태와 이후 상태·revision 전환을 SQLite에 저장한다. 일반 큐가 가득 차도 저장하고, 자리가 생기면 기존 health 컨테이너에 순서대로 보낸다. `credentialTransition`이 붙은 프레임은 관측 당시의 이력이다. 실시간 준비 상태는 일반 heartbeat에서 판정한다. [영수증 전달과 보관](RECEIPT_ROUTING.md#자격-상태-전환-영수증)
@@ -155,7 +173,7 @@ Gateway0.2.0은 DB를 configured Gateway/Originator/CSE 자원 identity에 연�
 
 oneM2M은 같은 `rqi`의 CREATE 성공 응답을 받아야 전송 완료 처리한다. MQTT PUBACK은 완료 근거가 아니다. HTTPS fallback도 동일한 contentInstance 이름을 쓰며, 이름 충돌은 기존 payload가 일치할 때만 완료로 처리한다.
 
-Gateway 0.2.26은 HTTPS 429/503의 `Retry-After` 초 단위와 HTTP 날짜를 처리한다. 유효한 시간이 남아 있으면 같은 HTTPS origin의 새 요청을 보류한다. outbox 행은 서버 대기 시간과 기존 backoff 중 긴 값을 SQLite에 저장해 재시작 뒤에도 그 시각까지 보존한다. origin 전체의 대기 시간은 현재 프로세스에서 관리한다. 중앙 API가 대기 중이면 기존 승인·자격·명령 기한 검사에 따라 실행을 보류한다. 0.2.36의 자격 전환 영수증은 MQTT가 연결돼도 HTTPS 저장 확인이 필요하므로 CSE 보류 동안 선택 대상에서 제외한다.
+Gateway는 HTTPS 429/503의 `Retry-After` 초 단위와 HTTP 날짜를 처리한다. 유효한 시간이 남아 있으면 같은 HTTPS origin의 새 요청을 보류한다. 개별 outbox 행은 서버 대기 시간과 기존 backoff 중 긴 값을 SQLite에 저장한다. 0.2.57은 서버 주소와 포트별 대기 종료를 Linux 부팅 ID와 단조 시계 값으로 보관한다. 같은 부팅에서 데몬을 재시작하면 남은 시간을 이어받고, Pi를 재부팅하면 이전 부팅의 서버별 대기는 정리한다. 중앙 API가 대기 중이면 기존 승인·자격·명령 기한 검사에 따라 실행을 보류한다. 자격 전환 영수증은 MQTT가 연결돼도 HTTPS 저장 확인이 필요하므로 CSE 보류 동안 선택 대상에서 제외한다.
 
 Gateway 0.2.31은 CSE가 재시도를 보류한 동안 HTTPS가 필요한 항목을 대기열 선택에서 건너뛴다. 아직 보내지 않은 항목의 재시도 횟수와 시각을 그대로 유지한다. oneM2M MQTT가 준비돼 있으면 고정 컨테이너 영수증처럼 HTTPS 사전 조회가 필요한 경로만 보류한다. CORE MQTT 항목은 별도 경로로 선택할 수 있다. 이 변경의 시험과 배포는 미실행이다.
 

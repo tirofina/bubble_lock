@@ -8,7 +8,7 @@ from contextlib import closing
 from pathlib import Path
 from unittest.mock import patch
 
-from bubble_gateway.model import canonical, payload_hash
+from bubble_gateway.model import canonical, parse_time, payload_hash
 from bubble_gateway.state_archive import archive
 from bubble_gateway.state_identity import DATA_TABLES, StateIdentityError, configured_binding, metadata, readonly
 from bubble_gateway.store import CapacityError, Store
@@ -50,6 +50,34 @@ class StoreTests(unittest.TestCase):
             self.assertIsNone(self.store.due())
         with patch("bubble_gateway.store.time.time", return_value=1045.0):
             self.assertEqual(self.store.due()["rqi"], rqi)
+
+    def test_heartbeat_waits_for_pending_report_across_restart_without_blocking_credential_receipts(self):
+        health = BINDING["healthContainer"]
+        first = {"bootId": "first-boot", "observedAt": "2026-11-10T00:00:00.000Z",
+                 "uptimeSeconds": 30, "outboxDepth": 0}
+        newer = dict(first, bootId="next-boot", observedAt="2026-11-10T00:01:00.000Z")
+        state = {"status": "LOST", "credentialRevision": "rev-1"}
+        # A deployment may share the health container with another payload type.
+        self.store.observation(health, observation())
+        self.store.record_credential_status(state, lambda: first)
+        self.store.stage_credential_receipt()
+        self.assertTrue(self.store.enqueue_heartbeat(first))
+        self.assertEqual(self.store.counts()[0], 3)
+
+        rqi = self.store.request_id("health", f"{first['bootId']}:{first['observedAt']}")
+        with patch("bubble_gateway.store.time.time", return_value=1000):
+            self.store.retry(rqi, 0, minimum_delay=300)
+        self.store.close()
+        self.store = self.open_store()
+        self.assertFalse(self.store.enqueue_heartbeat(newer))
+        self.assertEqual(self.store.counts()[0], 3)
+        retained = self.store.db.execute("SELECT payload,next_attempt FROM outbox WHERE rqi=?", (rqi,)).fetchone()
+        self.assertEqual(tuple(retained), (canonical(first), 1300.0))
+
+        self.store.delivered(rqi)
+        self.assertTrue(self.store.enqueue_heartbeat(newer))
+        self.assertEqual(self.store.counts()[0], 3)
+        self.assertEqual(self.store.db.execute("SELECT COUNT(*) FROM credential_receipts WHERE delivered_at IS NULL").fetchone()[0], 1)
 
     def test_credential_receipts_survive_full_outbox_restart_and_replay_in_order(self):
         initial = {"status": "ACTIVE", "credentialRevision": "rev-1"}
@@ -127,6 +155,8 @@ class StoreTests(unittest.TestCase):
         cfg = config(deployment_db)
         cfg.cse_deployment_id = "scoped-mobius4"
         cfg.receipt_container_ri = "cnt-original"
+        cfg.observation_container_ri = "cnt-observation"
+        cfg.health_container_ri = "cnt-health"
         cfg.cse_url = "https://old-address.invalid"
         binding = configured_binding(cfg)
         self.assertEqual(binding["bindingVersion"], 2)
@@ -147,9 +177,52 @@ class StoreTests(unittest.TestCase):
             with self.subTest(pin=different_pin), self.assertRaisesRegex(
                     StateIdentityError, "STATE_RECEIPT_CONTAINER_MISMATCH"):
                 Store(deployment_db, 100, 100000, 20, configured_binding(cfg))
+        cfg.receipt_container_ri = "cnt-original"
+        for different_pin in ("cnt-recreated", None):
+            cfg.observation_container_ri = different_pin
+            with self.subTest(observation_pin=different_pin), self.assertRaisesRegex(
+                    StateIdentityError, "STATE_OBSERVATION_CONTAINER_MISMATCH"):
+                Store(deployment_db, 100, 100000, 20, configured_binding(cfg))
+        cfg.observation_container_ri = "cnt-observation"
+        for different_pin in ("cnt-recreated", None):
+            cfg.health_container_ri = different_pin
+            with self.subTest(health_pin=different_pin), self.assertRaisesRegex(
+                    StateIdentityError, "STATE_HEALTH_CONTAINER_MISMATCH"):
+                Store(deployment_db, 100, 100000, 20, configured_binding(cfg))
         with self.assertRaisesRegex(StateIdentityError, "STATE_CSE_DEPLOYMENT_MISMATCH"):
             self.open_store(bindingVersion=2, cseDeploymentId="scoped-mobius4")
         self.assertEqual(metadata(self.store.db)["binding"], BINDING)
+
+    def test_pc_api_deployment_binding_blocks_replay_and_is_preserved_in_archive(self):
+        database = self.path.with_name("central.sqlite3")
+        cfg = config(database)
+        cfg.pc_api_deployment_id = "central-bench"
+        cfg.api_url = "https://old-address.invalid"
+        binding = configured_binding(cfg)
+        self.assertEqual(binding, dict(BINDING, bindingVersion=3, pcApiDeploymentId="central-bench"))
+        payload = observation()
+        with closing(Store(database, 100, 100000, 20, binding)) as store:
+            store.observation(cfg.observation_container, payload, central_enabled=True)
+
+        cfg.api_url = "https://new-address.invalid"
+        with closing(Store(database, 100, 100000, 20, configured_binding(cfg))) as store:
+            self.assertEqual(store.due_central_telemetry()["payload"], payload)
+        output = Path(self.temp.name) / "central-archive"
+        with patch("bubble_gateway.state_archive._sync_directory"):
+            manifest_path = archive(cfg, output, adopt=False, timeout=5)
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual(manifest["binding"], binding)
+        with closing(readonly(output / "gateway.sqlite3")) as db:
+            self.assertEqual(metadata(db)["binding"], binding)
+            self.assertEqual(metadata(db)["recovery_state"], "QUARANTINED")
+
+        for deployment in ("other-central", None):
+            cfg.pc_api_deployment_id = deployment
+            with self.subTest(deployment=deployment), self.assertRaisesRegex(
+                    StateIdentityError, "STATE_PC_API_DEPLOYMENT_MISMATCH"):
+                Store(database, 100, 100000, 20, configured_binding(cfg))
+        with self.assertRaisesRegex(StateIdentityError, "STATE_PC_API_DEPLOYMENT_MISMATCH"):
+            self.open_store(bindingVersion=3, pcApiDeploymentId="central-bench")
 
     def test_duplicate_conflict_and_interrupted_intent_survive_restart(self):
         cmd, digest = self.populate()
@@ -158,7 +231,7 @@ class StoreTests(unittest.TestCase):
         self.store.close()
         self.store = self.open_store()
         self.assertEqual(self.store.pending(), [])
-        self.assertEqual(self.store.interrupted(), [{"command": cmd, "digest": digest}])
+        self.assertEqual(self.store.interrupted(), [{"command": cmd, "digest": digest, "ble_final_write_started": 0}])
         self.assertEqual(self.store.begin_dispatch(cmd), "ALREADY_DISPATCHED")
 
     def test_stale_epoch_and_grant_do_not_dispatch(self):
@@ -179,6 +252,187 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(self.store.db.execute("SELECT COUNT(*) FROM core_sequences").fetchone()[0], 0)
         self.store.enqueue("receipt", "synthetic", BINDING["receiptContainer"], {}, critical=True)
         self.assertEqual(self.store.counts()[0], 1)
+
+    def test_migrates_pending_commands_into_device_workers_without_changing_payloads(self):
+        assigned = command(commandId="assigned")
+        retired = command(commandId="retired", deviceId="kr-retired")
+        legacy_dispatch = command(commandId="legacy-dispatch")
+        with self.store.db:
+            self.store.db.execute("DROP TABLE commands")
+            self.store.db.execute("""
+                CREATE TABLE commands (command_id TEXT PRIMARY KEY, payload_hash TEXT NOT NULL,
+                    payload TEXT NOT NULL, status TEXT NOT NULL, received_at TEXT NOT NULL,
+                    receipt TEXT, receipt_delivered INTEGER NOT NULL DEFAULT 0,
+                    central_receipt_staged INTEGER NOT NULL DEFAULT 0)
+            """)
+            for cmd in (assigned, retired):
+                self.store.db.execute("INSERT INTO commands(command_id,payload_hash,payload,status,received_at) "
+                                      "VALUES(?,?,?,'RECEIVED',?)",
+                                      (cmd["commandId"], payload_hash(cmd), canonical(cmd), cmd["issuedAt"]))
+            self.store.db.execute("INSERT INTO commands(command_id,payload_hash,payload,status,received_at) "
+                                  "VALUES(?,?,?,'DISPATCHING',?)",
+                                  (legacy_dispatch["commandId"], payload_hash(legacy_dispatch), canonical(legacy_dispatch),
+                                   legacy_dispatch["issuedAt"]))
+        self.store.close()
+        self.store = self.open_store()
+        for rows, cmd in ((self.store.pending(device_id="kr-test"), assigned),
+                          (self.store.pending(excluded_devices=("kr-test",)), retired)):
+            self.assertEqual([(row["command"], row["digest"]) for row in rows], [(cmd, payload_hash(cmd))])
+        self.assertEqual(self.store.interrupted(), [{"command": legacy_dispatch, "digest": payload_hash(legacy_dispatch),
+                                                    "ble_final_write_started": None}])
+
+    def test_button_press_floor_survives_missing_sample_and_database_reopen(self):
+        container = BINDING["observationContainer"]
+        self.store.observation(container, observation(sensorValues={"buttonPresses": [5, 3]}), True, central_enabled=True)
+        self.store.observation(container, observation(sequence=2), True, central_enabled=True)
+        self.store.close()
+        self.store = self.open_store()
+        self.assertEqual(self.store.observation_heads(include_button_presses=True), {"kr-test": ("boot-test", 2, (5, 3))})
+        before = self.rows()
+        for presses in ([4, 3], [6, 2]):
+            with self.subTest(presses=presses), self.assertRaisesRegex(ValueError, "counts regressed"):
+                self.store.observation(container, observation(sequence=3, sensorValues={"buttonPresses": presses}),
+                                       True, central_enabled=True)
+        self.assertEqual(self.rows(), before)
+        self.assertTrue(self.store.observation(container, observation(sequence=3, sensorValues={"buttonPresses": [6, 3]})))
+
+        # A previous Gateway version updates only the boot and sequence columns.
+        with self.store.db:
+            self.store.db.execute("UPDATE observations SET boot_id='boot-new',sequence=4")
+        self.assertEqual(self.store.observation_heads(include_button_presses=True), {"kr-test": ("boot-new", 4)})
+        self.assertTrue(self.store.observation(container, observation(bootId="boot-new", sequence=5,
+                                                                      sensorValues={"buttonPresses": [0, 1]})))
+        self.assertEqual(self.store.observation_heads(include_button_presses=True), {"kr-test": ("boot-new", 5, (0, 1))})
+
+    def test_migrates_previous_observation_table_without_inventing_button_counts(self):
+        with self.store.db:
+            self.store.db.execute("DROP TABLE observations")
+            self.store.db.execute("CREATE TABLE observations(device_id TEXT PRIMARY KEY, boot_id TEXT NOT NULL, "
+                                  "sequence INTEGER NOT NULL)")
+            self.store.db.execute("INSERT INTO observations VALUES ('kr-test','boot-test',3)")
+        self.store.close()
+        self.store = self.open_store()
+        self.assertEqual(self.store.observation_heads(include_button_presses=True), {"kr-test": ("boot-test", 3)})
+        self.assertEqual(self.store.observation_heads(include_device_uptime=True), {"kr-test": ("boot-test", 3, None, None)})
+        container = BINDING["observationContainer"]
+        self.assertTrue(self.store.observation(container, observation(sequence=4, sensorValues={"buttonPresses": [1, 0]})))
+        self.assertEqual(self.store.observation_heads(include_button_presses=True), {"kr-test": ("boot-test", 4, (1, 0))})
+
+    def test_device_uptime_survives_database_reopen_and_resets_with_device_boot(self):
+        container = BINDING["observationContainer"]
+        self.store.observation(container, observation(), central_enabled=True, device_uptime_ms=500)
+        self.store.observation(container, observation(sequence=2), central_enabled=True)
+        self.store.close()
+        self.store = self.open_store()
+        self.assertEqual(self.store.observation_heads(include_device_uptime=True), {"kr-test": ("boot-test", 2, None, 500)})
+        before = self.rows()
+        with self.assertRaisesRegex(ValueError, "uptime regressed"):
+            self.store.observation(container, observation(sequence=3), central_enabled=True, device_uptime_ms=499)
+        self.assertEqual(self.rows(), before)
+
+        with self.store.db:  # Older software advances only the boot and sequence columns.
+            self.store.db.execute("UPDATE observations SET boot_id='boot-new',sequence=0")
+        self.assertEqual(self.store.observation_heads(include_device_uptime=True), {"kr-test": ("boot-new", 0, None, None)})
+        self.assertTrue(self.store.observation(container, observation(bootId="boot-new", sequence=1), device_uptime_ms=30))
+        self.assertEqual(self.store.observation_heads(include_device_uptime=True), {"kr-test": ("boot-new", 1, None, 30)})
+
+    def test_central_observation_is_durable_with_native_copy_and_watermark(self):
+        container = BINDING["observationContainer"]
+        payload = observation(sensorValues={"location": {"lat": 37.5, "lon": 127.0, "source": "gps"}})
+        self.store.max_rows = 2  # One ordinary slot fits only the native copy.
+        with self.assertRaises(CapacityError):
+            self.store.observation(container, payload, central_enabled=True)
+        self.assertEqual(self.store.counts()[0], 0)
+        self.assertEqual(self.store.observation_heads(), {})
+
+        self.store.max_rows = 4
+        self.assertTrue(self.store.observation(container, payload, central_enabled=True))
+        self.store.close()
+        self.store = self.open_store()
+        self.assertFalse(self.store.observation(container, payload, central_enabled=True))
+        item = self.store.due_central_telemetry()
+        self.assertEqual((item["container"], item["payload"]), ("@central/telemetry", payload))
+        self.store.delivered(item["rqi"])
+        self.assertEqual(self.store.due()["payload"], payload)
+
+    def test_central_retry_preserves_device_order_without_holding_other_devices(self):
+        container = BINDING["observationContainer"]
+        first = observation(sequence=9)
+        second = observation(bootId="boot-new", sequence=0)
+        other = observation(deviceId="kr-other")
+        for payload in (first, second, other):
+            self.assertTrue(self.store.observation(container, payload, central_enabled=True))
+        identity = {key: first[key] for key in ("gatewayId", "deviceId", "bootId", "sequence")}
+        first_rqi = self.store.request_id("central-telemetry", payload_hash(identity))
+        with patch("bubble_gateway.store.time.time", return_value=1000):
+            self.assertIsNone(self.store.due(skip_native=True))
+            self.store.retry(first_rqi, 0)
+            self.store.close()
+            self.store = self.open_store()
+            remaining = self.store.due_central_telemetry()
+            self.assertEqual(remaining["payload"], other)
+            self.store.delivered(remaining["rqi"])
+            self.assertIsNone(self.store.due_central_telemetry())
+
+        with patch("bubble_gateway.store.time.time", return_value=2000):
+            for payload in (first, second):
+                item = self.store.due_central_telemetry()
+                self.assertEqual(item["payload"], payload)
+                self.store.delivered(item["rqi"])
+
+    def test_native_retry_preserves_order_across_boots_and_unmarked_rows_after_restart(self):
+        container = BINDING["observationContainer"]
+        first = observation(sequence=9, state=True)
+        after_boot = observation(bootId="next-boot", sequence=0, state=False)
+        other = observation(deviceId="kr-other")
+        for payload in (first, after_boot, other):
+            self.assertTrue(self.store.observation(container, payload))
+        self.store.enqueue("health", "shared-container", container, {"gatewayId": "gw-test", "uptimeSeconds": 10})
+        cmd = command()
+        self.store.accept(cmd, payload_hash(cmd))
+        self.store.finish(cmd["commandId"], {"commandId": cmd["commandId"], "status": "APPLIED"})
+        self.store.stage_receipts(BINDING["receiptContainer"])
+        first_rqi = Store.request_id("observation", "kr-test:boot-test:9")
+        other_rqi = Store.request_id("observation", "kr-other:boot-test:1")
+        health_rqi = Store.request_id("health", "shared-container")
+        receipt_rqi = Store.request_id("receipt", cmd["commandId"])
+
+        with patch("bubble_gateway.store.time.time", return_value=1000):
+            self.store.retry(first_rqi, 0, minimum_delay=60)
+            with self.store.db:
+                self.store.db.execute("UPDATE outbox SET native_observation_device_id=NULL")
+            self.store.close()
+            self.store = self.open_store()
+            sent = set()
+            while item := self.store.due():
+                sent.add(item["rqi"])
+                self.store.delivered(item["rqi"])
+            self.assertEqual(sent, {other_rqi, health_rqi, receipt_rqi})
+
+        with patch("bubble_gateway.store.time.time", return_value=1100):
+            for expected in (first, after_boot):
+                item = self.store.due()
+                self.assertEqual(item["payload"], expected)
+                self.store.delivered(item["rqi"])
+            self.assertIsNone(self.store.due())
+
+    def test_expired_central_rows_free_capacity_without_deleting_native_or_fresh_rows(self):
+        container = BINDING["observationContainer"]
+        old = observation(observedAt="2026-11-09T09:00:00+09:00")
+        equally_old = observation(sequence=2, observedAt="2026-11-09T00:00:00.000Z")
+        at_cutoff = observation(sequence=3, observedAt="2026-11-09T00:00:01.000Z")
+        self.store.max_rows = 7  # Six ordinary rows fit, leaving a reserved slot for receipts.
+        for payload in (old, equally_old, at_cutoff):
+            self.assertTrue(self.store.observation(container, payload, central_enabled=True))
+        first = self.store.due_central_telemetry()
+        self.store.retry(first["rqi"], 0, minimum_delay=3600)
+        cutoff = parse_time(at_cutoff["observedAt"])
+        self.assertIsNone(self.store.due_central_telemetry())
+        self.assertEqual(self.store.expire_central_telemetry(cutoff, limit=1), 1)
+        self.assertEqual(self.store.expire_central_telemetry(cutoff, limit=128), 1)
+        self.assertEqual(self.store.due_central_telemetry()["payload"], at_cutoff)
+        self.assertEqual(self.store.counts()[0], 4)
+        self.assertTrue(self.store.observation(container, observation(sequence=4), central_enabled=True))
 
     def test_nullable_projection_uses_only_the_scoped_route(self):
         container = BINDING["observationContainer"]
@@ -290,6 +544,11 @@ class StoreTests(unittest.TestCase):
         deployment.cse_deployment_id = "unproven"
         refused_output = Path(self.temp.name) / "refused"
         with self.assertRaisesRegex(StateIdentityError, "STATE_CSE_DEPLOYMENT_UNBOUND"):
+            archive(deployment, refused_output, adopt=True, timeout=5)
+        self.assertFalse(refused_output.exists())
+        deployment.cse_deployment_id = None
+        deployment.pc_api_deployment_id = "unproven-central"
+        with self.assertRaisesRegex(StateIdentityError, "STATE_PC_API_DEPLOYMENT_UNBOUND"):
             archive(deployment, refused_output, adopt=True, timeout=5)
         self.assertFalse(refused_output.exists())
         manifest_path = self.archive(adopt=True)

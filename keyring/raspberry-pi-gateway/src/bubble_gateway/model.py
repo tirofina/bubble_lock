@@ -13,6 +13,13 @@ from .config import ID
 COMMAND_KEYS = frozenset({"version", "gatewayId", "deviceId", "commandId", "claimId",
                           "desiredState", "issuedAt", "deadline", "grantRevision", "ownershipEpoch"})
 MAX_REVISION = 2147483647
+MAX_UPTIME_MS = 9007199254740991
+# DOC-REV 2.0.0, PC-MOBIUS-INTEGRATION gateway-control.mjs.
+CENTRAL_CANCEL_ACKS = frozenset({
+    "REJECTED_EPOCH", "REJECTED_GRANT", "EXPIRED", "CONFLICT", "INVALID", "JOURNAL_FULL",
+    "CLOCK_UNTRUSTED", "CREDENTIAL_UNKNOWN", "CREDENTIAL_LOST", "CREDENTIAL_REVOKED", "CREDENTIAL_EXPIRED",
+    "NOT_AUTHORIZED", "DISPATCH_NOT_SENT", "STALE_EPOCH", "STALE_GRANT",
+})
 
 
 def utc_now() -> datetime:
@@ -40,6 +47,22 @@ def canonical(value: Any) -> str:
 
 def payload_hash(value: Any) -> str:
     return hashlib.sha256(canonical(value).encode("utf-8")).hexdigest()
+
+
+def central_observation_id(observation: dict) -> str:
+    return payload_hash({key: observation[key] for key in ("gatewayId", "deviceId", "bootId", "sequence")})
+
+
+def central_receipt_execution_state(receipt: dict) -> str:
+    status, code = receipt.get("status"), receipt.get("ackCode")
+    if status == "APPLIED" and code in ("APPLIED", "DUPLICATE"):
+        return "APPLIED_VERIFIED"
+    if status == "REJECTED" and isinstance(code, str) and code in CENTRAL_CANCEL_ACKS:
+        if "appliedAt" in receipt and receipt["appliedAt"] is None:
+            return "SETTLED_CANCELLED"
+    if status in ("TIMEOUT", "INDETERMINATE") or (status == "REJECTED" and code == "ALREADY_DISPATCHED"):
+        return "DISPATCH_UNCERTAIN"
+    raise ValueError("Receipt has no central execution state for this status and ACK")
 
 
 def validate_command(raw: Any, gateway_id: str, devices: dict[str, str]) -> dict:
@@ -102,6 +125,23 @@ def valid_button_presses(presses: Any) -> bool:
             and all(type(value) is int and 0 <= value <= 4294967295 for value in presses))
 
 
+ObservationHead = tuple[str, int] | tuple[str, int, tuple[int, int]] | tuple[str, int, tuple[int, int] | None, int | None]
+
+
+def observation_button_presses(sensor_values: dict) -> tuple[int, int] | None:
+    if "buttonPresses" not in sensor_values:
+        return None
+    presses = sensor_values["buttonPresses"]
+    if not valid_button_presses(presses):
+        raise ValueError("Invalid boot-local button press counts")
+    return presses[0], presses[1]
+
+
+def button_presses_regressed(previous: tuple[int, int] | None, current: tuple[int, int] | None) -> bool:
+    return (previous is not None and current is not None
+            and (current[0] < previous[0] or current[1] < previous[1]))
+
+
 def validate_observation(raw: Any, gateway_id: str, devices: dict[str, str]) -> dict:
     keys = {"version", "gatewayId", "deviceId", "bootId", "sequence", "observedAt", "receivedAt",
             "rssi", "battery", "buttonState", "sensorValues", "state", "firmwareRevision", "timestampSource"}
@@ -129,8 +169,9 @@ def validate_observation(raw: Any, gateway_id: str, devices: dict[str, str]) -> 
         raise ValueError("Invalid battery alert for the reported charge")
     if any(not isinstance(key, str) or not 1 <= len(key) <= 64 for key in raw["sensorValues"]):
         raise ValueError("Invalid sensor name")
-    if "buttonPresses" in raw["sensorValues"] and not valid_button_presses(raw["sensorValues"]["buttonPresses"]):
-        raise ValueError("Invalid boot-local button press counts")
+    observation_button_presses(raw["sensorValues"])
+    if "displayDrawnPresses" in raw["sensorValues"] and not valid_button_presses(raw["sensorValues"]["displayDrawnPresses"]):
+        raise ValueError("Invalid display button press counts")
     if not isinstance(raw["firmwareRevision"], str) or not 1 <= len(raw["firmwareRevision"]) <= 64:
         raise ValueError("Invalid firmware revision")
     if raw["timestampSource"] != "gateway-received" or len(canonical(raw).encode("utf-8")) > 8192:

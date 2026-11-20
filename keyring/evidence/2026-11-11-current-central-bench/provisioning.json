@@ -1,0 +1,42 @@
+{
+  "role": "KEYRING",
+  "documentRevision": "2.0.0",
+  "recordedAt": "2026-11-11T06:54:36.1703959+00:00",
+  "scope": "local integration API startup and enrollment",
+  "launcherSourceCommit": "fbac3d11035c3de3275e858140a7364fb861f362",
+  "teamRevision": "bc2a45dfcc014b7cdb0a57a03aca2c04ca8eb989",
+  "teamArchiveSha256": "d71f006b9a64576376115303227d8e9b4aa9e8ce5010429e98316cb3f3475b3a",
+  "dependencies": {
+    "manager": "pnpm",
+    "managerVersion": "11.25.0",
+    "nodeVersion": "24.22.1",
+    "teamPackageLockSha256": "64a991f785ba48f72d25d0e98a515fee324d4166f0fca49e939b479c6ebedaef",
+    "importedPnpmLockSha256": "e2af337a4bb5074d01297e344eb5dc8b4926b3efe73fb83adb43bf50bd312d4a",
+    "frozenProductionInstallExitCode": 0,
+    "dependencyScriptsExecuted": false,
+    "directVersions": {
+      "ajv": "8.20.0",
+      "ajv-formats": "3.0.1",
+      "mqtt": "5.16.1",
+      "pg": "8.23.1"
+    }
+  },
+  "listener": {
+    "startupStatus": "READY",
+    "mode": "integration",
+    "endpoint": "https://127.0.0.1:8788",
+    "loopbackOnly": true
+  },
+  "enrollment": {
+    "gatewayId": "gw-a",
+    "gatewayStatus": "ACTIVE",
+    "deviceId": "keyring-feather-lab",
+    "householdId": "scoped-feather-bench",
+    "operatorIsGuardian": true,
+    "deviceMatchesEnrollment": true,
+    "issuedCommands": 0,
+    "telemetryRows": 0
+  },
+  "piVerified": false,
+  "apiWorkflowVerified": false
+}

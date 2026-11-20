@@ -8,14 +8,17 @@ import re
 import sqlite3
 
 from bubble_gateway.config import ID
+from bubble_gateway.integration_evidence import (COMMAND_BINDING, inspect_integration_command,
+                                                 inspect_integration_observation, match_integration_issuance)
 from bubble_gateway.model import canonical, iso_time, parse_time, payload_hash, validate_command
 from bubble_gateway.state_identity import metadata, readonly
-from pi_led_cycle import DEVICE, STEPS, receipt_name, verify_database, verify_step
+from pi_led_cycle import DEVICE, FIRMWARE, STEPS, receipt_name, verify_database, verify_step
+from scoped_feather_pi import DISPLAY_FIRMWARE
 
 GATEWAY = "gw-a"
 ROUTE = "/Mobius/privacy-bubble-test-ae/command-receipts-a"
-BINDING = ("gatewayId", "deviceId", "commandId", "claimId", "grantRevision", "ownershipEpoch")
 SOURCES = {"CSE_CALLBACK", "RECOVERY_SWEEP"}
+DISPLAY_TEXTS = ("CMD ON", "CMD OFF", "CMD GPIO ERROR")
 
 
 def read_json(path):
@@ -23,8 +26,14 @@ def read_json(path):
         return json.load(stream)
 
 
+def read_display_observations(path):
+    if path.is_dir():
+        return [read_json(path / f"display-{label.lower()}.json") for label, _ in STEPS]
+    return read_json(path)
+
+
 def matches_approval(event, command, payload_hash, native_stored_at):
-    expected = {key: command[key] for key in BINDING}
+    expected = {key: command[key] for key in COMMAND_BINDING}
     expected.update(contractId="privacy-bubble.integration.v1", docRevision="2.0.0", owner="PC-MOBIUS-INTEGRATION",
                     type="GATEWAY_COMMAND_AUTHORIZED", allowed=True, payloadHash=payload_hash)
     actual = {key: event.get(key) for key in expected}
@@ -108,7 +117,47 @@ def physical_observations(steps, observations):
     return report
 
 
-def verify_scoped_evidence(cycle, database, inspections, team_state, observed_led=None, *, prior_expired_commands=()):
+def check_display_observation(step, observation, *, next_issued_at=None):
+    if not isinstance(observation, dict) or observation.keys() != {"commandId", "screenText", "observedAt"}:
+        raise ValueError("Invalid command display observation fields")
+    command = step["command"]
+    text = observation["screenText"]
+    if text is not None and text not in DISPLAY_TEXTS:
+        raise ValueError("Invalid command display text")
+    when = parse_time(observation["observedAt"])
+    if (observation["commandId"] != command["commandId"]
+            or when < parse_time(step["observation"]["receivedAt"])
+            or (next_issued_at is not None and when >= parse_time(next_issued_at))):
+        raise ValueError("Command display observation is outside the recorded command interval")
+    expected = "CMD ON" if command["desiredState"]["state"] else "CMD OFF"
+    return {**observation, "matched": text == expected}
+
+
+def display_observations(cycle, observations):
+    if observations is None:
+        return None
+    if cycle.get("firmwareRevision") != DISPLAY_FIRMWARE:
+        raise ValueError("Command display evidence requires the Feather display firmware")
+    steps = cycle["steps"]
+    if not isinstance(observations, list) or len(observations) != len(steps):
+        raise ValueError("Record one screen observation for each command")
+    report = []
+    for index, (step, observation) in enumerate(zip(steps, observations)):
+        next_issued_at = steps[index + 1]["command"]["issuedAt"] if index + 1 < len(steps) else None
+        report.append(check_display_observation(step, observation, next_issued_at=next_issued_at))
+    return report
+
+
+def operator_evidence(cycle, observed_led, observed_display):
+    led = physical_observations(cycle["steps"], observed_led)
+    display = display_observations(cycle, observed_display)
+    return {"physicalLedObserved": led, "physicalLedMatched": None if led is None else all(row["matched"] for row in led),
+            "commandDisplayObserved": display,
+            "commandDisplayMatched": None if display is None else all(row["matched"] for row in display)}
+
+
+def verify_scoped_evidence(cycle, database, inspections, team_state, observed_led=None, *, observed_display=None,
+                           prior_expired_commands=()):
     steps = cycle["steps"]
     if len(set(prior_expired_commands)) != len(prior_expired_commands):
         raise ValueError("Specify each prior expired command once")
@@ -117,13 +166,57 @@ def verify_scoped_evidence(cycle, database, inspections, team_state, observed_le
         raise ValueError("Provide one PostgreSQL inspection for each command")
     commands = [inspect_command(step, pi_proof, inspection, team_state)
                 for step, pi_proof, inspection in zip(steps, proof["commands"], inspections)]
-    observations = physical_observations(steps, observed_led)
     return {"piCseBindingVerified": True,
+            "observationContainerVerified": proof["observationContainerVerified"],
             "priorExpiredCommandCount": len(prior_expired_commands),
             "centralSettlementVerified": all(row["settlementVerified"] for row in commands),
             "cseCallbackRecorded": all("CSE_CALLBACK" in row["deliverySources"] for row in commands),
-            "physicalLedObserved": observations,
-            "physicalLedMatched": None if observations is None else all(row["matched"] for row in observations),
+            **operator_evidence(cycle, observed_led, observed_display),
+            "commands": commands}
+
+
+def integration_observation_event(step, team_state, *, allow_pending=False):
+    command, observation = step["command"], step["observation"]
+    return inspect_integration_observation(
+        dict(observation, gatewayId=command["gatewayId"], deviceId=command["deviceId"]),
+        team_state, allow_pending=allow_pending)
+
+
+def inspect_integration_step(step, pi_proof, team_state):
+    command, receipt, observation = step["command"], step["cseReceipt"], step["observation"]
+    resource = step["cseResource"]
+    if not ID.fullmatch(resource["ri"]) or re.fullmatch(r"[0-9]{8}T[0-9]{6}", resource["ct"]) is None:
+        raise ValueError("Invalid native receipt resource identity")
+    if pi_proof["payloadHash"] != payload_hash(command) or pi_proof["receiptHash"] != payload_hash(receipt):
+        raise ValueError("Pi evidence differs from the command or native receipt")
+    settlement = inspect_integration_command(command, receipt, team_state)
+    if settlement is None:
+        raise ValueError("Central command receipt is not settled")
+    telemetry = integration_observation_event(step, team_state)
+    return {**pi_proof, **settlement,
+            "telemetryEventId": telemetry["eventId"], "observationId": telemetry["observationId"],
+            "centralTelemetrySequence": telemetry["sequence"], "nativeResourceId": resource["ri"],
+            "centralTelemetryPayloadVerified": True if "payloadHash" in observation else None}
+
+
+def verify_integration_evidence(cycle, database, team_state, observed_led=None, *, observed_display=None,
+                                prior_expired_commands=()):
+    if len(set(prior_expired_commands)) != len(prior_expired_commands):
+        raise ValueError("Specify each prior expired command once")
+    proof = verify_database(cycle, database, gateway_id=GATEWAY, prior_expired_commands=prior_expired_commands,
+                            require_central_receipts=True)
+    steps = cycle["steps"]
+    commands = [inspect_integration_step(step, pi_proof, team_state) for step, pi_proof in zip(steps, proof["commands"])]
+    if commands[0]["centralTelemetrySequence"] >= commands[1]["centralTelemetrySequence"]:
+        raise ValueError("Central telemetry order does not match the LED cycle")
+    payload_verified = commands[0]["centralTelemetryPayloadVerified"]
+    if payload_verified is not commands[1]["centralTelemetryPayloadVerified"]:
+        raise ValueError("Native observation payload hashes are incomplete for the LED cycle")
+    return {"piCseBindingVerified": True, "centralDispatchVerified": True, "centralSettlementVerified": True,
+            "observationContainerVerified": proof["observationContainerVerified"],
+            "centralTelemetryVerified": True, "centralTelemetryPayloadVerified": payload_verified,
+            "priorExpiredCommandCount": len(prior_expired_commands),
+            **operator_evidence(cycle, observed_led, observed_display),
             "commands": commands}
 
 
@@ -137,23 +230,43 @@ def read_optional(path):
     return value
 
 
-def read_pi_commands(database):
+def read_pi_commands(database, *, gateway_id=GATEWAY, originator="Sscoped-feather-gateway-a", receipt_container=ROUTE,
+                     deployment_ids=(None, "scoped-mobius4"), command_id=None, receipt_parent=None,
+                     container_pins=None):
     with closing(readonly(database)) as db:
         db.execute("BEGIN")
         record = metadata(db)
         binding = record["binding"] if record else {}
-        if (binding.get("gatewayId") != GATEWAY or binding.get("cseId") != "Mobius4"
-                or binding.get("originator") != "Sscoped-feather-gateway-a" or binding.get("receiptContainer") != ROUTE
-                or binding.get("cseDeploymentId") not in (None, "scoped-mobius4")):
-            raise ValueError("Pi database does not belong to the scoped Feather session")
+        if (binding.get("gatewayId") != gateway_id or binding.get("cseId") != "Mobius4"
+                or binding.get("originator") != originator or binding.get("receiptContainer") != receipt_container
+                or binding.get("cseDeploymentId") not in deployment_ids
+                or (receipt_parent is not None and binding.get("receiptContainerRi") not in (None, receipt_parent))
+                or (container_pins is not None and
+                    (binding.get("receiptContainerRi"), binding.get("observationContainerRi")) != container_pins)):
+            raise ValueError("Pi database does not belong to the scoped session")
         rows = db.execute("""
             SELECT command_id,payload_hash,payload,status,receipt,receipt_delivered,
                    EXISTS (SELECT 1 FROM outbox WHERE outbox.command_id=commands.command_id) AS native_queued
-            FROM commands LIMIT 3
-        """).fetchall()
+            FROM commands WHERE (? IS NULL OR command_id=?) LIMIT 3
+        """, (command_id, command_id)).fetchall()
         if len(rows) > len(STEPS):
             raise ValueError("Pi database contains extra commands")
         return {row["command_id"]: dict(row) for row in rows}
+
+
+def validate_interrupted_receipt(receipt, command, status):
+    fields = ("gatewayId", "deviceId", "commandId", "grantRevision", "ownershipEpoch")
+    expected = {key: command[key] for key in fields}
+    expected.update(version=1, payloadHash=payload_hash(command), status=status)
+    if (status not in {"APPLIED", "REJECTED", "TIMEOUT", "INDETERMINATE"}
+            or canonical({key: receipt.get(key) for key in expected}) != canonical(expected)
+            or not re.fullmatch(r"[A-Z][A-Z0-9_]{0,63}", receipt["ackCode"])):
+        raise ValueError("Pi receipt does not bind the issued command")
+    successful_ack = receipt["ackCode"] in {"APPLIED", "DUPLICATE"}
+    if (successful_ack != (status == "APPLIED")
+            or (successful_ack and canonical(receipt["readback"]) != canonical(command["desiredState"]))):
+        raise ValueError("Pi receipt has a contradictory application result")
+    parse_time(receipt["receivedAt"])
 
 
 def interrupted_pi_result(row, command):
@@ -167,18 +280,7 @@ def interrupted_pi_result(row, command):
             raise ValueError("Pi command has an inconsistent pending state")
         return {"piCommandState": status}, None
     receipt = json.loads(row["receipt"])
-    fields = ("gatewayId", "deviceId", "commandId", "grantRevision", "ownershipEpoch")
-    expected = {key: command[key] for key in fields}
-    expected.update(version=1, payloadHash=digest, status=status)
-    if (status not in {"APPLIED", "REJECTED", "TIMEOUT", "INDETERMINATE"}
-            or canonical({key: receipt.get(key) for key in expected}) != canonical(expected)
-            or not re.fullmatch(r"[A-Z][A-Z0-9_]{0,63}", receipt["ackCode"])):
-        raise ValueError("Pi receipt does not bind the issued command")
-    successful_ack = receipt["ackCode"] in {"APPLIED", "DUPLICATE"}
-    if (successful_ack != (status == "APPLIED")
-            or (successful_ack and canonical(receipt["readback"]) != canonical(command["desiredState"]))):
-        raise ValueError("Pi receipt has a contradictory application result")
-    parse_time(receipt["receivedAt"])
+    validate_interrupted_receipt(receipt, command, status)
     return {"piCommandState": status, "piAckCode": receipt["ackCode"], "piReceiptSha256": payload_hash(receipt),
             "piReceiptDelivered": bool(row["receipt_delivered"]), "piReceiptQueued": bool(row["native_queued"])}, receipt
 
@@ -190,12 +292,18 @@ def inspect_interrupted_bench(directory, team_state, database=None):
     rows = read_pi_commands(database) if database is not None else {}
     seen = set()
     steps = []
+    display_records = []
+    off_issued_at = None
+    bench_identity = None
     for label, state in STEPS:
         prefix = f"led-{label.lower()}"
         intent, issued_file, readback, revocation = (
             read_optional(directory / f"{prefix}-{suffix}.json")
             for suffix in ("intent", "issued", "readback", "grant-revoked")
         )
+        display = read_optional(directory / f"display-{label.lower()}.json")
+        if display is not None and (intent is None or readback is None or revocation is None):
+            raise ValueError("Screen observation requires a bench intent, readback and grant revocation")
         if intent is None:
             if issued_file is not None or readback is not None:
                 raise ValueError("Bench artifacts have no matching local intent")
@@ -225,13 +333,9 @@ def inspect_interrupted_bench(directory, team_state, database=None):
                 raise ValueError("Team snapshot is missing an issuance referenced by bench or Pi evidence")
             continue
         issued_record = issued[command_id]
-        command = validate_command(issued_record["command"], GATEWAY, {DEVICE: ""})
-        expected_intent = {**request, "gatewayId": GATEWAY, "deadline": deadline}
-        if (command["commandId"] != command_id or command["desiredState"]["state"] is not state
-                or command["deadline"] != deadline or issued_record["grantId"] != grant_id
-                or issued_record["payloadHash"] != payload_hash(command)
-                or issued_record["intentHash"] != payload_hash(expected_intent)):
-            raise ValueError("Team issuance does not match the bench intent")
+        command = match_integration_issuance(request, issued_record, GATEWAY, DEVICE, state)
+        if label == "OFF":
+            off_issued_at = command["issuedAt"]
         if issued_file is not None and (canonical(issued_file["command"]) != canonical(command)
                                         or issued_file["cseReceiptName"] != intent["cseReceiptName"]):
             raise ValueError("Captured issuance differs from the team snapshot")
@@ -242,7 +346,12 @@ def inspect_interrupted_bench(directory, team_state, database=None):
             result.update(pi_result)
         if readback is not None:
             observed_boot = readback["observation"]["bootId"]
-            matched = verify_step(readback, state, observed_boot, gateway_id=GATEWAY)
+            firmware = readback.get("firmwareRevision", FIRMWARE)
+            identity = (observed_boot, firmware)
+            if bench_identity is not None and identity != bench_identity:
+                raise ValueError("Captured command steps do not share a Feather boot and firmware")
+            bench_identity = identity
+            matched = verify_step(readback, state, observed_boot, gateway_id=GATEWAY, firmware=firmware)
             if (canonical(matched) != canonical(command)
                     or (database is not None and canonical(receipt) != canonical(readback["cseReceipt"]))):
                 raise ValueError("Captured CSE readback differs from the issued command or Pi receipt")
@@ -253,9 +362,20 @@ def inspect_interrupted_bench(directory, team_state, database=None):
             result["cseResourceId"] = resource["ri"]
             result["cseResourceCreated"] = resource["ct"]
             result["cseReceiptSha256"] = payload_hash(readback["cseReceipt"])
+            if display is not None:
+                if firmware != DISPLAY_FIRMWARE:
+                    raise ValueError("Command display evidence requires the Feather display firmware")
+                display_records.append((result, readback, display))
     if rows.keys() - seen:
         raise ValueError("Pi database contains commands outside the bench intents")
-    return {"steps": steps, "physicalLedObserved": None, "centralSettlementVerified": None}
+    for result, readback, display in display_records:
+        next_issued_at = off_issued_at if result["step"] == "ON" else None
+        result["commandDisplayObserved"] = check_display_observation(readback, display, next_issued_at=next_issued_at)
+    display_matched = None
+    if len(display_records) == len(STEPS):
+        display_matched = all(step["commandDisplayObserved"]["matched"] for step in steps)
+    return {"steps": steps, "physicalLedObserved": None, "centralSettlementVerified": None,
+            "commandDisplayMatched": display_matched}
 
 
 if __name__ == "__main__":
@@ -267,24 +387,38 @@ if __name__ == "__main__":
     parser.add_argument("--on-inspection", type=Path)
     parser.add_argument("--off-inspection", type=Path)
     parser.add_argument("--team-state", required=True, type=Path)
+    parser.add_argument("--api-mode", choices=("legacy", "integration"), default="legacy")
     parser.add_argument("--operator-observations", type=Path)
+    parser.add_argument("--display-observations", type=Path,
+                        help="Bench directory with recorded ON/OFF display files, or a JSON array of operator observations")
     parser.add_argument("--prior-expired-command", action="append", default=[],
                         help="Exact command ID of an earlier, delivered pre-device expiration in the same Pi database")
     args = parser.parse_args()
-    if args.cycle and not (args.database and args.on_inspection and args.off_inspection):
+    if args.api_mode == "integration" and (not args.cycle or not args.database or args.on_inspection or args.off_inspection):
+        parser.error("Integration mode requires --cycle and --database and reads settlement from --team-state")
+    if args.api_mode == "legacy" and args.cycle and not (args.database and args.on_inspection and args.off_inspection):
         parser.error("--cycle requires --database, --on-inspection and --off-inspection")
-    if args.interrupted_output and (args.on_inspection or args.off_inspection or args.operator_observations
+    if args.interrupted_output and (args.on_inspection or args.off_inspection or args.operator_observations or args.display_observations
                                     or args.prior_expired_command):
         parser.error("Settlement and operator inputs require a completed --cycle")
     try:
         team_state = read_json(args.team_state)
+        observed_display = read_display_observations(args.display_observations) if args.display_observations else None
         if args.interrupted_output:
             result = inspect_interrupted_bench(args.interrupted_output, team_state, args.database)
+        elif args.api_mode == "integration":
+            result = verify_integration_evidence(
+                read_json(args.cycle), args.database, team_state,
+                read_json(args.operator_observations) if args.operator_observations else None,
+                observed_display=observed_display,
+                prior_expired_commands=args.prior_expired_command,
+            )
         else:
             result = verify_scoped_evidence(read_json(args.cycle), args.database,
                                             [read_json(args.on_inspection), read_json(args.off_inspection)],
                                             team_state,
                                             read_json(args.operator_observations) if args.operator_observations else None,
+                                            observed_display=observed_display,
                                             prior_expired_commands=args.prior_expired_command)
     except (AttributeError, KeyError, TypeError, OSError, ValueError, RuntimeError, sqlite3.Error) as error:
         parser.exit(1, f"Evidence could not be bound ({type(error).__name__}).\n")

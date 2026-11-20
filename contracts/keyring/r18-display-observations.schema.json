@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:privacy-bubble:keyring:0.1.0:r18-display-observations",
+  "title": "r18 display observations",
+  "description": "Operator observations taken after button release, correlated with an r18 Pi BLE capture.",
+  "type": "object",
+  "required": ["version", "captureSha256", "observations"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {"const": 1},
+    "captureSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "observations": {
+      "type": "array",
+      "minItems": 2,
+      "prefixItems": [
+        {"$ref": "#/$defs/observation", "properties": {"button": {"const": "confirm"}}},
+        {"$ref": "#/$defs/observation", "properties": {"button": {"const": "panic"}}}
+      ],
+      "items": false
+    }
+  },
+  "$defs": {
+    "observation": {
+      "type": "object",
+      "required": ["button", "releaseSequence", "panelLabel", "screenText", "borderVisible", "colorOrder",
+                   "displaySize", "mediaOffsetMs"],
+      "additionalProperties": false,
+      "properties": {
+        "button": {"enum": ["confirm", "panic"]},
+        "releaseSequence": {"type": "integer", "minimum": 0, "maximum": 4294967295},
+        "panelLabel": {"type": ["string", "null"], "minLength": 1, "maxLength": 24},
+        "screenText": {"type": ["string", "null"], "minLength": 1, "maxLength": 24},
+        "borderVisible": {"type": ["boolean", "null"]},
+        "colorOrder": {
+          "type": ["array", "null"], "minItems": 3, "maxItems": 3,
+          "items": {"type": "string", "minLength": 1, "maxLength": 16}
+        },
+        "displaySize": {
+          "type": ["array", "null"], "minItems": 2, "maxItems": 2,
+          "items": {"type": "integer", "minimum": 1, "maximum": 4096}
+        },
+        "mediaOffsetMs": {"type": ["integer", "null"], "minimum": 0}
+      }
+    }
+  }
+}

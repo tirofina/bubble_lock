@@ -24,6 +24,8 @@ async def archive(args: argparse.Namespace) -> Path:
         validate_identity(identity, args.device_id)
         if identity["firmwareRevision"] != args.firmware_revision:
             raise BleProtocolError("firmware revision differs from the selected revision")
+        if args.board_revision is not None and identity["boardRevision"] != args.board_revision:
+            raise BleProtocolError("board revision differs from the selected revision")
         snapshot = await capture(client, identity, args.gatt_profile)
         if _object(await client.read_gatt_char(identity_uuid), 512) != identity:
             raise BleProtocolError("keyring identity changed during capture")
@@ -38,11 +40,14 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True, help="new archive directory; parent must exist")
     parser.add_argument("--gatt-profile", choices=("core-v1", "keyring-v01"), default="core-v1")
     parser.add_argument("--firmware-revision", default="keyring-0.7.0")
+    parser.add_argument("--board-revision", help="Require an exact board revision from BLE identity")
     args = parser.parse_args()
     if os.name != "posix":
         parser.error("this operator command requires Linux/BlueZ")
     if IDENTIFIER.fullmatch(args.device_id) is None or re.fullmatch(r"(?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}", args.address) is None:
         parser.error("invalid device enrollment identity/address")
+    if args.board_revision is not None and IDENTIFIER.fullmatch(args.board_revision) is None:
+        parser.error("invalid board revision")
     if args.output.exists() or args.output.is_symlink() or not args.output.parent.is_dir():
         parser.error("output must be a new directory under an existing parent")
     os.umask(0o077)
