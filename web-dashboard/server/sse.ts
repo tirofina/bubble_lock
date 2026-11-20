@@ -73,6 +73,9 @@ export function createReplayServer(replay: EventFeed, locationFeed?: LocationFee
           if (!response.destroyed) json(response, 503, { error: 'location_feed_unavailable', message: '위치 파일과 수신기 좌표 설정을 확인하세요.' });
         });
         return;
+      case '/api/group-commands':
+        json(response, portal?.caregiver ? 200 : 404, portal?.caregiver ? portal.caregiver.status() : { message: 'caregiver group not configured' });
+        return;
       case '/api/source':
         json(response, 200, {
           source: replay.source,

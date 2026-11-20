@@ -7,6 +7,7 @@ import { useAuth } from './auth-client.tsx';
 import type { PortalController } from './portal-client.ts';
 import { label, portalStatusLabels, portalStatusLabelsEn, scopeList, scopeListEn } from './labels.ts';
 import { useLang } from './i18n.tsx';
+import { CaregiverLivingRoom } from './Caregiver.tsx';
 import { GuardianAlertList, ResidentStatusMetric, SharedResidentMap, useAlertFeed } from './GuardianAlerts.tsx';
 const LocationMap = lazy(() => import('./LocationMap.tsx').then((module) => ({ default: module.LocationMap })));
 function useStatusName() { const { lang } = useLang(); return (status: string) => label(lang === 'en' ? portalStatusLabelsEn : portalStatusLabels, status); }
@@ -121,6 +122,7 @@ export function UserDashboard({ page }: { page: string }) {
     <div className="context-strip"><span className={`environment-tag${demo ? ' demo' : ''}`}><i />{demo ? tr('체험 모드', 'Demo mode') : tr('연결된 계정', 'Signed in')}</span><span>{tr('모든 요청은 가족이 허락한 범위 안에서만 처리돼요.', 'Every request stays within what the family has allowed.')}</span>{alertFeed.source === 'onem2m-cse-live' && <Badge tone="info">{tr('실제 Mobius4 CSE', 'Real Mobius4 CSE')}</Badge>}{alertFeed.source === 'fixture-replay' && <Badge tone="warning">{tr('알림 기록 재생', 'Alert replay')}</Badge>}{demo && <Badge tone="warning">{tr('체험 데이터', 'Demo data')}</Badge>}</div>
     {portal.error && <div className="notice error" role="alert">{portal.error}</div>}{portal.notice && <div className="notice success-notice" role="status"><Icon name="check" />{portal.notice}</div>}
     {(page === 'overview' || page === 'activity') && <GuardianAlertList feed={alertFeed} />}
+    {page === 'overview' && role === 'visitor' && <CaregiverLivingRoom />}
     {page === 'overview' && <>
       <div className="user-greeting"><div><p className="eyebrow">{tr('내 프라이버시', 'My privacy')}</p><h2>{tr('나와 가족의 연결을 한눈에', 'You and your family at a glance')}</h2><p>{tr('키링 위치, 공유 권한, 알림을 필요할 때 바로 확인하세요.', 'Check keyring location, sharing and alerts whenever you need them.')}</p><a className="button primary" href="#/user/map">{tr('키링 위치 보기', 'See keyring location')}<Icon name="arrow" size={18} /></a></div><div className="greeting-bubble" aria-hidden="true"><Icon name="shield" size={64} /></div></div>
       <div className="metrics-grid">{role === 'guardian' && <ResidentStatusMetric feed={alertFeed} />}<Metric label={tr('연결된 키링', 'Connected keyrings')} value={snapshot?.devices.length ?? '-'} note={tr('가족 공간에 연결된 키링', 'Keyrings in your family spaces')} icon="key" /><Metric label={tr('켜져 있는 권한', 'Active permissions')} value={snapshot?.grants.filter((grant) => grant.effectiveStatus === 'ACTIVE').length ?? '-'} note={tr('지금 사용할 수 있는 권한', 'Permissions you can use now')} icon="shield" /><Metric label={tr('읽지 않은 알림', 'Unread alerts')} value={snapshot?.notifications.filter((item) => !item.readAt).length ?? '-'} note={tr('새로 도착한 소식', 'Newly arrived updates')} icon="bell" /></div>

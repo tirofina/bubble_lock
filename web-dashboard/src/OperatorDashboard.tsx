@@ -13,6 +13,7 @@ import { commandStatusLabels, connectionLabels, connectionLabelsEn, label, servi
 import { useLang } from './i18n.tsx';
 import { EdgeRelocation } from './EdgeRelocation.tsx';
 import { AgentRuns } from './AgentRuns.tsx';
+import { GroupCommandsPanel } from './Caregiver.tsx';
 import { TriageAudit, useAlertFeed } from './GuardianAlerts.tsx';
 const LocationMap = lazy(() => import('./LocationMap.tsx').then((module) => ({ default: module.LocationMap })));
 
@@ -84,6 +85,7 @@ export function OperatorDashboard({ page }: { page: string }) {
       <div className="content-card row"><div><h2>명령 진행 과정</h2><p className="card-note">명령을 보낸 뒤 장치에 적용되고 상태가 다시 확인될 때까지 단계별로 보여 줘요.</p></div>
         <label>명령 선택<select value={selected?.commandId ?? ''} onChange={(event) => setSelectedId(event.target.value)} disabled={!commands.length}>{!commands.length && <option>명령을 기다리는 중</option>}
           {commands.map((command) => <option key={command.commandId} value={command.commandId}>{command.commandId} ({label(commandStatusLabels, summarizeCommand(command).status)})</option>)}</select></label></div>
+      <GroupCommandsPanel />
       {selected && <div className="content-card"><CommandDetail command={selected} /></div>}
       <EventDetails events={stream.events} />
     </div>}

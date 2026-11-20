@@ -4,14 +4,16 @@ import type { OidcSessionManager } from './oidc-session.ts';
 import type { PortalUpstream } from './portal-upstream.ts';
 import { ingestLocationRecord } from '../shared/location.ts';
 import type { LocationState, LocationSnapshot } from '../shared/location.ts';
+import { createLivingRoom, livingRoomCore } from './caregiver.ts';
+import type { LivingRoomConfig, LivingRoomService } from './caregiver.ts';
 
 type Role='guardian'|'visitor'|'operator';
 interface ApiResult { status:number;body:unknown }
 interface DemoRuntime {runtime:{api:{handle(request:{method:string;path:string;principal:unknown;body?:unknown}):Promise<ApiResult>}};principals:Record<Role,unknown>}
-interface DemoModule {createPortalDemo(options:{statePath?:string}):Promise<DemoRuntime>}
+interface DemoModule {createPortalDemo(options:{statePath?:string;core?:unknown}):Promise<DemoRuntime>}
 /** Live oneM2M bridge: guardian AE view merged into the snapshot, approved commands published to the CSE. */
 export interface PortalCseBridge {overlaySnapshot(snapshot:unknown):unknown;publishApproved(result:unknown):Promise<unknown>}
-export interface PortalOptions {statePath?:string;auth?:OidcSessionManager;upstream?:PortalUpstream;cse?:PortalCseBridge}
+export interface PortalOptions {statePath?:string;auth?:OidcSessionManager;upstream?:PortalUpstream;cse?:PortalCseBridge;livingRoom?:LivingRoomConfig}
 export interface PortalHandler {
   readonly mode:'live'|'demo';
   handle(request:IncomingMessage,response:ServerResponse,url:URL):Promise<void>;
@@ -19,6 +21,8 @@ export interface PortalHandler {
   authorizeOperator(request:IncomingMessage,response:ServerResponse):Promise<boolean>;
   /** Same boundary as the portal API: loopback origin in demo, OIDC session (and mutation origin) in live. */
   authorizePortal(request:IncomingMessage,response:ServerResponse,mutation:boolean):Promise<{principalId:string}|null>;
+  /** Caregiver living room group command (demo portal runtime only). */
+  readonly caregiver:LivingRoomService|null;
 }
 const actions=new Set(['households','devices','consents','grants','consents/revoke','grants/revoke','incidents','incidents/resolve','commands/request','commands/approve','notifications/read','location-leases','location-leases/revoke','relay-associations']);
 function json(response:ServerResponse,status:number,body:unknown) {
@@ -52,10 +56,12 @@ export async function createPortalHandler(locationFeed:LocationFeed,options:Port
   let demo:DemoRuntime|null=null;
   if(mode==='demo'){
     const module=await import(new URL('../../pc-mobius/integration/src/portal-demo.mjs',import.meta.url).href) as DemoModule;
-    demo=await module.createPortalDemo(options);
+    demo=await module.createPortalDemo({...(options.statePath===undefined?{}:{statePath:options.statePath}),...(options.livingRoom?{core:livingRoomCore(options.livingRoom)}:{})});
   }
+  const caregiver=demo&&options.livingRoom?await createLivingRoom(demo.runtime as never,demo.principals as never,options.livingRoom):null;
   return {
   mode,
+  caregiver,
   async handleAuth(request,response) {
     if(options.auth)return options.auth.handle(request,response);
     if(request.url==='/api/auth/session'&&request.method==='GET'){json(response,200,{mode:'demo',authenticated:false});return true;}
@@ -89,6 +95,14 @@ export async function createPortalHandler(locationFeed:LocationFeed,options:Port
         return demo.runtime.api.handle({method,path,principal:demo.principals[role],...(payload===undefined?{}:{body:payload})});
       };
       const action=url.pathname.slice('/api/portal/'.length);
+      if(action==='caregiver'){
+        if(!caregiver){json(response,404,{message:'방문 돌봄 기기 그룹이 설정되지 않았어요.'});return;}
+        if(request.method==='GET'){json(response,200,{mode,...caregiver.status()});return;}
+        const input=await body(request);
+        if(input['action']==='renew'){json(response,200,{mode,grant:await caregiver.renew(Number.isInteger(input['ttlSec'])?Math.max(10,Math.min(3600,input['ttlSec'] as number)):undefined)});return;}
+        if(roleOf(input['role'])!=='visitor'){json(response,403,{message:'방문 돌봄자 화면에서 눌러 주세요.'});return;}
+        json(response,200,{mode,result:await caregiver.command(input['state']!==false)});return;
+      }
       if(request.method==='GET'&&(action==='snapshot'||action==='locations')) {
         const result=await api('GET',action==='snapshot'?'/v1/portal/snapshot':'/v1/portal/location-access',identity?'guardian':roleOf(url.searchParams.get('role')));
         if(result.status!==200){json(response,result.status,{message:'사용자 범위를 확인해 주세요.'});return;}
