@@ -1,0 +1,1437 @@
+{
+  "receiptId": "routine-learning",
+  "status": "PASS",
+  "generatedAt": "2026-11-20T01:40:10.516Z",
+  "docRevision": "2.0.0",
+  "rubricIds": [
+    "R17"
+  ],
+  "command": "node pc-mobius/scripts/run-routine-learning.mjs",
+  "agent": "none (scripted path, LLM invocations 0)",
+  "simulationScope": {
+    "evenings": "synthetic (seeded generator on the dayofcare trail and guardianPath)",
+    "bleProximity": "simulated flag (day 6)",
+    "guardianFeedback": "scripted",
+    "cse": false,
+    "mecSandbox": false,
+    "hardware": false
+  },
+  "placeMemory": {
+    "version": "pb-place-memory.v1",
+    "params": {
+      "placeRadiusM": 45,
+      "minStopSec": 120,
+      "cellM": 30,
+      "halfLifeDays": 21,
+      "familiarWeight": 2,
+      "familiarAt": 0.4,
+      "coldStartDays": 5,
+      "maxPlaces": 64,
+      "maxDwellSamples": 40,
+      "todBinHours": 4,
+      "noveltySec": 300,
+      "noveltyFarM": 400,
+      "coldStartAlertScore": 0.55,
+      "coldStartDwellFloorSec": 600
+    },
+    "finalSummary": {
+      "version": "pb-place-memory.v1",
+      "soloDays": 10,
+      "accompaniedDays": 1,
+      "coldStart": false,
+      "corridorCells": 44,
+      "places": [
+        {
+          "label": "south bench",
+          "familiarity": 1,
+          "visits": 16,
+          "usualTimeBand": "16-20h",
+          "dwellP50Min": 15.3,
+          "guardianMarkedOk": false,
+          "distanceBand": "park range"
+        },
+        {
+          "label": "Fontvieille cafe",
+          "familiarity": 1,
+          "visits": 3,
+          "usualTimeBand": "16-20h",
+          "dwellP50Min": 21.7,
+          "guardianMarkedOk": true,
+          "distanceBand": "park range"
+        },
+        {
+          "label": "main footway to the bench",
+          "familiarity": 0.48,
+          "visits": 1,
+          "usualTimeBand": "16-20h",
+          "dwellP50Min": 2,
+          "guardianMarkedOk": false,
+          "distanceBand": "park range"
+        }
+      ],
+      "accompaniedPlaces": 2
+    },
+    "finalStateHash": "cf219791bde48c6da3816bce3bcaaf365a8e0d9948490d1c1a8a05201e38f4dd"
+  },
+  "encryption": {
+    "cipher": "AES-256-GCM (MecCipher, location-privacy key handling: 32-byte key file next to the routine service store, 0600)",
+    "aad": "place-memory:<residentId>",
+    "container": "/Mobius/pb-resident-mwoayk2tc7a6/routine",
+    "writes": [
+      {
+        "rn": "d1",
+        "memoryRsc": 2001,
+        "summaryRsc": 2001,
+        "ciphertextBytes": 1008,
+        "coordinateHitsMemoryCin": 0,
+        "coordinateHitsSummaryCin": 0,
+        "roundTrip": true,
+        "readerOriginator": "triage AE (RETRIEVE only)"
+      },
+      {
+        "rn": "d2",
+        "memoryRsc": 2001,
+        "summaryRsc": 2001,
+        "ciphertextBytes": 1684,
+        "coordinateHitsMemoryCin": 0,
+        "coordinateHitsSummaryCin": 0,
+        "roundTrip": true,
+        "readerOriginator": "triage AE (RETRIEVE only)"
+      },
+      {
+        "rn": "d3",
+        "memoryRsc": 2001,
+        "summaryRsc": 2001,
+        "ciphertextBytes": 1928,
+        "coordinateHitsMemoryCin": 0,
+        "coordinateHitsSummaryCin": 0,
+        "roundTrip": true,
+        "readerOriginator": "triage AE (RETRIEVE only)"
+      },
+      {
+        "rn": "d4",
+        "memoryRsc": 2001,
+        "summaryRsc": 2001,
+        "ciphertextBytes": 2204,
+        "coordinateHitsMemoryCin": 0,
+        "coordinateHitsSummaryCin": 0,
+        "roundTrip": true,
+        "readerOriginator": "triage AE (RETRIEVE only)"
+      },
+      {
+        "rn": "d5",
+        "memoryRsc": 2001,
+        "summaryRsc": 2001,
+        "ciphertextBytes": 2296,
+        "coordinateHitsMemoryCin": 0,
+        "coordinateHitsSummaryCin": 0,
+        "roundTrip": true,
+        "readerOriginator": "triage AE (RETRIEVE only)"
+      },
+      {
+        "rn": "d6",
+        "memoryRsc": 2001,
+        "summaryRsc": 2001,
+        "ciphertextBytes": 3544,
+        "coordinateHitsMemoryCin": 0,
+        "coordinateHitsSummaryCin": 0,
+        "roundTrip": true,
+        "readerOriginator": "triage AE (RETRIEVE only)"
+      },
+      {
+        "rn": "d7",
+        "memoryRsc": 2001,
+        "summaryRsc": 2001,
+        "ciphertextBytes": 5108,
+        "coordinateHitsMemoryCin": 0,
+        "coordinateHitsSummaryCin": 0,
+        "roundTrip": true,
+        "readerOriginator": "triage AE (RETRIEVE only)"
+      },
+      {
+        "rn": "d8",
+        "memoryRsc": 2001,
+        "summaryRsc": 2001,
+        "ciphertextBytes": 5108,
+        "coordinateHitsMemoryCin": 0,
+        "coordinateHitsSummaryCin": 0,
+        "roundTrip": true,
+        "readerOriginator": "triage AE (RETRIEVE only)"
+      },
+      {
+        "rn": "d9",
+        "memoryRsc": 2001,
+        "summaryRsc": 2001,
+        "ciphertextBytes": 5704,
+        "coordinateHitsMemoryCin": 0,
+        "coordinateHitsSummaryCin": 0,
+        "roundTrip": true,
+        "readerOriginator": "triage AE (RETRIEVE only)"
+      },
+      {
+        "rn": "d10",
+        "memoryRsc": 2001,
+        "summaryRsc": 2001,
+        "ciphertextBytes": 5852,
+        "coordinateHitsMemoryCin": 0,
+        "coordinateHitsSummaryCin": 0,
+        "roundTrip": true,
+        "readerOriginator": "triage AE (RETRIEVE only)"
+      },
+      {
+        "rn": "d11",
+        "memoryRsc": 2001,
+        "summaryRsc": 2001,
+        "ciphertextBytes": 5852,
+        "coordinateHitsMemoryCin": 0,
+        "coordinateHitsSummaryCin": 0,
+        "roundTrip": true,
+        "readerOriginator": "triage AE (RETRIEVE only)"
+      },
+      {
+        "rn": "d12",
+        "memoryRsc": 2001,
+        "summaryRsc": 2001,
+        "ciphertextBytes": 5852,
+        "coordinateHitsMemoryCin": 0,
+        "coordinateHitsSummaryCin": 0,
+        "roundTrip": true,
+        "readerOriginator": "triage AE (RETRIEVE only)"
+      },
+      {
+        "rn": "d13",
+        "memoryRsc": 2001,
+        "summaryRsc": 2001,
+        "ciphertextBytes": 6336,
+        "coordinateHitsMemoryCin": 0,
+        "coordinateHitsSummaryCin": 0,
+        "roundTrip": true,
+        "readerOriginator": "triage AE (RETRIEVE only)"
+      },
+      {
+        "rn": "d14",
+        "memoryRsc": 2001,
+        "summaryRsc": 2001,
+        "ciphertextBytes": 6580,
+        "coordinateHitsMemoryCin": 0,
+        "coordinateHitsSummaryCin": 0,
+        "roundTrip": true,
+        "readerOriginator": "triage AE (RETRIEVE only)"
+      },
+      {
+        "rn": "a0",
+        "memoryRsc": 2001,
+        "summaryRsc": 2001,
+        "ciphertextBytes": 2296,
+        "coordinateHitsMemoryCin": 0,
+        "coordinateHitsSummaryCin": 0,
+        "roundTrip": true,
+        "readerOriginator": "triage AE (RETRIEVE only)"
+      },
+      {
+        "rn": "a1",
+        "memoryRsc": 2001,
+        "summaryRsc": 2001,
+        "ciphertextBytes": 3564,
+        "coordinateHitsMemoryCin": 0,
+        "coordinateHitsSummaryCin": 0,
+        "roundTrip": true,
+        "readerOriginator": "triage AE (RETRIEVE only)"
+      },
+      {
+        "rn": "a2",
+        "memoryRsc": 2001,
+        "summaryRsc": 2001,
+        "ciphertextBytes": 5200,
+        "coordinateHitsMemoryCin": 0,
+        "coordinateHitsSummaryCin": 0,
+        "roundTrip": true,
+        "readerOriginator": "triage AE (RETRIEVE only)"
+      },
+      {
+        "rn": "a3",
+        "memoryRsc": 2001,
+        "summaryRsc": 2001,
+        "ciphertextBytes": 5676,
+        "coordinateHitsMemoryCin": 0,
+        "coordinateHitsSummaryCin": 0,
+        "roundTrip": true,
+        "readerOriginator": "triage AE (RETRIEVE only)"
+      }
+    ],
+    "plaintext": "only inside the routine service process; the triage AE reads ciphertext and the label summary"
+  },
+  "learningCurve": {
+    "schedule": [
+      {
+        "day": 1,
+        "date": "2026-11-21",
+        "kind": "normal",
+        "route": "usual",
+        "accompanied": null,
+        "guardian": null
+      },
+      {
+        "day": 2,
+        "date": "2026-11-22",
+        "kind": "normal",
+        "route": "direct",
+        "accompanied": null,
+        "guardian": null
+      },
+      {
+        "day": 3,
+        "date": "2026-11-23",
+        "kind": "normal",
+        "route": "parkLoop",
+        "accompanied": null,
+        "guardian": null
+      },
+      {
+        "day": 4,
+        "date": "2026-11-24",
+        "kind": "normal",
+        "route": "usual",
+        "accompanied": null,
+        "guardian": null
+      },
+      {
+        "day": 5,
+        "date": "2026-11-25",
+        "kind": "normal",
+        "route": "usual",
+        "accompanied": null,
+        "guardian": null
+      },
+      {
+        "day": 6,
+        "date": "2026-11-26",
+        "kind": "cafe-with-guardian",
+        "route": "cafeTrip",
+        "accompanied": "ble",
+        "guardian": null
+      },
+      {
+        "day": 7,
+        "date": "2026-11-27",
+        "kind": "cafe-first-solo",
+        "route": "cafeTrip",
+        "accompanied": null,
+        "guardian": "dismissOk"
+      },
+      {
+        "day": 8,
+        "date": "2026-11-28",
+        "kind": "wandering",
+        "route": "storyDay",
+        "accompanied": null,
+        "guardian": null
+      },
+      {
+        "day": 9,
+        "date": "2026-11-29",
+        "kind": "normal",
+        "route": "usual",
+        "accompanied": null,
+        "guardian": null
+      },
+      {
+        "day": 10,
+        "date": "2026-11-30",
+        "kind": "cafe-solo",
+        "route": "cafeTrip",
+        "accompanied": null,
+        "guardian": null
+      },
+      {
+        "day": 11,
+        "date": "2026-12-01",
+        "kind": "wandering",
+        "route": "storyDay",
+        "accompanied": null,
+        "guardian": null
+      },
+      {
+        "day": 12,
+        "date": "2026-12-02",
+        "kind": "wandering",
+        "route": "storyDay",
+        "accompanied": null,
+        "guardian": null
+      },
+      {
+        "day": 13,
+        "date": "2026-12-03",
+        "kind": "normal",
+        "route": "parkLoop",
+        "accompanied": null,
+        "guardian": null
+      },
+      {
+        "day": 14,
+        "date": "2026-12-04",
+        "kind": "cafe-solo",
+        "route": "cafeTrip",
+        "accompanied": null,
+        "guardian": null
+      }
+    ],
+    "curves": {
+      "learning": {
+        "variant": "learning",
+        "falseAlarms": 1,
+        "falseAlarmsByDay": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "falseAlarmsDays1to7": 1,
+        "falseAlarmsDays8to14": 0,
+        "wanderingDetected": 3,
+        "wanderingEvenings": 3,
+        "leadTimeSec": {
+          "day-8": 320,
+          "day-11": 360,
+          "day-12": 200
+        }
+      },
+      "frozen": {
+        "variant": "frozen",
+        "falseAlarms": 3,
+        "falseAlarmsByDay": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        "falseAlarmsDays1to7": 1,
+        "falseAlarmsDays8to14": 2,
+        "wanderingDetected": 3,
+        "wanderingEvenings": 3,
+        "leadTimeSec": {
+          "day-8": 320,
+          "day-11": 360,
+          "day-12": 200
+        }
+      },
+      "noGate": {
+        "variant": "noGate",
+        "falseAlarms": 0,
+        "falseAlarmsByDay": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "falseAlarmsDays1to7": 0,
+        "falseAlarmsDays8to14": 0,
+        "wanderingDetected": 1,
+        "wanderingEvenings": 3,
+        "leadTimeSec": {
+          "day-8": 320,
+          "day-11": null,
+          "day-12": null
+        }
+      },
+      "segmentV1": {
+        "variant": "segmentV1",
+        "falseAlarms": 3,
+        "falseAlarmsByDay": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        "falseAlarmsDays1to7": 1,
+        "falseAlarmsDays8to14": 2,
+        "wanderingDetected": 3,
+        "wanderingEvenings": 3,
+        "leadTimeSec": {
+          "day-8": 320,
+          "day-11": 360,
+          "day-12": 200
+        }
+      }
+    },
+    "days": [
+      {
+        "day": 1,
+        "date": "2026-11-21",
+        "kind": "normal",
+        "expectAlert": false,
+        "accompanied": false,
+        "companionReason": null,
+        "alerts": [],
+        "falseAlarms": 0,
+        "detected": null,
+        "firstAlertLocal": null,
+        "leadTimeSec": null,
+        "guardianDismissedOk": false,
+        "learned": {
+          "learn": true,
+          "mode": "solo",
+          "reason": "solo trip ended without alert"
+        },
+        "coldStartAtStart": true
+      },
+      {
+        "day": 2,
+        "date": "2026-11-22",
+        "kind": "normal",
+        "expectAlert": false,
+        "accompanied": false,
+        "companionReason": null,
+        "alerts": [],
+        "falseAlarms": 0,
+        "detected": null,
+        "firstAlertLocal": null,
+        "leadTimeSec": null,
+        "guardianDismissedOk": false,
+        "learned": {
+          "learn": true,
+          "mode": "solo",
+          "reason": "solo trip ended without alert"
+        },
+        "coldStartAtStart": true
+      },
+      {
+        "day": 3,
+        "date": "2026-11-23",
+        "kind": "normal",
+        "expectAlert": false,
+        "accompanied": false,
+        "companionReason": null,
+        "alerts": [],
+        "falseAlarms": 0,
+        "detected": null,
+        "firstAlertLocal": null,
+        "leadTimeSec": null,
+        "guardianDismissedOk": false,
+        "learned": {
+          "learn": true,
+          "mode": "solo",
+          "reason": "solo trip ended without alert"
+        },
+        "coldStartAtStart": true
+      },
+      {
+        "day": 4,
+        "date": "2026-11-24",
+        "kind": "normal",
+        "expectAlert": false,
+        "accompanied": false,
+        "companionReason": null,
+        "alerts": [],
+        "falseAlarms": 0,
+        "detected": null,
+        "firstAlertLocal": null,
+        "leadTimeSec": null,
+        "guardianDismissedOk": false,
+        "learned": {
+          "learn": true,
+          "mode": "solo",
+          "reason": "solo trip ended without alert"
+        },
+        "coldStartAtStart": true
+      },
+      {
+        "day": 5,
+        "date": "2026-11-25",
+        "kind": "normal",
+        "expectAlert": false,
+        "accompanied": false,
+        "companionReason": null,
+        "alerts": [],
+        "falseAlarms": 0,
+        "detected": null,
+        "firstAlertLocal": null,
+        "leadTimeSec": null,
+        "guardianDismissedOk": false,
+        "learned": {
+          "learn": true,
+          "mode": "solo",
+          "reason": "solo trip ended without alert"
+        },
+        "coldStartAtStart": true
+      },
+      {
+        "day": 6,
+        "date": "2026-11-26",
+        "kind": "cafe-with-guardian",
+        "expectAlert": false,
+        "accompanied": true,
+        "companionReason": "guardian phone sees the keyring over BLE (simulated flag)",
+        "alerts": [],
+        "falseAlarms": 0,
+        "detected": null,
+        "firstAlertLocal": null,
+        "leadTimeSec": null,
+        "guardianDismissedOk": false,
+        "learned": {
+          "learn": true,
+          "mode": "accompanied",
+          "reason": "accompanied trip (separate store)"
+        },
+        "coldStartAtStart": false
+      },
+      {
+        "day": 7,
+        "date": "2026-11-27",
+        "kind": "cafe-first-solo",
+        "expectAlert": false,
+        "accompanied": false,
+        "companionReason": null,
+        "alerts": [
+          {
+            "kind": "WANDERING",
+            "trigger": "novelty",
+            "detectedLocal": "16:58:00",
+            "place": "unfamiliar area"
+          }
+        ],
+        "falseAlarms": 1,
+        "detected": null,
+        "firstAlertLocal": null,
+        "leadTimeSec": null,
+        "guardianDismissedOk": true,
+        "learned": {
+          "learn": true,
+          "mode": "solo",
+          "reason": "guardian dismissed the alert as OK"
+        },
+        "coldStartAtStart": false
+      },
+      {
+        "day": 8,
+        "date": "2026-11-28",
+        "kind": "wandering",
+        "expectAlert": true,
+        "accompanied": false,
+        "companionReason": null,
+        "alerts": [
+          {
+            "kind": "WANDERING",
+            "trigger": "behaviour",
+            "detectedLocal": "17:12:40",
+            "place": "familiar route"
+          }
+        ],
+        "falseAlarms": 0,
+        "detected": true,
+        "firstAlertLocal": "17:12:40",
+        "leadTimeSec": 320,
+        "guardianDismissedOk": false,
+        "learned": {
+          "learn": false,
+          "mode": null,
+          "reason": "PANIC during the trip"
+        },
+        "coldStartAtStart": false
+      },
+      {
+        "day": 9,
+        "date": "2026-11-29",
+        "kind": "normal",
+        "expectAlert": false,
+        "accompanied": false,
+        "companionReason": null,
+        "alerts": [],
+        "falseAlarms": 0,
+        "detected": null,
+        "firstAlertLocal": null,
+        "leadTimeSec": null,
+        "guardianDismissedOk": false,
+        "learned": {
+          "learn": true,
+          "mode": "solo",
+          "reason": "solo trip ended without alert"
+        },
+        "coldStartAtStart": false
+      },
+      {
+        "day": 10,
+        "date": "2026-11-30",
+        "kind": "cafe-solo",
+        "expectAlert": false,
+        "accompanied": false,
+        "companionReason": null,
+        "alerts": [],
+        "falseAlarms": 0,
+        "detected": null,
+        "firstAlertLocal": null,
+        "leadTimeSec": null,
+        "guardianDismissedOk": false,
+        "learned": {
+          "learn": true,
+          "mode": "solo",
+          "reason": "solo trip ended without alert"
+        },
+        "coldStartAtStart": false
+      },
+      {
+        "day": 11,
+        "date": "2026-12-01",
+        "kind": "wandering",
+        "expectAlert": true,
+        "accompanied": false,
+        "companionReason": null,
+        "alerts": [
+          {
+            "kind": "WANDERING",
+            "trigger": "behaviour",
+            "detectedLocal": "17:12:00",
+            "place": "familiar route"
+          }
+        ],
+        "falseAlarms": 0,
+        "detected": true,
+        "firstAlertLocal": "17:12:00",
+        "leadTimeSec": 360,
+        "guardianDismissedOk": false,
+        "learned": {
+          "learn": false,
+          "mode": null,
+          "reason": "PANIC during the trip"
+        },
+        "coldStartAtStart": false
+      },
+      {
+        "day": 12,
+        "date": "2026-12-02",
+        "kind": "wandering",
+        "expectAlert": true,
+        "accompanied": false,
+        "companionReason": null,
+        "alerts": [
+          {
+            "kind": "WANDERING",
+            "trigger": "behaviour",
+            "detectedLocal": "17:14:40",
+            "place": "familiar route"
+          }
+        ],
+        "falseAlarms": 0,
+        "detected": true,
+        "firstAlertLocal": "17:14:40",
+        "leadTimeSec": 200,
+        "guardianDismissedOk": false,
+        "learned": {
+          "learn": false,
+          "mode": null,
+          "reason": "PANIC during the trip"
+        },
+        "coldStartAtStart": false
+      },
+      {
+        "day": 13,
+        "date": "2026-12-03",
+        "kind": "normal",
+        "expectAlert": false,
+        "accompanied": false,
+        "companionReason": null,
+        "alerts": [],
+        "falseAlarms": 0,
+        "detected": null,
+        "firstAlertLocal": null,
+        "leadTimeSec": null,
+        "guardianDismissedOk": false,
+        "learned": {
+          "learn": true,
+          "mode": "solo",
+          "reason": "solo trip ended without alert"
+        },
+        "coldStartAtStart": false
+      },
+      {
+        "day": 14,
+        "date": "2026-12-04",
+        "kind": "cafe-solo",
+        "expectAlert": false,
+        "accompanied": false,
+        "companionReason": null,
+        "alerts": [],
+        "falseAlarms": 0,
+        "detected": null,
+        "firstAlertLocal": null,
+        "leadTimeSec": null,
+        "guardianDismissedOk": false,
+        "learned": {
+          "learn": true,
+          "mode": "solo",
+          "reason": "solo trip ended without alert"
+        },
+        "coldStartAtStart": false
+      }
+    ],
+    "variants": {
+      "learning": [
+        {
+          "day": 1,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "solo"
+        },
+        {
+          "day": 2,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "solo"
+        },
+        {
+          "day": 3,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "solo"
+        },
+        {
+          "day": 4,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "solo"
+        },
+        {
+          "day": 5,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "solo"
+        },
+        {
+          "day": 6,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "accompanied"
+        },
+        {
+          "day": 7,
+          "alerts": [
+            "WANDERING/novelty@16:58:00"
+          ],
+          "falseAlarms": 1,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "solo"
+        },
+        {
+          "day": 8,
+          "alerts": [
+            "WANDERING/behaviour@17:12:40"
+          ],
+          "falseAlarms": 0,
+          "detected": true,
+          "leadTimeSec": 320,
+          "learned": "not learned"
+        },
+        {
+          "day": 9,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "solo"
+        },
+        {
+          "day": 10,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "solo"
+        },
+        {
+          "day": 11,
+          "alerts": [
+            "WANDERING/behaviour@17:12:00"
+          ],
+          "falseAlarms": 0,
+          "detected": true,
+          "leadTimeSec": 360,
+          "learned": "not learned"
+        },
+        {
+          "day": 12,
+          "alerts": [
+            "WANDERING/behaviour@17:14:40"
+          ],
+          "falseAlarms": 0,
+          "detected": true,
+          "leadTimeSec": 200,
+          "learned": "not learned"
+        },
+        {
+          "day": 13,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "solo"
+        },
+        {
+          "day": 14,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "solo"
+        }
+      ],
+      "frozen": [
+        {
+          "day": 1,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "solo"
+        },
+        {
+          "day": 2,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "solo"
+        },
+        {
+          "day": 3,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "solo"
+        },
+        {
+          "day": 4,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "solo"
+        },
+        {
+          "day": 5,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "solo"
+        },
+        {
+          "day": 6,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "not learned"
+        },
+        {
+          "day": 7,
+          "alerts": [
+            "WANDERING/novelty@16:58:00"
+          ],
+          "falseAlarms": 1,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "not learned"
+        },
+        {
+          "day": 8,
+          "alerts": [
+            "WANDERING/behaviour@17:12:40"
+          ],
+          "falseAlarms": 0,
+          "detected": true,
+          "leadTimeSec": 320,
+          "learned": "not learned"
+        },
+        {
+          "day": 9,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "not learned"
+        },
+        {
+          "day": 10,
+          "alerts": [
+            "WANDERING/novelty@17:00:20"
+          ],
+          "falseAlarms": 1,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "not learned"
+        },
+        {
+          "day": 11,
+          "alerts": [
+            "WANDERING/behaviour@17:12:00"
+          ],
+          "falseAlarms": 0,
+          "detected": true,
+          "leadTimeSec": 360,
+          "learned": "not learned"
+        },
+        {
+          "day": 12,
+          "alerts": [
+            "WANDERING/behaviour@17:14:40"
+          ],
+          "falseAlarms": 0,
+          "detected": true,
+          "leadTimeSec": 200,
+          "learned": "not learned"
+        },
+        {
+          "day": 13,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "not learned"
+        },
+        {
+          "day": 14,
+          "alerts": [
+            "WANDERING/novelty@16:57:40"
+          ],
+          "falseAlarms": 1,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "not learned"
+        }
+      ],
+      "noGate": [
+        {
+          "day": 1,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "solo"
+        },
+        {
+          "day": 2,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "solo"
+        },
+        {
+          "day": 3,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "solo"
+        },
+        {
+          "day": 4,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "solo"
+        },
+        {
+          "day": 5,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "solo"
+        },
+        {
+          "day": 6,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "solo"
+        },
+        {
+          "day": 7,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "solo"
+        },
+        {
+          "day": 8,
+          "alerts": [
+            "WANDERING/behaviour@17:12:40"
+          ],
+          "falseAlarms": 0,
+          "detected": true,
+          "leadTimeSec": 320,
+          "learned": "solo"
+        },
+        {
+          "day": 9,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "solo"
+        },
+        {
+          "day": 10,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "solo"
+        },
+        {
+          "day": 11,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": false,
+          "leadTimeSec": null,
+          "learned": "solo"
+        },
+        {
+          "day": 12,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": false,
+          "leadTimeSec": null,
+          "learned": "solo"
+        },
+        {
+          "day": 13,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "solo"
+        },
+        {
+          "day": 14,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "solo"
+        }
+      ],
+      "segmentV1": [
+        {
+          "day": 1,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "not learned"
+        },
+        {
+          "day": 2,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "not learned"
+        },
+        {
+          "day": 3,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "not learned"
+        },
+        {
+          "day": 4,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "not learned"
+        },
+        {
+          "day": 5,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "not learned"
+        },
+        {
+          "day": 6,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "not learned"
+        },
+        {
+          "day": 7,
+          "alerts": [
+            "WANDERING/behaviour@17:00:20"
+          ],
+          "falseAlarms": 1,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "not learned"
+        },
+        {
+          "day": 8,
+          "alerts": [
+            "WANDERING/behaviour@17:12:40"
+          ],
+          "falseAlarms": 0,
+          "detected": true,
+          "leadTimeSec": 320,
+          "learned": "not learned"
+        },
+        {
+          "day": 9,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "not learned"
+        },
+        {
+          "day": 10,
+          "alerts": [
+            "WANDERING/behaviour@17:02:40"
+          ],
+          "falseAlarms": 1,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "not learned"
+        },
+        {
+          "day": 11,
+          "alerts": [
+            "WANDERING/behaviour@17:12:00"
+          ],
+          "falseAlarms": 0,
+          "detected": true,
+          "leadTimeSec": 360,
+          "learned": "not learned"
+        },
+        {
+          "day": 12,
+          "alerts": [
+            "WANDERING/behaviour@17:14:40"
+          ],
+          "falseAlarms": 0,
+          "detected": true,
+          "leadTimeSec": 200,
+          "learned": "not learned"
+        },
+        {
+          "day": 13,
+          "alerts": [],
+          "falseAlarms": 0,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "not learned"
+        },
+        {
+          "day": 14,
+          "alerts": [
+            "WANDERING/behaviour@17:00:20"
+          ],
+          "falseAlarms": 1,
+          "detected": null,
+          "leadTimeSec": null,
+          "learned": "not learned"
+        }
+      ]
+    }
+  },
+  "companionRule": {
+    "mec": "same MEC013 zone, under 50 m, similar heading and speed for 3 consecutive reports",
+    "ble": "guardian phone sees the keyring over BLE (simulated flag)",
+    "effect": "no novelty or distance alerts while accompanied; accompanied trips learned into a separate store; PANIC unaffected"
+  },
+  "partA": {
+    "sandbox": "dayofcare",
+    "residentUe": "resident-relay",
+    "guardianUe": "guardian",
+    "meps": [
+      "mep1",
+      "mep2"
+    ],
+    "trips": [
+      {
+        "trip": "A1-cafe-with-guardian",
+        "accompaniedBy": "guardian UE guardian beside the resident from the bench (MEC013)",
+        "expectAlert": false,
+        "companion": {
+          "accompanied": true,
+          "reason": "MEC013 co-location for 3 consecutive reports (same zone or cell, under 50 m, similar heading and speed)",
+          "coLocatedReports": 169,
+          "since": "16:41:00"
+        },
+        "alerts": [],
+        "pass": true,
+        "guardianDismissedOk": false,
+        "learned": {
+          "learn": true,
+          "mode": "accompanied",
+          "reason": "accompanied trip (separate store)"
+        },
+        "zonesSeen": {
+          "home-district|office-district": 32,
+          "park-district|office-district": 12,
+          "park-district|park-district": 60,
+          "park-district|home-district": 1,
+          "home-district|home-district": 37,
+          "office-district|office-district": 75
+        },
+        "mecPositionUnmatched": 0,
+        "ticks": 217,
+        "wallSec": 194
+      },
+      {
+        "trip": "A2-cafe-first-solo",
+        "accompaniedBy": "guardian UE guardian at the office",
+        "expectAlert": true,
+        "companion": {
+          "accompanied": false,
+          "reason": null,
+          "coLocatedReports": 0,
+          "since": null
+        },
+        "alerts": [
+          {
+            "kind": "WANDERING",
+            "trigger": "novelty",
+            "detectedLocal": "16:58:00",
+            "place": "unfamiliar area",
+            "familiarity": 0,
+            "distanceBand": "park range"
+          }
+        ],
+        "pass": true,
+        "guardianDismissedOk": true,
+        "learned": {
+          "learn": true,
+          "mode": "solo",
+          "reason": "guardian dismissed the alert as OK"
+        },
+        "zonesSeen": {
+          "home-district|office-district": 71,
+          "park-district|office-district": 71,
+          "office-district|office-district": 75
+        },
+        "mecPositionUnmatched": 0,
+        "ticks": 217,
+        "wallSec": 184
+      },
+      {
+        "trip": "A3-cafe-solo-after-ok",
+        "accompaniedBy": "guardian UE guardian at the office",
+        "expectAlert": false,
+        "companion": {
+          "accompanied": false,
+          "reason": null,
+          "coLocatedReports": 0,
+          "since": null
+        },
+        "alerts": [],
+        "pass": true,
+        "guardianDismissedOk": false,
+        "learned": {
+          "learn": true,
+          "mode": "solo",
+          "reason": "solo trip ended without alert"
+        },
+        "zonesSeen": {
+          "home-district|office-district": 70,
+          "park-district|office-district": 72,
+          "office-district|office-district": 74
+        },
+        "mecPositionUnmatched": 0,
+        "ticks": 216,
+        "wallSec": 186
+      }
+    ],
+    "gisPostRetries": 0,
+    "mobility": {
+      "wasActive": false,
+      "leftActive": true,
+      "note": "left on: the declared dayofcare state after the R13 run"
+    }
+  },
+  "checks": {
+    "falseAlarmsDropWithLearning": true,
+    "wanderingDetectionHeld": true,
+    "accompaniedTripKeptOutOfSoloMemory": true,
+    "newPlaceQuietAfterGuardianOk": true,
+    "confusedWanderingNotLearned": true,
+    "memoryEncryptedAtRest": true,
+    "companionSandboxTrips": true
+  },
+  "sandbox": {
+    "host": "192.168.0.103",
+    "definitionSource": {
+      "sha256": "fdc608968f04fc3481c12b4ac288824fb2b0d5936a7f9506b8c6826b4ae4f572",
+      "schema": "pb.mec-sandbox.dayofcare.v1"
+    }
+  },
+  "runnerSHA256": "dda6d4f60d3b4217750c41457634338ca7a0b46a91aacdcef1c47125a1395772",
+  "runDirectory": ".local/routine-learning/mwoayk2tc7a6",
+  "limits": [
+    "Evenings, BLE proximity and guardian answers are synthetic and designed with the model parameters; fourteen evenings and three sandbox trips, no clinical claim.",
+    "The sandbox positions are the generated points set through GIS; MEC013 echoes them, so real positioning error is absent."
+  ]
+}

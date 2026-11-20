@@ -96,3 +96,5 @@ node pc-mobius/scripts/run-anomaly-triage.mjs --agent=claude --sandbox=dayofcare
 ```
 
 runner는 Mobius4와 run 전용 DB, 거주자, routine, triage, guardian app, incident service AE를 준비하고, 합성 정상 산책 7일을 locationHistory에 기록한 뒤 routine AE가 CSE에서 다시 읽어 profile을 만든다. 사례마다 sandbox UE를 GIS로 옮기고 MEC013 조회 위치를 location cin으로, MEC012 cell 변화를 rnis cin으로 기록한다. routine AE가 alerts에 cin을 쓰면 triage AE가 oneM2M 알림으로 깨어나 agent를 실행한다. 보호자 승인 뒤 lease 적용은 triage AE가 저장된 run 상태에서 LLM 없이 재개한다. 단위 시험은 `node --test test/mcp-triage.test.mjs`(6건)이다.
+
+장소 기억(`place-memory.mjs`)을 켜면 routine container에 봉인된 `memory-*` cin(AES-256-GCM)과 이름표 요약 `summary-*` cin이 함께 쌓인다. `readRoutineProfile`은 `profile-*`과 최신 `summary-*`만 읽어 `places`(이름표, 친숙도, 방문 수, 시간대, 보호자 OK 표시, 거리 구간)를 돌려주고, `readAlert`는 경보 장소의 이름표, 친숙도, 거리 구간, 동행 여부를 돌려준다. MCP 도구 출력은 이름표와 거친 통계만 담고, 좌표와 봉인된 기억은 routine service 안에 머문다. 학습 gate, 동행 판정, 14일 학습 곡선은 `node pc-mobius/scripts/run-routine-learning.mjs`(LLM 호출 0회)와 `node --test test/place-memory.test.mjs`(5건)로 확인한다.
