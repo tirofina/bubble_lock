@@ -143,5 +143,7 @@ export function translateServerMessage(message: string, lang: UiLang): string {
   const direct = serverMessages[message];
   if (direct !== undefined) return direct;
   for (const [ko, , enTemplate] of serverPatterns) if (ko.test(message)) return message.replace(ko, enTemplate);
+  // A Korean server message without a mapping still reads as English.
+  if (/[가-힣]/.test(message)) return 'The request could not be completed. Check the input and your permissions, then try again.';
   return message;
 }

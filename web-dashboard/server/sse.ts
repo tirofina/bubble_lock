@@ -63,7 +63,7 @@ export function createReplayServer(replay: EventFeed, locationFeed?: LocationFee
     }
     switch (url.pathname) {
       case '/api/evidence':
-        void readFile(new URL('../../docs/rubric-audit.json',import.meta.url),'utf8').then((text)=>json(response,200,JSON.parse(text))).catch(()=>json(response,503,{message:'구현 대조 기록을 준비하고 있습니다.'}));
+        void readFile(new URL('../../docs/rubric-audit.json',import.meta.url),'utf8').then((text)=>json(response,200,JSON.parse(text))).catch(()=>json(response,503,{message:'The requirement trace is being prepared.'}));
         return;
       case '/api/locations':
         if (!locationFeed) { json(response, 503, { error: 'location_feed_pending' }); return; }

@@ -6,7 +6,8 @@ import type { ReactNode } from 'react';
  * or the language toggle selects Korean, and the choice is kept per browser.
  */
 export type Lang = 'ko' | 'en';
-const STORAGE_KEY = 'bubblelock.lang';
+// The earlier key saved the default on every visit (Korean at the time), so only an explicit choice under this key counts.
+const STORAGE_KEY = 'bubblelock.lang.choice';
 
 function initialLang(): Lang {
   try {
@@ -22,12 +23,13 @@ interface LangContext { readonly lang: Lang; setLang(lang: Lang): void }
 const Context = createContext<LangContext>({ lang: 'en', setLang: () => undefined });
 
 export function LangProvider({ children }: { readonly children: ReactNode }) {
-  const [lang, setLang] = useState<Lang>(initialLang);
-  useEffect(() => {
-    document.documentElement.lang = lang;
-    try { window.localStorage.setItem(STORAGE_KEY, lang); } catch { /* per-browser convenience only */ }
-  }, [lang]);
-  const value = useMemo(() => ({ lang, setLang }), [lang]);
+  const [lang, setLangState] = useState<Lang>(initialLang);
+  useEffect(() => { document.documentElement.lang = lang; }, [lang]);
+  const setLang = useCallback((next: Lang) => {
+    setLangState(next);
+    try { window.localStorage.setItem(STORAGE_KEY, next); } catch { /* per-browser convenience only */ }
+  }, []);
+  const value = useMemo(() => ({ lang, setLang }), [lang, setLang]);
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 

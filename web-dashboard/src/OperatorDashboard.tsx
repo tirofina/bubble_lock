@@ -14,12 +14,13 @@ import { useLang } from './i18n.tsx';
 import { EdgeRelocation } from './EdgeRelocation.tsx';
 import { AgentRuns } from './AgentRuns.tsx';
 import { KeyringEnrollment } from './KeyringEnrollment.tsx';
+import { rubricDesignEn, rubricStatusEn } from './rubric-en.ts';
 import { GroupCommandsPanel } from './Caregiver.tsx';
 import { TriageAudit, useAlertFeed } from './GuardianAlerts.tsx';
 const LocationMap = lazy(() => import('./LocationMap.tsx').then((module) => ({ default: module.LocationMap })));
 
 function Evidence() {
-  const { tr } = useLang();
+  const { tr, lang } = useLang();
   const [audit, setAudit] = useState<unknown>(null);
   const [error, setError] = useState(false);
   useEffect(() => { const controller = new AbortController(); void fetch('/api/evidence', { signal: controller.signal }).then((response) => { if (!response.ok) throw Error(); return response.json(); }).then(setAudit).catch(() => { if (!controller.signal.aborted) setError(true); }); return () => controller.abort(); }, []);
@@ -30,8 +31,8 @@ function Evidence() {
     {error ? <p className="notice error" role="alert">{tr('진행 현황을 받아오는 중에 문제가 생겼어요. 새로고침해 주세요.', 'The status could not be loaded. Please refresh.')}</p> : rubric.length === 0 ? <p className="notice" role="status">{tr('진행 현황을 불러오고 있어요…', 'Loading status…')}</p> :
       <div className="content-card"><div className="card-heading"><h2>{tr('요구사항별 현황', 'Status by requirement')}</h2><Badge>{tr(`${rubric.length}개 항목`, `${rubric.length} items`)}</Badge></div><div className="rubric-table">{rubric.filter(isRecord).map((item, index) =>
         <a className="rubric-row" href="/api/evidence" target="_blank" rel="noreferrer" key={String(item['id'] ?? index)}><span className="rubric-id">{String(item['id'] ?? item['rubricId'] ?? `R${index + 1}`)}</span>
-          <div><h3>{String(item['title'] ?? item['requirement'] ?? tr('요구사항', 'Requirement'))}</h3><p>{String(item['design'] ?? tr('자세한 근거는 요구사항 추적 기록에서 볼 수 있어요.', 'See the requirement trace for details.'))}</p></div>
-          <Badge>{String(isRecord(item['audit']) ? item['audit']['status'] : tr('확인 중', 'Checking'))}</Badge></a>)}</div></div>}
+          <div><h3>{String(item['title'] ?? item['requirement'] ?? tr('요구사항', 'Requirement'))}</h3><p>{String((lang === 'en' ? rubricDesignEn[String(item['id'])] : undefined) ?? item['design'] ?? tr('자세한 근거는 요구사항 추적 기록에서 볼 수 있어요.', 'See the requirement trace for details.'))}</p></div>
+          <Badge>{(() => { const status = String(isRecord(item['audit']) ? item['audit']['status'] : tr('확인 중', 'Checking')); return lang === 'en' ? rubricStatusEn[status] ?? status : status; })()}</Badge></a>)}</div></div>}
   </div>;
 }
 
