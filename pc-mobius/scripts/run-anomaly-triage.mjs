@@ -110,7 +110,14 @@ const sandbox = async (method, path, body, expected = [200, 201, 204]) => {
   if (!expected.includes(response.status)) throw Object.assign(new Error(`sandbox ${method} ${path} ${response.status}`), { status: response.status });
   return { status: response.status, data };
 };
-const moveUe = (point) => sandbox('POST', `/gis/v1/geodata/${encodeURIComponent(ueAddress)}`, { assetName: ueAddress, assetType: 'UE', subType: 'UE', location: { type: 'Point', coordinates: [point.lon, point.lat] } });
+// The sandbox is shared with the R13 relocation run; a transient GIS 4xx/5xx is retried a few times before the run stops.
+let gisRetries = 0;
+const moveUe = async (point) => {
+  for (let attempt = 0; ; attempt += 1) {
+    try { return await sandbox('POST', `/gis/v1/geodata/${encodeURIComponent(ueAddress)}`, { assetName: ueAddress, assetType: 'UE', subType: 'UE', location: { type: 'Point', coordinates: [point.lon, point.lat] } }); }
+    catch (error) { if (attempt >= 4) throw error; gisRetries += 1; await delay(1000 * (attempt + 1)); }
+  }
+};
 let originalUe = null; let mobilityWasActive = null; let movementActive = null;
 
 try {
@@ -452,7 +459,7 @@ try {
     agent: { kind: agentKind, client: agentKind === 'claude' ? `claude-code ${spawnSync(env.CLAUDE_BIN ?? 'claude', ['--version'], { encoding: 'utf8', windowsHide: true }).stdout?.trim() ?? 'unknown'} headless -p stream-json` : 'scripted triage policy over the same MCP tools',
       model: results.flatMap((entry) => entry.triage).flatMap((entry) => entry.invocations).find((item) => item.model)?.model ?? null, llmInvocations, builtInTools: 'disabled (--tools "")', allowedTools: triageToolNames(), permissionMode: 'dontAsk', strictMcpConfig: true, modelFlag: 'not passed (user default)' },
     simulationScope: { walks: 'synthetic (generated on the sandbox map geometry, seeded)', keyringStates: 'synthetic', guardianDecision: 'scripted guardian principal outside the agent session', mecSandbox: false, cse: false, mcpTransport: false, llmAgent: agentKind !== 'claude', hardware: false },
-    sandbox: { host: new URL(mecBase).host, name: definition.sandbox, scenario: active?.name ?? null, meps, ue: ueAddress, caSHA256: sha256(await readFile(caFile)), tlsWithoutPinnedCa: unpinned, mobilityAutomation: 'turned on for the run and restored', movementAutomation: 'off',
+    sandbox: { host: new URL(mecBase).host, name: definition.sandbox, scenario: active?.name ?? null, meps, ue: ueAddress, caSHA256: sha256(await readFile(caFile)), tlsWithoutPinnedCa: unpinned, mobilityAutomation: 'turned on for the run and restored', movementAutomation: 'off', gisPostRetries: gisRetries,
       definitionSource: useDayofcare ? { path: '.local/mec-sandbox/dayofcare.json (sandbox description written by the R13 day-of-care agent)', sha256: sha256(dayofcareText), schema: JSON.parse(dayofcareText).schema } : 'DEV_MAP_BUBBLE', apis: ['MEC013 v3 queries/users', 'MEC013 v3 queries/zones', 'MEC012 rab_info', 'GIS geodata POST', 'GIS automation MOBILITY'] },
     cse: { version: JSON.parse(await readFile(join(upstream, 'package.json'), 'utf8')).version, postgres: (await pool.query('SELECT version()')).rows[0].version.split(',')[0], resources: { residentAe: aes.resident.path, history: historyPath, routine: routinePath }, acp: 'resident ACP: resident 63, routine/triage/guardian/incident AEs 35 (CREATE, RETRIEVE, DISCOVER)' },
     routineModel: { version: ROUTINE_MODEL_VERSION, profileHash: profile.profileHash, trainingDays: profile.days, synthetic: profile.synthetic, readBackFromCse: historyDays.length, params: profile.params, weights: profile.weights, summary: summarizeProfile(profile, map), map: map.describe() },
