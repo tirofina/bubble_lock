@@ -1,0 +1,601 @@
+# Privacy Bubble Keyring: "day of care" scenario for the ETSI MEC Sandbox (STF_685).
+# An elderly resident lives alone in Les Moneghetti (Monaco). Her keyring talks BLE to a relay phone
+# (UE resident-relay); a caregiver visits in the afternoon; at dusk she walks down Boulevard de Belgique
+# into Parc Princesse Antoinette, stops at a fork of the main footway and later rests on the south benches,
+# where her daughter (UE guardian) joins her from an office in Fontvieille.
+# Geography: OpenStreetMap (Nominatim and Overpass) coordinates, lon/lat (WGS84), rounded to 1e-6 deg.
+# Topology: home-district is served by mep1 (Edge-A), park-district and office-district by mep2 (Edge-B).
+# MEC013 and MEC012 on each MEP only see UEs inside that MEP's locality, so an application serving the
+# resident has to follow her from mep1 to mep2. MEC021 (AMS) maps zones to MEPs for the whole system.
+# The oneM2M MEC IPE (pb-ipe-mep1) is declared as an EDGE-APP on mep1; the run script adds pb-ipe-mep2 on
+# mep2 through a SCENARIO-UPDATE event when it decides to relocate (see deploy/mec-sandbox/README.md).
+version: 1.10.0
+name: day-of-care
+description: 'Privacy Bubble Keyring day of care: home (Les Moneghetti) to Parc Princesse Antoinette, two MEPs, oneM2M MEC IPE relocation'
+deployment:
+    netChar:
+        latency: 50
+        latencyVariation: 10
+        latencyDistribution: Normal
+        throughputDl: 1000
+        throughputUl: 1000
+        packetLoss: 0
+    connectivity:
+        model: OPEN
+    d2d:
+        d2dMaxDistance: 100
+        disableD2dViaNetwork: false
+    userMeta:
+        pb-day-of-care: '{"story":"day-of-care","home":"Les Moneghetti, upper Boulevard de Belgique","park":"Parc Princesse Antoinette","office":"Fontvieille, Avenue Albert II"}'
+    domains:
+        -
+            id: 0d0c0a00-0000-4000-8000-000000000001
+            name: PUBLIC
+            type: PUBLIC
+            netChar:
+                latency: 6
+                latencyVariation: 2
+                throughputDl: 1000
+                throughputUl: 1000
+                packetLoss: 0
+            zones:
+                -
+                    id: 0d0c0a00-0000-4000-8000-000000000002
+                    name: PUBLIC-COMMON
+                    type: COMMON
+                    netChar:
+                        latency: 5
+                        latencyVariation: 1
+                        throughputDl: 1000
+                        throughputUl: 1000
+                        packetLoss: 0
+                    networkLocations:
+                        -
+                            id: 0d0c0a00-0000-4000-8000-000000000003
+                            name: PUBLIC-COMMON-DEFAULT
+                            type: DEFAULT
+                            netChar:
+                                latency: 1
+                                latencyVariation: 1
+                                throughputDl: 1000
+                                throughputUl: 1000
+                                packetLoss: 0
+        -
+            id: 0d0c0a00-0000-4000-8000-000000000010
+            name: monaco-operator
+            type: OPERATOR-CELLULAR
+            netChar:
+                latency: 6
+                latencyVariation: 2
+                throughputDl: 1000
+                throughputUl: 1000
+                packetLoss: 0
+            cellularDomainConfig:
+                mnc: '001'
+                mcc: '001'
+                defaultCellId: FFFFFFF
+            zones:
+                -
+                    id: 0d0c0a00-0000-4000-8000-000000000011
+                    name: monaco-operator-COMMON
+                    type: COMMON
+                    netChar:
+                        latency: 5
+                        latencyVariation: 1
+                        throughputDl: 1000
+                        throughputUl: 1000
+                        packetLoss: 0
+                    networkLocations:
+                        -
+                            id: 0d0c0a00-0000-4000-8000-000000000012
+                            name: monaco-operator-COMMON-DEFAULT
+                            type: DEFAULT
+                            netChar:
+                                latency: 1
+                                latencyVariation: 1
+                                throughputDl: 1000
+                                throughputUl: 1000
+                                packetLoss: 0
+                # Edge-A: the resident's home district (Les Moneghetti).
+                -
+                    id: 0d0c0a00-0000-4000-8000-000000000100
+                    name: home-district
+                    type: ZONE
+                    netChar:
+                        latency: 5
+                        latencyVariation: 1
+                        throughputDl: 1000
+                        throughputUl: 1000
+                        packetLoss: 0
+                    meta:
+                        display.map.color: royalblue
+                    networkLocations:
+                        -
+                            id: 0d0c0a00-0000-4000-8000-000000000101
+                            name: home-district-DEFAULT
+                            type: DEFAULT
+                            netChar:
+                                latency: 1
+                                latencyVariation: 1
+                                throughputDl: 1000
+                                throughputUl: 1000
+                                packetLoss: 0
+                            physicalLocations:
+                                -
+                                    id: 0d0c0a00-0000-4000-8000-000000000110
+                                    name: mep1
+                                    type: EDGE
+                                    geoData:
+                                        location:
+                                            type: Point
+                                            coordinates:
+                                                - 7.418002
+                                                - 43.736427
+                                    meta:
+                                        pb.edge: edge-a
+                                        pb.capacity.cpu: '1.0'
+                                        pb.capacity.memoryMi: '1024'
+                                    connected: true
+                                    dataNetwork: {}
+                                    netChar:
+                                        latencyDistribution: Normal
+                                        throughputDl: 1000
+                                        throughputUl: 1000
+                                    processes:
+                                        -
+                                            id: 0d0c0a00-0000-4000-8000-000000000111
+                                            name: mec011-1
+                                            type: EDGE-APP
+                                            image: 'meep-docker-registry:30001/meep-app-enablement'
+                                            environment: ''
+                                            netChar:
+                                                latencyDistribution: Normal
+                                                throughputDl: 1000
+                                                throughputUl: 1000
+                                        -
+                                            id: 0d0c0a00-0000-4000-8000-000000000112
+                                            name: mec012-1
+                                            type: EDGE-APP
+                                            image: 'meep-docker-registry:30001/meep-rnis'
+                                            environment: 'MEEP_LOCALITY=home-district,MEEP_SCOPE_OF_LOCALITY=MEC_HOST,MEEP_CONSUMED_LOCAL_ONLY=false'
+                                            netChar:
+                                                latencyDistribution: Normal
+                                                throughputDl: 1000
+                                                throughputUl: 1000
+                                        -
+                                            id: 0d0c0a00-0000-4000-8000-000000000113
+                                            name: mec013-1
+                                            type: EDGE-APP
+                                            image: 'meep-docker-registry:30001/meep-loc-serv'
+                                            environment: 'MEEP_LOCALITY=home-district,MEEP_SCOPE_OF_LOCALITY=MEC_HOST,MEEP_CONSUMED_LOCAL_ONLY=false'
+                                            netChar:
+                                                latencyDistribution: Normal
+                                                throughputDl: 1000
+                                                throughputUl: 1000
+                                        -
+                                            id: 0d0c0a00-0000-4000-8000-000000000114
+                                            name: mec021-1
+                                            type: EDGE-APP
+                                            image: 'meep-docker-registry:30001/meep-ams'
+                                            environment: 'MEEP_MEP_COVERAGE=mep1:home-district/mep2:park-district:office-district,MEEP_SCOPE_OF_LOCALITY=MEC_SYSTEM,MEEP_CONSUMED_LOCAL_ONLY=false'
+                                            netChar:
+                                                latencyDistribution: Normal
+                                                throughputDl: 1000
+                                                throughputUl: 1000
+                                        # oneM2M MEC IPE, initial placement on Edge-A (image built from deploy/mec-sandbox/ipe/).
+                                        # Environment values cannot hold ',' or '=' (virt-engine splits on them).
+                                        -
+                                            id: 0d0c0a00-0000-4000-8000-0000000001a1
+                                            name: pb-ipe-mep1
+                                            type: EDGE-APP
+                                            image: 'meep-docker-registry:30001/pb-onem2m-ipe'
+                                            environment: 'PB_IPE_MEP=mep1,MEC_MEP=mep1,MEC_SANDBOX_NAME=dayofcare,MEC_APP_INSTANCE_ID=0d0c0a00-0000-4000-8000-0000000001a1,MEC_CALLBACK_PUBLIC_URL=http://192.168.0.103:31881,MEC_IPE_ONEM2M_URL=http://192.168.0.103:31881,ONEM2M_CSE_URL=https://192.168.0.106:17599'
+                                            serviceConfig:
+                                                name: pb-ipe-mep1
+                                                meSvcName: pb-onem2m-ipe
+                                                ports:
+                                                    -
+                                                        protocol: TCP
+                                                        port: 18080
+                                                        externalPort: 31881
+                                            cpuConfig:
+                                                min: 0.1
+                                                max: 0.5
+                                            memoryConfig:
+                                                min: 64
+                                                max: 256
+                                            netChar:
+                                                latencyDistribution: Normal
+                                                throughputDl: 1000
+                                                throughputUl: 1000
+                        -
+                            id: 0d0c0a00-0000-4000-8000-000000000120
+                            name: home-wifi
+                            type: POA-WIFI
+                            netChar:
+                                latency: 5
+                                latencyVariation: 1
+                                throughputDl: 1000
+                                throughputUl: 1000
+                                packetLoss: 0
+                            poaWifiConfig:
+                                macId: 005C0D0C0001
+                            geoData:
+                                location:
+                                    type: Point
+                                    coordinates:
+                                        - 7.417915
+                                        - 43.736945
+                                radius: 40
+                            physicalLocations:
+                                # Phone carried by the resident; the keyring talks BLE to it, so network location is this UE.
+                                # Path: home, Boulevard de Belgique, park east gate (Chemin des Revoires), main footway,
+                                # fork, south benches. Elderly walking pace.
+                                -
+                                    id: 0d0c0a00-0000-4000-8000-000000000201
+                                    name: resident-relay
+                                    type: UE
+                                    geoData:
+                                        location:
+                                            type: Point
+                                            coordinates:
+                                                - 7.417915
+                                                - 43.736945
+                                        path:
+                                            type: LineString
+                                            coordinates:
+                                                - [7.417915, 43.736945]
+                                                - [7.417894, 43.736678]
+                                                - [7.417596, 43.736644]
+                                                - [7.417302, 43.736479]
+                                                - [7.417082, 43.736212]
+                                                - [7.416868, 43.735937]
+                                                - [7.416715, 43.735715]
+                                                - [7.416551, 43.735538]
+                                                - [7.41646, 43.735358]
+                                                - [7.416365, 43.735125]
+                                                - [7.416308, 43.734946]
+                                                - [7.416266, 43.734679]
+                                                - [7.416249, 43.734458]
+                                                - [7.416217, 43.7343]
+                                                - [7.416158, 43.734131]
+                                                - [7.416042, 43.733948]
+                                                - [7.415986, 43.733975]
+                                                - [7.415907, 43.733872]
+                                                - [7.41571, 43.733702]
+                                                - [7.41556, 43.733582]
+                                                - [7.415479, 43.733515]
+                                                - [7.415336, 43.733392]
+                                                - [7.415248, 43.733333]
+                                                - [7.415159, 43.733293]
+                                                - [7.4151, 43.733238]
+                                                - [7.415052, 43.733171]
+                                                - [7.414975, 43.733087]
+                                                - [7.414598, 43.732772]
+                                                - [7.414514, 43.732722]
+                                                - [7.414478, 43.732648]
+                                        eopMode: REVERSE
+                                        velocity: 0.9
+                                    connected: true
+                                    wireless: true
+                                    wirelessType: 'wifi,5g,4g'
+                                    meta:
+                                        display.map.icon: ion-android-walk
+                                        pb.role: resident-relay
+                                    netChar:
+                                        latencyDistribution: Normal
+                                        throughputDl: 1000
+                                        throughputUl: 1000
+                                    macId: 005C0D0C0201
+                        -
+                            id: 0d0c0a00-0000-4000-8000-000000000130
+                            name: moneghetti-5g-small
+                            type: POA-5G
+                            netChar:
+                                latency: 3
+                                latencyVariation: 1
+                                throughputDl: 1000
+                                throughputUl: 1000
+                                packetLoss: 0
+                            poa5GConfig:
+                                cellId: 1A0000001
+                            geoData:
+                                location:
+                                    type: Point
+                                    coordinates:
+                                        - 7.41745
+                                        - 43.7364
+                                radius: 140
+                        -
+                            id: 0d0c0a00-0000-4000-8000-000000000140
+                            name: moneghetti-4g-macro
+                            type: POA-4G
+                            netChar:
+                                latency: 10
+                                latencyVariation: 2
+                                throughputDl: 1000
+                                throughputUl: 1000
+                                packetLoss: 0
+                            poa4GConfig:
+                                cellId: 1A00001
+                            geoData:
+                                location:
+                                    type: Point
+                                    coordinates:
+                                        - 7.417
+                                        - 43.7352
+                                radius: 600
+                            physicalLocations:
+                                # Visiting caregiver: starts on Boulevard de Belgique, walks to the resident's door, stays, leaves.
+                                -
+                                    id: 0d0c0a00-0000-4000-8000-000000000202
+                                    name: caregiver
+                                    type: UE
+                                    geoData:
+                                        location:
+                                            type: Point
+                                            coordinates:
+                                                - 7.416868
+                                                - 43.735937
+                                        path:
+                                            type: LineString
+                                            coordinates:
+                                                - [7.416868, 43.735937]
+                                                - [7.417082, 43.736212]
+                                                - [7.417302, 43.736479]
+                                                - [7.417894, 43.736678]
+                                                - [7.417915, 43.736945]
+                                        eopMode: REVERSE
+                                        velocity: 1.3
+                                    connected: true
+                                    wireless: true
+                                    wirelessType: 'wifi,5g,4g'
+                                    meta:
+                                        display.map.icon: ion-android-walk
+                                        pb.role: caregiver
+                                    netChar:
+                                        latencyDistribution: Normal
+                                        throughputDl: 1000
+                                        throughputUl: 1000
+                                    macId: 005C0D0C0202
+                # Edge-B: Parc Princesse Antoinette and the Jardin Exotique side.
+                -
+                    id: 0d0c0a00-0000-4000-8000-000000000300
+                    name: park-district
+                    type: ZONE
+                    netChar:
+                        latency: 5
+                        latencyVariation: 1
+                        throughputDl: 1000
+                        throughputUl: 1000
+                        packetLoss: 0
+                    meta:
+                        display.map.color: forestgreen
+                    networkLocations:
+                        -
+                            id: 0d0c0a00-0000-4000-8000-000000000301
+                            name: park-district-DEFAULT
+                            type: DEFAULT
+                            netChar:
+                                latency: 1
+                                latencyVariation: 1
+                                throughputDl: 1000
+                                throughputUl: 1000
+                                packetLoss: 0
+                            physicalLocations:
+                                -
+                                    id: 0d0c0a00-0000-4000-8000-000000000310
+                                    name: mep2
+                                    type: EDGE
+                                    geoData:
+                                        location:
+                                            type: Point
+                                            coordinates:
+                                                - 7.414172
+                                                - 43.731278
+                                    meta:
+                                        pb.edge: edge-b
+                                        pb.capacity.cpu: '0.5'
+                                        pb.capacity.memoryMi: '512'
+                                    connected: true
+                                    dataNetwork: {}
+                                    netChar:
+                                        latencyDistribution: Normal
+                                        throughputDl: 1000
+                                        throughputUl: 1000
+                                    processes:
+                                        -
+                                            id: 0d0c0a00-0000-4000-8000-000000000311
+                                            name: mec011-2
+                                            type: EDGE-APP
+                                            image: 'meep-docker-registry:30001/meep-app-enablement'
+                                            environment: ''
+                                            netChar:
+                                                latencyDistribution: Normal
+                                                throughputDl: 1000
+                                                throughputUl: 1000
+                                        -
+                                            id: 0d0c0a00-0000-4000-8000-000000000312
+                                            name: mec012-2
+                                            type: EDGE-APP
+                                            image: 'meep-docker-registry:30001/meep-rnis'
+                                            environment: 'MEEP_LOCALITY=park-district:office-district,MEEP_SCOPE_OF_LOCALITY=MEC_HOST,MEEP_CONSUMED_LOCAL_ONLY=false'
+                                            netChar:
+                                                latencyDistribution: Normal
+                                                throughputDl: 1000
+                                                throughputUl: 1000
+                                        -
+                                            id: 0d0c0a00-0000-4000-8000-000000000313
+                                            name: mec013-2
+                                            type: EDGE-APP
+                                            image: 'meep-docker-registry:30001/meep-loc-serv'
+                                            environment: 'MEEP_LOCALITY=park-district:office-district,MEEP_SCOPE_OF_LOCALITY=MEC_HOST,MEEP_CONSUMED_LOCAL_ONLY=false'
+                                            netChar:
+                                                latencyDistribution: Normal
+                                                throughputDl: 1000
+                                                throughputUl: 1000
+                                        -
+                                            id: 0d0c0a00-0000-4000-8000-000000000314
+                                            name: mec021-2
+                                            type: EDGE-APP
+                                            image: 'meep-docker-registry:30001/meep-ams'
+                                            environment: 'MEEP_MEP_COVERAGE=mep1:home-district/mep2:park-district:office-district,MEEP_SCOPE_OF_LOCALITY=MEC_SYSTEM,MEEP_CONSUMED_LOCAL_ONLY=false'
+                                            netChar:
+                                                latencyDistribution: Normal
+                                                throughputDl: 1000
+                                                throughputUl: 1000
+                        -
+                            id: 0d0c0a00-0000-4000-8000-000000000320
+                            name: park-5g-entrance
+                            type: POA-5G
+                            netChar:
+                                latency: 3
+                                latencyVariation: 1
+                                throughputDl: 1000
+                                throughputUl: 1000
+                                packetLoss: 0
+                            poa5GConfig:
+                                cellId: 2B0000001
+                            geoData:
+                                location:
+                                    type: Point
+                                    coordinates:
+                                        - 7.4159
+                                        - 43.73388
+                                radius: 80
+                        -
+                            id: 0d0c0a00-0000-4000-8000-000000000330
+                            name: park-5g-fork
+                            type: POA-5G
+                            netChar:
+                                latency: 3
+                                latencyVariation: 1
+                                throughputDl: 1000
+                                throughputUl: 1000
+                                packetLoss: 0
+                            poa5GConfig:
+                                cellId: 2B0000002
+                            geoData:
+                                location:
+                                    type: Point
+                                    coordinates:
+                                        - 7.4153
+                                        - 43.73335
+                                radius: 80
+                        -
+                            id: 0d0c0a00-0000-4000-8000-000000000340
+                            name: park-5g-bench
+                            type: POA-5G
+                            netChar:
+                                latency: 3
+                                latencyVariation: 1
+                                throughputDl: 1000
+                                throughputUl: 1000
+                                packetLoss: 0
+                            poa5GConfig:
+                                cellId: 2B0000003
+                            geoData:
+                                location:
+                                    type: Point
+                                    coordinates:
+                                        - 7.41465
+                                        - 43.73282
+                                radius: 80
+                # Office area in Fontvieille (no local MEP; AMS maps it to mep2).
+                -
+                    id: 0d0c0a00-0000-4000-8000-000000000400
+                    name: office-district
+                    type: ZONE
+                    netChar:
+                        latency: 5
+                        latencyVariation: 1
+                        throughputDl: 1000
+                        throughputUl: 1000
+                        packetLoss: 0
+                    meta:
+                        display.map.color: darkorange
+                    networkLocations:
+                        -
+                            id: 0d0c0a00-0000-4000-8000-000000000401
+                            name: office-district-DEFAULT
+                            type: DEFAULT
+                            netChar:
+                                latency: 1
+                                latencyVariation: 1
+                                throughputDl: 1000
+                                throughputUl: 1000
+                                packetLoss: 0
+                        -
+                            id: 0d0c0a00-0000-4000-8000-000000000420
+                            name: fontvieille-5g-office
+                            type: POA-5G
+                            netChar:
+                                latency: 3
+                                latencyVariation: 1
+                                throughputDl: 1000
+                                throughputUl: 1000
+                                packetLoss: 0
+                            poa5GConfig:
+                                cellId: 3C0000001
+                            geoData:
+                                location:
+                                    type: Point
+                                    coordinates:
+                                        - 7.417963
+                                        - 43.730843
+                                radius: 90
+                            physicalLocations:
+                                # Daughter at work in Fontvieille; hurries to the park bench (taxi and on foot).
+                                -
+                                    id: 0d0c0a00-0000-4000-8000-000000000203
+                                    name: guardian
+                                    type: UE
+                                    geoData:
+                                        location:
+                                            type: Point
+                                            coordinates:
+                                                - 7.417963
+                                                - 43.730843
+                                        path:
+                                            type: LineString
+                                            coordinates:
+                                                - [7.417963, 43.730843]
+                                                - [7.417615, 43.73142]
+                                                - [7.416843, 43.732451]
+                                                - [7.41533, 43.7324]
+                                                - [7.415273, 43.732446]
+                                                - [7.415066, 43.732616]
+                                                - [7.414725, 43.732736]
+                                                - [7.414478, 43.732648]
+                                        eopMode: REVERSE
+                                        velocity: 4
+                                    connected: true
+                                    wireless: true
+                                    wirelessType: 'wifi,5g,4g'
+                                    meta:
+                                        display.map.icon: ion-android-walk
+                                        pb.role: guardian
+                                    netChar:
+                                        latencyDistribution: Normal
+                                        throughputDl: 1000
+                                        throughputUl: 1000
+                                    macId: 005C0D0C0203
+                        -
+                            id: 0d0c0a00-0000-4000-8000-000000000430
+                            name: fontvieille-4g-macro
+                            type: POA-4G
+                            netChar:
+                                latency: 10
+                                latencyVariation: 2
+                                throughputDl: 1000
+                                throughputUl: 1000
+                                packetLoss: 0
+                            poa4GConfig:
+                                cellId: 3C00001
+                            geoData:
+                                location:
+                                    type: Point
+                                    coordinates:
+                                        - 7.4175
+                                        - 43.7295
+                                radius: 450

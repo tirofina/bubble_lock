@@ -113,10 +113,146 @@ kubectl delete secret bubble-local-ca meep-ingress
 | MEC012 RNIS v2 `queries/rab_info` | HTTP 200 |
 | Strict TLS from the PC with the pinned CA (`createMecFetch({ caFile })`) | 200 on all three paths; without the CA Node rejects the certificate (`UNABLE_TO_VERIFY_LEAF_SIGNATURE`) |
 | Callback path from a sandbox pod to the PC (`busybox wget` to `http://192.168.0.106:18090`) | Delivered; source address 192.168.0.103 (node SNAT). Windows Firewall already allows `node.exe` inbound |
+| Day-of-care relocation run (`npm --prefix pc-mobius run integration:mec-day-of-care`, sandbox `dayofcare`) | 25/25 checks PASS; IPE relocated mep1 to mep2 on a MEC021 `INTERHOST_MOVEOUT_TRIGGERED`; receipt `docs/verification-evidence/2026-11-20/mec-day-of-care.json` (see the day-of-care section below) |
 | IPE run against the sandbox (`npm --prefix pc-mobius run integration:mec-ipe-sandbox`) | 33/33 checks PASS. The IPE registered as a USER app instance (`confirm_ready` 204) and as MEC011 service `pb-onem2m-ipe`; 3 oneM2M request cin created Location periodic, Location user-event and RNIS cell-change subscriptions; 19 real sandbox notifications became oneM2M cin; zone entry triggered handover edge-a to edge-b; 2 renewals per subscription; DELETE 204 for all three. Details: `docs/rubric-work/R15-R16.md`, receipt `docs/verification-evidence/2026-11-20/mec-ipe-sandbox.json` |
+
+## Day-of-care scenario and the IPE as a MEC application (R13)
+
+A second sandbox, `dayofcare`, runs the project scenario
+`scenarios/day-of-care.yaml` (scenario name `day-of-care`). It models one
+afternoon of an elderly resident who lives alone in Les Moneghetti, Monaco,
+with real OpenStreetMap coordinates (lon, lat):
+
+| Place | Location | Coordinates |
+|---|---|---|
+| Home | residential block on upper Boulevard de Belgique, Les Moneghetti | 7.417915, 43.736945 |
+| Walk | Boulevard de Belgique down to the park's east gate (Chemin des Revoires) | gate 7.416042, 43.733948 |
+| Park | Parc Princesse Antoinette (OSM way 221351810) | centre 7.414608, 43.733407 |
+| Trail fork | main footway (OSM way 939530791) meets the east branch (OSM way 688744018) | 7.415336, 43.733392 |
+| Bench | south bench group (OSM nodes 6459866593 to 6459866598) | 7.414478, 43.732648 |
+| Office | Fontvieille, near Avenue Albert II | 7.417963, 43.730843 |
+
+Topology (operator domain `monaco-operator`, MCC/MNC 001/001):
+
+| Zone | MEP | MEC013/MEC012 locality | POAs (cell id, radius) |
+|---|---|---|---|
+| `home-district` | `mep1` (Edge-A), capacity 1.0 CPU / 1024 MiB | home-district | `home-wifi` (Wi-Fi, 40 m), `moneghetti-5g-small` (1A0000001, 140 m), `moneghetti-4g-macro` (1A00001, 600 m, covers the walk route) |
+| `park-district` | `mep2` (Edge-B), capacity 0.5 CPU / 512 MiB | park-district, office-district | `park-5g-entrance` (2B0000001, 80 m), `park-5g-fork` (2B0000002, 80 m), `park-5g-bench` (2B0000003, 80 m) |
+| `office-district` | none (MEC021 maps it to mep2) | served by mep2 | `fontvieille-5g-office` (3C0000001, 90 m), `fontvieille-4g-macro` (3C00001, 450 m) |
+
+Each MEP runs only MEC011, MEC012, MEC013 and MEC021 (lean for the shared VM).
+MEC021 uses `MEEP_MEP_COVERAGE=mep1:home-district/mep2:park-district:office-district`.
+UEs: `resident-relay` (the phone the resident carries; the keyring talks BLE to
+it, so it is her network location; path home, Boulevard de Belgique, park gate,
+trail, fork, bench at 0.9 m/s), `caregiver` (street to the front door, 1.3 m/s)
+and `guardian` (office to the bench, 4 m/s). Scenario automations stay off;
+the run script moves UEs through the GIS API with MOBILITY automation on.
+
+Import and sandbox creation (VM-internal platform-ctrl ClusterIP path, same as
+fix 9):
+
+```bash
+scp deploy/mec-sandbox/scenarios/day-of-care.yaml mec@192.168.0.103:~/day-of-care.yaml
+ssh mec@192.168.0.103 'bash -s' < deploy/mec-sandbox/import-day-of-care.sh
+# after a yaml change: ssh mec@192.168.0.103 'REACTIVATE=1 bash -s' < deploy/mec-sandbox/import-day-of-care.sh
+```
+
+### oneM2M MEC IPE image and placement
+
+`ipe/Dockerfile` packages the IPE (`pc-mobius/integration/src/mec-ipe*.mjs`)
+with the entry point `pc-mobius/scripts/run-mec-ipe-pod.mjs` on
+`node:22-alpine`. `ipe/publish-image.sh` (Git Bash on the PC) assembles the
+build context in `.local/mec-sandbox/ipe-build` (it holds the lab CA
+certificate, public part only), builds on the VM and pushes
+`meep-docker-registry:30001/pb-onem2m-ipe`.
+
+- The scenario declares `pb-ipe-mep1` as an `EDGE-APP` process on `mep1`
+  (fixed app instance id, `serviceConfig` NodePort 31881, `meSvcName:
+  pb-onem2m-ipe`, CPU 0.1 to 0.5, memory 64 to 256 MiB). The virt-engine
+  deploys it as a pod; the sandbox app store lists it as an app instance on
+  `mep1`, so MEC011 `confirm_ready` and MEC021 accept its id.
+- The orchestrator adds `pb-ipe-mep2` (NodePort 31882) with a sandbox-ctrl
+  `SCENARIO-UPDATE` event (`ADD`, parent `mep2`) and removes an instance with
+  `REMOVE` plus `gracePeriod`; the app store then sends the MEC011
+  AppTermination notification and the IPE answers with `confirm_termination`.
+  The same `meSvcName` makes both instances adjacent app instances for MEC021.
+- `virt-engine` splits the process `environment` string on `,` and `=`; values
+  therefore hold neither (the pod also accepts `;` as a list separator).
+- oneM2M side: the PC Mobius4 (`/pb-cse`) listens with HTTPS on
+  `192.168.0.106:17599` (server certificate from the same lab CA,
+  `.local/mec-sandbox/pc-cse-server.*`) and on loopback HTTP for the PC AEs.
+  Pods reach it through node SNAT; Mobius4 reaches each pod through its
+  NodePort (`http://192.168.0.103:3188x`). MEC callbacks from the sandbox
+  services use the same NodePort URL.
+- MEC side inside the pod: the ingress `https://192.168.0.103/dayofcare/<mep>`
+  with the pinned lab CA, as on the PC (`MEC_*` settings of
+  `mec-platform-client.mjs`).
+- A pod waits for the CSE, and exits for a restart when its AE disappears or
+  the CSE stays unreachable for 30 s, so each run starts from fresh state. On
+  start it removes MEC011 services and MEC021 registrations left by an earlier
+  container with the same app instance id.
+
+`kubectl logs -f` fails on this VM (`failed to create fsnotify watcher: too
+many open files`); the run script polls `kubectl logs` over SSH instead.
+
+### Relocation run
+
+`npm --prefix pc-mobius run integration:mec-day-of-care` (with
+`MOBIUS4_ROOT`) replays the afternoon with story minutes compressed to
+seconds and writes `docs/verification-evidence/2026-11-20/mec-day-of-care.json`
+and `mec-day-of-care-trace.jsonl`. Sequence:
+
+1. Declared placement check (`pb-ipe-mep1` only) and an eligibility record for
+   the resident's zone (MEC013 sighting); ownership epoch 1 goes to the mep1
+   instance as a cin in `/Mobius/pb-mec-ipe/ownership`.
+2. The guardian app writes Location periodic, Location user-event and RNIS
+   cell-change request cins; the mep1 instance creates the MEC013/MEC012
+   subscriptions and writes observations under `/Mobius/resident-keyring`.
+3. Caregiver visit: MEC013 on mep1 lists caregiver and resident on `home-wifi`.
+4. Walk: each oneM2M observation from Edge-A makes the orchestrator read the
+   serving access point from MEC013; the 4G macro borders park-district
+   coverage, so it pre-places `pb-ipe-mep2` on the eligible host.
+5. Zone entry: MEC021 sends `INTERHOST_MOVEOUT_TRIGGERED` with the mep2
+   instance as target to the mep1 instance, which records it as a lifecycle
+   cin; the orchestrator re-checks eligibility and writes ownership epoch 2.
+   The mep1 instance deletes its MEC subscriptions and reports the context
+   transfer to MEC021; the mep2 instance rebuilds the request set from the CSE
+   and re-creates the subscriptions on its own MEP. Observations continue in
+   the same oneM2M containers, each carrying `servedBy {mep, appInstanceId, epoch}`.
+6. Fork stop at dusk; the orchestrator removes `pb-ipe-mep1` with a 30 s grace
+   period (MEC011 AppTermination, `confirm_termination`).
+7. Guardian approach; MEC013 on mep2 shows both UEs on `park-5g-bench`; a
+   oneM2M geo-query over the park returns the resident's location container.
+8. Unsubscribe, removal of `pb-ipe-mep2`, declared placement restored.
+
+The run refuses to start (`SANDBOX_IN_USE`) when a UE it drives moves during a
+6 s idle check, because other experiments share the `dayofcare` sandbox. With
+`PB_UE_PREFIX=r13-` it adds run-time copies of the three UEs (`r13-resident`,
+`r13-carer`, `r13-guardian`, same POA parents and radio settings) through
+`SCENARIO-UPDATE` and removes them at the end, leaving the declared UEs to the
+other experiment. Keep copy names at 12 characters or fewer: this GIS build
+answers 400 (`duplicate key "ue_pkey"`, then `varchar(36)`) for a run-time UE
+named `r13-resident-relay`; the script re-creates the geodata entry once on a
+duplicate-key answer.
+
+Result of the run on 2026-11-20 (UE copies, R17 was driving the declared UEs):
+25/25 checks PASS. Pre-placement started at walk point 9 (attach to
+`moneghetti-4g-macro`, 83 s before park-district at 0.9 m/s); the mep2 pod was
+Ready 6.7 s after the `ADD`. MEC021 notified the zone entry once, 0.6 s after
+the GIS update; decision 210 ms, epoch 2 written, mep2 resumed all three
+requests 511 ms later, mep1 deleted its three subscriptions (204). The periodic
+source gap at hand-over equals one measured period (4 s); 0 missed, 0
+duplicate, 0 interleaved observations across 25 reports. MEC011 removal of the
+mep1 instance: `confirm_termination` 204, node gone 0.9 s after `REMOVE`.
+Receipt `docs/verification-evidence/2026-11-20/mec-day-of-care.json`, trace
+`mec-day-of-care-trace.jsonl`; details in `docs/rubric-work/R13.md`.
 
 ## Operating notes
 
+- Two sandboxes share the VM: `bubble` (dep-opt-b, 37 pods) and `dayofcare`
+  (day-of-care, 4 core pods, 8 MEC service pods and the IPE pods). Load average
+  stayed between about 10 and 25 on 6 vCPU during the runs; free memory stayed
+  above 9 GiB.
 - SSH to the VM uses a dedicated key pair and a pinned `known_hosts` entry
   kept outside the repository. VirtualBox guest control does not work on this
   VM; use SSH.

@@ -1,0 +1,1040 @@
+{
+  "status": "PASS",
+  "generatedAt": "2026-11-20T00:59:02.651Z",
+  "docRevision": "2.0.0",
+  "rubricIds": [
+    "R13"
+  ],
+  "simulation": {
+    "mec": false,
+    "ue": "sandbox-scenario",
+    "cse": false,
+    "hardware": false
+  },
+  "hosts": [
+    {
+      "host": "pc",
+      "address": "192.168.0.106",
+      "os": "Windows 11",
+      "roles": [
+        "Mobius4 CSE /pb-cse (HTTPS 17599 on the LAN with the lab CA, loopback HTTP for local AEs)",
+        "PostgreSQL + PostGIS",
+        "orchestrator AE Cpb-orchestrator",
+        "guardian app AE Cguardian-app",
+        "story driver"
+      ]
+    },
+    {
+      "host": "vm mec-sandbox",
+      "address": "192.168.0.103",
+      "os": "Ubuntu 22.04 (single-node kubeadm)",
+      "roles": [
+        "ETSI MEC Sandbox STF_685",
+        "sandbox dayofcare",
+        "MEP mep1 (Edge-A) and mep2 (Edge-B): MEC011, MEC012, MEC013, MEC021",
+        "oneM2M MEC IPE pods (image pb-onem2m-ipe)"
+      ]
+    }
+  ],
+  "scenario": {
+    "name": "day-of-care",
+    "yaml": "deploy/mec-sandbox/scenarios/day-of-care.yaml",
+    "yamlSHA256": "88f372397e14ff0e1e6202757645e0c34c61b765292896b706a4c4ce588176a7",
+    "activeScenarioHash": "c31a151c1a00a1aa",
+    "zones": [
+      "home-district",
+      "park-district",
+      "office-district"
+    ],
+    "poas": [
+      {
+        "name": "home-wifi",
+        "type": "POA-WIFI",
+        "zone": "home-district",
+        "cellId": null,
+        "radiusM": 40
+      },
+      {
+        "name": "moneghetti-5g-small",
+        "type": "POA-5G",
+        "zone": "home-district",
+        "cellId": "1A0000001",
+        "radiusM": 140
+      },
+      {
+        "name": "moneghetti-4g-macro",
+        "type": "POA-4G",
+        "zone": "home-district",
+        "cellId": "1A00001",
+        "radiusM": 600
+      },
+      {
+        "name": "park-5g-entrance",
+        "type": "POA-5G",
+        "zone": "park-district",
+        "cellId": "2B0000001",
+        "radiusM": 80
+      },
+      {
+        "name": "park-5g-fork",
+        "type": "POA-5G",
+        "zone": "park-district",
+        "cellId": "2B0000002",
+        "radiusM": 80
+      },
+      {
+        "name": "park-5g-bench",
+        "type": "POA-5G",
+        "zone": "park-district",
+        "cellId": "2B0000003",
+        "radiusM": 80
+      },
+      {
+        "name": "fontvieille-5g-office",
+        "type": "POA-5G",
+        "zone": "office-district",
+        "cellId": "3C0000001",
+        "radiusM": 90
+      },
+      {
+        "name": "fontvieille-4g-macro",
+        "type": "POA-4G",
+        "zone": "office-district",
+        "cellId": "3C00001",
+        "radiusM": 450
+      }
+    ],
+    "amsCoverage": {
+      "home-district": "mep1",
+      "park-district": "mep2",
+      "office-district": "mep2"
+    },
+    "ues": [
+      "r13-resident",
+      "r13-carer",
+      "r13-guardian"
+    ],
+    "ueCopies": {
+      "reason": "the declared UEs resident-relay, caregiver and guardian were driven by another experiment (R17) on the same sandbox; this run added copies with the same POA parents, radio settings and roles through SCENARIO-UPDATE ADD and removed them afterwards",
+      "copies": [
+        {
+          "name": "r13-resident",
+          "id": "0d0c0a00-0000-4000-8000-0000000002f1",
+          "parent": "home-wifi",
+          "copyOf": "resident-relay"
+        },
+        {
+          "name": "r13-carer",
+          "id": "0d0c0a00-0000-4000-8000-0000000002f2",
+          "parent": "moneghetti-4g-macro",
+          "copyOf": "caregiver"
+        },
+        {
+          "name": "r13-guardian",
+          "id": "0d0c0a00-0000-4000-8000-0000000002f3",
+          "parent": "fontvieille-5g-office",
+          "copyOf": "guardian"
+        }
+      ]
+    }
+  },
+  "sandbox": {
+    "name": "dayofcare",
+    "host": "192.168.0.103",
+    "implementation": "ETSI MEC Sandbox STF_685 (local kubeadm install)",
+    "caSHA256": "41b040e74ccdada474afe8972813df3adcebef77fdbf04fc9a0bfe7f52898bc4"
+  },
+  "meps": [
+    {
+      "mep": "mep1",
+      "zone": "home-district",
+      "edge": "edge-a",
+      "capacity": {
+        "cpu": 1,
+        "memoryMi": 1024
+      },
+      "mecApis": [
+        "MEC011",
+        "MEC012",
+        "MEC013",
+        "MEC021"
+      ],
+      "locality": {
+        "MEC012": [
+          "home-district"
+        ],
+        "MEC013": [
+          "home-district"
+        ]
+      }
+    },
+    {
+      "mep": "mep2",
+      "zone": "park-district",
+      "edge": "edge-b",
+      "capacity": {
+        "cpu": 0.5,
+        "memoryMi": 512
+      },
+      "mecApis": [
+        "MEC011",
+        "MEC012",
+        "MEC013",
+        "MEC021"
+      ],
+      "locality": {
+        "MEC012": [
+          "park-district",
+          "office-district"
+        ],
+        "MEC013": [
+          "park-district",
+          "office-district"
+        ]
+      }
+    }
+  ],
+  "ipe": {
+    "image": "meep-docker-registry:30001/pb-onem2m-ipe",
+    "imageDigest": "meep-docker-registry:30001/pb-onem2m-ipe@sha256:a5c8262b65a37299b3aa6e618a661cb6d1211add1d60d5b42181d502b8dd0582",
+    "ae": "/Mobius/pb-mec-ipe",
+    "originator": "Cpb-mec-ipe",
+    "instances": {
+      "mep1": {
+        "name": "pb-ipe-mep1",
+        "appInstanceId": "0d0c0a00-0000-4000-8000-0000000001a1",
+        "nodePort": 31881,
+        "placement": "declared in the scenario"
+      },
+      "mep2": {
+        "name": "pb-ipe-mep2",
+        "appInstanceId": "0d0c0a00-0000-4000-8000-0000000001a2",
+        "nodePort": 31882,
+        "placement": "SCENARIO-UPDATE ADD by the orchestrator",
+        "pod": {
+          "name": "pb-ipe-mep2-695f76958-xl295",
+          "node": "mec-sandbox",
+          "createdAt": "2026-11-20T00:57:58Z",
+          "scheduledAt": "2026-11-20T00:57:58Z",
+          "readyAt": "2026-11-20T00:58:04Z",
+          "phase": "Running",
+          "image": "meep-docker-registry:30001/pb-onem2m-ipe@sha256:a5c8262b65a37299b3aa6e618a661cb6d1211add1d60d5b42181d502b8dd0582"
+        }
+      }
+    }
+  },
+  "cse": {
+    "implementation": "Mobius4",
+    "version": "4.24.5",
+    "sourceRevision": "3da4d8523694b5077e348ab1c9e769fb3a30df24",
+    "cseId": "/pb-cse",
+    "postgres": "PostgreSQL 17.6 on x86_64-windows"
+  },
+  "storyTimeline": [
+    {
+      "storyTime": "13:00",
+      "title": "Resident at home (home-wifi, home-district, Edge-A)",
+      "runMs": 13959
+    },
+    {
+      "storyTime": "14:00",
+      "title": "Visiting caregiver arrives at the home",
+      "runMs": 21772
+    },
+    {
+      "storyTime": "16:00",
+      "title": "Caregiver leaves",
+      "runMs": 31046
+    },
+    {
+      "storyTime": "16:30",
+      "title": "Resident leaves home and walks down Boulevard de Belgique",
+      "runMs": 34566
+    },
+    {
+      "storyTime": "16:36",
+      "title": "Resident enters park-district coverage at the park east gate (Edge-B)",
+      "runMs": 58721
+    },
+    {
+      "storyTime": "17:10",
+      "title": "At dusk the resident stops at the fork of the trail",
+      "runMs": 73986,
+      "servingPoa": "park-5g-entrance"
+    },
+    {
+      "storyTime": "17:20",
+      "title": "Guardian leaves the Fontvieille office for the park bench",
+      "runMs": 84540
+    },
+    {
+      "storyTime": "17:25",
+      "title": "Resident walks on to the bench; guardian arrives",
+      "runMs": 91127
+    }
+  ],
+  "decisions": [
+    {
+      "decisionId": "dec-1-57057123",
+      "kind": "initial-placement",
+      "at": "2026-11-20T00:57:23.324Z",
+      "trigger": {
+        "type": "MEC013-sighting",
+        "ueRef": "56c38d3ee36449bb",
+        "sightings": [
+          {
+            "mep": "mep1",
+            "zoneId": "home-district",
+            "accessPointId": "home-wifi"
+          }
+        ],
+        "zoneId": "home-district",
+        "accessPointId": "home-wifi"
+      },
+      "ue": "56c38d3ee36449bb",
+      "zone": "home-district",
+      "request": {
+        "cpu": 0.1,
+        "memoryMi": 64
+      },
+      "requiredApis": [
+        "MEC011",
+        "MEC012",
+        "MEC013",
+        "MEC021"
+      ],
+      "rule": "eligible = MEC013/MEC012 locality covers zone AND required MEC APIs declared AND MEC011 catalog ACTIVE AND free capacity >= request; order: MEC021 AMS coverage first, then most free CPU",
+      "candidates": [
+        {
+          "mep": "mep1",
+          "edge": "edge-a",
+          "hostZone": "home-district",
+          "servesZone": true,
+          "amsPreferred": true,
+          "mecApis": [
+            "MEC011",
+            "MEC012",
+            "MEC013",
+            "MEC021"
+          ],
+          "liveApis": [
+            "MEC012",
+            "MEC013",
+            "MEC021"
+          ],
+          "mec011Status": 200,
+          "capacity": {
+            "cpu": 1,
+            "memoryMi": 1024
+          },
+          "used": {
+            "cpu": 0.1,
+            "memoryMi": 64
+          },
+          "free": {
+            "cpu": 0.9,
+            "memoryMi": 960
+          },
+          "capacityOk": true,
+          "eligible": true,
+          "reasons": []
+        },
+        {
+          "mep": "mep2",
+          "edge": "edge-b",
+          "hostZone": "park-district",
+          "servesZone": false,
+          "amsPreferred": false,
+          "mecApis": [
+            "MEC011",
+            "MEC012",
+            "MEC013",
+            "MEC021"
+          ],
+          "liveApis": [
+            "MEC012",
+            "MEC013",
+            "MEC021"
+          ],
+          "mec011Status": 200,
+          "capacity": {
+            "cpu": 0.5,
+            "memoryMi": 512
+          },
+          "used": {
+            "cpu": 0,
+            "memoryMi": 0
+          },
+          "free": {
+            "cpu": 0.5,
+            "memoryMi": 512
+          },
+          "capacityOk": true,
+          "eligible": false,
+          "reasons": [
+            "locality [\"park-district\",\"office-district\"] excludes home-district"
+          ]
+        }
+      ],
+      "selected": "mep1",
+      "instances": [
+        {
+          "name": "pb-ipe-mep1",
+          "id": "0d0c0a00-0000-4000-8000-0000000001a1",
+          "mep": "mep1",
+          "nodePort": 31881
+        }
+      ],
+      "evaluationMs": 41
+    },
+    {
+      "decisionId": "dec-2-00222095",
+      "kind": "pre-placement",
+      "at": "2026-11-20T00:57:57.158Z",
+      "trigger": {
+        "type": "oneM2M-observation+MEC013-access-point",
+        "cellId": "1A00001",
+        "accessPointId": "moneghetti-4g-macro",
+        "observationCin": "8dsroohafy",
+        "predictedZones": [
+          "park-district",
+          "office-district"
+        ]
+      },
+      "ue": "56c38d3ee36449bb",
+      "zone": "park-district",
+      "request": {
+        "cpu": 0.1,
+        "memoryMi": 64
+      },
+      "requiredApis": [
+        "MEC011",
+        "MEC012",
+        "MEC013",
+        "MEC021"
+      ],
+      "rule": "eligible = MEC013/MEC012 locality covers zone AND required MEC APIs declared AND MEC011 catalog ACTIVE AND free capacity >= request; order: MEC021 AMS coverage first, then most free CPU",
+      "candidates": [
+        {
+          "mep": "mep1",
+          "edge": "edge-a",
+          "hostZone": "home-district",
+          "servesZone": false,
+          "amsPreferred": false,
+          "mecApis": [
+            "MEC011",
+            "MEC012",
+            "MEC013",
+            "MEC021"
+          ],
+          "liveApis": [
+            "MEC012",
+            "MEC013",
+            "MEC021",
+            "unknown"
+          ],
+          "mec011Status": 200,
+          "capacity": {
+            "cpu": 1,
+            "memoryMi": 1024
+          },
+          "used": {
+            "cpu": 0.1,
+            "memoryMi": 64
+          },
+          "free": {
+            "cpu": 0.9,
+            "memoryMi": 960
+          },
+          "capacityOk": true,
+          "eligible": false,
+          "reasons": [
+            "locality [\"home-district\"] excludes park-district"
+          ]
+        },
+        {
+          "mep": "mep2",
+          "edge": "edge-b",
+          "hostZone": "park-district",
+          "servesZone": true,
+          "amsPreferred": true,
+          "mecApis": [
+            "MEC011",
+            "MEC012",
+            "MEC013",
+            "MEC021"
+          ],
+          "liveApis": [
+            "MEC012",
+            "MEC013",
+            "MEC021"
+          ],
+          "mec011Status": 200,
+          "capacity": {
+            "cpu": 0.5,
+            "memoryMi": 512
+          },
+          "used": {
+            "cpu": 0,
+            "memoryMi": 0
+          },
+          "free": {
+            "cpu": 0.5,
+            "memoryMi": 512
+          },
+          "capacityOk": true,
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "selected": "mep2",
+      "instances": [
+        {
+          "name": "pb-ipe-mep1",
+          "id": "0d0c0a00-0000-4000-8000-0000000001a1",
+          "mep": "mep1",
+          "nodePort": 31881
+        }
+      ],
+      "evaluationMs": 164
+    },
+    {
+      "decisionId": "dec-3-55ac06ba",
+      "kind": "relocation",
+      "at": "2026-11-20T00:58:08.701Z",
+      "trigger": {
+        "type": "MEC021-MobilityProcedureNotification",
+        "mobilityStatus": "INTERHOST_MOVEOUT_TRIGGERED",
+        "targetAppInstanceId": "0d0c0a00-0000-4000-8000-0000000001a2",
+        "observedAt": "2026-11-20T00:58:08.000Z",
+        "writtenAt": "2026-11-20T00:58:08.608Z",
+        "sighting": {
+          "ueRef": "56c38d3ee36449bb",
+          "sightings": [
+            {
+              "mep": "mep2",
+              "zoneId": "park-district",
+              "accessPointId": "park-5g-entrance"
+            }
+          ],
+          "zoneId": "park-district",
+          "accessPointId": "park-5g-entrance"
+        }
+      },
+      "ue": "56c38d3ee36449bb",
+      "zone": "park-district",
+      "request": {
+        "cpu": 0.1,
+        "memoryMi": 64
+      },
+      "requiredApis": [
+        "MEC011",
+        "MEC012",
+        "MEC013",
+        "MEC021"
+      ],
+      "rule": "eligible = MEC013/MEC012 locality covers zone AND required MEC APIs declared AND MEC011 catalog ACTIVE AND free capacity >= request; order: MEC021 AMS coverage first, then most free CPU",
+      "candidates": [
+        {
+          "mep": "mep1",
+          "edge": "edge-a",
+          "hostZone": "home-district",
+          "servesZone": false,
+          "amsPreferred": false,
+          "mecApis": [
+            "MEC011",
+            "MEC012",
+            "MEC013",
+            "MEC021"
+          ],
+          "liveApis": [
+            "MEC012",
+            "MEC013",
+            "MEC021",
+            "unknown"
+          ],
+          "mec011Status": 200,
+          "capacity": {
+            "cpu": 1,
+            "memoryMi": 1024
+          },
+          "used": {
+            "cpu": 0.1,
+            "memoryMi": 64
+          },
+          "free": {
+            "cpu": 0.9,
+            "memoryMi": 960
+          },
+          "capacityOk": true,
+          "eligible": false,
+          "reasons": [
+            "locality [\"home-district\"] excludes park-district"
+          ]
+        },
+        {
+          "mep": "mep2",
+          "edge": "edge-b",
+          "hostZone": "park-district",
+          "servesZone": true,
+          "amsPreferred": true,
+          "mecApis": [
+            "MEC011",
+            "MEC012",
+            "MEC013",
+            "MEC021"
+          ],
+          "liveApis": [
+            "MEC012",
+            "MEC013",
+            "MEC021",
+            "unknown"
+          ],
+          "mec011Status": 200,
+          "capacity": {
+            "cpu": 0.5,
+            "memoryMi": 512
+          },
+          "used": {
+            "cpu": 0.1,
+            "memoryMi": 64
+          },
+          "free": {
+            "cpu": 0.4,
+            "memoryMi": 448
+          },
+          "capacityOk": true,
+          "eligible": true,
+          "reasons": []
+        }
+      ],
+      "selected": "mep2",
+      "instances": [
+        {
+          "name": "pb-ipe-mep1",
+          "id": "0d0c0a00-0000-4000-8000-0000000001a1",
+          "mep": "mep1",
+          "nodePort": 31881
+        },
+        {
+          "name": "pb-ipe-mep2",
+          "id": "0d0c0a00-0000-4000-8000-0000000001a2",
+          "mep": "mep2",
+          "nodePort": 31882
+        }
+      ],
+      "evaluationMs": 122
+    }
+  ],
+  "metrics": {
+    "preplacement": {
+      "trigger": {
+        "type": "oneM2M-observation+MEC013-access-point",
+        "cellId": "1A00001",
+        "accessPointId": "moneghetti-4g-macro",
+        "observationCin": "8dsroohafy"
+      },
+      "decisionEvaluationMs": 164,
+      "addRequestedAt": "2026-11-20T00:57:57.323Z",
+      "readyAfterAddMs": 7512,
+      "pod": {
+        "createdAt": "2026-11-20T00:57:58Z",
+        "scheduledAt": "2026-11-20T00:57:58Z",
+        "readyAt": "2026-11-20T00:58:04Z",
+        "podReadyAfterAddMs": 6677
+      },
+      "walkHoldMs": 2623,
+      "walkIndexAtTrigger": 9,
+      "realWalkLeadToParkMsAt0_9mps": 83240,
+      "readyB": {
+        "confirmReady": {
+          "status": 204
+        },
+        "mecService": {
+          "serInstanceId": "7ee19f8f-a7a6-425d-80c7-6d0d39ac0f57",
+          "httpStatus": 201
+        },
+        "ams": {
+          "appMobilityServiceId": "e-95o1Fs6RkXbUQm",
+          "devices": [
+            "56c38d3ee36449bb"
+          ],
+          "httpStatus": 201
+        },
+        "amsSubscription": {
+          "httpStatus": 201
+        }
+      }
+    },
+    "relocation": {
+      "trigger": {
+        "type": "MEC021-MobilityProcedureNotification",
+        "mobilityStatus": "INTERHOST_MOVEOUT_TRIGGERED",
+        "targetAppInstanceId": "0d0c0a00-0000-4000-8000-0000000001a2",
+        "observedAt": "2026-11-20T00:58:08.000Z",
+        "writtenAt": "2026-11-20T00:58:08.608Z"
+      },
+      "zoneEntryToTriggerMs": 600,
+      "decisionMs": 210,
+      "eligibilityEvaluationMs": 122,
+      "ownershipEpoch": 2,
+      "decisionToOwnerMs": 16,
+      "decisionToResumedMs": 511,
+      "resumeMsInPod": 497,
+      "resumedRequests": [
+        {
+          "service": "Location",
+          "requestId": "loc-tracking-2b50d8",
+          "state": "ACTIVE",
+          "mecSubscriptionId": "6",
+          "type": "userTracking"
+        },
+        {
+          "service": "RNIS",
+          "requestId": "rnis-2b50d8",
+          "state": "ACTIVE",
+          "mecSubscriptionId": "3",
+          "type": "cellChange"
+        },
+        {
+          "service": "Location",
+          "requestId": "loc-periodic-2b50d8",
+          "state": "ACTIVE",
+          "mecSubscriptionId": "5",
+          "type": "periodic"
+        }
+      ],
+      "drainMsInPod": 145,
+      "drainedRequests": [
+        {
+          "service": "RNIS",
+          "requestId": "rnis-2b50d8",
+          "mecSubscriptionId": "4",
+          "providerStatus": 204,
+          "state": "HANDED_OVER"
+        },
+        {
+          "service": "Location",
+          "requestId": "loc-periodic-2b50d8",
+          "mecSubscriptionId": "7",
+          "providerStatus": 204,
+          "state": "HANDED_OVER"
+        },
+        {
+          "service": "Location",
+          "requestId": "loc-tracking-2b50d8",
+          "mecSubscriptionId": "8",
+          "providerStatus": 204,
+          "state": "HANDED_OVER"
+        }
+      ],
+      "decisionToFirstMep2ObservationMs": 1050,
+      "zoneEntryToFirstMep2ObservationMs": 1860
+    },
+    "observationGap": {
+      "lastMep1Observation": {
+        "observedAt": "2026-11-20T00:58:05.000Z",
+        "arrivedAtMs": 55723
+      },
+      "firstMep2Observation": {
+        "observedAt": "2026-11-20T00:58:09.000Z",
+        "arrivedAtMs": 60581
+      },
+      "arrivalGapMs": 4858,
+      "periodicHandoverGapMs": 4000,
+      "periodicSourceGapMs": 4000,
+      "requestedPeriodSec": 2,
+      "measuredPeriodMs": 4000,
+      "missedPeriodicReports": 0,
+      "periodicReports": 25
+    },
+    "notifications": {
+      "observations": 25,
+      "byMep": {
+        "mep1": 11,
+        "mep2": 14
+      },
+      "duplicates": 0,
+      "interleavedAfterCutover": false,
+      "fencedInPods": 0,
+      "amsMobilityNotifications": 1,
+      "amsNotificationsAfterTransfer": 0,
+      "rnisCellChanges": []
+    },
+    "termination": {
+      "requestedAt": "2026-11-20T00:58:23.829Z",
+      "gracePeriodSec": 30,
+      "terminatingAfterRemoveMs": 46,
+      "terminatedAfterRemoveMs": 234,
+      "confirm": {
+        "confirmTermination": 204,
+        "serviceDelete": 204,
+        "amsDelete": 404,
+        "amsSubscriptionDelete": 404
+      },
+      "nodeRemovedAfterRemoveMs": 943
+    }
+  },
+  "requests": {
+    "periodic": "loc-periodic-2b50d8",
+    "tracking": "loc-tracking-2b50d8",
+    "rnis": "rnis-2b50d8"
+  },
+  "checks": [
+    {
+      "name": "sandbox-scenario-active",
+      "status": "PASS",
+      "expected": "day-of-care",
+      "actual": "day-of-care"
+    },
+    {
+      "name": "cse-lan-https-with-lab-ca",
+      "status": "PASS",
+      "expected": true,
+      "actual": true
+    },
+    {
+      "name": "declared-placement-ipe-on-mep1-only",
+      "status": "PASS",
+      "expected": [
+        "0d0c0a00-0000-4000-8000-0000000001a1"
+      ],
+      "actual": [
+        "0d0c0a00-0000-4000-8000-0000000001a1"
+      ]
+    },
+    {
+      "name": "initial-placement-selects-mep1",
+      "status": "PASS",
+      "expected": "mep1",
+      "actual": "mep1",
+      "eligible": [
+        "mep1"
+      ]
+    },
+    {
+      "name": "orchestrator-subscribes-ipe-lifecycle",
+      "status": "PASS",
+      "expected": 2001,
+      "actual": 2001
+    },
+    {
+      "name": "mep1-ipe-mec011-confirm-ready-and-service",
+      "status": "PASS",
+      "expected": {
+        "confirmReady": 204,
+        "service": 201,
+        "termination": 201
+      },
+      "actual": {
+        "confirmReady": 204,
+        "service": 201,
+        "termination": 201
+      }
+    },
+    {
+      "name": "ownership-epoch-1-mep1",
+      "status": "PASS",
+      "expected": {
+        "epoch": 1,
+        "mep": "mep1"
+      },
+      "actual": {
+        "epoch": 1,
+        "mep": "mep1"
+      }
+    },
+    {
+      "name": "requests-active-on-mep1",
+      "status": "PASS",
+      "expected": 3,
+      "actual": 3
+    },
+    {
+      "name": "home-observations-served-by-mep1",
+      "status": "PASS",
+      "expected": true,
+      "actual": true
+    },
+    {
+      "name": "caregiver-and-resident-share-home-wifi-on-mep1-mec013",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "accessPoints": {
+        "r13-carer": "home-wifi",
+        "caregiver": "moneghetti-5g-small",
+        "r13-resident": "home-wifi"
+      }
+    },
+    {
+      "name": "fork-stop-seen-by-mep2-mec013",
+      "status": "PASS",
+      "expected": {
+        "zoneId": "park-district",
+        "withinFifteenMetres": true
+      },
+      "actual": {
+        "zoneId": "park-district",
+        "withinFifteenMetres": true
+      },
+      "accessPointId": "park-5g-entrance",
+      "distanceM": 0.2
+    },
+    {
+      "name": "guardian-meets-resident-at-bench-on-mep2-mec013",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "accessPoints": {
+        "r13-guardian": "park-5g-bench",
+        "r13-resident": "park-5g-bench",
+        "guardian": "fontvieille-5g-office"
+      }
+    },
+    {
+      "name": "onem2m-geo-query-park-finds-resident-location-container",
+      "status": "PASS",
+      "expected": true,
+      "actual": true,
+      "uril": [
+        "Mobius/resident-keyring/location"
+      ]
+    },
+    {
+      "name": "preplacement-selects-mep2-and-mep1-not-eligible-for-park",
+      "status": "PASS",
+      "expected": {
+        "selected": "mep2",
+        "mep1Eligible": false
+      },
+      "actual": {
+        "selected": "mep2",
+        "mep1Eligible": false
+      }
+    },
+    {
+      "name": "mep2-instance-mec011-ready-and-ams-registered",
+      "status": "PASS",
+      "expected": {
+        "confirmReady": 204,
+        "service": 201,
+        "ams": 201
+      },
+      "actual": {
+        "confirmReady": 204,
+        "service": 201,
+        "ams": 201
+      }
+    },
+    {
+      "name": "relocation-triggered-by-mec021-ams",
+      "status": "PASS",
+      "expected": "MEC021-MobilityProcedureNotification",
+      "actual": "MEC021-MobilityProcedureNotification",
+      "trigger": {
+        "type": "MEC021-MobilityProcedureNotification",
+        "mobilityStatus": "INTERHOST_MOVEOUT_TRIGGERED",
+        "targetAppInstanceId": "0d0c0a00-0000-4000-8000-0000000001a2",
+        "observedAt": "2026-11-20T00:58:08.000Z",
+        "writtenAt": "2026-11-20T00:58:08.608Z"
+      }
+    },
+    {
+      "name": "relocation-decision-selects-mep2",
+      "status": "PASS",
+      "expected": "mep2",
+      "actual": "mep2"
+    },
+    {
+      "name": "ownership-epoch-2-mep2",
+      "status": "PASS",
+      "expected": 2,
+      "actual": 2
+    },
+    {
+      "name": "mep2-resumed-all-requests-on-its-mec013-mec012",
+      "status": "PASS",
+      "expected": [
+        "ACTIVE",
+        "ACTIVE",
+        "ACTIVE"
+      ],
+      "actual": [
+        "ACTIVE",
+        "ACTIVE",
+        "ACTIVE"
+      ]
+    },
+    {
+      "name": "mep1-drained-its-mec-subscriptions",
+      "status": "PASS",
+      "expected": [
+        204,
+        204,
+        204
+      ],
+      "actual": [
+        204,
+        204,
+        204
+      ]
+    },
+    {
+      "name": "observations-cut-over-once-without-interleaving",
+      "status": "PASS",
+      "expected": false,
+      "actual": false
+    },
+    {
+      "name": "no-duplicate-observations-across-instances",
+      "status": "PASS",
+      "expected": 0,
+      "actual": 0
+    },
+    {
+      "name": "same-onem2m-container-before-and-after",
+      "status": "PASS",
+      "expected": true,
+      "actual": true
+    },
+    {
+      "name": "mep1-instance-terminated-via-mec011-and-removed",
+      "status": "PASS",
+      "expected": {
+        "confirmTermination": 204,
+        "removed": true
+      },
+      "actual": {
+        "confirmTermination": 204,
+        "removed": true
+      }
+    },
+    {
+      "name": "unsubscribe-deletes-mep2-subscriptions",
+      "status": "PASS",
+      "expected": [
+        204,
+        204,
+        204
+      ],
+      "actual": [
+        204,
+        204,
+        204
+      ]
+    }
+  ],
+  "caseCount": 25,
+  "passed": 25,
+  "failed": 0,
+  "artifacts": {
+    "trace": "docs/verification-evidence/2026-11-20/mec-day-of-care-trace.jsonl",
+    "traceSHA256": "deb9efc039de3b773ba0289dcdea58619d90adda190978ce6d5496adb52ca995",
+    "traceEntries": 242,
+    "podLogs": "kubectl logs of each IPE pod streamed over SSH into the trace (actor ipe@mepN)",
+    "runtimeDirectory": ".local/mec-day-of-care/1795136229297_2b50d8"
+  },
+  "runnerSHA256": "db6b001e1edc79e9fbae21060c23fab69ebc43a3adc58993ee2c6766255f7356",
+  "notes": "MEC side is the ETSI MEC Sandbox (STF_685) on a separate VM; UE movement is driven through the sandbox GIS engine with MOBILITY automation, so POA, zone, cell and MEC021 mobility events come from the sandbox. The IPE instances are real pods placed by the sandbox virt-engine; oneM2M side is an actual Mobius4 process with PostgreSQL/PostGIS on the PC. Story time is compressed; the walk waits for the pre-placed instance before park-district."
+}
