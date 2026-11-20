@@ -56,6 +56,20 @@ export interface CseLiveConfig {
   readonly gatewayReader?: string;
   readonly pollMs?: number;
   readonly backlog?: number;
+  /**
+   * Public story-demo writer. Each browser receives a short-lived child container below
+   * this AE and all demo actions are CREATE + RETRIEVE verified through Mobius4.
+   * A dedicated mTLS binding keeps the public demo writer separate from dashboard readers.
+   */
+  readonly story?: {
+    readonly parentPath?: string;
+    readonly rootRn?: string;
+    readonly originator?: string;
+    readonly binding?: RoleBinding;
+    readonly sessionTtlSec?: number;
+    readonly careGrantSec?: number;
+    readonly maxSessions?: number;
+  };
 }
 
 type App = 'operator' | 'guardian';

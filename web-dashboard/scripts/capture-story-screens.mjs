@@ -1,4 +1,4 @@
-// Capture the six mobile story screens and exercise their approval, group-command and location-share actions.
+// Capture the seven mobile story screens and exercise login, keyring, approval, group-command and location-share actions.
 // Usage: npm --prefix web-dashboard run build && npm --prefix web-dashboard run capture:story
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -15,14 +15,15 @@ const dashboard = fileURLToPath(new URL('..', import.meta.url));
 const dist = join(dashboard, 'dist');
 const outDir = join(dashboard, 'evidence', 'story-screens');
 const scenes = [
-  ['01-activity-away', 'activity-away', 'Mom went out'],
-  ['02-activity-home', 'activity-home', 'Mom is home'],
-  ['03-care-request', 'care-request', 'Living room access for Mina'],
-  ['04-caregiver-shared', 'caregiver-shared', 'Shared with you'],
-  ['05-caregiver-ended', 'caregiver-ended', 'Access ended at 4:00 PM'],
-  ['06-check-in', 'check-in', 'Check on Mom'],
+  ['01-login', 'login', 'A safer day for your family'],
+  ['02-activity-away', 'activity-away', 'Mom went out'],
+  ['03-activity-home', 'activity-home', 'Mom is home'],
+  ['04-care-request', 'care-request', 'Living room access for Mina'],
+  ['05-caregiver-shared', 'caregiver-shared', 'Shared with you'],
+  ['06-caregiver-ended', 'caregiver-ended', 'Access ended automatically'],
+  ['07-check-in', 'check-in', 'Check on Mom'],
 ];
-const galleryLabels = ['Went out', 'Returned home', 'Care approval', 'Room control', 'Automatic expiry', 'Check-in before PANIC'];
+const galleryLabels = ['Auto sign-in', 'Went out', 'Returned home', 'Care approval', 'Room control', 'Automatic expiry', 'Keyring and check-in'];
 if (!existsSync(join(dist, 'index.html'))) throw new Error('dist/ is missing; run npm --prefix web-dashboard run build first');
 
 async function freePort() {
@@ -52,13 +53,13 @@ await new Promise((resolve, reject) => {
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json', '.woff2': 'font/woff2' };
 const gallery = `<!doctype html><html><head><meta charset="utf-8"><style>
-*{box-sizing:border-box}body{margin:0;padding:56px;background:#dce7e1;color:#122820;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}header{max-width:1170px;margin:0 auto 36px}p{margin:8px 0 0;color:#53665e;font-size:20px}h1{margin:0;font-size:42px;letter-spacing:-.04em}.grid{width:1170px;margin:0 auto;display:grid;grid-template-columns:repeat(3,390px);gap:28px 0}.screen{display:grid;gap:10px}.screen img{display:block;width:360px;height:auto;border-radius:28px;box-shadow:0 18px 44px #1233262e}.screen strong{font-size:17px}.screen span{color:#007a66;font:700 13px ui-monospace,monospace}
-</style></head><body><header><h1>Privacy Bubble — working story screens</h1><p>Presence by default. Time-limited control. Five-minute location only on approval.</p></header><main class="grid">${scenes.map(([name], index) => `<figure class="screen"><img src="/story-evidence/${name}.png" alt="${galleryLabels[index]}"><figcaption><span>0${index + 1}</span> <strong>${galleryLabels[index]}</strong></figcaption></figure>`).join('')}</main></body></html>`;
+*{box-sizing:border-box}body{margin:0;padding:56px;background:#f5f5f7;color:#1d1d1f;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}header{max-width:1170px;margin:0 auto 36px}p{margin:8px 0 0;color:#636366;font-size:20px}h1{margin:0;font-size:40px;letter-spacing:-.02em}.grid{width:1170px;margin:0 auto;display:grid;grid-template-columns:repeat(3,390px);gap:28px 0}.screen{display:grid;gap:10px}.screen img{display:block;width:360px;height:auto;border:1px solid #e0e0e0;border-radius:18px}.screen strong{font-size:17px}.screen span{color:#0066cc;font-size:13px;font-weight:600}
+</style></head><body><header><h1>Privacy Bubble story screens</h1><p>Presence by default. Time-limited control. Five-minute location only on approval.</p></header><main class="grid">${scenes.map(([name], index) => `<figure class="screen"><img src="/story-evidence/${name}.png" alt="${galleryLabels[index]}"><figcaption><span>0${index + 1}</span> <strong>${galleryLabels[index]}</strong></figcaption></figure>`).join('')}</main></body></html>`;
 
 const preview = createServer(async (request, response) => {
   const url = new URL(request.url ?? '/', 'http://preview');
   if (url.pathname.startsWith('/api') || url.pathname === '/events') {
-    const proxied = httpRequest({ hostname: '127.0.0.1', port: apiPort, path: `${url.pathname}${url.search}`, method: request.method, headers: { ...Object.fromEntries(Object.entries(request.headers).filter(([key]) => !['origin', 'sec-fetch-site'].includes(key))), host: `127.0.0.1:${apiPort}` } }, (reply) => { response.writeHead(reply.statusCode ?? 502, reply.headers); reply.pipe(response); });
+    const proxied = httpRequest({ hostname: '127.0.0.1', port: apiPort, path: `${url.pathname}${url.search}`, method: request.method, headers: { ...Object.fromEntries(Object.entries(request.headers).filter(([key]) => !['origin', 'sec-fetch-site', 'host'].includes(key))), host: `127.0.0.1:${apiPort}`, origin: `http://127.0.0.1:${apiPort}`, 'sec-fetch-site': 'same-origin' } }, (reply) => { response.writeHead(reply.statusCode ?? 502, reply.headers); reply.pipe(response); });
     proxied.on('error', (error) => { if (!response.headersSent) response.writeHead(502); response.end(error.message); });
     request.pipe(proxied); response.on('close', () => proxied.destroy());
     return;
@@ -122,16 +123,43 @@ try {
   await waitFor("location.hash === '#/story/caregiver-shared'", 'care approval transition');
   await waitFor("document.querySelector('button.story-primary')?.textContent?.includes('All on')", 'caregiver controls');
   await evaluate("document.querySelector('button.story-primary')?.click()");
-  await waitFor("document.querySelector('button.story-primary')?.textContent?.includes('applied')", 'group command result');
+  await waitFor("document.querySelector('button.story-primary')?.textContent?.includes('3/3 verified')", 'group command result');
 
-  await openScene('check-in', 'View location for 5 min');
+  await openScene('check-in', 'Prepare location share');
   await waitFor("Boolean(document.querySelector('button.story-secondary'))", 'location share action');
+  await evaluate("document.querySelector('button.story-secondary')?.click()");
+  await waitFor("document.querySelector('button.story-secondary')?.textContent?.includes('Review and share')", 'location draft');
   await evaluate("document.querySelector('button.story-secondary')?.click()");
   await waitFor("document.querySelector('button.story-secondary')?.textContent?.includes('Viewing location')", 'five-minute location share');
 
+  await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
+  await send('Page.navigate', { url: `${previewUrl}/?lang=en#/story/activity-away` });
+  await waitFor("Boolean(document.querySelector('.keyring-physical-button.confirm:not(:disabled)'))", 'interactive virtual keyring');
+  const beforeRotate = await evaluate("document.querySelector('.keyring-model')?.style.transform");
+  const stage = await evaluate("(() => { const r=document.querySelector('.keyring-stage').getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2}; })()");
+  await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: stage.x, y: stage.y, button: 'left', clickCount: 1 });
+  await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: stage.x + 46, y: stage.y + 20, button: 'left' });
+  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: stage.x + 46, y: stage.y + 20, button: 'left', clickCount: 1 });
+  await waitFor(`document.querySelector('.keyring-model')?.style.transform !== ${JSON.stringify(beforeRotate)}`, 'keyring drag rotation');
+  await evaluate("[...document.querySelectorAll('.keyring-mode button')].find((button)=>button.textContent.includes('Move'))?.click()");
+  const beforeMove = await evaluate("document.querySelector('.keyring-model')?.style.transform");
+  await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: stage.x, y: stage.y, button: 'left', clickCount: 1 });
+  await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: stage.x - 34, y: stage.y + 16, button: 'left' });
+  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: stage.x - 34, y: stage.y + 16, button: 'left', clickCount: 1 });
+  await waitFor(`document.querySelector('.keyring-model')?.style.transform !== ${JSON.stringify(beforeMove)}`, 'keyring drag movement');
+  await evaluate("document.querySelector('.keyring-physical-button.confirm')?.click()");
+  await waitFor("Boolean(document.querySelector('[data-event-type=\"RESIDENT_CONFIRMED\"]'))", 'keyring confirm Mobius receipt');
+  const systemShot = await send('Page.captureScreenshot', { format: 'png' });
+  const systemBytes = Buffer.from(systemShot.result.data, 'base64');
+  await writeFile(join(outDir, 'story-system-desktop.png'), systemBytes);
+  captured.push({ name: 'story-system-desktop', width: 1440, height: 1000, file: 'story-system-desktop.png', sha256: createHash('sha256').update(systemBytes).digest('hex') });
+  await evaluate("document.querySelector('.keyring-physical-button.panic')?.click()");
+  await waitFor("location.hash === '#/story/check-in'", 'keyring panic to check-in transition');
+  await waitFor("Boolean(document.querySelector('[data-event-type=\"PANIC_ALERT\"]'))", 'keyring panic Mobius receipt');
+
   await send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 1900, deviceScaleFactor: 1, mobile: false });
   await send('Page.navigate', { url: `${previewUrl}/story-gallery` });
-  await waitFor("document.images.length === 6 && [...document.images].every((image) => image.complete)", 'story gallery images');
+  await waitFor("document.images.length === 7 && [...document.images].every((image) => image.complete)", 'story gallery images');
   await delay(300);
   const galleryShot = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true });
   const galleryBytes = Buffer.from(galleryShot.result.data, 'base64');
@@ -142,9 +170,9 @@ try {
   const manifest = {
     generatedAt: new Date().toISOString(),
     browser: version.Browser,
-    mode: 'replay API with CAREGIVER_DEMO=1; guardian share and caregiver group command exercised',
+    mode: 'browser-isolated replay CSE; auto-login, virtual keyring, guardian share and caregiver group command exercised',
     command: 'npm --prefix web-dashboard run capture:story',
-    assertions: ['care approval opens the caregiver view', 'All on returns the applied state', 'View location opens a five-minute share'],
+    assertions: ['auto-login creates an isolated CSE session', 'keyring supports drag rotation and movement', 'keyring buttons create verified Mobius records', 'care approval opens the caregiver view', 'All on returns three readbacks', 'draft review opens a five-minute location lease'],
     captured,
   };
   await writeFile(join(outDir, 'capture-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);

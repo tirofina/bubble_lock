@@ -37,6 +37,9 @@ if (!['replay', 'cse-live'].includes(sourceMode)) throw new TypeError('DASHBOARD
 const cseLiveConfigFile = process.env['CSE_LIVE_CONFIG'];
 if (sourceMode === 'cse-live' && !cseLiveConfigFile) throw new TypeError('cse-live 모드에는 CSE_LIVE_CONFIG 파일을 지정하세요.');
 const cseLive = sourceMode === 'cse-live' && cseLiveConfigFile ? JSON.parse(await readFile(cseLiveConfigFile, 'utf8')) as CseLiveConfig : undefined;
+const storyMode = process.env['STORY_DEMO_MODE'] ?? (cseLive ? 'live' : 'replay');
+if (!['live', 'replay'].includes(storyMode)) throw new TypeError('STORY_DEMO_MODE 값은 live 또는 replay로 지정하세요.');
+if (storyMode === 'live' && !cseLive) throw new TypeError('실제 스토리 데모에는 CSE_LIVE_CONFIG를 연결하세요.');
 const port = process.env['DASHBOARD_PORT'] === undefined ? undefined : Number(process.env['DASHBOARD_PORT']);
 if (port !== undefined && (!Number.isInteger(port) || port < 0 || port > 65535)) throw new TypeError('DASHBOARD_PORT 값을 확인하세요.');
 if (locationSimulation !== undefined && !['true', 'false'].includes(locationSimulation)) {
@@ -54,6 +57,8 @@ const service = await startReplayServer({
   host: process.env['BFF_HOST'] ?? '127.0.0.1',
   ...(port === undefined ? {} : { port }),
   ...(cseLive ? { cseLive } : {}),
+  storyMode: storyMode as 'live' | 'replay',
+  ...(process.env['STORY_SESSION_SECRET'] ? { storySecret: process.env['STORY_SESSION_SECRET'] } : {}),
   alerts,
   ...(receiptFile === undefined ? {} : { receiptFile }),
   ...(locationFile === undefined ? {} : { locationFile }),
@@ -66,6 +71,7 @@ const service = await startReplayServer({
 });
 console.log(`이벤트 재생: ${service.url} · ${service.replay.source} · ${service.replay.lastSequence}개 · ${portal?.auth?'OIDC 계정 인증':portal?.localAccounts?`로컬 계정 인증 (${portal.localAccounts.length}개)`:'로컬 체험 환경'}`);
 if (service.live) console.log(`oneM2M 실시간 원천: ${JSON.stringify(service.live.describe())}`);
+console.log(`브라우저별 스토리 데모: ${JSON.stringify(service.story.describe())}`);
 console.log(`보호자 알림 카드: ${JSON.stringify(service.alerts.backend.describe())}`);
 process.send?.({ type: 'ready', url: service.url, source: service.replay.source, live: service.live?.describe() ?? null });
 console.log(`위치 지도: ${locationFile === undefined ? '모의 fixture' : locationSimulation === 'false' ? '현장 JSONL 관측' : '모의 JSONL 관측'} · GET /api/locations · 4초 갱신`);

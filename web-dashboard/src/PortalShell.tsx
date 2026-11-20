@@ -81,7 +81,7 @@ export function Landing() {
           <p className="eyebrow">{tr('일상에 안심을', 'Peace of mind, every day')}</p>
           <h1 id="welcome-title">{tr('안전은 버블 안에,', 'Safe in a bubble,')}<br />{tr('위치는 락 아래에.', 'private under lock.')}</h1>
           <p className="welcome-description">{tr('키링이 어디 있는지 확인하고 누구와 얼마 동안 공유할지 직접 정하세요.', 'See where the keyring is, and decide who sees it and for how long.')}</p>
-          <div className="welcome-actions"><a className="button primary" href="#/story/activity-away">{tr('이야기 화면 체험', 'Open the story demo')}<Icon name="arrow" size={18} /></a></div>
+          <div className="welcome-actions"><a className="button primary" href="#/story/login">{tr('이야기 화면 체험', 'Open the story demo')}<Icon name="arrow" size={18} /></a></div>
         </div>
         <div className="welcome-channels">
         <p className="eyebrow">{tr('화면 선택', 'Choose a view')}</p>

@@ -1,5 +1,7 @@
 import { defineConfig } from 'vite';
 
+const bffTarget = process.env['BFF_PROXY_TARGET'] ?? 'http://127.0.0.1:4174';
+
 export default defineConfig({
   server: {
     host: '127.0.0.1',
@@ -7,8 +9,8 @@ export default defineConfig({
     strictPort: true,
     // xfwd forwards the browser address so the BFF can rate-limit local password logins per client.
     proxy: {
-      '/events': { target: 'http://127.0.0.1:4174', xfwd: true },
-      '/api': { target: 'http://127.0.0.1:4174', xfwd: true },
+      '/events': { target: bffTarget, xfwd: true },
+      '/api': { target: bffTarget, xfwd: true },
     },
   },
 });

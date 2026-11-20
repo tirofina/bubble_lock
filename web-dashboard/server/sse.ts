@@ -19,6 +19,8 @@ import { createPortalHandler } from './portal.ts';
 import type { PortalHandler, PortalOptions } from './portal.ts';
 import { createAlertReplay, createAlertRoutes } from './guardian-alerts.ts';
 import type { AlertRoutes } from './guardian-alerts.ts';
+import { createStoryDemoService } from './story-demo.ts';
+import type { StoryDemoHandler } from './story-demo.ts';
 
 let activeEventStreams = 0;
 
@@ -51,13 +53,14 @@ export interface EventFeed {
 
 const RESYNC_WAIT_MS = 3000;
 
-export function createReplayServer(replay: EventFeed, locationFeed?: LocationFeed, portal?:PortalHandler, alerts?: AlertRoutes, maxEventStreams = 64): Server {
+export function createReplayServer(replay: EventFeed, locationFeed?: LocationFeed, portal?:PortalHandler, alerts?: AlertRoutes, maxEventStreams = 64, story?: StoryDemoHandler): Server {
   if (!Number.isSafeInteger(maxEventStreams) || maxEventStreams < 1 || maxEventStreams > 1024) {
     throw new ContractError('maxEventStreams must be an integer from 1 through 1024');
   }
   return createServer(async (request, response) => {
     try {
     const url = new URL(request.url ?? '/', 'http://127.0.0.1');
+    if(story&&await story.handle(request,response,url))return;
     if(portal&&url.pathname.startsWith('/api/auth/')&&await portal.handleAuth(request,response))return;
     if(alerts&&portal&&(url.pathname==='/api/portal/alerts'||url.pathname.startsWith('/api/portal/alerts/'))) {void alerts.handlePortal(request,response,url,portal);return;}
     if(url.pathname.startsWith('/api/portal/')&&portal) {void portal.handle(request,response,url);return;}
@@ -181,6 +184,10 @@ export interface StartReplayOptions {
   readonly cseLive?: CseLiveConfig;
   /** Guardian alert card source: the live resident feed when configured, otherwise the R17 story replay. */
   readonly alerts?: { readonly source?: 'auto' | 'replay' | 'cse-live'; readonly variant?: string; readonly start?: string; readonly storyControlUrl?: string };
+  /** Live writes browser-isolated story resources to Mobius; replay keeps the same contract in memory for local QA. */
+  readonly storyMode?: 'live' | 'replay';
+  /** HMAC secret used only to derive opaque oneM2M resource names for browser story sessions. */
+  readonly storySecret?: string;
 }
 
 /** Loopback is the default; deployments explicitly choose their private bind address. */
@@ -217,7 +224,13 @@ export async function startReplayServer(options: StartReplayOptions = {}) {
   if (alertSource === 'cse-live' && !liveAlerts) throw new ContractError('ALERT_SOURCE=cse-live에는 CSE_LIVE_CONFIG의 guardian과 residents 설정이 필요해요.');
   const alertBackend = alertSource !== 'replay' && liveAlerts ? liveAlerts : createAlertReplay({ ...(options.alerts?.variant ? { variant: options.alerts.variant } : {}), ...(options.alerts?.start ? { start: options.alerts.start } : {}) });
   const alerts = createAlertRoutes(alertBackend, { allowReplayControl: !options.portal?.auth, ...(options.alerts?.storyControlUrl ? { storyControlUrl: options.alerts.storyControlUrl } : {}) });
-  const server = createReplayServer(replay, locationFeed, portal, alerts, options.maxEventStreams);
+  const storyMode = options.storyMode ?? (options.cseLive ? 'live' : 'replay');
+  const story = await createStoryDemoService({
+    mode: storyMode,
+    ...(options.cseLive ? { cse: options.cseLive } : {}),
+    ...(options.storySecret ? { secret: options.storySecret } : {}),
+  });
+  const server = createReplayServer(replay, locationFeed, portal, alerts, options.maxEventStreams, story);
   const listening = once(server, 'listening');
   server.listen(options.port ?? 4174, host);
   await listening;
@@ -228,9 +241,10 @@ export async function startReplayServer(options: StartReplayOptions = {}) {
     server.closeAllConnections();
     server.close();
     await closed;
+    await story.close();
     await live?.close();
   };
-  return { server, replay, live, alerts, url: `http://127.0.0.1:${address.port}`, close };
+  return { server, replay, live, alerts, story, url: `http://127.0.0.1:${address.port}`, close };
 }
 
 type PanicEvent = { deviceId: string; at: string; key: string };
