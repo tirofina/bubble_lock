@@ -17,6 +17,8 @@ export interface PortalHandler {
   handle(request:IncomingMessage,response:ServerResponse,url:URL):Promise<void>;
   handleAuth(request:IncomingMessage,response:ServerResponse):Promise<boolean>;
   authorizeOperator(request:IncomingMessage,response:ServerResponse):Promise<boolean>;
+  /** Same boundary as the portal API: loopback origin in demo, OIDC session (and mutation origin) in live. */
+  authorizePortal(request:IncomingMessage,response:ServerResponse,mutation:boolean):Promise<{principalId:string}|null>;
 }
 const actions=new Set(['households','devices','consents','grants','consents/revoke','grants/revoke','incidents','incidents/resolve','commands/request','commands/approve','notifications/read','location-leases','location-leases/revoke','relay-associations']);
 function json(response:ServerResponse,status:number,body:unknown) {
@@ -65,6 +67,13 @@ export async function createPortalHandler(locationFeed:LocationFeed,options:Port
     if(!identity){json(response,401,{mode,message:'로그인하여 대시보드에 연결하세요.'});return false;}
     if(!identity.principal.scopes.includes('dashboard:read')){json(response,403,{mode,message:'운영 조회 권한을 확인하세요.'});return false;}
     return true;
+  },
+  async authorizePortal(request,response,mutation) {
+    if(!options.auth){if(!localOrigin(request)){json(response,403,{message:'등록된 로컬 화면에서 접근해 주세요.'});return null;}return {principalId:'demo-guardian'};}
+    const identity=await options.auth.authenticate(request);
+    if(!identity){json(response,401,{mode,message:'로그인하여 사용자 공간에 연결하세요.'});return null;}
+    if(mutation){try{options.auth.assertMutationOrigin(request);}catch{json(response,403,{message:'로그인한 화면에서 요청하세요.'});return null;}}
+    return {principalId:identity.principal.principalId};
   },
   async handle(request,response,url) {
     try {

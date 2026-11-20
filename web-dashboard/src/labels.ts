@@ -63,3 +63,33 @@ export const serviceFieldLabels: Labels = {
   roundId: '학습 회차', participantCount: '참여 수', selectionHash: '참여자 선택 해시', modelHash: '모델 해시',
   runId: '실행 ID', action: '동작', cursor: '진행 위치', principalId: '실행 계정', approvalHash: '승인 해시',
 };
+
+/* English labels for the demo video screens (Korean stays the default). */
+export const connectionLabelsEn: Labels = {
+  connecting: 'Connecting', connected: 'Live', offline: 'Offline', disconnected: 'Disconnected', invalid: 'Stopped (format error)', resync: 'Reload needed',
+};
+export const serviceStateLabelsEn: Labels = {
+  ACTIVE: 'Active', COMPLETED: 'Completed', RUNNING: 'Running', DRAINING: 'Draining', RUN_COMPLETED: 'Run completed', PENDING: 'Pending',
+  true: 'Yes', false: 'No',
+};
+export const scopeLabelsEn: Labels = { 'location:read': 'See location', 'bubble:command': 'Turn the keyring on and off' };
+export const scopeListEn = (scopes: readonly string[]) => scopes.map((scope) => label(scopeLabelsEn, scope)).join(', ');
+export const portalStatusLabelsEn: Labels = {
+  ACTIVE: 'Active', REVOKED: 'Revoked', EXPIRED: 'Expired', INACTIVE: 'Consent needed', PENDING: 'Waiting for approval',
+  PARTIAL: 'Partly registered, retrying', QUEUED: 'Queued', CONFIRMED_BY_CSE: 'Confirmed on the keyring', OPEN: 'Open', RESOLVED: 'Resolved',
+};
+export const serviceMetaEn: Readonly<Record<string, { readonly label: string; readonly description: string }>> = {
+  MEC: { label: 'Location service', description: 'MEC location information (RNIS)' },
+  HANDOVER: { label: 'Edge handover', description: 'Handover from edge A to B' },
+  FL: { label: 'Federated learning', description: 'FL rounds and model history' },
+  MCP: { label: 'Automation runs', description: 'MCP approval and execution' },
+};
+export const serviceFieldLabelsEn: Labels = {
+  eventId: 'Record ID', service: 'Service', eventType: 'Record type', ueId: 'UE ID', status: 'Status', allowed: 'Allowed',
+  state: 'State', previousEdgeId: 'Previous edge', edgeId: 'Current edge', epoch: 'Handover epoch', grantId: 'Grant ID',
+  roundId: 'Round', participantCount: 'Participants', selectionHash: 'Selection hash', modelHash: 'Model hash',
+  runId: 'Run ID', action: 'Action', cursor: 'Cursor', principalId: 'Principal', approvalHash: 'Approval hash',
+};
+/** Lease purposes of the triage contract (pc-mobius/contracts/mcp-triage-tools.v1.json). */
+export const leasePurposeLabels: Labels = { 'wandering-check': '안부 확인', 'emergency-rescue': '긴급 구조' };
+export const leasePurposeLabelsEn: Labels = { 'wandering-check': 'Wellbeing check', 'emergency-rescue': 'Emergency Rescue' };

@@ -1,0 +1,59 @@
+{
+  "description": "Replay of the R17 C4 story (trail fork at dusk, PANIC at 17:18) for the guardian alert card. Values come from the dayofcare receipts named in each variant; record ids, timestamps, the decision approvalHash and the lease are made by the dashboard replay at run time. simulation true.",
+  "residentId": "resident-r1",
+  "deviceId": "resident-ue",
+  "guardianId": "guardian-daughter",
+  "labels": {
+    "resident": { "ko": "어머니", "en": "Mom" },
+    "device": { "ko": "어머니 키링", "en": "Mom's keyring" },
+    "relay": { "ko": "어머니 휴대폰 (BLE 중계)", "en": "Mom's phone (BLE relay)" }
+  },
+  "status": {
+    "home": { "state": "AT_HOME", "place": "home", "localTime": "16:20" },
+    "walk": { "state": "MOVING", "place": "Parc Princesse Antoinette", "localTime": "17:05" }
+  },
+  "location": {
+    "note": "Trail fork of Parc Princesse Antoinette (OSM ways 939530791 and 688744018, docs/rubric-work/R13.md). MEC accuracy and BLE RSSI are replay values.",
+    "position": { "lat": 43.733392, "lon": 7.415336, "accuracyM": 30, "source": "mec" },
+    "ble": { "gatewayId": "resident-relay", "rssiDbm": -73, "referenceRssiDbm": -59, "pathLossExponent": 2 }
+  },
+  "variants": {
+    "scripted": {
+      "provenance": "docs/verification-evidence/2026-11-20/anomaly-triage-scripted.json case C4-fork-dusk (scripted triage policy over the same 13 MCP tools, dayofcare sandbox, 01:14-01:30 UTC); draftId and policy fields not in the receipt are replay values",
+      "agent": "scripted triage policy (0 LLM calls)",
+      "alert": { "alertId": "alert-c4-1-5c43", "kind": "WANDERING", "score": 0.476, "severityHint": "watch", "detectedLocal": "17:13:20", "startedLocal": "17:09", "segment": "east branch at the trail fork", "dwellSec": 220, "reversals": 1, "minutesAfterSunset": 11.2, "distanceHomeM": 448 },
+      "triage": { "runId": "triage-run-d68352b1-03e1-4333-b8f5-a3f3522f4236", "severity": "urgent", "action": "emergencyLease", "explanation": "Since 17:09 stopped on her usual route; about 4 min at the main footway going back and forth after sunset (17:02). She is usually home by 17:24.", "checked": ["readAlert", "readRecentHistory", "readRoutineProfile", "queryUeLocation"], "decidedLocal": "17:13:20" },
+      "incidentId": "incident-alert-c4-1-5c43",
+      "noticeLocal": "17:13:20",
+      "draft": {
+        "approvalRequestId": "approval-18eb15146f5f7d24",
+        "draftId": "lease-draft-replay-c4",
+        "requestedLocal": "17:13:20",
+        "policy": { "runId": "triage-run-d68352b1-03e1-4333-b8f5-a3f3522f4236", "householdId": "household-r1", "recipientId": "guardian-daughter", "deviceId": "resident-ue", "purpose": "wandering-check", "durationMinutes": 5, "incidentId": "incident-alert-c4-1-5c43", "alertId": "alert-c4-1-5c43" }
+      },
+      "toolsByServer": {
+        "oneM2M": ["readAlert", "readRecentHistory", "readRoutineProfile", "submitTriage", "draftLocationLease", "requestGuardianApproval", "applyApprovedLease"],
+        "MEC": ["queryUeLocation"],
+        "Audit": ["readExecution", "appendTriageEvidence"]
+      },
+      "evidenceHash": null,
+      "panic": { "panicLocal": "17:18:00", "leadTimeSec": 279 }
+    },
+    "claude": {
+      "provenance": "docs/verification-evidence/2026-11-20/anomaly-triage.json run 3 case C4-fork-dusk (Claude Code headless, claude-opus-5-5, dayofcare sandbox, 00:56-01:13 UTC); Claude chose checkIn, so this variant has no lease draft",
+      "agent": "Claude Code headless (claude-opus-5-5)",
+      "alert": { "alertId": "alert-c4-1-8bc8", "kind": "WANDERING", "score": 0.476, "severityHint": "watch", "detectedLocal": "17:13:20", "startedLocal": "17:09", "segment": "east branch at the trail fork", "dwellSec": 220, "reversals": 1, "minutesAfterSunset": 11.2, "distanceHomeM": 448 },
+      "triage": { "runId": "triage-run-2056fdf7-3cfd-4c83-ac4c-2a8f6cb50181", "severity": "watch", "action": "checkIn", "explanation": "Since 17:09 she has stood at the trail fork (east branch) about 4 min and turned back once; she does not usually stop there. Sunset was 17:02. She left the south bench early at 17:07. Still on her usual route, no panic press, usual return 17:24. Please call her.", "checked": ["alert", "recentHistory", "routineProfile", "keyringState"], "decidedLocal": "17:13:35" },
+      "incidentId": "incident-alert-c4-1-8bc8",
+      "noticeLocal": "17:13:35",
+      "draft": null,
+      "toolsByServer": {
+        "oneM2M": ["readAlert", "readRecentHistory", "readRoutineProfile", "readDeviceState", "submitTriage"],
+        "MEC": [],
+        "Audit": ["readExecution", "appendTriageEvidence"]
+      },
+      "evidenceHash": "0deeb8464c67454aab7a13c8858152d8a3f9688567842ff1d9c0add6a398ac27",
+      "panic": { "panicLocal": "17:18:00", "leadTimeSec": 265 }
+    }
+  }
+}

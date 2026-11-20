@@ -30,9 +30,14 @@ if (port !== undefined && (!Number.isInteger(port) || port < 0 || port > 65535))
 if (locationSimulation !== undefined && !['true', 'false'].includes(locationSimulation)) {
   throw new TypeError('LOCATION_SIMULATION 값은 true 또는 false로 지정하세요.');
 }
+// Guardian alert card: ALERT_SOURCE=auto|replay|cse-live, ALERT_REPLAY_VARIANT=scripted|claude, ALERT_REPLAY_START=home|walk|alert.
+const alertSource = process.env['ALERT_SOURCE'] ?? 'auto';
+if (!['auto', 'replay', 'cse-live'].includes(alertSource)) throw new TypeError('ALERT_SOURCE 값은 auto, replay, cse-live 중 하나로 지정하세요.');
+const alerts = { source: alertSource as 'auto' | 'replay' | 'cse-live', ...(process.env['ALERT_REPLAY_VARIANT'] ? { variant: process.env['ALERT_REPLAY_VARIANT'] } : {}), ...(process.env['ALERT_REPLAY_START'] ? { start: process.env['ALERT_REPLAY_START'] } : {}) };
 const service = await startReplayServer({
   ...(port === undefined ? {} : { port }),
   ...(cseLive ? { cseLive } : {}),
+  alerts,
   ...(receiptFile === undefined ? {} : { receiptFile }),
   ...(locationFile === undefined ? {} : { locationFile }),
   ...(gatewayLocationsFile === undefined ? {} : { gatewayLocationsFile }),
@@ -42,6 +47,7 @@ const service = await startReplayServer({
 });
 console.log(`이벤트 재생: ${service.url} · ${service.replay.source} · ${service.replay.lastSequence}개 · ${portal?'OIDC 계정 인증':'로컬 체험 환경'}`);
 if (service.live) console.log(`oneM2M 실시간 원천: ${JSON.stringify(service.live.describe())}`);
+console.log(`보호자 알림 카드: ${JSON.stringify(service.alerts.backend.describe())}`);
 process.send?.({ type: 'ready', url: service.url, source: service.replay.source, live: service.live?.describe() ?? null });
 console.log(`위치 지도: ${locationFile === undefined ? '모의 fixture' : locationSimulation === 'false' ? '현장 JSONL 관측' : '모의 JSONL 관측'} · GET /api/locations · 4초 갱신`);
 const stop = () => {

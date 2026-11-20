@@ -14,6 +14,8 @@ import type { LocationFeed } from './location-feed.ts';
 import { readFile } from 'node:fs/promises';
 import { createPortalHandler } from './portal.ts';
 import type { PortalHandler, PortalOptions } from './portal.ts';
+import { createAlertReplay, createAlertRoutes } from './guardian-alerts.ts';
+import type { AlertRoutes } from './guardian-alerts.ts';
 
 export function parseResumeSequence(value: string | undefined | null): number {
   if (value === undefined || value === null) return 0;
@@ -44,14 +46,16 @@ export interface EventFeed {
 
 const RESYNC_WAIT_MS = 3000;
 
-export function createReplayServer(replay: EventFeed, locationFeed?: LocationFeed, portal?:PortalHandler): Server {
+export function createReplayServer(replay: EventFeed, locationFeed?: LocationFeed, portal?:PortalHandler, alerts?: AlertRoutes): Server {
   return createServer(async (request, response) => {
     try {
     const url = new URL(request.url ?? '/', 'http://127.0.0.1');
     if(portal&&url.pathname.startsWith('/api/auth/')&&await portal.handleAuth(request,response))return;
+    if(alerts&&portal&&(url.pathname==='/api/portal/alerts'||url.pathname.startsWith('/api/portal/alerts/'))) {void alerts.handlePortal(request,response,url,portal);return;}
     if(url.pathname.startsWith('/api/portal/')&&portal) {void portal.handle(request,response,url);return;}
     if(url.pathname==='/api/locations'&&portal?.mode==='live') {void portal.handle(request,response,new URL('/api/portal/locations',url));return;}
     if(portal&&!await portal.authorizeOperator(request,response))return;
+    if(alerts&&request.method==='GET'&&await alerts.handleOperator(request,response,url))return;
     if (request.method !== 'GET') {
       response.setHeader('Allow', 'GET');
       json(response, 405, { error: 'method_not_allowed' });
@@ -156,6 +160,8 @@ export interface StartReplayOptions {
   readonly portal?: PortalOptions;
   /** Live oneM2M CSE source. Omitted means the existing fixture or journal replay. */
   readonly cseLive?: CseLiveConfig;
+  /** Guardian alert card source: the live resident feed when configured, otherwise the R17 story replay. */
+  readonly alerts?: { readonly source?: 'auto' | 'replay' | 'cse-live'; readonly variant?: string; readonly start?: string };
 }
 
 /** Loopback is deliberately fixed; port 0 is supported for integration tests. */
@@ -169,7 +175,11 @@ export async function startReplayServer(options: StartReplayOptions = {}) {
     ...(options.locationSimulation === undefined ? {} : { simulation: options.locationSimulation }),
   });
   const portal=await createPortalHandler(locationFeed,{...options.portal,...(options.portalStatePath===undefined?{}:{statePath:options.portalStatePath}),...(live?{cse:{overlaySnapshot:(snapshot:unknown)=>live.guardianOverlay?.apply(snapshot)??snapshot,publishApproved:(result:unknown)=>live.publishApproved(result)}}:{})});
-  const server = createReplayServer(replay, locationFeed, portal);
+  const alertSource = options.alerts?.source ?? 'auto';
+  if (alertSource === 'cse-live' && !live?.alerts) throw new ContractError('ALERT_SOURCE=cse-live에는 CSE_LIVE_CONFIG의 guardian과 residents 설정이 필요해요.');
+  const alertBackend = alertSource !== 'replay' && live?.alerts ? live.alerts : createAlertReplay({ ...(options.alerts?.variant ? { variant: options.alerts.variant } : {}), ...(options.alerts?.start ? { start: options.alerts.start } : {}) });
+  const alerts = createAlertRoutes(alertBackend, { allowReplayControl: !options.portal?.auth });
+  const server = createReplayServer(replay, locationFeed, portal, alerts);
   const listening = once(server, 'listening');
   server.listen(options.port ?? 4174, '127.0.0.1');
   await listening;
@@ -182,5 +192,5 @@ export async function startReplayServer(options: StartReplayOptions = {}) {
     await closed;
     await live?.close();
   };
-  return { server, replay, live, url: `http://127.0.0.1:${address.port}`, close };
+  return { server, replay, live, alerts, url: `http://127.0.0.1:${address.port}`, close };
 }
