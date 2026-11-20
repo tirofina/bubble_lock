@@ -1,0 +1,488 @@
+
+> bubblelock-web-dashboard@0.1.0 test
+> node --test test/*.test.ts
+
+TAP version 13
+# Subtest: BFF 조회는 같은 origin 세션을 사용하고 외부 CSE 조회는 별도 인증 경계를 유지
+ok 1 - BFF 조회는 같은 origin 세션을 사용하고 외부 CSE 조회는 별도 인증 경계를 유지
+  ---
+  duration_ms: 24.1966
+  type: 'test'
+  ...
+# Subtest: 인증 거부 응답은 위치 화면의 좌표 폐기에 사용할 상태 코드를 유지
+ok 2 - 인증 거부 응답은 위치 화면의 좌표 폐기에 사용할 상태 코드를 유지
+  ---
+  duration_ms: 1.1452
+  type: 'test'
+  ...
+# Subtest: validates default events when exact CORE fixtures are wrapped
+ok 3 - validates default events when exact CORE fixtures are wrapped
+  ---
+  duration_ms: 24.2591
+  type: 'test'
+  ...
+# Subtest: rejects malformed fixtures when event schema boundaries are crossed
+ok 4 - rejects malformed fixtures when event schema boundaries are crossed
+  ---
+  duration_ms: 0.8623
+  type: 'test'
+  ...
+# Subtest: preserves exact receipt fields and hashes when adapting a CORE JSONL journal
+ok 5 - preserves exact receipt fields and hashes when adapting a CORE JSONL journal
+  ---
+  duration_ms: 3.712
+  type: 'test'
+  ...
+# Subtest: uses receipt timestamp and null revision when journal metadata is absent
+ok 6 - uses receipt timestamp and null revision when journal metadata is absent
+  ---
+  duration_ms: 0.4435
+  type: 'test'
+  ...
+# Subtest: rejects inconsistent identities when ACK payload and receipt disagree
+ok 7 - rejects inconsistent identities when ACK payload and receipt disagree
+  ---
+  duration_ms: 3.3844
+  type: 'test'
+  ...
+# Subtest: reports the actual line when a journal record is malformed
+ok 8 - reports the actual line when a journal record is malformed
+  ---
+  duration_ms: 0.3168
+  type: 'test'
+  ...
+# Subtest: does not add acceptance when an explicit receipt file is supplied
+ok 9 - does not add acceptance when an explicit receipt file is supplied
+  ---
+  duration_ms: 2.6284
+  type: 'test'
+  ...
+# Subtest: maps a Gateway observation notification to gateway.telemetry with the CSE resource identity
+ok 10 - maps a Gateway observation notification to gateway.telemetry with the CSE resource identity
+  ---
+  duration_ms: 9.633
+  type: 'test'
+  ...
+# Subtest: turns a contentInstance from another writer into REVIEW instead of telemetry
+ok 11 - turns a contentInstance from another writer into REVIEW instead of telemetry
+  ---
+  duration_ms: 0.2825
+  type: 'test'
+  ...
+# Subtest: keeps claim, grant revision, ownership epoch, deadline and payload hash across accepted, dispatched and ACK
+ok 12 - keeps claim, grant revision, ownership epoch, deadline and payload hash across accepted, dispatched and ACK
+  ---
+  duration_ms: 3.5092
+  type: 'test'
+  ...
+# Subtest: maps rejected native receipts to REVIEW and automation incidents to integration records
+ok 13 - maps rejected native receipts to REVIEW and automation incidents to integration records
+  ---
+  duration_ms: 1.3179
+  type: 'test'
+  ...
+# Subtest: deduplicates a notification and a later la/ RETRIEVE of the same contentInstance
+ok 14 - deduplicates a notification and a later la/ RETRIEVE of the same contentInstance
+  ---
+  duration_ms: 1.0264
+  type: 'test'
+  ...
+# Subtest: rejects acceptance labels that do not match their source
+ok 15 - rejects acceptance labels that do not match their source
+  ---
+  duration_ms: 0.3377
+  type: 'test'
+  ...
+# Subtest: parses notification envelopes and oneM2M timestamps
+ok 16 - parses notification envelopes and oneM2M timestamps
+  ---
+  duration_ms: 0.3449
+  type: 'test'
+  ...
+# Subtest: merges guardian incidents and notifications only into the guardian snapshot of the same household
+ok 17 - merges guardian incidents and notifications only into the guardian snapshot of the same household
+  ---
+  duration_ms: 0.6218
+  type: 'test'
+  ...
+# Subtest: registers two AEs with their own subscriptions and pushes CSE notifications to SSE clients
+ok 18 - registers two AEs with their own subscriptions and pushes CSE notifications to SSE clients
+  ---
+  duration_ms: 322.6224
+  type: 'test'
+  ...
+# Subtest: re-reads la/ and createdAfter children when a client reconnects after missed notifications
+ok 19 - re-reads la/ and createdAfter children when a client reconnects after missed notifications
+  ---
+  duration_ms: 47.1215
+  type: 'test'
+  ...
+# Subtest: replays actual merged INTEGRATION policy MEC handover FL and MCP journals
+ok 20 - replays actual merged INTEGRATION policy MEC handover FL and MCP journals
+  ---
+  duration_ms: 148.1276
+  type: 'test'
+  ...
+# Subtest: mixed journals preserve CORE commands and validate INTEGRATION envelope fields
+ok 21 - mixed journals preserve CORE commands and validate INTEGRATION envelope fields
+  ---
+  duration_ms: 3.0021
+  type: 'test'
+  ...
+# Subtest: renders canonical keyring commands telemetry extensions and nested readback receipts
+ok 22 - renders canonical keyring commands telemetry extensions and nested readback receipts
+  ---
+  duration_ms: 4.3589
+  type: 'test'
+  ...
+# Subtest: demo fixture preserves measurement timestamps across polling snapshots
+ok 23 - demo fixture preserves measurement timestamps across polling snapshots
+  ---
+  duration_ms: 12.3279
+  type: 'test'
+  ...
+# Subtest: location file tails complete JSONL records while preserving earlier devices
+ok 24 - location file tails complete JSONL records while preserving earlier devices
+  ---
+  duration_ms: 19.7113
+  type: 'test'
+  ...
+# Subtest: file truncate and replacement reset the previous journal snapshot
+ok 25 - file truncate and replacement reset the previous journal snapshot
+  ---
+  duration_ms: 10.6677
+  type: 'test'
+  ...
+# Subtest: same-prefix same-size rewrites replace stale values at the tail
+ok 26 - same-prefix same-size rewrites replace stale values at the tail
+  ---
+  duration_ms: 7.6444
+  type: 'test'
+  ...
+# Subtest: invalid and oversized rows are bounded and later valid observations remain readable
+ok 27 - invalid and oversized rows are bounded and later valid observations remain readable
+  ---
+  duration_ms: 4.5744
+  type: 'test'
+  ...
+# Subtest: configured file errors remain explicit and omit filesystem paths
+ok 28 - configured file errors remain explicit and omit filesystem paths
+  ---
+  duration_ms: 7.5734
+  type: 'test'
+  ...
+# Subtest: concurrent polling shares one cursor and reloads gateway coordinates
+ok 29 - concurrent polling shares one cursor and reloads gateway coordinates
+  ---
+  duration_ms: 16.4456
+  type: 'test'
+  ...
+# Subtest: active device memory is bounded while retaining the newest observations
+ok 30 - active device memory is bounded while retaining the newest observations
+  ---
+  duration_ms: 165.1045
+  type: 'test'
+  ...
+# Subtest: location HTTP endpoint returns a validated explicit demo snapshot
+ok 31 - location HTTP endpoint returns a validated explicit demo snapshot
+  ---
+  duration_ms: 281.7701
+  type: 'test'
+  ...
+# Subtest: location HTTP polling reflects appended GPS RSSI and updated gateway settings
+ok 32 - location HTTP polling reflects appended GPS RSSI and updated gateway settings
+  ---
+  duration_ms: 21.6991
+  type: 'test'
+  ...
+# Subtest: configured missing location file returns explicit 503 and recovers after file creation
+ok 33 - configured missing location file returns explicit 503 and recovers after file creation
+  ---
+  duration_ms: 13.1203
+  type: 'test'
+  ...
+# Subtest: location HTTP endpoint preserves GET-only policy
+ok 34 - location HTTP endpoint preserves GET-only policy
+  ---
+  duration_ms: 12.4382
+  type: 'test'
+  ...
+# Subtest: MEC 위치와 CORE/Gateway BLE 관측은 각각 최신값을 유지한다
+ok 35 - MEC 위치와 CORE/Gateway BLE 관측은 각각 최신값을 유지한다
+  ---
+  duration_ms: 1.6366
+  type: 'test'
+  ...
+# Subtest: BLE-only 키링은 수신기 중심의 원을 제공하고 좌표 필드는 대기로 유지한다
+ok 36 - BLE-only 키링은 수신기 중심의 원을 제공하고 좌표 필드는 대기로 유지한다
+  ---
+  duration_ms: 0.6628
+  type: 'test'
+  ...
+# Subtest: 수신 세기와 교정값을 반영하고 매우 약한 신호의 지도 반경은 상한을 표시한다
+ok 37 - 수신 세기와 교정값을 반영하고 매우 약한 신호의 지도 반경은 상한을 표시한다
+  ---
+  duration_ms: 0.2221
+  type: 'test'
+  ...
+# Subtest: 입력 좌표·시각·RSSI·교정값 경계를 검증한다
+ok 38 - 입력 좌표·시각·RSSI·교정값 경계를 검증한다
+  ---
+  duration_ms: 0.6697
+  type: 'test'
+  ...
+# Subtest: 센서 GPS 좌표를 읽고 모의 출처를 수집 경로 전체에 보존한다
+ok 39 - 센서 GPS 좌표를 읽고 모의 출처를 수집 경로 전체에 보존한다
+  ---
+  duration_ms: 0.2531
+  type: 'test'
+  ...
+# Subtest: 최근 이벤트 100개 표시 범위를 넘어도 키링별 좌표는 누적 상태에 남는다
+ok 40 - 최근 이벤트 100개 표시 범위를 넘어도 키링별 좌표는 누적 상태에 남는다
+  ---
+  duration_ms: 1.5739
+  type: 'test'
+  ...
+# Subtest: 관측 시각으로 현재·오래된 기록·시계 앞섬을 판정한다
+ok 41 - 관측 시각으로 현재·오래된 기록·시계 앞섬을 판정한다
+  ---
+  duration_ms: 0.2031
+  type: 'test'
+  ...
+# Subtest: 미래 시각 관측을 격리하고 기존 미래 상태에서 정상 시각으로 회복한다
+ok 42 - 미래 시각 관측을 격리하고 기존 미래 상태에서 정상 시각으로 회복한다
+  ---
+  duration_ms: 0.1672
+  type: 'test'
+  ...
+# Subtest: 데모는 3개 키링·2개 직접 좌표·3개 BLE 관측과 원본 시각을 제공한다
+ok 43 - 데모는 3개 키링·2개 직접 좌표·3개 BLE 관측과 원본 시각을 제공한다
+  ---
+  duration_ms: 1.0053
+  type: 'test'
+  ...
+# Subtest: 통합 journal adapter가 만든 위치 receipt는 공통 reducer로 연결된다
+ok 44 - 통합 journal adapter가 만든 위치 receipt는 공통 reducer로 연결된다
+  ---
+  duration_ms: 7.2379
+  type: 'test'
+  ...
+# Subtest: 지도 공급자 전환은 각 공급자의 출처와 확대 한도를 함께 유지한다
+ok 45 - 지도 공급자 전환은 각 공급자의 출처와 확대 한도를 함께 유지한다
+  ---
+  duration_ms: 1.2995
+  type: 'test'
+  ...
+# Subtest: 지정된 안전 구역은 위경도·반경·경계 순서를 검증한 뒤 지도에 표시한다
+ok 46 - 지정된 안전 구역은 위경도·반경·경계 순서를 검증한 뒤 지도에 표시한다
+  ---
+  duration_ms: 0.3337
+  type: 'test'
+  ...
+# Subtest: PKCE code callback은 HttpOnly 세션과 등록 principal을 생성하고 토큰을 서버에 보관한다
+ok 47 - PKCE code callback은 HttpOnly 세션과 등록 principal을 생성하고 토큰을 서버에 보관한다
+  ---
+  duration_ms: 50.0797
+  type: 'test'
+  ...
+# Subtest: state·nonce·ID token audience와 access token subject 오류를 검증한다
+ok 48 - state·nonce·ID token audience와 access token subject 오류를 검증한다
+  ---
+  duration_ms: 31.3657
+  type: 'test'
+  ...
+# Subtest: 동시 API 요청은 refresh token을 한 번 교환하고 교체된 토큰을 이어 사용한다
+ok 49 - 동시 API 요청은 refresh token을 한 번 교환하고 교체된 토큰을 이어 사용한다
+  ---
+  duration_ms: 14.283
+  type: 'test'
+  ...
+# Subtest: 세션은 동일 origin 로그아웃과 TTL을 적용하고 foreign subject 갱신을 종료한다
+ok 50 - 세션은 동일 origin 로그아웃과 TTL을 적용하고 foreign subject 갱신을 종료한다
+  ---
+  duration_ms: 15.9216
+  type: 'test'
+  ...
+# Subtest: discovery origin·PKCE support·redirect와 제한된 로그인 저장소를 검증한다
+ok 51 - discovery origin·PKCE support·redirect와 제한된 로그인 저장소를 검증한다
+  ---
+  duration_ms: 8.6245
+  type: 'test'
+  ...
+# Subtest: 운영 HTTPS 세션 쿠키는 __Host Secure 속성을 적용한다
+ok 52 - 운영 HTTPS 세션 쿠키는 __Host Secure 속성을 적용한다
+  ---
+  duration_ms: 2.2549
+  type: 'test'
+  ...
+# Subtest: 사용자 포털의 실제 응답은 snapshot과 canonical command 계약을 함께 만족한다
+ok 53 - 사용자 포털의 실제 응답은 snapshot과 canonical command 계약을 함께 만족한다
+  ---
+  duration_ms: 365.6815
+  type: 'test'
+  ...
+# Subtest: 포털 HTTP: 동의→위치권한→방문자 위치→회수 경로
+ok 54 - 포털 HTTP: 동의→위치권한→방문자 위치→회수 경로
+  ---
+  duration_ms: 375.8426
+  type: 'test'
+  ...
+# Subtest: 포털 HTTP: 방문자 요청을 보호자가 승인하고 같은 재전송을 복구
+ok 55 - 포털 HTTP: 방문자 요청을 보호자가 승인하고 같은 재전송을 복구
+  ---
+  duration_ms: 56.1734
+  type: 'test'
+  ...
+# Subtest: 포털 HTTP: 출처·역할·JSON·본문 경계와 principal 위조
+ok 56 - 포털 HTTP: 출처·역할·JSON·본문 경계와 principal 위조
+  ---
+  duration_ms: 30.7202
+  type: 'test'
+  ...
+# Subtest: 체험 사용자 위치는 실측 JSONL과 실제 수신기 좌표에서 격리
+ok 57 - 체험 사용자 위치는 실측 JSONL과 실제 수신기 좌표에서 격리
+  ---
+  duration_ms: 13.5017
+  type: 'test'
+  ...
+# Subtest: 실계정 BFF는 서버 세션의 토큰·위치 범위·운영 scope를 적용
+ok 58 - 실계정 BFF는 서버 세션의 토큰·위치 범위·운영 scope를 적용
+  ---
+  duration_ms: 9.8176
+  type: 'test'
+  ...
+# Subtest: LIVE 위치 HTTP: 중앙 BLE와 등록 anchor를 연결하고 가구 밖 수신기를 분리
+ok 59 - LIVE 위치 HTTP: 중앙 BLE와 등록 anchor를 연결하고 가구 밖 수신기를 분리
+  ---
+  duration_ms: 7.6246
+  type: 'test'
+  ...
+# Subtest: LIVE 위치 HTTP: JSONL·중앙 GPS/BLE를 각각의 최신 관측 시각으로 병합
+ok 60 - LIVE 위치 HTTP: JSONL·중앙 GPS/BLE를 각각의 최신 관측 시각으로 병합
+  ---
+  duration_ms: 7.7576
+  type: 'test'
+  ...
+# Subtest: LIVE 위치 HTTP: 현재 grant 회수와 조회 중 회수는 로컬·중앙·anchor를 함께 비운다
+ok 61 - LIVE 위치 HTTP: 현재 grant 회수와 조회 중 회수는 로컬·중앙·anchor를 함께 비운다
+  ---
+  duration_ms: 13.9205
+  type: 'test'
+  ...
+# Subtest: LIVE 위치 HTTP: 중앙 오류·권한 응답 결손 시 좌표 응답을 오류로 전환
+ok 62 - LIVE 위치 HTTP: 중앙 오류·권한 응답 결손 시 좌표 응답을 오류로 전환
+  ---
+  duration_ms: 17.9215
+  type: 'test'
+  ...
+# Subtest: LIVE 위치 HTTP: JSONL 24시간 보관 경계와 응답 lease 만료를 적용
+ok 63 - LIVE 위치 HTTP: JSONL 24시간 보관 경계와 응답 lease 만료를 적용
+  ---
+  duration_ms: 9.8992
+  type: 'test'
+  ...
+# Subtest: resumes strictly after Last-Event-ID and keeps finite replay open
+ok 64 - resumes strictly after Last-Event-ID and keeps finite replay open
+  ---
+  duration_ms: 281.6337
+  type: 'test'
+  ...
+# Subtest: resumes strictly after the query cursor on manual EventSource reconnect
+ok 65 - resumes strictly after the query cursor on manual EventSource reconnect
+  ---
+  duration_ms: 9.4653
+  type: 'test'
+  ...
+# Subtest: prefers native Last-Event-ID over the stale reconnect query
+ok 66 - prefers native Last-Event-ID over the stale reconnect query
+  ---
+  duration_ms: 9.223
+  type: 'test'
+  ...
+# Subtest: keeps an exhausted resume cursor open without replaying duplicates
+ok 67 - keeps an exhausted resume cursor open without replaying duplicates
+  ---
+  duration_ms: 8.1371
+  type: 'test'
+  ...
+# Subtest: returns explicit cursor errors instead of accepting malformed or future IDs
+ok 68 - returns explicit cursor errors instead of accepting malformed or future IDs
+  ---
+  duration_ms: 25.0881
+  type: 'test'
+  ...
+# Subtest: serves simulated resources audit search and source metadata over HTTP
+ok 69 - serves simulated resources audit search and source metadata over HTTP
+  ---
+  duration_ms: 11.2355
+  type: 'test'
+  ...
+# Subtest: calculates stage durations when explicit acceptance and member ACKs exist
+ok 70 - calculates stage durations when explicit acceptance and member ACKs exist
+  ---
+  duration_ms: 18.5846
+  type: 'test'
+  ...
+# Subtest: keeps stages pending when only a readback verification receipt exists
+ok 71 - keeps stages pending when only a readback verification receipt exists
+  ---
+  duration_ms: 2.6932
+  type: 'test'
+  ...
+# Subtest: never invents acceptance when dispatch is the only command evidence
+ok 72 - never invents acceptance when dispatch is the only command evidence
+  ---
+  duration_ms: 3.3134
+  type: 'test'
+  ...
+# Subtest: reports member partial failure when one member awaits retry
+ok 73 - reports member partial failure when one member awaits retry
+  ---
+  duration_ms: 3.3252
+  type: 'test'
+  ...
+# Subtest: reports failure when the only observed member explicitly requests retry
+ok 74 - reports failure when the only observed member explicitly requests retry
+  ---
+  duration_ms: 2.2378
+  type: 'test'
+  ...
+# Subtest: does not manufacture stage timestamps when only a settled group summary exists
+ok 75 - does not manufacture stage timestamps when only a settled group summary exists
+  ---
+  duration_ms: 2.6774
+  type: 'test'
+  ...
+# Subtest: ignores duplicate and out-of-order stream events without regressing state
+ok 76 - ignores duplicate and out-of-order stream events without regressing state
+  ---
+  duration_ms: 2.8421
+  type: 'test'
+  ...
+# Subtest: keeps negative or absent time differences unknown
+ok 77 - keeps negative or absent time differences unknown
+  ---
+  duration_ms: 0.2257
+  type: 'test'
+  ...
+# Subtest: 중앙 발급 멤버 명령 ID를 그룹에 연결: summaryFirst=true
+ok 78 - 중앙 발급 멤버 명령 ID를 그룹에 연결: summaryFirst=true
+  ---
+  duration_ms: 2.6361
+  type: 'test'
+  ...
+# Subtest: 중앙 발급 멤버 명령 ID를 그룹에 연결: summaryFirst=false
+ok 79 - 중앙 발급 멤버 명령 ID를 그룹에 연결: summaryFirst=false
+  ---
+  duration_ms: 3.2156
+  type: 'test'
+  ...
+1..79
+# tests 79
+# suites 0
+# pass 79
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1164.608

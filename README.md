@@ -288,7 +288,7 @@ hardware verified (real keyring board or bench board and a real Raspberry Pi).
 
 | Capability | Implemented | Locally verified | Hardware verified |
 |---|---|---|---|
-| Full test and build suite | Yes | `npm run verify` 13 steps PASS, 469 tests on 2026-11-19 (CORE 212, web 79, Gateway 167, cross-runtime TLS 11; [logs](docs/verification/2026-11-19/results.json)); earlier run 386 tests on 2026-11-11 ([logs](docs/verification/2026-11-11/results.json)) | n/a |
+| Full test and build suite | Yes | `npm run verify` 13 steps PASS, 488 tests on 2026-11-20 (CORE 231, web 79, Gateway 167, cross-runtime TLS 11; [logs](docs/verification/2026-11-20/results.json)); earlier runs 469 tests on 2026-11-19 ([logs](docs/verification/2026-11-19/results.json)) and 386 tests on 2026-11-11 ([logs](docs/verification/2026-11-11/results.json)) | n/a |
 | oneM2M CORE contract: AE, flexContainer, subscription, discovery, group fopt, readback | Yes | Contract and dry-run in verify; two real Mobius4 CSEs times two clients ([interop](docs/verification-evidence/2026-11-11/interop-real-cse.json)) | n/a |
 | ACP role matrix and subscription security patch | Yes | 828 cases PASS on two real CSEs ([acp](docs/verification-evidence/2026-11-11/acp-real-cse.json)) | n/a |
 | SDT binarySwitch and XSD import closure | Yes | XSD closure and canonical contract in verify | n/a |
