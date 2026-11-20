@@ -14,6 +14,7 @@ Privacy Bubble Keyring 사용자·운영 대시보드입니다. 시작 화면에
 | `/#/user/activity` | 방문자 명령 요청·보호자 승인·도움 요청·알림 |
 | `/#/operator/overview` | CORE·INTEGRATION journal, 명령·자원·감사·서비스 |
 | `/#/operator/evidence` | ZIP 및 R01–R17/A01–A26 추적 감사 |
+| `/#/story/activity-away` | 영상의 6개 모바일 이야기 화면과 상호작용 흐름 |
 
 기본 실행은 `.local/portal-demo/state.json`의 체험 가구와 키링을 사용합니다. 사용자 체험 요청은 격리된 실행 대기열에 기록하며 실물 적용은 Gateway ACK/readback을 기준으로 판정합니다. 체험 지도는 모의 관측만 사용합니다. 방문자 위치는 현재 활성 `location:read` grant와 consent revision을 조회마다 검사합니다. 권한·로그인 연결이 바뀌면 사용자 지도의 기존 좌표를 비웁니다.
 
@@ -121,6 +122,12 @@ CORE와 INTEGRATION 기록을 한 파일에 넣어도 같은 순서로 재생합
 - 이야기 단계: `curl -X POST -H "Content-Type: application/json" -d '{"step":"alert"}' http://127.0.0.1:4174/api/portal/alerts/replay` (`reset`, `home`, `walk`, `park`, `alert`, `panic`). 실시간 모드에서는 같은 요청이 runtime으로 전달되어 CSE에 기록되고, `panic`은 모의 키링 버튼부터 Gateway, CSE, 자동화 AE를 거쳐 열린 사건을 escalation함.
 - 재생 변형: `ALERT_REPLAY_VARIANT=claude`(기본, Claude run 3 설명과 checkIn) 또는 `scripted`(에이전트 lease 초안 포함), 시작 단계 `ALERT_REPLAY_START=home|walk|park|alert`.
 - 화면 기록: `node web-dashboard/scripts/capture-alert-card.mjs --lang=en` (재생), `--api=http://127.0.0.1:4174` (실시간). 결과는 [evidence/2026-11-20-alert-card](evidence/2026-11-20-alert-card/).
+
+## 영상 이야기 화면
+
+`#/story/activity-away`에서 영상에 등장한 6개 모바일 화면을 순서대로 체험할 수 있음. 외출과 귀가의 최소 활동 표시, 미나의 거실 기기 접근 승인, 방문 돌봄자 그룹 제어, 오후 4시 자동 종료, 평소와 다른 멈춤의 통화와 5분 위치 공유를 포함함. 로컬 oneM2M 데모 API가 실행 중이면 승인·그룹 명령·위치 공유 버튼이 기존 API를 사용하며, 공개 정적 화면도 같은 이야기 흐름을 제공함.
+
+`npm --prefix web-dashboard run capture:story`는 390 × 844 화면 6장과 종합 이미지를 [evidence/story-screens](evidence/story-screens/)에 만들고 승인 전환, 그룹 명령 적용, 5분 위치 공유를 함께 검증함.
 
 ## 검증
 

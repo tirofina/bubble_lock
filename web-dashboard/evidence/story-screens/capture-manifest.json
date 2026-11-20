@@ -1,0 +1,62 @@
+{
+  "generatedAt": "2026-11-20T16:37:45.844Z",
+  "browser": "Chrome/157.0.8103.80",
+  "mode": "replay API with CAREGIVER_DEMO=1; guardian share and caregiver group command exercised",
+  "command": "npm --prefix web-dashboard run capture:story",
+  "assertions": [
+    "care approval opens the caregiver view",
+    "All on returns the applied state",
+    "View location opens a five-minute share"
+  ],
+  "captured": [
+    {
+      "name": "01-activity-away",
+      "width": 390,
+      "height": 844,
+      "file": "01-activity-away.png",
+      "sha256": "b50ee3756b8e83a58f4f09390581131da73d8b76586210b1951e2857b0edd676"
+    },
+    {
+      "name": "02-activity-home",
+      "width": 390,
+      "height": 844,
+      "file": "02-activity-home.png",
+      "sha256": "4d648023b48bcdc49170bf767fdfcd7561f25e5cffb1256584416df9e319f8dd"
+    },
+    {
+      "name": "03-care-request",
+      "width": 390,
+      "height": 844,
+      "file": "03-care-request.png",
+      "sha256": "4dd7101086c093b7a65ed7bd321ee8169c799bfc2f9b74240c3b8efd73f9421e"
+    },
+    {
+      "name": "04-caregiver-shared",
+      "width": 390,
+      "height": 844,
+      "file": "04-caregiver-shared.png",
+      "sha256": "f319996d1f74160734ecdc45c45527f1bdc2b88e5e8ec26e778d724e9aba3422"
+    },
+    {
+      "name": "05-caregiver-ended",
+      "width": 390,
+      "height": 844,
+      "file": "05-caregiver-ended.png",
+      "sha256": "0e6613a6cc6691fc7addf86c26f7cb249885fed130a43a926c3b442613a6f88a"
+    },
+    {
+      "name": "06-check-in",
+      "width": 390,
+      "height": 844,
+      "file": "06-check-in.png",
+      "sha256": "c9c226cc401d98bf40e319153fa5e2dbc6da618416e0740ea9fd80ce2e0d20d8"
+    },
+    {
+      "name": "story-screens-overview",
+      "width": 1280,
+      "height": 1900,
+      "file": "story-screens-overview.png",
+      "sha256": "87a308b31e11b03220563234103c87de8c97eb95cc7e09600f5dd38595fdc94b"
+    }
+  ]
+}

@@ -14,6 +14,7 @@
     "sse": "node server/cli.ts",
     "serve:local": "node scripts/serve-local.mjs",
     "serve:local:vm": "node scripts/serve-local-vm.mjs",
+    "capture:story": "node scripts/capture-story-screens.mjs",
     "account:add": "node scripts/add-local-account.mjs",
     "test": "node --test test/*.test.ts",
     "typecheck": "tsc --noEmit",
