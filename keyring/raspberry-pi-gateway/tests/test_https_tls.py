@@ -56,6 +56,7 @@ class HttpsTlsTests(unittest.IsolatedAsyncioTestCase):
         cin = record["body"]["m2m:cin"]
         self.assertEqual(cin["con"], payload)
         self.assertEqual(cin["rn"], "gw-" + hashlib.sha256(b"tls-request").hexdigest())
+        self.assertIsNone(cin["cr"])
         print("loopback evidence: TLSv1.3, verified test client CN=gw-test, matching oneM2M CREATE response", flush=True)
 
     async def test_untrusted_server_ca_is_rejected_before_http(self):

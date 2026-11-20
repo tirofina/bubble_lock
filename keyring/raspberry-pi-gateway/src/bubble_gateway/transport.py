@@ -653,7 +653,7 @@ class TransportHub:
             return await self._publish_central_telemetry(rqi, payload)
         path = _resource_path(container)
         rn = "gw-" + hashlib.sha256(rqi.encode("utf-8")).hexdigest()
-        cin = {"rn": rn, "cnf": "application/json:0", "con": payload}
+        cin = {"rn": rn, "cnf": "application/json:0", "con": payload, "cr": None}
         if len(_json(cin)) > MAX_BODY:
             raise ValueError("outgoing content exceeds size limit")
         pin = configured_container_pins(self.config).get(container)
