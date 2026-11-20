@@ -15,6 +15,8 @@ export async function createPortalDemo({ statePath = null, clock = () => new Dat
   await runtime.gatewayControl.enroll({ gatewayId: 'pi-01', principalId: 'gateway-demo', fingerprint: 'DEMO-ONLY-NO-TRANSPORT', credentialRevision: 'demo-1', ownershipEpoch: 0,
     devices: { 'keyring-A': 'household-demo', 'keyring-B': 'household-demo', 'keyring-C': 'household-demo' } });
   for (const [deviceId, label] of [['keyring-A', 'Keyring A'], ['keyring-B', 'Keyring B'], ['keyring-C', 'Keyring C']]) {
+    // A saved state keeps its own seed (and any label it was seeded with); re-seeding the same key with a new label would fail the idempotency check.
+    if (runtime.portalService.store.get('portalDevices', deviceId)) continue;
     await runtime.portalService.registerDevice(principals.guardian, { householdId: 'household-demo', deviceId, gatewayId: 'pi-01', label, idempotencyKey: `seed-${deviceId}` });
   }
   if(runtime.locationPrivacy.deviceIds(principals.guardian).length===0){
