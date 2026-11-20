@@ -100,6 +100,7 @@ export function guardianRecordFromContent(container: FeedContainer, con: unknown
       }) });
     }
     case 'guardianInbox': {
+      if (type === 'STORY_RESET') return make('REPLAY_RESET', 'triage', {});
       const incidentId = text(con['incidentId'], 128); if (!incidentId) return null;
       if (type === 'TRIAGE_NOTICE') {
         if (!['info', 'watch', 'urgent'].includes(String(con['severity'])) || !['observe', 'checkIn', 'emergencyLease'].includes(String(con['action'])) || !text(con['explanation'], 280)) return null;

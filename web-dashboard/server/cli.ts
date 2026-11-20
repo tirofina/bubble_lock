@@ -33,7 +33,7 @@ if (locationSimulation !== undefined && !['true', 'false'].includes(locationSimu
 // Guardian alert card: ALERT_SOURCE=auto|replay|cse-live, ALERT_REPLAY_VARIANT=scripted|claude, ALERT_REPLAY_START=home|walk|alert.
 const alertSource = process.env['ALERT_SOURCE'] ?? 'auto';
 if (!['auto', 'replay', 'cse-live'].includes(alertSource)) throw new TypeError('ALERT_SOURCE 값은 auto, replay, cse-live 중 하나로 지정하세요.');
-const alerts = { source: alertSource as 'auto' | 'replay' | 'cse-live', ...(process.env['ALERT_REPLAY_VARIANT'] ? { variant: process.env['ALERT_REPLAY_VARIANT'] } : {}), ...(process.env['ALERT_REPLAY_START'] ? { start: process.env['ALERT_REPLAY_START'] } : {}) };
+const alerts = { source: alertSource as 'auto' | 'replay' | 'cse-live', ...(process.env['ALERT_REPLAY_VARIANT'] ? { variant: process.env['ALERT_REPLAY_VARIANT'] } : {}), ...(process.env['ALERT_REPLAY_START'] ? { start: process.env['ALERT_REPLAY_START'] } : {}), ...(process.env['ALERT_STORY_CONTROL_URL'] ? { storyControlUrl: process.env['ALERT_STORY_CONTROL_URL'] } : {}) };
 const service = await startReplayServer({
   ...(port === undefined ? {} : { port }),
   ...(cseLive ? { cseLive } : {}),

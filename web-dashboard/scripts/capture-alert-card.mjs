@@ -16,16 +16,17 @@ import { setTimeout as delay } from 'node:timers/promises';
 
 const dashboard = fileURLToPath(new URL('..', import.meta.url));
 const args = Object.fromEntries(process.argv.slice(2).map((arg) => { const [key, ...value] = arg.replace(/^--/, '').split('='); return [key, value.join('=') || true]; }));
-const outDir = typeof args.out === 'string' ? args.out : join(dashboard, 'evidence', '2026-11-20-alert-card');
+const external = typeof args.api === 'string' ? args.api.replace(/\/$/, '') : null;
+const outDir = typeof args.out === 'string' ? args.out : join(dashboard, 'evidence', '2026-11-20-alert-card', ...(external ? ['live'] : []));
 const lang = args.lang === 'ko' ? 'ko' : 'en';
 const dist = join(dashboard, 'dist');
 if (!existsSync(join(dist, 'index.html'))) throw new Error('dist/ is missing; run npm --prefix web-dashboard run build first');
 async function freePort() { const probe = netServer(); probe.listen(0, '127.0.0.1'); await once(probe, 'listening'); const { port } = probe.address(); await new Promise((done) => probe.close(done)); return port; }
 
-const apiPort = await freePort();
-const api = spawn(process.execPath, ['server/cli.ts'], { cwd: dashboard, env: { ...process.env, DASHBOARD_PORT: String(apiPort), ALERT_SOURCE: 'replay', ALERT_REPLAY_VARIANT: args.variant ?? 'claude', ALERT_REPLAY_START: 'alert' }, stdio: ['ignore', 'pipe', 'pipe', 'ipc'], windowsHide: true });
-let apiLog = ''; api.stdout.on('data', (chunk) => { apiLog += chunk; }); api.stderr.on('data', (chunk) => { apiLog += chunk; });
-await new Promise((resolve, reject) => { const timer = setTimeout(() => reject(new Error(`server start timeout\n${apiLog}`)), 30000); api.on('message', (message) => { if (message?.type === 'ready') { clearTimeout(timer); resolve(); } }); api.once('exit', (code) => reject(new Error(`server exited ${code}\n${apiLog}`))); });
+const apiPort = external ? Number(new URL(external).port) : await freePort();
+const api = external ? null : spawn(process.execPath, ['server/cli.ts'], { cwd: dashboard, env: { ...process.env, DASHBOARD_PORT: String(apiPort), ALERT_SOURCE: 'replay', ALERT_REPLAY_VARIANT: args.variant ?? 'claude', ALERT_REPLAY_START: 'alert' }, stdio: ['ignore', 'pipe', 'pipe', 'ipc'], windowsHide: true });
+let apiLog = ''; if (api) { api.stdout.on('data', (chunk) => { apiLog += chunk; }); api.stderr.on('data', (chunk) => { apiLog += chunk; }); }
+if (api) await new Promise((resolve, reject) => { const timer = setTimeout(() => reject(new Error(`server start timeout\n${apiLog}`)), 30000); api.on('message', (message) => { if (message?.type === 'ready') { clearTimeout(timer); resolve(); } }); api.once('exit', (code) => reject(new Error(`server exited ${code}\n${apiLog}`))); });
 const apiUrl = `http://127.0.0.1:${apiPort}`;
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json', '.woff2': 'font/woff2' };
@@ -124,12 +125,12 @@ try {
   await desk.click('.alert-actions .quiet-button', 2500);
   await desk.shot(`user-alert-dismissed-1440-${lang}`);
   for (const item of [desk, phone, operator]) item.close();
-  const manifest = { generatedAt: new Date().toISOString(), browser: version.Browser, mode: 'replay (ALERT_SOURCE=replay, fixtures/guardian-alert-story.json, simulation true)', variant: args.variant ?? 'claude', lang, command: 'node web-dashboard/scripts/capture-alert-card.mjs', captured };
+  const manifest = { generatedAt: new Date().toISOString(), browser: version.Browser, mode: external ? `live (${external}, pc-mobius/scripts/run-video-live.mjs, real Mobius4, emulated devices and triage runtime, simulation true)` : 'replay (ALERT_SOURCE=replay, fixtures/guardian-alert-story.json, simulation true)', variant: args.variant ?? 'claude', lang, command: 'node web-dashboard/scripts/capture-alert-card.mjs', captured };
   await writeFile(join(outDir, `capture-manifest-${lang}.json`), `${JSON.stringify(manifest, null, 2)}\n`);
   console.log(JSON.stringify(manifest, null, 2));
 } finally {
   browser.kill();
   preview.closeAllConnections(); preview.close();
-  api.send?.({ type: 'stop' });
-  setTimeout(() => api.kill(), 2000).unref();
+  api?.send?.({ type: 'stop' });
+  if (api) setTimeout(() => api.kill(), 2000).unref();
 }

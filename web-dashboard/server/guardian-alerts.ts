@@ -296,7 +296,7 @@ function feedContainer(backend: AlertBackend, card: AlertCard, container: string
 }
 
 /** Routes under /api/portal/alerts (guardian) and /api/alerts, /api/relocation (operator). */
-export function createAlertRoutes(backend: AlertBackend, options: { allowReplayControl?: boolean } = {}) {
+export function createAlertRoutes(backend: AlertBackend, options: { allowReplayControl?: boolean; storyControlUrl?: string } = {}) {
   return {
     backend,
     async handlePortal(request: IncomingMessage, response: ServerResponse, url: URL, auth: PortalAuthorizer): Promise<void> {
@@ -317,8 +317,13 @@ export function createAlertRoutes(backend: AlertBackend, options: { allowReplayC
         if (!mutation) { json(response, 405, { message: '이 경로의 요청 방식을 확인해 주세요.' }); return; }
         const input = await readBody(request);
         if (action === 'replay') {
-          if (!backend.replay || !options.allowReplayControl) { json(response, 404, { message: '재생 모드에서만 쓸 수 있어요.' }); return; }
           const step = String(input['step']) as ReplayStep;
+          if (options.allowReplayControl && !backend.replay && options.storyControlUrl) {
+            // Live recording: the story runtime (pc-mobius/scripts/run-video-live.mjs) writes the step into the CSE.
+            const forwarded = await fetch(options.storyControlUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ step: input['step'] }), signal: AbortSignal.timeout(15000) });
+            json(response, forwarded.status, { mode: 'live', ...(await forwarded.json() as Record<string, unknown>) }); return;
+          }
+          if (!backend.replay || !options.allowReplayControl) { json(response, 404, { message: '재생 모드에서만 쓸 수 있어요.' }); return; }
           if (!REPLAY_STEPS.includes(step)) { json(response, 400, { message: `step: ${REPLAY_STEPS.join(', ')}` }); return; }
           json(response, 200, { step, ...backend.replay(step), lastSequence: backend.guardian.lastSequence }); return;
         }

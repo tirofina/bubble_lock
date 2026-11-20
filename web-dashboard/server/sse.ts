@@ -161,7 +161,7 @@ export interface StartReplayOptions {
   /** Live oneM2M CSE source. Omitted means the existing fixture or journal replay. */
   readonly cseLive?: CseLiveConfig;
   /** Guardian alert card source: the live resident feed when configured, otherwise the R17 story replay. */
-  readonly alerts?: { readonly source?: 'auto' | 'replay' | 'cse-live'; readonly variant?: string; readonly start?: string };
+  readonly alerts?: { readonly source?: 'auto' | 'replay' | 'cse-live'; readonly variant?: string; readonly start?: string; readonly storyControlUrl?: string };
 }
 
 /** Loopback is deliberately fixed; port 0 is supported for integration tests. */
@@ -178,7 +178,7 @@ export async function startReplayServer(options: StartReplayOptions = {}) {
   const alertSource = options.alerts?.source ?? 'auto';
   if (alertSource === 'cse-live' && !live?.alerts) throw new ContractError('ALERT_SOURCE=cse-live에는 CSE_LIVE_CONFIG의 guardian과 residents 설정이 필요해요.');
   const alertBackend = alertSource !== 'replay' && live?.alerts ? live.alerts : createAlertReplay({ ...(options.alerts?.variant ? { variant: options.alerts.variant } : {}), ...(options.alerts?.start ? { start: options.alerts.start } : {}) });
-  const alerts = createAlertRoutes(alertBackend, { allowReplayControl: !options.portal?.auth });
+  const alerts = createAlertRoutes(alertBackend, { allowReplayControl: !options.portal?.auth, ...(options.alerts?.storyControlUrl ? { storyControlUrl: options.alerts.storyControlUrl } : {}) });
   const server = createReplayServer(replay, locationFeed, portal, alerts);
   const listening = once(server, 'listening');
   server.listen(options.port ?? 4174, '127.0.0.1');

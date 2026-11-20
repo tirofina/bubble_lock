@@ -396,19 +396,19 @@ export async function startCseLiveSource(config: CseLiveConfig, options: { fetch
     async review(card, input) {
       if (!input.requestResource || !card.draft) throw new Error('승인 요청 컨테이너를 찾지 못했어요.');
       const con = { type: 'GUARDIAN_REVIEW', approvalRequestId: card.draft.approvalRequestId, draftId: card.draft.draftId, reviewedDraftHash: input.reviewedDraftHash, decision: input.decision, guardianId: config.guardian!.principalId, reviewedAt: new Date().toISOString() };
-      const created = await guardian.expect('POST', input.requestResource, [2001], { ty: 4, body: { 'm2m:cin': { rn: `review-${card.draft.approvalRequestId.replace(/[^A-Za-z0-9-]/g, '').slice(-24)}`, cnf: 'application/json:0', con } } });
+      const created = await guardian.expect('POST', input.requestResource, [2001], { ty: 4, body: { 'm2m:cin': { rn: `review-${card.draft.approvalRequestId.replace(/^approval-/, '').replace(/[^A-Za-z0-9-]/g, '').slice(0, 40)}`, cnf: 'application/json:0', con, cr: null } } });
       const cin = record(created.payload?.['m2m:cin']) ? created.payload['m2m:cin'] as Record<string, unknown> : {};
       return { status: 'SUBMITTED', resource: `${input.requestResource}/${String(cin['rn'] ?? '')}`, payloadHash: commandPayloadHash(con) };
     },
     async requestShare(card, input) {
       if (!input.container) throw new Error('보호자 기록 컨테이너를 찾지 못했어요.');
       const con = { type: 'SHARE_REQUEST', requestId: input.requestId, alertId: card.alertId, incidentId: card.incidentId, purpose: input.purpose, durationMinutes: input.durationMinutes, guardianId: config.guardian!.principalId, requestedAt: new Date().toISOString() };
-      await guardian.expect('POST', input.container, [2001], { ty: 4, body: { 'm2m:cin': { rn: input.requestId, cnf: 'application/json:0', con } } });
+      await guardian.expect('POST', input.container, [2001], { ty: 4, body: { 'm2m:cin': { rn: input.requestId, cnf: 'application/json:0', con, cr: null } } });
     },
     async feedback(card, learning, container) {
       if (!container) throw new Error('보호자 기록 컨테이너를 찾지 못했어요.');
       const con = { type: 'GUARDIAN_FEEDBACK', feedback: 'ALERT_OK', alertId: card.alertId, incidentId: card.incidentId, guardianId: config.guardian!.principalId, guardianDismissedOk: true, learn: learning.learn, mode: learning.mode, reason: learning.reason, at: new Date().toISOString() };
-      await guardian.expect('POST', container, [2001], { ty: 4, body: { 'm2m:cin': { cnf: 'application/json:0', con } } });
+      await guardian.expect('POST', container, [2001], { ty: 4, body: { 'm2m:cin': { cnf: 'application/json:0', con, cr: null } } });
       return { status: 'SUBMITTED', learning };
     },
     async location(card, lang): Promise<LocationSnapshot | null> {
@@ -421,12 +421,20 @@ export async function startCseLiveSource(config: CseLiveConfig, options: { fetch
         if (cin) { latest = { cin, receivedAt: new Date().toISOString() }; latestLocation.set(root, latest); }
       }
       const con = latest && record(latest.cin.con) ? latest.cin.con : null;
-      const grid = con && record(con['grid']) ? con['grid'] : null;
-      if (!latest || !grid || typeof grid['lat'] !== 'number' || typeof grid['lon'] !== 'number') return null;
+      // R17 samples carry con.grid; the MEC IPE record carries the cin loc attribute ([lon, lat], three decimals).
+      let point: { lat: number; lon: number } | null = con && record(con['grid']) && typeof con['grid']['lat'] === 'number' && typeof con['grid']['lon'] === 'number' ? { lat: con['grid']['lat'], lon: con['grid']['lon'] } : null;
+      const loc = latest ? (latest.cin as unknown as { loc?: { crd?: unknown } }).loc : undefined;
+      if (!point && typeof loc?.crd === 'string') { try { const [lon, lat] = JSON.parse(loc.crd) as number[]; if (typeof lat === 'number' && typeof lon === 'number') point = { lat, lon }; } catch { /* malformed loc */ } }
+      if (!latest || !point) return null;
       const observedAt = oneM2mTimeToIso(latest.cin.ct);
-      // The location cin holds the three-decimal grid only (about 110 m by 80 m here); the circle shows that bound.
-      return { schemaVersion: '1.0.0', mode: 'live', source: 'portal-api', simulation: config.simulation, updatedAt: new Date().toISOString(), rejectedRecords: 0, caughtUp: true, gateways: [],
-        devices: [{ deviceId: card.residentId, label: lang === 'en' ? 'Resident (network location)' : '거주자 (통신망 위치)', position: { coordinates: { lat: grid['lat'], lon: grid['lon'] }, source: 'mec', observedAt, accuracyM: 70, simulation: config.simulation }, ble: null }] };
+      const relay = con && record(con['relay']) && typeof con['relay']['rssiDbm'] === 'number' && typeof con['relay']['gatewayId'] === 'string' ? con['relay'] : null;
+      const simulated = config.simulation || con?.['simulation'] === true;
+      const label = lang === 'en' ? "Mom's keyring" : '어머니 키링';
+      // Three-decimal coordinates bound the error to about 70 m here; the circle shows that bound, not a precise fix.
+      return { schemaVersion: '1.0.0', mode: 'live', source: 'portal-api', simulation: simulated, updatedAt: new Date().toISOString(), rejectedRecords: 0, caughtUp: true,
+        gateways: relay ? [{ gatewayId: String(relay['gatewayId']), label: lang === 'en' ? "Mom's phone (BLE relay)" : '어머니 휴대폰 (BLE 중계)', position: point, simulation: relay['simulation'] !== false, referenceRssiDbm: Number(relay['referenceRssiDbm'] ?? -59), pathLossExponent: Number(relay['pathLossExponent'] ?? 2) }] : [],
+        devices: [{ deviceId: card.residentId, label, position: { coordinates: point, source: 'mec', observedAt, accuracyM: 70, simulation: simulated },
+          ble: relay ? { gatewayId: String(relay['gatewayId']), rssiDbm: Math.round(Number(relay['rssiDbm'])), observedAt, simulation: relay['simulation'] !== false } : null }] };
     },
     describe() { return { mode: 'live', label: feedLabel, guardian: alertLogs.guardian.lastSequence, operator: alertLogs.operator.lastSequence, locations: latestLocation.size }; },
   } : null;
