@@ -18,7 +18,7 @@ Gateway 0.2.15의 `bubble-gateway-state retire-core`는 전환 뒤 보류된 이
 
 Python 3.11 이상과 Linux BlueZ를 사용하는 KEYRING 현장 daemon이다. BLE 관측을 SQLite outbox에 저장하고 MQTT 또는 HTTPS로 oneM2M contentInstance를 생성한다. 중앙에서 받은 명령은 최신 승인·credential·deadline을 확인한 뒤 BLE로 전달한다.
 
-Pi Zero 2 W의 별도 시험 폴더에 Gateway 0.2.5를 설치했다. 임시 사용자 systemd 서비스로 전체 데몬을 실행해 실제 Feather 관측 27개와 Gateway 상태 16개를 격리 Mobius4에서 확인했다. 재시작 뒤 SQLite에 남은 관측 한 건의 원본 해시도 CSE와 일치했다. 0.2.4에서 수행한 버튼 관측과 PC 모의 GATT 명령 시험은 각각 별도 증거다. 실물 명령과 배포용 systemd 설정 시험이 남아 있다. [Pi 전체 데몬](../evidence/2026-11-10-pi-full-daemon/README.md) · [버튼 관측](../evidence/2026-11-10-pi-feather/README.md) · [명령 통합 시험](../evidence/2026-11-10-central-dispatch/README.md)
+Pi Zero 2 W의 별도 시험 폴더에 Gateway 0.2.5를 설치했다. 임시 사용자 systemd 서비스로 전체 데몬을 실행해 실제 Feather 관측 27개와 Gateway 상태 16개를 격리 Mobius4에서 확인했다. 재시작 뒤 SQLite에 남은 관측 한 건의 원본 해시도 CSE와 일치했다. 0.2.4에서 수행한 버튼 관측과 PC 모의 GATT 명령 시험은 각각 별도 증거다. 실물 명령은 이후 Gateway 0.2.28에서 Feather LED ON/OFF와 GPIO readback으로 확인했다([영수증](../evidence/2026-11-11-scoped-feather-led/receipt.json)). Pi의 배포용 systemd 설정 시험이 남아 있다. [Pi 전체 데몬](../evidence/2026-11-10-pi-full-daemon/README.md) · [버튼 관측](../evidence/2026-11-10-pi-feather/README.md) · [명령 통합 시험](../evidence/2026-11-10-central-dispatch/README.md)
 
 아래 절차는 중앙 인증서·API와 연결할 전체 Gateway 배포용이다. Gateway 0.2.6의 배포용 시작 검사는 로컬 Linux systemd와 시험용 TLS 파일로 검증했다. Pi 실물 실행은 위의 0.2.5 벤치 결과다. [시작 검사 시험](../evidence/2026-11-10-deployment-preflight/README.md)
 
@@ -28,12 +28,12 @@ Pi Zero 2 W의 별도 시험 폴더에 Gateway 0.2.5를 설치했다. 임시 사
 
 [최신 HTTPS/TLS 실행 증거](../evidence/2026-10-30-https-tls/README.md)에 임시 PKI·loopback server로 확인한 TLS1.3/mTLS·실패 경계를 기록한다. 개발 suite는 OpenSSL 실행 파일이 필요하다. 실제 운영 PKI·MQTT ACL·Pi/CSE 통합은 별도다.
 
-[별도 MQTT wire6개](../evidence/2026-10-30-mqtt-wire/README.md)는 임시 Mosquitto2.1.2·TLS1.3/mTLS·CN topic ACL·application receipt·HTTPS fallback을 실제 broker로 확인했다. 기본55개와 구분해 명시 실행하며, 기존 운영/개발 서버는 변경하지 않는다.
+[별도 MQTT wire6개](../evidence/2026-10-30-mqtt-wire/README.md)는 임시 Mosquitto2.1.2·TLS1.3/mTLS·CN topic ACL·application receipt·HTTPS fallback을 실제 broker로 확인했다. 기본 Gateway suite(167개, [03-gateway-tests.log](../../docs/verification/2026-11-20/03-gateway-tests.log))와 구분해 명시 실행하며, 기존 운영/개발 서버는 변경하지 않는다.
 
 ## 먼저 준비할 환경
 
 - Python 3.11+, Bluetooth LE 어댑터, BlueZ system bus, 올바르게 동기화된 시스템 시계.
-- 이번 작업의 코드가 포함된 저장소를 `/opt/bubble_lock`에 복사한 배포본. 원격 main에 이 코드가 이미 있다고 가정하지 않는다.
+- 이번 작업의 코드가 포함된 저장소를 `/opt/bubble_lock`에 복사한 배포본. main에는 Gateway 0.2.124가 들어 있다.
 - [펌웨어 안내](../firmware/README.md)에 따라 장치별 deviceId·passkey가 설정된 키링. flash 절차도 해당 문서에 있으며 이번 작업에서 실행하지 않았다.
 - PC-MOBIUS 담당이 발급·등록한 Gateway client certificate와 private key, 서버 CA bundle.
 - 중앙 commands/authorize/credentials API와 AE·container·ACP·broker ACL. 현재 API는 [계약 후보](../INTERFACE_NOTES.md)이므로 중앙의 준비가 필요하다.
@@ -71,7 +71,7 @@ sudoedit /etc/privacy-bubble/gateway.env
 | 설정 | 의미 |
 |---|---|
 | `M2M_CSE_URL` | `https://host:port` 형태의 origin. `/Mobius`는 넣지 않음 |
-| `M2M_*_CONTAINER` | `/Mobius/{AE}/observations`처럼 전체 oneM2M resource path |
+| `M2M_*_CONTAINER` | 전체 oneM2M resource path. 팀 서버는 `/Mobius/BubbleLock/gateway-1/observations`, 시험 CSE는 `/Mobius/{GatewayAE}/observations` |
 | `PC_API_URL` | HTTPS base URL. 코드가 `/api/v1/gateways/{GATEWAY_ID}`를 덧붙임. `/api/v1`을 중복 입력하지 않음 |
 | `PC_API_DEPLOYMENT_ID` | 새 DB를 중앙 API 저장소에 연결하는 선택 설정. 같은 저장소의 주소를 바꾸면 ID를 유지하고, 새 저장소에는 새 ID와 DB 경로를 지정함. [중앙 API 배포 전환](STATE_RECOVERY.md#중앙-api-배포-전환) |
 | `PC_DISPATCH_START_REQUIRED` | `true`일 때 BLE 쓰기 전 중앙 `POST /dispatch-start` 승인을 요구함. 기존 고정 벤치 프로필의 기본값은 `false`. [명령 기한](BLE_SESSIONS.md#승인-기한과-gatt-전송) |

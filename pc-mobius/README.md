@@ -44,7 +44,7 @@ Node.js 검증 묶음은 `npm test`, `npm run validate`, `npm run dry-run` 명�
 
 ## 계약 기준
 
-`contracts/oneM2M-test-contract.v1.json`이 wire 정본이다. 모든 요청은 `X-M2M-RVI: 4`, `X-M2M-Origin`, 고유 `X-M2M-RI`를 전달한다. HTTP 계약과 MQTT 계약은 같은 requestId를 사용하여 이벤트와 응답을 연결한다.
+`contracts/oneM2M-test-contract.v1.json`(기존 `pb:binarySwitch`)은 `run-contract.mjs`의 기본값이다. `contracts/oneM2M-test-contract.v2.json`은 `npm run verify`가 검사하는 정식 `cod:binSh` 형식이다. 모든 요청은 `X-M2M-RVI: 4`, `X-M2M-Origin`, 고유 `X-M2M-RI`를 전달한다. HTTP 계약과 MQTT 계약은 같은 requestId를 사용하여 이벤트와 응답을 연결한다.
 
 ### 다른 담당자와의 연결
 

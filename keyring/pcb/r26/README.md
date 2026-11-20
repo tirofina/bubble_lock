@@ -49,7 +49,7 @@ LCD harness (JST SH 8-pin) from the module labels to J3:
 
 ![LCD wiring](J3_ST7789_Wiring.png)
 
-Firmware build profiles, first power-on and over-the-air updates: [R26_BRING_UP.md](https://github.com/tirofina/bubble_lock/blob/codex/keyring-namho/keyring/pcb/R26_BRING_UP.md) and [R26_OTA.md](https://github.com/tirofina/bubble_lock/blob/codex/keyring-namho/keyring/firmware/R26_OTA.md) on the KEYRING branch.
+Firmware build profiles, first power-on and over-the-air updates: [R26_BRING_UP.md](../R26_BRING_UP.md) and [R26_OTA.md](../../firmware/R26_OTA.md).
 
 ## Files
 
@@ -92,7 +92,7 @@ Re-run with `kicad-cli` 10.0.4, errors and warnings included: DRC 0 violations a
 
 1. Order the board from the Gerber zip (4 layers, 1.0 mm) with top-side assembly from the BOM and CPL.
 2. Print and assemble the case: [keyring/case/r26](../../case/r26/README.md).
-3. Flash `keyring_r26_front_st7789` and pair the keyring with the Raspberry Pi Gateway: [R26_BRING_UP.md](https://github.com/tirofina/bubble_lock/blob/codex/keyring-namho/keyring/pcb/R26_BRING_UP.md).
+3. Flash `keyring_r26_front_st7789` and pair the keyring with the Raspberry Pi Gateway: [R26_BRING_UP.md](../R26_BRING_UP.md).
 
 ## License
 

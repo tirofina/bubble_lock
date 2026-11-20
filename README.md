@@ -6,22 +6,22 @@
 
 *The story behind the keyring, page 1 and page 2 (illustration).*
 
-**Privacy by default. Help on demand.** A BLE keyring for an older parent who lives alone, built on the [oneM2M](https://www.onem2m.org) service layer and ETSI MEC.
+**Privacy by default. Help before the button.** A BLE keyring for an older parent who lives alone, built on the [oneM2M](https://www.onem2m.org) service layer and ETSI MEC.
 
-Mobius4 4.24.5 oneM2M CSE | ETSI MEC Sandbox | Code Apache-2.0 | Docs and hardware CC BY 4.0 | 2026 oneM2M International Hackathon
+Mobius4 oneM2M CSE (4.24.5 in test runs, 4.25.0 on the team server) | ETSI MEC Sandbox | Code Apache-2.0 | Docs and hardware CC BY 4.0 | 2026 oneM2M International Hackathon
 
 | | |
 |---|---|
 | Hackster article | link added on publication |
-| Demo video (under 5 minutes) | link added on publication |
+| Demo video (under 5 minutes) | [Mom, Where Are You? on YouTube](https://www.youtube.com/watch?v=vOgl1aOGWl0) |
 | Why oneM2M, feature by feature | [docs/oneM2M-why.md](docs/oneM2M-why.md) |
 | Architecture, resource tree, protocols | [docs/architecture.md](docs/architecture.md) |
 
 ## What it does
 
-A resident carries the keyring; her daughter is the guardian; a caregiver visits in the afternoon. The system keeps four rules, and the oneM2M CSE enforces them for every app:
+A resident carries the keyring; her daughter is the guardian; a caregiver visits in the afternoon. The system keeps four rules: the oneM2M CSE holds the shared data and checks every app's access, and the integration service adds grants, consent and approvals on top:
 
-1. **Presence by default.** The keyring reports presence and button presses over BLE to a Raspberry Pi Gateway, which writes them to the CSE. The guardian sees one word: At Home, Out or Moving.
+1. **Presence by default.** The keyring reports presence and button presses over BLE to a Raspberry Pi Gateway, which writes them to the CSE. The guardian sees one coarse word: At Home, Moving or In Park.
 2. **Devices on grant.** A command needs a current grant with an end time and counts as done only after the device reports a readback of its real output.
 3. **Help before the button.** A routine model learns her usual walks; on an unusual evening a Claude triage agent sends the guardian a check-in message before any PANIC press.
 4. **Location on approval.** Precise location stays encrypted and opens for one incident, one recipient and at most five minutes.
@@ -55,7 +55,7 @@ We map the edge layout to deployment option B of oneM2M TR-0077: the CSE and the
 
 ## Results
 
-Every run uses real Mobius4 4.24.5 processes, and every receipt names its simulated parts. `npm run verify` passes 13 steps with 488 tests ([log](docs/verification/2026-11-20/results.json)).
+Every local run uses real Mobius4 4.24.5 processes; the team server runs Mobius4 4.25.0. Every receipt names its simulated parts. `npm run verify` passes 13 steps with 488 tests ([log](docs/verification/2026-11-20/results.json)).
 
 | What | Result | Setup | Receipt |
 |---|---|---|---|
@@ -83,7 +83,7 @@ Per-package notes are in [docs/rubric-work](docs/rubric-work), and every receipt
 | Bench keyring | Adafruit Feather ESP32 V2 for the command path: [feather_probe](keyring/firmware/feather_probe/README.md) |
 | Full design | r18, with fuel gauge, accelerometer, charger and audio: [keyring/pcb/r18](keyring/pcb/r18/README.md) |
 
-The r26 firmware and its bring-up guide are on the [KEYRING branch](https://github.com/tirofina/bubble_lock/blob/codex/keyring-namho/keyring/pcb/R26_BRING_UP.md).
+The r26 firmware (`keyring_r26_front_st7789` in [platformio.ini](keyring/firmware/platformio.ini)) and its bring-up guide ([R26_BRING_UP.md](keyring/pcb/R26_BRING_UP.md)) are in this repository.
 
 ## Quick start
 

@@ -1,7 +1,7 @@
 # Why oneM2M
 
 Privacy Bubble Keyring handles some of the most sensitive data a family has:
-where a child or an older relative is, and who is allowed to know it. We built
+where an older parent who lives alone is, and who is allowed to know it. We built
 the system on the [oneM2M](https://www.onem2m.org) service layer, running on the
 open-source [Mobius4](https://github.com/IoTKETI/mobius4) CSE, because oneM2M
 gives every application the same resources, the same access control and the
@@ -17,7 +17,7 @@ replaces, and where to find the code. The architecture diagrams are in
 
 | oneM2M feature | What it does here | Where in the code | What we would build without it |
 |---|---|---|---|
-| Group and fanOutPoint | One UPDATE to `/privacy-bubble-group/fopt` reaches every member keyring state; the CSE returns one aggregated `m2m:agr` response with a result code per member | [group-dispatcher.mjs](../pc-mobius/src/group-dispatcher.mjs), `group-fanout` step in [oneM2M-test-contract.v2.json](../pc-mobius/contracts/oneM2M-test-contract.v2.json) | A custom broadcast service with its own member list, partial-failure bookkeeping and retry rules |
+| Group and fanOutPoint | One UPDATE to the group's `fopt` (`/privacy-bubble-group/fopt` in the test contract, `/BubbleLock/grp-switches/fopt` on the team server) reaches every member; the CSE returns one aggregated `m2m:agr` response with a result code per member | [group-dispatcher.mjs](../pc-mobius/src/group-dispatcher.mjs), `group-fanout` step in [oneM2M-test-contract.v2.json](../pc-mobius/contracts/oneM2M-test-contract.v2.json) | A custom broadcast service with its own member list, partial-failure bookkeeping and retry rules |
 | Subscription and notification | The CSE pushes `m2m:sgn` notifications when a state, observation or receipt changes; the central service settles commands from receipt notifications and the dashboards update without polling | `create-subscription` step in the contract, [handover-cse.mjs](../pc-mobius/integration/src/handover-cse.mjs), [receipt notification ingress](../keyring/integration-candidate/receipt-notification-ingress.mjs) | A private pub/sub layer and per-app polling loops |
 | accessControlPolicy (ACP) | The CSE checks every CREATE, RETRIEVE, UPDATE, DELETE, NOTIFY and DISCOVER request against per-role privileges, so a visitor, a relay or the MEC interworking role holds only the rights it needs | [run-acp-real.mjs](../pc-mobius/scripts/run-acp-real.mjs), `fl-model-acp` in [fl-publisher.mjs](../pc-mobius/integration/src/fl-publisher.mjs), `handover-acp` in [handover-cse.mjs](../pc-mobius/integration/src/handover-cse.mjs) | Authorization code repeated in every application that touches device data |
 | SDT (TS-0023) and flexContainer | Keyring state is a `binarySwitch` ModuleClass (`cod:binSh`, `state: boolean`) in a flexContainer, so any oneM2M client that knows the binarySwitch model can read and control it | [sdt-adapter.mjs](../pc-mobius/src/sdt-adapter.mjs), [specializations](../pc-mobius/specializations), [SDT notes](../pc-mobius/SDT.md) | A project-specific JSON schema that every client must learn |
@@ -64,12 +64,14 @@ Current state, stated precisely:
 - The MEC adapter ([mec-adapter.mjs](../pc-mobius/integration/src/mec-adapter.mjs),
   [mec-http-client.mjs](../pc-mobius/integration/src/mec-http-client.mjs)) implements
   service discovery, Location and RNIS queries, subscription CRUD and HTTP
-  callbacks with replay protection. It runs against a local MEC provider
-  simulator; receipts carry `simulation: true` ([MEC notes](../pc-mobius/integration/MEC.md)).
-- A dedicated MEC bridge AE acting as the IPE is a work package in progress on
-  2026-11-19. Its results will be linked from `docs/rubric-work/` when merged.
-- A connection to an external MEC sandbox is listed in
-  [external-validation-todo.md](external-validation-todo.md).
+  callbacks with replay protection. It also runs against a local MEC provider
+  simulator (`run-mec-ipe-real.mjs`, [MEC notes](../pc-mobius/integration/MEC.md)).
+- The oneM2M MEC IPE runs against our own ETSI MEC Sandbox with 33/33 checks
+  ([mec-ipe-sandbox.json](verification-evidence/2026-11-20/mec-ipe-sandbox.json))
+  and, as a MEC application, relocates from mep1 to mep2 with 25/25 checks
+  ([mec-day-of-care.json](verification-evidence/2026-11-20/mec-day-of-care.json)).
+  Install record: [deploy/mec-sandbox](../deploy/mec-sandbox/README.md); notes:
+  [R15-R16](rubric-work/R15-R16.md).
 
 ## Federated learning over oneM2M
 
@@ -78,8 +80,11 @@ updates, the model bytes with their manifest and the current serving model as
 oneM2M resources under a dedicated AE with its own ACP. Raw training rows stay
 with each participant. Consent revocation pauses serving and records a new
 serving generation. The rubric of the 2026 hackathon names oneM2M TR-0084 for
-this category. Runs so far use `LOCAL_SIMULATION` workers against a real CSE;
-deployment on an ESTIMED VM is listed in
+this category. The local run uses real worker processes against a real Mobius4
+CSE for 12 rounds ([fl-onem2m-real-cse.json](verification-evidence/2026-11-19/fl-onem2m-real-cse.json));
+a second run trained three workers on the sandbox VM for 6 rounds against the
+team server CSE ([fl-server-cse.json](verification-evidence/2026-11-20/fl-server-cse.json)).
+Deployment on an ESTIMED VM is listed in
 [external-validation-todo.md](external-validation-todo.md).
 
 ## AI agent with MCP servers
@@ -113,7 +118,7 @@ All documents are available from
 - oneM2M: https://www.onem2m.org
 - Published specifications: https://www.onem2m.org/technical/published-specifications
 - oneM2M Recipes, tutorials and code examples for developers: https://recipes.onem2m.org
-- Mobius4 oneM2M CSE by KETI (the CSE used here, version 4.24.5): https://github.com/IoTKETI/mobius4
+- Mobius4 oneM2M CSE by KETI (4.24.5 for our test runs, 4.25.0 on the team server): https://github.com/IoTKETI/mobius4
 - oneM2M XML schemas: https://git.onem2m.org/XMLSchemas/ts-0004
 
 If you build an IoT product that more than one application must trust, start

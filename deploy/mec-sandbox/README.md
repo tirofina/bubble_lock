@@ -255,6 +255,12 @@ originator-binding route `https://<SERVER_DOMAIN>:8443/onem2m/Mobius` with mutua
 `X-M2M-Origin: Cpb-mec-ipe` and admits only `pb-mec-ipe(/...)`, AE registration and
 `bubble-household-1/<x>/(location|rnis)(/...)`.
 
+This section records the run on 2026-11-20, when the relay containers lived under the legacy AE
+`bubble-household-1`. The team server now keeps them under the service AE as
+`/Mobius/BubbleLock/resident-relay/{location,rnis}` with ACP `resident-relay-access`;
+`provision-server-cse.sh` (`HOUSEHOLD_AE`) and `run-mec-ipe-server-cse.mjs` still default to
+`bubble-household-1`.
+
 | Step | Tool | Result |
 |---|---|---|
 | 1. Device containers and ACP | `ssh mec@192.168.0.103 'bash -s' < ipe/provision-server-cse.sh` (docker exec inside the cse container, admin originator from that container's environment) | `/Mobius/bubble-household-1/resident-relay` with `location` and `rnis`, all with ACP `resident-relay-mec-access`: `Cpb-mec-ipe` 7, `Cpb-dash-guardian` 50, `Cpb-dash-operator` 34. The household AE and its acpi stay as they are |

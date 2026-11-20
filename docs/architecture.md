@@ -21,14 +21,14 @@ central integration service adds consent, grants and approvals on top of it.
 ```mermaid
 flowchart LR
   subgraph Field["Field: home, school, outing"]
-    K1["Keyring<br/>ESP32-S3 r18 PCB<br/>(bench: Feather ESP32 V2)"]
+    K1["Keyring<br/>ESP32-S3 r26 PCB<br/>(bench: Feather ESP32 V2)"]
     K2["Keyring 2..32"]
     GW["Raspberry Pi Gateway<br/>Python daemon, BlueZ<br/>SQLite outbox and command journal"]
   end
 
   subgraph Central["Central server"]
     BRK["MQTT broker<br/>TLS 1.3, mTLS, topic ACL"]
-    CSE["Mobius4 4.24.5 IN-CSE<br/>oneM2M Release 4 resources<br/>PostgreSQL + PostGIS"]
+    CSE["Mobius4 IN-CSE<br/>4.24.5 in test runs, 4.25.0 on the team server<br/>oneM2M Release 4 resources<br/>PostgreSQL + PostGIS"]
     API["Integration API :8787<br/>TLS 1.3 mTLS and OIDC"]
     POL["Policy service<br/>consent, grant, approval, audit"]
     CORE["CORE GatewayBridge<br/>GroupDispatcher, SDT adapter"]
@@ -36,7 +36,7 @@ flowchart LR
   end
 
   subgraph Svc["Edge and AI services"]
-    MEC["MEC Location and RNIS<br/>(local provider simulator today)"]
+    MEC["ETSI MEC Sandbox<br/>MEC011, 012, 013, 021<br/>via the oneM2M MEC IPE"]
     EDGE["Edge-A / Edge-B CSE<br/>handover coordinator"]
     FL["Federated learning workers"]
     MCP["MCP servers<br/>oneM2M, MEC, Audit"]
@@ -78,8 +78,11 @@ The tree below combines the resources created by the CORE contract
 ([oneM2M-test-contract.v2.json](../pc-mobius/contracts/oneM2M-test-contract.v2.json)),
 the Gateway configuration ([.env.example](../keyring/raspberry-pi-gateway/.env.example)),
 Gateway registration, the federated learning publisher and the handover
-coordinator. The Gateway AE name and the task container names are set per
-deployment.
+coordinator. This tree is what the local test runners create; the Gateway AE name and the
+task container names are set per deployment. On the team server the Gateway
+feeds sit under the service AE as `BubbleLock/gateway-1/{observations,receipts,health}`,
+and federated learning uses the AEs `fl-privacy-motion` and `flw-w1` to
+`flw-w3` (see the deployment note below).
 
 ```mermaid
 flowchart TD
@@ -131,10 +134,13 @@ Notes:
   policyDeployer) and gives each role the smallest `acop` mask it needs, for
   example RETRIEVE only on `desired` and CREATE plus UPDATE on `actual` for the
   MEC interworking role.
-- Deployment target tree: one AE `BubbleLock` directly under the CSEBase, with
-  each Gateway, the resident relay and the shared services (`services/incidents`,
-  `grp-switches` for `fopt`) below it as container, flexContainer, group and
-  subscription resources. Device roots under a Gateway container keep the
+- Deployment target tree: all service data lives under one service AE
+  `BubbleLock` directly under the CSEBase, with each Gateway, the resident relay
+  and the shared services (`services/incidents`, `grp-switches` for `fopt`)
+  below it as container, flexContainer, group and subscription resources. The
+  client applications stay registered AEs of their own under the CSEBase
+  (guardian, caregiver and operator dashboards, the MEC IPE, federated
+  learning), and the ACPs on `BubbleLock` decide what each of them may do there. Device roots under a Gateway container keep the
   `pb-keyring` label and the stream containers of
   [topology.mjs](../pc-mobius/multiapp/topology.mjs), so label discovery in the
   dashboard finds them. [bubblelock-topology.mjs](../pc-mobius/multiapp/bubblelock-topology.mjs)
