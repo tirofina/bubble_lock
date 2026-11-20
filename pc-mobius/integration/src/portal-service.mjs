@@ -88,6 +88,7 @@ export class PortalService {
     return structuredClone({
       schemaVersion: '1.0.0', generatedAt: this.clock(), principal: { principalId: principal.principalId, role: guardian ? 'guardian' : 'visitor' },
       households, devices: this.store.list('portalDevices').filter((record) => ids.has(record.householdId)), consents, grants,
+      keyringEnrollments: this.keyringEnrollments?.snapshot(principal, ids) ?? [],
       locationLeases:this.locationPrivacy?.list(principal)??[],
       incidents: this.store.list('portalIncidents').filter((record) => ids.has(record.householdId)),
       commandRequests: this.store.list('portalCommandRequests').filter((record) => ids.has(record.householdId)).map((record) => this.liveGroup(record)).map((record) => ({ ...record, effectiveStatus: ['PENDING', 'PARTIAL'].includes(record.status) && Date.parse(record.expiresAt) <= now ? 'EXPIRED' : record.status })),
@@ -138,9 +139,17 @@ export class PortalService {
       if (prior && (prior.householdId !== input.householdId || prior.gatewayId !== input.gatewayId)) throw new Error('기기의 기존 가구 연결을 확인하세요.');
       const device = { deviceId, householdId: input.householdId, gatewayId: input.gatewayId, label: text(input.label, '기기 이름', 80), registeredAt: prior?.registeredAt ?? this.clock() };
       await this.store.put('portalDevices', deviceId, device);
-      await this.event(principal, input.householdId, 'DEVICE_REGISTERED', `${device.label} 기기가 등록되었습니다.`, { deviceId });
+      await this.event(principal, input.householdId, 'DEVICE_REGISTERED', `${device.label} was registered.`, { deviceId });
       return device;
     });
+  }
+
+  requestKeyringEnrollment(principal, input) {
+    return this.keyringEnrollments.request(principal, input);
+  }
+
+  cancelKeyringEnrollment(principal, input) {
+    return this.keyringEnrollments.cancel(principal, input);
   }
 
   /** Operator view for keyring enrollment: every Gateway allow-list and every household (names only). */
@@ -160,6 +169,7 @@ export class PortalService {
     if (!household) throw new Error('등록할 가구를 선택하세요.');
     return this.mutate(principal, 'device.enroll', input, async () => {
       const deviceId = identifier(input.deviceId, '키링 ID');
+      if (this.store.get('keyringBindings', deviceId) || this.store.list('keyringEnrollments').some((record) => record.deviceId === deviceId && this.keyringEnrollments.effective(record) === 'PENDING')) throw new Error('이미 다른 가구나 수신기에 등록된 키링이에요.');
       try { await this.gatewayControl.assignDevice({ gatewayId: identifier(input.gatewayId, '수신기 ID'), deviceId, subjectId: household.householdId }); }
       catch (error) {
         const message = error instanceof Error ? error.message : '';
@@ -269,16 +279,17 @@ export class PortalService {
     });
   }
 
-  approveCommand(principal, input) {
+  async approveCommand(principal, input) {
     this.policyService.authorize(principal, 'bubble:command');
     const request = this.store.get('portalCommandRequests', identifier(input.requestId));
     this.household(principal, request?.householdId, true);
-    return this.mutate(principal, 'command.approve', input, async () => {
+    const approved = await this.mutate(principal, 'command.approve', input, async () => {
       const current = this.store.get('portalCommandRequests', input.requestId);
       if (!['PENDING', 'PARTIAL'].includes(current.status)) throw new Error('승인 대기 중인 요청을 선택하세요.');
       const decision = this.policyService.evaluateGrant(input.grantId, { scope: 'bubble:command' });
       if (!decision.allowed || decision.grant.principalId !== principal.principalId || decision.grant.subjectId !== current.householdId) throw new Error('현재 가구의 유효한 명령 승인 권한을 확인하세요.');
       if (Date.parse(current.expiresAt) <= Date.parse(this.clock())) throw new Error('새 명령 요청으로 유효기간을 갱신하세요.');
+      this.groupRuntime?.validateRequest(current);
       const deadline = new Date(Math.min(Date.parse(current.expiresAt), Date.parse(decision.grant.expiresAt))).toISOString();
       if (current.target === 'household') return this.approveGroupCommand(principal, input, current, deadline);
       const commands = [];
@@ -286,7 +297,9 @@ export class PortalService {
         for (const deviceId of current.deviceIds) {
           const device = this.store.get('portalDevices', deviceId);
           const commandId = `portal-${approvalHash({ requestId: current.requestId, deviceId }).slice(0,32)}`;
-          commands.push(await this.gatewayControl.issue({ principal, gatewayId: device.gatewayId, deviceId, commandId, grantId: input.grantId, desiredState: current.desiredState, deadline }));
+          const command = await this.gatewayControl.issue({ principal, gatewayId: device.gatewayId, deviceId, commandId, grantId: input.grantId, desiredState: current.desiredState, deadline });
+          if (this.groupRuntime) await this.store.put('gatewayCommands', commandId, { ...this.store.get('gatewayCommands', commandId), groupRequestId: current.requestId });
+          commands.push(command);
         }
       } catch (error) {
         if (commands.length > 0) {
@@ -300,6 +313,18 @@ export class PortalService {
       await this.event(principal, current.householdId, 'COMMAND_APPROVED_QUEUED', '명령이 승인되어 Gateway 전달을 기다리고 있습니다.', { requestId: current.requestId, approvalHash: result.approvalHash });
       return result;
     });
+    // Approval and canonical commands must be durable before any CSE side effect.
+    // Household fopt requests (approved.group) were already sent by HouseholdGroupCommandService.
+    if (this.groupRuntime && !approved.group) await this.groupRuntime.dispatch(approved);
+    return approved;
+  }
+
+  async commandGroup(principal, input, retry = false) {
+    const request = this.store.get('portalCommandRequests', identifier(input.requestId));
+    this.household(principal, request?.householdId, retry);
+    if (retry) this.policyService.authorize(principal, 'bubble:command');
+    if (!this.groupRuntime) throw new Error('CSE group runtime configuration required');
+    return retry ? this.groupRuntime.dispatch(request, true) : this.groupRuntime.reconcile(request.requestId);
   }
 
   // Household-wide command: one oneM2M <grp>/fopt request, per-member claim, failed-member retry.
@@ -359,10 +384,17 @@ export class PortalService {
       if(Object.hasOwn(actions,path))return {status:200,body:await this.locationPrivacy[actions[path]](principal,body)};
     }
     const actions = {
-      households: 'createHousehold', devices: 'registerDevice', 'devices/enroll': 'enrollDevice', consents: 'createConsent', grants: 'createGrant',
+      households: 'createHousehold', devices: 'registerDevice',
+      'keyring-enrollments': 'requestKeyringEnrollment', 'keyring-enrollments/cancel': 'cancelKeyringEnrollment', 'devices/enroll': 'enrollDevice',
+      consents: 'createConsent', grants: 'createGrant',
       'consents/revoke': 'revokeConsent', 'grants/revoke': 'revokeGrant', incidents: 'createIncident', 'incidents/resolve': 'resolveIncident',
       'commands/request': 'requestCommand', 'commands/approve': 'approveCommand', 'commands/retry': 'retryCommand', 'notifications/read': 'readNotification',
     };
+    // /commands/retry belongs to HouseholdGroupCommandService for fopt requests or when no GroupRuntime is configured.
+    const groupRetry = path === '/v1/portal/commands/retry' && this.groupRuntime && !(typeof body?.requestId === 'string' && this.store.get('portalCommandRequests', body.requestId)?.group?.commandId);
+    if (method === 'POST' && (path === '/v1/portal/commands/group' || groupRetry)) {
+      return { status: 200, body: await this.commandGroup(principal, body, path.endsWith('/retry')) };
+    }
     const actionKey = path.replace(/^\/v1\/portal\//, '');
     const action = Object.hasOwn(actions, actionKey) ? actions[actionKey] : null;
     if (method !== 'POST' || !action) return { status: 404, body: { error: 'portal_route_required' } };

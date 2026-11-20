@@ -58,7 +58,7 @@ npm run dashboard
 
 사용자 **키링 위치**와 운영 **위치 지도**에서 키링을 선택하면 핀·BLE 수신기 중심 원과 관측 상세를 확인할 수 있습니다. 기본 화면은 서울시청 주변의 모의 키링 3개를 제공합니다. 실측 GPS·MEC·Gateway 관측은 `LOCATION_FILE`, 수신기 좌표·교정값은 `GATEWAY_LOCATIONS_FILE`로 연결하며 5초마다 갱신합니다.
 
-실측 파일 연결과 데이터 예시는 [위치 연동 안내](docs/location-feed.md)에 정리했습니다. 기본 배경은 Stadia Alidade Smooth, 일반 지도는 OpenStreetMap입니다. `VITE_MAP_TILE_URL`·`VITE_MAP_ATTRIBUTION`으로 공급자를 설정하며 공개 배포의 키·도메인 설정은 [지도 디자인 안내](docs/map-design.md)에 있습니다.
+실측 파일 연결과 데이터 예시는 [위치 연동 안내](docs/location-feed.md)에 정리했습니다. 지도 배경은 Stadia Alidade Smooth(실패 시 OpenStreetMap), 위성 배경은 Esri World Imagery입니다. `VITE_MAP_TILE_URL`·`VITE_MAP_ATTRIBUTION`으로 공급자를 설정하며 공개 배포의 키·도메인 설정은 [지도 디자인 안내](docs/map-design.md)에 있습니다.
 
 ## 통합 journal 연결
 

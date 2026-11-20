@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { estimateBleProximity, freshness } from '../shared/location.ts';
 import type { Coordinates, LocationDevice } from '../shared/location.ts';
-import { mapTileStyle, validMapGeofence } from '../shared/map-presentation.ts';
+import { fallbackMapTile, mapTileStyle, validMapGeofence } from '../shared/map-presentation.ts';
 import type { MapGeofence, MapStyle } from '../shared/map-presentation.ts';
 import { useLocations } from './useLocations.ts';
 import { Badge, Timestamp } from './ui.tsx';
@@ -17,6 +17,8 @@ const meters = (value: number) => value < 10 ? `${value.toFixed(1)} m` : `${Math
 const observationTime = (device: LocationDevice) => [device.position?.observedAt, device.ble?.observedAt]
   .filter((at): at is string => at !== undefined).sort((left, right) => Date.parse(left) - Date.parse(right)).at(-1);
 const emptyGeofences: readonly MapGeofence[] = [];
+type Overlay = 'proximity' | 'accuracy' | 'receivers' | 'zones';
+const allOverlays: Readonly<Record<Overlay, boolean>> = { proximity: true, accuracy: true, receivers: true, zones: true };
 
 function textElement(text: string, className = '') {
   const element = document.createElement('span');
@@ -52,13 +54,17 @@ export function LocationMap({ refresh, variant = 'operator', geofences = emptyGe
   const { lang, tr } = useLang();
   const feed = useLocations(refresh, locationUrl);
   const [selectedId, setSelectedId] = useState('');
-  const [tileStyle, setTileStyle] = useState<MapStyle>('light');
+  const [tileStyle, setTileStyle] = useState<MapStyle>('map');
+  const [tileFallback, setTileFallback] = useState(false);
   const [tileError, setTileError] = useState(false);
-  const [showProximity, setShowProximity] = useState(true);
+  const [overlays, setOverlays] = useState(allOverlays);
+  const [layerOpen, setLayerOpen] = useState(false);
+  const layerControl = useRef<HTMLDivElement>(null);
+  const layerPanelId = useId();
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const layers = useRef<L.FeatureGroup | null>(null);
-  const tiles = useRef<L.TileLayer | null>(null);
+  const [tileReload, setTileReload] = useState(0);
   const initialFit = useRef(false);
   const markers = useRef(new Map<string, L.Marker>());
   const devices = feed.snapshot?.devices ?? [];
@@ -66,18 +72,18 @@ export function LocationMap({ refresh, variant = 'operator', geofences = emptyGe
   const selectedProximity = selected?.ble && feed.snapshot ? estimateBleProximity(selected.ble, feed.snapshot.gateways) : null;
   const demo = feed.snapshot?.mode === 'demo';
   const user = variant === 'user';
-  const plotSignature = JSON.stringify({ devices, gateways: feed.snapshot?.gateways, selected: selected?.deviceId, demo, showProximity, geofences, lang,
+  const plotSignature = JSON.stringify({ devices, gateways: feed.snapshot?.gateways, selected: selected?.deviceId, demo, overlays, geofences, lang,
     ages: devices.map((device) => [device.position && freshness(device.position.observedAt, feed.now), device.ble && freshness(device.ble.observedAt, feed.now)]) });
 
   useEffect(() => {
     if (!container.current) return;
-    const instance = L.map(container.current, { scrollWheelZoom: false, zoomControl: false, zoomAnimation: false }).setView([37.5665, 126.978], 16);
+    const instance = L.map(container.current, { scrollWheelZoom: true, wheelPxPerZoomLevel: 80, zoomControl: false, zoomAnimation: false }).setView([37.5665, 126.978], 16);
     L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(instance);
     map.current = instance;
     layers.current = L.featureGroup().addTo(instance);
     const observer = new ResizeObserver(() => instance.invalidateSize({ pan: false }));
     observer.observe(container.current);
-    return () => { observer.disconnect(); instance.stop(); instance.remove(); map.current = null; layers.current = null; tiles.current = null; initialFit.current = false; };
+    return () => { observer.disconnect(); instance.stop(); instance.remove(); map.current = null; layers.current = null; initialFit.current = false; };
   }, []);
 
   // Zoom buttons carry their titles in the current language; the control is rebuilt when the language changes.
@@ -91,18 +97,31 @@ export function LocationMap({ refresh, variant = 'operator', geofences = emptyGe
   useEffect(() => {
     const instance = map.current;
     if (!instance) return;
-    const source = mapTileStyle(tileStyle, {
+    const useFallback = tileStyle === 'map' && tileFallback;
+    const source = useFallback ? fallbackMapTile : mapTileStyle(tileStyle, {
       customUrl: import.meta.env['VITE_MAP_TILE_URL'] || '',
       customAttribution: import.meta.env['VITE_MAP_ATTRIBUTION'] || '',
       stadiaKey: import.meta.env['VITE_STADIA_MAPS_KEY'] || '',
+      stadiaDomain: import.meta.env['VITE_STADIA_MAPS_DOMAIN'] || '',
+      hostname: window.location.hostname,
     });
     setTileError(false);
     instance.setMaxZoom(source.maxZoom);
+    // A road map that fails (no Stadia key on a public domain, custom server down) switches to OpenStreetMap once.
+    const failed = () => { if (tileStyle === 'map' && !useFallback) setTileFallback(true); else setTileError(true); };
     const background = L.tileLayer(source.url, { maxZoom: source.maxZoom, attribution: source.attribution }).addTo(instance);
-    background.on('tileerror', () => setTileError(true));
-    tiles.current = background;
+    background.on('tileerror', failed);
     return () => { background.remove(); };
-  }, [tileStyle]);
+  }, [tileStyle, tileFallback, tileReload]);
+
+  useEffect(() => {
+    if (!layerOpen) return;
+    const close = (event: PointerEvent) => { if (!layerControl.current?.contains(event.target as Node)) setLayerOpen(false); };
+    const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') setLayerOpen(false); };
+    document.addEventListener('pointerdown', close);
+    document.addEventListener('keydown', escape);
+    return () => { document.removeEventListener('pointerdown', close); document.removeEventListener('keydown', escape); };
+  }, [layerOpen]);
 
   useEffect(() => {
     const group = layers.current;
@@ -112,14 +131,14 @@ export function LocationMap({ refresh, variant = 'operator', geofences = emptyGe
     group.clearLayers();
     markers.current.clear();
     if(!devices.length){initialFit.current=false;instance.setView([37.5665,126.978],12,{animate:false});}
-    for (const fence of geofences.filter(validMapGeofence)) {
+    for (const fence of overlays.zones ? geofences.filter(validMapGeofence) : []) {
       const style = { color: '#348e70', weight: 1.5, fillColor: '#79c9aa', fillOpacity: 0.09, dashArray: '4 6' };
       const shape = fence.shape;
       const geometry = shape.type === 'circle' ? L.circle([shape.lat, shape.lon], { ...style, radius: shape.radiusM })
         : L.rectangle([[shape.minLat, shape.minLon], [shape.maxLat, shape.maxLon]], style);
       geometry.bindTooltip(textElement(`${fence.label} (${fence.simulation ? tr('모의 안전 구역', 'simulated safe zone') : tr('등록한 안전 구역', 'registered safe zone')})`)).addTo(group);
     }
-    for (const gateway of feed.snapshot.gateways) {
+    for (const gateway of overlays.receivers ? feed.snapshot.gateways : []) {
       L.circleMarker(coordinate(gateway.position), { radius: 5, color: '#3b5067', fillColor: '#fff', fillOpacity: 1, weight: 2 })
         .bindTooltip(textElement(`${gateway.label} (${tr('수신기', 'receiver')})`)).addTo(group);
     }
@@ -128,7 +147,7 @@ export function LocationMap({ refresh, variant = 'operator', geofences = emptyGe
       const proximity = device.ble ? estimateBleProximity(device.ble, feed.snapshot!.gateways) : null;
       const fix = device.position;
       const active = selected?.deviceId === device.deviceId;
-      if (proximity && device.ble && showProximity) {
+      if (proximity && device.ble && overlays.proximity) {
         const old = freshness(device.ble.observedAt, feed.now) !== 'fresh' && !demo;
         L.circle(coordinate(proximity.center), {
           radius: proximity.radiusM, color, weight: active ? 2 : 1,
@@ -137,7 +156,7 @@ export function LocationMap({ refresh, variant = 'operator', geofences = emptyGe
         }).bindTooltip(textElement(tr(`${device.label}: ${proximity.gatewayLabel}에서 약 ${meters(proximity.distanceM)} (${device.ble.rssiDbm} dBm, ${proximity.simulation ? '모의' : '실측'})`, `${device.label}: about ${meters(proximity.distanceM)} from ${proximity.gatewayLabel} (${device.ble.rssiDbm} dBm, ${proximity.simulation ? 'simulated' : 'measured'})`)))
           .on('click', () => setSelectedId(device.deviceId)).addTo(group);
       }
-      if (fix?.accuracyM) {
+      if (fix?.accuracyM && overlays.accuracy) {
         L.circle(coordinate(fix.coordinates), { radius: fix.accuracyM, color, weight: 1, fillOpacity: 0.035, opacity: 0.25 })
           .bindTooltip(textElement(tr(`${device.label}: 오차 범위 ${meters(fix.accuracyM)}`, `${device.label}: accuracy ${meters(fix.accuracyM)}`))).addTo(group);
       }
@@ -180,6 +199,12 @@ export function LocationMap({ refresh, variant = 'operator', geofences = emptyGe
   const sourceLabel = demo ? simulatedLabel : feed.snapshot ? feed.snapshot.simulation ? simulatedLabel : tr('실제 위치', 'Real location') : tr('연결하는 중', 'Connecting');
   const geofenceCount = geofences.filter(validMapGeofence).length;
   const feedError = feed.error && lang === 'en' ? (feed.error.includes('권한') ? 'A location share permission is needed to see the location.' : 'Lost the connection to the location server. Showing the last location and time.') : feed.error;
+  const overlayOptions: readonly (readonly [Overlay, string, string])[] = [
+    ['proximity', 'legend-ring', tr('블루투스 추정 범위', 'Bluetooth proximity range')],
+    ['accuracy', 'legend-accuracy', tr('위치 오차 범위', 'Location accuracy')],
+    ['receivers', 'legend-anchor', tr('수신기', 'Receivers')],
+    ...(geofenceCount > 0 ? [['zones', 'legend-zone', tr(`안전 구역 ${geofenceCount}개`, `${geofenceCount} safe zones`)] as const] : []),
+  ];
   const sim = (value: boolean) => (value ? tr(' (모의)', ' (simulated)') : tr(' (실측)', ' (measured)'));
 
   return <div className={`location-experience location-${variant}`}>
@@ -195,18 +220,29 @@ export function LocationMap({ refresh, variant = 'operator', geofences = emptyGe
     </div>
     {feedError && <p className="location-alert" role="alert">{feedError}</p>}
     {tileError && <div className="location-alert" role="status"><span>{tr('배경 지도를 불러오지 못했어요. 키링 위치와 범위는 그대로 보여 드려요.', 'The background map did not load. Keyring locations and ranges are still shown.')}</span>
-      <button type="button" onClick={() => { setTileError(false); if (tileStyle === 'light') setTileStyle('street'); else tiles.current?.redraw(); }}>{tileStyle === 'light' ? tr('일반 지도로 바꾸기', 'Switch to street map') : tr('지도 다시 불러오기', 'Reload the map')}</button></div>}
+      <button type="button" onClick={() => { setTileError(false); setTileReload((count) => count + 1); }}>{tr('지도 다시 불러오기', 'Reload the map')}</button></div>}
     <div className="location-layout">
       <div className="map-frame">
         <div ref={container} className="location-canvas" role="region" aria-label={tr('키링 위치 지도', 'Keyring location map')} />
-        <div className="map-style-switch" role="group" aria-label={tr('지도 배경 선택', 'Map background')}><MapIcon name="layers" />
-          <button type="button" aria-pressed={tileStyle === 'light'} onClick={() => setTileStyle('light')}>{import.meta.env['VITE_MAP_TILE_URL'] ? tr('기본 지도', 'Default') : tr('밝은 지도', 'Light')}</button>
-          <button type="button" aria-pressed={tileStyle === 'street'} onClick={() => setTileStyle('street')}>{tr('일반 지도', 'Street')}</button>
+        <div className="map-layer-control" ref={layerControl}>
+          <button type="button" className="map-layer-button" aria-expanded={layerOpen} aria-controls={layerPanelId} onClick={() => setLayerOpen((open) => !open)}>
+            <MapIcon name="layers" />{tr('레이어', 'Layers')}</button>
+          {layerOpen && <div className="map-layer-panel" id={layerPanelId} role="group" aria-label={tr('지도 레이어 설정', 'Map layer settings')}>
+            <span className="map-layer-heading">{tr('배경', 'Background')}</span>
+            <div className="map-background-options">
+              {(['map', 'satellite'] as const).map((style) => <button key={style} type="button" className={`map-background-option bg-${style}`} aria-pressed={tileStyle === style} onClick={() => setTileStyle(style)}>
+                <span className="map-background-thumb" aria-hidden="true" />{style === 'map' ? tr('지도', 'Map') : tr('위성', 'Satellite')}</button>)}
+            </div>
+            <span className="map-layer-heading">{tr('표시할 정보', 'Show on map')}</span>
+            {overlayOptions.map(([key, icon, label]) => <label key={key} className="map-overlay-option">
+              <input type="checkbox" checked={overlays[key]} onChange={(event) => { const on = event.currentTarget.checked; setOverlays((value) => ({ ...value, [key]: on })); }} />
+              <i className={icon} aria-hidden="true" /><span>{label}</span></label>)}
+          </div>}
         </div>
         <div className="map-corner-note"><span className="map-live-dot" />{tr('4초마다 새로고침', 'Refreshes every 4 s')}</div>
-        <div className="map-legend"><span><i className="legend-pin" />{tr('GPS/통신망 위치', 'GPS / network location')}</span><span><i className="legend-ring" />{tr('블루투스 추정 범위', 'Bluetooth proximity range')}</span><span><i className="legend-anchor" />{tr('수신기', 'Receiver')}</span>
-          {geofenceCount > 0 && <span><i className="legend-zone" />{tr(`안전 구역 ${geofenceCount}개`, `${geofenceCount} safe zones`)}</span>}
-          <button type="button" className="map-layer-toggle" aria-pressed={showProximity} onClick={() => setShowProximity((value) => !value)}>{showProximity ? tr('추정 범위 숨기기', 'Hide ranges') : tr('추정 범위 보기', 'Show ranges')}</button>
+        <div className="map-legend"><span><i className="legend-pin" />{tr('GPS/통신망 위치', 'GPS / network location')}</span>
+          {overlayOptions.filter(([key]) => overlays[key]).map(([key, icon, label]) => <span key={key}><i className={icon} />{label}</span>)}
+          <span className="map-legend-hint">{tr('마우스 휠로 확대/축소', 'Scroll to zoom')}</span>
         </div>
       </div>
       <aside className="location-side" aria-label={tr('키링 위치 정보', 'Keyring location details')}>
@@ -250,7 +286,7 @@ export function LocationMap({ refresh, variant = 'operator', geofences = emptyGe
         <p>{tr('추정 거리 = 10 ^ ((1 m 기준 RSSI - 현재 RSSI) / (10 x 경로 손실 계수)). 수신기 교정값과 주변 환경이 반경에 반영돼요.', 'Estimated distance = 10 ^ ((RSSI at 1 m - current RSSI) / (10 x path loss exponent)). Receiver calibration and surroundings shape the radius.')}</p>
         {selectedProximity && <p>{tr(`선택한 수신기: 1 m 기준 ${selectedProximity.referenceRssiDbm} dBm, 경로 손실 계수 ${selectedProximity.pathLossExponent}`, `Selected receiver: ${selectedProximity.referenceRssiDbm} dBm at 1 m, path loss exponent ${selectedProximity.pathLossExponent}`)}</p>}
         {!!feed.snapshot?.rejectedRecords && <p>{tr(`형식이 맞지 않는 기록 ${feed.snapshot.rejectedRecords}건은 빼고 올바른 기록만 표시해요.`, `${feed.snapshot.rejectedRecords} malformed records are left out.`)}</p>}
-        <p>{tr('밝은 지도는 Stadia Maps Alidade Smooth, 일반 지도는 OpenStreetMap을 써요. 키링 식별자와 신호 값은 로컬 서버에서 처리해요.', 'The light map is Stadia Maps Alidade Smooth and the street map is OpenStreetMap. Keyring IDs and signal values stay on the local server.')}</p>
+        <p>{tr('지도 배경은 설정된 지도 공급자(설정이 없거나 불러오지 못하면 OpenStreetMap), 위성 배경은 Esri World Imagery를 써요. 키링 식별자와 신호 값은 로컬 서버에서 처리해요.', 'The map background is the configured tile provider (OpenStreetMap when none is set or it fails to load) and the satellite background is Esri World Imagery. Keyring IDs and signal values stay on the local server.')}</p>
       </div>
     </details>}
   </div>;

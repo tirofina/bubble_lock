@@ -7,12 +7,18 @@
     "node": ">=22.19.0"
   },
   "scripts": {
+    "build:validators": "node scripts/build-validators.mjs",
+    "check:validators": "node scripts/build-validators.mjs --check",
     "dev": "vite --host 127.0.0.1 --port 5173 --strictPort",
+    "dev:lan": "vite --host 0.0.0.0 --port 5173 --strictPort",
     "sse": "node server/cli.ts",
+    "serve:local": "node scripts/serve-local.mjs",
+    "serve:local:vm": "node scripts/serve-local-vm.mjs",
+    "account:add": "node scripts/add-local-account.mjs",
     "test": "node --test test/*.test.ts",
     "typecheck": "tsc --noEmit",
     "typecheck:contract": "tsc --noEmit -p tsconfig.contract.json",
-    "build": "tsc --noEmit && vite build",
+    "build": "npm run check:validators && tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1 --port 5173 --strictPort"
   },
   "dependencies": {
@@ -27,6 +33,7 @@
     "@types/node": "^24.0.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "esbuild": "0.28.2",
     "typescript": "~5.9.3",
     "vite": "^7.2.0"
   }

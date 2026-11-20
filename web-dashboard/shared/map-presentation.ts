@@ -1,6 +1,6 @@
 import { validCoordinates } from './location.ts';
 
-export type MapStyle = 'light' | 'street';
+export type MapStyle = 'map' | 'satellite';
 export type MapGeofence = {
   readonly id: string;
   readonly label: string;
@@ -17,14 +17,31 @@ export function validMapGeofence(fence: MapGeofence): boolean {
 }
 
 const osmAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+export type MapTileSource = { readonly url: string; readonly attribution: string; readonly maxZoom: number };
+
+/** OpenStreetMap standard tiles: the road map without provider settings, and the fallback when the configured one fails. */
+export const fallbackMapTile: MapTileSource = { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', attribution: `${osmAttribution} contributors`, maxZoom: 19 };
+
+/** 'map' is the road map (custom URL, Stadia by key or registered domain, else OpenStreetMap); 'satellite' is Esri World Imagery. */
 export function mapTileStyle(style: MapStyle, settings: {
   readonly customUrl?: string;
   readonly customAttribution?: string;
   readonly stadiaKey?: string;
-} = {}) {
-  if (style === 'street') return { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', attribution: `${osmAttribution} contributors`, maxZoom: 19 };
+  readonly stadiaDomain?: string;
+  readonly hostname?: string;
+} = {}): MapTileSource {
+  const street = fallbackMapTile;
+  if (style === 'satellite') return {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Tiles &copy; Esri, Maxar, Earthstar Geographics, and the GIS User Community',
+    maxZoom: 19,
+  };
   if (settings.customUrl) return { url: settings.customUrl, attribution: settings.customAttribution || osmAttribution, maxZoom: 19 };
-  const key = settings.stadiaKey ? `?api_key=${encodeURIComponent(settings.stadiaKey)}` : '';
+  const stadiaKey = settings.stadiaKey?.trim();
+  const stadiaDomain = settings.stadiaDomain?.trim().toLowerCase();
+  // Without a key or domain, Stadia still serves localhost and LAN hosts; a public host that gets 401 falls back to OpenStreetMap at runtime.
+  if (!stadiaKey && stadiaDomain && stadiaDomain !== settings.hostname?.toLowerCase()) return street;
+  const key = stadiaKey ? `?api_key=${encodeURIComponent(stadiaKey)}` : '';
   return {
     url: `https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png${key}`,
     attribution: `&copy; <a href="https://stadiamaps.com/attribution/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> ${osmAttribution}`,

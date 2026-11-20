@@ -14,6 +14,7 @@ import { useLang } from './i18n.tsx';
 import { EdgeRelocation } from './EdgeRelocation.tsx';
 import { AgentRuns } from './AgentRuns.tsx';
 import { KeyringEnrollment } from './KeyringEnrollment.tsx';
+import { CseAccess } from './CseAccess.tsx';
 import { rubricDesignEn, rubricStatusEn } from './rubric-en.ts';
 import { GroupCommandsPanel } from './Caregiver.tsx';
 import { TriageAudit, useAlertFeed } from './GuardianAlerts.tsx';
@@ -50,6 +51,7 @@ export function OperatorDashboard({ page }: { page: string }) {
   const services = integrationServices(stream.events).map((service) => ({ ...service, meta: metaMap[service.prefix] ?? { label: service.title, description: '' } }));
   const latest = stream.events.at(-1);
   const verified = commands.filter((command) => summarizeCommand(command).status === 'verified').length;
+  const processing = commands.length - verified;
   const connected = stream.connection === 'connected';
   const live = latest?.source === 'onem2m-cse-live';
   const connectionText = label(en ? connectionLabelsEn : connectionLabels, stream.connection);
@@ -58,12 +60,12 @@ export function OperatorDashboard({ page }: { page: string }) {
       <span>{live ? tr('oneM2M CSE 알림을 실시간으로 받고 있어요.', 'Receiving oneM2M CSE notifications live.') : tr('명령과 서비스 기록을 재생하고 있어요.', 'Replaying command and service records.')} {tr(`지금까지 ${stream.timeline.lastSequence}번째 기록을 받았어요.`, `${stream.timeline.lastSequence} records received so far.`)}</span><Badge tone={latest?.simulation === false ? 'info' : 'warning'}>{live ? (latest?.simulation === false ? tr('실제 CSE', 'Real CSE') : tr('모의 장치, 실제 CSE', 'Simulated devices, real CSE')) : tr('모의 데이터', 'Simulated data')}</Badge></div>
     {stream.error && <div className="notice error" role="alert">{stream.error}<button onClick={() => stream.reconnect(true)}>{tr('처음부터 다시 받기', 'Reload from the start')}</button></div>}
     {page === 'overview' && <>
-      <div className="operator-welcome"><div><p className="eyebrow">{tr('운영 현황', 'Operations')}</p><h2>{tr('현장의 흐름을 한눈에', 'The field at a glance')}</h2><p>{tr('키링 위치, 명령 처리, 연결 서비스 상태를 한 화면에서 확인하세요.', 'Keyring locations, command handling and connected services on one screen.')}</p>
+      <div className="operator-welcome"><div><p className="eyebrow">{tr('운영 현황', 'Operations')}</p><h2>{tr('현장 상태와 처리 흐름', 'Field status and command flow')}</h2><p>{tr('키링 위치, 명령 처리, 연결 서비스 상태를 확인하세요.', 'Keyring locations, command handling and connected services.')}</p>
         <a className="button primary" href="#/operator/map">{tr('위치 지도 열기', 'Open the location map')}<Icon name="arrow" size={18} /></a></div>
         <div className="network-visual" aria-hidden="true"><Icon name="server" size={44} /><i /><Icon name="bubble" size={60} /><i /><Icon name="key" size={40} /></div></div>
       <div className="metrics-grid">
         <Metric href="#/operator/audit" label={tr('받은 기록', 'Records received')} value={stream.timeline.lastSequence} note={live ? tr('CSE 알림과 재동기화로 받은 기록 수예요.', 'Records from CSE notifications and resyncs.') : tr('연결 기록 파일을 기준으로 센 숫자예요.', 'Counted from the integration journal.')} icon="activity" />
-        <Metric href="#/operator/commands" label={tr('처리 중인 명령', 'Commands')} value={commands.length} note={tr(`그중 ${verified}개 적용 확인`, `${verified} confirmed applied`)} icon="bolt" />
+        <Metric href="#/operator/commands" label={tr('처리 중인 명령', 'Commands')} value={processing} note={tr(`${verified}개 적용 확인 완료`, `${verified} confirmed applied`)} icon="bolt" />
         <Metric href="#/operator/services" label={tr('연결 서비스', 'Connected services')} value={`${services.filter((service) => service.receipt).length} / ${services.length}`} note={tr('최근 응답이 온 서비스 수예요.', 'Services that responded recently.')} icon="server" />
         <Metric onClick={() => { stream.reconnect(); alertFeed.reconnect(); setRefresh((value) => value + 1); }} label={tr('연결 상태', 'Connection')} value={connectionText} compact note={tr('누르면 다시 연결해요. 끊기면 마지막 기록 다음부터 이어서 받아요.', 'Select to reconnect. After a drop it resumes from the last record.')} icon="refresh" />
       </div>
@@ -93,7 +95,7 @@ export function OperatorDashboard({ page }: { page: string }) {
       <EventDetails events={stream.events} />
     </div>}
     {page === 'audit' && <div className="stack"><div className="two-columns"><AgentRuns /><TriageAudit feed={alertFeed} /></div><div className="content-card"><Audit refresh={refresh} integrated={latest?.source === 'integration-journal-replay'} /></div></div>}
-    {page === 'services' && <div className="stack services-page"><div className="two-columns"><EdgeRelocation events={stream.events} /><TriageAudit feed={alertFeed} /></div>
+    {page === 'services' && <div className="stack services-page"><CseAccess refresh={refresh} /><div className="two-columns"><EdgeRelocation events={stream.events} /><TriageAudit feed={alertFeed} /></div>
     <div className="service-grid">{services.map((service) => <article className="content-card stack" key={service.prefix}>
       <div className="card-heading"><span className="row-symbol"><Icon name="server" /></span><Badge tone={service.receipt ? 'success' : 'warning'}>{service.receipt ? tr('응답 받음', 'Responded') : tr('응답 기다리는 중', 'Waiting for a response')}</Badge></div>
       <div><h2>{service.meta.label}</h2><p className="card-note">{service.meta.description}</p></div>

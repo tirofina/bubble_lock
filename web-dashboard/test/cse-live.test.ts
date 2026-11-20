@@ -236,7 +236,7 @@ test('registers two AEs with their own subscriptions and pushes CSE notification
   const service = await startReplayServer({ port: 0, cseLive: liveConfig(cse.endpoint()) });
   t.after(service.close);
   const live = service.live; assert.ok(live);
-  const ingress = String(live.describe()['notificationUrl']);
+  const ingress = String((live.describe() as Record<string, unknown>)['notificationUrl']);
   const streamed = readSse(t, `${service.url}/events`, {}, (events) => events.some((event) => event.type === 'gateway.telemetry'));
   // When
   const notify = (app: string, origin: string) => fetch(`${ingress}/${app}`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-M2M-Origin': origin, 'X-M2M-RI': 'n1' },
@@ -276,5 +276,6 @@ test('re-reads la/ and createdAfter children when a client reconnects after miss
   assert.deepEqual(events.map((event) => [event.sequence, event.currentRevision]), [[2, 'missed'], [3, 'latest']]);
   assert.ok(cse.requests.some((line) => line.startsWith(`GET ${ROOT}/observation/la`)));
   assert.ok(cse.requests.some((line) => line.includes('cra=20261119T005959')));
+  assert.ok('recoveredByResync' in live.stats);
   assert.deepEqual(live.stats.recoveredByResync, ['first', 'missed', 'latest'].map((ri) => `${ROOT}/observation/gw-${ri}`), 'startup la/ plus reconnect recovery');
 });

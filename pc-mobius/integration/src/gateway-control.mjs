@@ -33,10 +33,23 @@ export class GatewayControl {
     if (!Number.isInteger(ownershipEpoch) || ownershipEpoch < 0 || ownershipEpoch > 2147483647) throw new Error('Valid ownership epoch required');
     if (!devices || typeof devices !== 'object' || Array.isArray(devices) || !Object.keys(devices).length) throw new Error('Enrolled devices required');
     for (const [deviceId, subjectId] of Object.entries(devices)) { identifier(deviceId); identifier(subjectId); }
-    const current = this.store.get('gateways', gatewayId);
-    // Restarting trusted provisioning preserves an established loss/revocation.
-    if (current && ['LOST', 'REVOKED'].includes(current.status)) return current;
-    return this.store.put('gateways', gatewayId, { gatewayId, principalId, fingerprint, devices, credentialRevision, status, ownershipEpoch });
+    return this.store.transaction(`gateway:enroll:${gatewayId}`, async () => {
+      const current = this.store.get('gateways', gatewayId);
+      // Restarting trusted provisioning preserves an established loss/revocation.
+      if (current && ['LOST', 'REVOKED'].includes(current.status)) return current;
+      const merged = { ...devices };
+      for (const binding of this.store.list('keyringBindings')) {
+        if (binding.gatewayId !== gatewayId) {
+          if (merged[binding.deviceId]) throw new Error('다른 Gateway에 이미 연결된 키링을 확인하세요.');
+          continue;
+        }
+        const device = this.store.get('portalDevices', binding.deviceId);
+        if (!device || device.householdId !== binding.householdId || device.gatewayId !== gatewayId
+          || merged[binding.deviceId] && merged[binding.deviceId] !== binding.householdId) throw new Error('키링 소유권 기록과 Gateway 설정을 확인하세요.');
+        merged[binding.deviceId] = binding.householdId;
+      }
+      return this.store.put('gateways', gatewayId, { gatewayId, principalId, fingerprint, devices: merged, credentialRevision, status, ownershipEpoch });
+    });
   }
 
   // Operator enrollment of one more keyring on an active Gateway. A keyring already bound to another subject stays
@@ -72,14 +85,15 @@ export class GatewayControl {
     return Math.max(this.handoverCoordinator.status(deviceId)?.epoch ?? 0, gateway.ownershipEpoch);
   }
 
-  active(record, gateway) {
+  active(record, gateway, { publication = false } = {}) {
     const { command, grantId } = record;
     const decision = this.policyService.evaluateGrant(grantId, { scope: 'bubble:command' });
     const consent = decision.grant && this.store.get('consents', decision.grant.consentId);
     const now = Date.parse(this.clock());
     const handover = this.handoverCoordinator.status(command.deviceId);
     const ready = !handover || ['ACTIVE', 'ROLLED_BACK'].includes(handover.state);
-    return ready && gateway.status === 'ACTIVE' && decision.allowed && consent?.status === 'ACTIVE'
+    return ready && (!record.groupRequestId || publication || record.groupCsePublished === true)
+      && gateway.status === 'ACTIVE' && decision.allowed && consent?.status === 'ACTIVE'
       && !['SETTLED_CANCELLED', 'APPLIED_VERIFIED'].includes(record.executionState)
       && Date.parse(consent.expiresAt) > now && consent.revision === command.grantRevision
       && decision.grant.revision === command.grantRevision
@@ -114,7 +128,7 @@ export class GatewayControl {
     const intentHash = approvalHash(intent);
     const prior = this.store.get('gatewayCommands', commandId);
     if (prior) {
-      if (prior.intentHash !== intentHash || !this.active(prior, gateway)) throw new Error('Command identity requires the original active intent');
+      if (prior.intentHash !== intentHash || !this.active(prior, gateway, { publication: true })) throw new Error('Command identity requires the original active intent');
       return prior.command;
     }
     const command = { version: 1, gatewayId, deviceId, commandId, claimId: id('claim'), desiredState,
@@ -163,7 +177,7 @@ export class GatewayControl {
       if (allowed) {
         record.executionState = record.dispatchStartedAt ? 'IN_FLIGHT' : 'DISPATCH_CLAIMED'; record.claimCommittedAt ??= now; record.claimExpiresAt ??= claimDeadline;
         await this.store.put('dispatchOutbox', `${body.commandId}:${body.deviceId}`, { commandId: body.commandId, memberLogicalId: body.deviceId, claimId: body.claimId, payloadHash: body.payloadHash, desiredGeneration: record.desiredGeneration ?? 0, deadline: record.claimExpiresAt, state: record.dispatchStartedAt ? 'IN_FLIGHT' : 'PENDING', claimCommittedAt: record.claimCommittedAt, ...(record.dispatchStartedAt ? { dispatchStartedAt: record.dispatchStartedAt } : {}) });
-      } else if (!['SETTLED_CANCELLED', 'APPLIED_VERIFIED'].includes(record.executionState) && (!this.active(record, gateway) || Date.parse(claimDeadline) <= Date.parse(now))) {
+      } else if (!['SETTLED_CANCELLED', 'APPLIED_VERIFIED'].includes(record.executionState) && (!this.active(record, gateway, { publication: true }) || Date.parse(claimDeadline) <= Date.parse(now))) {
         record.executionState = record.claimCommittedAt ? 'DISPATCH_UNCERTAIN' : 'SETTLED_CANCELLED';
         record.settlementReason = Date.parse(claimDeadline) <= Date.parse(now) ? 'EXPIRED' : 'CURRENT_POLICY';
         if (!record.claimCommittedAt) record.settledAt = now;

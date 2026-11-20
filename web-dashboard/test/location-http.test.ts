@@ -89,3 +89,31 @@ test('location HTTP endpoint preserves GET-only policy', async (t) => {
   assert.equal(response.headers.get('allow'), 'GET');
   assert.deepEqual(await response.json(), { error: 'method_not_allowed' });
 });
+
+test('rejects measured demo locations on non-loopback binds before loading or listening', async (t) => {
+  const files = await workspace(t);
+  await writeFile(files.locations, line(observation('2026-11-10T08:00:00.000Z', -67, 37.5665)));
+  for (const host of ['0.0.0.0', '::', '192.0.2.1']) {
+    await assert.rejects(async () => {
+      const service = await startReplayServer({ port: 0, host, locationFile: files.locations,
+        gatewayLocationsFile: files.gateways, locationSimulation: false });
+      await service.close();
+    }, /Measured demo locations require a loopback bind/);
+  }
+});
+
+test('allows measured locations on non-loopback binds in authorized live mode', async (t) => {
+  const files = await workspace(t);
+  const service = await startReplayServer({ port: 0, host: '0.0.0.0', locationFile: files.locations,
+    locationSimulation: false, portal: {
+      auth: {
+        handle: async () => false, authenticate: async () => null,
+        assertMutationOrigin: () => {}, close: () => {},
+      },
+      upstream: async () => { throw new Error('Unauthenticated requests must not reach upstream'); },
+    } });
+  t.after(service.close);
+  const response = await fetch(`${service.url}/api/locations`);
+  assert.equal(response.status, 401);
+  assert.equal(JSON.stringify(await response.json()).includes('coordinates'), false);
+});

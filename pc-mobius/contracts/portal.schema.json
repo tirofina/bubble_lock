@@ -3,7 +3,7 @@
   "$id": "https://bubble-lock.local/contracts/portal.schema.json",
   "title": "Privacy Bubble Portal Snapshot",
   "type": "object",
-  "required": ["schemaVersion", "generatedAt", "principal", "households", "devices", "consents", "grants", "incidents", "commandRequests", "notifications"],
+  "required": ["schemaVersion", "generatedAt", "principal", "households", "devices", "keyringEnrollments", "consents", "grants", "incidents", "commandRequests", "notifications"],
   "additionalProperties": false,
   "properties": {
     "schemaVersion": {"const": "1.0.0"},
@@ -11,6 +11,7 @@
     "principal": {"type": "object", "required": ["principalId", "role"], "additionalProperties": false, "properties": {"principalId": {"$ref": "#/definitions/id"}, "role": {"enum": ["guardian", "visitor"]}}},
     "households": {"type": "array", "items": {"$ref": "#/definitions/household"}},
     "devices": {"type": "array", "items": {"$ref": "#/definitions/device"}},
+    "keyringEnrollments": {"type": "array", "items": {"$ref": "#/definitions/keyringEnrollment"}},
     "consents": {"type": "array", "items": {"$ref": "#/definitions/consent"}},
     "grants": {"type": "array", "items": {"$ref": "#/definitions/grant"}},
     "locationLeases": {"type":"array","items":{"$ref":"#/definitions/locationLease"}},
@@ -19,6 +20,19 @@
     "notifications": {"type": "array", "maxItems": 100, "items": {"$ref": "#/definitions/notification"}}
   },
   "definitions": {
+    "keyringEnrollment": {
+      "type": "object", "additionalProperties": false,
+      "required": ["enrollmentId", "householdId", "gatewayId", "deviceId", "label", "requestedBy", "createdAt", "expiresAt", "status", "effectiveStatus"],
+      "properties": {
+        "enrollmentId": {"$ref": "#/definitions/id"}, "householdId": {"$ref": "#/definitions/id"},
+        "gatewayId": {"$ref": "#/definitions/id"}, "deviceId": {"$ref": "#/definitions/id"},
+        "label": {"type": "string", "minLength": 1, "maxLength": 80}, "requestedBy": {"$ref": "#/definitions/id"},
+        "createdAt": {"$ref": "#/definitions/timestamp"}, "expiresAt": {"$ref": "#/definitions/timestamp"},
+        "status": {"enum": ["PENDING", "COMPLETED", "CANCELLED"]},
+        "effectiveStatus": {"enum": ["PENDING", "COMPLETED", "CANCELLED", "EXPIRED"]},
+        "cancelledAt": {"$ref": "#/definitions/timestamp"}, "completedAt": {"$ref": "#/definitions/timestamp"}
+      }
+    },
     "locationLease": {
       "type":"object","additionalProperties":false,
       "required":["leaseId","householdId","recipientId","deviceIds","purpose","incidentId","grantId","grantRevision","consentRevision","approvedBy","status","createdAt","expiresAt"],

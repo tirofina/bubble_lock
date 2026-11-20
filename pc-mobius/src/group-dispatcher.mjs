@@ -10,6 +10,10 @@ const BINDING_KEYS=['claimId','grantRevision','ownershipEpoch','deadline','issue
 //   fanOut({groupId, commandId, state, members}) -> {[memberId]: {ok, rsc, error, command, payloadHash}}
 //                                          optional; when present, dispatch() sends ONE group request
 //                                          (oneM2M <grp>/fopt) and maps the per-member aggregated answer.
+//   sendCommands(commands, groupCommandId) -> [{commandId, published, error}]
+//                                          optional batch path used when fanOut is absent; each member
+//                                          needs its own publication receipt.
+// Delivery order: fanOut when present, else sendCommands when present, else per-member sendCommand.
 // retryScope 'unsettled' (default) re-sends every member without readback; 'failed' re-sends only
 // members whose delivery failed, so a member that already reached the CSE waits for its own ACK.
 export class GroupDispatcher {
@@ -38,8 +42,9 @@ export class GroupDispatcher {
   async dispatch({ groupId, state, commandId, deadline, epoch, claimId, grantRevision, issuedAt, memberCommands = null }) {
     await this.ready;
     if(typeof state!=='boolean'||typeof commandId!=='string'||!commandId)throw Error('Group 상태와 명령 식별자를 확인하세요.');
-    const groupMembers = [...this.members.entries()].filter(([, member]) => member.groupId === groupId || member.groups?.includes(groupId));
+    const groupMembers = [...this.members.entries()].filter(([memberId, member]) => (member.groupId === groupId || member.groups?.includes(groupId)) && (!memberCommands || Object.hasOwn(memberCommands, memberId)));
     if (groupMembers.length === 0) throw new Error(`Group ${groupId} has no registered members`);
+    if (memberCommands && groupMembers.length !== Object.keys(memberCommands).length) throw new Error('Every canonical member requires a registered group binding');
     const intentHash = approvalHash({ groupId, state, deadline: deadline ?? null, epoch: epoch ?? null, claimId: claimId ?? null, grantRevision: grantRevision ?? null, members: groupMembers.map(([memberId]) => memberId).sort(), memberCommands });
     if (this.groups.has(commandId)) {
       // Idempotent per commandId: the same intent returns the durable summary, a different one is refused.
@@ -68,7 +73,7 @@ export class GroupDispatcher {
     this.groups.set(commandId, entry);
     await this.persist(entry);
     if (fanout) await this.fanOutMembers(entry);
-    else for (const member of entry.members.values()) await this.sendMember(entry,member);
+    else await this.sendMembers(entry, [...entry.members.values()]);
     this.refreshStatus(entry);
     await this.persist(entry);
     return this.summary(commandId);
@@ -82,6 +87,9 @@ export class GroupDispatcher {
     if(typeof deadline!=='string'||!Number.isFinite(Date.parse(deadline))||Date.parse(deadline)<=Date.parse(this.clock()))throw Error('명령 유효기간이 종료되었습니다.');
     if(this.authorizeCommand){const decision=await this.authorizeCommand(structuredClone(member.command));if(decision!==true&&decision?.allowed!==true)throw Error('현재 명령 실행 권한을 확인하세요.');}
   }
+
+  // Name used by the server deployment; the checks live in admit().
+  async authorizeMember(entry, member) { return this.admit(entry, member); }
 
   // A bridge may answer with the centrally issued canonical command (claim, grantRevision,
   // ownershipEpoch, deadline) for this member; it must keep the member identity.
@@ -117,6 +125,47 @@ export class GroupDispatcher {
         this.bind(entry,member,result);
         if(result?.ok!==true)throw Error(result?.error??'GROUP_FANOUT_MEMBER_RESULT_MISSING');
       }catch(error){if(member.status!=='READBACK_VERIFIED'){member.status='RETRY_PENDING';member.error=error.message;}}
+    }
+    await this.persist(entry);
+  }
+
+  // Batch path for bridges with sendCommands (no fanOut); otherwise one sendCommand per member.
+  async sendMembers(entry, members) {
+    if (typeof this.bridge.sendCommands !== 'function') {
+      for (const member of members) await this.sendMember(entry, member);
+      return;
+    }
+    const admitted = [];
+    for (const member of members) {
+      member.attempts += 1;
+      delete member.error;
+      try {
+        await this.admit(entry, member);
+        member.status = 'DISPATCHED';
+        admitted.push(member);
+      } catch (error) {
+        if (!(error instanceof Error)) throw error;
+        member.status = 'RETRY_PENDING';
+        member.error = error.message;
+      }
+    }
+    await this.persist(entry);
+    if (!admitted.length) return;
+    try {
+      const results = await this.bridge.sendCommands(admitted.map((member) => structuredClone(member.command)), entry.commandId);
+      for (const member of admitted) {
+        const result = results.find((item) => item.commandId === member.memberCommandId);
+        if (!result?.published && member.status !== 'READBACK_VERIFIED') {
+          member.status = 'RETRY_PENDING';
+          member.error = result?.error ?? 'CSE member publication receipt required';
+        }
+      }
+    } catch (error) {
+      if (!(error instanceof Error)) throw error;
+      for (const member of admitted) if (member.status !== 'READBACK_VERIFIED') {
+        member.status = 'RETRY_PENDING';
+        member.error = error.message;
+      }
     }
     await this.persist(entry);
   }
@@ -177,9 +226,10 @@ export class GroupDispatcher {
     const entry = this.groups.get(commandId);
     if (!entry) throw new Error(`Group command ${commandId} is not registered`);
     if (entry.attempts >= this.maxRetries + 1) return this.summary(commandId);
-    for (const member of entry.members.values()) {
-      if (this.retryable(member)) await this.sendMember(entry,member);
-    }
+    const pending = [...entry.members.values()].filter((member) => this.retryable(member));
+    // Fanout entries retry member by member, as before; other bridges reuse the batch path when present.
+    if (entry.transport === 'GROUP_FANOUT') for (const member of pending) await this.sendMember(entry,member);
+    else await this.sendMembers(entry, pending);
     entry.attempts += 1;
     this.refreshStatus(entry);
     await this.persist(entry);

@@ -9,7 +9,7 @@
     "principal": "verified certificate or signed OIDC access token plus server enrollment",
     "scopeRule": "OIDC token scopes intersect enrolled scopes",
     "householdRule": "member principalId bound to provisioned household",
-    "deviceRule": "guardian plus enrolled gateway.devices[deviceId] equals householdId"
+    "deviceRule": "direct device registration requires guardian plus enrolled gateway.devices[deviceId] equals householdId; new keyrings require guardian request and fresh confirm on an authenticated ACTIVE exclusive household Gateway"
   },
   "idempotency": {"inputField": "idempotencyKey", "requiredOn": "POST", "namespace": ["principalId", "action"], "maxLength": 128, "intentHash": "SHA256 canonical input", "completedReplay": "stored response", "concurrency": "serialized portal mutations"},
   "responses": {"success": 200, "authentication": 401, "validationOrAuthorization": 403, "unknownRoute": 404},
@@ -19,6 +19,8 @@
     "GET /locations": {"scope": "portal:read", "response": {"observations": "array of deviceId, gatewayId?, observedAt, simulation, service?, location?:{lat,lon,source:gps|mec,accuracyM?}, rssiDbm?"}, "fences": ["location-access", "registered device household", "MEC source grant household", "current source grant revision", "server UE mapping", "24-hour retention"]},
     "POST /households": {"scope": "household:write", "input": {"required": ["name"], "optional": []}, "response": "household"},
     "POST /devices": {"scope": "device:write", "role": "guardian", "input": {"required": ["householdId", "deviceId", "gatewayId", "label"], "optional": []}, "response": "device"},
+    "POST /keyring-enrollments": {"scope": "device:write", "role": "guardian", "input": {"required": ["householdId", "deviceId", "gatewayId", "label"], "optional": []}, "response": "keyringEnrollment", "expiresSec": 300},
+    "POST /keyring-enrollments/cancel": {"scope": "device:write", "role": "guardian", "input": {"required": ["enrollmentId"], "optional": []}, "response": "keyringEnrollment"},
     "POST /consents": {"scope": "consent:write", "role": "guardian", "input": {"required": ["householdId", "purpose", "scopes"], "optional": ["ttlSec"]}, "response": "consent"},
     "POST /grants": {"scope": "grant:write", "role": "guardian", "input": {"required": ["consentId", "scopes"], "optional": ["purpose", "ttlSec"]}, "response": "grant"},
     "POST /consents/revoke": {"scope": "consent:write", "role": "guardian", "ownerBound": true, "input": {"required": ["consentId"], "optional": ["reason"]}, "response": "consent"},

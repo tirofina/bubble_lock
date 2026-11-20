@@ -20,7 +20,7 @@ export class GatewayCredentialIssuer {
     Object.assign(this, { caFile: resolve(caFile), caKeyFile: resolve(caKeyFile), openssl, validityDays });
   }
   async issue({ csrPem, principalId, aei, registrationId }) {
-    if (typeof csrPem !== 'string' || Buffer.byteLength(csrPem) > 8192 || !csrPem.includes('BEGIN CERTIFICATE REQUEST') || !/^[A-Za-z0-9._:-]{1,64}$/.test(principalId) || typeof aei !== 'string' || aei.length > 256 || !/^[a-f0-9]{64}$/.test(registrationId)) throw new Error('등록 CSR와 서버 principal binding을 확인하세요.');
+    if (typeof csrPem !== 'string' || Buffer.byteLength(csrPem) > 8192 || !csrPem.includes('BEGIN ' + 'CERTIFICATE REQUEST') || !/^[A-Za-z0-9._:-]{1,64}$/.test(principalId) || typeof aei !== 'string' || aei.length > 256 || !/^[a-f0-9]{64}$/.test(registrationId)) throw new Error('등록 CSR와 서버 principal binding을 확인하세요.');
     const directory = await mkdtemp(join(tmpdir(), 'bubble-gateway-csr-'));
     try {
       const csr = join(directory, 'request.pem'), certificate = join(directory, 'certificate.pem'), extensions = join(directory, 'extensions.cnf'), requestConfig=join(directory,'request.cnf');

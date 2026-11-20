@@ -5,6 +5,7 @@ import { pick, translateServerMessage, uiLang } from './server-messages.ts';
 export type PortalRole = 'guardian' | 'visitor' | 'operator';
 export interface Household { householdId: string; name: string; ownerId: string; members: {principalId: string; role: string}[] }
 export interface PortalDevice { deviceId: string; householdId: string; gatewayId: string; label: string; registeredAt: string }
+export interface KeyringEnrollment { enrollmentId: string; householdId: string; gatewayId: string; deviceId: string; label: string; requestedBy: string; createdAt: string; expiresAt: string; status: 'PENDING' | 'COMPLETED' | 'CANCELLED'; effectiveStatus: 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'EXPIRED' }
 export interface Consent { consentId: string; subjectId: string; purpose: string; scopes: string[]; expiresAt: string; effectiveStatus: string; status: string }
 export interface Grant { grantId: string; consentId: string; subjectId: string; scopes: string[]; expiresAt: string; effectiveStatus: string; status: string }
 export interface Incident { incidentId: string; householdId: string; deviceId: string | null; kind: string; message: string; status: string; createdBy: string; createdAt: string }
@@ -13,7 +14,7 @@ export interface Notification { notificationId: string; householdId: string; pri
 export interface LocationLease { leaseId:string; householdId:string; recipientId:string; deviceIds:string[]; purpose:string; incidentId:string; grantId:string; status:string; effectiveStatus?:string; expiresAt:string }
 export interface PortalSnapshot {
   schemaVersion: '1.0.0'; generatedAt: string; principal: {principalId: string; role: PortalRole};
-  households: Household[]; devices: PortalDevice[]; consents: Consent[]; grants: Grant[];
+  households: Household[]; devices: PortalDevice[]; keyringEnrollments: KeyringEnrollment[]; consents: Consent[]; grants: Grant[];
   incidents: Incident[]; commandRequests: CommandRequest[]; notifications: Notification[];
   locationLeases?: LocationLease[];
 }
@@ -22,7 +23,7 @@ function parseResponse(value: unknown): PortalResponse {
   if (!isRecord(value) || !['demo','live'].includes(String(value['mode'])) || !isRecord(value['snapshot'])) throw new Error(pick('받은 데이터 형식이 예상과 달라요. 잠시 후 다시 시도해 주세요.', 'The data arrived in an unexpected format. Try again in a moment.'));
   const snapshot = value['snapshot'];
   if (snapshot['schemaVersion'] !== '1.0.0' || !isRecord(snapshot['principal']) ||
-    !['households','devices','consents','grants','incidents','commandRequests','notifications'].every((key) => Array.isArray(snapshot[key]))) throw new Error(pick('받은 데이터 형식이 예상과 달라요. 잠시 후 다시 시도해 주세요.', 'The data arrived in an unexpected format. Try again in a moment.'));
+    !['households','devices','keyringEnrollments','consents','grants','incidents','commandRequests','notifications'].every((key) => Array.isArray(snapshot[key]))) throw new Error(pick('받은 데이터 형식이 예상과 달라요. 잠시 후 다시 시도해 주세요.', 'The data arrived in an unexpected format. Try again in a moment.'));
   return value as unknown as PortalResponse;
 }
 export function usePortal(role: PortalRole) {

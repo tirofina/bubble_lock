@@ -18,10 +18,12 @@ export class Onem2mClient {
   readonly rvi: string;
   readonly timeoutMs: number;
   readonly fetchImpl: FetchLike;
-  constructor(options: { endpoint: string; originator: string; rvi?: string; timeoutMs?: number; fetchImpl?: FetchLike }) {
+  /** allowLanHttp: explicit opt-in for plain HTTP to a private (RFC 1918) address, e.g. a self-hosted LAN relay. */
+  constructor(options: { endpoint: string; originator: string; rvi?: string; timeoutMs?: number; fetchImpl?: FetchLike; allowLanHttp?: boolean }) {
     const url = new URL(options.endpoint);
     if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) throw new TypeError('CSE endpoint를 확인하세요.');
-    if (url.protocol === 'http:' && !['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname)) throw new TypeError('원격 CSE에는 HTTPS를 설정하세요.');
+    const lan = options.allowLanHttp === true && /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(url.hostname);
+    if (url.protocol === 'http:' && !lan && !['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname)) throw new TypeError('원격 CSE에는 HTTPS를 설정하세요.');
     this.endpoint = options.endpoint.replace(/\/$/, '');
     this.originator = options.originator;
     this.rvi = options.rvi ?? '4';

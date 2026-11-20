@@ -202,7 +202,13 @@ a.overview-row:hover { background: var(--surface-soft); text-decoration: none; }
 .welcome-header .environment-tag { font-size: var(--t-callout); }
 .welcome-band { padding: var(--s24) var(--s6); }
 .welcome-band > div { max-width: 1200px; margin: 0 auto; }
-.welcome-hero > div { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: center; gap: var(--s12); }
+/* Top band: copy and the two view cards over the keyring illustration, which is a background layer. */
+.welcome-hero { position: relative; overflow: hidden; padding-top: var(--s16); }
+.welcome-hero > .welcome-hero-inner { position: relative; z-index: 1; display: grid; gap: var(--s12); }
+.welcome-hero > .welcome-visual {
+  position: absolute; z-index: 0; top: var(--s6); right: max(var(--s6), calc((100vw - 1200px) / 2));
+  width: 460px; max-width: none; margin: 0; opacity: .7; pointer-events: none;
+}
 .welcome-copy .eyebrow { font-size: var(--t-callout); margin-bottom: var(--s4); }
 .welcome-copy h1 { font-size: var(--t-hero); line-height: 1.1; letter-spacing: -0.025em; }
 .welcome-description { margin-top: var(--s6); font-size: 21px; line-height: 1.5; color: var(--muted); max-inline-size: 30ch; }
@@ -221,6 +227,7 @@ a.overview-row:hover { background: var(--surface-soft); text-decoration: none; }
   box-shadow: var(--shadow-product), inset 0 -4px 8px rgb(0 0 0 / .04);
   transform: rotate(-13deg);
 }
+.keyring-photo { position: relative; width: 190px; height: auto; transform: rotate(-8deg); filter: drop-shadow(0 18px 28px rgb(0 0 0 / .16)); }
 .device-hole { position: absolute; top: 13px; width: 17px; height: 10px; border-radius: 6px; background: #d2d2d7; box-shadow: inset 0 2px 3px rgb(0 0 0 / .18); }
 .bubble-device > span:not(.device-hole) { font-size: 8px; font-weight: 700; letter-spacing: 1.7px; color: #8e8e93; }
 .bubble-device > i { position: absolute; bottom: 18px; width: 6px; height: 6px; border-radius: 50%; background: var(--hover-ring); box-shadow: 0 0 0 4px rgb(0 195 255 / .18); }
@@ -229,27 +236,24 @@ a.overview-row:hover { background: var(--surface-soft); text-decoration: none; }
 .mark-pin { bottom: 28px; right: 24px; transform: rotate(8deg); }
 .mark-key { left: 36px; top: 96px; transform: rotate(-10deg); }
 
-.welcome-channels { background: var(--chrome); color: #ffffff; }
-@media (prefers-color-scheme: dark) {
-  .welcome-channels { background: linear-gradient(180deg, var(--band-top), var(--band-bottom)); border-block: 1px solid var(--hairline); }
-}
-.welcome-channels .eyebrow { color: var(--accent-on-dark); }
-.welcome-channels h2 { font-size: 40px; letter-spacing: -0.02em; }
-.channel-intro { margin-top: var(--s3); color: var(--on-band-muted); font-size: var(--t-body); }
-.entrance-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s6); margin-top: var(--s10); }
+/* View cards: white cards on the light top band. */
+.welcome-channels .eyebrow { color: var(--accent-text); }
+.welcome-channels h2 { font-size: 32px; letter-spacing: -0.02em; }
+.channel-intro { margin-top: var(--s3); color: var(--muted); font-size: var(--t-body); }
+.entrance-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s6); margin-top: var(--s8); }
 .entrance-card {
   display: grid; grid-template-columns: 56px minmax(0, 1fr); grid-template-rows: 1fr auto; gap: var(--s5);
   padding: var(--s8);
-  border-radius: var(--r-card); border: 1px solid rgb(229 229 229 / .14);
-  background: linear-gradient(180deg, #1c1c1e, #121314);
-  color: #ffffff; text-decoration: none;
+  border-radius: var(--r-card); border: 1px solid var(--hairline);
+  background: var(--surface); box-shadow: 0 6px 24px rgb(0 0 0 / .06);
+  color: inherit; text-decoration: none;
 }
 .entrance-icon { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: var(--accent); color: #ffffff; }
-.operator-entrance .entrance-icon { background: rgb(255 255 255 / .12); }
-.entrance-card .eyebrow { margin-bottom: var(--s2); color: var(--accent-on-dark); }
+.operator-entrance .entrance-icon { background: var(--surface-soft); color: var(--accent-text); }
+.entrance-card .eyebrow { margin-bottom: var(--s2); color: var(--accent-text); }
 .entrance-card h3 { font-size: var(--t-title); letter-spacing: -0.015em; }
-.entrance-card p:not(.eyebrow) { margin-top: var(--s3); color: var(--on-band-muted); }
-.entrance-link { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; margin-top: var(--s2); padding-top: var(--s5); border-top: 1px solid rgb(229 229 229 / .14); color: var(--accent-on-dark); font-weight: 600; }
+.entrance-card p:not(.eyebrow) { margin-top: var(--s3); color: var(--muted); }
+.entrance-link { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; margin-top: var(--s2); padding-top: var(--s5); border-top: 1px solid var(--hairline); color: var(--accent-text); font-weight: 600; }
 
 .welcome-promises { background: var(--canvas); }
 .welcome-promises h2 { font-size: var(--t-title); }
@@ -399,19 +403,28 @@ a.overview-row:hover { background: var(--surface-soft); text-decoration: none; }
   .welcome-description { font-size: var(--t-body); }
   .welcome-actions .button { flex: 1 1 100%; }
   .welcome-visual { min-height: 260px; }
+  .welcome-hero > .welcome-visual { width: 300px; top: var(--s4); right: -60px; opacity: .35; }
+  .welcome-hero { padding-top: var(--s12); }
   .orbit-two { width: 250px; height: 250px; }
   .orbit-one { width: 200px; height: 200px; }
   .orbit-three { width: 136px; height: 136px; }
   .bubble-device { width: 100px; height: 138px; }
   .bubble-device > svg { width: 44px; height: 44px; }
+  .keyring-photo { width: 130px; }
   .floating-mark { width: 46px; height: 46px; border-radius: 14px; }
   .mark-shield { right: 18%; top: 8px; }
   .mark-key { left: 16%; top: 56px; }
   .mark-pin { right: 14%; bottom: 12px; }
   .welcome-channels h2 { font-size: 28px; }
-  .entrance-grid { grid-template-columns: minmax(0, 1fr); gap: var(--s4); margin-top: var(--s8); }
-  .entrance-card { grid-template-columns: 48px minmax(0, 1fr); gap: var(--s4); padding: var(--s6); }
-  .entrance-icon { width: 48px; height: 48px; }
+  /* Family and operator cards stay side by side on phones: icon on top, compact text. */
+  .entrance-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s3); margin-top: var(--s6); }
+  .entrance-card { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr auto; gap: var(--s3); padding: var(--s4); }
+  .entrance-icon { width: 40px; height: 40px; }
+  .entrance-icon svg { width: 22px; height: 22px; }
+  .entrance-card h3 { font-size: 19px; }
+  .entrance-card .eyebrow { font-size: 11px; margin-bottom: var(--s1); }
+  .entrance-card p:not(.eyebrow) { margin-top: var(--s2); font-size: 14px; line-height: 1.4; }
+  .entrance-link { margin-top: 0; padding-top: var(--s3); font-size: 14px; gap: var(--s2); }
   .welcome-footer { flex-direction: column; align-items: flex-start; padding: var(--s5) var(--s4); }
   .desktop-only { display: none; }
   .alert-card { padding: var(--s5); gap: var(--s3); }

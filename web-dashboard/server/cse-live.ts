@@ -10,6 +10,7 @@ import type { AlertCard, FeedContainer } from '../shared/guardian-alert.ts';
 import type { LocationSnapshot } from '../shared/location.ts';
 import { discoveredUris, Onem2mClient, startNotificationIngress } from './onem2m.ts';
 import type { FetchLike, NotificationIngress } from './onem2m.ts';
+import type { RoleBinding } from './mtls-fetch.ts';
 import type { AlertBackend, AlertFeed } from './guardian-alerts.ts';
 
 /**
@@ -21,7 +22,7 @@ import type { AlertBackend, AlertFeed } from './guardian-alerts.ts';
  * for gaps) restores anything a notification did not deliver.
  */
 export interface CseLiveConfig {
-  readonly cse: { readonly endpoint: string; readonly cseBase: string; readonly cseId: string; readonly rvi?: string };
+  readonly cse: { readonly endpoint: string; readonly cseBase: string; readonly cseId: string; readonly rvi?: string; readonly allowLanHttp?: boolean };
   readonly notification?: { readonly host?: string; readonly port?: number };
   readonly simulation: boolean;
   /** Expected creator (cr) of keyring containers: the Gateway AE. */
@@ -42,6 +43,19 @@ export interface CseLiveConfig {
     readonly residentId?: string;
     readonly writers: { readonly routine: readonly string[]; readonly triage: readonly string[]; readonly incident: readonly string[]; readonly guardianDecider: readonly string[]; readonly resident: readonly string[] };
   };
+  /** 'labeled-keyring' (default): label discovery plus subscriptions. 'gateway-container': la/ polling, see cse-gateway-poll.ts. */
+  readonly layout?: 'labeled-keyring' | 'gateway-container';
+  /** gateway-container paths relative to cseBase, e.g. bubble-household-1/gateway-1/observations. */
+  readonly paths?: { readonly observations: string; readonly receipts?: string; readonly health?: string; readonly location?: string; readonly locationDeviceId?: string; readonly locationLabel?: string; readonly locationSimulated?: boolean };
+  /**
+   * gateway-container per-role bindings (R10): each role reads with its own least-privilege AE over mTLS. When set,
+   * gatewayReader and operator.aeId are not used for reads, and a role without a binding reads nothing.
+   */
+  readonly roles?: { readonly operator: RoleBinding; readonly guardian?: RoleBinding };
+  /** gateway-container originator for reads without roles; defaults to operator.aeId. */
+  readonly gatewayReader?: string;
+  readonly pollMs?: number;
+  readonly backlog?: number;
 }
 
 type App = 'operator' | 'guardian';

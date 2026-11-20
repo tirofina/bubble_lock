@@ -3,6 +3,7 @@ import { Icon } from './Icon.tsx';
 import type { IconName } from './Icon.tsx';
 import { AccountAction, useAuth } from './auth-client.tsx';
 import { LangToggle, useLang } from './i18n.tsx';
+import keyringImage from './assets/privacy-bubble-keyring.png';
 
 type NavItem = readonly [id: string, title: string, short: string, icon: IconName, titleEn: string, shortEn: string];
 const operatorNav: readonly NavItem[] = [
@@ -68,23 +69,20 @@ export function Landing() {
       <span className={`environment-tag${mode === 'live' ? '' : ' demo'}`}><i />{mode === 'live' ? tr('계정에 연결됨', 'Signed in') : mode === 'demo' ? tr('체험 모드', 'Demo mode') : tr('연결 확인 중', 'Checking connection')}</span><LangToggle /><AccountAction />
     </div></header>
     <main>
-      <section className="welcome-band welcome-hero" aria-labelledby="welcome-title"><div>
-        <div className="welcome-copy">
-          <p className="eyebrow">{tr('일상에 안심을', 'Peace of mind, every day')}</p>
-          <h1 id="welcome-title">{tr('가까이 있어 든든하고', 'Close by for safety,')}<br />{tr('공유는 내가 정해요.', 'shared on your terms.')}</h1>
-          <p className="welcome-description">{tr('키링이 어디 있는지 확인하고 누구와 얼마 동안 공유할지 직접 정하세요.', 'See where the keyring is, and decide who sees it and for how long.')}</p>
-          <div className="welcome-actions">
-            <a className="button primary" href="#/user/overview">{tr('가족 화면 시작하기', 'Open the family view')}<Icon name="arrow" size={18} /></a>
-            <a className="button" href="#/operator/overview">{tr('운영 화면 열기', 'Open the operator view')}</a>
-          </div>
-        </div>
+      <section className="welcome-band welcome-hero" aria-labelledby="welcome-title">
+        {/* The keyring illustration sits behind the top band as a background layer. */}
         <div className="welcome-visual" aria-hidden="true"><div className="orbit orbit-one" /><div className="orbit orbit-two" /><div className="orbit orbit-three" />
           <div className="floating-mark mark-shield"><Icon name="shield" size={30} /></div>
-          <div className="bubble-device"><span className="device-hole" /><Icon name="bubble" size={60} /><span>BUBBLE LOCK</span><i /></div>
+          <img className="keyring-photo" src={keyringImage} alt="" width={271} height={359} />
           <div className="floating-mark mark-pin"><Icon name="pin" size={28} /></div><div className="floating-mark mark-key"><Icon name="key" size={26} /></div>
         </div>
-      </div></section>
-      <section className="welcome-band welcome-channels" aria-labelledby="channels-title"><div>
+        <div className="welcome-hero-inner">
+        <div className="welcome-copy">
+          <p className="eyebrow">{tr('일상에 안심을', 'Peace of mind, every day')}</p>
+          <h1 id="welcome-title">{tr('안전은 버블 안에,', 'Safe in a bubble,')}<br />{tr('위치는 락 아래에.', 'private under lock.')}</h1>
+          <p className="welcome-description">{tr('키링이 어디 있는지 확인하고 누구와 얼마 동안 공유할지 직접 정하세요.', 'See where the keyring is, and decide who sees it and for how long.')}</p>
+        </div>
+        <div className="welcome-channels">
         <p className="eyebrow">{tr('화면 선택', 'Choose a view')}</p>
         <h2 id="channels-title">{tr('어떤 화면으로 시작할까요?', 'Where would you like to start?')}</h2>
         <div className="entrance-grid">
@@ -95,7 +93,9 @@ export function Landing() {
             <div><p className="eyebrow">{tr('운영자', 'Operators')}</p><h3>{tr('운영 화면', 'Operator view')}</h3><p>{tr('장치 상태, 명령 처리, 연결 서비스, 활동 기록을 한 화면에서 살펴봐요.', 'Devices, commands, connected services and the activity log on one screen.')}</p></div>
             <span className="entrance-link">{tr('운영 화면 열기', 'Open the operator view')}<Icon name="arrow" /></span></a>
         </div>
-      </div></section>
+        </div>
+        </div>
+      </section>
       <section className="welcome-band welcome-promises" aria-labelledby="promise-title"><div>
         <h2 id="promise-title">{tr('안심하고 쓰도록 이렇게 만들었어요', 'Built so you can trust it')}</h2>
         <ul className="promise-grid">

@@ -2,6 +2,8 @@
 
 Gateway AE 등록·CSR 인증서 발급·LOST 수명주기는 [GATEWAY_REGISTRATION](GATEWAY_REGISTRATION.md)에 연결한다.
 
+포털의 canonical 승인부터 durable GroupDispatcher, 실제 CSE `/fopt`, Gateway native ACK/readback까지의 제품 경로와 설정·복구는 [GROUP_PRODUCT](GROUP_PRODUCT.md)를 따른다.
+
 Privacy Bubble의 정책·API·MEC·handover·FL·MCP 통합 계층이다. PC-MOBIUS-CORE가 제공하는 oneM2M resource·MQTT/HTTP·Gateway receipt 계약을 그대로 사용하며, 앱·웹·키링이 같은 `DOC-REV 2.0.0` 이벤트 흐름으로 연결된다.
 
 ## 역할 경계

@@ -277,7 +277,7 @@ details[open] > summary { margin-bottom: var(--s4); }
 }
 .tree button:hover { background: var(--surface); }
 .tree button:active { transform: none; background: var(--surface-strong); }
-.tree button[aria-pressed="true"] { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+.tree button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-text); }
 .selection-label { min-block-size: 1.45em; color: var(--accent-text); font-size: var(--t-caption); }
 .tree .path { font: 400 var(--t-caption) var(--mono); color: var(--muted); overflow-wrap: anywhere; }
 

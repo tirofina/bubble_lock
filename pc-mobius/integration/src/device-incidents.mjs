@@ -24,7 +24,7 @@ export class DeviceIncidentService {
       if (observation.buttonState !== 'panic' || previous?.buttonState === 'panic') return { status: 'OBSERVED' };
       const existing = this.store.list('portalIncidents').find((item) => item.householdId === householdId && item.deviceId === deviceId && item.kind === 'SAFETY' && item.status === 'OPEN');
       const incident = existing ?? { incidentId: `incident-${approvalHash({ deviceId, observationId }).slice(0, 24)}`, householdId, deviceId, kind: 'SAFETY',
-        message: `${device.label}에서 긴급 도움을 요청했습니다.`, status: 'OPEN', createdBy: principal.principalId, createdAt: this.clock() };
+        message: `${device.label} asked for emergency help.`, status: 'OPEN', createdBy: principal.principalId, createdAt: this.clock() };
       if (!existing) await this.store.put('portalIncidents', incident.incidentId, incident);
       const policyRows = this.store.list('policies').filter((record) => record.status === 'APPROVED' && record.policy?.trigger === 'PANIC'
         && record.policy.householdId === householdId && record.policy.deviceId === deviceId
@@ -39,7 +39,7 @@ export class DeviceIncidentService {
           || deviceIds.some((id) => this.store.get('portalDevices', id)?.householdId !== householdId)) continue;
         const requestId = `request-${approvalHash({ incidentId: incident.incidentId, policyId: record.policyId, revision: record.revision }).slice(0, 24)}`;
         if (!this.store.get('portalCommandRequests', requestId)) await this.store.put('portalCommandRequests', requestId, {
-          requestId, householdId, deviceIds, desiredState: { state: policy.desiredState.state }, reason: `${device.label} 긴급 요청 · 보호자 승인`, requestedBy: principal.principalId,
+          requestId, householdId, deviceIds, desiredState: { state: policy.desiredState.state }, reason: `${device.label} emergency request, guardian approved`, requestedBy: principal.principalId,
           requestedAt: this.clock(), expiresAt: new Date(Math.min(now + 300000, Date.parse(decision.grant.expiresAt))).toISOString(), status: 'PENDING', commands: [],
         });
         requestIds.push(requestId);

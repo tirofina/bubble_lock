@@ -2,6 +2,8 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { LocationFeed } from './location-feed.ts';
 import type { OidcSessionManager } from './oidc-session.ts';
 import type { PortalUpstream } from './portal-upstream.ts';
+import { createLocalAccountManager } from './local-accounts.ts';
+import type { LocalAccount, LocalIdentity } from './local-accounts.ts';
 import { ingestLocationRecord } from '../shared/location.ts';
 import type { LocationState, LocationSnapshot } from '../shared/location.ts';
 import { createLivingRoom, livingRoomCore } from './caregiver.ts';
@@ -12,8 +14,10 @@ interface ApiResult { status:number;body:unknown }
 interface DemoRuntime {runtime:{api:{handle(request:{method:string;path:string;principal:unknown;body?:unknown}):Promise<ApiResult>}};principals:Record<Role,unknown>}
 interface DemoModule {createPortalDemo(options:{statePath?:string;core?:unknown}):Promise<DemoRuntime>}
 /** Live oneM2M bridge: guardian AE view merged into the snapshot, approved commands published to the CSE. */
-export interface PortalCseBridge {overlaySnapshot(snapshot:unknown):unknown;publishApproved(result:unknown):Promise<unknown>}
-export interface PortalOptions {statePath?:string;auth?:OidcSessionManager;upstream?:PortalUpstream;cse?:PortalCseBridge;livingRoom?:LivingRoomConfig}
+export interface PanicBridgeEvent {deviceId:string;at:string;key:string}
+export interface PortalCseBridge {overlaySnapshot(snapshot:unknown):unknown;publishApproved(result:unknown):Promise<unknown>;onPanic?(listener:(event:PanicBridgeEvent)=>Promise<void>):void;escalate?(incidentId:string,event:PanicBridgeEvent):void;markEmergency?(incidentId:string):void}
+/** localAccounts: self-hosted password login over the demo runtime; the session, not the query, picks the role. */
+export interface PortalOptions {statePath?:string;auth?:OidcSessionManager;upstream?:PortalUpstream;cse?:PortalCseBridge;localAccounts?:LocalAccount[];livingRoom?:LivingRoomConfig}
 export interface PortalHandler {
   readonly mode:'live'|'demo';
   handle(request:IncomingMessage,response:ServerResponse,url:URL):Promise<void>;
@@ -24,7 +28,7 @@ export interface PortalHandler {
   /** Caregiver living room group command (demo portal runtime only). */
   readonly caregiver:LivingRoomService|null;
 }
-const actions=new Set(['households','devices','devices/enroll','consents','grants','consents/revoke','grants/revoke','incidents','incidents/resolve','commands/request','commands/approve','notifications/read','location-leases','location-leases/revoke','relay-associations']);
+const actions=new Set(['households','devices','keyring-enrollments','keyring-enrollments/cancel','devices/enroll','consents','grants','consents/revoke','grants/revoke','incidents','incidents/resolve','commands/request','commands/approve','commands/group','commands/retry','notifications/read','location-leases','location-leases/revoke','relay-associations']);
 function json(response:ServerResponse,status:number,body:unknown) {
   response.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});response.end(JSON.stringify(body));
 }
@@ -52,11 +56,36 @@ async function body(request:IncomingMessage):Promise<Record<string,unknown>> {
 }
 export async function createPortalHandler(locationFeed:LocationFeed,options:PortalOptions={}):Promise<PortalHandler> {
   if(Boolean(options.auth)!==Boolean(options.upstream))throw Error('OIDC와 포털 API를 함께 설정하세요.');
-  const mode=options.auth?'live':'demo';
+  if(options.auth&&options.localAccounts)throw Error('OIDC와 로컬 계정 중 하나만 설정하세요.');
+  const mode=options.auth||options.localAccounts?'live':'demo';
   let demo:DemoRuntime|null=null;
-  if(mode==='demo'){
+  if(!options.auth){
     const module=await import(new URL('../../pc-mobius/integration/src/portal-demo.mjs',import.meta.url).href) as DemoModule;
     demo=await module.createPortalDemo({...(options.statePath===undefined?{}:{statePath:options.statePath}),...(options.livingRoom?{core:livingRoomCore(options.livingRoom)}:{})});
+  }
+  const scopesOf=(role:Role)=>{const principal=demo?.principals[role];return record(principal)&&Array.isArray(principal['scopes'])?principal['scopes'].filter((scope):scope is string=>typeof scope==='string'):[];};
+  const local=options.localAccounts?createLocalAccountManager({accounts:options.localAccounts,scopes:{guardian:scopesOf('guardian'),operator:[...new Set([...scopesOf('operator'),'dashboard:read'])]}}):null;
+  // Local accounts: an explicit role=operator request needs an operator session; otherwise the session role applies.
+  const sessionRole=(identity:LocalIdentity,requested:unknown):Role|null=>roleOf(requested)==='operator'&&identity.role!=='operator'?null:identity.role;
+  // PANIC from a live keyring: escalate that keyring's open incident, otherwise open a new emergency incident.
+  if(demo&&options.cse?.onPanic){
+    const runtime=demo;const cse=options.cse;
+    cse.onPanic!(async(event)=>{
+      const snap=await runtime.runtime.api.handle({method:'GET',path:'/v1/portal/snapshot',principal:runtime.principals['guardian']});
+      const body=record(snap.body)?snap.body:{};
+      const devices=Array.isArray(body['devices'])?body['devices'].filter(record):[];
+      const households=Array.isArray(body['households'])?body['households'].filter(record):[];
+      const device=devices.find((item)=>item['deviceId']===event.deviceId);
+      const householdId=typeof device?.['householdId']==='string'?device['householdId']:typeof households[0]?.['householdId']==='string'?households[0]['householdId'] as string:null;
+      if(!householdId)return;
+      const open=(Array.isArray(body['incidents'])?body['incidents'].filter(record):[]).filter((item)=>item['status']==='OPEN'&&item['householdId']===householdId);
+      // Only an open incident of the same keyring is escalated; simulated map-demo incidents (deviceId null) stay untouched.
+      const target=open.find((item)=>item['deviceId']===event.deviceId);
+      if(target&&typeof target['incidentId']==='string'){cse.escalate?.(target['incidentId'],event);return;}
+      const label=typeof device?.['label']==='string'?device['label']:event.deviceId;
+      const created=await runtime.runtime.api.handle({method:'POST',path:'/v1/portal/incidents',principal:runtime.principals['guardian'],body:{idempotencyKey:`panic-${event.key}`,householdId,...(device?{deviceId:event.deviceId}:{}),kind:'HELP',message:`[Emergency] ${label}: PANIC button pressed. Help is needed now.`}});
+      if(record(created.body)&&typeof created.body['incidentId']==='string')cse.markEmergency?.(created.body['incidentId']);
+    });
   }
   const caregiver=demo&&options.livingRoom?await createLivingRoom(demo.runtime as never,demo.principals as never,options.livingRoom):null;
   return {
@@ -64,10 +93,17 @@ export async function createPortalHandler(locationFeed:LocationFeed,options:Port
   caregiver,
   async handleAuth(request,response) {
     if(options.auth)return options.auth.handle(request,response);
+    if(local)return local.handle(request,response);
     if(request.url==='/api/auth/session'&&request.method==='GET'){json(response,200,{mode:'demo',authenticated:false});return true;}
     return false;
   },
   async authorizeOperator(request,response) {
+    if(local){
+      const identity=local.authenticate(request);
+      if(!identity){json(response,401,{mode,message:'로그인하여 대시보드에 연결하세요.'});return false;}
+      if(!identity.scopes.includes('dashboard:read')){json(response,403,{mode,message:'운영 조회 권한을 확인하세요.'});return false;}
+      return true;
+    }
     if(!options.auth)return true;
     const identity=await options.auth.authenticate(request);
     if(!identity){json(response,401,{mode,message:'로그인하여 대시보드에 연결하세요.'});return false;}
@@ -83,7 +119,13 @@ export async function createPortalHandler(locationFeed:LocationFeed,options:Port
   },
   async handle(request,response,url) {
     try {
-      if(!options.auth&&!localOrigin(request)){json(response,403,{message:'등록된 로컬 화면에서 접근해 주세요.'});return;}
+      if(!options.auth&&!local&&!localOrigin(request)){json(response,403,{message:'등록된 로컬 화면에서 접근해 주세요.'});return;}
+      const localIdentity=local?local.authenticate(request):null;
+      if(local&&!localIdentity){json(response,401,{mode,message:'로그인하여 사용자 공간에 연결하세요.'});return;}
+      if(local&&request.method==='POST'){
+        try{local.assertMutationOrigin(request);}catch{json(response,403,{message:'로그인한 화면에서 요청하세요.'});return;}
+      }
+      const pick=(requested:unknown):Role|null=>localIdentity?sessionRole(localIdentity,requested):roleOf(requested);
       const identity=options.auth?await options.auth.authenticate(request):null;
       if(options.auth&&!identity){json(response,401,{mode,message:'로그인하여 사용자 공간에 연결하세요.'});return;}
       if(options.auth&&request.method==='POST'){
@@ -99,17 +141,22 @@ export async function createPortalHandler(locationFeed:LocationFeed,options:Port
         if(!caregiver){json(response,404,{message:'방문 돌봄 기기 그룹이 설정되지 않았어요.'});return;}
         if(request.method==='GET'){json(response,200,{mode,...caregiver.status()});return;}
         const input=await body(request);
-        if(input['action']==='renew'){json(response,200,{mode,grant:await caregiver.renew(Number.isInteger(input['ttlSec'])?Math.max(10,Math.min(3600,input['ttlSec'] as number)):undefined)});return;}
-        if(roleOf(input['role'])!=='visitor'){json(response,403,{message:'방문 돌봄자 화면에서 눌러 주세요.'});return;}
+        // Password accounts have no visitor login, so grant renewal needs an operator session and the visitor command stays demo-only.
+        if(input['action']==='renew'){if(localIdentity&&localIdentity.role!=='operator'){json(response,403,{mode,message:'운영 조회 권한을 확인하세요.'});return;}json(response,200,{mode,grant:await caregiver.renew(Number.isInteger(input['ttlSec'])?Math.max(10,Math.min(3600,input['ttlSec'] as number)):undefined)});return;}
+        if(localIdentity||roleOf(input['role'])!=='visitor'){json(response,403,{message:'방문 돌봄자 화면에서 눌러 주세요.'});return;}
         json(response,200,{mode,result:await caregiver.command(input['state']!==false)});return;
       }
       if(request.method==='GET'&&action==='enrollments'){
         // Operator keyring enrollment view (Gateway allow-lists and household names); scope device:enroll.
-        const result=await api('GET','/v1/portal/enrollments','operator');
+        const enrollRole=identity?'operator':pick('operator');
+        if(enrollRole===null){json(response,403,{mode,message:'키링 등록 권한을 확인해 주세요.'});return;}
+        const result=await api('GET','/v1/portal/enrollments',enrollRole);
         json(response,result.status,result.status===200?{mode,enrollments:result.body}:{message:record(result.body)&&typeof result.body['error']==='string'?result.body['error']:'키링 등록 권한을 확인해 주세요.'});return;
       }
       if(request.method==='GET'&&(action==='snapshot'||action==='locations')) {
-        const result=await api('GET',action==='snapshot'?'/v1/portal/snapshot':'/v1/portal/location-access',identity?'guardian':roleOf(url.searchParams.get('role')));
+        const readRole=identity?'guardian':pick(url.searchParams.get('role'));
+        if(readRole===null){json(response,403,{mode,message:'운영 조회 권한을 확인하세요.'});return;}
+        const result=await api('GET',action==='snapshot'?'/v1/portal/snapshot':'/v1/portal/location-access',readRole);
         if(result.status!==200){json(response,result.status,{message:'사용자 범위를 확인해 주세요.'});return;}
         if(action==='snapshot'){json(response,200,{mode,snapshot:options.cse?options.cse.overlaySnapshot(result.body):result.body});return;}
         const allowed=deviceScope(result.body);
@@ -124,7 +171,7 @@ export async function createPortalHandler(locationFeed:LocationFeed,options:Port
         let rejectedRecords=locations.rejectedRecords;
         let readExpiresAt:string|undefined;
         {
-          const current=await api('GET','/v1/portal/locations',identity?'guardian':roleOf(url.searchParams.get('role')));
+          const current=await api('GET','/v1/portal/locations',readRole);
           if(current.status!==200||!record(current.body)||!Array.isArray(current.body['observations'])||current.body['observations'].length>2000){json(response,current.status===200?502:current.status,{message:'현재 위치 관측 연결을 확인하세요.'});return;}
           const currentAllowed=deviceScope(current.body);
           if(!currentAllowed){json(response,502,{message:'현재 기기 접근 범위를 확인하세요.'});return;}
@@ -150,7 +197,8 @@ export async function createPortalHandler(locationFeed:LocationFeed,options:Port
       if(request.method!=='POST'){json(response,405,{message:'이 경로의 요청 방식을 확인해 주세요.'});return;}
       if(!actions.has(action)){json(response,404,{message:'요청 경로를 확인해 주세요.'});return;}
       if(!String(request.headers['content-type']).startsWith('application/json')){json(response,415,{message:'JSON 요청 형식을 사용해 주세요.'});return;}
-      const input=await body(request);const role=identity?'guardian':roleOf(input['role']);
+      const input=await body(request);const role=identity?'guardian':pick(input['role']);
+      if(role===null){json(response,403,{mode,message:'운영 조회 권한을 확인하세요.'});return;}
       const {role:discardRole,principal:discardPrincipal,...payload}=input;
       void discardRole;void discardPrincipal;
       const result=await api('POST',`/v1/portal/${action}`,role,payload);

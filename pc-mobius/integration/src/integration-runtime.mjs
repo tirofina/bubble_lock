@@ -16,10 +16,12 @@ import { PortalService } from './portal-service.mjs';
 import { PortalLocationService } from './portal-location-service.mjs';
 import { LocationPrivacyService } from './location-privacy.mjs';
 import { DeviceIncidentService } from './device-incidents.mjs';
+import { KeyringEnrollmentService } from './keyring-enrollment.mjs';
 import { RetentionService } from './retention-service.mjs';
 import { GatewayRegistrationService } from './gateway-registration.mjs';
 import { GatewayRegistrationCse } from './gateway-registration-cse.mjs';
 import { GatewayCredentialIssuer } from './gateway-credential-issuer.mjs';
+import { GroupRuntime } from './group-runtime.mjs';
 import { HouseholdGroupCommandService } from './group-command-service.mjs';
 import { OneM2mGroupFanout } from '../../src/onem2m-group-fanout.mjs';
 
@@ -65,6 +67,10 @@ export async function createIntegrationRuntime({ statePath = null, receiptPath =
     terminateSessions:core.registration?.terminateSessions});
   for(const bootstrap of core.registration?.bootstraps ?? []) await gatewayRegistration.provisionBootstrap(bootstrap);
   const portalService = new PortalService({ store, policyService, gatewayControl, clock });
+  const keyringEnrollments = new KeyringEnrollmentService({ store, portalService, gatewayControl, clock });
+  portalService.keyringEnrollments = keyringEnrollments;
+  const groupRuntime = core.group ? new GroupRuntime({ store, gatewayControl, clock, fetchImpl, ...core.group }) : null;
+  if (groupRuntime) { await groupRuntime.ready; portalService.groupRuntime = groupRuntime; }
   // Household-wide guardian commands use a oneM2M <group> fanOutPoint when a CSE is configured.
   const groupCommands = core.groupCommand ? new HouseholdGroupCommandService({ store, gatewayControl, policyService, clock, ...core.groupCommand, fanout: core.groupCommand.fanout ?? new OneM2mGroupFanout({ fetchImpl, ...core.groupCommand.cse }) }) : null;
   if (groupCommands) { await groupCommands.ready; portalService.groupCommands = groupCommands; }
@@ -72,12 +78,12 @@ export async function createIntegrationRuntime({ statePath = null, receiptPath =
   portalService.locationPrivacy=locationPrivacy;
   handoverCoordinator.observationCipher=mecSubscriptions.cipher;
   const deviceIncidents=new DeviceIncidentService({store,portalService,policyService,gatewayControl,clock});
-  const portalLocations = new PortalLocationService({ store, policyService, portalService, gatewayControl, mecIngress, handoverCoordinator, privacy:locationPrivacy,deviceIncidents, clock, deviceBindings: core.locationDeviceBindings ?? {} });
+  const portalLocations = new PortalLocationService({ store, policyService, portalService, gatewayControl, mecIngress, handoverCoordinator, privacy:locationPrivacy,deviceIncidents,keyringEnrollments, clock, deviceBindings: core.locationDeviceBindings ?? {} });
   await portalLocations.migrateLegacy();await handoverCoordinator.migrateObservations();await handoverCoordinator.purgeLegacyCse();
   portalLocations.start();
   const retention = new RetentionService({ store, clock, receiptJournal, ...(core.retention ?? {}) });
   if (core.retention?.autoPrune !== false) retention.start();
-  const api = new IntegrationApiGateway({ policyService, mecIngress, mecSubscriptions: mecPath === 'direct' ? mecSubscriptions : null, handoverCoordinator, flCoordinator, mcpOrchestrator, gatewayControl, gatewayRegistration, portalService, portalLocations, clock });
+  const api = new IntegrationApiGateway({ policyService, mecIngress, mecSubscriptions: mecPath === 'direct' ? mecSubscriptions : null, handoverCoordinator, flCoordinator, mcpOrchestrator, gatewayControl, gatewayRegistration, portalService, portalLocations, groupRuntime, clock });
   let gatewayBridge = null;
   if (mqttClient) {
     gatewayBridge = new GatewayBridge({ mqttClient, fetchImpl, receiptJournal, clock, ...core });
@@ -94,6 +100,6 @@ export async function createIntegrationRuntime({ statePath = null, receiptPath =
     mecTimer = setInterval(() => mecIngress.drainOutbox().then(() => mecIngress.prune()).catch(() => {}), 1000);
     mecTimer.unref?.();
   }
-  const close = async () => { groupCommands?.close(); mecSubscriptions.stop(); await mecConsumer?.stop(); portalLocations.close(); retention.close(); clearInterval(mecTimer); await mcpOrchestrator.close(); await store.close(); };
-  return { store, receiptJournal, policyService, mecIngress, mecSubscriptions, mecPath, mecConsumer, reconciler, handoverCoordinator, flCoordinator, mcpOrchestrator, gatewayControl, gatewayRegistration, portalService, portalLocations, locationPrivacy,deviceIncidents, retention, api, gatewayBridge, groupCommands, close };
+  const close = async () => { groupRuntime?.close(); groupCommands?.close(); mecSubscriptions.stop(); await mecConsumer?.stop(); portalLocations.close(); retention.close(); clearInterval(mecTimer); await mcpOrchestrator.close(); await store.close(); };
+  return { store, receiptJournal, policyService, mecIngress, mecSubscriptions, mecPath, mecConsumer, reconciler, handoverCoordinator, flCoordinator, mcpOrchestrator, gatewayControl, gatewayRegistration, portalService, portalLocations, locationPrivacy,deviceIncidents,keyringEnrollments, retention, api, gatewayBridge, groupRuntime, groupCommands, close };
 }

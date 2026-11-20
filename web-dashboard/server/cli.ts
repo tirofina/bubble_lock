@@ -6,12 +6,17 @@ import type { OidcSessionConfig } from './oidc-session.ts';
 import { createPortalUpstream } from './portal-upstream.ts';
 import type { PortalOptions } from './portal.ts';
 import type { CseLiveConfig } from './cse-live.ts';
+import { loadLocalAccounts } from './local-accounts.ts';
 import type { LivingRoomConfig } from './caregiver.ts';
 
 const receiptFile = process.env['RECEIPT_FILE'];
 const locationFile = process.env['LOCATION_FILE'];
 const gatewayLocationsFile = process.env['GATEWAY_LOCATIONS_FILE'];
 const locationSimulation = process.env['LOCATION_SIMULATION'];
+const maxEventStreams = process.env['SSE_MAX_STREAMS'];
+if (maxEventStreams !== undefined && !/^[1-9]\d{0,3}$/.test(maxEventStreams)) {
+  throw new TypeError('SSE_MAX_STREAMS must be an integer from 1 through 1024');
+}
 const portalConfigFile=process.env['PORTAL_CONFIG_FILE'];
 let portal:PortalOptions|undefined;
 if(portalConfigFile){
@@ -19,6 +24,12 @@ if(portalConfigFile){
   const auth=await createOidcSessionManager(config.oidc);
   const upstream=createPortalUpstream({baseUrl:config.api.baseUrl,...(config.api.caFile?{ca:await readFile(config.api.caFile,'utf8')}:{} )});
   portal={auth,upstream};
+}
+// LOCAL_ACCOUNTS_FILE enables self-hosted password accounts (scripts/add-local-account.mjs writes the file).
+const localAccountsFile=process.env['LOCAL_ACCOUNTS_FILE'];
+if(localAccountsFile){
+  if(portal)throw new TypeError('PORTAL_CONFIG_FILE와 LOCAL_ACCOUNTS_FILE 중 하나만 지정하세요.');
+  portal={localAccounts:await loadLocalAccounts(localAccountsFile)};
 }
 // DASHBOARD_SOURCE=cse-live reads oneM2M notifications from a real CSE; default stays fixture or journal replay.
 const sourceMode = process.env['DASHBOARD_SOURCE'] ?? 'replay';
@@ -40,6 +51,7 @@ const coreConfigFile = process.env['PORTAL_CORE_CONFIG'];
 const livingRoom = coreConfigFile ? (JSON.parse(await readFile(coreConfigFile, 'utf8')) as { livingRoom: LivingRoomConfig }).livingRoom : process.env['CAREGIVER_DEMO'] === '1' ? {} : undefined;
 if (livingRoom && portal) throw new TypeError('방문 돌봄 기기 그룹은 로컬 체험 포털에서만 실행하세요.');
 const service = await startReplayServer({
+  host: process.env['BFF_HOST'] ?? '127.0.0.1',
   ...(port === undefined ? {} : { port }),
   ...(cseLive ? { cseLive } : {}),
   alerts,
@@ -47,11 +59,12 @@ const service = await startReplayServer({
   ...(locationFile === undefined ? {} : { locationFile }),
   ...(gatewayLocationsFile === undefined ? {} : { gatewayLocationsFile }),
   locationSimulation: locationSimulation !== 'false',
+  ...(maxEventStreams === undefined ? {} : { maxEventStreams: Number(maxEventStreams) }),
   ...(livingRoom ? { portal: { livingRoom } } : {}),
   portalStatePath:process.env['PORTAL_DEMO_STATE']??fileURLToPath(new URL('../../.local/portal-demo/state.json',import.meta.url)),
   ...(portal?{portal}:{}),
 });
-console.log(`이벤트 재생: ${service.url} · ${service.replay.source} · ${service.replay.lastSequence}개 · ${portal?'OIDC 계정 인증':'로컬 체험 환경'}`);
+console.log(`이벤트 재생: ${service.url} · ${service.replay.source} · ${service.replay.lastSequence}개 · ${portal?.auth?'OIDC 계정 인증':portal?.localAccounts?`로컬 계정 인증 (${portal.localAccounts.length}개)`:'로컬 체험 환경'}`);
 if (service.live) console.log(`oneM2M 실시간 원천: ${JSON.stringify(service.live.describe())}`);
 console.log(`보호자 알림 카드: ${JSON.stringify(service.alerts.backend.describe())}`);
 process.send?.({ type: 'ready', url: service.url, source: service.replay.source, live: service.live?.describe() ?? null });

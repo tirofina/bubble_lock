@@ -10,24 +10,27 @@ const accuracy = (value) => Number.isFinite(value) && value >= 0 && value <= 100
 const rssi = (value) => Number.isInteger(value) && value >= -127 && value <= 20;
 
 export class PortalLocationService {
-  constructor({ store, policyService, portalService, gatewayControl, mecIngress, handoverCoordinator, privacy, deviceIncidents, clock = () => new Date().toISOString(), deviceBindings = {}, retentionMs = 86400000 }) {
+  constructor({ store, policyService, portalService, gatewayControl, mecIngress, handoverCoordinator, privacy, deviceIncidents, keyringEnrollments, clock = () => new Date().toISOString(), deviceBindings = {}, retentionMs = 86400000 }) {
     if (!deviceBindings || typeof deviceBindings !== 'object' || Array.isArray(deviceBindings) || Object.entries(deviceBindings).some(([ueId, deviceId]) => !ueId || ueId.length > 256 || typeof deviceId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(deviceId))) throw new Error('서버의 UE·키링 등록 연결을 확인하세요.');
     if (!Number.isSafeInteger(retentionMs) || retentionMs < 1000 || retentionMs > 86400000) throw new Error('위치 보관 기간을 1초~24시간으로 설정하세요.');
-    Object.assign(this, { store, policyService, portalService, gatewayControl, mecIngress, handoverCoordinator, privacy, deviceIncidents, clock, retentionMs });
+    Object.assign(this, { store, policyService, portalService, gatewayControl, mecIngress, handoverCoordinator, privacy, deviceIncidents, keyringEnrollments, clock, retentionMs });
     this.deviceBindings = structuredClone(deviceBindings);
   }
 
   async ingestGateway({ gatewayId, principal, observation }) {
     const gateway = this.gatewayControl.authenticate(gatewayId, principal);
     if (gateway.status !== 'ACTIVE' || !validateObservation(observation) || Buffer.byteLength(JSON.stringify(observation)) > 8192
-      || observation.gatewayId !== gatewayId || !gateway.devices[observation.deviceId]) throw new Error('등록된 Gateway의 관측 계약을 확인하세요.');
+      || observation.gatewayId !== gatewayId) throw new Error('등록된 Gateway의 관측 계약을 확인하세요.');
     const now = Date.parse(this.clock()); const observed = Date.parse(observation.observedAt); const received = Date.parse(observation.receivedAt);
     if (observed > now + 2000 || observed < now - this.retentionMs || received < observed || received > now + 2000) throw new Error('관측 시각과 위치 보관 기간을 확인하세요.');
+    const observationId = approvalHash({ gatewayId, deviceId: observation.deviceId, bootId: observation.bootId, sequence: observation.sequence });
+    const enrollment = await this.keyringEnrollments?.ingest({ gatewayId, principal, observation, observationId });
+    if (enrollment) return enrollment;
+    if (!gateway.devices[observation.deviceId]) throw new Error('등록된 Gateway의 관측 계약을 확인하세요.');
     const householdId = gateway.devices[observation.deviceId];
     const device = this.store.get('portalDevices', observation.deviceId);
     if (device && device.householdId !== householdId) throw new Error('기기·가구 연결을 확인하세요.');
     const key = `${gatewayId}:${observation.deviceId}`;
-    const observationId = approvalHash({ gatewayId, deviceId: observation.deviceId, bootId: observation.bootId, sequence: observation.sequence });
     const payloadHash = approvalHash(observation);
     return this.store.transaction(`gateway-telemetry:${key}`, async () => {
       const currentGateway=this.gatewayControl.authenticate(gatewayId,principal);

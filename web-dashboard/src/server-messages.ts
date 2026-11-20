@@ -16,6 +16,8 @@ export function pick(ko: string, en: string, lang: UiLang = uiLang()): string {
 }
 
 const serverMessages: Readonly<Record<string, string>> = {
+  '로그인 시도가 많아요. 잠시 후 다시 시도해 주세요.': 'Too many sign-in attempts. Try again in a moment.',
+  '아이디 또는 비밀번호를 확인해 주세요.': 'Check the username or password.',
   // Portal boundary (web-dashboard/server/portal.ts)
   '등록된 로컬 화면에서 접근해 주세요.': 'Open this page from the registered local screen.',
   '로그인하여 대시보드에 연결하세요.': 'Sign in to connect to the dashboard.',
@@ -127,7 +129,7 @@ const serverMessages: Readonly<Record<string, string>> = {
 
 /** Messages with a variable part: [Korean pattern, English pattern, English template, Korean template]. `$1` is the captured part. */
 const serverPatterns: readonly (readonly [RegExp, RegExp, string, string])[] = [
-  [/^(.+) 기기가 등록되었습니다\.$/u, /^Keyring (.+) was registered\.$/u, 'Keyring $1 was registered.', '$1 기기가 등록되었습니다.'],
+  [/^(.+) 기기가 등록되었습니다\.$/u, /^(.+) was registered\.$/u, '$1 was registered.', '$1 기기가 등록되었습니다.'],
 ];
 
 const englishToKorean: Readonly<Record<string, string>> = Object.fromEntries(Object.entries(serverMessages).map(([ko, en]) => [en, ko]));
