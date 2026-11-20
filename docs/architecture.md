@@ -1,7 +1,7 @@
 # Architecture
 
-This page describes how the Privacy Bubble Keyring system is put together: the
-devices, the oneM2M resources in the Mobius4 CSE, the command path with
+This page describes the Privacy Bubble Keyring architecture: the devices, the
+oneM2M resources in the Mobius4 CSE, the command path with
 acknowledgement and readback, and the protocol used on every segment. The
 diagrams use Mermaid, which GitHub renders in the browser.
 
@@ -13,7 +13,7 @@ Related pages: [README](../README.md), [Why oneM2M](oneM2M-why.md),
 ## 1. System overview
 
 The default demonstration path is
-`Keyring BLE -> Raspberry Pi Gateway -> MQTT/HTTPS -> Mobius4 CSE -> web and app`.
+`Keyring BLE → Raspberry Pi Gateway → MQTT/HTTPS → Mobius4 CSE → web apps`.
 Every resource that more than one application needs (device state, observations,
 receipts, groups, subscriptions, access control) lives in the oneM2M CSE. The
 central integration service adds consent, grants and approvals on top of it.
@@ -70,7 +70,7 @@ flowchart LR
 | Mobius4 CSE | oneM2M resource store: AE, container, contentInstance, flexContainer, group, subscription, accessControlPolicy | external checkout, [IoTKETI/mobius4](https://github.com/IoTKETI/mobius4) |
 | CORE harness | oneM2M contract runner, GatewayBridge (telemetry to flexContainer UPDATE, ACK binding), GroupDispatcher (fan-out per member), SDT adapter | [pc-mobius/src](../pc-mobius/src) |
 | Integration service | API server, policy, portal, Gateway registration, MEC adapter, handover, FL, MCP, retention | [pc-mobius/integration/src](../pc-mobius/integration/src) |
-| Web dashboard | Guardian and visitor portal, operator console, map with GPS/MEC pins and BLE range circles | [web-dashboard](../web-dashboard/README.md) |
+| Web dashboard | Guardian and caregiver portal, operator console, map with GPS/MEC pins and BLE range circles | [web-dashboard](../web-dashboard/README.md) |
 
 ## 2. oneM2M resource tree
 
@@ -120,15 +120,14 @@ Notes:
   profiles so that clients and CSEs with older registries stay interoperable
   ([SDT notes](../pc-mobius/SDT.md)).
 - Discovery uses `fu=1&ty=28&cnd=org.onem2m.common.moduleclass.binarySwitch`, so
-  an application finds every switch by its device model, without a hard-coded
-  path.
+  an application finds every switch by its standard device model.
 - The Gateway writes immutable `m2m:cin` children. The content instance name is
   derived from the request identifier, so an HTTPS retry after an MQTT timeout
   produces the same resource and the Gateway accepts a name conflict only when
   the stored payload matches.
-- Precise location stays out of the CSE. A location `m2m:cin` carries an
-  encrypted payload reference, its hash and an `et` expiry; the ciphertext stays
-  in the policy store ([location privacy](../pc-mobius/integration/LOCATION_PRIVACY.md)).
+- The policy store holds precise location as ciphertext. A location `m2m:cin`
+  carries its encrypted payload reference, hash and `et` expiry
+  ([location privacy](../pc-mobius/integration/LOCATION_PRIVACY.md)).
 - The ACP matrix test ([run-acp-real.mjs](../pc-mobius/scripts/run-acp-real.mjs))
   creates one AE per role (guardian, visitor, relay, mecIPE, executor, operator,
   policyDeployer) and gives each role the smallest `acop` mask it needs, for
@@ -140,14 +139,15 @@ Notes:
   below it as container, flexContainer, group and subscription resources. The
   client applications stay registered AEs of their own under the CSEBase
   (guardian, caregiver and operator dashboards, the MEC IPE, federated
-  learning), and the ACPs on `BubbleLock` decide what each of them may do there. Device roots under a Gateway container keep the
-  `pb-keyring` label and the stream containers of
+  learning), and the ACPs on `BubbleLock` decide what each of them may do there.
+  Device roots under a Gateway container keep the `pb-keyring` label and the
+  stream containers of
   [topology.mjs](../pc-mobius/multiapp/topology.mjs), so label discovery in the
   dashboard finds them. [bubblelock-topology.mjs](../pc-mobius/multiapp/bubblelock-topology.mjs)
-  audits a CSE against this tree and reconciles it additively: it creates what
-  is missing, appends missing labels, group members and ACP rules, and leaves
-  every other attribute and the existing household AE tree as they are. The
-  default mode is `plan` (read only); `apply` needs `--confirm BubbleLock`
+  audits a CSE against this tree and reconciles it additively: it creates the
+  required resources, appends the required labels, group members and ACP rules,
+  and preserves every other attribute and the existing household AE tree. The
+  default `plan` mode produces a read-only preview; `apply` uses `--confirm BubbleLock`
   (`npm --prefix pc-mobius run topology:bubblelock -- --spec <site.json> ...`,
   example spec in [pc-mobius/config](../pc-mobius/config/bubblelock-topology.example.json)).
 
@@ -157,8 +157,8 @@ A command changes a physical output (for example the vibration motor, or the
 built-in LED on the Feather bench board). The central service issues a claim
 that binds `commandId`, `claimId`, `grantRevision`, `ownershipEpoch`,
 `deadline` and `payloadHash`. The Gateway, the keyring and the receipt carry
-these values unchanged, and the command counts as done only after a readback
-of the device output.
+these values unchanged, and the command completes when the device returns a
+matching output readback.
 
 ```mermaid
 sequenceDiagram
@@ -193,11 +193,11 @@ sequenceDiagram
 Failure handling follows the same identifiers:
 
 - A timeout or restart during dispatch produces a `TIMEOUT` or `INDETERMINATE`
-  receipt. The Gateway never repeats a physical action by itself; it only
-  retries delivery of an existing receipt.
+  receipt. The Gateway retains each physical action as a single execution and
+  retries delivery of the existing receipt.
 - A revoked grant, a lower epoch or an expired deadline produces a rejection
   receipt (for example `EXPIRED`) that still reaches the CSE and the dashboard.
-- The Gateway blocks execution when the wall clock jumps more than 2 seconds
+- The Gateway enters a safe hold when the wall clock jumps more than 2 seconds
   against the monotonic clock, or when the credential status is stale.
 
 ### Group fan-out
@@ -248,7 +248,7 @@ and [web-dashboard/contracts](../web-dashboard/contracts).
 ## 5. Edge handover
 
 The handover coordinator moves an application between two CSEs (Edge-A and
-Edge-B) without losing state. It prepares the target process, rechecks the
+Edge-B) while preserving state. It prepares the target process, rechecks the
 current policy, recreates the AE, ACP, group and subscription on the target,
 copies the latest state, switches over, reads the state back and then releases
 the source. Each step carries a handover epoch, so a late write to the old CSE

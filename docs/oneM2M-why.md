@@ -4,8 +4,8 @@ Privacy Bubble Keyring handles some of the most sensitive data a family has:
 where an older parent who lives alone is, and who is allowed to know it. We built
 the system on the [oneM2M](https://www.onem2m.org) service layer, running on the
 open-source [Mobius4](https://github.com/IoTKETI/mobius4) CSE, because oneM2M
-gives every application the same resources, the same access control and the
-same event model. The guardian app, the operator console, the MEC location
+provides every application with the same resources, access control and event
+model. The guardian app, the operator console, the MEC location
 service, the federated learning coordinator and the AI agent all read and
 write one shared, standard resource tree instead of five private APIs.
 
@@ -15,14 +15,14 @@ replaces, and where to find the code. The architecture diagrams are in
 
 ## What oneM2M does for this project
 
-| oneM2M feature | What it does here | Where in the code | What we would build without it |
+| oneM2M feature | What it does here | Where in the code | Equivalent custom component |
 |---|---|---|---|
 | Group and fanOutPoint | One UPDATE to the group's `fopt` (`/privacy-bubble-group/fopt` in the test contract, `/BubbleLock/grp-switches/fopt` on the team server) reaches every member; the CSE returns one aggregated `m2m:agr` response with a result code per member | [group-dispatcher.mjs](../pc-mobius/src/group-dispatcher.mjs), `group-fanout` step in [oneM2M-test-contract.v2.json](../pc-mobius/contracts/oneM2M-test-contract.v2.json) | A custom broadcast service with its own member list, partial-failure bookkeeping and retry rules |
-| Subscription and notification | The CSE pushes `m2m:sgn` notifications when a state, observation or receipt changes; the central service settles commands from receipt notifications and the dashboards update without polling | `create-subscription` step in the contract, [handover-cse.mjs](../pc-mobius/integration/src/handover-cse.mjs), [receipt notification ingress](../keyring/integration-candidate/receipt-notification-ingress.mjs) | A private pub/sub layer and per-app polling loops |
+| Subscription and notification | The CSE pushes `m2m:sgn` notifications when a state, observation or receipt changes; the central service settles commands from receipt notifications and the dashboards update as each event arrives | `create-subscription` step in the contract, [handover-cse.mjs](../pc-mobius/integration/src/handover-cse.mjs), [receipt notification ingress](../keyring/integration-candidate/receipt-notification-ingress.mjs) | A private pub/sub layer and per-app polling loops |
 | accessControlPolicy (ACP) | The CSE checks every CREATE, RETRIEVE, UPDATE, DELETE, NOTIFY and DISCOVER request against per-role privileges, so a visitor, a relay or the MEC interworking role holds only the rights it needs | [run-acp-real.mjs](../pc-mobius/scripts/run-acp-real.mjs), `fl-model-acp` in [fl-publisher.mjs](../pc-mobius/integration/src/fl-publisher.mjs), `handover-acp` in [handover-cse.mjs](../pc-mobius/integration/src/handover-cse.mjs) | Authorization code repeated in every application that touches device data |
 | SDT (TS-0023) and flexContainer | Keyring state is a `binarySwitch` ModuleClass (`cod:binSh`, `state: boolean`) in a flexContainer, so any oneM2M client that knows the binarySwitch model can read and control it | [sdt-adapter.mjs](../pc-mobius/src/sdt-adapter.mjs), [specializations](../pc-mobius/specializations), [SDT notes](../pc-mobius/SDT.md) | A project-specific JSON schema that every client must learn |
-| Discovery with filter criteria | Applications find devices with `fu=1&ty=28&cnd=org.onem2m.common.moduleclass.binarySwitch` instead of hard-coded paths | `discover-state` step in the contract, `discoverDevices` MCP tool in [mcp-domain-tools.mjs](../pc-mobius/integration/src/mcp-domain-tools.mjs) | A device registry service |
-| container and contentInstance | The Gateway writes each BLE observation, command receipt and health frame as an immutable `m2m:cin`; the request identifier fixes the instance name, so retries over MQTT and HTTPS never duplicate data | [transport.py](../keyring/raspberry-pi-gateway/src/bubble_gateway/transport.py), [INTERFACE_NOTES.md](../keyring/INTERFACE_NOTES.md) | An append-only log store with its own deduplication |
+| Discovery with filter criteria | Applications discover devices with `fu=1&ty=28&cnd=org.onem2m.common.moduleclass.binarySwitch` through standard filter criteria | `discover-state` step in the contract, `discoverDevices` MCP tool in [mcp-domain-tools.mjs](../pc-mobius/integration/src/mcp-domain-tools.mjs) | A device registry service |
+| container and contentInstance | The Gateway writes each BLE observation, command receipt and health frame as an immutable `m2m:cin`; the request identifier fixes the instance name, so MQTT and HTTPS retries resolve to one resource | [transport.py](../keyring/raspberry-pi-gateway/src/bubble_gateway/transport.py), [INTERFACE_NOTES.md](../keyring/INTERFACE_NOTES.md) | An append-only log store with its own deduplication |
 | HTTP and MQTT protocol bindings (TS-0009, TS-0010) | The Gateway sends the same oneM2M primitive over MQTT and falls back to HTTPS; `X-M2M-RI` / `rqi` correlates the response in both cases | [transport.py](../keyring/raspberry-pi-gateway/src/bubble_gateway/transport.py), [gateway-bridge.mjs](../pc-mobius/src/gateway-bridge.mjs) | Two separate device APIs with separate correlation logic |
 | Standard resources across CSEs | The handover coordinator recreates AE, ACP, group and subscription on a second CSE and reads the state back; the same code works on any compliant CSE | [handover-coordinator.mjs](../pc-mobius/integration/src/handover-coordinator.mjs), [handover-cse.mjs](../pc-mobius/integration/src/handover-cse.mjs) | Vendor-specific migration scripts |
 
@@ -59,14 +59,14 @@ data. The MEC interworking role holds narrow rights: RETRIEVE on the `desired`
 container, CREATE and UPDATE on the `actual` container, and NOTIFY towards the
 notification sink. These masks are part of the 828-case ACP run above.
 
-Current state, stated precisely:
+Verified implementation:
 
 - The MEC adapter ([mec-adapter.mjs](../pc-mobius/integration/src/mec-adapter.mjs),
   [mec-http-client.mjs](../pc-mobius/integration/src/mec-http-client.mjs)) implements
   service discovery, Location and RNIS queries, subscription CRUD and HTTP
   callbacks with replay protection. It also runs against a local MEC provider
   simulator (`run-mec-ipe-real.mjs`, [MEC notes](../pc-mobius/integration/MEC.md)).
-- The oneM2M MEC IPE runs against our own ETSI MEC Sandbox with 33/33 checks
+- The oneM2M MEC IPE runs against the team's ETSI MEC Sandbox with 33/33 checks
   ([mec-ipe-sandbox.json](verification-evidence/2026-11-20/mec-ipe-sandbox.json))
   and, as a MEC application, relocates from mep1 to mep2 with 25/25 checks
   ([mec-day-of-care.json](verification-evidence/2026-11-20/mec-day-of-care.json)).
@@ -91,8 +91,8 @@ Deployment on an ESTIMED VM is listed in
 
 Three MCP servers (oneM2M, MEC, Audit) expose tools to an agent. The oneM2M
 server reads group membership and registered device resources from the CSE and
-queues approved policies as canonical Gateway commands. Every run needs an
-approval hash from the guardian, and the physical effect still goes through the
+queues approved policies as canonical Gateway commands. Every run requires a
+guardian approval hash, and the physical effect goes through the
 Gateway ACK and readback path ([MCP notes](../pc-mobius/integration/MCP.md)).
 
 ## oneM2M specifications used
@@ -106,7 +106,7 @@ Gateway ACK and readback path ([MCP notes](../pc-mobius/integration/MCP.md)).
 | TS-0010 MQTT Protocol Binding | Gateway and CORE MQTT requests on `/oneM2M/req/{originator}/{cseId}/json` |
 | TS-0023 SDT based information model | binarySwitch ModuleClass, `cod:binSh` short names, flexContainer specialization |
 | TR-0084 | Federated learning category of the hackathon rubric |
-| TR-0077, TR-0086 | Further technical reports the team follows for the hackathon work packages; look them up by number on the published specifications page |
+| TR-0077, TR-0086 | Deployment and interworking guidance used by the hackathon work packages; both are available by document number on the published specifications page |
 
 All documents are available from
 [oneM2M published specifications](https://www.onem2m.org/technical/published-specifications)
@@ -123,5 +123,5 @@ All documents are available from
 
 If you build an IoT product that more than one application must trust, start
 from a oneM2M CSE. Group, subscription, ACP and SDT gave this project a shared
-security and data model on day one, and let a small hackathon team spend its
-time on the privacy features instead of on plumbing.
+security and data model on day one, letting a small hackathon team focus on
+privacy features while oneM2M supplied transport, authorization and events.

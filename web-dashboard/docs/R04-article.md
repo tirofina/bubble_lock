@@ -1,8 +1,8 @@
-# Privacy Bubble Keyring: article
+# Privacy Bubble Keyring Article Sources
 
-The project article lives on Hackster.io (R04). Its link goes into the [repository README](../../README.md) on publication, next to the demo video [Mom, Where Are You?](https://www.youtube.com/watch?v=vOgl1aOGWl0).
+The published Hackster.io project article, [Privacy Bubble: Help Before the Button](https://www.hackster.io/even-bubble-lock-is-rock/privacy-bubble-help-before-the-button-601c1d), appears in the [repository README](../../README.md) beside the demo video [Mom, Where Are You?](https://www.youtube.com/watch?v=vOgl1aOGWl0).
 
-The article tells the family story behind the keyring and then walks through the system: the oneM2M roles, the team server, the resource tree, one PANIC press request by request, MEC through the oneM2M IPE, and the r26 hardware. Each part draws on these repository documents.
+The article tells the family story behind the keyring and then walks through the system: the oneM2M roles, the team server, the resource tree, the full request path of one PANIC press, MEC interworking through the oneM2M IPE, and the r26 hardware. Each part draws on these repository documents.
 
 | Article part | Repository source |
 |---|---|
