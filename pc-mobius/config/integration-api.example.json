@@ -32,7 +32,7 @@
     }
   ],
   "households": [
-    { "householdId": "household-1", "name": "우리 가족", "ownerId": "guardian-1", "members": [{ "principalId": "visitor-1", "role": "visitor" }] }
+    { "householdId": "household-1", "name": "Our family", "ownerId": "guardian-1", "members": [{ "principalId": "visitor-1", "role": "visitor" }] }
   ],
   "gateways": [
     {

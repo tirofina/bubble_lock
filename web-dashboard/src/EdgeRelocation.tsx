@@ -21,11 +21,13 @@ export function EdgeRelocation({ events }: { readonly events: readonly Dashboard
   const { tr } = useLang();
   const [summary, setSummary] = useState<Summary | null>(null);
   const [error, setError] = useState(false);
+  const [generation, setGeneration] = useState(0);
   useEffect(() => {
     const controller = new AbortController();
+    setError(false);
     void getJson('/api/relocation', controller.signal).then(({ value }) => { const next = parse(value); if (next) setSummary(next); else setError(true); }).catch(() => { if (!controller.signal.aborted) setError(true); });
     return () => controller.abort();
-  }, []);
+  }, [generation]);
   const liveHandover = events.filter((event) => event.type === 'integration.receipt' && /HANDOVER/.test(String(event.receipt.type ?? event.receipt.eventType ?? ''))).slice(-3);
   const titles: Record<string, [string, string]> = {
     preplacement: ['Edge-B 사전 배치 (pod 준비)', 'Edge-B pre-placement (pod ready)'],
@@ -50,7 +52,7 @@ export function EdgeRelocation({ events }: { readonly events: readonly Dashboard
     <div className="card-heading"><div><h2>{tr('MEC IPE 재배치', 'MEC IPE relocation')}</h2>
       <p>{summary ? tr(`${summary.from.mep} (${summary.from.edge}, ${summary.from.zone ?? ''})에서 ${summary.to.mep} (${summary.to.edge}, ${summary.to.zone ?? ''})로, 이야기 시각 ${summary.storyTime ?? ''}`, `${summary.from.mep} (${summary.from.edge}, ${summary.from.zone ?? ''}) to ${summary.to.mep} (${summary.to.edge}, ${summary.to.zone ?? ''}), story time ${summary.storyTime ?? ''}`) : tr('mep1 (Edge-A)에서 mep2 (Edge-B)로', 'mep1 (Edge-A) to mep2 (Edge-B)')}</p></div>
       <Badge tone="warning">{tr('기록 재생', 'Replayed')}</Badge></div>
-    {error && <p className="notice error" role="alert">{tr('재배치 기록을 불러오지 못했어요.', 'The relocation record could not be loaded.')}</p>}
+    {error && <p className="notice error" role="alert">{tr('재배치 기록을 불러오지 못했어요.', 'The relocation record could not be loaded.')} <button type="button" onClick={() => setGeneration((value) => value + 1)}>{tr('다시 시도', 'Try again')}</button></p>}
     {summary && <>
       <div className="relocation-route" aria-hidden="true"><span><Icon name="server" />{summary.from.mep}<small>{summary.from.edge}</small></span><i /><span className="target"><Icon name="server" />{summary.to.mep}<small>{summary.to.edge}</small></span></div>
       <ol className="relocation-timeline">{summary.steps.map((step) => <li key={step.key}>

@@ -72,7 +72,6 @@ export function LocationMap({ refresh, variant = 'operator', geofences = emptyGe
   useEffect(() => {
     if (!container.current) return;
     const instance = L.map(container.current, { scrollWheelZoom: false, zoomControl: false, zoomAnimation: false }).setView([37.5665, 126.978], 16);
-    L.control.zoom({ zoomInTitle: tr('지도 확대', 'Zoom in'), zoomOutTitle: tr('지도 축소', 'Zoom out'), position: 'bottomright' }).addTo(instance);
     L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(instance);
     map.current = instance;
     layers.current = L.featureGroup().addTo(instance);
@@ -80,6 +79,14 @@ export function LocationMap({ refresh, variant = 'operator', geofences = emptyGe
     observer.observe(container.current);
     return () => { observer.disconnect(); instance.stop(); instance.remove(); map.current = null; layers.current = null; tiles.current = null; initialFit.current = false; };
   }, []);
+
+  // Zoom buttons carry their titles in the current language; the control is rebuilt when the language changes.
+  useEffect(() => {
+    const instance = map.current;
+    if (!instance) return;
+    const zoom = L.control.zoom({ zoomInTitle: tr('지도 확대', 'Zoom in'), zoomOutTitle: tr('지도 축소', 'Zoom out'), position: 'bottomright' }).addTo(instance);
+    return () => { zoom.remove(); };
+  }, [lang]);
 
   useEffect(() => {
     const instance = map.current;

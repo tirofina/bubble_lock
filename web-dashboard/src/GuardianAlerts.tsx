@@ -80,6 +80,8 @@ function countdown(ms: number): string {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 }
 const shortHash = (hash: string | null | undefined) => (hash ? hash.slice(0, 12) : '-');
+/** Optional resident contact number for the Call button (VITE_RESIDENT_PHONE); without it the button explains the alternatives. */
+const callNumber = String(import.meta.env['VITE_RESIDENT_PHONE'] ?? '').replace(/[^0-9+]/g, '');
 
 export function alertTitle(card: Pick<AlertCard, 'kind'>, tr: Tr): string {
   switch (card.kind) {
@@ -112,6 +114,7 @@ export function AlertCardView({ card, source, now }: { readonly card: AlertCard;
   const { lang, tr } = useLang();
   const [pending, setPending] = useState<'share' | 'dismiss' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [callHelp, setCallHelp] = useState(false);
   const lease = activeLease(card, now);
   const alertedMs = card.alertedAt ? Date.parse(card.alertedAt) : null;
   const purpose = card.draft ? label(lang === 'en' ? leasePurposeLabelsEn : leasePurposeLabels, card.draft.purpose) : '';
@@ -164,18 +167,21 @@ export function AlertCardView({ card, source, now }: { readonly card: AlertCard;
     {error && <p className="notice error" role="alert">{error}</p>}
     <div className="alert-actions">
       {canShare && <button className="primary" disabled={pending !== null} onClick={() => void act('share')}><Icon name="pin" size={18} />{tr(`위치 ${minutes}분 공유 (${sharePurpose})`, `Share location ${minutes} min (${sharePurpose})`)}</button>}
-      <a className="button" href="tel:"><Icon name="bell" size={18} />{tr('전화하기', 'Call')}</a>
+      {callNumber ? <a className="button" href={`tel:${callNumber}`}><Icon name="bell" size={18} />{tr('전화하기', 'Call')}</a>
+        : <button type="button" aria-expanded={callHelp} onClick={() => setCallHelp((value) => !value)}><Icon name="bell" size={18} />{tr('전화하기', 'Call')}</button>}
       {canDismiss && <button className="quiet-button" disabled={pending !== null} onClick={() => void act('dismiss')}>{tr('괜찮아요', "It's fine")}</button>}
     </div>
+    {callHelp && !callNumber && <p className="notice" role="status">{tr('이 화면에 등록된 전화번호가 없어요. 휴대전화로 직접 거시거나 ', 'No phone number is set up for this screen. Call from your phone, or send a ')}<a href="#/user/activity">{tr('안부 확인 요청', 'check-in request')}</a>{tr('을 보내 주세요.', ' instead.')}</p>}
     <p className="caption muted alert-source">{source === 'onem2m-cse-live' ? tr('oneM2M CSE에서 실시간으로 받은 알림', 'Received live from the oneM2M CSE') : tr('실행 기록을 재생한 알림 (모의)', 'Replayed from a run record (simulated)')}{card.agent ? `, ${card.agent}` : ''}</p>
   </article>;
 }
 
 export function GuardianAlertList({ feed }: { readonly feed: AlertFeedController }) {
+  const { tr } = useLang();
   const now = useNow(1000);
   const cards = feed.view.cards.filter((card) => card.notified).slice().reverse();
   if (cards.length === 0) return null;
-  return <section className="alert-list" aria-label="Alerts">{cards.map((card) => <AlertCardView key={card.key} card={card} source={feed.source} now={now} />)}</section>;
+  return <section className="alert-list" aria-label={tr('알림', 'Alerts')}>{cards.map((card) => <AlertCardView key={card.key} card={card} source={feed.source} now={now} />)}</section>;
 }
 
 /** Keyring location page: the resident's lease-gated location (dayofcare park) while a guardian-approved share is open. */
@@ -198,7 +204,7 @@ export function ResidentStatusMetric({ feed }: { readonly feed: AlertFeedControl
   const place = status?.place === 'home' ? tr('집', 'home') : status?.place;
   const open = feed.view.cards.filter((card) => card.notified && card.state !== 'dismissed');
   const alertNote = open.some((card) => card.state === 'escalated' || card.kind === 'PANIC') ? tr('긴급 구조 진행 중', 'Emergency Rescue in progress') : open.length ? tr('살펴볼 알림이 있어요', 'Alert open') : null;
-  return <Metric label={tr('어머니 지금', 'Mom right now')} value={value} compact icon={status?.state === 'AT_HOME' ? 'home' : status?.state === 'IN_PARK' ? 'pin' : 'activity'}
+  return <Metric href="#/user/map" label={tr('어머니 지금', 'Mom right now')} value={value} compact icon={status?.state === 'AT_HOME' ? 'home' : status?.state === 'IN_PARK' ? 'pin' : 'activity'}
     note={status ? [place, status.localTime, alertNote].filter(Boolean).join(', ') : tr('위치 소식을 기다리고 있어요.', 'Waiting for her next update.')} />;
 }
 

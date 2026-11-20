@@ -3,7 +3,7 @@
   "gateways": [
     {
       "gatewayId": "pi-01",
-      "label": "서울광장 수신기 · 모의",
+      "label": "Seoul Plaza receiver (simulated)",
       "position": { "lat": 37.56585, "lon": 126.97805 },
       "simulation": true,
       "referenceRssiDbm": -59,
@@ -16,14 +16,14 @@
       "service": "Location",
       "eventType": "UE_LOCATION_UPDATE",
       "ueId": "keyring-A",
-      "label": "키링 A",
+      "label": "Keyring A",
       "location": { "lat": 37.56588, "lon": 126.97808, "accuracyM": 4 },
       "timestamp": "2026-11-10T08:10:00.000Z",
       "simulation": true
     },
     {
       "deviceId": "keyring-B",
-      "label": "키링 B",
+      "label": "Keyring B",
       "locationSource": "gps",
       "location": { "lat": 37.56573, "lon": 126.97812, "accuracyM": 8 },
       "observedAt": "2026-11-10T08:10:01.000Z",
@@ -45,7 +45,7 @@
     },
     {
       "deviceId": "keyring-C",
-      "label": "키링 C · BLE",
+      "label": "Keyring C (BLE)",
       "gatewayId": "pi-01",
       "rssiDbm": -87,
       "observedAt": "2026-11-10T08:10:04.000Z",

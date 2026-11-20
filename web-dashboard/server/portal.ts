@@ -24,7 +24,7 @@ export interface PortalHandler {
   /** Caregiver living room group command (demo portal runtime only). */
   readonly caregiver:LivingRoomService|null;
 }
-const actions=new Set(['households','devices','consents','grants','consents/revoke','grants/revoke','incidents','incidents/resolve','commands/request','commands/approve','notifications/read','location-leases','location-leases/revoke','relay-associations']);
+const actions=new Set(['households','devices','devices/enroll','consents','grants','consents/revoke','grants/revoke','incidents','incidents/resolve','commands/request','commands/approve','notifications/read','location-leases','location-leases/revoke','relay-associations']);
 function json(response:ServerResponse,status:number,body:unknown) {
   response.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});response.end(JSON.stringify(body));
 }
@@ -102,6 +102,11 @@ export async function createPortalHandler(locationFeed:LocationFeed,options:Port
         if(input['action']==='renew'){json(response,200,{mode,grant:await caregiver.renew(Number.isInteger(input['ttlSec'])?Math.max(10,Math.min(3600,input['ttlSec'] as number)):undefined)});return;}
         if(roleOf(input['role'])!=='visitor'){json(response,403,{message:'방문 돌봄자 화면에서 눌러 주세요.'});return;}
         json(response,200,{mode,result:await caregiver.command(input['state']!==false)});return;
+      }
+      if(request.method==='GET'&&action==='enrollments'){
+        // Operator keyring enrollment view (Gateway allow-lists and household names); scope device:enroll.
+        const result=await api('GET','/v1/portal/enrollments','operator');
+        json(response,result.status,result.status===200?{mode,enrollments:result.body}:{message:record(result.body)&&typeof result.body['error']==='string'?result.body['error']:'키링 등록 권한을 확인해 주세요.'});return;
       }
       if(request.method==='GET'&&(action==='snapshot'||action==='locations')) {
         const result=await api('GET',action==='snapshot'?'/v1/portal/snapshot':'/v1/portal/location-access',identity?'guardian':roleOf(url.searchParams.get('role')));

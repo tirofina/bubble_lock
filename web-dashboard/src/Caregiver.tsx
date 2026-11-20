@@ -45,7 +45,7 @@ function MemberRows({ result, devices }: { readonly result: Result; readonly dev
 export function CaregiverLivingRoom() {
   const { lang, tr } = useLang();
   const now = useNow(1000);
-  const { status, reload } = useCaregiver('/api/portal/caregiver?role=visitor');
+  const { status, reload, error: loadError } = useCaregiver('/api/portal/caregiver?role=visitor');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   if (!status) return null;
@@ -56,7 +56,7 @@ export function CaregiverLivingRoom() {
     try {
       const response = await fetch('/api/portal/caregiver', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: 'visitor', state }) });
       if (!response.ok) { const value: unknown = await response.json().catch(() => null); throw new Error(isRecord(value) && typeof value['message'] === 'string' ? value['message'] : `HTTP ${response.status}`); }
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'error'); }
+    } catch (cause) { setError(cause instanceof Error ? cause.message : tr('요청을 보내지 못했어요.', 'The request did not reach the server.')); }
     finally { setPending(false); reload(); }
   };
   return <article className={`alert-card caregiver-card ${last?.outcome === 'REJECTED' ? 'alert-escalated' : last?.outcome === 'APPLIED' ? 'alert-approved' : ''}`}>
@@ -71,6 +71,7 @@ export function CaregiverLivingRoom() {
         : tr(`거절됨: ${last.stage === 'grant' ? '위임 권한이 끝나 명령을 보내지 않았어요.' : last.reason ?? ''}`, `REJECTED: ${last.stage === 'grant' ? 'the delegation grant expired, no command was sent.' : last.reason ?? ''}`)}</div>}
     {last && <MemberRows result={last} devices={status.devices} />}
     {error && <p className="notice error" role="alert">{error}</p>}
+    {loadError && <p className="notice error" role="alert">{tr('거실 상태를 새로 받지 못했어요. 마지막 상태를 보여 드려요.', 'Could not refresh the living room status. Showing the last one.')} <button type="button" onClick={reload}>{tr('다시 시도', 'Try again')}</button></p>}
     <div className="alert-actions"><button className="primary" disabled={pending} onClick={() => void press(true)}><Icon name="bolt" size={18} />{tr('거실 켜기', 'Living Room On')}</button>
       <button disabled={pending} onClick={() => void press(false)}>{tr('거실 끄기', 'Living Room Off')}</button></div>
     <p className="caption muted alert-source">{status.live ? tr(`실제 Mobius4 CSE ${status.cse?.cseId ?? ''}의 <grp>/fopt, 기기와 Gateway는 모의`, `<grp>/fopt on the real Mobius4 CSE ${status.cse?.cseId ?? ''}; devices and Gateway emulated`) : tr('모의 fanOutPoint와 모의 기기 (CSE 없이 재생)', 'Emulated fanOutPoint and devices (no CSE)')}</p>
@@ -87,11 +88,11 @@ export function GroupCommandsPanel() {
     <Badge tone={status.live ? 'info' : 'warning'}>{status.live ? tr('실제 CSE, 모의 기기', 'Real CSE, emulated devices') : tr('모의', 'Simulated')}</Badge></div>
     {status.results.length === 0 && <p className="empty-state">{tr('방문 돌봄자가 누르면 여기에 기록돼요.', 'Recorded here when the caregiver presses a button.')}</p>}
     {status.results.map((result) => <article className="triage-run" key={result.id}>
-      <div className="row"><div className="stack-tight"><strong>{result.state ? 'Living Room On' : 'Living Room Off'}</strong><span className="small muted"><Timestamp at={result.at} />{result.fanoutPoint ? `, ${result.fanoutPoint}` : ''}{result.aggregateRsc ? `, rsc ${result.aggregateRsc}` : ''}</span></div>
-        <Badge tone={result.outcome === 'APPLIED' ? 'success' : 'danger'}>{result.outcome}</Badge></div>
+      <div className="row"><div className="stack-tight"><strong>{result.state ? tr('거실 켜기', 'Living Room On') : tr('거실 끄기', 'Living Room Off')}</strong><span className="small muted"><Timestamp at={result.at} />{result.fanoutPoint ? `, ${result.fanoutPoint}` : ''}{result.aggregateRsc ? `, rsc ${result.aggregateRsc}` : ''}</span></div>
+        <Badge tone={result.outcome === 'APPLIED' ? 'success' : 'danger'}>{result.outcome === 'APPLIED' ? tr('적용됨', 'APPLIED') : result.outcome === 'REJECTED' ? tr('거절됨', 'REJECTED') : result.outcome}</Badge></div>
       {result.outcome === 'REJECTED' && <p className="small">{tr('거절 사유', 'Rejection')}: {result.stage === 'grant' ? tr(`위임 권한 만료 (${result.grantExpiresAt ?? ''})`, `delegation grant expired at ${result.grantExpiresAt ?? ''}`) : result.reason}</p>}
       <MemberRows result={result} devices={status.devices} />
-      {result.approvalHash && <p className="caption muted">approvalHash <code>{result.approvalHash}</code></p>}
+      {result.approvalHash && <p className="caption muted">{tr('승인 hash', 'Approval hash')} <code>{result.approvalHash}</code></p>}
     </article>)}
   </div>;
 }

@@ -143,6 +143,41 @@ export class PortalService {
     });
   }
 
+  /** Operator view for keyring enrollment: every Gateway allow-list and every household (names only). */
+  enrollments(principal) {
+    this.policyService.authorize(principal, 'device:enroll');
+    const connected = new Map(this.store.list('portalDevices').map((device) => [device.deviceId, device]));
+    return structuredClone({
+      gateways: this.store.list('gateways').map((gateway) => ({ gatewayId: gateway.gatewayId, status: gateway.status,
+        devices: Object.entries(gateway.devices).map(([deviceId, householdId]) => ({ deviceId, householdId, connected: connected.get(deviceId)?.householdId === householdId, label: connected.get(deviceId)?.label ?? null })) })),
+      households: this.store.list('households').map((home) => ({ householdId: home.householdId, name: home.name })),
+    });
+  }
+
+  enrollDevice(principal, input) {
+    this.policyService.authorize(principal, 'device:enroll');
+    const household = this.store.get('households', identifier(input?.householdId, '가구'));
+    if (!household) throw new Error('등록할 가구를 선택하세요.');
+    return this.mutate(principal, 'device.enroll', input, async () => {
+      const deviceId = identifier(input.deviceId, '키링 ID');
+      try { await this.gatewayControl.assignDevice({ gatewayId: identifier(input.gatewayId, '수신기 ID'), deviceId, subjectId: household.householdId }); }
+      catch (error) {
+        const message = error instanceof Error ? error.message : '';
+        if (message === 'Enrolled gateway required') throw new Error('등록된 수신기를 선택하세요.');
+        if (message === 'Active gateway required') throw new Error('사용 중인 수신기를 선택하세요.');
+        if (message.startsWith('Device already enrolled')) throw new Error('이미 다른 가구나 수신기에 등록된 키링이에요.');
+        throw error;
+      }
+      const enrollment = { gatewayId: input.gatewayId, deviceId, householdId: household.householdId, enrolledAt: this.clock() };
+      await this.store.append('receipts', recordEnvelope({ type: 'DEVICE_ENROLLED', owner: 'PC-MOBIUS-INTEGRATION', principalId: principal.principalId, ...enrollment }, this.clock));
+      for (const member of household.members.filter((entry) => entry.role === 'guardian')) {
+        const notificationId = `notice-${approvalHash({ enrollment, principalId: member.principalId }).slice(0,32)}`;
+        await this.store.put('portalNotifications', notificationId, { notificationId, householdId: household.householdId, principalId: member.principalId, type: 'DEVICE_ENROLLED', title: '운영자가 새 키링을 등록했습니다. 가족과 키링 화면에서 연결하세요.', createdAt: enrollment.enrolledAt, readAt: null });
+      }
+      return enrollment;
+    });
+  }
+
   createConsent(principal, input) {
     this.household(principal, input.householdId, true);
     if (!Array.isArray(input.scopes) || input.scopes.some((value) => !['bubble:command', 'location:read', 'mec:location', 'mec:rnis', 'fl:participate'].includes(value))) throw new Error('사용자 동의 범위에서 제공하는 기능을 선택하세요.');
@@ -318,12 +353,13 @@ export class PortalService {
   async handle({ method, path, principal, body = {} }) {
     if (method === 'GET' && path === '/v1/portal/snapshot') return { status: 200, body: this.snapshot(principal) };
     if (method === 'GET' && path === '/v1/portal/location-access') return { status: 200, body: this.locationAccess(principal) };
+    if (method === 'GET' && path === '/v1/portal/enrollments') return { status: 200, body: this.enrollments(principal) };
     if(method==='POST'&&this.locationPrivacy){
       const actions={'/v1/portal/location-leases':'createLease','/v1/portal/location-leases/revoke':'revokeLease','/v1/portal/relay-associations':'approveAssociation'};
       if(Object.hasOwn(actions,path))return {status:200,body:await this.locationPrivacy[actions[path]](principal,body)};
     }
     const actions = {
-      households: 'createHousehold', devices: 'registerDevice', consents: 'createConsent', grants: 'createGrant',
+      households: 'createHousehold', devices: 'registerDevice', 'devices/enroll': 'enrollDevice', consents: 'createConsent', grants: 'createGrant',
       'consents/revoke': 'revokeConsent', 'grants/revoke': 'revokeGrant', incidents: 'createIncident', 'incidents/resolve': 'resolveIncident',
       'commands/request': 'requestCommand', 'commands/approve': 'approveCommand', 'commands/retry': 'retryCommand', 'notifications/read': 'readNotification',
     };

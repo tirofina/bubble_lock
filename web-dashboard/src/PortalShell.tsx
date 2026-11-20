@@ -37,7 +37,7 @@ export function PortalShell({ role, page, children, actions }: { role: 'operator
       <nav aria-label={tr(`${area} 메뉴`, `${area} menu`)}>{nav.map((item) =>
         <a className={page === item[0] ? 'active' : ''} aria-current={page === item[0] ? 'page' : undefined} href={`#/${role}/${item[0]}`} key={item[0]}><Icon name={item[3]} /><span>{title(item)}</span></a>)}</nav>
       <div className="sidebar-bottom">
-        <div className="workspace-info"><Icon name="shield" /><div><strong>{tr('받은 그대로 보여요', 'Shown as received')}</strong>{tr('위치, 공유 권한, 실행 기록', 'Location, sharing and run records')}</div></div>
+        <a className="workspace-info" href={role === 'operator' ? '#/operator/audit' : '#/user/privacy'}><Icon name="shield" /><div><strong>{tr('받은 그대로 보여요', 'Shown as received')}</strong>{tr('위치, 공유 권한, 실행 기록', 'Location, sharing and run records')}</div></a>
         <a href="#/"><Icon name="exit" />{tr('시작 화면으로', 'Back to start')}</a>
       </div>
     </aside>
@@ -61,20 +61,21 @@ export function PortalShell({ role, page, children, actions }: { role: 'operator
 
 export function Landing() {
   const auth = useAuth();
+  const { tr } = useLang();
   const mode = auth.session?.mode;
   return <div className="welcome-page">
     <header className="welcome-header"><Brand tagline={false} /><div className="cluster">
-      <span className={`environment-tag${mode === 'live' ? '' : ' demo'}`}><i />{mode === 'live' ? '계정에 연결됨' : mode === 'demo' ? '체험 모드' : '연결 확인 중'}</span><AccountAction />
+      <span className={`environment-tag${mode === 'live' ? '' : ' demo'}`}><i />{mode === 'live' ? tr('계정에 연결됨', 'Signed in') : mode === 'demo' ? tr('체험 모드', 'Demo mode') : tr('연결 확인 중', 'Checking connection')}</span><LangToggle /><AccountAction />
     </div></header>
     <main>
       <section className="welcome-band welcome-hero" aria-labelledby="welcome-title"><div>
         <div className="welcome-copy">
-          <p className="eyebrow">일상에 안심을</p>
-          <h1 id="welcome-title">가까이 있어 든든하고<br />공유는 내가 정해요.</h1>
-          <p className="welcome-description">키링이 어디 있는지 확인하고 누구와 얼마 동안 공유할지 직접 정하세요.</p>
+          <p className="eyebrow">{tr('일상에 안심을', 'Peace of mind, every day')}</p>
+          <h1 id="welcome-title">{tr('가까이 있어 든든하고', 'Close by for safety,')}<br />{tr('공유는 내가 정해요.', 'shared on your terms.')}</h1>
+          <p className="welcome-description">{tr('키링이 어디 있는지 확인하고 누구와 얼마 동안 공유할지 직접 정하세요.', 'See where the keyring is, and decide who sees it and for how long.')}</p>
           <div className="welcome-actions">
-            <a className="button primary" href="#/user/overview">가족 화면 시작하기<Icon name="arrow" size={18} /></a>
-            <a className="button" href="#/operator/overview">운영 화면 열기</a>
+            <a className="button primary" href="#/user/overview">{tr('가족 화면 시작하기', 'Open the family view')}<Icon name="arrow" size={18} /></a>
+            <a className="button" href="#/operator/overview">{tr('운영 화면 열기', 'Open the operator view')}</a>
           </div>
         </div>
         <div className="welcome-visual" aria-hidden="true"><div className="orbit orbit-one" /><div className="orbit orbit-two" /><div className="orbit orbit-three" />
@@ -84,31 +85,35 @@ export function Landing() {
         </div>
       </div></section>
       <section className="welcome-band welcome-channels" aria-labelledby="channels-title"><div>
-        <p className="eyebrow">화면 선택</p>
-        <h2 id="channels-title">어떤 화면으로 시작할까요?</h2>
+        <p className="eyebrow">{tr('화면 선택', 'Choose a view')}</p>
+        <h2 id="channels-title">{tr('어떤 화면으로 시작할까요?', 'Where would you like to start?')}</h2>
         <div className="entrance-grid">
           <a className="entrance-card user-entrance" href="#/user/overview"><span className="entrance-icon"><Icon name="users" size={26} /></span>
-            <div><p className="eyebrow">가족과 나</p><h3>가족 화면</h3><p>키링 위치, 가족, 공유 권한, 알림을 한곳에서 확인해요.</p></div>
-            <span className="entrance-link">가족 화면 열기<Icon name="arrow" /></span></a>
+            <div><p className="eyebrow">{tr('가족과 나', 'You and your family')}</p><h3>{tr('가족 화면', 'Family view')}</h3><p>{tr('키링 위치, 가족, 공유 권한, 알림을 한곳에서 확인해요.', 'Keyring location, family, sharing and alerts in one place.')}</p></div>
+            <span className="entrance-link">{tr('가족 화면 열기', 'Open the family view')}<Icon name="arrow" /></span></a>
           <a className="entrance-card operator-entrance" href="#/operator/overview"><span className="entrance-icon"><Icon name="grid" size={26} /></span>
-            <div><p className="eyebrow">운영자</p><h3>운영 화면</h3><p>장치 상태, 명령 처리, 연결 서비스, 활동 기록을 한 화면에서 살펴봐요.</p></div>
-            <span className="entrance-link">운영 화면 열기<Icon name="arrow" /></span></a>
+            <div><p className="eyebrow">{tr('운영자', 'Operators')}</p><h3>{tr('운영 화면', 'Operator view')}</h3><p>{tr('장치 상태, 명령 처리, 연결 서비스, 활동 기록을 한 화면에서 살펴봐요.', 'Devices, commands, connected services and the activity log on one screen.')}</p></div>
+            <span className="entrance-link">{tr('운영 화면 열기', 'Open the operator view')}<Icon name="arrow" /></span></a>
         </div>
       </div></section>
       <section className="welcome-band welcome-promises" aria-labelledby="promise-title"><div>
-        <h2 id="promise-title">안심하고 쓰도록 이렇게 만들었어요</h2>
+        <h2 id="promise-title">{tr('안심하고 쓰도록 이렇게 만들었어요', 'Built so you can trust it')}</h2>
         <ul className="promise-grid">
-          <li><span><Icon name="pin" /></span><h3>필요할 때만 보여요</h3><p>위치 공유에는 시간을 정해요. 정한 시간이 지나면 공유가 끝나요.</p></li>
-          <li><span><Icon name="shield" /></span><h3>보호자가 정해요</h3><p>공유할 항목과 기간은 보호자가 정하고 언제든 취소할 수 있어요.</p></li>
-          <li><span><Icon name="file" /></span><h3>모두 기록돼요</h3><p>모든 요청과 승인은 받은 시각과 함께 기록으로 남아요.</p></li>
+          <li><a href="#/user/map"><span><Icon name="pin" /></span><h3>{tr('필요할 때만 보여요', 'Shown only when needed')}</h3><p>{tr('위치 공유에는 시간을 정해요. 정한 시간이 지나면 공유가 끝나요.', 'Every location share has a time limit and ends when it runs out.')}</p></a></li>
+          <li><a href="#/user/privacy"><span><Icon name="shield" /></span><h3>{tr('보호자가 정해요', 'Guardians decide')}</h3><p>{tr('공유할 항목과 기간은 보호자가 정하고 언제든 취소할 수 있어요.', 'Guardians choose what is shared and for how long, and can revoke it at any time.')}</p></a></li>
+          <li><a href="#/operator/audit"><span><Icon name="file" /></span><h3>{tr('모두 기록돼요', 'Everything is recorded')}</h3><p>{tr('모든 요청과 승인은 받은 시각과 함께 기록으로 남아요.', 'Every request and approval is logged with the time it arrived.')}</p></a></li>
         </ul>
       </div></section>
     </main>
-    <footer className="welcome-footer"><span>BubbleLock, 프라이버시 버블 키링</span><span>체험 데이터와 실제 데이터는 화면에 따로 표시돼요.</span></footer>
+    <footer className="welcome-footer"><span>{tr('BubbleLock, 프라이버시 버블 키링', 'BubbleLock, the Privacy Bubble Keyring')}</span><span>{tr('체험 데이터와 실제 데이터는 화면에 따로 표시돼요.', 'Demo data and real data are labelled separately.')}</span></footer>
   </div>;
 }
 
-export function Metric({ label, value, note, icon, compact = false }: { label: string; value: ReactNode; note: ReactNode; icon: IconName; compact?: boolean }) {
-  return <article className="metric-card"><span className="metric-icon"><Icon name={icon} /></span><p>{label}</p>
-    <strong className={compact ? 'metric-text' : undefined}>{value}</strong><small>{note}</small></article>;
+/** A metric card; with `href` it is a link, with `onClick` a button, so every card leads somewhere. */
+export function Metric({ label, value, note, icon, compact = false, href, onClick }: { label: string; value: ReactNode; note: ReactNode; icon: IconName; compact?: boolean; href?: string; onClick?: () => void }) {
+  const body = <><span className="metric-icon"><Icon name={icon} /></span><p>{label}</p>
+    <strong className={compact ? 'metric-text' : undefined}>{value}</strong><small>{note}</small></>;
+  if (href) return <a className="metric-card metric-link" href={href}>{body}</a>;
+  if (onClick) return <button type="button" className="metric-card metric-link" onClick={onClick}>{body}</button>;
+  return <article className="metric-card">{body}</article>;
 }

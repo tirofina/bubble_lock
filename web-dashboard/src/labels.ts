@@ -1,5 +1,5 @@
 /**
- * Plain Korean labels for protocol values shown on screen.
+ * Plain labels for protocol values shown on screen: Korean maps and their `...En` twins.
  * Unknown values fall back to the raw value so new states stay visible.
  */
 type Labels = Readonly<Record<string, string>>;
@@ -64,7 +64,7 @@ export const serviceFieldLabels: Labels = {
   runId: '실행 ID', action: '동작', cursor: '진행 위치', principalId: '실행 계정', approvalHash: '승인 해시',
 };
 
-/* English labels for the demo video screens (Korean stays the default). */
+/* English labels (English is the UI default; the Korean maps above serve the Korean setting). */
 export const connectionLabelsEn: Labels = {
   connecting: 'Connecting', connected: 'Connected', offline: 'Offline', disconnected: 'Disconnected', invalid: 'Stopped (format error)', resync: 'Reload needed',
 };
@@ -90,6 +90,28 @@ export const serviceFieldLabelsEn: Labels = {
   roundId: 'Round', participantCount: 'Participants', selectionHash: 'Selection hash', modelHash: 'Model hash',
   runId: 'Run ID', action: 'Action', cursor: 'Cursor', principalId: 'Principal', approvalHash: 'Approval hash',
 };
+/** Fallback text for a value that has not arrived yet, per language (default argument of label() stays Korean). */
+export const notYetLabel = (lang: 'ko' | 'en') => (lang === 'en' ? 'Not yet' : '확인 전');
+export const commandStatusLabelsEn: Labels = {
+  pending: 'Pending', 'in-flight': 'Sending', partial: 'Partly confirmed', verified: 'Applied and confirmed', failure: 'Failed, waiting to retry',
+};
+export const ackStateLabelsEn: Labels = {
+  RECEIVED: 'Received', FORWARDED: 'Forwarded', APPLIED: 'Applied', READBACK_VERIFIED: 'Applied and confirmed', RETRY_PENDING: 'Waiting to retry',
+};
+export const eventTypeLabelsEn: Labels = {
+  'command.accepted': 'Command accepted', 'command.dispatched': 'Command sent', 'command.ack': 'Device response',
+  'gateway.telemetry': 'Receiver status report', 'receipt.review': 'Record review', 'group.summary': 'Group summary',
+  'integration.receipt': 'Service record',
+};
+export const receiptTypeLabelsEn: Labels = {
+  CONSENT_CREATED: 'Consent created', GRANT_ISSUED: 'Permission issued', POLICY_APPROVED: 'Policy approved',
+  MEC_POLICY_RECONCILE: 'Location service policy applied', UE_LOCATION_UPDATE: 'UE location update',
+  HANDOVER_ACTIVE: 'Edge handover complete', HANDOVER_DRAINING: 'Edge handover preparing',
+  FL_ROUND: 'Federated learning round', MCP_AUDIT: 'Automation run record', AUTOMATION_INCIDENT_OPENED: 'Automation incident record',
+};
+export const outcomeLabelsEn: Labels = { allowed: 'Allowed', denied: 'Denied', pending: 'Pending' };
+/** Pick the Korean or English twin of a label map. */
+export function labelsFor(lang: 'ko' | 'en', ko: Labels, en: Labels): Labels { return lang === 'en' ? en : ko; }
 /** Lease purposes of the triage contract (pc-mobius/contracts/mcp-triage-tools.v1.json). */
 export const leasePurposeLabels: Labels = { 'wandering-check': '안부 확인', 'emergency-rescue': '긴급 구조' };
 export const leasePurposeLabelsEn: Labels = { 'wandering-check': 'Wellbeing check', 'emergency-rescue': 'Emergency Rescue' };

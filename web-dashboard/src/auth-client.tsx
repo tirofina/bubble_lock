@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { isRecord } from './client.ts';
+import { useLang } from './i18n.tsx';
+import { pick } from './server-messages.ts';
 
 interface AuthSession {mode:'demo'|'live';authenticated:boolean;principal?:{principalId:string;scopes:string[]};expiresAt?:string}
 interface AuthContextValue {session:AuthSession|null;error:string|null;reload:()=>void;logout:()=>Promise<void>}
@@ -19,10 +21,10 @@ export function AuthProvider({children}:{children:ReactNode}) {
       try{
         const response=await fetch('/api/auth/session',{credentials:'same-origin',signal:controller.signal});
         const data:unknown=await response.json();
-        if(!response.ok||!isRecord(data)||!['demo','live'].includes(String(data['mode']))||typeof data['authenticated']!=='boolean')throw Error('로그인 서버와 연결이 끊겼어요. 잠시 후 다시 시도해 주세요.');
-        if(data['authenticated']&&(!isRecord(data['principal'])||!Array.isArray(data['principal']['scopes'])||typeof data['principal']['principalId']!=='string'))throw Error('계정 정보 형식이 예상과 달라요.');
+        if(!response.ok||!isRecord(data)||!['demo','live'].includes(String(data['mode']))||typeof data['authenticated']!=='boolean')throw Error('session');
+        if(data['authenticated']&&(!isRecord(data['principal'])||!Array.isArray(data['principal']['scopes'])||typeof data['principal']['principalId']!=='string'))throw Error('session');
         if(active){setSession(data as unknown as AuthSession);setError(null);}
-      }catch{if(active){setSession(null);setError('로그인 서버와 연결이 끊겼어요. 잠시 후 다시 시도해 주세요.');}}
+      }catch{if(active){setSession(null);setError(pick('로그인 서버와 연결이 끊겼어요. 잠시 후 다시 시도해 주세요.', 'Lost the connection to the sign-in server. Try again in a moment.'));}}
     };
     void read();const timer=setInterval(()=>void read(),30000);
     window.addEventListener('focus',reload);
@@ -33,20 +35,22 @@ export function AuthProvider({children}:{children:ReactNode}) {
       const response=await fetch('/api/auth/logout',{method:'POST',credentials:'same-origin'});
       if(!response.ok)throw Error();
       setSession({mode:'live',authenticated:false});setError(null);reload();
-    }catch{setError('로그아웃 요청이 서버에 닿지 않았어요. 다시 시도해 주세요.');}
+    }catch{setError(pick('로그아웃 요청이 서버에 닿지 않았어요. 다시 시도해 주세요.', 'The sign-out request did not reach the server. Try again.'));}
   },[reload]);
   return <AuthContext.Provider value={{session,error,reload,logout}}>{children}</AuthContext.Provider>;
 }
 
 export function AccountAction() {
   const {session,logout}=useAuth();
-  return session?.mode==='live'&&session.authenticated?<button className="portal-switch" onClick={()=>void logout()} title={session.principal?.principalId}>로그아웃</button>:null;
+  const {tr}=useLang();
+  return session?.mode==='live'&&session.authenticated?<button className="portal-switch" onClick={()=>void logout()} title={session.principal?.principalId}>{tr('로그아웃','Sign out')}</button>:null;
 }
 
 export function AuthGate({role,children}:{role:'operator'|'user';children:ReactNode}) {
   const auth=useAuth();
+  const {tr}=useLang();
   const allowed=auth.session?.mode==='demo'||(auth.session?.authenticated&&(role==='user'||auth.session.principal?.scopes.includes('dashboard:read')));
   if(allowed)return <>{children}</>;
   const returnTo=`/${window.location.hash}`;
-  return <main className="auth-gate"><a className="portal-brand" href="#/">BubbleLock</a><div className="content-card stack"><p className="eyebrow">계정</p><h1>{auth.session===null&&auth.error===null?'잠시만 기다려 주세요':auth.session?.authenticated?'운영자 계정이 필요해요':'로그인하고 시작하세요'}</h1><p>{auth.error??(auth.session?.authenticated?'운영 화면을 볼 수 있는 계정으로 다시 로그인해 주세요.':auth.session?'가족과 키링이 연결된 계정으로 로그인해 주세요.':'계정을 확인하고 있어요…')}</p>{auth.session?.mode==='live'&&!auth.session.authenticated&&<a className="button primary" href={`/api/auth/login?returnTo=${encodeURIComponent(returnTo)}`}>로그인</a>}{auth.session?.authenticated&&<AccountAction/>}{auth.error&&<button onClick={auth.reload}>다시 시도</button>}<a href="#/">시작 화면으로</a></div></main>;
+  return <main className="auth-gate"><a className="portal-brand" href="#/">BubbleLock</a><div className="content-card stack"><p className="eyebrow">{tr('계정','Account')}</p><h1>{auth.session===null&&auth.error===null?tr('잠시만 기다려 주세요','One moment'):auth.session?.authenticated?tr('운영자 계정이 필요해요','An operator account is needed'):tr('로그인하고 시작하세요','Sign in to start')}</h1><p>{auth.error??(auth.session?.authenticated?tr('운영 화면을 볼 수 있는 계정으로 다시 로그인해 주세요.','Sign in again with an account that can open the operator view.'):auth.session?tr('가족과 키링이 연결된 계정으로 로그인해 주세요.','Sign in with the account linked to your family and keyrings.'):tr('계정을 확인하고 있어요…','Checking your account…'))}</p>{auth.session?.mode==='live'&&!auth.session.authenticated&&<a className="button primary" href={`/api/auth/login?returnTo=${encodeURIComponent(returnTo)}`}>{tr('로그인','Sign in')}</a>}{auth.session?.authenticated&&<AccountAction/>}{auth.error&&<button onClick={auth.reload}>{tr('다시 시도','Try again')}</button>}<a href="#/">{tr('시작 화면으로','Back to start')}</a></div></main>;
 }

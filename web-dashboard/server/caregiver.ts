@@ -30,8 +30,8 @@ interface Runtime {
 type Principals = Record<'guardian' | 'visitor' | 'operator', { principalId: string }>;
 
 export const DEFAULT_DEVICES = [
-  { deviceId: 'living-room-light', label: '거실 조명 (모의 기기)', labelEn: 'Living room light (emulated)' },
-  { deviceId: 'living-room-fan', label: '거실 선풍기 (모의 기기)', labelEn: 'Living room fan (emulated)' },
+  { deviceId: 'living-room-light', label: 'Living room light (emulated)', labelEn: 'Living room light (emulated)' },
+  { deviceId: 'living-room-fan', label: 'Living room fan (emulated)', labelEn: 'Living room fan (emulated)' },
 ] as const;
 const GATEWAY = 'pi-lr';
 const memberKey = (value: unknown) => String(value ?? '').replace(/^\/+/, '');
@@ -73,7 +73,7 @@ export async function createLivingRoom(runtime: Runtime, principals: Principals,
   const live = Boolean(config.groupCommand);
   // The living room devices sit behind their own emulated Gateway, enrolled like the demo pi-01.
   try { await runtime.gatewayControl.enroll({ gatewayId: GATEWAY, principalId: 'gateway-demo', fingerprint: 'DEMO-ONLY-NO-TRANSPORT', credentialRevision: 'demo-1', ownershipEpoch: 0, devices: Object.fromEntries(devices.map((device) => [device.deviceId, householdId])) }); } catch { /* enrolled on an earlier start */ }
-  try { await runtime.portalService.provisionHousehold({ householdId, name: config.name ?? '거실 (Living room)', ownerId: principals.guardian.principalId, members: [{ principalId: principals.visitor.principalId, role: 'visitor' }] }); } catch { /* kept from an earlier start */ }
+  try { await runtime.portalService.provisionHousehold({ householdId, name: config.name ?? 'Living room', ownerId: principals.guardian.principalId, members: [{ principalId: principals.visitor.principalId, role: 'visitor' }] }); } catch { /* kept from an earlier start */ }
   for (const device of devices) {
     try { await runtime.portalService.registerDevice(principals.guardian, { householdId, deviceId: device.deviceId, gatewayId: GATEWAY, label: device.label, idempotencyKey: `living-room-${device.deviceId}` }); } catch { /* already registered */ }
   }

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { isRecord } from './client.ts';
+import { pick, translateServerMessage, uiLang } from './server-messages.ts';
 
 export type PortalRole = 'guardian' | 'visitor' | 'operator';
 export interface Household { householdId: string; name: string; ownerId: string; members: {principalId: string; role: string}[] }
@@ -18,10 +19,10 @@ export interface PortalSnapshot {
 }
 export interface PortalResponse { mode: 'demo' | 'live'; snapshot: PortalSnapshot }
 function parseResponse(value: unknown): PortalResponse {
-  if (!isRecord(value) || !['demo','live'].includes(String(value['mode'])) || !isRecord(value['snapshot'])) throw new Error('받은 데이터 형식이 예상과 달라요. 잠시 후 다시 시도해 주세요.');
+  if (!isRecord(value) || !['demo','live'].includes(String(value['mode'])) || !isRecord(value['snapshot'])) throw new Error(pick('받은 데이터 형식이 예상과 달라요. 잠시 후 다시 시도해 주세요.', 'The data arrived in an unexpected format. Try again in a moment.'));
   const snapshot = value['snapshot'];
   if (snapshot['schemaVersion'] !== '1.0.0' || !isRecord(snapshot['principal']) ||
-    !['households','devices','consents','grants','incidents','commandRequests','notifications'].every((key) => Array.isArray(snapshot[key]))) throw new Error('받은 데이터 형식이 예상과 달라요. 잠시 후 다시 시도해 주세요.');
+    !['households','devices','consents','grants','incidents','commandRequests','notifications'].every((key) => Array.isArray(snapshot[key]))) throw new Error(pick('받은 데이터 형식이 예상과 달라요. 잠시 후 다시 시도해 주세요.', 'The data arrived in an unexpected format. Try again in a moment.'));
   return value as unknown as PortalResponse;
 }
 export function usePortal(role: PortalRole) {
@@ -40,10 +41,10 @@ export function usePortal(role: PortalRole) {
     async function read() {
       try {
         const response = await fetch(`/api/portal/snapshot?role=${role}`, { signal: controller.signal, credentials: 'same-origin' });
-        if (!response.ok) throw new Error('서버와 연결이 끊겼어요. 잠시 후 자동으로 다시 연결해요.');
+        if (!response.ok) throw new Error(pick('서버와 연결이 끊겼어요. 잠시 후 자동으로 다시 연결해요.', 'Lost the connection to the server. Reconnecting automatically in a moment.'));
         const next = parseResponse(await response.json());
         if (active) { setData(next); setError(null); }
-      } catch (cause) { if (active) setError(cause instanceof Error ? cause.message : '서버와 연결이 끊겼어요. 잠시 후 자동으로 다시 연결해요.'); }
+      } catch (cause) { if (active) setError(cause instanceof Error ? cause.message : pick('서버와 연결이 끊겼어요. 잠시 후 자동으로 다시 연결해요.', 'Lost the connection to the server. Reconnecting automatically in a moment.')); }
       finally { if (active) timer = setTimeout(() => void read(), 5000); }
     }
     void read();
@@ -59,9 +60,9 @@ export function usePortal(role: PortalRole) {
       const response = await fetch(`/api/portal/${path}`, { method: 'POST', credentials: 'same-origin', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ ...input, role, idempotencyKey }), signal: AbortSignal.timeout(15000) });
       const value: unknown = await response.json();
-      if (!response.ok) throw new Error(isRecord(value) && typeof value['message'] === 'string' ? value['message'] : '요청을 처리하지 못했어요. 입력한 내용과 권한을 확인해 주세요.');
+      if (!response.ok) throw new Error(isRecord(value) && typeof value['message'] === 'string' ? translateServerMessage(value['message'], uiLang()) : pick('요청을 처리하지 못했어요. 입력한 내용과 권한을 확인해 주세요.', 'The request could not be processed. Check what you entered and your permissions.'));
       retryKeys.current.delete(intent); setNotice(success); reload(); return true;
-    } catch (cause) { setError(cause instanceof Error ? cause.message : '요청이 서버에 닿지 않았어요. 다시 시도해 주세요.'); return false; }
+    } catch (cause) { setError(cause instanceof Error && !(cause.name === 'TimeoutError' || cause.name === 'TypeError') ? cause.message : pick('요청이 서버에 닿지 않았어요. 다시 시도해 주세요.', 'The request did not reach the server. Try again.')); return false; }
     finally { setPending(false); }
   }, [role, reload]);
   return { data, snapshot: data?.snapshot, error, pending, notice, action, reload, revision: generation };

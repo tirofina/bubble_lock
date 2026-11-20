@@ -2,8 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { ReactNode } from 'react';
 
 /**
- * Minimal Korean / English switch for the screens in the demo video. Korean stays the default; `?lang=en` in the
- * page URL (before the hash) or the toggle selects English, and the choice is kept per browser.
+ * English / Korean switch for every screen. English is the default; `?lang=ko` in the page URL (before the hash)
+ * or the language toggle selects Korean, and the choice is kept per browser.
  */
 export type Lang = 'ko' | 'en';
 const STORAGE_KEY = 'bubblelock.lang';
@@ -14,12 +14,12 @@ function initialLang(): Lang {
     if (query === 'en' || query === 'ko') return query;
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (stored === 'en' || stored === 'ko') return stored;
-  } catch { /* storage can be blocked; Korean stays */ }
-  return 'ko';
+  } catch { /* storage can be blocked; English stays */ }
+  return 'en';
 }
 
 interface LangContext { readonly lang: Lang; setLang(lang: Lang): void }
-const Context = createContext<LangContext>({ lang: 'ko', setLang: () => undefined });
+const Context = createContext<LangContext>({ lang: 'en', setLang: () => undefined });
 
 export function LangProvider({ children }: { readonly children: ReactNode }) {
   const [lang, setLang] = useState<Lang>(initialLang);

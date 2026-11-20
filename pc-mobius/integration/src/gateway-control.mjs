@@ -39,6 +39,18 @@ export class GatewayControl {
     return this.store.put('gateways', gatewayId, { gatewayId, principalId, fingerprint, devices, credentialRevision, status, ownershipEpoch });
   }
 
+  // Operator enrollment of one more keyring on an active Gateway. A keyring already bound to another subject stays
+  // bound (moving it needs an ownership epoch change through handover), so this only adds new bindings.
+  async assignDevice({ gatewayId, deviceId, subjectId }) {
+    identifier(deviceId); identifier(subjectId);
+    const gateway = this.gateway(gatewayId);
+    if (gateway.status !== 'ACTIVE') throw new Error('Active gateway required');
+    if (gateway.devices[deviceId] === subjectId) return gateway;
+    if (gateway.devices[deviceId] !== undefined) throw new Error('Device already enrolled for another subject');
+    for (const other of this.store.list('gateways')) if (other.gatewayId !== gatewayId && other.devices[deviceId] !== undefined) throw new Error('Device already enrolled on another gateway');
+    return this.store.put('gateways', gatewayId, { ...gateway, devices: { ...gateway.devices, [deviceId]: subjectId } });
+  }
+
   gateway(gatewayId) {
     const gateway = this.store.get('gateways', identifier(gatewayId));
     if (!gateway) throw new Error('Enrolled gateway required');
