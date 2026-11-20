@@ -10,8 +10,8 @@ oneM2M-MEC interworking (oneM2M TR-0086, Annex B; cited by number only).
 
 | Host | Role | Address |
 |---|---|---|
-| Development PC (Windows 11) | Mobius4 4.24.5 CSE, PostgreSQL 17 + PostGIS, MEC IPE (oneM2M AE), policy and handover consumers | 192.168.0.106 (LAN) |
-| VM `mec-sandbox` (VirtualBox, Ubuntu 22.04.5, 6 vCPU, 16 GiB, 120 GB, bridged LAN) | Single-node Kubernetes v1.35.1 (kubeadm, Calico pod pool 10.244.0.0/16, Helm 3.22.1) running the ETSI MEC Sandbox | 192.168.0.103 |
+| Development PC (Windows 11) | Mobius4 4.24.5 CSE, PostgreSQL 17 + PostGIS, MEC IPE (oneM2M AE), policy and handover consumers | <PC_IP> (LAN) |
+| VM `mec-sandbox` (VirtualBox, Ubuntu 22.04.5, 6 vCPU, 16 GiB, 120 GB, bridged LAN) | Single-node Kubernetes v1.35.1 (kubeadm, Calico pod pool 10.244.0.0/16, Helm 3.22.1) running the ETSI MEC Sandbox | <VM_IP> |
 
 Sandbox `bubble` runs scenario `dep-opt-b`: four zones, each with one MEP
 (`mep1`..`mep4`) hosting MEC011, MEC012 (RNIS), MEC013 (Location), MEC021,
@@ -23,11 +23,11 @@ Endpoints used by the IPE (MEP `mep1` shown):
 
 | Service | Path |
 |---|---|
-| MEC011 service management | `https://192.168.0.103/bubble/mep1/mec_service_mgmt/v1/services` |
-| MEC011 app support | `https://192.168.0.103/bubble/mep1/mec_app_support/v2` |
-| MEC013 Location | `https://192.168.0.103/bubble/mep1/location/v3` (v2 is not served) |
-| MEC012 RNIS | `https://192.168.0.103/bubble/mep1/rni/v2` |
-| Scenario control | `https://192.168.0.103/bubble/sandbox-ctrl/v1` |
+| MEC011 service management | `https://<VM_IP>/bubble/mep1/mec_service_mgmt/v1/services` |
+| MEC011 app support | `https://<VM_IP>/bubble/mep1/mec_app_support/v2` |
+| MEC013 Location | `https://<VM_IP>/bubble/mep1/location/v3` (v2 is not served) |
+| MEC012 RNIS | `https://<VM_IP>/bubble/mep1/rni/v2` |
+| Scenario control | `https://<VM_IP>/bubble/sandbox-ctrl/v1` |
 
 ## Sources
 
@@ -49,7 +49,7 @@ Both were cloned with `--depth 1` into the VM user's home.
 3. Ansible pass 1 (`install_mec_sandbox: false`): base packages, containerd,
    Docker, kubeadm, Calico, Helm, Go, Node. Result: ok=73, failed=0; node Ready.
 4. Create a GitHub OAuth app for the sandbox UI with redirect URI
-   `https://192.168.0.103/platform-ctrl/v1/authorize`. Its client ID and secret
+   `https://<VM_IP>/platform-ctrl/v1/authorize`. Its client ID and secret
    live only in the VM's `config/secrets.yaml` files (mode 600) and in a local
    credentials file outside the repository.
 5. Ansible pass 2 (`install_mec_sandbox: true`): MEC configuration, `meepctl`
@@ -72,7 +72,7 @@ Both were cloned with `--depth 1` into the VM user's home.
 | 5 | `go-apps/meepctl/install.sh` line 43 | `golangci-lint run \|\| echo "lint skipped ..."` (original kept as `install.sh.orig`) | golangci-lint v1.46.0 panics under Go 1.25 (`load embedded ruleguard rules: can't load fmt`); later builds already use `--nolint` |
 | 6 | Backend `.meepctl-repocfg.yaml` | `meep-edgeapp` set to `build/dockerize/deploy: false` and its chart removed from the virt-engine data list (backup `.meepctl-repocfg.yaml.bak-edgeapp`) | Frontend commit `df11a72` adds `meep-edgeapp` to the repo config, but backend commit `8c66f08` has no `go-apps/meep-edgeapp` or chart, so `dockerize all` stopped there. Location and RNIS do not need it; scenario `edgeapp-dual-mep` is the only one that fails to import |
 | 7 | Playbook task "Dockerize all" | run `meepctl dockerize all` directly as the VM user | The task wraps the command in `sg docker -c`, which changes the effective GID to `docker` (997); `meepctl` then rejects the configured GID 1000 (`repo.deployment.permissions.gid mismatch`) |
-| 8 | Ingress TLS | cert-manager `ClusterIssuer bubble-local-ca` (local CA) and `Certificate meep-ingress-local` with `ipAddresses: [192.168.0.103]`, written to the secret `meep-ingress` used by `--default-ssl-certificate`; annotation `cert-manager.io/cluster-issuer` removed from `Ingress meep-ingress-certs` (original saved as `~/meep-ingress-certs.ingress.orig.yaml`) | Let's Encrypt cannot issue for a private IP, so the ingress served the controller's "Fake Certificate" (SAN `ingress.local`) and strict clients failed |
+| 8 | Ingress TLS | cert-manager `ClusterIssuer bubble-local-ca` (local CA) and `Certificate meep-ingress-local` with `ipAddresses: [<VM_IP>]`, written to the secret `meep-ingress` used by `--default-ssl-certificate`; annotation `cert-manager.io/cluster-issuer` removed from `Ingress meep-ingress-certs` (original saved as `~/meep-ingress-certs.ingress.orig.yaml`) | Let's Encrypt cannot issue for a private IP, so the ingress served the controller's "Fake Certificate" (SAN `ingress.local`) and strict clients failed |
 | 9 | Sandbox creation | `POST /platform-ctrl/v1/sandboxes/bubble` with `{"scenarioName":"dep-opt-b"}` sent to the platform-ctrl ClusterIP from inside the VM | Creating a sandbox through the ingress requires an admin session; the VM-internal call is the same path the playbook uses for scenario import |
 
 Two sandbox service fixes were needed for the IPE run and are applied only to
@@ -112,7 +112,7 @@ kubectl delete secret bubble-local-ca meep-ingress
 | MEC013 Location v3 `queries/users` | HTTP 200 (v2 path returns 404) |
 | MEC012 RNIS v2 `queries/rab_info` | HTTP 200 |
 | Strict TLS from the PC with the pinned CA (`createMecFetch({ caFile })`) | 200 on all three paths; without the CA Node rejects the certificate (`UNABLE_TO_VERIFY_LEAF_SIGNATURE`) |
-| Callback path from a sandbox pod to the PC (`busybox wget` to `http://192.168.0.106:18090`) | Delivered; source address 192.168.0.103 (node SNAT). Windows Firewall already allows `node.exe` inbound |
+| Callback path from a sandbox pod to the PC (`busybox wget` to `http://<PC_IP>:18090`) | Delivered; source address <VM_IP> (node SNAT). Windows Firewall already allows `node.exe` inbound |
 | Day-of-care relocation run (`npm --prefix pc-mobius run integration:mec-day-of-care`, sandbox `dayofcare`) | 25/25 checks PASS; IPE relocated mep1 to mep2 on a MEC021 `INTERHOST_MOVEOUT_TRIGGERED`; receipt `docs/verification-evidence/2026-11-20/mec-day-of-care.json` (see the day-of-care section below) |
 | IPE run against the sandbox (`npm --prefix pc-mobius run integration:mec-ipe-sandbox`) | 33/33 checks PASS. The IPE registered as a USER app instance (`confirm_ready` 204) and as MEC011 service `pb-onem2m-ipe`; 3 oneM2M request cin created Location periodic, Location user-event and RNIS cell-change subscriptions; 19 real sandbox notifications became oneM2M cin; zone entry triggered handover edge-a to edge-b; 2 renewals per subscription; DELETE 204 for all three. Details: `docs/rubric-work/R15-R16.md`, receipt `docs/verification-evidence/2026-11-20/mec-ipe-sandbox.json` |
 
@@ -152,9 +152,9 @@ Import and sandbox creation (VM-internal platform-ctrl ClusterIP path, same as
 fix 9):
 
 ```bash
-scp deploy/mec-sandbox/scenarios/day-of-care.yaml mec@192.168.0.103:~/day-of-care.yaml
-ssh mec@192.168.0.103 'bash -s' < deploy/mec-sandbox/import-day-of-care.sh
-# after a yaml change: ssh mec@192.168.0.103 'REACTIVATE=1 bash -s' < deploy/mec-sandbox/import-day-of-care.sh
+scp deploy/mec-sandbox/scenarios/day-of-care.yaml mec@<VM_IP>:~/day-of-care.yaml
+ssh mec@<VM_IP> 'bash -s' < deploy/mec-sandbox/import-day-of-care.sh
+# after a yaml change: ssh mec@<VM_IP> 'REACTIVATE=1 bash -s' < deploy/mec-sandbox/import-day-of-care.sh
 ```
 
 ### oneM2M MEC IPE image and placement
@@ -179,12 +179,12 @@ certificate, public part only), builds on the VM and pushes
 - `virt-engine` splits the process `environment` string on `,` and `=`; values
   therefore hold neither (the pod also accepts `;` as a list separator).
 - oneM2M side: the PC Mobius4 (`/pb-cse`) listens with HTTPS on
-  `192.168.0.106:17599` (server certificate from the same lab CA,
+  `<PC_IP>:17599` (server certificate from the same lab CA,
   `.local/mec-sandbox/pc-cse-server.*`) and on loopback HTTP for the PC AEs.
   Pods reach it through node SNAT; Mobius4 reaches each pod through its
-  NodePort (`http://192.168.0.103:3188x`). MEC callbacks from the sandbox
+  NodePort (`http://<VM_IP>:3188x`). MEC callbacks from the sandbox
   services use the same NodePort URL.
-- MEC side inside the pod: the ingress `https://192.168.0.103/dayofcare/<mep>`
+- MEC side inside the pod: the ingress `https://<VM_IP>/dayofcare/<mep>`
   with the pinned lab CA, as on the PC (`MEC_*` settings of
   `mec-platform-client.mjs`).
 - A pod waits for the CSE, and exits for a restart when its AE disappears or
@@ -263,9 +263,9 @@ This section records the run on 2026-11-20, when the relay containers lived unde
 
 | Step | Tool | Result |
 |---|---|---|
-| 1. Device containers and ACP | `ssh mec@192.168.0.103 'bash -s' < ipe/provision-server-cse.sh` (docker exec inside the cse container, admin originator from that container's environment) | `/Mobius/bubble-household-1/resident-relay` with `location` and `rnis`, all with ACP `resident-relay-mec-access`: `Cpb-mec-ipe` 7, `Cpb-dash-guardian` 50, `Cpb-dash-operator` 34. The household AE and its acpi stay as they are |
+| 1. Device containers and ACP | `ssh mec@<VM_IP> 'bash -s' < ipe/provision-server-cse.sh` (docker exec inside the cse container, admin originator from that container's environment) | `/Mobius/bubble-household-1/resident-relay` with `location` and `rnis`, all with ACP `resident-relay-mec-access`: `Cpb-mec-ipe` 7, `Cpb-dash-guardian` 50, `Cpb-dash-operator` 34. The household AE and its acpi stay as they are |
 | 2. Image | `ipe/publish-image.sh` (`MEC_CA_PEM` overrides the lab CA path) | Only the public lab CA is baked in; the script refuses a build context that holds a private key |
-| 3. Pod wiring | `ssh mec@192.168.0.103 'bash -s' < ipe/attach-server-cse.sh` | Secret `pb-ipe-server-cse` (client certificate, key, server trust bundle) created on the VM from the server deployment files; every `pb-ipe-mep*` deployment gets the secret volume, `hostAliases` `<SERVER_DOMAIN>` -> 192.168.0.103, `ONEM2M_CSE_URL=https://<SERVER_DOMAIN>:8443/onem2m`, `ONEM2M_CSE_ID=/bubble-cse`, `ONEM2M_CA_FILE`, `ONEM2M_CLIENT_CERT_FILE`, `ONEM2M_CLIENT_KEY_FILE` and the requester, reader and orchestrator lists |
+| 3. Pod wiring | `ssh mec@<VM_IP> 'bash -s' < ipe/attach-server-cse.sh` | Secret `pb-ipe-server-cse` (client certificate, key, server trust bundle) created on the VM from the server deployment files; every `pb-ipe-mep*` deployment gets the secret volume, `hostAliases` `<SERVER_DOMAIN>` -> <VM_IP>, `ONEM2M_CSE_URL=https://<SERVER_DOMAIN>:8443/onem2m`, `ONEM2M_CSE_ID=/bubble-cse`, `ONEM2M_CA_FILE`, `ONEM2M_CLIENT_CERT_FILE`, `ONEM2M_CLIENT_KEY_FILE` and the requester, reader and orchestrator lists |
 | 4. Ownership and requests | `npm --prefix pc-mobius run integration:mec-ipe-server-cse` | `Cpb-orchestrator` writes the ownership epoch, `Cguardian-app` writes Location and RNIS request cins with `deviceAe: bubble-household-1/resident-relay` |
 
 Code: `createMecFetch` takes `cert`/`key` (or files) and `servername` (SNI, certificate name check and
@@ -275,7 +275,7 @@ URL host). A request `deviceAe` is an AE name or `<ae>/<container>`. The pod ret
 15 s (`MEC_IPE_START_RETRY_MS`) instead of exiting.
 
 The CSE sends notifications only to the origins in its `NOTIFICATION_ALLOWED_ORIGINS`
-(`http://192.168.0.103:31881`, `:31882` and the PC listener `http://192.168.0.106:18096`); with an empty
+(`http://<VM_IP>:31881`, `:31882` and the PC listener `http://<PC_IP>:18096`); with an empty
 list every subscription answers 4000 `notification target origin denied`.
 
 Run on 2026-11-20 (receipt `docs/verification-evidence/2026-11-20/mec-ipe-server-cse.json`, status

@@ -10,7 +10,7 @@ coordinator와 worker는 설정 파일 하나(CSE URL, 자격 증명 경로, wor
 | B | 연구실 PC | VM 1대 이상 | 연구실 PC Mobius4 | 같은 규칙 |
 | C | VM | VM | VM Mobius4 | 같은 규칙 |
 
-- 팀원이 준비 중인 Ubuntu 22.04 VM(192.168.0.103)은 MEC 샌드박스 VM이므로 `SANDBOX_VM_REAL_CSE`로 표기함.
+- 팀원이 준비 중인 Ubuntu 22.04 VM(<VM_IP>)은 MEC 샌드박스 VM이므로 `SANDBOX_VM_REAL_CSE`로 표기함.
 - `ESTIMED_VM_REAL_CSE` 표기에는 ESTIMED 계정, 할당 ticket, VM 식별 정보(호스트 이름 hash, 이미지 또는 커널 정보)가 함께 필요함.
 
 ## 1. 신원 발급 (운영자 PC)
@@ -89,7 +89,7 @@ sudo install -d -m 0750 -o bubblefl -g bubblefl /var/lib/bubble-fl
 | `cseUrl`, `cseBase` | `https://<SERVER_DOMAIN>:8443/onem2m`, `/Mobius` | 같음 |
 | `caFile` | `.local-fl-certs/fl-coord/trust-bundle.pem` | `~/bubblelock-nocert/repo/.local/deployment/fl/fl-wN/trust-bundle.pem` |
 | `clientCertFile`, `clientKeyFile` | `fl-coord.pem`, `fl-coord.key` | `fl-wN.pem`, `fl-wN.key` (VM 안에서 그대로 읽음) |
-| `servername`, `connectHost` | `<SERVER_DOMAIN>`, `192.168.0.103` | `<SERVER_DOMAIN>`, `127.0.0.1` |
+| `servername`, `connectHost` | `<SERVER_DOMAIN>`, `<VM_IP>` | `<SERVER_DOMAIN>`, `127.0.0.1` |
 | `flAeName` | `fl-privacy-motion` | `fl-privacy-motion` (worker는 FL AE 이름을 직접 사용함) |
 | 기타 | `pollMs` 500, `inboxPollMs` 2000, `timeoutMs` 8000, `notify` null, task `targetRounds` 6, `roundDeadlineMs` 15000, `heartbeatTtlMs` 10000 | `pollMs` 1000, `heartbeatMs` 2000, `trainDelayMs` 3000, `exitOnTaskComplete` false, `standbyPollMs` 30000 |
 

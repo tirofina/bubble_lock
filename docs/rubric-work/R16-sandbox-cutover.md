@@ -1,14 +1,14 @@
 # R16 MEC 샌드박스 전환 절차
 
-로컬 시뮬레이터로 검증한 MEC IPE를 실제 ETSI MEC 샌드박스(VM 192.168.0.103)에 연결하는 명령 모음임.
+로컬 시뮬레이터로 검증한 MEC IPE를 실제 ETSI MEC 샌드박스(VM <VM_IP>)에 연결하는 명령 모음임.
 
-2026-11-20에 sandbox `bubble`(시나리오 `dep-opt-b`, MEP `mep1`)로 전 과정을 실행했고 33개 항목이 PASS함. 한 번에 실행하는 명령은 `npm --prefix pc-mobius run integration:mec-ipe-sandbox`이며, 결과와 sandbox에서 확인한 동작은 `docs/rubric-work/R15-R16.md`의 "실제 sandbox 실행" 절에 있음. 이 sandbox는 Location v3만 제공하고(v2는 404), ingress CA는 `.local/mec-sandbox/ca.pem`, PC callback 주소는 `http://192.168.0.106:18092`임. 샌드박스 배포 자체는 quahog 세션의 `deploy/mec-sandbox/` 담당 범위이며, 이 문서는 IPE 쪽 설정과 확인 절차만 다룸.
+2026-11-20에 sandbox `bubble`(시나리오 `dep-opt-b`, MEP `mep1`)로 전 과정을 실행했고 33개 항목이 PASS함. 한 번에 실행하는 명령은 `npm --prefix pc-mobius run integration:mec-ipe-sandbox`이며, 결과와 sandbox에서 확인한 동작은 `docs/rubric-work/R15-R16.md`의 "실제 sandbox 실행" 절에 있음. 이 sandbox는 Location v3만 제공하고(v2는 404), ingress CA는 `.local/mec-sandbox/ca.pem`, PC callback 주소는 `http://<PC_IP>:18092`임. 샌드박스 배포 자체는 quahog 세션의 `deploy/mec-sandbox/` 담당 범위이며, 이 문서는 IPE 쪽 설정과 확인 절차만 다룸.
 
 ## 준비물
 
 | 항목 | 값 | 보관 위치 |
 | --- | --- | --- |
-| 샌드박스 주소 | `https://192.168.0.103` | 환경 변수 `MEC_BASE_URL` |
+| 샌드박스 주소 | `https://<VM_IP>` | 환경 변수 `MEC_BASE_URL` |
 | 샌드박스 이름 | 샌드박스 UI 또는 API가 만든 이름(예: `sbx-xxxx`) | `MEC_SANDBOX_NAME` |
 | MEP 이름 | 시나리오의 MEP(예: `mep1`) | `MEC_MEP` |
 | k8s ingress CA | VM의 ingress 인증서 CA PEM | `.local/mec-sandbox/ca.pem` (`MEC_CA_FILE`) |
@@ -24,7 +24,7 @@
 Git Bash 기준 명령임.
 
 ```bash
-export MEC_BASE_URL=https://192.168.0.103
+export MEC_BASE_URL=https://<VM_IP>
 export MEC_SANDBOX_NAME=sbx-xxxx
 export MEC_MEP=mep1
 export MEC_CA_FILE=.local/mec-sandbox/ca.pem
@@ -34,7 +34,7 @@ npm --prefix pc-mobius run integration:mec-ipe -- --discover-only
 PowerShell 기준 명령임.
 
 ```powershell
-$env:MEC_BASE_URL = 'https://192.168.0.103'
+$env:MEC_BASE_URL = 'https://<VM_IP>'
 $env:MEC_SANDBOX_NAME = 'sbx-xxxx'
 $env:MEC_MEP = 'mep1'
 $env:MEC_CA_FILE = '.local/mec-sandbox/ca.pem'
@@ -118,8 +118,8 @@ curl -s -G "http://127.0.0.1:7599/Mobius" --data-urlencode 'fu=1' --data-urlenco
   --data-urlencode 'geom=[[[7.42,43.737],[7.425,43.737],[7.425,43.74],[7.42,43.74],[7.42,43.737]]]' \
   -H 'X-M2M-Origin: Cguardian-app' -H 'X-M2M-RI: chk-3' -H 'X-M2M-RVI: 4' -H 'Accept: application/json'
 # 샌드박스 쪽 구독 목록
-curl -s --cacert .local/mec-sandbox/ca.pem "https://192.168.0.103/sbx-xxxx/mep1/location/v3/subscriptions/users"
-curl -s --cacert .local/mec-sandbox/ca.pem "https://192.168.0.103/sbx-xxxx/mep1/rni/v2/subscriptions"
+curl -s --cacert .local/mec-sandbox/ca.pem "https://<VM_IP>/sbx-xxxx/mep1/location/v3/subscriptions/users"
+curl -s --cacert .local/mec-sandbox/ca.pem "https://<VM_IP>/sbx-xxxx/mep1/rni/v2/subscriptions"
 ```
 
 UE 이동은 샌드박스 UI의 시나리오 이동 기능이나 자동 이동 설정으로 발생시킴. trace에서 `MEC_SUBSCRIPTION_CREATED`, `MEC_NOTIFICATION_RECEIVED`, `ONEM2M_OBSERVATION_WRITTEN`, `MEC_SUBSCRIPTION_RENEWED`, `MEC_SUBSCRIPTION_DELETED` 순서를 확인함. `MEC_CALLBACK_REVIEW`의 `SCHEMA_REVIEW`나 `LOCATION_UNAVAILABLE`이 보이면 샌드박스 알림 원문을 저장해 `normalizeMecNotification` 필드 대응을 보강함.

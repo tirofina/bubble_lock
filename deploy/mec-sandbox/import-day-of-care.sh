@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Import (or update) the day-of-care scenario into platform-ctrl and run it in sandbox "dayofcare".
 # Runs on the sandbox VM as the VM user (kubectl and python3 with PyYAML). Usage:
-#   scp deploy/mec-sandbox/scenarios/day-of-care.yaml mec@192.168.0.103:~/day-of-care.yaml
-#   ssh mec@192.168.0.103 'bash -s' < deploy/mec-sandbox/import-day-of-care.sh            # first time
-#   ssh mec@192.168.0.103 'REACTIVATE=1 bash -s' < deploy/mec-sandbox/import-day-of-care.sh  # after a yaml change
+#   scp deploy/mec-sandbox/scenarios/day-of-care.yaml mec@<VM_IP>:~/day-of-care.yaml
+#   ssh mec@<VM_IP> 'bash -s' < deploy/mec-sandbox/import-day-of-care.sh            # first time
+#   ssh mec@<VM_IP> 'REACTIVATE=1 bash -s' < deploy/mec-sandbox/import-day-of-care.sh  # after a yaml change
 # The platform-ctrl ClusterIP path is the same one the Ansible playbook uses for scenario import; creating a
 # sandbox through the ingress needs an admin session, so this script stays inside the VM.
 set -euo pipefail

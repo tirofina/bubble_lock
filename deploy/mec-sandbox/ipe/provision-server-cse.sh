@@ -10,8 +10,8 @@
 # Runs on the VM as the VM user. The requests go from inside the cse container (docker exec, node fetch to
 # the CSE's own HTTP port), with the admin originator taken from that container's environment; the value
 # never leaves the container and the output masks it:
-#   ssh mec@192.168.0.103 'bash -s' < deploy/mec-sandbox/ipe/provision-server-cse.sh
-#   ssh mec@192.168.0.103 'DEVICE=keyring-1 bash -s' < deploy/mec-sandbox/ipe/provision-server-cse.sh
+#   ssh mec@<VM_IP> 'bash -s' < deploy/mec-sandbox/ipe/provision-server-cse.sh
+#   ssh mec@<VM_IP> 'DEVICE=keyring-1 bash -s' < deploy/mec-sandbox/ipe/provision-server-cse.sh
 # Re-running updates the ACP privileges and the acpi of the three containers (4105 then 2004).
 set -euo pipefail
 CONTAINER="${CSE_CONTAINER:-bubblelock-nocert-cse-1}"

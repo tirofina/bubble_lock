@@ -3,8 +3,8 @@
 # (Mobius4 /bubble-cse behind the nginx originator-binding route https://<SERVER_DOMAIN>:8443/onem2m).
 # Runs on the sandbox VM as the VM user (kubectl). Re-run it after a relocation adds pb-ipe-mep2, or after
 # a scenario re-activation re-creates pb-ipe-mep1 from the scenario yaml:
-#   ssh mec@192.168.0.103 'bash -s' < deploy/mec-sandbox/ipe/attach-server-cse.sh
-#   ssh mec@192.168.0.103 'ONLY=pb-ipe-mep2 bash -s' < deploy/mec-sandbox/ipe/attach-server-cse.sh
+#   ssh mec@<VM_IP> 'bash -s' < deploy/mec-sandbox/ipe/attach-server-cse.sh
+#   ssh mec@<VM_IP> 'ONLY=pb-ipe-mep2 bash -s' < deploy/mec-sandbox/ipe/attach-server-cse.sh
 # What it does:
 #   1. Secret pb-ipe-server-cse in the namespace, created on the VM from the server deployment files
 #      (client certificate CN pb-mec-ipe, its key, the server trust bundle). Nothing is copied off the VM
