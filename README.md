@@ -1,5 +1,11 @@
 # Privacy Bubble Keyring
 
+![Story page 1. 4:30 PM, Mom heads out for a walk. Her daughter calls from work: "Mom, where are you?" "At the park. Get back to work." Mom pushes away a GPS watch: "Am I a prisoner?" The daughter shows her the keyring instead: "Who sees my walks?" "No one. It only shows home or away. Press orange if you get lost."](docs/story/page-1.png)
+
+![Story page 2. Two weeks later, the daughter's screen shows only "4:31 PM, Mom went out" and "5:36 PM, Mom came home." At 5:09 PM Mom stands at a fork in the park path: "I know this path..." At 5:13 PM the daughter gets a check-in: "4 min at the east fork. Try calling. View for 5 min," and Mom presses the orange PANIC button. On a park bench, Mom says "Your dad and I used to sit here." "I know." Location sharing turns off.](docs/story/page-2.png)
+
+*The story behind the keyring, page 1 and page 2 (illustration).*
+
 **Privacy by default. Help on demand.** A BLE keyring for an older parent who lives alone, built on the [oneM2M](https://www.onem2m.org) service layer and ETSI MEC.
 
 Mobius4 4.24.5 oneM2M CSE | ETSI MEC Sandbox | Code Apache-2.0 | Docs and hardware CC BY 4.0 | 2026 oneM2M International Hackathon
