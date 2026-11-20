@@ -297,9 +297,10 @@ export async function scriptedTriage({ call, runId, alertId, keyringId, deviceId
     explanation = `Her keyring with the PANIC button was last seen by the ${device.bleSeenBy} at ${device.bleLastSeenLocal.slice(0, 5)} while she walks on the ${ue.segment.name}, about ${ue.distanceHomeM} m from home. Please call her.`;
   } else {
     await call('oneM2M', 'readRecentHistory', { minutes: 20 }); const profile = await call('oneM2M', 'readRoutineProfile', {}); const ue = await call('MEC', 'queryUeLocation', {}); checked.push('readRecentHistory', 'readRoutineProfile', 'queryUeLocation');
-    const urgent = (alert.features.minutesAfterSunset ?? -1) > 0 && !ue.onCorridor;
+    const urgent = (alert.features.minutesAfterSunset ?? -1) > 0 && (!ue.onCorridor || alert.features.reversals >= 1);
     [severity, action] = urgent ? ['urgent', 'emergencyLease'] : ['watch', 'checkIn'];
-    explanation = `Since ${alert.features.offCorridorSince ?? alert.startedLocal} off her usual loop; about ${Math.max(1, Math.round(alert.features.dwellSec / 60))} min at the ${ue.segment.name} going back and forth after sunset (${profile.sunsetLocal}). She is usually home by ${profile.usualReturn}.`;
+    const since = alert.features.offCorridorSince ? `Since ${alert.features.offCorridorSince} off her usual loop` : `Since ${alert.startedLocal} stopped on her usual route`;
+    explanation = `${since}; about ${Math.max(1, Math.round(alert.features.dwellSec / 60))} min at the ${ue.segment.name} going back and forth after sunset (${profile.sunsetLocal}). She is usually home by ${profile.usualReturn}.`;
   }
   const triage = await call('oneM2M', 'submitTriage', { alertId, severity, action, explanation: explanation.slice(0, 280), checked });
   if (action === 'emergencyLease') {

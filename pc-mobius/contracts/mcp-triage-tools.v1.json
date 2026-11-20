@@ -1166,7 +1166,7 @@
         },
         {
           "name": "queryServingCell",
-          "description": "Query the ETSI MEC012 RNIS (rab_info) for the relay UE serving cell now, together with the cell changes of the last N minutes that the RNIS path stored on the oneM2M CSE.",
+          "description": "Query the ETSI MEC012 RNIS (rab_info) for the relay UE serving E-UTRAN (4G) cell now, together with the cell changes of the last N minutes that the RNIS path stored on the oneM2M CSE. rab_info lists 4G cells only: cellId none means the UE is on Wi-Fi or a 5G access point (MEC013 accessPointId names it), not that the network lost the UE.",
           "requiredScope": "mec:rnis",
           "readOnly": true,
           "inputSchema": {

@@ -70,6 +70,7 @@ class ScenarioClock {
   nowMs() { return this.base + (Date.now() - this.wall) * this.rate; }
   advanceTo(ms) { const now = this.nowMs(); this.base = Math.max(now, ms); this.wall = Date.now(); }
   run(rate) { this.base = this.nowMs(); this.wall = Date.now(); this.rate = rate; }
+  reset(ms) { this.base = ms; this.wall = Date.now(); this.rate = 0; }
 }
 
 async function rpcSession(endpoint, token) {
@@ -210,7 +211,7 @@ try {
   };
   handlers.guardian = async ({ con, container: path }) => {
     const state = current; if (!state || !con?.type) return;
-    state.guardianNotices.push({ type: con.type, container: path.split('/').at(-1), scenarioMs: clock.nowMs(), wallMs: Date.now(), action: con.action ?? null, severity: con.severity ?? null });
+    state.guardianNotices.push({ type: con.type, container: path.split('/').at(-1), scenarioMs: clock.nowMs(), wallMs: Date.now(), action: con.action ?? null, severity: con.severity ?? null, alertKind: con.alertKind ?? null });
   };
   handlers.incident = async ({ con }) => {
     const state = current; if (!state || con?.type !== 'PANIC') return;
@@ -342,7 +343,7 @@ try {
     for (const name of ['guardianInbox', 'approvals', 'incidents']) await subscribe(clients.guardian, paths[name], `sub-guardian-${name}`, 'guardian');
     await subscribe(clients.incident, paths.keyringEvents, 'sub-incident', 'incident');
     current = { caseId: scenario.caseId, caseShort, paths, detector: new RoutineDetector({ map, profile }), routineSeen: new Set(), handledAlerts: new Set(), attachedAlerts: [], triageRuns: [], guardianNotices: [], routineAlerts: [], panic: null, pendingTriage: null, lastFix: null, lastReference: null };
-    clock.advanceTo(scenario.startMs); clock.run(0);
+    clock.reset(scenario.startMs);
     const byTime = new Map(scenario.samples.map((sample) => [sample.t, sample])); const trackByTime = new Map(scenario.track.map((sample) => [sample.t, sample]));
     const delivered = []; const lagMs = []; let lastCell = null; const cellChanges = []; const devicesLeft = [...scenario.devices]; const eventsLeft = [...scenario.events]; let alertCount = 0; let interference = 0; const mepsSeen = {};
     const deliverEvents = async (untilMs) => {
@@ -398,16 +399,19 @@ try {
     const baseline = (thresholdSec) => {
       const rule = new DwellThresholdBaseline({ map, thresholdSec }); const byTick = new Map(delivered.map((fix) => [fix.t, fix]));
       for (let t = scenario.startMs; t <= scenario.endMs; t += 20000) { const fix = byTick.get(t); if (fix) rule.observe(fix); rule.evaluate(t); }
-      return rule.alerts.map((alert) => ({ detectedLocal: alert.detectedLocal, detectedMs: Date.parse(alert.detectedAt), dwellSec: alert.dwellSec, startedLocal: alert.startedLocal }));
+      return rule.alerts.map((alert) => ({ kind: alert.kind, detectedLocal: alert.detectedLocal, detectedMs: Date.parse(alert.detectedAt), dwellSec: alert.dwellSec, startedLocal: alert.startedLocal }));
     };
+    // A true detection is an alert after the deviation start whose kind addresses the deviation: a dwell alert can
+    // report wandering, it cannot report a keyring left at home. Every other alert counts as a false alarm.
+    const addresses = (kind) => kind === scenario.expectedKind || (scenario.expectedKind === 'WANDERING' && kind === 'DWELL_THRESHOLD');
     const judge = (alerts) => {
-      const relevant = scenario.expectAlert ? alerts.filter((alert) => alert.detectedMs >= scenario.deviationStartMs) : [];
+      const relevant = scenario.expectAlert ? alerts.filter((alert) => alert.detectedMs >= scenario.deviationStartMs && addresses(alert.kind)) : [];
       const first = relevant[0] ?? null; const falseAlarms = alerts.length - relevant.length;
       const beforePanic = first && (!scenario.panicMs || first.detectedMs < scenario.panicMs);
       return { alert: alerts.length > 0, alerts: alerts.length, falseAlarms, missed: scenario.expectAlert ? !beforePanic : false, firstTrueAlertLocal: first ? map.localTime(first.detectedMs, true) : null,
         timeToAlertSec: first ? Math.round((first.detectedMs - scenario.deviationStartMs) / 1000) : null, leadTimeSec: first && scenario.panicMs ? Math.round((scenario.panicMs - first.detectedMs) / 1000) : null };
     };
-    const guardianAlerts = current.guardianNotices.filter((entry) => entry.type === 'TRIAGE_NOTICE').map((entry) => ({ detectedMs: entry.scenarioMs, action: entry.action }));
+    const guardianAlerts = current.guardianNotices.filter((entry) => entry.type === 'TRIAGE_NOTICE').map((entry) => ({ kind: entry.alertKind, detectedMs: entry.scenarioMs, action: entry.action }));
     const runs = current.triageRuns;
     const perServer = (runId, actorName) => Object.fromEntries(['oneM2M', 'MEC', 'Audit'].map((serverId) => [serverId, toolLog.filter((item) => item.runId === runId && item.actor === actorName && item.serverId === serverId).map((item) => `${item.tool}${item.outcome === 'COMMITTED' ? '' : `:${item.outcome}`}`)]));
     const result = {
@@ -417,7 +421,7 @@ try {
       routineAlerts: current.routineAlerts.map(({ features, ...rest }) => ({ ...rest, features: { dwellSec: features.dwellSec, dwellRefSec: features.dwellRefSec, reversals: features.reversals, offCorridorSec: features.offCorridorSec, minutesAfterSunset: features.minutesAfterSunset, distanceHomeM: features.distanceHomeM, gapSec: features.gapSec, gapRefSec: features.gapRefSec, components: features.components } })),
       attachedAlerts: current.attachedAlerts,
       triage: runs.map((entry) => ({ ...entry, toolsCalledByAgent: perServer(entry.runId, 'agent'), toolsCalledByTriageAe: perServer(entry.runId, 'triage-ae') })),
-      guardianNotices: current.guardianNotices.map(({ type, container: name, scenarioMs, action, severity }) => ({ type, container: name, scenarioLocal: map.localTime(scenarioMs, true), action, severity })),
+      guardianNotices: current.guardianNotices.map(({ type, container: name, scenarioMs, action, severity, alertKind }) => ({ type, container: name, scenarioLocal: map.localTime(scenarioMs, true), action, severity, alertKind })),
       routinePlusTriage: { ...judge(guardianAlerts), action: runs[0]?.triage?.action ?? null, severity: runs[0]?.triage?.severity ?? null },
       baseline5min: { ...judge(baseline(300)), alertTimes: baseline(300).map((alert) => alert.detectedLocal) }, baseline10min: { ...judge(baseline(600)), alertTimes: baseline(600).map((alert) => alert.detectedLocal) },
       panic: current.panic, duplicateTriageRunsAfterPanic: current.panic ? runs.length - current.panic.triageRunsAtPanic : 0,
