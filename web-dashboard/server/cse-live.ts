@@ -186,7 +186,7 @@ export async function startCseLiveSource(config: CseLiveConfig, options: { fetch
       const root = binding.containerPath.slice(0, -'/location'.length);
       const previous = latestLocation.get(root);
       if (!previous || cin.ct >= previous.cin.ct) latestLocation.set(root, { cin, receivedAt });
-      const state = residentStatusOf(cin.con); const key = `${app}|${root}`;
+      const status = residentStatusOf(cin.con); const key = `${app}|${root}`; const state = status ? `${status.state}|${status.place ?? ''}` : null;
       if (state === null || residentStatus.get(key) === state) return;
       residentStatus.set(key, state);
     }
@@ -399,6 +399,11 @@ export async function startCseLiveSource(config: CseLiveConfig, options: { fetch
       const created = await guardian.expect('POST', input.requestResource, [2001], { ty: 4, body: { 'm2m:cin': { rn: `review-${card.draft.approvalRequestId.replace(/[^A-Za-z0-9-]/g, '').slice(-24)}`, cnf: 'application/json:0', con } } });
       const cin = record(created.payload?.['m2m:cin']) ? created.payload['m2m:cin'] as Record<string, unknown> : {};
       return { status: 'SUBMITTED', resource: `${input.requestResource}/${String(cin['rn'] ?? '')}`, payloadHash: commandPayloadHash(con) };
+    },
+    async requestShare(card, input) {
+      if (!input.container) throw new Error('보호자 기록 컨테이너를 찾지 못했어요.');
+      const con = { type: 'SHARE_REQUEST', requestId: input.requestId, alertId: card.alertId, incidentId: card.incidentId, purpose: input.purpose, durationMinutes: input.durationMinutes, guardianId: config.guardian!.principalId, requestedAt: new Date().toISOString() };
+      await guardian.expect('POST', input.container, [2001], { ty: 4, body: { 'm2m:cin': { rn: input.requestId, cnf: 'application/json:0', con } } });
     },
     async feedback(card, learning, container) {
       if (!container) throw new Error('보호자 기록 컨테이너를 찾지 못했어요.');

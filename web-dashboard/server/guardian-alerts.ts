@@ -2,6 +2,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import story from '../fixtures/guardian-alert-story.json' with { type: 'json' };
+import places from '../fixtures/dayofcare-places.json' with { type: 'json' };
 import { ContractError, parseDashboardEvent } from '../shared/validation.ts';
 import { activeLease, compactRecord, GUARDIAN_ALERT_CONTRACT, reduceGuardianAlerts } from '../shared/guardian-alert.ts';
 import type { AlertCard, Loose } from '../shared/guardian-alert.ts';
@@ -30,8 +31,9 @@ export interface AlertFeed {
   subscribe(listener: (event: DashboardEvent) => void): () => void;
 }
 export interface LearningOutcome { readonly learn: boolean; readonly mode: string | null; readonly reason: string }
-export type ReplayStep = 'reset' | 'home' | 'walk' | 'alert' | 'panic';
-export const REPLAY_STEPS: readonly ReplayStep[] = ['reset', 'home', 'walk', 'alert', 'panic'];
+export type ReplayStep = 'reset' | 'home' | 'walk' | 'park' | 'alert' | 'panic';
+export const REPLAY_STEPS: readonly ReplayStep[] = ['reset', 'home', 'walk', 'park', 'alert', 'panic'];
+export interface ShareInput { readonly requestId: string; readonly purpose: 'wandering-check' | 'emergency-rescue'; readonly durationMinutes: number; readonly container: string | null }
 export interface ReviewInput { readonly decision: 'APPROVE' | 'REJECT'; readonly reviewedDraftHash: string; readonly requestResource: string | null }
 export interface AlertBackend {
   readonly mode: 'replay' | 'live';
@@ -41,6 +43,8 @@ export interface AlertBackend {
   review(card: AlertCard, input: ReviewInput): Promise<Record<string, unknown>>;
   feedback(card: AlertCard, learning: LearningOutcome, requestResource: string | null): Promise<Record<string, unknown>>;
   location(card: AlertCard, lang: 'ko' | 'en'): Promise<LocationSnapshot | null>;
+  /** Guardian asks for a share; the triage runtime answers with an APPROVAL_REQUEST draft carrying input.requestId. */
+  requestShare(card: AlertCard, input: ShareInput): Promise<void>;
   replay?(step: ReplayStep): { appended: number };
   describe(): Record<string, unknown>;
 }
@@ -79,19 +83,29 @@ export function storyVariant(name: string): { name: 'scripted' | 'claude'; varia
 }
 
 /** Lease-gated location of the resident's keyring as a LocationSnapshot (the existing map draws both circles). */
-export function storyLocation(lang: 'ko' | 'en', now = Date.now(), demo = true): LocationSnapshot {
+export function storyLocation(lang: 'ko' | 'en', now = Date.now(), demo = true, placeKey: keyof typeof places.places = 'fork'): LocationSnapshot {
   const at = new Date(now - 2000).toISOString();
   const { position, ble } = story.location;
+  const place = places.places[placeKey];
   return {
     schemaVersion: '1.0.0', mode: demo ? 'demo' : 'live', source: demo ? 'demo-fixture' : 'portal-api', simulation: true, updatedAt: new Date(now).toISOString(), rejectedRecords: 0, caughtUp: true,
-    devices: [{ deviceId: story.deviceId, label: story.labels.device[lang], position: { coordinates: { lat: position.lat, lon: position.lon }, source: 'mec', observedAt: at, accuracyM: position.accuracyM, simulation: true }, ble: { gatewayId: ble.gatewayId, rssiDbm: ble.rssiDbm, observedAt: at, simulation: true } }],
-    gateways: [{ gatewayId: ble.gatewayId, label: story.labels.relay[lang], position: { lat: position.lat, lon: position.lon }, simulation: true, referenceRssiDbm: ble.referenceRssiDbm, pathLossExponent: ble.pathLossExponent }],
+    devices: [{ deviceId: story.deviceId, label: story.labels.device[lang], position: { coordinates: { lat: place.lat, lon: place.lon }, source: 'mec', observedAt: at, accuracyM: position.accuracyM, simulation: true }, ble: { gatewayId: ble.gatewayId, rssiDbm: ble.rssiDbm, observedAt: at, simulation: true } }],
+    gateways: [{ gatewayId: ble.gatewayId, label: story.labels.relay[lang], position: { lat: place.lat, lon: place.lon }, simulation: true, referenceRssiDbm: ble.referenceRssiDbm, pathLossExponent: ble.pathLossExponent }],
   };
+}
+
+/** Lease draft the triage runtime builds for a guardian share request (same fields as draftLocationLease). */
+export function shareDraftPolicy(card: AlertCard, input: ShareInput, guardianId: string, deviceId: string) {
+  return { runId: card.runId, householdId: 'household-r1', recipientId: guardianId, deviceId, purpose: input.purpose, durationMinutes: input.durationMinutes, incidentId: card.incidentId, alertId: card.alertId, requestedBy: guardianId, requestId: input.requestId };
+}
+/** Guardian decision hash, the same fields as McpTriageWorkflow.guardianDecide. */
+export function decisionHash(input: { runId: string | null; approvalRequestId: string; draftId: string; draftHash: string; guardianId: string; decision: string; decidedAt: string; nonce: string }) {
+  return approvalHash(input);
 }
 
 /** Replay of the R17 C4 story for recording without the sandbox; every event is simulation true and fixture-replay. */
 export function createAlertReplay(options: { variant?: string; start?: string } = {}): AlertBackend {
-  const { name, variant } = storyVariant(options.variant ?? 'scripted');
+  const { name, variant } = storyVariant(options.variant ?? 'claude');
   const log = createRecordLog({ source: 'fixture-replay', simulation: true, roleScope: ['guardian', 'operator'] });
   let counter = 0; let panicCount = 0;
   const residentId = story.residentId;
@@ -103,18 +117,21 @@ export function createAlertReplay(options: { variant?: string; start?: string } 
   };
   const view = () => reduceGuardianAlerts(log.events);
   const openCard = () => view().cards.find((card) => card.notified && card.state !== 'escalated' && card.kind !== 'PANIC') ?? null;
+  const status = (key: 'home' | 'walk' | 'park') => { const item = story.status[key]; append('RESIDENT_STATUS', 'location', { localTime: item.localTime, status: { state: item.state as 'AT_HOME', place: item.place } }); return 1; };
   const steps: Record<ReplayStep, () => number> = {
     reset: () => { append('REPLAY_RESET', 'replay', { provenance: variant.provenance }); return 1 + steps.home(); },
-    home: () => { append('RESIDENT_STATUS', 'location', { localTime: story.status.home.localTime, status: { state: 'AT_HOME', place: story.status.home.place } }); return 1; },
-    walk: () => { append('RESIDENT_STATUS', 'location', { localTime: story.status.walk.localTime, status: { state: 'MOVING', place: story.status.walk.place } }); return 1; },
+    home: () => status('home'),
+    walk: () => status('walk'),
+    park: () => status('park'),
     alert: () => {
       if (view().cards.some((card) => card.alertId === variant.alert.alertId)) return 0;
       const { alertId, ...alert } = variant.alert; const { runId, decidedLocal, ...triage } = variant.triage;
       const before = log.lastSequence;
+      if (view().status?.state !== 'IN_PARK') status('park');
       append('ROUTINE_ALERT', 'alerts', { alertId, localTime: alert.detectedLocal, provenance: variant.provenance, alert: { kind: alert.kind, score: alert.score, severityHint: alert.severityHint, detectedLocal: alert.detectedLocal, startedLocal: alert.startedLocal, segment: alert.segment, dwellSec: alert.dwellSec, reversals: alert.reversals, minutesAfterSunset: alert.minutesAfterSunset, distanceHomeM: alert.distanceHomeM } });
-      append('TRIAGE_DECISION', 'triageLog', { alertId, runId, localTime: decidedLocal, triage: { severity: triage.severity as 'urgent', action: triage.action as 'checkIn', explanation: triage.explanation, checked: triage.checked, decidedLocal, agent: variant.agent } });
+      append('TRIAGE_DECISION', 'triageLog', { alertId, runId, localTime: decidedLocal, triage: { severity: triage.severity, action: triage.action, explanation: triage.explanation, checked: triage.checked, decidedLocal, agent: variant.agent } });
       append('INCIDENT_OPENED', 'incidents', { alertId, incidentId: variant.incidentId, runId, localTime: variant.noticeLocal });
-      append('TRIAGE_NOTICE', 'guardianInbox', { incidentId: variant.incidentId, localTime: variant.noticeLocal, triage: { severity: triage.severity as 'urgent', action: triage.action as 'checkIn', explanation: triage.explanation, checked: [] } });
+      append('TRIAGE_NOTICE', 'guardianInbox', { incidentId: variant.incidentId, localTime: variant.noticeLocal, triage: { severity: triage.severity, action: triage.action, explanation: triage.explanation, checked: [] } });
       if (variant.draft) {
         const { policy } = variant.draft;
         append('APPROVAL_REQUEST', 'approvals', { runId, alertId, incidentId: variant.incidentId, localTime: variant.draft.requestedLocal, provenance: variant.provenance, draft: {
@@ -124,7 +141,6 @@ export function createAlertReplay(options: { variant?: string; start?: string } 
       } else {
         append('TRIAGE_EVIDENCE', 'audit', { runId, alertId, incidentId: variant.incidentId, provenance: variant.provenance, evidence: { evidenceHash: variant.evidenceHash ?? approvalHash({ runId, alertId, tools: variant.toolsByServer }), agent: variant.agent, approvalHash: null, toolsByServer: variant.toolsByServer } });
       }
-      append('RESIDENT_STATUS', 'location', { localTime: alert.detectedLocal.slice(0, 5), status: { state: 'STOPPED', place: alert.segment } });
       return log.lastSequence - before;
     },
     panic: () => {
@@ -141,27 +157,37 @@ export function createAlertReplay(options: { variant?: string; start?: string } 
     },
   };
   const start = options.start ?? 'alert';
-  if (!['home', 'walk', 'alert'].includes(start)) throw new TypeError('ALERT_REPLAY_START 값은 home, walk, alert 중 하나로 지정하세요.');
+  if (!['home', 'walk', 'park', 'alert'].includes(start)) throw new TypeError('ALERT_REPLAY_START 값은 home, walk, park, alert 중 하나로 지정하세요.');
   steps.reset();
   if (start !== 'home') steps.walk();
+  if (start === 'park' || start === 'alert') steps.park();
   if (start === 'alert') steps.alert();
   return {
     mode: 'replay', guardianId: story.guardianId, guardian: log, operator: log,
+    async requestShare(card, input) {
+      // Server (triage runtime) step: build the least-privilege draft for the guardian's own request and hash it.
+      append('SHARE_REQUEST', 'approvals', { alertId: card.alertId ?? undefined, incidentId: card.incidentId ?? undefined, share: { requestId: input.requestId, purpose: input.purpose, durationMinutes: input.durationMinutes, guardianId: story.guardianId } });
+      const policy = shareDraftPolicy(card, input, story.guardianId, story.deviceId);
+      const draftHash = approvalHash(policy);
+      append('APPROVAL_REQUEST', 'approvals', { runId: card.runId ?? undefined, alertId: card.alertId ?? undefined, incidentId: card.incidentId ?? undefined, draft: {
+        approvalRequestId: `approval-${draftHash.slice(0, 16)}`, draftId: `lease-draft-${draftHash.slice(0, 16)}`, draftHash, purpose: input.purpose, durationMinutes: input.durationMinutes, recipientId: story.guardianId, deviceId: story.deviceId, findings: [], policy,
+      } });
+    },
     async review(card, input) {
       const draft = card.draft!;
       const decidedAt = new Date().toISOString(); const nonce = randomBytes(16).toString('hex');
-      const decisionHash = approvalHash({ runId: card.runId, approvalRequestId: draft.approvalRequestId, draftId: draft.draftId, draftHash: draft.draftHash, guardianId: story.guardianId, decision: input.decision, decidedAt, nonce });
-      append('GUARDIAN_DECISION', 'approvals', { runId: card.runId ?? undefined, decision: { approvalRequestId: draft.approvalRequestId, decision: input.decision, draftHash: draft.draftHash, approvalHash: decisionHash, decidedBy: story.guardianId } });
-      if (input.decision !== 'APPROVE') return { decision: input.decision, approvalHash: decisionHash, lease: null };
+      const hash = decisionHash({ runId: card.runId, approvalRequestId: draft.approvalRequestId, draftId: draft.draftId, draftHash: draft.draftHash, guardianId: story.guardianId, decision: input.decision, decidedAt, nonce });
+      append('GUARDIAN_DECISION', 'approvals', { runId: card.runId ?? undefined, decision: { approvalRequestId: draft.approvalRequestId, decision: input.decision, draftHash: draft.draftHash, approvalHash: hash, decidedBy: story.guardianId } });
+      if (input.decision !== 'APPROVE') return { decision: input.decision, approvalHash: hash, lease: null };
       // Server step after the decision: the lease applies only with the guardian hash bound to this exact draft hash.
       const stored = reduceGuardianAlerts(log.events).cards.find((item) => item.draft?.approvalRequestId === draft.approvalRequestId);
-      if (!stored?.decision || stored.decision.approvalHash !== decisionHash || stored.decision.draftHash !== approvalHash(stored.draft?.policy)) throw new ContractError('APPROVAL_HASH_MISMATCH');
+      if (!stored?.decision || stored.decision.approvalHash !== hash || stored.decision.draftHash !== approvalHash(stored.draft?.policy)) throw new ContractError('APPROVAL_HASH_MISMATCH');
       const expiresAt = new Date(Date.now() + draft.durationMinutes * 60000).toISOString();
-      const lease = { leaseId: `location-${decisionHash.slice(0, 32)}`, purpose: draft.purpose as 'wandering-check', recipientId: draft.recipientId, expiresAt, durationMinutes: draft.durationMinutes, approvalHash: decisionHash, draftHash: draft.draftHash };
+      const lease = { leaseId: `location-${hash.slice(0, 32)}`, purpose: draft.purpose as 'wandering-check', recipientId: draft.recipientId, expiresAt, durationMinutes: draft.durationMinutes, approvalHash: hash, draftHash: draft.draftHash };
       append('LOCATION_LEASE', 'leases', { runId: card.runId ?? undefined, incidentId: card.incidentId ?? undefined, lease });
-      append('TRIAGE_EVIDENCE', 'audit', { runId: card.runId ?? undefined, alertId: card.alertId ?? undefined, incidentId: card.incidentId ?? undefined, provenance: variant.provenance,
-        evidence: { evidenceHash: approvalHash({ runId: card.runId, alertId: card.alertId, toolsByServer: variant.toolsByServer, draftHash: draft.draftHash, approvalHash: decisionHash, leaseId: lease.leaseId }), agent: variant.agent, approvalHash: decisionHash, toolsByServer: variant.toolsByServer } });
-      return { decision: input.decision, approvalHash: decisionHash, lease };
+      if (variant.draft) append('TRIAGE_EVIDENCE', 'audit', { runId: card.runId ?? undefined, alertId: card.alertId ?? undefined, incidentId: card.incidentId ?? undefined, provenance: variant.provenance,
+        evidence: { evidenceHash: approvalHash({ runId: card.runId, alertId: card.alertId, toolsByServer: variant.toolsByServer, draftHash: draft.draftHash, approvalHash: hash, leaseId: lease.leaseId }), agent: variant.agent, approvalHash: hash, toolsByServer: variant.toolsByServer } });
+      return { decision: input.decision, approvalHash: hash, lease };
     },
     async feedback(card, learning) {
       append('GUARDIAN_FEEDBACK', 'approvals', { alertId: card.alertId ?? undefined, incidentId: card.incidentId ?? undefined, feedback: { kind: 'ALERT_OK', guardianId: story.guardianId, learn: learning.learn, mode: learning.mode, reason: learning.reason.slice(0, 160) } });
@@ -172,6 +198,7 @@ export function createAlertReplay(options: { variant?: string; start?: string } 
     describe() { return { mode: 'replay', variant: name, provenance: variant.provenance, steps: REPLAY_STEPS, lastSequence: log.lastSequence }; },
   };
 }
+
 
 function json(response: ServerResponse, status: number, body: unknown): void {
   response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
@@ -307,6 +334,22 @@ export function createAlertRoutes(backend: AlertBackend, options: { allowReplayC
           if (decision === 'APPROVE' && card.draft.findings.length > 0) { json(response, 409, { error: 'DRAFT_FINDINGS', findings: card.draft.findings }); return; }
           if (card.draft.recipientId !== backend.guardianId) { json(response, 403, { error: 'RECIPIENT_MISMATCH', message: '이 공유를 받을 보호자만 승인할 수 있어요.' }); return; }
           json(response, 200, { mode: backend.mode, ...(await backend.review(card, { decision, reviewedDraftHash: reviewed, requestResource: feedContainer(backend, card, 'approvals') })) }); return;
+        }
+        if (action === 'share') {
+          // "Share location 5 min (Emergency Rescue)": the guardian asks, the triage runtime drafts and hashes, the guardian then approves that exact hash.
+          const card = cardFor(backend, typeof input['key'] === 'string' ? input['key'] : null);
+          if (!card?.notified) { json(response, 404, { message: '알림을 찾지 못했어요.' }); return; }
+          if (card.decision) { json(response, 409, { error: 'ALREADY_DECIDED', decision: card.decision }); return; }
+          if (card.draft) { json(response, 200, { mode: backend.mode, draft: card.draft, source: 'agent-draft' }); return; }
+          const purpose = input['purpose'] === 'wandering-check' ? 'wandering-check' : 'emergency-rescue';
+          const durationMinutes = Math.max(1, Math.min(5, Number.isInteger(input['durationMinutes']) ? input['durationMinutes'] as number : 5));
+          const requestId = `share-${randomBytes(8).toString('hex')}`;
+          await backend.requestShare(card, { requestId, purpose, durationMinutes, container: feedContainer(backend, card, 'approvals') });
+          for (const until = Date.now() + 10000; Date.now() < until; await new Promise((resolve) => setTimeout(resolve, 100))) {
+            const drafted = reduceGuardianAlerts(backend.guardian.events).cards.find((item) => item.draft?.policy['requestId'] === requestId);
+            if (drafted?.draft) { json(response, 200, { mode: backend.mode, draft: drafted.draft, source: 'guardian-request' }); return; }
+          }
+          json(response, 504, { error: 'DRAFT_TIMEOUT', message: '공유 초안이 아직 도착하지 않았어요. 잠시 후 다시 눌러 주세요.' }); return;
         }
         if (action === 'dismiss') {
           const card = cardFor(backend, typeof input['key'] === 'string' ? input['key'] : null);

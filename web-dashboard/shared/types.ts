@@ -143,7 +143,7 @@ export type JournalReceipt = CoreReceipt | IntegrationReceipt;
 export type GuardianRecordType =
   | 'ROUTINE_ALERT' | 'TRIAGE_DECISION' | 'TRIAGE_NOTICE' | 'INCIDENT_OPENED' | 'APPROVAL_REQUEST' | 'GUARDIAN_REVIEW'
   | 'GUARDIAN_DECISION' | 'LOCATION_LEASE' | 'INCIDENT_ESCALATED' | 'ESCALATION_NOTICE' | 'PANIC_NOTICE' | 'TRIAGE_EVIDENCE'
-  | 'GUARDIAN_FEEDBACK' | 'RESIDENT_STATUS' | 'REPLAY_RESET';
+  | 'GUARDIAN_FEEDBACK' | 'RESIDENT_STATUS' | 'REPLAY_RESET' | 'SHARE_REQUEST';
 export type TriageSeverity = 'info' | 'watch' | 'urgent';
 export type TriageAction = 'observe' | 'checkIn' | 'emergencyLease';
 export interface GuardianAlertRecord {
@@ -187,7 +187,9 @@ export interface GuardianAlertRecord {
     readonly evidenceHash: string; readonly agent?: string; readonly approvalHash?: string | null;
     readonly toolsByServer: Readonly<Record<string, readonly string[]>>;
   };
-  readonly status?: { readonly state: 'AT_HOME' | 'MOVING' | 'STOPPED' | 'EMERGENCY'; readonly place?: string };
+  readonly status?: { readonly state: 'AT_HOME' | 'MOVING' | 'IN_PARK'; readonly place?: string };
+  /** Guardian-initiated location share request; the triage runtime answers with an APPROVAL_REQUEST draft. */
+  readonly share?: { readonly requestId: string; readonly purpose: 'wandering-check' | 'emergency-rescue'; readonly durationMinutes: number; readonly guardianId: string };
   /** The schema closes the record; the signature keeps union reads over journal receipts (receipt?.sequence) typed as before. */
   readonly [key: string]: unknown;
 }

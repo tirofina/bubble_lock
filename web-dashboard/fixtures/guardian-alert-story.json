@@ -9,12 +9,15 @@
     "relay": { "ko": "어머니 휴대폰 (BLE 중계)", "en": "Mom's phone (BLE relay)" }
   },
   "status": {
-    "home": { "state": "AT_HOME", "place": "home", "localTime": "16:20" },
-    "walk": { "state": "MOVING", "place": "Parc Princesse Antoinette", "localTime": "17:05" }
+    "note": "Coarse zone events as in docs/verification-evidence/2026-11-20/mec-day-of-care.json storyTimeline (home-wifi in home-district at 13:00, walk down Boulevard de Belgique at 16:30, park-district entry at 16:36).",
+    "home": { "state": "AT_HOME", "place": "home", "zoneId": "home-district", "accessPointId": "home-wifi", "mep": "mep1", "localTime": "13:00" },
+    "walk": { "state": "MOVING", "place": "home-district", "zoneId": "home-district", "accessPointId": "moneghetti-4g-macro", "mep": "mep1", "localTime": "16:30" },
+    "park": { "state": "IN_PARK", "place": "park-district", "zoneId": "park-district", "accessPointId": "park-5g-entrance", "mep": "mep2", "localTime": "16:36" }
   },
   "location": {
-    "note": "Trail fork of Parc Princesse Antoinette (OSM ways 939530791 and 688744018, docs/rubric-work/R13.md). MEC accuracy and BLE RSSI are replay values.",
-    "position": { "lat": 43.733392, "lon": 7.415336, "accuracyM": 30, "source": "mec" },
+    "note": "Place from fixtures/dayofcare-places.json (trail fork). MEC accuracy and BLE RSSI are replay values.",
+    "place": "fork",
+    "position": { "accuracyM": 30, "source": "mec" },
     "ble": { "gatewayId": "resident-relay", "rssiDbm": -73, "referenceRssiDbm": -59, "pathLossExponent": 2 }
   },
   "variants": {

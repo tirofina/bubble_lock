@@ -66,7 +66,7 @@ export const serviceFieldLabels: Labels = {
 
 /* English labels for the demo video screens (Korean stays the default). */
 export const connectionLabelsEn: Labels = {
-  connecting: 'Connecting', connected: 'Live', offline: 'Offline', disconnected: 'Disconnected', invalid: 'Stopped (format error)', resync: 'Reload needed',
+  connecting: 'Connecting', connected: 'Connected', offline: 'Offline', disconnected: 'Disconnected', invalid: 'Stopped (format error)', resync: 'Reload needed',
 };
 export const serviceStateLabelsEn: Labels = {
   ACTIVE: 'Active', COMPLETED: 'Completed', RUNNING: 'Running', DRAINING: 'Draining', RUN_COMPLETED: 'Run completed', PENDING: 'Pending',

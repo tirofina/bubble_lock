@@ -1395,7 +1395,8 @@
             "TRIAGE_EVIDENCE",
             "GUARDIAN_FEEDBACK",
             "RESIDENT_STATUS",
-            "REPLAY_RESET"
+            "REPLAY_RESET",
+            "SHARE_REQUEST"
           ]
         },
         "recordId": {
@@ -1768,14 +1769,42 @@
               "enum": [
                 "AT_HOME",
                 "MOVING",
-                "STOPPED",
-                "EMERGENCY"
+                "IN_PARK"
               ]
             },
             "place": {
               "type": "string",
               "minLength": 1,
               "maxLength": 120
+            }
+          }
+        },
+        "share": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "requestId",
+            "purpose",
+            "durationMinutes",
+            "guardianId"
+          ],
+          "properties": {
+            "requestId": {
+              "$ref": "#/$defs/id"
+            },
+            "purpose": {
+              "enum": [
+                "wandering-check",
+                "emergency-rescue"
+              ]
+            },
+            "durationMinutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            },
+            "guardianId": {
+              "$ref": "#/$defs/id"
             }
           }
         }

@@ -88,6 +88,7 @@ export function alertTitle(card: Pick<AlertCard, 'kind'>, tr: Tr): string {
     default: return tr('살펴볼 알림', 'Alert to check');
   }
 }
+export const actionText = (action: string | null, tr: Tr) => action === 'checkIn' ? tr('안부 확인 요청', 'Check in') : action === 'emergencyLease' ? tr('긴급 위치 공유', 'Emergency share') : action === 'observe' ? tr('지켜보기', 'Observe') : tr('확인 중', 'Pending');
 export const severityText = (severity: string | null, tr: Tr) => severity === 'urgent' ? tr('긴급', 'Urgent') : severity === 'watch' ? tr('주의', 'Watch') : severity === 'info' ? tr('참고', 'Info') : tr('확인 중', 'Checking');
 export function stateText(card: Pick<AlertCard, 'state' | 'review' | 'decision'>, tr: Tr): string {
   if (card.state === 'escalated') return tr('긴급 구조', 'Emergency Rescue');
@@ -107,7 +108,7 @@ async function post(path: string, body: Record<string, unknown>): Promise<Record
 
 export function AlertCardView({ card, source, now }: { readonly card: AlertCard; readonly source: string | null; readonly now: number }) {
   const { lang, tr } = useLang();
-  const [pending, setPending] = useState<'approve' | 'dismiss' | null>(null);
+  const [pending, setPending] = useState<'share' | 'dismiss' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const lease = activeLease(card, now);
   const alertedMs = card.alertedAt ? Date.parse(card.alertedAt) : null;
@@ -116,15 +117,21 @@ export function AlertCardView({ card, source, now }: { readonly card: AlertCard;
   const leaseEndLocal = card.lease && alertedMs !== null ? addToLocal(card.alertedLocal, Date.parse(card.lease.expiresAt) - alertedMs) : null;
   const escalatedAfter = card.escalation && alertedMs !== null ? Math.round((Date.parse(card.escalation.at) - alertedMs) / 1000) : null;
   const leadTime = card.escalation?.leadTimeSec ?? escalatedAfter;
-  const act = async (kind: 'approve' | 'dismiss') => {
+  const act = async (kind: 'share' | 'dismiss') => {
     setPending(kind); setError(null);
     try {
-      if (kind === 'approve' && card.draft) await post('/api/portal/alerts/decide', { approvalRequestId: card.draft.approvalRequestId, reviewedDraftHash: card.draft.draftHash, decision: 'APPROVE' });
-      else await post('/api/portal/alerts/dismiss', { key: card.key });
+      if (kind === 'share') {
+        // The server drafts the lease (or returns the agent draft) with its draftHash; the guardian approves that exact hash.
+        const drafted = await post('/api/portal/alerts/share', { key: card.key, purpose: 'emergency-rescue', durationMinutes: 5 });
+        const draft = isRecord(drafted['draft']) ? drafted['draft'] : null;
+        if (!draft || typeof draft['approvalRequestId'] !== 'string' || typeof draft['draftHash'] !== 'string') throw new Error(tr('공유 초안을 받지 못했어요.', 'No share draft came back.'));
+        await post('/api/portal/alerts/decide', { approvalRequestId: draft['approvalRequestId'], reviewedDraftHash: draft['draftHash'], decision: 'APPROVE' });
+      } else await post('/api/portal/alerts/dismiss', { key: card.key });
     } catch (cause) { setError(cause instanceof Error ? cause.message : tr('요청을 보내지 못했어요.', 'The request did not reach the server.')); }
     finally { setPending(null); }
   };
-  const canApprove = Boolean(card.draft) && !card.decision && !card.review && card.draft!.findings.length === 0;
+  const canShare = card.notified && !card.decision && !card.review && (!card.draft || card.draft.findings.length === 0);
+  const sharePurpose = card.draft ? purpose : label(lang === 'en' ? leasePurposeLabelsEn : leasePurposeLabels, 'emergency-rescue');
   const canDismiss = card.state !== 'escalated' && card.state !== 'dismissed' && card.kind !== 'PANIC';
   const tone = card.state === 'escalated' || card.kind === 'PANIC' ? 'danger' : card.state === 'dismissed' ? '' : card.state === 'approved' ? 'success' : card.severity === 'urgent' ? 'danger' : 'warning';
   return <article className={`alert-card alert-${card.state}${card.kind === 'PANIC' ? ' alert-panic' : ''}`} aria-labelledby={`alert-${card.key}`}>
@@ -142,6 +149,7 @@ export function AlertCardView({ card, source, now }: { readonly card: AlertCard;
         <p>{leadTime !== null ? tr(`같은 알림을 이어서 긴급으로 올렸어요. 첫 알림보다 ${durationText(leadTime, tr)} 뒤예요.`, `Escalated on this same alert, ${durationText(leadTime, tr)} after the first alert.`) : tr('같은 알림을 이어서 긴급으로 올렸어요.', 'Escalated on this same alert.')}</p></div></div>}
     {card.explanation && <blockquote className="alert-explanation"><p>{card.explanation}</p>
       <footer>{tr('분류 에이전트의 설명', 'Explained by the triage agent')}{card.startedLocal ? tr(`, ${card.startedLocal}부터`, `, since ${card.startedLocal}`) : ''}</footer></blockquote>}
+    {card.notified && card.kind !== 'PANIC' && <p className="small muted alert-rule">{tr(`서버 최소 조치: ${actionText(card.minimumAction, tr)}. 에이전트 선택: ${actionText(card.action, tr)}.`, `Server minimum action: ${actionText(card.minimumAction, tr)}. Agent chose: ${actionText(card.action, tr)}.`)}</p>}
     {card.draft && !lease && card.state !== 'approved' && <div className="alert-draft"><span className="row-symbol"><Icon name="pin" /></span>
       <div><strong>{tr(`위치 공유 초안: ${minutes}분 동안 나에게`, `Draft: share her location with you for ${minutes} min`)}</strong>
         <p className="small muted">{purpose}, {tr('승인한 뒤에만 시작해요.', 'starts only after you approve.')} <span className="mono">{tr('초안', 'draft')} {shortHash(card.draft.draftHash)}</span></p></div></div>}
@@ -153,11 +161,11 @@ export function AlertCardView({ card, source, now }: { readonly card: AlertCard;
     {card.feedback && <p className="small muted alert-feedback"><Icon name="check" size={16} />{card.feedback.learn ? tr('괜찮다고 알려 주셨어요. 이 산책은 평소 장소 학습에 들어가요.', 'You marked this as fine. This walk now counts toward her usual places.') : tr(`괜찮다고 알려 주셨어요. 학습 제외: ${card.feedback.reason}`, `You marked this as fine. Not learned: ${card.feedback.reason}`)}</p>}
     {error && <p className="notice error" role="alert">{error}</p>}
     <div className="alert-actions">
-      {canApprove && <button className="primary" disabled={pending !== null} onClick={() => void act('approve')}><Icon name="pin" size={18} />{tr(`${minutes}분 위치 공유 승인`, `Approve ${minutes}-min share`)}</button>}
-      <a className={`button${card.draft || card.state === 'escalated' ? '' : ' primary'}`} href="tel:"><Icon name="bell" size={18} />{tr('전화하기', 'Call')}</a>
+      {canShare && <button className="primary" disabled={pending !== null} onClick={() => void act('share')}><Icon name="pin" size={18} />{tr(`위치 ${minutes}분 공유 (${sharePurpose})`, `Share location ${minutes} min (${sharePurpose})`)}</button>}
+      <a className="button" href="tel:"><Icon name="bell" size={18} />{tr('전화하기', 'Call')}</a>
       {canDismiss && <button className="quiet-button" disabled={pending !== null} onClick={() => void act('dismiss')}>{tr('괜찮아요', "It's fine")}</button>}
     </div>
-    <p className="caption muted alert-source">{source === 'onem2m-cse-live' ? tr('oneM2M CSE에서 실시간으로 받은 알림이에요.', 'Received live from the oneM2M CSE.') : tr('기록을 재생한 알림이에요 (모의).', 'Replayed from a run record (simulated).')}{card.agent ? `, ${card.agent}` : ''}</p>
+    <p className="caption muted alert-source">{source === 'onem2m-cse-live' ? tr('oneM2M CSE에서 실시간으로 받은 알림', 'Received live from the oneM2M CSE') : tr('실행 기록을 재생한 알림 (모의)', 'Replayed from a run record (simulated)')}{card.agent ? `, ${card.agent}` : ''}</p>
   </article>;
 }
 
@@ -168,14 +176,28 @@ export function GuardianAlertList({ feed }: { readonly feed: AlertFeedController
   return <section className="alert-list" aria-label="Alerts">{cards.map((card) => <AlertCardView key={card.key} card={card} source={feed.source} now={now} />)}</section>;
 }
 
+/** Keyring location page: the resident's lease-gated location (dayofcare park) while a guardian-approved share is open. */
+export function SharedResidentMap({ feed }: { readonly feed: AlertFeedController }) {
+  const { lang, tr } = useLang();
+  const now = useNow(1000);
+  const card = feed.view.cards.find((item) => item.incidentId && activeLease(item, now));
+  if (!card?.incidentId || !card.lease) return null;
+  return <div className="content-card map-content stack"><div className="card-heading"><div><h2>{tr('어머니 위치 (공유 중)', 'Mom, shared with you')}</h2>
+    <p>{tr(`보호자가 승인한 ${card.lease.durationMinutes ?? 5}분 공유, ${countdown(Date.parse(card.lease.expiresAt) - now)} 남음`, `Guardian-approved ${card.lease.durationMinutes ?? 5}-min share, ${countdown(Date.parse(card.lease.expiresAt) - now)} left`)}</p></div>
+    <Badge tone="success">{label(lang === 'en' ? leasePurposeLabelsEn : leasePurposeLabels, card.lease.purpose)}</Badge></div>
+    <Suspense fallback={<p role="status">{tr('지도를 불러오고 있어요…', 'Loading the map…')}</p>}><LocationMap refresh={0} variant="user" locationUrl={`/api/portal/alerts/location?incidentId=${encodeURIComponent(card.incidentId)}&lang=${lang}`} /></Suspense></div>;
+}
+
+/** Coarse zone status from location records (At Home, Moving, In Park); no coordinates are shown. */
 export function ResidentStatusMetric({ feed }: { readonly feed: AlertFeedController }) {
   const { tr } = useLang();
   const status = feed.view.status;
-  const value = !status ? tr('확인 중', 'Checking') : status.state === 'AT_HOME' ? tr('집에 있음', 'At Home') : status.state === 'MOVING' ? tr('이동 중', 'Moving')
-    : status.state === 'STOPPED' ? tr('평소와 다른 멈춤', 'Unusual stop') : tr('긴급 상황', 'Emergency');
+  const value = !status ? tr('확인 중', 'Checking') : status.state === 'AT_HOME' ? tr('집에 있음', 'At Home') : status.state === 'IN_PARK' ? tr('공원에 있음', 'In Park') : tr('이동 중', 'Moving');
   const place = status?.place === 'home' ? tr('집', 'home') : status?.place;
-  return <Metric label={tr('어머니 지금', 'Mom right now')} value={value} compact icon={status?.state === 'AT_HOME' ? 'home' : 'activity'}
-    note={status ? [place, status.localTime].filter(Boolean).join(', ') : tr('위치 소식을 기다리고 있어요.', 'Waiting for her next update.')} />;
+  const open = feed.view.cards.filter((card) => card.notified && card.state !== 'dismissed');
+  const alertNote = open.some((card) => card.state === 'escalated' || card.kind === 'PANIC') ? tr('긴급 구조 진행 중', 'Emergency Rescue in progress') : open.length ? tr('살펴볼 알림이 있어요', 'Alert open') : null;
+  return <Metric label={tr('어머니 지금', 'Mom right now')} value={value} compact icon={status?.state === 'AT_HOME' ? 'home' : status?.state === 'IN_PARK' ? 'pin' : 'activity'}
+    note={status ? [place, status.localTime, alertNote].filter(Boolean).join(', ') : tr('위치 소식을 기다리고 있어요.', 'Waiting for her next update.')} />;
 }
 
 /** Operator audit entry per triage run: tools per MCP server, approval hash, evidence hash. */

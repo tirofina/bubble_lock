@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { get } from 'node:http';
 import test from 'node:test';
 import type { TestContext } from 'node:test';
 import { createLiveEventLog } from '../shared/cse-notification.ts';
 import type { ContentInstance, CseBinding } from '../shared/cse-notification.ts';
-import { cardState, reduceGuardianAlerts, reduceGuardianRecords } from '../shared/guardian-alert.ts';
+import { ACTION_FLOOR, cardState, reduceGuardianAlerts, reduceGuardianRecords, residentStatusOf } from '../shared/guardian-alert.ts';
 import type { AlertCard, FeedContainer } from '../shared/guardian-alert.ts';
 import { parseDashboardEvent, validateDashboardEvent } from '../shared/index.ts';
 import type { DashboardEvent, GuardianAlertRecord } from '../shared/index.ts';
@@ -193,4 +194,54 @@ test('rejects guardian alert requests from a non-local origin in demo mode', { t
   t.after(service.close);
   const response = await fetch(`${service.url}/api/portal/alerts/decide`, { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://evil.example' }, body: '{}' });
   assert.equal(response.status, 403);
+});
+
+test('derives At Home, Moving and In Park from coarse zone records without coordinates', () => {
+  // Given: MEC IPE observations (pb.mec.location.v1) and an R17 location sample
+  const ipe = (zoneId: string | null, accessPointId: string, mep: string) => ({ schema: 'pb.mec.location.v1', service: 'Location', zoneId, accessPointId, servedBy: { mep, appInstanceId: 'x', epoch: 1 } });
+  // When / Then
+  assert.deepEqual(residentStatusOf(ipe('home-district', 'home-wifi', 'mep1')), { state: 'AT_HOME', place: 'home' });
+  assert.deepEqual(residentStatusOf(ipe('home-district', 'moneghetti-4g-macro', 'mep1')), { state: 'MOVING', place: 'home-district' });
+  assert.deepEqual(residentStatusOf(ipe(null, 'park-5g-entrance', 'mep2')), { state: 'IN_PARK', place: 'park-district' });
+  assert.deepEqual(residentStatusOf({ schema: 'pb.location.sample.v1', segment: 'east branch at the trail fork', zoneId: 'park-district' }), { state: 'IN_PARK', place: 'park-district' });
+  const log = createLiveEventLog({ simulation: true, roleScope: ['guardian'] });
+  const [event] = log.append(bind('location'), cin({ ...ipe('park-district', 'park-5g-fork', 'mep2'), precise: { payloadRef: 'r' } }, 'Cresident-run1'), '2026-11-20T08:13:21.000Z');
+  assert.equal(event?.type === 'guardian.alert' ? event.receipt.status?.state : null, 'IN_PARK');
+  assert.doesNotMatch(JSON.stringify(event), /payloadRef|"lat"|"lon"/);
+});
+
+test('minimum action table matches the triage contract action floor', async () => {
+  const contract = JSON.parse(await readFile(new URL('../../pc-mobius/contracts/mcp-triage-tools.v1.json', import.meta.url), 'utf8')) as { workflow: { actionFloor: Record<string, { minimumAction: string }> } };
+  assert.deepEqual(ACTION_FLOOR, Object.fromEntries(Object.entries(contract.workflow.actionFloor).map(([kind, value]) => [kind, value.minimumAction])));
+});
+
+test('Claude receipt replay: guardian share request becomes a server draft and needs its exact hash', { timeout: 15000 }, async (t) => {
+  // Given: the default replay (Claude run 3: checkIn, no agent draft)
+  const service = await startReplayServer({ port: 0 });
+  t.after(service.close);
+  const view = (await call(service.url, '/api/portal/alerts')).body['view'];
+  const card = view.cards.find((item: AlertCard) => item.notified) as AlertCard;
+  assert.equal(card.action, 'checkIn');
+  assert.equal(card.minimumAction, 'checkIn');
+  assert.equal(card.draft, null);
+  assert.match(card.explanation ?? '', /^Since 17:09 she has stood at the trail fork/);
+  assert.equal(view.status.state, 'IN_PARK');
+  // When: "Share location 5 min (Emergency Rescue)"
+  const shared = await call(service.url, '/api/portal/alerts/share', { key: card.key, purpose: 'emergency-rescue', durationMinutes: 5 });
+  // Then: the server returns its draft, whose hash covers the exact policy
+  assert.equal(shared.status, 200);
+  const draft = shared.body['draft'];
+  assert.equal(draft.purpose, 'emergency-rescue');
+  assert.equal(draft.durationMinutes, 5);
+  assert.equal(draft.recipientId, 'guardian-daughter');
+  assert.equal(draft.draftHash, approvalHash(draft.policy));
+  assert.equal((await call(service.url, '/api/portal/alerts/decide', { approvalRequestId: draft.approvalRequestId, reviewedDraftHash: 'b'.repeat(64), decision: 'APPROVE' })).status, 409);
+  const approved = await call(service.url, '/api/portal/alerts/decide', { approvalRequestId: draft.approvalRequestId, reviewedDraftHash: draft.draftHash, decision: 'APPROVE' });
+  assert.equal(approved.status, 200);
+  const after = (await call(service.url, '/api/portal/alerts')).body['view'].cards.find((item: AlertCard) => item.notified) as AlertCard;
+  assert.equal(after.state, 'approved');
+  assert.equal(after.lease?.purpose, 'emergency-rescue');
+  assert.equal(after.decision?.approvalHash, approved.body['approvalHash']);
+  const location = parseLocationSnapshot((await call(service.url, `/api/portal/alerts/location?incidentId=${after.incidentId}`)).body);
+  assert.deepEqual(location.devices[0]?.position?.coordinates, { lat: 43.733392, lon: 7.415336 }, 'dayofcare trail fork');
 });

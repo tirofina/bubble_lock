@@ -304,6 +304,7 @@ a.overview-row:hover { background: var(--surface-soft); text-decoration: none; }
 
 /* Operator relocation and triage audit */
 .services-page { gap: var(--s6); }
+.relocation-panel .card-heading > .badge, .triage-audit .card-heading > .badge { flex: none; white-space: nowrap; }
 .relocation-route { display: flex; align-items: center; gap: var(--s3); }
 .relocation-route > span { display: inline-flex; align-items: center; gap: var(--s2); padding: var(--s2) var(--s4); border-radius: var(--r-pill); background: var(--surface-soft); font-weight: 600; }
 .relocation-route > span.target { background: var(--accent-soft); color: var(--accent-text); }

@@ -54,11 +54,24 @@ export interface FeedMeta {
 }
 export interface MappedRecord { readonly record: GuardianAlertRecord; readonly writer: FeedWriter }
 
-/** Segment name of a location sample to the resident status shown on the family overview. */
-export function residentStatusOf(con: unknown): 'AT_HOME' | 'MOVING' | null {
-  if (!record(con) || con['schema'] !== 'pb.location.sample.v1') return null;
-  return con['segment'] === 'home' ? 'AT_HOME' : 'MOVING';
+export type ResidentState = 'AT_HOME' | 'MOVING' | 'IN_PARK';
+/**
+ * Coarse zone of a location record to the family overview status (no coordinates):
+ * home Wi-Fi or the home segment is At Home, park-district (Edge-B, mep2) is In Park, anything else is Moving.
+ * Accepts the MEC IPE observation (pb.mec.location.v1) and the R17 location sample (pb.location.sample.v1).
+ */
+export function residentStatusOf(con: unknown): { state: ResidentState; place: string | undefined } | null {
+  if (!record(con) || !['pb.location.sample.v1', 'pb.mec.location.v1'].includes(String(con['schema']))) return null;
+  const zone = text(con['zoneId'], 64); const accessPoint = text(con['accessPointId'], 64);
+  const servedBy = record(con['servedBy']) ? text(con['servedBy']['mep'], 16) : undefined;
+  if (con['segment'] === 'home' || accessPoint === 'home-wifi') return { state: 'AT_HOME', place: 'home' };
+  if (zone === 'park-district' || (!zone && servedBy === 'mep2')) return { state: 'IN_PARK', place: zone ?? 'park-district' };
+  return { state: 'MOVING', place: zone ?? text(con['segment'], 120) };
 }
+
+/** Minimum triage action per alert kind (pc-mobius/contracts/mcp-triage-tools.v1.json workflow.actionFloor). */
+export const ACTION_FLOOR: Readonly<Record<string, TriageAction>> = { WANDERING: 'checkIn', DEVICE_SEPARATION: 'checkIn' };
+export const minimumActionOf = (kind: string): TriageAction => ACTION_FLOOR[kind] ?? 'observe';
 
 /**
  * One contentInstance body from a resident feed container to a guardian record. Unknown shapes return null and
@@ -122,6 +135,11 @@ export function guardianRecordFromContent(container: FeedContainer, con: unknown
           approvalRequestId, decision: con['decision'] as 'APPROVE' | 'REJECT', draftHash, approvalHash: hex64(con['approvalHash']), decidedBy: text(con['guardianId'] ?? con['decidedBy'], 128),
         }) });
       }
+      if (type === 'SHARE_REQUEST') {
+        const requestId = text(con['requestId'], 128);
+        if (!requestId || !purpose(con['purpose']) || !Number.isInteger(con['durationMinutes']) || !text(con['guardianId'], 128)) return null;
+        return make('SHARE_REQUEST', 'guardian', { alertId: text(con['alertId'], 128), incidentId: text(con['incidentId'], 128), share: { requestId, purpose: purpose(con['purpose'])!, durationMinutes: Math.max(1, Math.min(5, con['durationMinutes'] as number)), guardianId: text(con['guardianId'], 128)! } });
+      }
       if (type === 'GUARDIAN_FEEDBACK') {
         if (con['feedback'] !== 'ALERT_OK' || typeof con['learn'] !== 'boolean' || !text(con['guardianId'], 128) || !text(con['reason'], 160)) return null;
         return make('GUARDIAN_FEEDBACK', 'guardian', { alertId: text(con['alertId'], 128), incidentId: text(con['incidentId'], 128), feedback: { kind: 'ALERT_OK', guardianId: text(con['guardianId'], 128)!, learn: con['learn'] as boolean, mode: text(con['mode'], 32) ?? null, reason: text(con['reason'], 160)! } });
@@ -143,8 +161,8 @@ export function guardianRecordFromContent(container: FeedContainer, con: unknown
       }) });
     }
     case 'location': {
-      const state = residentStatusOf(con); if (!state) return null;
-      return make('RESIDENT_STATUS', 'resident', { localTime: hhmm(con['localTime']), status: compact({ state, place: text(con['segment'], 120) }) });
+      const status = residentStatusOf(con); if (!status) return null;
+      return make('RESIDENT_STATUS', 'resident', { localTime: hhmm(con['localTime']), status: compact({ state: status.state, place: status.place }) });
     }
   }
 }
@@ -157,6 +175,9 @@ export interface AlertCard {
   readonly alertId: string | null;
   readonly runId: string | null;
   readonly kind: string;
+  /** Server product rule for the alert kind (contract actionFloor); the agent may choose a higher action. */
+  readonly minimumAction: TriageAction;
+  readonly share: { readonly requestId: string; readonly purpose: string; readonly at: string } | null;
   readonly severity: TriageSeverity | null;
   readonly action: TriageAction | null;
   readonly explanation: string | null;
@@ -181,7 +202,7 @@ export interface AlertCard {
 }
 export interface GuardianAlertView {
   readonly cards: readonly AlertCard[];
-  readonly status: { readonly state: 'AT_HOME' | 'MOVING' | 'STOPPED' | 'EMERGENCY'; readonly place: string | null; readonly localTime: string | null; readonly at: string } | null;
+  readonly status: { readonly state: ResidentState; readonly place: string | null; readonly localTime: string | null; readonly at: string } | null;
   readonly lastSequence: number;
 }
 type Mutable<T> = { -readonly [K in keyof T]: T[K] };
@@ -201,7 +222,7 @@ export function reduceGuardianRecords(records: readonly GuardianAlertRecord[], l
   const byApproval = new Map<string, Mutable<AlertCard>>(); const byRun = new Map<string, Mutable<AlertCard>>();
   const create = (item: GuardianAlertRecord): Mutable<AlertCard> => {
     const card: Mutable<AlertCard> = { key: item.incidentId ?? item.alertId ?? item.recordId, residentId: item.residentId, incidentId: null, alertId: null, runId: null, kind: 'ALERT', severity: null, action: null, explanation: null, checked: [], agent: null,
-      segment: null, startedLocal: null, detectedLocal: null, alertedAt: null, alertedLocal: null, notified: false, draft: null, review: null, decision: null, lease: null, escalation: null, feedback: null, evidence: null, records: 0, state: 'new' };
+      segment: null, startedLocal: null, detectedLocal: null, alertedAt: null, alertedLocal: null, notified: false, minimumAction: 'observe', share: null, draft: null, review: null, decision: null, lease: null, escalation: null, feedback: null, evidence: null, records: 0, state: 'new' };
     cards.push(card); return card;
   };
   const merge = (into: Mutable<AlertCard>, from: Mutable<AlertCard>) => {
@@ -250,11 +271,10 @@ export function reduceGuardianRecords(records: readonly GuardianAlertRecord[], l
         break;
       case 'TRIAGE_EVIDENCE': if (item.evidence) { card.evidence = item.evidence; card.agent ??= item.evidence.agent ?? null; } break;
       case 'GUARDIAN_FEEDBACK': if (item.feedback) card.feedback = { ...item.feedback, at: item.timestamp }; break;
+      case 'SHARE_REQUEST': if (item.share) card.share = { requestId: item.share.requestId, purpose: item.share.purpose, at: item.timestamp }; break;
     }
   }
-  for (const card of cards) card.state = cardState(card);
-  if (status && cards.some((card) => card.state === 'escalated' || card.kind === 'PANIC')) status = { ...status, state: 'EMERGENCY' };
-  else if (status && cards.some((card) => card.notified && (card.state === 'new' || card.state === 'approved'))) status = { ...status, state: 'STOPPED' };
+  for (const card of cards) { card.state = cardState(card); card.minimumAction = minimumActionOf(card.kind); }
   return { cards, status, lastSequence };
 }
 

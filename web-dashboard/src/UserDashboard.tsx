@@ -7,7 +7,7 @@ import { useAuth } from './auth-client.tsx';
 import type { PortalController } from './portal-client.ts';
 import { label, portalStatusLabels, portalStatusLabelsEn, scopeList, scopeListEn } from './labels.ts';
 import { useLang } from './i18n.tsx';
-import { GuardianAlertList, ResidentStatusMetric, useAlertFeed } from './GuardianAlerts.tsx';
+import { GuardianAlertList, ResidentStatusMetric, SharedResidentMap, useAlertFeed } from './GuardianAlerts.tsx';
 const LocationMap = lazy(() => import('./LocationMap.tsx').then((module) => ({ default: module.LocationMap })));
 function useStatusName() { const { lang } = useLang(); return (status: string) => label(lang === 'en' ? portalStatusLabelsEn : portalStatusLabels, status); }
 function useScopes() { const { lang } = useLang(); return lang === 'en' ? scopeListEn : scopeList; }
@@ -114,7 +114,7 @@ export function UserDashboard({ page }: { page: string }) {
   const auth = useAuth();
   const { tr } = useLang();
   // The guardian alert card feed (R17): same SSE event contract, `guardian.alert` type, guardian role only.
-  const alertFeed = useAlertFeed(role === 'guardian' && ['overview', 'activity'].includes(page) ? '/api/portal/alerts/events' : null);
+  const alertFeed = useAlertFeed(role === 'guardian' && ['overview', 'activity', 'map'].includes(page) ? '/api/portal/alerts/events' : null);
   const snapshot = portal.snapshot;
   const demo = portal.data?.mode !== 'live';
   return <PortalShell role="user" page={page} actions={<div className="cluster">{auth.session?.mode === 'demo' && <label className="compact-label">{tr('체험할 역할', 'Try as')}<select value={role} onChange={(event) => setRole(event.target.value as typeof role)}><option value="guardian">{tr('보호자', 'Guardian')}</option><option value="visitor">{tr('방문자', 'Visitor')}</option></select></label>}<button className="icon-button" onClick={() => { portal.reload(); alertFeed.reconnect(); }} aria-label={tr('새로고침', 'Refresh')} title={tr('새로고침', 'Refresh')}><Icon name="refresh" /></button></div>}>
@@ -126,7 +126,7 @@ export function UserDashboard({ page }: { page: string }) {
       <div className="metrics-grid">{role === 'guardian' && <ResidentStatusMetric feed={alertFeed} />}<Metric label={tr('연결된 키링', 'Connected keyrings')} value={snapshot?.devices.length ?? '-'} note={tr('가족 공간에 연결된 키링', 'Keyrings in your family spaces')} icon="key" /><Metric label={tr('켜져 있는 권한', 'Active permissions')} value={snapshot?.grants.filter((grant) => grant.effectiveStatus === 'ACTIVE').length ?? '-'} note={tr('지금 사용할 수 있는 권한', 'Permissions you can use now')} icon="shield" /><Metric label={tr('읽지 않은 알림', 'Unread alerts')} value={snapshot?.notifications.filter((item) => !item.readAt).length ?? '-'} note={tr('새로 도착한 소식', 'Newly arrived updates')} icon="bell" /></div>
       <div className="content-card"><div className="card-heading"><div><h2>{tr('바로가기', 'Shortcuts')}</h2><p>{tr('자주 쓰는 기능이에요.', 'Things you use often.')}</p></div></div><div className="quick-actions"><a href="#/user/devices"><Icon name="users" /><strong>{tr('가족과 키링 연결하기', 'Connect family and keyrings')}</strong><Icon name="arrow" /></a><a href="#/user/privacy"><Icon name="shield" /><strong>{tr('공유 권한 관리하기', 'Manage sharing')}</strong><Icon name="arrow" /></a><a href="#/user/activity"><Icon name="bolt" /><strong>{tr('요청 보내고 승인하기', 'Send and approve requests')}</strong><Icon name="arrow" /></a></div></div>
       <div className="content-card"><div className="card-heading"><h2>{tr('내 키링', 'My keyrings')}</h2><a href="#/user/devices">{tr('전체 보기', 'See all')}</a></div><div className="device-card-grid">{snapshot?.devices.map((device) => <a className="mini-device" href="#/user/map" key={device.deviceId}><span className="device-glyph"><Icon name="key" size={22} /></span><div><h3>{device.label}</h3><p>{snapshot.households.find((house) => house.householdId === device.householdId)?.name}</p></div><Icon name="arrow" /></a>)}</div>{snapshot?.devices.length === 0 && <Empty>{tr('가족 공간에 첫 키링을 연결해 보세요.', 'Connect the first keyring to your family space.')}</Empty>}</div></>}
-    {page === 'map' && <div className="stack"><div className="content-card map-content"><Suspense fallback={<p role="status">{tr('지도를 불러오고 있어요…', 'Loading the map…')}</p>}><LocationMap refresh={portal.revision} variant="user" locationUrl={`/api/portal/locations?role=${role}`} /></Suspense></div><LocationSharing portal={portal} /></div>}
+    {page === 'map' && <div className="stack">{role === 'guardian' && <SharedResidentMap feed={alertFeed} />}<div className="content-card map-content"><Suspense fallback={<p role="status">{tr('지도를 불러오고 있어요…', 'Loading the map…')}</p>}><LocationMap refresh={portal.revision} variant="user" locationUrl={`/api/portal/locations?role=${role}`} /></Suspense></div><LocationSharing portal={portal} /></div>}
     {page === 'devices' && <Devices portal={portal} />}{page === 'privacy' && <Privacy portal={portal} />}{page === 'activity' && <Activity portal={portal} />}
   </PortalShell>;
 }
