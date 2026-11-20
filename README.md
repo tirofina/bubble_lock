@@ -142,12 +142,6 @@ Keep certificates, private keys, passkeys, databases and runtime state in git-ig
 
 Detailed design notes and run records are in Korean: [development record](docs/development-completion.md), [integration contracts](docs/branch-integration.md), and the README of each package.
 
-## Giving back
-
-- A Mobius4 subscription security patch with an 828-case ACP test: [CSE_SECURITY.md](pc-mobius/integration/CSE_SECURITY.md)
-- Two ETSI MEC Sandbox fixes with diffs: [mec-sandbox-patches](docs/verification-evidence/2026-11-20/mec-sandbox-patches)
-- Open hardware: the r26 PCB and case above
-
 ## License and team
 
 Code: [Apache License 2.0](LICENSE). Documentation, images, evidence and hardware design files: [CC BY 4.0](LICENSE-docs). Third-party material keeps its own terms: [NOTICE](NOTICE).
