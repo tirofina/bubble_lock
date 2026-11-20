@@ -1,0 +1,19 @@
+{
+  "cseBase": "Mobius",
+  "ae": { "rn": "BubbleLock", "api": "Npb.bubblelock", "originator": "Cpb-bubblelock" },
+  "householdId": "household-1",
+  "gateways": [
+    { "rn": "gateway-1", "gatewayId": "gateway-1", "feeds": ["observations", "receipts", "health"], "devices": [] }
+  ],
+  "residentRelays": [
+    { "rn": "resident-relay", "feeds": ["location", "rnis"] }
+  ],
+  "services": true,
+  "readers": [
+    { "originator": "Cpb-dash-operator", "acop": 35 },
+    { "originator": "Cpb-dash-guardian", "acop": 51 }
+  ],
+  "subscriptions": [],
+  "legacyRoots": ["bubble-household-1"],
+  "labelAdditions": []
+}

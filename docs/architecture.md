@@ -131,6 +131,19 @@ Notes:
   policyDeployer) and gives each role the smallest `acop` mask it needs, for
   example RETRIEVE only on `desired` and CREATE plus UPDATE on `actual` for the
   MEC interworking role.
+- Deployment target tree: one AE `BubbleLock` directly under the CSEBase, with
+  each Gateway, the resident relay and the shared services (`services/incidents`,
+  `grp-switches` for `fopt`) below it as container, flexContainer, group and
+  subscription resources. Device roots under a Gateway container keep the
+  `pb-keyring` label and the stream containers of
+  [topology.mjs](../pc-mobius/multiapp/topology.mjs), so label discovery in the
+  dashboard finds them. [bubblelock-topology.mjs](../pc-mobius/multiapp/bubblelock-topology.mjs)
+  audits a CSE against this tree and reconciles it additively: it creates what
+  is missing, appends missing labels, group members and ACP rules, and leaves
+  every other attribute and the existing household AE tree as they are. The
+  default mode is `plan` (read only); `apply` needs `--confirm BubbleLock`
+  (`npm --prefix pc-mobius run topology:bubblelock -- --spec <site.json> ...`,
+  example spec in [pc-mobius/config](../pc-mobius/config/bubblelock-topology.example.json)).
 
 ## 3. Command path with ACK and readback
 

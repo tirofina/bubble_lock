@@ -27,6 +27,7 @@
     "fl:onem2m:worker": "node scripts/run-fl-onem2m-worker.mjs",
     "fl:onem2m:provision": "node scripts/fl-onem2m-provision.mjs",
     "fl:onem2m:readback": "node scripts/fl-onem2m-readback.mjs",
+    "topology:bubblelock": "node scripts/bubblelock-topology.mjs",
     "integration:api": "node scripts/run-integration-api.mjs",
     "integration:validate": "node scripts/validate-integration.mjs",
     "integration:evidence": "node scripts/build-integration-evidence.mjs",
