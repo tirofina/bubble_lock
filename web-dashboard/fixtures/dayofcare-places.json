@@ -1,0 +1,10 @@
+{
+  "description": "Public places of the dayofcare sandbox story in Monaco (OpenStreetMap values listed in docs/rubric-work/R13.md). Map display only; no personal data.",
+  "source": "docs/rubric-work/R13.md (scenario geography), OpenStreetMap ways 221351810, 939530791, 688744018",
+  "places": {
+    "home": { "label": { "ko": "집 (Les Moneghetti)", "en": "Home (Les Moneghetti)" }, "lat": 43.736945, "lon": 7.417915, "zoneId": "home-district" },
+    "parkGate": { "label": { "ko": "공원 동문", "en": "Park east gate" }, "lat": 43.733948, "lon": 7.416042, "zoneId": "park-district" },
+    "fork": { "label": { "ko": "공원 산책로 갈림길", "en": "Trail fork, Parc Princesse Antoinette" }, "lat": 43.733392, "lon": 7.415336, "zoneId": "park-district" },
+    "bench": { "label": { "ko": "공원 남쪽 벤치", "en": "South bench, Parc Princesse Antoinette" }, "lat": 43.732648, "lon": 7.414478, "zoneId": "park-district" }
+  }
+}

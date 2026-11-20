@@ -112,7 +112,7 @@ function applyAck(member: MemberTimeline, receipt: CoreReceipt): MemberTimeline 
 export function timelineReducer(state: TimelineState, event: DashboardEvent): TimelineState {
   if (event.sequence <= state.lastSequence) return { ...state, ignoredEvents: state.ignoredEvents + 1 };
   const next = { ...state, lastSequence: event.sequence };
-  if (event.type === 'integration.receipt') return next;
+  if (event.type === 'integration.receipt' || event.type === 'guardian.alert') return next;
   const rawCommandId = event.type === 'command.accepted' ? event.acceptance.commandId : event.receipt.commandId;
   if (rawCommandId === undefined) return next;
   const identity = event.type === 'group.summary' || event.type === 'command.accepted'

@@ -29,7 +29,8 @@
         "gateway.telemetry",
         "receipt.review",
         "group.summary",
-        "integration.receipt"
+        "integration.receipt",
+        "guardian.alert"
       ]
     },
     "sequence": {
@@ -83,6 +84,9 @@
         },
         {
           "$ref": "#/$defs/integrationReceipt"
+        },
+        {
+          "$ref": "#/$defs/guardianAlertRecord"
         }
       ]
     },
@@ -170,12 +174,31 @@
           }
         },
         "else": {
-          "properties": {
-            "acceptance": {
-              "type": "null"
-            },
-            "receipt": {
-              "$ref": "#/$defs/coreReceipt"
+          "if": {
+            "properties": {
+              "type": {
+                "const": "guardian.alert"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "acceptance": {
+                "type": "null"
+              },
+              "receipt": {
+                "$ref": "#/$defs/guardianAlertRecord"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "acceptance": {
+                "type": "null"
+              },
+              "receipt": {
+                "$ref": "#/$defs/coreReceipt"
+              }
             }
           }
         }
@@ -315,6 +338,34 @@
               "groupId": {
                 "$ref": "#/$defs/id"
               }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "guardian.alert"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "source": {
+            "enum": [
+              "fixture-replay",
+              "onem2m-cse-live"
+            ]
+          },
+          "roleScope": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "guardian",
+                "operator"
+              ]
             }
           }
         }
@@ -1309,6 +1360,455 @@
           }
         }
       ]
+    },
+    "guardianAlertRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contractId",
+        "docRevision",
+        "recordType",
+        "recordId",
+        "timestamp",
+        "residentId"
+      ],
+      "properties": {
+        "contractId": {
+          "const": "privacy-bubble.guardian-alert.v1"
+        },
+        "docRevision": {
+          "const": "2.0.0"
+        },
+        "recordType": {
+          "enum": [
+            "ROUTINE_ALERT",
+            "TRIAGE_DECISION",
+            "TRIAGE_NOTICE",
+            "INCIDENT_OPENED",
+            "APPROVAL_REQUEST",
+            "GUARDIAN_REVIEW",
+            "GUARDIAN_DECISION",
+            "LOCATION_LEASE",
+            "INCIDENT_ESCALATED",
+            "ESCALATION_NOTICE",
+            "PANIC_NOTICE",
+            "TRIAGE_EVIDENCE",
+            "GUARDIAN_FEEDBACK",
+            "RESIDENT_STATUS",
+            "REPLAY_RESET",
+            "SHARE_REQUEST"
+          ]
+        },
+        "recordId": {
+          "$ref": "#/$defs/id"
+        },
+        "timestamp": {
+          "$ref": "#/$defs/dateTime"
+        },
+        "residentId": {
+          "$ref": "#/$defs/id"
+        },
+        "alertId": {
+          "$ref": "#/$defs/id"
+        },
+        "incidentId": {
+          "$ref": "#/$defs/id"
+        },
+        "runId": {
+          "$ref": "#/$defs/id"
+        },
+        "creator": {
+          "$ref": "#/$defs/id"
+        },
+        "oneM2MResource": {
+          "type": "string",
+          "pattern": "^/[^\\s]*$",
+          "maxLength": 2048
+        },
+        "localTime": {
+          "type": "string",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$"
+        },
+        "provenance": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 400
+        },
+        "alert": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "score",
+            "detectedLocal"
+          ],
+          "properties": {
+            "kind": {
+              "$ref": "#/$defs/id"
+            },
+            "score": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "severityHint": {
+              "$ref": "#/$defs/id"
+            },
+            "detectedLocal": {
+              "type": "string",
+              "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$"
+            },
+            "startedLocal": {
+              "type": "string",
+              "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$"
+            },
+            "segment": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "dwellSec": {
+              "type": "number",
+              "minimum": 0
+            },
+            "reversals": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "minutesAfterSunset": {
+              "type": "number"
+            },
+            "distanceHomeM": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "triage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "severity",
+            "action",
+            "explanation",
+            "checked"
+          ],
+          "properties": {
+            "severity": {
+              "enum": [
+                "info",
+                "watch",
+                "urgent"
+              ]
+            },
+            "action": {
+              "enum": [
+                "observe",
+                "checkIn",
+                "emergencyLease"
+              ]
+            },
+            "explanation": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 280
+            },
+            "checked": {
+              "type": "array",
+              "maxItems": 16,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              }
+            },
+            "decidedLocal": {
+              "type": "string",
+              "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$"
+            },
+            "agent": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            }
+          }
+        },
+        "draft": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "approvalRequestId",
+            "draftId",
+            "draftHash",
+            "purpose",
+            "durationMinutes",
+            "recipientId",
+            "findings",
+            "policy"
+          ],
+          "properties": {
+            "approvalRequestId": {
+              "$ref": "#/$defs/id"
+            },
+            "draftId": {
+              "$ref": "#/$defs/id"
+            },
+            "draftHash": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "purpose": {
+              "enum": [
+                "wandering-check",
+                "emergency-rescue"
+              ]
+            },
+            "durationMinutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            },
+            "recipientId": {
+              "$ref": "#/$defs/id"
+            },
+            "deviceId": {
+              "$ref": "#/$defs/id"
+            },
+            "findings": {
+              "type": "array",
+              "maxItems": 16,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              }
+            },
+            "policy": {
+              "type": "object"
+            }
+          }
+        },
+        "decision": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "approvalRequestId",
+            "decision",
+            "draftHash"
+          ],
+          "properties": {
+            "approvalRequestId": {
+              "$ref": "#/$defs/id"
+            },
+            "decision": {
+              "enum": [
+                "APPROVE",
+                "REJECT"
+              ]
+            },
+            "draftHash": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "approvalHash": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "decidedBy": {
+              "$ref": "#/$defs/id"
+            }
+          }
+        },
+        "lease": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "leaseId",
+            "purpose",
+            "recipientId",
+            "expiresAt"
+          ],
+          "properties": {
+            "leaseId": {
+              "$ref": "#/$defs/id"
+            },
+            "purpose": {
+              "enum": [
+                "wandering-check",
+                "emergency-rescue"
+              ]
+            },
+            "recipientId": {
+              "$ref": "#/$defs/id"
+            },
+            "expiresAt": {
+              "$ref": "#/$defs/dateTime"
+            },
+            "durationMinutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            },
+            "approvalHash": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "draftHash": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        },
+        "escalation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "cause"
+          ],
+          "properties": {
+            "cause": {
+              "$ref": "#/$defs/id"
+            },
+            "panicLocal": {
+              "type": "string",
+              "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$"
+            },
+            "leadTimeSec": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
+          }
+        },
+        "feedback": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "guardianId",
+            "learn",
+            "mode",
+            "reason"
+          ],
+          "properties": {
+            "kind": {
+              "const": "ALERT_OK"
+            },
+            "guardianId": {
+              "$ref": "#/$defs/id"
+            },
+            "learn": {
+              "type": "boolean"
+            },
+            "mode": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 32
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160
+            }
+          }
+        },
+        "evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "evidenceHash",
+            "toolsByServer"
+          ],
+          "properties": {
+            "evidenceHash": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "agent": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "approvalHash": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              ]
+            },
+            "toolsByServer": {
+              "type": "object",
+              "maxProperties": 8,
+              "additionalProperties": {
+                "type": "array",
+                "maxItems": 32,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 96
+                }
+              }
+            }
+          }
+        },
+        "status": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state"
+          ],
+          "properties": {
+            "state": {
+              "enum": [
+                "AT_HOME",
+                "MOVING",
+                "IN_PARK"
+              ]
+            },
+            "place": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            }
+          }
+        },
+        "share": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "requestId",
+            "purpose",
+            "durationMinutes",
+            "guardianId"
+          ],
+          "properties": {
+            "requestId": {
+              "$ref": "#/$defs/id"
+            },
+            "purpose": {
+              "enum": [
+                "wandering-check",
+                "emergency-rescue"
+              ]
+            },
+            "durationMinutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            },
+            "guardianId": {
+              "$ref": "#/$defs/id"
+            }
+          }
+        }
+      }
     }
   }
 }

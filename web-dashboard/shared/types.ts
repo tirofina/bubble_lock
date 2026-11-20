@@ -139,6 +139,61 @@ export interface IntegrationReceipt {
 
 export type JournalReceipt = CoreReceipt | IntegrationReceipt;
 
+/** Guardian alert feed (R17): routine alert, triage, approval, lease, escalation and feedback records of one resident. */
+export type GuardianRecordType =
+  | 'ROUTINE_ALERT' | 'TRIAGE_DECISION' | 'TRIAGE_NOTICE' | 'INCIDENT_OPENED' | 'APPROVAL_REQUEST' | 'GUARDIAN_REVIEW'
+  | 'GUARDIAN_DECISION' | 'LOCATION_LEASE' | 'INCIDENT_ESCALATED' | 'ESCALATION_NOTICE' | 'PANIC_NOTICE' | 'TRIAGE_EVIDENCE'
+  | 'GUARDIAN_FEEDBACK' | 'RESIDENT_STATUS' | 'REPLAY_RESET' | 'SHARE_REQUEST';
+export type TriageSeverity = 'info' | 'watch' | 'urgent';
+export type TriageAction = 'observe' | 'checkIn' | 'emergencyLease';
+export interface GuardianAlertRecord {
+  readonly contractId: 'privacy-bubble.guardian-alert.v1';
+  readonly docRevision: '2.0.0';
+  readonly recordType: GuardianRecordType;
+  readonly recordId: string;
+  /** CSE creationTime (live) or the replay append time. */
+  readonly timestamp: string;
+  readonly residentId: string;
+  readonly alertId?: string;
+  readonly incidentId?: string;
+  readonly runId?: string;
+  readonly creator?: string;
+  readonly oneM2MResource?: string;
+  /** Story clock (HH:MM or HH:MM:SS) of the resident's place; display only. */
+  readonly localTime?: string;
+  readonly provenance?: string;
+  readonly alert?: {
+    readonly kind: string; readonly score: number; readonly severityHint?: string; readonly detectedLocal: string; readonly startedLocal?: string;
+    readonly segment?: string; readonly dwellSec?: number; readonly reversals?: number; readonly minutesAfterSunset?: number; readonly distanceHomeM?: number;
+  };
+  readonly triage?: {
+    readonly severity: TriageSeverity; readonly action: TriageAction; readonly explanation: string; readonly checked: readonly string[];
+    readonly decidedLocal?: string; readonly agent?: string;
+  };
+  readonly draft?: {
+    readonly approvalRequestId: string; readonly draftId: string; readonly draftHash: string; readonly purpose: string; readonly durationMinutes: number;
+    readonly recipientId: string; readonly deviceId?: string; readonly findings: readonly string[]; readonly policy: Readonly<Record<string, unknown>>;
+  };
+  readonly decision?: {
+    readonly approvalRequestId: string; readonly decision: 'APPROVE' | 'REJECT'; readonly draftHash: string; readonly approvalHash?: string; readonly decidedBy?: string;
+  };
+  readonly lease?: {
+    readonly leaseId: string; readonly purpose: string; readonly recipientId: string; readonly expiresAt: string; readonly durationMinutes?: number;
+    readonly approvalHash?: string; readonly draftHash?: string;
+  };
+  readonly escalation?: { readonly cause: string; readonly panicLocal?: string; readonly leadTimeSec?: number | null };
+  readonly feedback?: { readonly kind: 'ALERT_OK'; readonly guardianId: string; readonly learn: boolean; readonly mode: string | null; readonly reason: string };
+  readonly evidence?: {
+    readonly evidenceHash: string; readonly agent?: string; readonly approvalHash?: string | null;
+    readonly toolsByServer: Readonly<Record<string, readonly string[]>>;
+  };
+  readonly status?: { readonly state: 'AT_HOME' | 'MOVING' | 'IN_PARK'; readonly place?: string };
+  /** Guardian-initiated location share request; the triage runtime answers with an APPROVAL_REQUEST draft. */
+  readonly share?: { readonly requestId: string; readonly purpose: 'wandering-check' | 'emergency-rescue'; readonly durationMinutes: number; readonly guardianId: string };
+  /** The schema closes the record; the signature keeps union reads over journal receipts (receipt?.sequence) typed as before. */
+  readonly [key: string]: unknown;
+}
+
 export interface EventEnvelope {
   readonly schemaVersion: '1.0.0';
   readonly sequence: number;
@@ -155,6 +210,7 @@ export interface EventEnvelope {
 export type DashboardEvent = EventEnvelope & (
   | { readonly type: 'command.accepted'; readonly acceptance: ApiAcceptance; readonly receipt: null }
   | { readonly type: 'integration.receipt'; readonly acceptance: null; readonly receipt: IntegrationReceipt }
+  | { readonly type: 'guardian.alert'; readonly acceptance: null; readonly receipt: GuardianAlertRecord }
   | { readonly type: 'command.dispatched' | 'command.ack' | 'gateway.telemetry' | 'receipt.review' | 'group.summary'; readonly acceptance: null; readonly receipt: CoreReceipt }
 );
 

@@ -1,0 +1,80 @@
+{
+  "generatedAt": "2026-11-20T02:59:26.266Z",
+  "browser": "Chrome/157.0.8103.79",
+  "mode": "live (http://127.0.0.1:47411, pc-mobius/scripts/run-video-live.mjs, real Mobius4, emulated devices and triage runtime, simulation true)",
+  "variant": "claude",
+  "lang": "en",
+  "command": "node web-dashboard/scripts/capture-alert-card.mjs",
+  "captured": [
+    {
+      "name": "user-alert-new-1440-en",
+      "width": 1440,
+      "lang": "en",
+      "file": "user-alert-new-1440-en.png",
+      "sha256": "969c12eefa6ef592b7733a741b4d5ccc83f44c4afd90042a4b2179c6d4bbbbe4"
+    },
+    {
+      "name": "user-alert-new-390-en",
+      "width": 390,
+      "lang": "en",
+      "file": "user-alert-new-390-en.png",
+      "sha256": "ab99b4feaba662f822394b016b9505e00be1cb71e8a82be474087f1f23cbdc41"
+    },
+    {
+      "name": "user-alert-approved-1440-en",
+      "width": 1440,
+      "lang": "en",
+      "file": "user-alert-approved-1440-en.png",
+      "sha256": "aaf8f28bb66d410a5597c30718c46973d11e3c463f39440ba90bee76c55e7ad7"
+    },
+    {
+      "name": "user-alert-approved-390-en",
+      "width": 390,
+      "lang": "en",
+      "file": "user-alert-approved-390-en.png",
+      "sha256": "96388ec698f300549eee3c031199379cca73643c767609bb5ddb1769588039dd"
+    },
+    {
+      "name": "user-map-shared-1440-en",
+      "width": 1440,
+      "lang": "en",
+      "file": "user-map-shared-1440-en.png",
+      "sha256": "10db429d097fd28048e6500f2dd87c33bd3cc88f2287d53c07f93cbb9740b17e"
+    },
+    {
+      "name": "user-alert-escalated-1440-en",
+      "width": 1440,
+      "lang": "en",
+      "file": "user-alert-escalated-1440-en.png",
+      "sha256": "b613869955dd0227d5c7b7d2eb8b69ad56a131c008295d2d578b9e8b10ce91f6"
+    },
+    {
+      "name": "user-alert-escalated-390-en",
+      "width": 390,
+      "lang": "en",
+      "file": "user-alert-escalated-390-en.png",
+      "sha256": "1b8a9b6e143b33f331f92fdefa7d23d9c7317fbe2cd880fda77ba5f41ddde36a"
+    },
+    {
+      "name": "operator-services-1440-en",
+      "width": 1440,
+      "lang": "en",
+      "file": "operator-services-1440-en.png",
+      "sha256": "25adf13eb0bba9f77185b0307076bf763f4625bf9fcc25c9526b398a697d8ce7"
+    },
+    {
+      "name": "user-status-moving-1440-en",
+      "width": 1440,
+      "lang": "en",
+      "file": "user-status-moving-1440-en.png",
+      "sha256": "e900958b450ea2abd0c58b852dcc0617dc04990973d6f56934832c02a68ae228"
+    },
+    {
+      "name": "user-alert-dismissed-1440-en",
+      "width": 1440,
+      "lang": "en",
+      "file": "user-alert-dismissed-1440-en.png",
+      "sha256": "4cc903ea69b1631ed60a5b0d1b86b322b2f59a9ac88ee26c75a739fa39e4b88e"
+    }
+  ]
+}

@@ -79,7 +79,7 @@ export function parseDashboardEvent(value: unknown): DashboardEvent {
   if (!eventValidator(value)) {
     throw new ContractError(ajv.errorsText(eventValidator.errors));
   }
-  if (value.receipt !== null && value.type !== 'integration.receipt') checkReceiptIdentity(value.receipt);
+  if (value.receipt !== null && value.type !== 'integration.receipt' && value.type !== 'guardian.alert') checkReceiptIdentity(value.receipt);
   return value;
 }
 

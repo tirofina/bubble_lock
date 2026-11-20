@@ -1,5 +1,7 @@
-import type { AcceptanceLabel, CommandPayload, CoreReceipt, DashboardEvent, IntegrationReceipt } from './types.ts';
+import type { AcceptanceLabel, CommandPayload, CoreReceipt, DashboardEvent, GuardianAlertRecord, IntegrationReceipt } from './types.ts';
 import { parseDashboardEvent } from './validation.ts';
+import { guardianRecordFromContent } from './guardian-alert.ts';
+import type { FeedContainer, FeedWriter } from './guardian-alert.ts';
 
 /**
  * oneM2M notification (m2m:sgn) to dashboard event mapping for the live CSE source.
@@ -12,7 +14,14 @@ export const DISPATCH_RECORD_TYPE = 'privacy-bubble.gateway-dispatch';
 export const INCIDENT_TYPE = 'privacy-bubble.automation-incident';
 const GATEWAY_CONTRACT = 'privacy-bubble.raspberrypi-gateway' as const;
 
-export type CseStream = 'observation' | 'button' | 'battery' | 'command' | 'receipt' | 'incident';
+export type CseStream = 'observation' | 'button' | 'battery' | 'command' | 'receipt' | 'incident' | 'alert-feed';
+
+/** Resident feed container (R17): several AEs write it, each record type has its own writer. */
+export interface AlertFeedBinding {
+  readonly container: FeedContainer;
+  readonly residentId: string;
+  readonly writers: Readonly<Record<FeedWriter, readonly string[]>>;
+}
 
 /** One subscribed container, and the only AE whose writes it accepts (creator attribute). */
 export interface CseBinding {
@@ -21,6 +30,7 @@ export interface CseBinding {
   readonly deviceId: string | null;
   readonly gatewayId: string | null;
   readonly expectedCreator: string;
+  readonly feed?: AlertFeedBinding;
 }
 
 export interface ContentInstance {
@@ -43,7 +53,7 @@ export interface ParsedNotification {
 }
 
 type Draft = Pick<DashboardEvent, 'type' | 'resourceUri'> & {
-  readonly receipt: CoreReceipt | IntegrationReceipt | null;
+  readonly receipt: CoreReceipt | IntegrationReceipt | GuardianAlertRecord | null;
   readonly acceptance: DashboardEvent['acceptance'];
 };
 
@@ -183,8 +193,20 @@ function incident(binding: CseBinding, cin: ContentInstance): Draft {
   return { type: 'integration.receipt', resourceUri: resource, acceptance: null, receipt: value };
 }
 
+/** Resident feed: the record type selects its writer AE, and only that creator (cr) is accepted. */
+function alertFeed(binding: CseBinding, cin: ContentInstance): Draft {
+  const feed = binding.feed;
+  const resource = `${binding.containerPath}/${cin.rn}`;
+  if (!feed) return review(binding, cin, 'alert-feed-binding');
+  const mapped = guardianRecordFromContent(feed.container, cin.con, { recordId: cin.ri, timestamp: oneM2mTimeToIso(cin.ct), residentId: feed.residentId, ...(cin.cr ? { creator: cin.cr } : {}), oneM2MResource: resource });
+  if (!mapped) return review(binding, cin, `alert-feed-schema:${feed.container}`);
+  if (!cin.cr || !feed.writers[mapped.writer].includes(cin.cr)) return review(binding, cin, `unexpected-creator:${cin.cr ?? 'absent'}:${mapped.record.recordType}`);
+  return { type: 'guardian.alert', resourceUri: resource, acceptance: null, receipt: mapped.record };
+}
+
 /** Map one contentInstance to zero or more event drafts. Unexpected writers become REVIEW. */
 export function mapContentInstance(binding: CseBinding, cin: ContentInstance): readonly Draft[] {
+  if (binding.stream === 'alert-feed') return [alertFeed(binding, cin)];
   if (cin.cr !== binding.expectedCreator) return [review(binding, cin, `unexpected-creator:${cin.cr ?? 'absent'}`)];
   switch (binding.stream) {
     case 'observation': case 'button': case 'battery': return [telemetry(binding, cin)];

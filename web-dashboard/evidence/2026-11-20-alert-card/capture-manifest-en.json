@@ -1,0 +1,87 @@
+{
+  "generatedAt": "2026-11-20T03:04:53.724Z",
+  "browser": "Chrome/157.0.8103.79",
+  "mode": "replay (ALERT_SOURCE=replay, fixtures/guardian-alert-story.json, simulation true)",
+  "variant": "claude",
+  "lang": "en",
+  "command": "node web-dashboard/scripts/capture-alert-card.mjs",
+  "captured": [
+    {
+      "name": "user-alert-new-1440-en",
+      "width": 1440,
+      "lang": "en",
+      "file": "user-alert-new-1440-en.png",
+      "sha256": "cec5352655bba070eef1ae6e7439e49cf6c561849ddc1d83eefd00306ad90f36"
+    },
+    {
+      "name": "user-alert-new-390-en",
+      "width": 390,
+      "lang": "en",
+      "file": "user-alert-new-390-en.png",
+      "sha256": "2d28010c8d038cdd28a1fab5d7745be3a7c53e932e7b614f4debb145d1bb1e18"
+    },
+    {
+      "name": "user-alert-approved-1440-en",
+      "width": 1440,
+      "lang": "en",
+      "file": "user-alert-approved-1440-en.png",
+      "sha256": "482c3f4a256f74221ed8294627ff98cf0ed3ba761fbf73ac05b0945e42a0e448"
+    },
+    {
+      "name": "user-alert-approved-390-en",
+      "width": 390,
+      "lang": "en",
+      "file": "user-alert-approved-390-en.png",
+      "sha256": "43cdf2a2d10bc9b96eee29a9cb26d99bf0e76a33ea58a2e6831453c437ddde67"
+    },
+    {
+      "name": "user-map-shared-1440-en",
+      "width": 1440,
+      "lang": "en",
+      "file": "user-map-shared-1440-en.png",
+      "sha256": "c98140ea08ea0e3e0eb370ebf6b533671cfae36e7f2f929f2cf4382800f23bb6"
+    },
+    {
+      "name": "user-alert-escalated-1440-en",
+      "width": 1440,
+      "lang": "en",
+      "file": "user-alert-escalated-1440-en.png",
+      "sha256": "fd456afa35cecee550db8fc3e31146443cb1e12cfd36cec64e782f3a7e6f41ae"
+    },
+    {
+      "name": "user-alert-escalated-390-en",
+      "width": 390,
+      "lang": "en",
+      "file": "user-alert-escalated-390-en.png",
+      "sha256": "ee4f0f077caef7a72dcece9543e02b5191556d83dc850b31e7132b90394c65e0"
+    },
+    {
+      "name": "operator-services-1440-en",
+      "width": 1440,
+      "lang": "en",
+      "file": "operator-services-1440-en.png",
+      "sha256": "5a3cb0b0e52fef84e1a44b515ce650c0d9a7548caf9b115eee83a15d12ec9d12"
+    },
+    {
+      "name": "operator-audit-1440-en",
+      "width": 1440,
+      "lang": "en",
+      "file": "operator-audit-1440-en.png",
+      "sha256": "045c6f8eaaf6ffcb171099780aacfec08d1a136baf196cdc59b784219bc9d8dc"
+    },
+    {
+      "name": "user-status-moving-1440-en",
+      "width": 1440,
+      "lang": "en",
+      "file": "user-status-moving-1440-en.png",
+      "sha256": "5533065dfeb3d2c240a960d9d9ba68f8ba10f2a84cce2c7de6653919b698e616"
+    },
+    {
+      "name": "user-alert-dismissed-1440-en",
+      "width": 1440,
+      "lang": "en",
+      "file": "user-alert-dismissed-1440-en.png",
+      "sha256": "598b5c742f6cb5e882afb1e9b44598d15dcf4f65c0f44b568d36e246b222a2ad"
+    }
+  ]
+}

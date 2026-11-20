@@ -109,6 +109,19 @@ CORE와 INTEGRATION 기록을 한 파일에 넣어도 같은 순서로 재생합
 - 보호자 승인(`/api/portal/commands/approve`) 결과는 보호자 AE가 transient group(et=deadline)의 fopt CREATE 한 번으로 키링 명령 컨테이너에 기록합니다.
 - 실제 CSE 시나리오: `node pc-mobius/scripts/run-multiapp-real.mjs --screenshot`, 기록은 `docs/rubric-work/R03.md`입니다.
 
+## 보호자 알림 카드와 데모 영상 녹화 (R17, R13)
+
+가족 화면 `#/user/overview`에 보호자 알림 카드가 있음. 거주자 AE의 `alerts`, `triageLog`, `guardianInbox`, `approvals`, `incidents`, `leases`, `audit`, `location` 컨테이너 기록이 `guardian.alert` 이벤트(같은 SSE 계약, [schema](contracts/dashboard-event.schema.json)의 `guardianAlertRecord`)로 들어오고, 카드에는 심각도, 분류 에이전트 설명, 서버 최소 조치(계약 `actionFloor`), 알림 경과 시간이 나옴. "Share location 5 min (Emergency Rescue)"는 서버가 만든 공유 초안의 정확한 `draftHash`를 보호자가 승인할 때만 lease를 열고, 승인 뒤 같은 카드에 망 위치 정확도 원과 BLE 근접 원 지도가 나옴. PANIC은 열린 사건의 escalation으로 같은 카드에 표시됨. "It's fine"은 place-memory `learningDecision`의 보호자 피드백으로 기록됨. 운영 화면 `#/operator/services`에는 MEC IPE 재배치(mep1 Edge-A에서 mep2 Edge-B, R13 receipt 재생)와 이상 징후 분류 감사(MCP 서버별 도구, 승인 hash)가 있음. 화면 언어는 `?lang=en` 또는 상단 전환 버튼으로 바꾸며 기본값은 한국어임.
+
+| 모드 | 시작 명령 | 데이터 |
+|---|---|---|
+| 재생 | `ALERT_SOURCE=replay npm --prefix web-dashboard run sse` 와 `npm --prefix web-dashboard run dev` | `fixtures/guardian-alert-story.json`(R17 run 3 C4 receipt 값), `simulation: true`, `fixture-replay` |
+| 실시간 | `MOBIUS4_ROOT=<mobius4> node pc-mobius/scripts/run-video-live.mjs --start=park` 와 `npm --prefix web-dashboard run dev` | 실제 Mobius4 4.24.5 CSE, 거주자, 보호자, 방문자, 운영 AE와 구독. Gateway, 키링, MEC IPE 위치 기록, routine과 triage runtime은 모의(receipt 값 사용) |
+
+- 이야기 단계: `curl -X POST -H "Content-Type: application/json" -d '{"step":"alert"}' http://127.0.0.1:4174/api/portal/alerts/replay` (`reset`, `home`, `walk`, `park`, `alert`, `panic`). 실시간 모드에서는 같은 요청이 runtime으로 전달되어 CSE에 기록되고, `panic`은 모의 키링 버튼부터 Gateway, CSE, 자동화 AE를 거쳐 열린 사건을 escalation함.
+- 재생 변형: `ALERT_REPLAY_VARIANT=claude`(기본, Claude run 3 설명과 checkIn) 또는 `scripted`(에이전트 lease 초안 포함), 시작 단계 `ALERT_REPLAY_START=home|walk|park|alert`.
+- 화면 기록: `node web-dashboard/scripts/capture-alert-card.mjs --lang=en` (재생), `--api=http://127.0.0.1:4174` (실시간). 결과는 [evidence/2026-11-20-alert-card](evidence/2026-11-20-alert-card/).
+
 ## 검증
 
 `npm test`는 CORE 계약·SSE cursor·Group 타임라인·통합 runtime journal·키링 위치·사용자 포털·OIDC 세션과 권한 경계를 검증합니다. `npm run typecheck`, `npm run typecheck:contract`, `npm run build`로 TypeScript와 배포 파일을 검사합니다. 루트 `npm run verify`에는 실제 TLS API와 BFF upstream 호출 시험도 포함됩니다.

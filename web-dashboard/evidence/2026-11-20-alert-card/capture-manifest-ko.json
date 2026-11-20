@@ -1,0 +1,80 @@
+{
+  "generatedAt": "2026-11-20T02:49:09.057Z",
+  "browser": "Chrome/157.0.8103.79",
+  "mode": "replay (ALERT_SOURCE=replay, fixtures/guardian-alert-story.json, simulation true)",
+  "variant": "claude",
+  "lang": "ko",
+  "command": "node web-dashboard/scripts/capture-alert-card.mjs",
+  "captured": [
+    {
+      "name": "user-alert-new-1440-ko",
+      "width": 1440,
+      "lang": "ko",
+      "file": "user-alert-new-1440-ko.png",
+      "sha256": "cb60330f55a3ea13e5248c3ed676fdcff275010d74340ccbebd0891b13af30c0"
+    },
+    {
+      "name": "user-alert-new-390-ko",
+      "width": 390,
+      "lang": "ko",
+      "file": "user-alert-new-390-ko.png",
+      "sha256": "33b30e2192ec8fa4996b844805601abe3aaf0a10daf9546dda4653f0499468c0"
+    },
+    {
+      "name": "user-alert-approved-1440-ko",
+      "width": 1440,
+      "lang": "ko",
+      "file": "user-alert-approved-1440-ko.png",
+      "sha256": "de1bbb2ee1d0c109482740e214b0931c0a294bd4e46cc7e278362db0e5dd2ae1"
+    },
+    {
+      "name": "user-alert-approved-390-ko",
+      "width": 390,
+      "lang": "ko",
+      "file": "user-alert-approved-390-ko.png",
+      "sha256": "5487bd8394e16528c948213d93921fedc18aec3cd7ca24d13a962e9e5ab06277"
+    },
+    {
+      "name": "user-map-shared-1440-ko",
+      "width": 1440,
+      "lang": "ko",
+      "file": "user-map-shared-1440-ko.png",
+      "sha256": "c7fa3f9ec9dc1e7b28c5d9becfecaf004bb1979910a871e15d58b4ad6b425682"
+    },
+    {
+      "name": "user-alert-escalated-1440-ko",
+      "width": 1440,
+      "lang": "ko",
+      "file": "user-alert-escalated-1440-ko.png",
+      "sha256": "5ae48697e945e36ae5e4b1e713c4015dbebf375d970fc4d782aec9dc9b184705"
+    },
+    {
+      "name": "user-alert-escalated-390-ko",
+      "width": 390,
+      "lang": "ko",
+      "file": "user-alert-escalated-390-ko.png",
+      "sha256": "0a83174d1416bc5b65f3ac419531307e310296732a90ae37e61553295a1cc549"
+    },
+    {
+      "name": "operator-services-1440-ko",
+      "width": 1440,
+      "lang": "ko",
+      "file": "operator-services-1440-ko.png",
+      "sha256": "5d2dae5413eda08e68b25da8ac20467f9f8bbb714dca8034db3deca3a7d58655"
+    },
+    {
+      "name": "user-status-moving-1440-ko",
+      "width": 1440,
+      "lang": "ko",
+      "file": "user-status-moving-1440-ko.png",
+      "sha256": "4fe8bb97efc956e9b3531f1b657f977ffcedc065ee972272780eef2e51896bad"
+    },
+    {
+      "name": "user-alert-dismissed-1440-ko",
+      "width": 1440,
+      "lang": "ko",
+      "file": "user-alert-dismissed-1440-ko.png",
+      "sha256": "0223a1896849cb0e5ad86453675e531178a5a37ae637bdea48784e3a809a05a7"
+    }
+  ]
+}

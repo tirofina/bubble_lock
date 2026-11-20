@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { Stage, TimelineStages } from '../shared/index.ts';
+import { useLang } from './i18n.tsx';
 
 export function Badge({ children, tone = '' }: { readonly children: ReactNode; readonly tone?: string }) {
   return <span className={`badge ${tone}`}>{children}</span>;
@@ -17,6 +18,9 @@ export function Section({ id, number, title, children }: {
 const friendlyFormat = new Intl.DateTimeFormat('ko-KR', {
   timeZone: 'Asia/Seoul', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit',
 });
+const friendlyFormatEn = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'Asia/Seoul', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+});
 
 /**
  * precise: KST with milliseconds for command and audit records.
@@ -24,10 +28,11 @@ const friendlyFormat = new Intl.DateTimeFormat('ko-KR', {
  * Both keep the original offset-bearing value in dateTime and the title.
  */
 export function Timestamp({ at, variant = 'precise' }: { readonly at: string; readonly variant?: 'precise' | 'friendly' }) {
+  const { lang } = useLang();
   const time = new Date(at).getTime();
   if (Number.isNaN(time)) return <time className="stage-time" title={`원본: ${at}`}>{at}</time>;
   if (variant === 'friendly') {
-    return <time className="friendly-time" dateTime={at} title={`원본: ${at}`}>{friendlyFormat.format(time)}</time>;
+    return <time className="friendly-time" dateTime={at} title={`${lang === 'en' ? 'Original' : '원본'}: ${at}`}>{(lang === 'en' ? friendlyFormatEn : friendlyFormat).format(time)}</time>;
   }
   const korean = new Date(time + 9 * 60 * 60 * 1000).toISOString();
   return <time className="stage-time" dateTime={at} title={`원본: ${at}`}>

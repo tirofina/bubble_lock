@@ -5,8 +5,12 @@ import {
 } from '../shared/cse-notification.ts';
 import type { ContentInstance, CseBinding, CseStream } from '../shared/cse-notification.ts';
 import type { DashboardEvent } from '../shared/types.ts';
+import { activeLease, FEED_CONTAINERS, residentStatusOf } from '../shared/guardian-alert.ts';
+import type { AlertCard, FeedContainer } from '../shared/guardian-alert.ts';
+import type { LocationSnapshot } from '../shared/location.ts';
 import { discoveredUris, Onem2mClient, startNotificationIngress } from './onem2m.ts';
 import type { FetchLike, NotificationIngress } from './onem2m.ts';
+import type { AlertBackend, AlertFeed } from './guardian-alerts.ts';
 
 /**
  * Live oneM2M data source for the dashboard server (R03).
@@ -29,10 +33,19 @@ export interface CseLiveConfig {
   readonly labels?: { readonly keyring?: string; readonly incidents?: string };
   readonly subscriptionTtlSec?: number;
   readonly refreshMs?: number;
+  /**
+   * R17 resident feed (alerts, triageLog, guardianInbox, approvals, incidents, leases, audit, location containers),
+   * discovered by label. Writers are the AE-IDs allowed per record type; the guardian AE is the guardian writer.
+   */
+  readonly residents?: {
+    readonly label?: string;
+    readonly residentId?: string;
+    readonly writers: { readonly routine: readonly string[]; readonly triage: readonly string[]; readonly incident: readonly string[]; readonly guardianDecider: readonly string[]; readonly resident: readonly string[] };
+  };
 }
 
 type App = 'operator' | 'guardian';
-interface SubscriptionEntry { readonly app: App; readonly binding: CseBinding; readonly kind: 'stream' | 'confirm'; readonly requestId?: string }
+interface SubscriptionEntry { readonly app: App; readonly binding: CseBinding; readonly kind: 'stream' | 'confirm' | 'alert'; readonly requestId?: string }
 interface Keyring { readonly deviceId: string; readonly gatewayId: string | null; readonly householdId: string | null; readonly root: string }
 export const OPERATOR_STREAMS: readonly CseStream[] = ['observation', 'button', 'battery', 'command', 'receipt'];
 export const GUARDIAN_STREAMS: readonly CseStream[] = ['button', 'battery', 'receipt'];
@@ -122,6 +135,11 @@ export async function startCseLiveSource(config: CseLiveConfig, options: { fetch
   const operator = client(config.operator.aeId);
   const guardian = config.guardian ? client(config.guardian.aeId) : null;
   const log = createLiveEventLog({ simulation: config.simulation, roleScope: ['operator'] });
+  // Resident feed: each app keeps the log of its own subscriptions (the guardian card, the operator triage audit).
+  const alertLogs = { guardian: createLiveEventLog({ simulation: config.simulation, roleScope: ['guardian'], maxEvents: 2000 }), operator: createLiveEventLog({ simulation: config.simulation, roleScope: ['operator'], maxEvents: 2000 }) };
+  const residentStatus = new Map<string, string>();
+  const latestLocation = new Map<string, { cin: ContentInstance; receivedAt: string }>();
+  const feedLabel = config.residents?.label ?? 'pb-guardian-feed';
   const overlay = config.guardian ? createGuardianOverlay(config.guardian) : null;
   const subscriptions = new Map<string, SubscriptionEntry>();
   const operatorBindings = new Map<string, CseBinding>();
@@ -157,27 +175,82 @@ export async function startCseLiveSource(config: CseLiveConfig, options: { fetch
       return;
     }
     if (!parsed.cin) return;
-    if (app === 'operator') appendOperator(entry.binding, parsed.cin, receivedAt);
+    if (entry.kind === 'alert') appendAlert(entry.app, entry.binding, parsed.cin, receivedAt);
+    else if (app === 'operator') appendOperator(entry.binding, parsed.cin, receivedAt);
     else overlay?.ingest(entry.binding, parsed.cin, receivedAt);
+  }
+
+  /** Location samples arrive every 20 s; only a change of At home / Moving becomes a record, the latest fix is cached for the lease map. */
+  function appendAlert(app: App, binding: CseBinding, cin: ContentInstance, receivedAt: string) {
+    if (binding.feed?.container === 'location') {
+      const root = binding.containerPath.slice(0, -'/location'.length);
+      const previous = latestLocation.get(root);
+      if (!previous || cin.ct >= previous.cin.ct) latestLocation.set(root, { cin, receivedAt });
+      const status = residentStatusOf(cin.con); const key = `${app}|${root}`; const state = status ? `${status.state}|${status.place ?? ''}` : null;
+      if (state === null || residentStatus.get(key) === state) return;
+      residentStatus.set(key, state);
+    }
+    alertLogs[app].append(binding, cin, receivedAt);
   }
 
   const ingress: NotificationIngress = await startNotificationIngress({ cseId: cse.cseId, ...(config.notification?.host ? { host: config.notification.host } : {}), ...(config.notification?.port === undefined ? {} : { port: config.notification.port }), onNotify });
   await operator.registerAe(cseBase, { rn: config.operator.rn, api: 'Npb.operator.dashboard', poa: [`${ingress.url}/operator`], lbl: ['pb-app-operator'] });
   if (guardian && config.guardian) await guardian.registerAe(cseBase, { rn: config.guardian.rn, api: 'Npb.guardian.portal', poa: [`${ingress.url}/guardian`], lbl: ['pb-app-guardian'] });
 
-  async function subscribe(app: App, appClient: Onem2mClient, aeId: string, binding: CseBinding) {
+  async function subscribe(app: App, appClient: Onem2mClient, aeId: string, binding: CseBinding, kind: 'stream' | 'alert' = 'stream') {
     const path = `${binding.containerPath}/sub-${app}`;
     if (subscriptions.has(path)) return true;
     await appClient.request('DELETE', path);
     const created = await appClient.request('POST', binding.containerPath, { ty: 23, body: { 'm2m:sub': { rn: `sub-${app}`, nu: [aeId], su: aeId, enc: { net: [3], chty: [4] }, nct: 1, et: isoToOneM2mTime(Date.now() + ttlSec * 1000), lbl: [`pb-app-${app}`] } } });
     if (created.rsc !== 2001) { stats.subscriptionsDenied.push(`${app}:${binding.containerPath}:${created.rsc}`); return false; }
-    subscriptions.set(path, { app, binding, kind: 'stream' });
+    subscriptions.set(path, { app, binding, kind });
     stats.subscriptionsCreated += 1;
+    if (kind === 'alert') await backfillAlert(app, appClient, binding).catch(() => undefined);
     return true;
   }
 
+  /** Records written before the subscription existed: children by creationTime (location: la only). */
+  async function backfillAlert(app: App, appClient: Onem2mClient, binding: CseBinding) {
+    const receivedAt = new Date().toISOString();
+    if (binding.feed?.container === 'location') {
+      const latest = await appClient.request('GET', `${binding.containerPath}/la`);
+      const cin = latest.rsc === 2000 ? parseContentInstance(latest.payload?.['m2m:cin']) : null;
+      if (cin) appendAlert(app, binding, cin, receivedAt);
+      return;
+    }
+    const discovery = await appClient.request('GET', binding.containerPath, { query: { fu: 1, ty: 4, lim: 100 } });
+    const found: ContentInstance[] = [];
+    for (const uri of discoveredUris(discovery.payload)) {
+      const read = await appClient.request('GET', uri);
+      const cin = read.rsc === 2000 ? parseContentInstance(read.payload?.['m2m:cin']) : null;
+      if (cin) found.push(cin);
+    }
+    found.sort((a, b) => a.ct.localeCompare(b.ct) || (a.st ?? 0) - (b.st ?? 0));
+    for (const cin of found) appendAlert(app, binding, cin, receivedAt);
+  }
+
+  /** Resident feed containers by label; the container name selects the record mapping. */
+  async function discoverResidentFeeds() {
+    if (!config.residents || !config.guardian || !guardian) return;
+    const residents = config.residents;
+    const writers = { ...residents.writers, guardian: [config.guardian.aeId] };
+    const uris = discoveredUris((await guardian.expect('GET', cseBase, [2000, 4004], { query: { fu: 1, ty: 3, lbl: feedLabel } })).payload);
+    for (const containerPath of uris) {
+      const name = containerPath.split('/').at(-1) as FeedContainer;
+      if (!FEED_CONTAINERS.includes(name)) continue;
+      const read = await guardian.request('GET', containerPath);
+      const cnt = record(read.payload?.['m2m:cnt']) ? read.payload['m2m:cnt'] as Record<string, unknown> : null;
+      const labels = Array.isArray(cnt?.['lbl']) ? (cnt['lbl'] as unknown[]).filter((item): item is string => typeof item === 'string') : [];
+      const residentId = labelValue(labels, 'pb-resident-') ?? residents.residentId ?? 'resident';
+      if (residents.residentId && residentId !== residents.residentId) continue;
+      const binding: CseBinding = { stream: 'alert-feed', containerPath, deviceId: null, gatewayId: null, expectedCreator: writers.triage[0] ?? '', feed: { container: name, residentId, writers } };
+      await subscribe('guardian', guardian, config.guardian.aeId, binding, 'alert');
+      if (name !== 'location') await subscribe('operator', operator, config.operator.aeId, binding, 'alert');
+    }
+  }
+
   async function discoverKeyrings(appClient: Onem2mClient) {
-    const roots = discoveredUris((await appClient.expect('GET', cseBase, [2000], { query: { fu: 1, ty: 3, lbl: keyringLabel } })).payload);
+    const roots = discoveredUris((await appClient.expect('GET', cseBase, [2000, 4004], { query: { fu: 1, ty: 3, lbl: keyringLabel } })).payload);
     const found: Keyring[] = [];
     for (const root of roots) {
       const read = await appClient.request('GET', root);
@@ -199,7 +272,7 @@ export async function startCseLiveSource(config: CseLiveConfig, options: { fetch
         if (await subscribe('operator', operator, config.operator.aeId, binding)) operatorBindings.set(binding.containerPath, binding);
       }
     }
-    const incidentContainers = discoveredUris((await operator.expect('GET', cseBase, [2000], { query: { fu: 1, ty: 3, lbl: incidentLabel } })).payload);
+    const incidentContainers = discoveredUris((await operator.expect('GET', cseBase, [2000, 4004], { query: { fu: 1, ty: 3, lbl: incidentLabel } })).payload);
     for (const containerPath of incidentContainers) {
       const binding: CseBinding = { stream: 'incident', containerPath, deviceId: null, gatewayId: null, expectedCreator: config.automationAeId };
       if (await subscribe('operator', operator, config.operator.aeId, binding)) operatorBindings.set(containerPath, binding);
@@ -212,6 +285,7 @@ export async function startCseLiveSource(config: CseLiveConfig, options: { fetch
         for (const stream of GUARDIAN_STREAMS) await subscribe('guardian', guardian, config.guardian.aeId, { stream, containerPath: `${keyring.root}/${stream}`, deviceId: keyring.deviceId, gatewayId: keyring.gatewayId, expectedCreator: config.gatewayAeId });
       }
     }
+    await discoverResidentFeeds();
   }
 
   /** Recover through the CSE: la/ RETRIEVE per container, createdAfter discovery for gaps. */
@@ -303,6 +377,68 @@ export async function startCseLiveSource(config: CseLiveConfig, options: { fetch
     return report;
   }
 
+  const feedView = (app: App): AlertFeed => ({
+    source: LIVE_SOURCE, simulation: config.simulation,
+    get events() { return alertLogs[app].events; }, get lastSequence() { return alertLogs[app].lastSequence; }, subscribe: alertLogs[app].subscribe,
+  });
+  /** Feed root (.../ev-c4) of a card, from the resource of any of its records. */
+  const feedRoot = (card: AlertCard): string | null => {
+    for (const event of alertLogs.guardian.events) {
+      if (event.type !== 'guardian.alert') continue;
+      const item = event.receipt;
+      if (item.oneM2MResource && ((item.incidentId && item.incidentId === card.incidentId) || (item.alertId && item.alertId === card.alertId))) return item.oneM2MResource.split('/').slice(0, -2).join('/');
+    }
+    return null;
+  };
+  /** Guardian decisions go to the CSE as the guardian AE; the triage runtime decides with this exact hash and applies the lease. */
+  const alerts: AlertBackend | null = config.residents && config.guardian && guardian ? {
+    mode: 'live', guardianId: config.guardian.principalId, guardian: feedView('guardian'), operator: feedView('operator'),
+    async review(card, input) {
+      if (!input.requestResource || !card.draft) throw new Error('승인 요청 컨테이너를 찾지 못했어요.');
+      const con = { type: 'GUARDIAN_REVIEW', approvalRequestId: card.draft.approvalRequestId, draftId: card.draft.draftId, reviewedDraftHash: input.reviewedDraftHash, decision: input.decision, guardianId: config.guardian!.principalId, reviewedAt: new Date().toISOString() };
+      const created = await guardian.expect('POST', input.requestResource, [2001], { ty: 4, body: { 'm2m:cin': { rn: `review-${card.draft.approvalRequestId.replace(/^approval-/, '').replace(/[^A-Za-z0-9-]/g, '').slice(0, 40)}`, cnf: 'application/json:0', con, cr: null } } });
+      const cin = record(created.payload?.['m2m:cin']) ? created.payload['m2m:cin'] as Record<string, unknown> : {};
+      return { status: 'SUBMITTED', resource: `${input.requestResource}/${String(cin['rn'] ?? '')}`, payloadHash: commandPayloadHash(con) };
+    },
+    async requestShare(card, input) {
+      if (!input.container) throw new Error('보호자 기록 컨테이너를 찾지 못했어요.');
+      const con = { type: 'SHARE_REQUEST', requestId: input.requestId, alertId: card.alertId, incidentId: card.incidentId, purpose: input.purpose, durationMinutes: input.durationMinutes, guardianId: config.guardian!.principalId, requestedAt: new Date().toISOString() };
+      await guardian.expect('POST', input.container, [2001], { ty: 4, body: { 'm2m:cin': { rn: input.requestId, cnf: 'application/json:0', con, cr: null } } });
+    },
+    async feedback(card, learning, container) {
+      if (!container) throw new Error('보호자 기록 컨테이너를 찾지 못했어요.');
+      const con = { type: 'GUARDIAN_FEEDBACK', feedback: 'ALERT_OK', alertId: card.alertId, incidentId: card.incidentId, guardianId: config.guardian!.principalId, guardianDismissedOk: true, learn: learning.learn, mode: learning.mode, reason: learning.reason, at: new Date().toISOString() };
+      await guardian.expect('POST', container, [2001], { ty: 4, body: { 'm2m:cin': { cnf: 'application/json:0', con, cr: null } } });
+      return { status: 'SUBMITTED', learning };
+    },
+    async location(card, lang): Promise<LocationSnapshot | null> {
+      const root = feedRoot(card);
+      if (!activeLease(card) || !root) return null;
+      let latest = latestLocation.get(root);
+      if (!latest) {
+        const read = await guardian.request('GET', `${root}/location/la`);
+        const cin = read.rsc === 2000 ? parseContentInstance(read.payload?.['m2m:cin']) : null;
+        if (cin) { latest = { cin, receivedAt: new Date().toISOString() }; latestLocation.set(root, latest); }
+      }
+      const con = latest && record(latest.cin.con) ? latest.cin.con : null;
+      // R17 samples carry con.grid; the MEC IPE record carries the cin loc attribute ([lon, lat], three decimals).
+      let point: { lat: number; lon: number } | null = con && record(con['grid']) && typeof con['grid']['lat'] === 'number' && typeof con['grid']['lon'] === 'number' ? { lat: con['grid']['lat'], lon: con['grid']['lon'] } : null;
+      const loc = latest ? (latest.cin as unknown as { loc?: { crd?: unknown } }).loc : undefined;
+      if (!point && typeof loc?.crd === 'string') { try { const [lon, lat] = JSON.parse(loc.crd) as number[]; if (typeof lat === 'number' && typeof lon === 'number') point = { lat, lon }; } catch { /* malformed loc */ } }
+      if (!latest || !point) return null;
+      const observedAt = oneM2mTimeToIso(latest.cin.ct);
+      const relay = con && record(con['relay']) && typeof con['relay']['rssiDbm'] === 'number' && typeof con['relay']['gatewayId'] === 'string' ? con['relay'] : null;
+      const simulated = config.simulation || con?.['simulation'] === true;
+      const label = lang === 'en' ? "Mom's keyring" : '어머니 키링';
+      // Three-decimal coordinates bound the error to about 70 m here; the circle shows that bound, not a precise fix.
+      return { schemaVersion: '1.0.0', mode: 'live', source: 'portal-api', simulation: simulated, updatedAt: new Date().toISOString(), rejectedRecords: 0, caughtUp: true,
+        gateways: relay ? [{ gatewayId: String(relay['gatewayId']), label: lang === 'en' ? "Mom's phone (BLE relay)" : '어머니 휴대폰 (BLE 중계)', position: point, simulation: relay['simulation'] !== false, referenceRssiDbm: Number(relay['referenceRssiDbm'] ?? -59), pathLossExponent: Number(relay['pathLossExponent'] ?? 2) }] : [],
+        devices: [{ deviceId: card.residentId, label, position: { coordinates: point, source: 'mec', observedAt, accuracyM: 70, simulation: simulated },
+          ble: relay ? { gatewayId: String(relay['gatewayId']), rssiDbm: Math.round(Number(relay['rssiDbm'])), observedAt, simulation: relay['simulation'] !== false } : null }] };
+    },
+    describe() { return { mode: 'live', label: feedLabel, guardian: alertLogs.guardian.lastSequence, operator: alertLogs.operator.lastSequence, locations: latestLocation.size }; },
+  } : null;
+
   await refresh();
   await resync('startup');
   const timer = config.refreshMs ? setInterval(() => { void refresh().catch(() => {}); }, config.refreshMs) : null;
@@ -318,6 +454,7 @@ export async function startCseLiveSource(config: CseLiveConfig, options: { fetch
     refresh,
     publishApproved,
     guardianOverlay: overlay,
+    alerts,
     describe() {
       return {
         transport: 'oneM2M HTTP notifications', cseId: cse.cseId, notificationUrl: ingress.url,

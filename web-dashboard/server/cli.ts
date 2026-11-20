@@ -6,6 +6,7 @@ import type { OidcSessionConfig } from './oidc-session.ts';
 import { createPortalUpstream } from './portal-upstream.ts';
 import type { PortalOptions } from './portal.ts';
 import type { CseLiveConfig } from './cse-live.ts';
+import type { LivingRoomConfig } from './caregiver.ts';
 
 const receiptFile = process.env['RECEIPT_FILE'];
 const locationFile = process.env['LOCATION_FILE'];
@@ -30,18 +31,29 @@ if (port !== undefined && (!Number.isInteger(port) || port < 0 || port > 65535))
 if (locationSimulation !== undefined && !['true', 'false'].includes(locationSimulation)) {
   throw new TypeError('LOCATION_SIMULATION 값은 true 또는 false로 지정하세요.');
 }
+// Guardian alert card: ALERT_SOURCE=auto|replay|cse-live, ALERT_REPLAY_VARIANT=scripted|claude, ALERT_REPLAY_START=home|walk|alert.
+const alertSource = process.env['ALERT_SOURCE'] ?? 'auto';
+if (!['auto', 'replay', 'cse-live'].includes(alertSource)) throw new TypeError('ALERT_SOURCE 값은 auto, replay, cse-live 중 하나로 지정하세요.');
+const alerts = { source: alertSource as 'auto' | 'replay' | 'cse-live', ...(process.env['ALERT_REPLAY_VARIANT'] ? { variant: process.env['ALERT_REPLAY_VARIANT'] } : {}), ...(process.env['ALERT_REPLAY_START'] ? { start: process.env['ALERT_REPLAY_START'] } : {}), ...(process.env['ALERT_STORY_CONTROL_URL'] ? { storyControlUrl: process.env['ALERT_STORY_CONTROL_URL'] } : {}) };
+// Caregiver living room group: PORTAL_CORE_CONFIG=<json with livingRoom.groupCommand> (live CSE) or CAREGIVER_DEMO=1 (emulated fanout).
+const coreConfigFile = process.env['PORTAL_CORE_CONFIG'];
+const livingRoom = coreConfigFile ? (JSON.parse(await readFile(coreConfigFile, 'utf8')) as { livingRoom: LivingRoomConfig }).livingRoom : process.env['CAREGIVER_DEMO'] === '1' ? {} : undefined;
+if (livingRoom && portal) throw new TypeError('방문 돌봄 기기 그룹은 로컬 체험 포털에서만 실행하세요.');
 const service = await startReplayServer({
   ...(port === undefined ? {} : { port }),
   ...(cseLive ? { cseLive } : {}),
+  alerts,
   ...(receiptFile === undefined ? {} : { receiptFile }),
   ...(locationFile === undefined ? {} : { locationFile }),
   ...(gatewayLocationsFile === undefined ? {} : { gatewayLocationsFile }),
   locationSimulation: locationSimulation !== 'false',
+  ...(livingRoom ? { portal: { livingRoom } } : {}),
   portalStatePath:process.env['PORTAL_DEMO_STATE']??fileURLToPath(new URL('../../.local/portal-demo/state.json',import.meta.url)),
   ...(portal?{portal}:{}),
 });
 console.log(`이벤트 재생: ${service.url} · ${service.replay.source} · ${service.replay.lastSequence}개 · ${portal?'OIDC 계정 인증':'로컬 체험 환경'}`);
 if (service.live) console.log(`oneM2M 실시간 원천: ${JSON.stringify(service.live.describe())}`);
+console.log(`보호자 알림 카드: ${JSON.stringify(service.alerts.backend.describe())}`);
 process.send?.({ type: 'ready', url: service.url, source: service.replay.source, live: service.live?.describe() ?? null });
 console.log(`위치 지도: ${locationFile === undefined ? '모의 fixture' : locationSimulation === 'false' ? '현장 JSONL 관측' : '모의 JSONL 관측'} · GET /api/locations · 4초 갱신`);
 const stop = () => {

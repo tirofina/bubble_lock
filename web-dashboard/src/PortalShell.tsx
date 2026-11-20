@@ -2,55 +2,60 @@ import type { ReactNode } from 'react';
 import { Icon } from './Icon.tsx';
 import type { IconName } from './Icon.tsx';
 import { AccountAction, useAuth } from './auth-client.tsx';
+import { LangToggle, useLang } from './i18n.tsx';
 
-type NavItem = readonly [id: string, title: string, short: string, icon: IconName];
+type NavItem = readonly [id: string, title: string, short: string, icon: IconName, titleEn: string, shortEn: string];
 const operatorNav: readonly NavItem[] = [
-  ['overview', '한눈에 보기', '한눈에', 'grid'], ['map', '위치 지도', '지도', 'pin'], ['devices', '장치와 자원', '장치', 'key'],
-  ['commands', '명령 처리', '명령', 'bolt'], ['audit', '활동 기록', '기록', 'file'], ['services', '연결 서비스', '서비스', 'server'],
-  ['evidence', '개발 현황', '현황', 'shield'],
+  ['overview', '한눈에 보기', '한눈에', 'grid', 'Overview', 'Overview'], ['map', '위치 지도', '지도', 'pin', 'Location map', 'Map'], ['devices', '장치와 자원', '장치', 'key', 'Devices and resources', 'Devices'],
+  ['commands', '명령 처리', '명령', 'bolt', 'Commands', 'Commands'], ['audit', '활동 기록', '기록', 'file', 'Activity log', 'Log'], ['services', '연결 서비스', '서비스', 'server', 'Connected services', 'Services'],
+  ['evidence', '개발 현황', '현황', 'shield', 'Build status', 'Status'],
 ];
 const userNav: readonly NavItem[] = [
-  ['overview', '내 대시보드', '홈', 'home'], ['map', '키링 위치', '위치', 'pin'], ['devices', '가족과 키링', '가족', 'users'],
-  ['privacy', '공유 권한', '권한', 'shield'], ['activity', '알림과 요청', '알림', 'bell'],
+  ['overview', '내 대시보드', '홈', 'home', 'My dashboard', 'Home'], ['map', '키링 위치', '위치', 'pin', 'Keyring location', 'Location'], ['devices', '가족과 키링', '가족', 'users', 'Family and keyrings', 'Family'],
+  ['privacy', '공유 권한', '권한', 'shield', 'Sharing', 'Sharing'], ['activity', '알림과 요청', '알림', 'bell', 'Alerts and requests', 'Alerts'],
 ];
 
 function Brand({ tagline = true }: { readonly tagline?: boolean }) {
+  const { tr } = useLang();
   return <a className="portal-brand" href="#/"><span className="brand-symbol"><Icon name="bubble" size={22} /></span>
-    <span>BubbleLock{tagline && <small>가까이서 지키는 프라이버시</small>}</span></a>;
+    <span>BubbleLock{tagline && <small>{tr('가까이서 지키는 프라이버시', 'Privacy that stays close')}</small>}</span></a>;
 }
 
 export function PortalShell({ role, page, children, actions }: { role: 'operator' | 'user'; page: string; children: ReactNode; actions?: ReactNode }) {
   const auth = useAuth();
+  const { lang, tr } = useLang();
   const canSwitch = role === 'operator' || auth.session?.mode === 'demo' || auth.session?.principal?.scopes.includes('dashboard:read');
   const nav = role === 'operator' ? operatorNav : userNav;
-  const label = nav.find(([id]) => id === page)?.[1] ?? nav[0]![1];
-  const area = role === 'operator' ? '운영 대시보드' : '가족 대시보드';
+  const title = (item: NavItem) => (lang === 'en' ? item[4] : item[1]);
+  const label = title(nav.find(([id]) => id === page) ?? nav[0]!);
+  const area = role === 'operator' ? tr('운영 대시보드', 'Operator dashboard') : tr('가족 대시보드', 'Family dashboard');
   return <div className={`portal-app ${role}-portal`}>
-    <a className="skip" href="#main" onClick={(event) => { event.preventDefault(); document.getElementById('main')?.focus(); }}>본문으로 건너뛰기</a>
+    <a className="skip" href="#main" onClick={(event) => { event.preventDefault(); document.getElementById('main')?.focus(); }}>{tr('본문으로 건너뛰기', 'Skip to content')}</a>
     <aside className="portal-sidebar">
       <Brand />
-      <div className="workspace-label"><span className="workspace-dot" />{role === 'operator' ? '운영자 화면' : '내 프라이버시'}</div>
-      <nav aria-label={`${area} 메뉴`}>{nav.map(([id, title, , icon]) =>
-        <a className={page === id ? 'active' : ''} aria-current={page === id ? 'page' : undefined} href={`#/${role}/${id}`} key={id}><Icon name={icon} /><span>{title}</span></a>)}</nav>
+      <div className="workspace-label"><span className="workspace-dot" />{role === 'operator' ? tr('운영자 화면', 'Operator view') : tr('내 프라이버시', 'My privacy')}</div>
+      <nav aria-label={tr(`${area} 메뉴`, `${area} menu`)}>{nav.map((item) =>
+        <a className={page === item[0] ? 'active' : ''} aria-current={page === item[0] ? 'page' : undefined} href={`#/${role}/${item[0]}`} key={item[0]}><Icon name={item[3]} /><span>{title(item)}</span></a>)}</nav>
       <div className="sidebar-bottom">
-        <div className="workspace-info"><Icon name="shield" /><div><strong>받은 그대로 보여요</strong>위치, 공유 권한, 실행 기록</div></div>
-        <a href="#/"><Icon name="exit" />시작 화면으로</a>
+        <div className="workspace-info"><Icon name="shield" /><div><strong>{tr('받은 그대로 보여요', 'Shown as received')}</strong>{tr('위치, 공유 권한, 실행 기록', 'Location, sharing and run records')}</div></div>
+        <a href="#/"><Icon name="exit" />{tr('시작 화면으로', 'Back to start')}</a>
       </div>
     </aside>
     <div className="portal-main">
       <header className="portal-topbar">
         <div className="breadcrumb">{area}<Icon name="chevron" size={14} /><strong>{label}</strong></div>
+        <LangToggle />
         <AccountAction />
-        {canSwitch && <a className="button portal-switch" href={role === 'operator' ? '#/user/overview' : '#/operator/overview'}>{role === 'operator' ? '가족 화면' : '운영 화면'}<Icon name="arrow" size={16} /></a>}
+        {canSwitch && <a className="button portal-switch" href={role === 'operator' ? '#/user/overview' : '#/operator/overview'}>{role === 'operator' ? tr('가족 화면', 'Family view') : tr('운영 화면', 'Operator view')}<Icon name="arrow" size={16} /></a>}
       </header>
       <main id="main" tabIndex={-1} className="portal-content">
         <div className="page-heading"><h1>{label}</h1>{actions}</div>
         {children}
       </main>
-      <footer className="portal-footer"><span>BubbleLock, 프라이버시 버블 키링</span><span>모든 기록에는 받은 시각과 출처가 함께 표시돼요.</span></footer>
+      <footer className="portal-footer"><span>{tr('BubbleLock, 프라이버시 버블 키링', 'BubbleLock, the Privacy Bubble Keyring')}</span><span>{tr('모든 기록에는 받은 시각과 출처가 함께 표시돼요.', 'Every record shows when it arrived and where it came from.')}</span></footer>
     </div>
-    {role === 'user' && <nav className="tab-bar" aria-label={`${area} 탭`}>{nav.map(([id, , short, icon]) =>
-      <a className={page === id ? 'active' : ''} aria-current={page === id ? 'page' : undefined} href={`#/${role}/${id}`} key={id}><Icon name={icon} size={22} /><span>{short}</span></a>)}</nav>}
+    {role === 'user' && <nav className="tab-bar" aria-label={tr(`${area} 탭`, `${area} tabs`)}>{nav.map((item) =>
+      <a className={page === item[0] ? 'active' : ''} aria-current={page === item[0] ? 'page' : undefined} href={`#/${role}/${item[0]}`} key={item[0]}><Icon name={item[3]} size={22} /><span>{lang === 'en' ? item[5] : item[2]}</span></a>)}</nav>}
   </div>;
 }
 

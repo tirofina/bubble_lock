@@ -9,7 +9,12 @@ import { integrationServices } from '../shared/integration.ts';
 import { summarizeCommand } from '../shared/index.ts';
 import { isRecord } from './client.ts';
 import { useAuth } from './auth-client.tsx';
-import { commandStatusLabels, connectionLabels, label, serviceFieldLabels, serviceMeta, serviceStateLabels } from './labels.ts';
+import { commandStatusLabels, connectionLabels, connectionLabelsEn, label, serviceFieldLabels, serviceFieldLabelsEn, serviceMeta, serviceMetaEn, serviceStateLabels, serviceStateLabelsEn } from './labels.ts';
+import { useLang } from './i18n.tsx';
+import { EdgeRelocation } from './EdgeRelocation.tsx';
+import { AgentRuns } from './AgentRuns.tsx';
+import { GroupCommandsPanel } from './Caregiver.tsx';
+import { TriageAudit, useAlertFeed } from './GuardianAlerts.tsx';
 const LocationMap = lazy(() => import('./LocationMap.tsx').then((module) => ({ default: module.LocationMap })));
 
 function Evidence() {
@@ -30,19 +35,24 @@ function Evidence() {
 
 export function OperatorDashboard({ page }: { page: string }) {
   const { session } = useAuth();
+  const { lang, tr } = useLang();
+  const en = lang === 'en';
   const stream = useEventStream();
+  const alertFeed = useAlertFeed(page === 'services' || page === 'audit' ? '/api/alerts/events' : null);
   const [refresh, setRefresh] = useState(0);
   const [selectedId, setSelectedId] = useState('');
   const commands = Object.values(stream.timeline.commands);
   const selected = commands.find((command) => command.commandId === selectedId) ?? commands[0];
-  const services = integrationServices(stream.events).map((service) => ({ ...service, meta: serviceMeta[service.prefix] ?? { label: service.title, description: '' } }));
+  const metaMap = en ? serviceMetaEn : serviceMeta;
+  const services = integrationServices(stream.events).map((service) => ({ ...service, meta: metaMap[service.prefix] ?? { label: service.title, description: '' } }));
   const latest = stream.events.at(-1);
   const verified = commands.filter((command) => summarizeCommand(command).status === 'verified').length;
   const connected = stream.connection === 'connected';
   const live = latest?.source === 'onem2m-cse-live';
-  return <PortalShell role="operator" page={page} actions={<button className="primary" onClick={() => { stream.reconnect(); setRefresh((value) => value + 1); }}><Icon name="refresh" size={17} />새로고침</button>}>
-    <div className="context-strip" role="status"><span className={`connection-pill${connected ? ' connected' : ''}`}><i />{label(connectionLabels, stream.connection)}</span>
-      <span>{live ? 'oneM2M CSE 알림을 실시간으로 받고 있어요.' : '명령과 서비스 기록을 재생하고 있어요.'} 지금까지 {stream.timeline.lastSequence}번째 기록을 받았어요.</span><Badge tone={latest?.simulation === false ? 'info' : 'warning'}>{live ? (latest?.simulation === false ? '실제 CSE' : '모의 장치, 실제 CSE') : '모의 데이터'}</Badge></div>
+  const connectionText = label(en ? connectionLabelsEn : connectionLabels, stream.connection);
+  return <PortalShell role="operator" page={page} actions={<button className="primary" onClick={() => { stream.reconnect(); alertFeed.reconnect(); setRefresh((value) => value + 1); }}><Icon name="refresh" size={17} />{tr('새로고침', 'Refresh')}</button>}>
+    <div className="context-strip" role="status"><span className={`connection-pill${connected ? ' connected' : ''}`}><i />{connectionText}</span>
+      <span>{live ? tr('oneM2M CSE 알림을 실시간으로 받고 있어요.', 'Receiving oneM2M CSE notifications live.') : tr('명령과 서비스 기록을 재생하고 있어요.', 'Replaying command and service records.')} {tr(`지금까지 ${stream.timeline.lastSequence}번째 기록을 받았어요.`, `${stream.timeline.lastSequence} records received so far.`)}</span><Badge tone={latest?.simulation === false ? 'info' : 'warning'}>{live ? (latest?.simulation === false ? tr('실제 CSE', 'Real CSE') : tr('모의 장치, 실제 CSE', 'Simulated devices, real CSE')) : tr('모의 데이터', 'Simulated data')}</Badge></div>
     {stream.error && <div className="notice error" role="alert">{stream.error}<button onClick={() => stream.reconnect(true)}>처음부터 다시 받기</button></div>}
     {page === 'overview' && <>
       <div className="operator-welcome"><div><p className="eyebrow">운영 현황</p><h2>현장의 흐름을 한눈에</h2><p>키링 위치, 명령 처리, 연결 서비스 상태를 한 화면에서 확인하세요.</p>
@@ -75,17 +85,19 @@ export function OperatorDashboard({ page }: { page: string }) {
       <div className="content-card row"><div><h2>명령 진행 과정</h2><p className="card-note">명령을 보낸 뒤 장치에 적용되고 상태가 다시 확인될 때까지 단계별로 보여 줘요.</p></div>
         <label>명령 선택<select value={selected?.commandId ?? ''} onChange={(event) => setSelectedId(event.target.value)} disabled={!commands.length}>{!commands.length && <option>명령을 기다리는 중</option>}
           {commands.map((command) => <option key={command.commandId} value={command.commandId}>{command.commandId} ({label(commandStatusLabels, summarizeCommand(command).status)})</option>)}</select></label></div>
+      <GroupCommandsPanel />
       {selected && <div className="content-card"><CommandDetail command={selected} /></div>}
       <EventDetails events={stream.events} />
     </div>}
-    {page === 'audit' && <div className="content-card"><Audit refresh={refresh} integrated={latest?.source === 'integration-journal-replay'} /></div>}
-    {page === 'services' && <div className="service-grid">{services.map((service) => <article className="content-card stack" key={service.prefix}>
-      <div className="card-heading"><span className="row-symbol"><Icon name="server" /></span><Badge tone={service.receipt ? 'success' : 'warning'}>{service.receipt ? '응답 받음' : '응답 기다리는 중'}</Badge></div>
+    {page === 'audit' && <div className="stack"><div className="two-columns"><AgentRuns /><TriageAudit feed={alertFeed} /></div><div className="content-card"><Audit refresh={refresh} integrated={latest?.source === 'integration-journal-replay'} /></div></div>}
+    {page === 'services' && <div className="stack services-page"><div className="two-columns"><EdgeRelocation events={stream.events} /><TriageAudit feed={alertFeed} /></div>
+    <div className="service-grid">{services.map((service) => <article className="content-card stack" key={service.prefix}>
+      <div className="card-heading"><span className="row-symbol"><Icon name="server" /></span><Badge tone={service.receipt ? 'success' : 'warning'}>{service.receipt ? tr('응답 받음', 'Responded') : tr('응답 기다리는 중', 'Waiting for a response')}</Badge></div>
       <div><h2>{service.meta.label}</h2><p className="card-note">{service.meta.description}</p></div>
-      {service.receipt ? <><p className="small muted"><Timestamp at={service.receipt.timestamp} />, 기록 재생</p>
-        <dl>{service.values.map(([name, value]) => <div key={name}><dt>{label(serviceFieldLabels, name)}</dt><dd>{['state', 'status', 'allowed'].includes(name) ? label(serviceStateLabels, value) : <code>{value}</code>}</dd></div>)}</dl></>
-        : <p className="small muted">서비스 응답이 오면 상태를 보여 드려요.</p>}
-    </article>)}</div>}
+      {service.receipt ? <><p className="small muted"><Timestamp at={service.receipt.timestamp} />, {live ? tr('실시간', 'live') : tr('기록 재생', 'replayed')}</p>
+        <dl>{service.values.map(([name, value]) => <div key={name}><dt>{label(en ? serviceFieldLabelsEn : serviceFieldLabels, name)}</dt><dd>{['state', 'status', 'allowed'].includes(name) ? label(en ? serviceStateLabelsEn : serviceStateLabels, value) : <code>{value}</code>}</dd></div>)}</dl></>
+        : <p className="small muted">{tr('서비스 응답이 오면 상태를 보여 드려요.', 'The status appears when the service responds.')}</p>}
+    </article>)}</div></div>}
     {page === 'evidence' && <Evidence />}
   </PortalShell>;
 }
