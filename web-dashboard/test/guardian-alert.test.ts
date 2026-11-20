@@ -196,6 +196,21 @@ test('rejects guardian alert requests from a non-local origin in demo mode', { t
   assert.equal(response.status, 403);
 });
 
+test('operator audit lists the MCP delegation and triage runs from the receipts with tools per server', { timeout: 10000 }, async (t) => {
+  const service = await startReplayServer({ port: 0 });
+  t.after(service.close);
+  const { status, body } = await call(service.url, '/api/agent-runs');
+  assert.equal(status, 200);
+  assert.equal(body['source'], 'receipt-replay');
+  const [delegation, claude, scripted] = body['runs'] as Record<string, any>[];
+  assert.equal(delegation?.['kind'], 'delegation');
+  assert.match(String(delegation?.['approvalHash']), /^[a-f0-9]{64}$/);
+  assert.deepEqual(delegation?.['toolsByServer'].MEC, ['reconcileApprovedIntent']);
+  assert.equal(claude?.['runId'], 'triage-run-2056fdf7-3cfd-4c83-ac4c-2a8f6cb50181');
+  assert.deepEqual(claude?.['toolsByServer'].oneM2M, ['readAlert', 'readRecentHistory', 'readRoutineProfile', 'readDeviceState', 'submitTriage']);
+  assert.ok(scripted?.['toolsByServer'].oneM2M.includes('applyApprovedLease'));
+});
+
 test('derives At Home, Moving and In Park from coarse zone records without coordinates', () => {
   // Given: MEC IPE observations (pb.mec.location.v1) and an R17 location sample
   const ipe = (zoneId: string | null, accessPointId: string, mep: string) => ({ schema: 'pb.mec.location.v1', service: 'Location', zoneId, accessPointId, servedBy: { mep, appInstanceId: 'x', epoch: 1 } });

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-20T02:47:19.947Z",
+  "generatedAt": "2026-11-20T03:04:53.724Z",
   "browser": "Chrome/157.0.8103.79",
   "mode": "replay (ALERT_SOURCE=replay, fixtures/guardian-alert-story.json, simulation true)",
   "variant": "claude",
@@ -11,70 +11,77 @@
       "width": 1440,
       "lang": "en",
       "file": "user-alert-new-1440-en.png",
-      "sha256": "98162940df35120d2653216b2a53437215d8ab1472e3c79815b798931aa7b16c"
+      "sha256": "cec5352655bba070eef1ae6e7439e49cf6c561849ddc1d83eefd00306ad90f36"
     },
     {
       "name": "user-alert-new-390-en",
       "width": 390,
       "lang": "en",
       "file": "user-alert-new-390-en.png",
-      "sha256": "8e35f78677566b6456fec9b82d98a122f264e5574e243f3f56280e4f26e59dee"
+      "sha256": "2d28010c8d038cdd28a1fab5d7745be3a7c53e932e7b614f4debb145d1bb1e18"
     },
     {
       "name": "user-alert-approved-1440-en",
       "width": 1440,
       "lang": "en",
       "file": "user-alert-approved-1440-en.png",
-      "sha256": "4138a504ca2f86faa9e9821f0c40c6534a651ec5b765bc66389d470bace85db8"
+      "sha256": "482c3f4a256f74221ed8294627ff98cf0ed3ba761fbf73ac05b0945e42a0e448"
     },
     {
       "name": "user-alert-approved-390-en",
       "width": 390,
       "lang": "en",
       "file": "user-alert-approved-390-en.png",
-      "sha256": "ee640c569c3b97b15f70fc0e3fddba416dda6012d18408db6f4eb76bcba06233"
+      "sha256": "43cdf2a2d10bc9b96eee29a9cb26d99bf0e76a33ea58a2e6831453c437ddde67"
     },
     {
       "name": "user-map-shared-1440-en",
       "width": 1440,
       "lang": "en",
       "file": "user-map-shared-1440-en.png",
-      "sha256": "4ec2a6ec5f1c5890a4573f6544a27cac2cfdd5552f50f5b5431e3203bfb9c401"
+      "sha256": "c98140ea08ea0e3e0eb370ebf6b533671cfae36e7f2f929f2cf4382800f23bb6"
     },
     {
       "name": "user-alert-escalated-1440-en",
       "width": 1440,
       "lang": "en",
       "file": "user-alert-escalated-1440-en.png",
-      "sha256": "41fdbdc03c6247a7e4b6398962d535e032399c168e83b9a99b08cd2824e6e990"
+      "sha256": "fd456afa35cecee550db8fc3e31146443cb1e12cfd36cec64e782f3a7e6f41ae"
     },
     {
       "name": "user-alert-escalated-390-en",
       "width": 390,
       "lang": "en",
       "file": "user-alert-escalated-390-en.png",
-      "sha256": "70cbf4869be1beb5f86bd121e4f2fd0664a2941acc1796bf3ed759572cbc2c6d"
+      "sha256": "ee4f0f077caef7a72dcece9543e02b5191556d83dc850b31e7132b90394c65e0"
     },
     {
       "name": "operator-services-1440-en",
       "width": 1440,
       "lang": "en",
       "file": "operator-services-1440-en.png",
-      "sha256": "9d9ee77a54821648add82e5183f64d7ae6ed23c718f247ab4b3f75fb9099d58d"
+      "sha256": "5a3cb0b0e52fef84e1a44b515ce650c0d9a7548caf9b115eee83a15d12ec9d12"
+    },
+    {
+      "name": "operator-audit-1440-en",
+      "width": 1440,
+      "lang": "en",
+      "file": "operator-audit-1440-en.png",
+      "sha256": "045c6f8eaaf6ffcb171099780aacfec08d1a136baf196cdc59b784219bc9d8dc"
     },
     {
       "name": "user-status-moving-1440-en",
       "width": 1440,
       "lang": "en",
       "file": "user-status-moving-1440-en.png",
-      "sha256": "719309fae9eaa19a008a6efe171a4f05b95cbebe1d25453f7edfc3669e0bf3ca"
+      "sha256": "5533065dfeb3d2c240a960d9d9ba68f8ba10f2a84cce2c7de6653919b698e616"
     },
     {
       "name": "user-alert-dismissed-1440-en",
       "width": 1440,
       "lang": "en",
       "file": "user-alert-dismissed-1440-en.png",
-      "sha256": "5319811b006cd1486013a041364ba6bcde898b4b4e184283679b3dce122e47f2"
+      "sha256": "598b5c742f6cb5e882afb1e9b44598d15dcf4f65c0f44b568d36e246b222a2ad"
     }
   ]
 }

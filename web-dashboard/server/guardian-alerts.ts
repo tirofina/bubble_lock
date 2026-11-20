@@ -275,6 +275,44 @@ export async function relocationSummary(file: URL = RELOCATION_RECEIPT): Promise
   };
 }
 
+/** MCP agent runs from the committed receipts (replayed): the R17 visitor delegation run and the anomaly triage runs. */
+export async function agentRunsSummary(): Promise<Record<string, unknown>> {
+  const read = async (path: string) => { const bytes = await readFile(new URL(`../../${path}`, import.meta.url)); return { path, sha256: createHash('sha256').update(bytes).digest('hex'), value: JSON.parse(bytes.toString('utf8')) as Record<string, any> }; };
+  const group = (calls: readonly { serverId: string; tool: string }[]) => {
+    const result: Record<string, string[]> = { oneM2M: [], MEC: [], Audit: [] };
+    for (const call of calls) { const list = result[call.serverId] ?? (result[call.serverId] = []); if (!list.includes(call.tool)) list.push(call.tool); }
+    return result;
+  };
+  const runs: Record<string, unknown>[] = [];
+  const delegation = await read('docs/verification-evidence/2026-11-19/mcp-llm-agent-real-cse.json');
+  const d = delegation.value;
+  runs.push({
+    kind: 'delegation', title: 'Visitor location delegation (R17 afternoon care)', runId: d['runId'], status: d['status'], at: d['generatedAt'], agent: `${d['agent']?.client ?? 'claude-code'} (${d['agent']?.model ?? 'model'})`,
+    invocations: d['agent']?.invocations?.length ?? null, interruption: d['interruption'] ? `process tree killed after ${d['interruption'].trigger}, resumed at cursor ${d['interruption'].cursorAtInterruption}` : null,
+    toolsByServer: group((d['toolCallsInOrder'] ?? []).filter((call: Record<string, unknown>) => call['actor'] === 'agent' && call['outcome'] === 'COMMITTED')),
+    rejectedProbes: (d['toolErrors'] ?? []).map((error: Record<string, unknown>) => `${error['tool']}: ${error['reason']}`),
+    draftHash: d['approval']?.draft?.draftHash ?? null, approvalHash: d['approval']?.guardian?.approvalHash ?? null, decision: d['approval']?.guardian?.decision ?? null,
+    receipt: { path: delegation.path, sha256: delegation.sha256 },
+  });
+  for (const [path, label] of [['docs/verification-evidence/2026-11-20/anomaly-triage.json', 'Anomaly triage, Claude run 3 (C4 trail fork)'], ['docs/verification-evidence/2026-11-20/anomaly-triage-scripted.json', 'Anomaly triage, scripted policy (C4 trail fork)']] as const) {
+    const receipt = await read(path);
+    const c4 = (receipt.value['cases'] ?? []).find((item: Record<string, unknown>) => String(item['caseId']).startsWith('C4'));
+    const triage = c4?.triage?.[0];
+    if (!triage) continue;
+    const merge = (left: Record<string, string[]> = {}, right: Record<string, string[]> = {}) => Object.fromEntries(['oneM2M', 'MEC', 'Audit'].map((server) => [server, [...new Set([...(left[server] ?? []), ...(right[server] ?? [])])]]));
+    runs.push({
+      kind: 'triage', title: label, runId: triage.runId, status: triage.status, at: receipt.value['generatedAt'], agent: receipt.value['agent']?.kind === 'claude' ? `${receipt.value['agent']?.client} (${receipt.value['agent']?.model})` : 'scripted triage policy (0 LLM calls)',
+      invocations: triage.invocations?.length ?? null, action: triage.triage?.action ?? null, severity: triage.triage?.severity ?? null,
+      toolsByServer: merge(triage.toolsCalledByAgent, Object.fromEntries(Object.entries(triage.toolsCalledByTriageAe ?? {}).map(([server, tools]) => [server, (tools as string[]).map((tool) => tool.split(':')[0]!)]))),
+      rejectedProbes: (triage.toolErrors ?? []).map((error: Record<string, unknown>) => `${error['tool']}: ${error['reason']}`),
+      approvalChecks: (triage.approvalChecks ?? []).map((check: Record<string, unknown>) => `${check['result']} ${check['reason']}`),
+      draftHash: null, approvalHash: null, evidenceHash: triage.evidenceHash ?? null, lease: triage.lease ? `${triage.lease.purpose}, ${triage.lease.ttlSec} s` : null,
+      receipt: { path, sha256: receipt.sha256 },
+    });
+  }
+  return { source: 'receipt-replay', runs };
+}
+
 export interface PortalAuthorizer {
   authorizePortal(request: IncomingMessage, response: ServerResponse, mutation: boolean): Promise<{ principalId: string } | null>;
 }
@@ -371,6 +409,10 @@ export function createAlertRoutes(backend: AlertBackend, options: { allowReplayC
     },
     async handleOperator(request: IncomingMessage, response: ServerResponse, url: URL): Promise<boolean> {
       if (url.pathname === '/api/alerts/events') { writeEventStream(request, response, url, backend.operator); return true; }
+      if (url.pathname === '/api/agent-runs') {
+        try { json(response, 200, await agentRunsSummary()); } catch { json(response, 503, { message: 'MCP 실행 기록 파일을 확인하세요.' }); }
+        return true;
+      }
       if (url.pathname === '/api/relocation') {
         try { json(response, 200, await relocationSummary()); } catch { json(response, 503, { message: '재배치 기록 파일을 확인하세요.' }); }
         return true;

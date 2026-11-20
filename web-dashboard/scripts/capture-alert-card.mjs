@@ -116,6 +116,8 @@ try {
   const operator = await page(1440, 1000);
   await operator.open('#/operator/services', 4500);
   await operator.shot(`operator-services-1440-${lang}`);
+  await operator.open('#/operator/audit', 4500);
+  await operator.shot(`operator-audit-1440-${lang}`);
   // 6. Dismissed state on a fresh story
   await step('reset'); await step('walk');
   await desk.open('#/user/overview', 3000);

@@ -12,6 +12,7 @@ import { useAuth } from './auth-client.tsx';
 import { commandStatusLabels, connectionLabels, connectionLabelsEn, label, serviceFieldLabels, serviceFieldLabelsEn, serviceMeta, serviceMetaEn, serviceStateLabels, serviceStateLabelsEn } from './labels.ts';
 import { useLang } from './i18n.tsx';
 import { EdgeRelocation } from './EdgeRelocation.tsx';
+import { AgentRuns } from './AgentRuns.tsx';
 import { TriageAudit, useAlertFeed } from './GuardianAlerts.tsx';
 const LocationMap = lazy(() => import('./LocationMap.tsx').then((module) => ({ default: module.LocationMap })));
 
@@ -36,7 +37,7 @@ export function OperatorDashboard({ page }: { page: string }) {
   const { lang, tr } = useLang();
   const en = lang === 'en';
   const stream = useEventStream();
-  const alertFeed = useAlertFeed(page === 'services' ? '/api/alerts/events' : null);
+  const alertFeed = useAlertFeed(page === 'services' || page === 'audit' ? '/api/alerts/events' : null);
   const [refresh, setRefresh] = useState(0);
   const [selectedId, setSelectedId] = useState('');
   const commands = Object.values(stream.timeline.commands);
@@ -86,7 +87,7 @@ export function OperatorDashboard({ page }: { page: string }) {
       {selected && <div className="content-card"><CommandDetail command={selected} /></div>}
       <EventDetails events={stream.events} />
     </div>}
-    {page === 'audit' && <div className="content-card"><Audit refresh={refresh} integrated={latest?.source === 'integration-journal-replay'} /></div>}
+    {page === 'audit' && <div className="stack"><div className="two-columns"><AgentRuns /><TriageAudit feed={alertFeed} /></div><div className="content-card"><Audit refresh={refresh} integrated={latest?.source === 'integration-journal-replay'} /></div></div>}
     {page === 'services' && <div className="stack services-page"><div className="two-columns"><EdgeRelocation events={stream.events} /><TriageAudit feed={alertFeed} /></div>
     <div className="service-grid">{services.map((service) => <article className="content-card stack" key={service.prefix}>
       <div className="card-heading"><span className="row-symbol"><Icon name="server" /></span><Badge tone={service.receipt ? 'success' : 'warning'}>{service.receipt ? tr('응답 받음', 'Responded') : tr('응답 기다리는 중', 'Waiting for a response')}</Badge></div>
