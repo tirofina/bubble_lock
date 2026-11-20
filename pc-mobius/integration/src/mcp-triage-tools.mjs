@@ -16,6 +16,9 @@ export function explanationFindings(text) {
   return findings;
 }
 const ACTION_SEVERITY = { observe: ['info', 'watch'], checkIn: ['watch', 'urgent'], emergencyLease: ['urgent'] };
+/** Product rule per alert kind: the agent may raise the action above the floor, the server refuses anything below it. */
+export const actionFloor = (kind) => TRIAGE.actionFloor?.[kind] ?? { minimumAction: 'observe', reason: null };
+const actionRank = (action) => TRIAGE.actionOrder.indexOf(action);
 
 /** Least-privilege findings for a lease draft against the run task; the guardian step approves only drafts without findings. */
 export function leaseFindings(draft, task) {
@@ -60,7 +63,8 @@ export function createTriageToolHandlers({ workflow, oneM2M, mec, privacy, scene
         const output = { alertId: alert.alertId, kind: alert.kind, score: alert.score, severityHint: alert.severityHint, detectedLocal: alert.detectedLocal, startedLocal: alert.startedLocal, nowLocal: nowLocal(),
           segment: { name: alert.segment?.name ?? 'unknown', kind: alert.segment?.kind ?? 'unknown' },
           features: { ...pick(['dwellSec', 'dwellRefSec', 'dwellRatio', 'reversals', 'speedMps', 'corridorDistanceM', 'offCorridorSec', 'offCorridorSince', 'stopSince', 'minutesAfterSunset', 'sunsetLocal', 'minutesPastUsualReturn', 'distanceHomeM', 'gapSec', 'gapRefSec', 'lastSampleAt']), components: f.components, ...(f.keyring ? { keyring: f.keyring } : {}) },
-          modelVersion: alert.modelVersion, profileHash: alert.profileHash, alertRecordPath: run.task.alertPath };
+          modelVersion: alert.modelVersion, profileHash: alert.profileHash, alertRecordPath: run.task.alertPath,
+          minimumAction: actionFloor(alert.kind).minimumAction, ...(actionFloor(alert.kind).reason ? { minimumActionReason: actionFloor(alert.kind).reason.slice(0, 160) } : {}) };
         await workflow.checkpoint(context, 'readAlert', { input, output, update: (state) => { state.alert = { kind: alert.kind, score: alert.score, alertHash: approvalHash(alert) }; } });
         return read(context, 'oneM2M', 'readAlert', input, output);
       },
@@ -107,6 +111,8 @@ export function createTriageToolHandlers({ workflow, oneM2M, mec, privacy, scene
         const findings = explanationFindings(input.explanation);
         if (findings.length) throw toolReview('EXPLANATION_PRIVACY', `${findings.join('; ')}; use times and place names`);
         if (!ACTION_SEVERITY[input.action].includes(input.severity)) throw toolReview('ACTION_SEVERITY', `action ${input.action} takes severity ${ACTION_SEVERITY[input.action].join(' or ')}`);
+        const floor = actionFloor(run.task.alertKind);
+        if (actionRank(input.action) < actionRank(floor.minimumAction)) throw toolReview('ACTION_FLOOR', `alert kind ${run.task.alertKind} requires at least ${floor.minimumAction}: ${floor.reason}`);
         const triageId = `triage-${context.operationKey.slice(0, 16)}`; const at = scene.nowMs();
         const triage = { type: 'TRIAGE_DECISION', triageId, runId: run.runId, alertId: run.task.alertId, alertKind: run.task.alertKind, severity: input.severity, action: input.action, explanation: input.explanation, checked: input.checked, recheckMinutes: input.recheckMinutes ?? null,
           decidedAt: new Date(at).toISOString(), decidedLocal: local(at), agentPrincipalId: run.agentPrincipalId, grantRevision: run.grantRevision };

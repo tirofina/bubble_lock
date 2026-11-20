@@ -43,6 +43,17 @@
       "emergency-rescue"
     ],
     "maxLeaseMinutes": 5,
+    "actionOrder": [
+      "observe",
+      "checkIn",
+      "emergencyLease"
+    ],
+    "actionFloor": {
+      "DEVICE_SEPARATION": {
+        "minimumAction": "checkIn",
+        "reason": "the resident is out without the PANIC button; the guardian is told every time (product rule, not an agent judgement)"
+      }
+    },
     "approvalGate": {
       "tool": "applyApprovedLease",
       "requires": "guardian approvalHash for the exact current draftHash",
@@ -99,7 +110,8 @@
               "features",
               "modelVersion",
               "profileHash",
-              "alertRecordPath"
+              "alertRecordPath",
+              "minimumAction"
             ],
             "properties": {
               "alertId": {
@@ -284,6 +296,17 @@
               "alertRecordPath": {
                 "type": "string",
                 "maxLength": 256
+              },
+              "minimumAction": {
+                "enum": [
+                  "observe",
+                  "checkIn",
+                  "emergencyLease"
+                ]
+              },
+              "minimumActionReason": {
+                "type": "string",
+                "maxLength": 160
               }
             }
           }
@@ -652,7 +675,7 @@
         },
         {
           "name": "submitTriage",
-          "description": "Record the structured triage for the alert. action observe = keep watching, no guardian notification; checkIn = notify the guardian to call or check on the resident; emergencyLease = urgent, notify the guardian and continue with draftLocationLease. The guardian-facing explanation must use times and place names, never coordinates.",
+          "description": "Record the structured triage for the alert. action observe = keep watching, no guardian notification; checkIn = notify the guardian to call or check on the resident; emergencyLease = urgent, notify the guardian and continue with draftLocationLease. The guardian-facing explanation must use times and place names, never coordinates. readAlert reports the minimumAction for the alert kind; a lower action returns ACTION_FLOOR.",
           "requiredScope": "bubble:command",
           "readOnly": false,
           "inputSchema": {

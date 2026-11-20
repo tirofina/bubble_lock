@@ -180,3 +180,15 @@ test('R17 triage: a signal gap with network progress is observed; routing, budge
   assert.equal((await f.call('Audit', 'appendTriageEvidence', { runId: f.run.runId, summary: 'gap observed' })).status, 'COMPLETED');
   assert.equal(f.store.list('portalIncidents').length, 0);
 });
+
+test('R17 triage: a keyring left at home has a server-side checkIn floor that the agent cannot lower', async (t) => {
+  const f = await triageRuntime(t, 'C6-keyring-home');
+  assert.equal(f.alert.kind, 'DEVICE_SEPARATION');
+  const alert = await f.call('oneM2M', 'readAlert', { alertId: f.alertId });
+  assert.equal(alert.minimumAction, 'checkIn'); assert.match(alert.minimumActionReason, /PANIC button/);
+  const lowered = await f.raw('oneM2M', 'submitTriage', { alertId: f.alertId, severity: 'watch', action: 'observe', explanation: 'Keyring at home while she walks her usual route; rechecking soon.', checked: ['readAlert'] });
+  assert.match(lowered.content[0].text, /^ACTION_FLOOR/);
+  const triage = await f.call('oneM2M', 'submitTriage', { alertId: f.alertId, severity: 'watch', action: 'checkIn', explanation: 'Her keyring is at home while she walks her usual route; please call her.', checked: ['readAlert'] });
+  assert.equal(triage.guardianNotified, true);
+  assert.equal(f.cse.containers.get(paths.guardianInbox)[0].con.alertKind, 'DEVICE_SEPARATION');
+});
