@@ -51,7 +51,18 @@ const useSsh = env.PB_VM_SSH !== '' && existsSync(vmKey);
 const scenarioFile = join(root, 'deploy', 'mec-sandbox', 'scenarios', 'day-of-care.yaml');
 const sandboxRoot = `${mecBase}/${sandboxName}`;
 const ids = { ipe: 'Cpb-mec-ipe', ipeAe: 'pb-mec-ipe', app: 'Cguardian-app', orchestrator: 'Cpb-orchestrator', device: 'Cresident-keyring', deviceAe: 'resident-keyring' };
-const ue = { resident: 'resident-relay', caregiver: 'caregiver', guardian: 'guardian' };
+// PB_UE_PREFIX (for example `r13-`) runs the story on run-time copies of the three scenario UEs, added with
+// SCENARIO-UPDATE and removed at the end, so the declared UEs stay free for another experiment on the sandbox.
+// Copy names stay short: the GIS engine of this sandbox build fails to insert a run-time UE named
+// `r13-resident-relay` (varchar(36) error, no POAs in range) while `r13-resident` works.
+const uePrefix = env.PB_UE_PREFIX ?? '';
+const ue = uePrefix ? { resident: `${uePrefix}resident`, caregiver: `${uePrefix}carer`, guardian: `${uePrefix}guardian` } : { resident: 'resident-relay', caregiver: 'caregiver', guardian: 'guardian' };
+if (Object.values(ue).some((name) => name.length > 12 && uePrefix)) throw new Error('PB_UE_PREFIX too long (copy names up to 12 characters)');
+const ueClones = uePrefix ? [
+  { name: ue.resident, id: '0d0c0a00-0000-4000-8000-0000000002f1', parent: 'home-wifi', macId: '005C0D0C02F1', at: [7.417915, 43.736945], velocity: 0.9, role: 'resident-relay' },
+  { name: ue.caregiver, id: '0d0c0a00-0000-4000-8000-0000000002f2', parent: 'moneghetti-4g-macro', macId: '005C0D0C02F2', at: [7.416868, 43.735937], velocity: 1.3, role: 'caregiver' },
+  { name: ue.guardian, id: '0d0c0a00-0000-4000-8000-0000000002f3', parent: 'fontvieille-5g-office', macId: '005C0D0C02F3', at: [7.417963, 43.730843], velocity: 4, role: 'guardian' },
+] : [];
 const instances = { mep1: { name: 'pb-ipe-mep1', id: '0d0c0a00-0000-4000-8000-0000000001a1', nodePort: 31881 }, mep2: { name: 'pb-ipe-mep2', id: '0d0c0a00-0000-4000-8000-0000000001a2', nodePort: 31882 } };
 const trail = [[7.417915, 43.736945], [7.417894, 43.736678], [7.417596, 43.736644], [7.417302, 43.736479], [7.417082, 43.736212], [7.416868, 43.735937], [7.416715, 43.735715], [7.416551, 43.735538], [7.41646, 43.735358], [7.416365, 43.735125], [7.416308, 43.734946], [7.416266, 43.734679], [7.416249, 43.734458], [7.416217, 43.7343], [7.416158, 43.734131], [7.416042, 43.733948], [7.415986, 43.733975], [7.415907, 43.733872], [7.41571, 43.733702], [7.41556, 43.733582], [7.415479, 43.733515], [7.415336, 43.733392], [7.415248, 43.733333], [7.415159, 43.733293], [7.4151, 43.733238], [7.415052, 43.733171], [7.414975, 43.733087], [7.414598, 43.732772], [7.414514, 43.732722], [7.414478, 43.732648]];
 const PARK_ENTRY = 12; const FORK = 21; const BENCH = trail.length - 1;
@@ -88,7 +99,18 @@ const sandbox = async (method, path, body, expected = [200, 201, 204]) => {
   if (!expected.includes(response.status)) throw Object.assign(new Error(`sandbox ${method} ${path} ${response.status} ${String(text).slice(0, 200)}`), { status: response.status });
   return { status: response.status, data };
 };
-const moveUe = async (name, coordinates) => (await sandbox('POST', `/gis/v1/geodata/${name}`, { assetName: name, assetType: 'UE', subType: 'UE', location: { type: 'Point', coordinates } })).status;
+// For a UE added by a scenario update the GIS engine can answer 400 (duplicate key "ue_pkey"): its database row
+// exists while its in-memory asset does not. Deleting the geodata entry and posting it again re-creates both.
+const moveUe = async (name, coordinates) => {
+  const body = { assetName: name, assetType: 'UE', subType: 'UE', location: { type: 'Point', coordinates } };
+  try { return (await sandbox('POST', `/gis/v1/geodata/${name}`, body)).status; }
+  catch (error) {
+    if (error.status !== 400 || !/duplicate key/.test(error.message)) throw error;
+    await sandbox('DELETE', `/gis/v1/geodata/${name}`, undefined, [200, 204, 404]);
+    step('mec-sandbox', 'GIS_ASSET_RECREATED', { ue: name });
+    return (await sandbox('POST', `/gis/v1/geodata/${name}`, body)).status;
+  }
+};
 const ssh = (command, { timeoutMs = 30000 } = {}) => { if (!useSsh) return null; const result = spawnSync('ssh', ['-i', vmKey, '-o', `UserKnownHostsFile=${vmKnownHosts}`, '-o', 'BatchMode=yes', vmSsh, command], { encoding: 'utf8', timeout: timeoutMs, windowsHide: true }); return result.status === 0 ? result.stdout : null; };
 const podInfo = (appId) => { const out = ssh(`kubectl -n ${sandboxName} get pods -l meepAppId=${appId} -o json`); if (!out) return null; try { const pod = JSON.parse(out).items?.at(-1); if (!pod) return null; const cond = (type) => pod.status?.conditions?.find((item) => item.type === type)?.lastTransitionTime ?? null; return { name: pod.metadata.name, node: pod.spec.nodeName, createdAt: pod.metadata.creationTimestamp, scheduledAt: cond('PodScheduled'), readyAt: cond('Ready'), phase: pod.status.phase, image: pod.status.containerStatuses?.find((item) => !item.name.includes('sidecar'))?.imageID ?? null }; } catch { return null; } };
 // Pod logs are polled (kubectl logs -f needs an inotify watcher, which this single-node VM runs out of).
@@ -113,13 +135,26 @@ try {
   check('sandbox-scenario-active', 'day-of-care', active?.name);
   const activeHash = approvalHash(active);
   // The sandbox is shared with other experiments: refuse to drive the UEs while someone else moves them.
-  const ueSnapshot = async () => JSON.stringify(((await sandbox('GET', '/gis/v1/geodata?assetType=UE&excludePath=true')).data?.geoDataAssets ?? []).map((asset) => [asset.assetName, asset.location?.coordinates]).sort());
+  if (ueClones.length) {
+    const present = new Set(((await sandbox('GET', '/gis/v1/geodata?assetType=UE&excludePath=true')).data?.geoDataAssets ?? []).map((asset) => asset.assetName));
+    for (const clone of ueClones.filter((item) => !present.has(item.name))) {
+      const physicalLocation = { id: clone.id, name: clone.name, type: 'UE', geoData: { location: { type: 'Point', coordinates: clone.at }, eopMode: 'REVERSE', velocity: clone.velocity }, connected: true, wireless: true, wirelessType: 'wifi,5g,4g', meta: { 'display.map.icon': 'ion-android-walk', 'pb.role': clone.role, 'pb.copyOf': clone.role }, netChar: { latencyDistribution: 'Normal', throughputDl: 1000, throughputUl: 1000 }, macId: clone.macId };
+      await sandbox('POST', '/sandbox-ctrl/v1/events/SCENARIO-UPDATE', { name: `pb-ue-add-${clone.name}`, type: 'SCENARIO-UPDATE', eventScenarioUpdate: { action: 'ADD', node: { type: 'UE', parent: clone.parent, nodeDataUnion: { physicalLocation } } } }, [200]);
+    }
+    await waitFor(async () => { const names = new Set(((await sandbox('GET', '/gis/v1/geodata?assetType=UE&excludePath=true')).data?.geoDataAssets ?? []).map((asset) => asset.assetName)); return ueClones.every((item) => names.has(item.name)); }, 60000, 'run-time UE copies in GIS');
+    step('mec-sandbox', 'UE_COPIES_ADDED', { ues: ueClones.map(({ name, parent, role }) => ({ name, parent, copyOf: role })) });
+    await delay(5000);
+  }
+  // Only the UEs this run drives take part in the idle check.
+  const mine = new Set(Object.values(ue));
+  const ueSnapshot = async () => JSON.stringify(((await sandbox('GET', '/gis/v1/geodata?assetType=UE&excludePath=true')).data?.geoDataAssets ?? []).filter((asset) => mine.has(asset.assetName)).map((asset) => [asset.assetName, asset.location?.coordinates]).sort());
   const before = await ueSnapshot(); await delay(6000);
   if (env.PB_IGNORE_SANDBOX_ACTIVITY !== '1' && before !== await ueSnapshot()) throw Object.assign(new Error('SANDBOX_IN_USE: UEs moved during the 6 s idle check; another experiment is driving sandbox dayofcare'), { code: 'SANDBOX_IN_USE' });
   tookControl = true;
   const automation = (await sandbox('GET', '/gis/v1/automation')).data?.states ?? [];
   mobilityWasActive = Boolean(automation.find((item) => item.type === 'MOBILITY')?.active);
-  if (automation.find((item) => item.type === 'MOVEMENT')?.active) await sandbox('POST', '/gis/v1/automation/MOVEMENT?run=false');
+  // UE copies have no path, so MOVEMENT automation (if another experiment uses it) leaves them alone.
+  if (!ueClones.length && automation.find((item) => item.type === 'MOVEMENT')?.active) await sandbox('POST', '/gis/v1/automation/MOVEMENT?run=false');
   if (!mobilityWasActive) await sandbox('POST', '/gis/v1/automation/MOBILITY?run=true');
   for (const [name, point] of [[ue.resident, trail[0]], [ue.caregiver, caregiverPath[0]], [ue.guardian, guardianPath[0]]]) await moveUe(name, point);
   // MOBILITY automation re-aligns the POA of each UE with its position on its next ticks.
@@ -415,7 +450,7 @@ try {
       { host: 'pc', address: publicHost, os: 'Windows 11', roles: ['Mobius4 CSE /pb-cse (HTTPS 17599 on the LAN with the lab CA, loopback HTTP for local AEs)', 'PostgreSQL + PostGIS', 'orchestrator AE Cpb-orchestrator', 'guardian app AE Cguardian-app', 'story driver'] },
       { host: 'vm mec-sandbox', address: new URL(mecBase).hostname, os: 'Ubuntu 22.04 (single-node kubeadm)', roles: ['ETSI MEC Sandbox STF_685', `sandbox ${sandboxName}`, 'MEP mep1 (Edge-A) and mep2 (Edge-B): MEC011, MEC012, MEC013, MEC021', 'oneM2M MEC IPE pods (image pb-onem2m-ipe)'] },
     ],
-    scenario: { name: active.name, yaml: 'deploy/mec-sandbox/scenarios/day-of-care.yaml', yamlSHA256, activeScenarioHash: activeHash.slice(0, 16), zones: Object.keys(topology.zones), poas: Object.values(topology.poas).map(({ name, type, zone, cellId, radiusM }) => ({ name, type, zone, cellId, radiusM })), amsCoverage: topology.amsCoverage, ues: Object.values(ue) },
+    scenario: { name: active.name, yaml: 'deploy/mec-sandbox/scenarios/day-of-care.yaml', yamlSHA256, activeScenarioHash: activeHash.slice(0, 16), zones: Object.keys(topology.zones), poas: Object.values(topology.poas).map(({ name, type, zone, cellId, radiusM }) => ({ name, type, zone, cellId, radiusM })), amsCoverage: topology.amsCoverage, ues: Object.values(ue), ueCopies: ueClones.length ? { reason: 'the declared UEs resident-relay, caregiver and guardian were driven by another experiment (R17) on the same sandbox; this run added copies with the same POA parents, radio settings and roles through SCENARIO-UPDATE ADD and removed them afterwards', copies: ueClones.map(({ name, id, parent, role }) => ({ name, id, parent, copyOf: role })) } : null },
     sandbox: { name: sandboxName, host: new URL(mecBase).host, implementation: 'ETSI MEC Sandbox STF_685 (local kubeadm install)', caSHA256: await sha256File(caFile) },
     meps: topology.hosts.map(({ mep, zone, edge, capacity, mecApis, locality }) => ({ mep, zone, edge, capacity, mecApis, locality })),
     ipe: { image: 'meep-docker-registry:30001/pb-onem2m-ipe', imageDigest: env.PB_IPE_IMAGE_DIGEST ?? podB?.image ?? null, ae: ipePath, originator: ids.ipe, instances: { mep1: { name: instances.mep1.name, appInstanceId: instances.mep1.id, nodePort: instances.mep1.nodePort, placement: 'declared in the scenario' }, mep2: { name: instances.mep2.name, appInstanceId: instances.mep2.id, nodePort: instances.mep2.nodePort, placement: 'SCENARIO-UPDATE ADD by the orchestrator', pod: podB } } },
@@ -435,7 +470,8 @@ try {
   runtimeError = error; console.error(sanitized(error.stack)); console.error(JSON.stringify(checks.filter((item) => item.status !== 'PASS'), null, 2)); process.exitCode = 1;
 } finally {
   // Back to the start positions; MOBILITY stays on long enough to re-align the POAs before it is restored.
-  if (tookControl) try { for (const [name, point] of [[ue.resident, trail[0]], [ue.caregiver, caregiverPath[0]], [ue.guardian, guardianPath[0]]]) await moveUe(name, point); await delay(4000); } catch { /* best effort */ }
+  if (tookControl && !ueClones.length) try { for (const [name, point] of [[ue.resident, trail[0]], [ue.caregiver, caregiverPath[0]], [ue.guardian, guardianPath[0]]]) await moveUe(name, point); await delay(4000); } catch { /* best effort */ }
+  for (const clone of ueClones) { try { await sandbox('POST', '/sandbox-ctrl/v1/events/SCENARIO-UPDATE', { name: `pb-ue-remove-${clone.name}`, type: 'SCENARIO-UPDATE', eventScenarioUpdate: { action: 'REMOVE', node: { type: 'UE', nodeDataUnion: { physicalLocation: { name: clone.name } } } } }, [200]); } catch { /* best effort */ } }
   try { if (mobilityWasActive === false) await sandbox('POST', '/gis/v1/automation/MOBILITY?run=false'); } catch { /* best effort */ }
   if (runtimeError && orchestrator && tookControl) {
     // Leave the declared placement (mep1 only) for the next run.
