@@ -10,7 +10,7 @@
 | P1 | MEC Sandbox | 실제 Location/RNIS OpenAPI pin·TLS callback·UE/relay 등록 후 M01–M09 수행 | 구독 CRUD·현재 권한·이벤트·시간·복구 receipt |
 | P1 | 독립 Edge A/B | 실제 호스트별 agent·CSE·고정 image 배치, 30회 handover·1000관측·rollback·partition 실행 | host/process/image identity·p95·loss/duplicate·복구 로그 |
 | P1 | ESTIMED | 할당 VM 3개 이상에 worker 배포, 3seed×10round·late join/dropout/restart·회수·재학습 수행 | 할당 ticket·VM identity·학습·모델 bytes·manifest·동일 split 비교 |
-| P1 | CSE 패치 운영 반영 | `apply-mobius-security.mjs`로 지정 Mobius4 소스에 구독 권한 패치 적용, 고정 release로 배포 | 원본/패치 hash·828건 ACP 행렬·위치 5건 회귀 receipt |
+| P1 | 실행 중인 CSE 재기동 | 저장소 설정(`keyring/dev/mobius4/cse-local.json`, `start-mobius4-test.ps1`)에 `subscription_verification: true`를 반영했음. 지금 떠 있는 Mobius4 인스턴스를 이 설정으로 다시 띄우고 값을 확인 | 인스턴스별 설정 readback·ACP 행렬 receipt |
 | P2 | 그룹 제품 경로 | 포털의 개별 canonical 명령 승인과 durable GroupDispatcher·실제 CSE `/fopt`를 운영 요구에 맞춰 연결 | 다중 실제 장치 부분 성공·재시도·ACK/readback·장애 복구 |
 | P2 | 운영 설정 인계 | 배포 hostname·CA·키 회전·비밀 저장·DB backup/restore·관측/경보 설정 | 등록표·runbook·복구 훈련·책임자 |
 | P2 | 지도 운영 | 지도 공급자 계정/키·배포 도메인·표시 정책, 현장 RSSI 기준값과 path-loss 보정 | 실제 수신기 좌표·거리 표본·오차/갱신 결과 |

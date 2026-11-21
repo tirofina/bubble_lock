@@ -24,7 +24,7 @@ try {
   else {
     $env:NODE_CONFIG = (@{
       http = @{ port = $Port }
-      cse = @{ poa = @($env:CSE_POA); admin = $AdminIdentity }
+      cse = @{ poa = @($env:CSE_POA); admin = $AdminIdentity; subscription_verification = $true }
     } | ConvertTo-Json -Compress)
     Write-Host "Starting Mobius4 source profile from $resolvedRoot on port $Port"
     npm run start

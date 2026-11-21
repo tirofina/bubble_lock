@@ -6,7 +6,6 @@ import { once } from 'node:events';
 import { join, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
-import { applyMobiusSecurity } from './apply-mobius-security.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const upstream = resolve(process.env.MOBIUS4_ROOT ?? join(root, '..', 'mobius4'));
@@ -15,8 +14,7 @@ const directory = join(root, '.local/acp-cse', runId); const source = join(direc
 await mkdir(directory, { recursive: true });
 await cp(upstream, source, { recursive: true, filter: (path) => !['node_modules', '.git', 'logs'].includes(basename(path)) });
 await symlink(join(upstream, 'node_modules'), join(source, 'node_modules'), 'junction');
-const patch = await applyMobiusSecurity(source);
-await applyMobiusSecurity(source); // The deployment step is repeatable.
+// The CSE runs unmodified; subscription protection uses standard procedures only.
 const prepared = spawnSync(process.execPath, [join(root, 'pc-mobius/scripts/prepare-specialization.mjs'), '--mobius-root', upstream, '--config-dir', join(source, 'config')], { cwd: root, encoding: 'utf8', windowsHide: true });
 if (prepared.status !== 0) throw new Error('CSE canonical registry 생성을 확인하세요.');
 const preload = join(directory, 'loopback-only.cjs');
@@ -48,10 +46,10 @@ try {
   await execute('run-location-privacy-real.mjs', [`--config=${configPath}`]);
   const receiptPath = join(root, 'pc-mobius/receipts/acp-real-cse.json');
   const evidence = JSON.parse(await readFile(receiptPath, 'utf8'));
-  evidence.securityPatch = patch; evidence.sourceRevision = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: upstream, encoding: 'utf8', windowsHide: true }).stdout.trim();
+  evidence.securityPatch = null; evidence.cseSource = 'unmodified'; evidence.sourceRevision = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: upstream, encoding: 'utf8', windowsHide: true }).stdout.trim();
   evidence.cseVersion = JSON.parse(await readFile(join(upstream, 'package.json'), 'utf8')).version;
   evidence.runtimeEvidenceDirectory = directory;
   await writeFile(receiptPath, `${JSON.stringify(evidence, null, 2)}\n`);
-  console.log(JSON.stringify({ status: 'PASS', caseCount: evidence.caseCount, patch: patch.patch, cseVersion: evidence.cseVersion }));
+  console.log(JSON.stringify({ status: 'PASS', caseCount: evidence.caseCount, cseSource: 'unmodified', cseVersion: evidence.cseVersion }));
 } catch (error) { console.error(sanitized(error.stack)); process.exitCode = 1; }
 finally { for (const child of children) if (child.exitCode === null) child.kill(); await pool.end(); }

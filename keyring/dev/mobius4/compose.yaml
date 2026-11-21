@@ -50,6 +50,8 @@ services:
     volumes:
       - identity_v2:/var/lib/mobius4
       - ./specializations.json:/app/config/specializations.json:ro
+      # TS-0004 7.4.8.2.1 Recv-6.4 subscription verification; node-config merges local.json over default.json.
+      - ./cse-local.json:/app/config/local.json:ro
     restart: on-failure
   tls:
     image: nginx:1.28-alpine

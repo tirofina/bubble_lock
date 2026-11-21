@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "role": "PC-MOBIUS-INTEGRATION",
   "docRevision": "2.0.0",
-  "generatedAt": "2026-11-11T04:07:59.480Z",
+  "generatedAt": "2026-11-21T02:44:45.559Z",
   "commands": [
     "npm run integration:validate",
     "npm run integration",
@@ -117,8 +117,8 @@
     },
     {
       "path": "../contracts/keyring/ble-observation.schema.json",
-      "bytes": 1747,
-      "sha256": "7d4aea4948960377ccbe6a99ffccb086d3519c71c8543146ad649db19b1bff9d"
+      "bytes": 2509,
+      "sha256": "af194bab627123f373db16204d1b8d1710a4ac094ff508729e3e97c725e8fba0"
     },
     {
       "path": "../contracts/keyring/ble-receipt.schema.json",
@@ -131,9 +131,19 @@
       "sha256": "ac606582f1da6d44f91a41fb38fc4187a845e1b81dcda8c0e248919daec6ca67"
     },
     {
+      "path": "../contracts/keyring/core-telemetry-receipt.schema.json",
+      "bytes": 1200,
+      "sha256": "3d70f0f4546d29d0b53d231520cad0da8208b7365e03119897cc0c4321be969d"
+    },
+    {
       "path": "../contracts/keyring/credential-status.schema.json",
       "bytes": 804,
       "sha256": "b854a5c83138cacdabd569614a16d1ccb6c11647b1270ecf6e92ce0fee69fda0"
+    },
+    {
+      "path": "../contracts/keyring/gateway-core-retirement.schema.json",
+      "bytes": 1334,
+      "sha256": "cd5c2becb5d46661a3e509715fd297570f7e486b97c0fbc6f7703981eebf55e6"
     },
     {
       "path": "../contracts/keyring/gateway-state-adoption.schema.json",
@@ -142,18 +152,18 @@
     },
     {
       "path": "../contracts/keyring/gateway-state-archive.schema.json",
-      "bytes": 4037,
-      "sha256": "1f37d252972206e4620fd3e242efc87ad70f4aa8cc414838b593309b2ac362ca"
+      "bytes": 4628,
+      "sha256": "6de5e99d8dab9c990a1b91190d6638a530a07f37cbf8ab73c333fb544dca1a8a"
     },
     {
       "path": "../contracts/keyring/gateway-state-binding.schema.json",
-      "bytes": 1205,
-      "sha256": "4c3e2adbdef7b057860d0e2c4b2f58a56f715abec83d85dfa06de285e7be63e8"
+      "bytes": 1656,
+      "sha256": "d588ffbb1a31d0373c0cf631aa21ba1c18ab1606f803f8a3b233f46ff1350ded"
     },
     {
       "path": "../contracts/keyring/health.schema.json",
-      "bytes": 2454,
-      "sha256": "5c3cbf8631ca0945319b2dd511a617c04a3ce4627a5665fbf188a6ac0b285747"
+      "bytes": 3572,
+      "sha256": "99f624b32fc41ee8d3dcb3297bfb5b0da6854b8c3ff7af64c84354b3bc5a6353"
     },
     {
       "path": "../contracts/keyring/ina219-reading.schema.json",
@@ -172,13 +182,18 @@
     },
     {
       "path": "../contracts/keyring/observation.schema.json",
-      "bytes": 2502,
-      "sha256": "133da902720553bfb4a1f544a06d79155f1730a8ac27bc8a984cff06218eab54"
+      "bytes": 3264,
+      "sha256": "ac6d2da91e0e4f7c442fa621c3232a9668c5118be30018c6a64c160a22550a42"
     },
     {
       "path": "../contracts/keyring/receipt.schema.json",
       "bytes": 3780,
       "sha256": "ec1a6f76926f26a31137f256af5d26a06346c7ecb9a48af9a830477cb5854f8a"
+    },
+    {
+      "path": "../contracts/keyring/scoped-nullable-telemetry.schema.json",
+      "bytes": 1496,
+      "sha256": "977557927cfcaa19bb8dbb2aed09a01a64041afbb4c54fd35a63152817b3b882"
     },
     {
       "path": "config/edge-agent.example.json",
@@ -252,8 +267,8 @@
     },
     {
       "path": "contracts/oneM2M-test-contract.v2.json",
-      "bytes": 5394,
-      "sha256": "758158ca91e30a4e69e4895e8aab82de4a1c0f01d42d3580dea9eb1bba8a3c6a"
+      "bytes": 5187,
+      "sha256": "1048142eeb4e54736c686a18ba54567595bceb93161328cd4edc82a540598c1e"
     },
     {
       "path": "contracts/portal-contract.v1.json",
@@ -282,8 +297,8 @@
     },
     {
       "path": "db/migrations/003_runtime_transactions.sql",
-      "bytes": 2688,
-      "sha256": "b977372a6f5e0f6c5493d06014a91b5a5fdb52330a2b8509251314a2a4a9185d"
+      "bytes": 2763,
+      "sha256": "2a8e30c60c44171ff60301e84a47298ef67822b3a0d414b267819b7d9e6a821e"
     },
     {
       "path": "integration/fixtures/fault-fixtures.json",
@@ -299,6 +314,11 @@
       "path": "integration/src/api-server.mjs",
       "bytes": 4335,
       "sha256": "f1a217f436ab868ece0d182b0f8d7ecccd594bcea22872690ff9dd23db534a46"
+    },
+    {
+      "path": "integration/src/cse-subscription-lifecycle.mjs",
+      "bytes": 3152,
+      "sha256": "36a602752ab576d725c6ff841036cf54ade8f3efb4eb8e72188daa075cd29a44"
     },
     {
       "path": "integration/src/device-incidents.mjs",
@@ -317,8 +337,8 @@
     },
     {
       "path": "integration/src/fl-coordinator.mjs",
-      "bytes": 32903,
-      "sha256": "3ed0b4d191c4fe343a9bf8d873dfe7e6e784200993fd54cdacea32af7fc8d939"
+      "bytes": 32902,
+      "sha256": "7cadcc057ca40e4cc8e4c86eace010ef002a960ada9d27b9132676818b392912"
     },
     {
       "path": "integration/src/fl-numerics.mjs",
@@ -481,11 +501,6 @@
       "sha256": "de19544c81978d963d20f251caacec7123d892818b733b93a106b3843f4e0913"
     },
     {
-      "path": "scripts/apply-mobius-security.mjs",
-      "bytes": 4898,
-      "sha256": "9dfa3c0a6fd708b412909e9e57a091fc373ad1f59e521ba744b69ea7cf89bae0"
-    },
-    {
       "path": "scripts/build-integration-evidence.mjs",
       "bytes": 4564,
       "sha256": "6c0127fbc333e49ee0eda238e2bf7d5339c2e89eddff81a8518d9fff94ecf4af"
@@ -527,13 +542,13 @@
     },
     {
       "path": "scripts/run-acp-isolated.mjs",
-      "bytes": 6047,
-      "sha256": "debe8c9226136321305d7c72cab7bdc3f21a4dab723630e9285c66966b755f58"
+      "bytes": 5980,
+      "sha256": "6bf71e6a4c274fe25a7dd17dd9df92455329d66f0e6b63da58ed3d10d01cbe05"
     },
     {
       "path": "scripts/run-acp-real.mjs",
-      "bytes": 10047,
-      "sha256": "5430a90b8fb38f114dbe5a09fafd1935fe88ea25332500eb34448df5b504654e"
+      "bytes": 11470,
+      "sha256": "7a661631e3a7bab20ce3ece323a261106e6addcaa5e610ebc8316c621e7c28a6"
     },
     {
       "path": "scripts/run-bridge.mjs",
@@ -627,8 +642,8 @@
     },
     {
       "path": "scripts/verify-postgres.mjs",
-      "bytes": 20666,
-      "sha256": "e315637e3dc18a67e6e3b71f1fbc02d1046088c2b05a388f11088e0afa447127"
+      "bytes": 20496,
+      "sha256": "666eac11db6d6f100ff9ca737549810188ff59985c03024fa0b501490b9f33a0"
     },
     {
       "path": "src/gateway-bridge.mjs",
@@ -659,6 +674,11 @@
       "path": "test/contract.test.mjs",
       "bytes": 2350,
       "sha256": "984282ff217beb7dc7aeb70cc3f6f314eb4ee6bacef11771d29a95ecfaa6f384"
+    },
+    {
+      "path": "test/cse-subscription-lifecycle.test.mjs",
+      "bytes": 2978,
+      "sha256": "07f6c4092581c4ee3437258b53c26cb1ac5edc982a1ce1b6961ab43b1f5dda00"
     },
     {
       "path": "test/device-incidents.test.mjs",
@@ -781,5 +801,5 @@
       "sha256": "e0de1bf0f956ae8274906dddac9a6d9b7db58db335de06d48a92553f3d2fddab"
     }
   ],
-  "sourceDigest": "7ab2e4be26bcb92887998ccfba4017a91c7c9c74f453cef5ad9501d457421f13"
+  "sourceDigest": "2514864c0f9268a223d4ffe02960ac4d7c1c47bd9dd4f6326a197187d27ca3aa"
 }
