@@ -35,6 +35,10 @@ function careCycle(snapshot: StorySessionSnapshot | null): number {
   return snapshot?.mobius.events.filter((event) => event.type === 'CARE_GRANT_APPROVED').length ?? 0;
 }
 
+function locationCycle(snapshot: StorySessionSnapshot | null, type: 'SHARE_DRAFT' | 'LOCATION_LEASE'): number {
+  return snapshot?.mobius.events.filter((event) => event.type === type).length ?? 0;
+}
+
 const sceneTime: Record<StoryScene, string> = {
   login: '4:28',
   'activity-away': '4:31',
@@ -533,8 +537,11 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
   const shareLocation = async () => {
     setPending('share');
     try {
-      if (snapshot?.location.status === 'drafted') await runAction('location-approve', 'location:approve:v1');
-      else await runAction('location-draft', 'location:draft:v1');
+      if (snapshot?.location.status === 'drafted') {
+        await runAction('location-approve', `location:approve:${locationCycle(snapshot, 'LOCATION_LEASE') + 1}`);
+      } else {
+        await runAction('location-draft', `location:draft:${locationCycle(snapshot, 'SHARE_DRAFT') + 1}`);
+      }
     } finally { setPending(null); }
   };
 
