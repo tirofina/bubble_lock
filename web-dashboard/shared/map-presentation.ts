@@ -39,8 +39,10 @@ export function mapTileStyle(style: MapStyle, settings: {
   if (settings.customUrl) return { url: settings.customUrl, attribution: settings.customAttribution || osmAttribution, maxZoom: 19 };
   const stadiaKey = settings.stadiaKey?.trim();
   const stadiaDomain = settings.stadiaDomain?.trim().toLowerCase();
-  // Without a key or domain, Stadia still serves localhost and LAN hosts; a public host that gets 401 falls back to OpenStreetMap at runtime.
-  if (!stadiaKey && stadiaDomain && stadiaDomain !== settings.hostname?.toLowerCase()) return street;
+  // Stadia serves only an API-key request or the exact registered domain. Every other host starts
+  // with OpenStreetMap, because some tile providers return a branded 401 image with HTTP 200 and
+  // therefore never emit Leaflet's tileerror event.
+  if (!stadiaKey && (!stadiaDomain || stadiaDomain !== settings.hostname?.toLowerCase())) return street;
   const key = stadiaKey ? `?api_key=${encodeURIComponent(stadiaKey)}` : '';
   return {
     url: `https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png${key}`,

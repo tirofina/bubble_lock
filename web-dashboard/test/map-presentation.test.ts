@@ -20,10 +20,9 @@ test('지도 공급자 전환은 각 공급자의 출처와 확대 한도를 함
   assert.equal(custom.attribution, 'Registered map provider');
 });
 
-test('키와 등록 도메인이 없으면 키 없는 Stadia 지도를 먼저 쓴다', () => {
-  const keyless = 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png';
-  assert.equal(mapTileStyle('map').url, keyless);
-  assert.equal(mapTileStyle('map', { stadiaKey: '   ', stadiaDomain: '  ', hostname: 'localhost' }).url, keyless);
+test('키와 등록 도메인이 없으면 OpenStreetMap을 바로 쓴다', () => {
+  assert.deepEqual(mapTileStyle('map'), fallbackMapTile);
+  assert.deepEqual(mapTileStyle('map', { stadiaKey: '   ', stadiaDomain: '  ', hostname: 'localhost' }), fallbackMapTile);
 });
 
 test('등록 도메인이 현재 호스트와 일치하면 API 키 없이 Stadia를 사용한다', () => {
