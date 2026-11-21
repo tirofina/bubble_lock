@@ -7,6 +7,7 @@ import { createMtlsFetch } from './mtls-fetch.ts';
 import type { RoleBinding } from './mtls-fetch.ts';
 import type { CseLiveConfig } from './cse-live.ts';
 import type { LocationDevice } from '../shared/location.ts';
+import { browseMobiusCse } from './mobius-browser.ts';
 
 /**
  * Polling source for the self-hosted Mobius gateway layout (layout: 'gateway-container').
@@ -287,6 +288,20 @@ export async function startGatewayPollSource(config: CseLiveConfig, options: { f
     subscribe: log.subscribe,
     resync: (reason: string) => { void reason; return poll(); },
     refresh: () => poll(),
+    browseResources(selected?: string | null) {
+      const cseBase = cse.cseBase.replace(/\/$/, '');
+      return browseMobiusCse({
+        client: operatorReader, cseBase, cseId: cse.cseId, source: LIVE_SOURCE, simulation: config.simulation,
+        ...(selected === undefined ? {} : { selected }),
+        knownPaths: [
+          `${cseBase}/${paths.observations}`,
+          ...(paths.receipts ? [`${cseBase}/${paths.receipts}`] : []),
+          ...(paths.health ? [`${cseBase}/${paths.health}`] : []),
+          ...(paths.location ? [`${cseBase}/${paths.location}`] : []),
+          ...log.events.slice(-80).map((event) => event.resourceUri),
+        ],
+      });
+    },
     async publishApproved(): Promise<unknown> { throw new Error('gateway-container 레이아웃은 읽기 전용이에요.'); },
     guardianOverlay,
     /** Latest MEC location fix for the configured keyring (lease gating stays in the portal). */

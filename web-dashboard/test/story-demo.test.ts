@@ -120,6 +120,9 @@ test('binds location approval to the exact draft hash and keeps actions idempote
   const service = await startReplayServer({ port: 0, storyMode: 'replay' });
   t.after(async () => service.close());
   const fixture = await openSession(service.url);
+  const otherBrowser = await openSession(service.url);
+  const beforeApproval = await fetch(`${service.url}/api/story/location?lang=en`, { headers: { Cookie: fixture.cookie } });
+  assert.equal(beforeApproval.status, 403);
   const drafted = await action(service.url, fixture, 'location-draft', 'location:draft:1');
   assert.equal(drafted.response.status, 200);
   assert.equal(drafted.body.location.status, 'drafted');
@@ -129,6 +132,20 @@ test('binds location approval to the exact draft hash and keeps actions idempote
   assert.equal(approved.body.location.status, 'approved');
   assert.ok(Date.parse(approved.body.location.sharedUntil) > Date.now());
   assert.deepEqual(approved.body.mobius.events.slice(0, 2).map((item: any) => item.type), ['LOCATION_LEASE', 'GUARDIAN_DECISION']);
+
+  const map = await fetch(`${service.url}/api/story/location?lang=en`, { headers: { Cookie: fixture.cookie } });
+  assert.equal(map.status, 200);
+  const location = await map.json() as any;
+  assert.equal(location.mode, 'demo');
+  assert.equal(location.source, 'demo-fixture');
+  assert.equal(location.devices.length, 1);
+  assert.equal(location.devices[0].label, "Mom's keyring");
+  assert.equal(location.readExpiresAt, approved.body.location.sharedUntil);
+  const isolated = await fetch(`${service.url}/api/story/location?lang=en`, { headers: { Cookie: otherBrowser.cookie } });
+  assert.equal(isolated.status, 403);
+  const wrongMethod = await fetch(`${service.url}/api/story/location`, { method: 'POST', headers: { Origin: service.url, Cookie: fixture.cookie, 'Content-Type': 'application/json' }, body: '{}' });
+  assert.equal(wrongMethod.status, 405);
+  assert.equal(wrongMethod.headers.get('allow'), 'GET');
 
   const before = approved.body.mobius.events.length;
   const replayed = await action(service.url, fixture, 'location-approve', 'location:approve:1');

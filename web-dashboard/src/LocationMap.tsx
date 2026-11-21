@@ -47,7 +47,7 @@ function sourceName(device: LocationDevice, user: boolean, tr: Tr) {
 
 export function LocationMap({ refresh, variant = 'operator', geofences = emptyGeofences, locationUrl = '/api/locations' }: {
   readonly refresh: number;
-  readonly variant?: 'operator' | 'user';
+  readonly variant?: 'operator' | 'user' | 'story';
   readonly locationUrl?: string;
   readonly geofences?: readonly MapGeofence[];
 }) {
@@ -71,14 +71,15 @@ export function LocationMap({ refresh, variant = 'operator', geofences = emptyGe
   const selected = devices.find((device) => device.deviceId === selectedId) ?? devices[0];
   const selectedProximity = selected?.ble && feed.snapshot ? estimateBleProximity(selected.ble, feed.snapshot.gateways) : null;
   const demo = feed.snapshot?.mode === 'demo';
-  const user = variant === 'user';
+  const story = variant === 'story';
+  const user = variant !== 'operator';
   const plotSignature = JSON.stringify({ devices, gateways: feed.snapshot?.gateways, selected: selected?.deviceId, demo, overlays, geofences, lang,
     ages: devices.map((device) => [device.position && freshness(device.position.observedAt, feed.now), device.ble && freshness(device.ble.observedAt, feed.now)]) });
 
   useEffect(() => {
     if (!container.current) return;
     const instance = L.map(container.current, { scrollWheelZoom: true, wheelPxPerZoomLevel: 80, zoomControl: false, zoomAnimation: false }).setView([37.5665, 126.978], 16);
-    L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(instance);
+    if (!story) L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(instance);
     map.current = instance;
     layers.current = L.featureGroup().addTo(instance);
     const observer = new ResizeObserver(() => instance.invalidateSize({ pan: false }));
@@ -89,10 +90,10 @@ export function LocationMap({ refresh, variant = 'operator', geofences = emptyGe
   // Zoom buttons carry their titles in the current language; the control is rebuilt when the language changes.
   useEffect(() => {
     const instance = map.current;
-    if (!instance) return;
+    if (!instance || story) return;
     const zoom = L.control.zoom({ zoomInTitle: tr('지도 확대', 'Zoom in'), zoomOutTitle: tr('지도 축소', 'Zoom out'), position: 'bottomright' }).addTo(instance);
     return () => { zoom.remove(); };
-  }, [lang]);
+  }, [lang, story]);
 
   useEffect(() => {
     const instance = map.current;
@@ -178,7 +179,7 @@ export function LocationMap({ refresh, variant = 'operator', geofences = emptyGe
       markers.current.set(device.deviceId, marker);
     });
     if (!initialFit.current && devices.length && group.getBounds().isValid()) {
-      instance.fitBounds(group.getBounds(), { padding: [70, 70], maxZoom: 18 });
+      instance.fitBounds(group.getBounds(), { padding: story ? [22, 22] : [70, 70], maxZoom: 18 });
       initialFit.current = true;
     }
   }, [plotSignature]);
@@ -206,6 +207,24 @@ export function LocationMap({ refresh, variant = 'operator', geofences = emptyGe
     ...(geofenceCount > 0 ? [['zones', 'legend-zone', tr(`안전 구역 ${geofenceCount}개`, `${geofenceCount} safe zones`)] as const] : []),
   ];
   const sim = (value: boolean) => (value ? tr(' (모의)', ' (simulated)') : tr(' (실측)', ' (measured)'));
+
+  if (story) return <div className="location-experience location-story" data-story-location-map="true" data-location-ready={feed.snapshot && devices.length > 0 ? 'true' : 'false'}>
+    <div className="story-location-meta">
+      <span className={`location-status-dot${feed.error ? ' attention' : ''}`} />
+      <strong>{tr('승인된 위치', 'Approved location')}</strong>
+      <span>{selected?.label ?? tr('키링 위치를 확인하는 중', 'Reading keyring location')}</span>
+      <Badge tone={feed.snapshot?.simulation ? 'warning' : 'info'}>{sourceLabel}</Badge>
+    </div>
+    {feedError && <p className="location-alert" role="alert">{feedError}</p>}
+    <div className="map-frame">
+      <div ref={container} className="location-canvas" role="region" aria-label={tr('5분 동안 공유된 키링 위치 지도', 'Keyring location map shared for five minutes')} />
+      <div className="map-corner-note"><span className="map-live-dot" />{tr('4초마다 갱신', 'Refreshes every 4 s')}</div>
+      {selected && <div className="story-location-readout">
+        <span>{sourceName(selected, true, tr)}</span>
+        {selected.position && <code>{selected.position.coordinates.lat.toFixed(4)}, {selected.position.coordinates.lon.toFixed(4)}</code>}
+      </div>}
+    </div>
+  </div>;
 
   return <div className={`location-experience location-${variant}`}>
     <div className="location-toolbar">

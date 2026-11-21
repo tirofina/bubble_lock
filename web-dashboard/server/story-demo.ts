@@ -4,6 +4,7 @@ import { isIP } from 'node:net';
 import type { CseLiveConfig } from './cse-live.ts';
 import { createMtlsFetch } from './mtls-fetch.ts';
 import { Onem2mClient } from './onem2m.ts';
+import { storyLocation } from './guardian-alerts.ts';
 
 export const storyActions = [
   'activity-away', 'activity-home', 'care-approve', 'room-all-on', 'care-expire', 'check-in', 'call',
@@ -672,7 +673,7 @@ export async function createStoryDemoService(options: {
 
   return {
     async handle(request, response, url) {
-      if (url.pathname !== '/api/story/session' && url.pathname !== '/api/story/action') return false;
+      if (url.pathname !== '/api/story/session' && url.pathname !== '/api/story/action' && url.pathname !== '/api/story/location') return false;
       try {
         if (request.method === 'POST') {
           if (!sameOrigin(request)) throw new StoryHttpError(403, '현재 데모 화면의 동일 출처 요청을 사용하세요.');
@@ -688,6 +689,18 @@ export async function createStoryDemoService(options: {
           const session = lookup(request);
           if (!session) throw new StoryHttpError(404, '브라우저 전용 데모 세션을 준비해 주세요.');
           json(response, 200, snapshot(session));
+          return true;
+        }
+        if (url.pathname === '/api/story/location' && request.method === 'GET') {
+          const session = lookup(request);
+          if (!session) throw new StoryHttpError(404, '브라우저 전용 데모 세션을 준비해 주세요.');
+          const now = Date.now();
+          if (session.share.status !== 'approved' || session.share.expiresAtMs === null || session.share.expiresAtMs <= now) {
+            if (session.share.expiresAtMs !== null && session.share.expiresAtMs <= now) session.share.status = 'expired';
+            throw new StoryHttpError(403, '검토한 위치 공유를 승인하면 5분 동안 지도가 열립니다.');
+          }
+          const lang = url.searchParams.get('lang') === 'en' ? 'en' : 'ko';
+          json(response, 200, { ...storyLocation(lang, now, true, 'fork'), readExpiresAt: new Date(session.share.expiresAtMs).toISOString() });
           return true;
         }
         if (url.pathname === '/api/story/action' && request.method === 'POST') {
@@ -717,7 +730,7 @@ export async function createStoryDemoService(options: {
           json(response, 200, result);
           return true;
         }
-        response.setHeader('Allow', url.pathname.endsWith('/action') ? 'POST' : 'GET, POST');
+        response.setHeader('Allow', url.pathname.endsWith('/action') ? 'POST' : url.pathname.endsWith('/location') ? 'GET' : 'GET, POST');
         throw new StoryHttpError(405, '이 데모 경로에 맞는 요청 방식을 사용하세요.');
       } catch (error) {
         const status = error instanceof StoryHttpError ? error.status : 503;
