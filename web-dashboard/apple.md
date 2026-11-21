@@ -662,7 +662,7 @@ HttpOnly browser session (403 before approval, after expiry and for any other br
  | (o) Refreshes every 4 s                       |  live chip, top-left (11px/600)
  |                     (1)                       |  pin, centered by fitBounds
  |             (accuracy circle)                 |
- |       (c) Stadia Maps (c) OpenMapTiles (c) OSM|  tile attribution, bottom-right (11px)
+ |                         (c) OpenStreetMap      |  tile attribution, bottom-right (11px)
  |-----------------------------------------------|
  | Location from the network service  43.7334, 7.4153 |  readout caption line under the canvas
  +-----------------------------------------------+
@@ -683,9 +683,10 @@ HttpOnly browser session (403 before approval, after expiry and for any other br
   chip on the pin; the countdown carries the live state there) and the flags take the action
   note's slot beside Call.
 - Portrait fallback: while the map shows, the app pane takes 50% of the stage instead of 44%.
-- Attribution: the complete tile attribution (Stadia Maps, OpenMapTiles, OpenStreetMap) stays
-  visible at 11px on a frosted strip; the optional Leaflet prefix steps out of the small story
-  map (the operator map keeps it). Nothing in the map renders below 11px.
+- Attribution: the complete active-provider credit stays visible at 11px on a frosted strip;
+  an unconfigured public host starts with OpenStreetMap, while a Stadia API key or exact registered
+  domain keeps the Stadia Maps, OpenMapTiles and OpenStreetMap credits. The optional Leaflet prefix
+  steps out of the small story map (the operator map keeps it). Nothing in the map renders below 11px.
 - Measured (scratch review, replay CSE, approved map): 1440 x 900 map frame 298 x 483 (canvas
   296 x 417, caption 296 x 26), Call 115 x 48; 844 x 390 with insets 47 / 47 / 21 canvas 268 x 141;
   812 x 265 Safari canvas 234 x 118 at x 364, y 50, caption 22px, pin 32px centered, Call 144 x 44
