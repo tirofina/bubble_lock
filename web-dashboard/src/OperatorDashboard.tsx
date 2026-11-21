@@ -18,6 +18,7 @@ import { CseAccess } from './CseAccess.tsx';
 import { rubricDesignEn, rubricStatusEn } from './rubric-en.ts';
 import { GroupCommandsPanel } from './Caregiver.tsx';
 import { TriageAudit, useAlertFeed } from './GuardianAlerts.tsx';
+import { OperatorMobiusBrowser } from './OperatorMobiusBrowser.tsx';
 const LocationMap = lazy(() => import('./LocationMap.tsx').then((module) => ({ default: module.LocationMap })));
 
 function Evidence() {
@@ -56,6 +57,7 @@ export function OperatorDashboard({ page }: { page: string }) {
   const live = latest?.source === 'onem2m-cse-live';
   const connectionText = label(en ? connectionLabelsEn : connectionLabels, stream.connection);
   return <PortalShell role="operator" page={page} actions={<button className="primary" onClick={() => { stream.reconnect(); alertFeed.reconnect(); setRefresh((value) => value + 1); }}><Icon name="refresh" size={17} />{tr('새로고침', 'Refresh')}</button>}>
+    <div className="operator-live-layout"><section className="operator-workspace" aria-label={tr('운영자 작업 화면', 'Operator workspace')}>
     <div className="context-strip" role="status"><span className={`connection-pill${connected ? ' connected' : ''}`}><i />{connectionText}</span>
       <span>{live ? tr('oneM2M CSE 알림을 실시간으로 받고 있어요.', 'Receiving oneM2M CSE notifications live.') : tr('명령과 서비스 기록을 재생하고 있어요.', 'Replaying command and service records.')} {tr(`지금까지 ${stream.timeline.lastSequence}번째 기록을 받았어요.`, `${stream.timeline.lastSequence} records received so far.`)}</span><Badge tone={latest?.simulation === false ? 'info' : 'warning'}>{live ? (latest?.simulation === false ? tr('실제 CSE', 'Real CSE') : tr('모의 장치, 실제 CSE', 'Simulated devices, real CSE')) : tr('모의 데이터', 'Simulated data')}</Badge></div>
     {stream.error && <div className="notice error" role="alert">{stream.error}<button onClick={() => stream.reconnect(true)}>{tr('처음부터 다시 받기', 'Reload from the start')}</button></div>}
@@ -104,5 +106,6 @@ export function OperatorDashboard({ page }: { page: string }) {
         : <p className="small muted">{tr('서비스 응답이 오면 상태를 보여 드려요.', 'The status appears when the service responds.')}</p>}
     </article>)}</div></div>}
     {page === 'evidence' && <Evidence />}
+    </section><OperatorMobiusBrowser refresh={refresh} /></div>
   </PortalShell>;
 }

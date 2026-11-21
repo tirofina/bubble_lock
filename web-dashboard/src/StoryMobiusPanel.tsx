@@ -178,7 +178,7 @@ export function StoryMobiusPanel({ scene, snapshot, phase, message, refresh, foc
   };
   const panelClass = (panel: PanelId, extra: string) => `story-panel-card story-mobile-panel ${extra}${mobilePanel === panel ? ' is-mobile-open' : ''}${flashes.has(panel) ? ' has-new-event' : ''}`;
 
-  return <aside className="story-mobius" aria-labelledby="story-mobius-title" lang="en">
+  return <aside className="story-mobius" data-demo-target="mobius" aria-labelledby="story-mobius-title" lang="en">
     <header className="story-mobius-head">
       <div>
         <h2 id="story-mobius-title">Mobius Resource Browser</h2>

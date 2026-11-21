@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Icon } from './Icon.tsx';
 import { LangToggle, useLang } from './i18n.tsx';
@@ -6,6 +6,8 @@ import { StoryMobiusPanel } from './StoryMobiusPanel.tsx';
 import { VirtualKeyring } from './VirtualKeyring.tsx';
 import { useStorySession } from './story-session.ts';
 import type { StorySessionSnapshot } from './story-session.ts';
+
+const StoryLocationMap = lazy(() => import('./LocationMap.tsx').then((module) => ({ default: module.LocationMap })));
 
 export const storyScenes = ['login', 'activity-away', 'activity-home', 'care-request', 'caregiver-shared', 'caregiver-ended', 'check-in'] as const;
 export type NumberedStoryScene = (typeof storyScenes)[number];
@@ -19,6 +21,15 @@ type PendingAction = 'approve' | 'all-on' | 'expire' | 'call' | 'share' | null;
 type DemoStage = 'intro' | 'sending' | 'system';
 type PortraitChoice = 'ask' | 'continue';
 type KeyringAction = 'keyring-confirm' | 'keyring-panic';
+type CoachTarget = 'keyring' | 'mobius' | 'app-primary' | 'app-secondary' | 'map' | 'next' | 'proof';
+
+type CoachCue = {
+  readonly target: CoachTarget;
+  readonly label: string;
+  readonly title: string;
+  readonly detail: string;
+  readonly action: string;
+};
 
 function careCycle(snapshot: StorySessionSnapshot | null): number {
   return snapshot?.mobius.events.filter((event) => event.type === 'CARE_GRANT_APPROVED').length ?? 0;
@@ -64,7 +75,7 @@ function LoginScreen({ step, snapshot, onStart }: {
     <div className={`story-auto-form step-${step}`} role="group" aria-label={tr('자동 로그인', 'Automatic sign-in')}>
       <label>{tr('계정', 'Account')}<input type="text" readOnly value={step >= 1 ? account : ''} autoComplete="off" spellCheck={false} /></label>
       <label>{tr('일회용 암호', 'One-time passcode')}<input type="text" readOnly value={step >= 2 ? '•'.repeat(10) : ''} autoComplete="off" aria-describedby="story-passcode-note" /></label>
-      <button type="button" className="story-primary" disabled={!ready} onClick={onStart}>
+      <button type="button" className="story-primary" data-demo-target="app-primary" disabled={!ready} onClick={onStart}>
         {step < 2 ? tr('자동으로 입력하는 중', 'Filling in') : !ready ? tr('로그인 확인 중', 'Checking sign-in') : tr('시작하기', 'Start')}
       </button>
     </div>
@@ -103,7 +114,7 @@ function CareRequestScreen({ pending, approved, onApprove }: {
       <strong className="story-deadline">{tr('30초 뒤 자동 종료', 'Ends automatically in 30 seconds')}</strong>
       <small>{tr('집 안의 다른 기기는 포함하지 않아요', 'Nothing else in the home')}</small>
     </article>
-    <button type="button" className={`story-primary${approved ? ' done' : ''}`} disabled={pending || approved} onClick={onApprove}>
+    <button type="button" className={`story-primary${approved ? ' done' : ''}`} data-demo-target="app-primary" disabled={pending || approved} onClick={onApprove}>
       {pending ? tr('승인을 기록하는 중', 'Recording approval') : approved ? tr('승인했어요', 'Approved') : tr('30초 동안 승인', 'Approve for 30 seconds')}
     </button>
     <PrivacyNote>{tr('기기 범위와 종료 시각을 함께 승인해요.', 'The devices and the end time are approved together.')}</PrivacyNote>
@@ -126,10 +137,10 @@ function CaregiverSharedScreen({ pending, status, onAllOn, onExpire }: {
       <p>{tr('조명, TV, 선풍기', 'Lights, TV, Fan')}</p>
       <strong className="story-deadline">{ended ? tr('접근이 끝났어요', 'Access has ended') : tr('30초 뒤 자동 종료', 'Ends automatically in 30 seconds')}</strong>
     </article>
-    <button type="button" className={`story-primary${applied ? ' done' : ''}`} disabled={pending || ended || applied} onClick={onAllOn}>
+    <button type="button" className={`story-primary${applied ? ' done' : ''}`} data-demo-target="app-primary" disabled={pending || ended || applied} onClick={onAllOn}>
       {pending ? tr('켜는 중', 'Turning on') : applied ? tr('모두 켜짐, 3/3 확인', 'All on, 3/3 verified') : tr('모두 켜기', 'All on')}
     </button>
-    {applied && <button type="button" className="story-text-action" disabled={pending} onClick={onExpire}>{tr('종료 시각으로 건너뛰기', 'Skip to the end time')}<Icon name="arrow" size={16} /></button>}
+    {applied && <button type="button" className="story-text-action" data-demo-target="app-secondary" disabled={pending} onClick={onExpire}>{tr('종료 시각으로 건너뛰기', 'Skip to the end time')}<Icon name="arrow" size={16} /></button>}
     <PrivacyNote>{tr('공유받은 거실 기기만 제어할 수 있어요.', 'You can control only the shared living-room devices.')}</PrivacyNote>
   </section>;
 }
@@ -166,13 +177,24 @@ function CheckInScreen({ pending, snapshot, callReady, onCall, onShare }: {
   readonly onCall: () => void;
   readonly onShare: () => void;
 }) {
-  const { tr } = useLang();
+  const { lang, tr } = useLang();
   const sharedUntil = snapshot?.location.sharedUntil ? Date.parse(snapshot.location.sharedUntil) : 0;
   const now = useSecondClock(sharedUntil > Date.now());
   const remaining = Math.max(0, Math.ceil((sharedUntil - now) / 1000));
   const countdown = `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`;
   const drafted = snapshot?.location.status === 'drafted';
   const panicCount = snapshot?.keyring.panicPresses ?? 0;
+  if (remaining > 0) return <section className="story-content story-check-in story-check-in-shared" aria-labelledby="story-title" data-location-shared="true">
+    <div className="story-location-heading"><div><p className="story-eyebrow">{tr('목적 제한 위치 공유', 'Purpose-bound location share')}</p><h1 id="story-title">{tr('어머니 위치', "Mom's location")}</h1></div><strong className="story-location-countdown" aria-label={tr(`남은 시간 ${countdown}`, `${countdown} remaining`)}>{countdown}</strong></div>
+    <div className="story-location-map-target" data-demo-target="map">
+      <Suspense fallback={<div className="story-location-loading" role="status">{tr('승인된 위치 지도를 여는 중', 'Opening the approved location map')}</div>}>
+        <StoryLocationMap refresh={snapshot?.mobius.events[0]?.sequence ?? 0} variant="story" locationUrl={`/api/story/location?lang=${lang}`} />
+      </Suspense>
+    </div>
+    <div className="story-location-actions"><button type="button" className={`story-primary${callReady ? ' done' : ''}`} data-demo-target="app-primary" disabled={pending === 'call' || callReady} onClick={onCall}>
+      {pending === 'call' ? tr('전화를 요청하는 중', 'Requesting the call') : callReady ? tr('안부 전화 요청 완료', 'Call requested') : tr('안부 전화', 'Call')}
+    </button><span><Icon name="shield" size={15} />{tr('나에게만, 5분 뒤 자동 종료', 'Only you, ends automatically')}</span></div>
+  </section>;
   return <section className="story-content story-check-in" aria-labelledby="story-title">
     <h1 id="story-title">{tr('어머니 확인', 'Check on Mom')}</h1>
     <article className="story-check-card">
@@ -183,10 +205,10 @@ function CheckInScreen({ pending, snapshot, callReady, onCall, onShare }: {
       <small>{tr('시험 실행 기준', 'Based on a test run')}</small>
     </article>
     <div className="story-actions">
-      <button type="button" className={`story-primary${callReady ? ' done' : ''}`} disabled={pending === 'call' || callReady} onClick={onCall}>
+      <button type="button" className={`story-primary${callReady ? ' done' : ''}`} data-demo-target="app-primary" disabled={pending === 'call' || callReady} onClick={onCall}>
         {pending === 'call' ? tr('전화를 요청하는 중', 'Requesting the call') : callReady ? tr('안부 전화를 요청했어요', 'Call requested') : tr('안부 전화', 'Call')}
       </button>
-      <button type="button" className={`story-secondary${remaining > 0 ? ' done' : ''}`} disabled={pending === 'share' || remaining > 0} onClick={onShare}>
+      <button type="button" className={`story-secondary${remaining > 0 ? ' done' : ''}`} data-demo-target="app-secondary" disabled={pending === 'share' || remaining > 0} onClick={onShare}>
         {pending === 'share' ? tr('공유 내용을 확인하는 중', 'Checking the share')
           : remaining > 0 ? tr(`위치 보는 중 ${countdown}`, `Viewing location ${countdown}`)
             : drafted ? tr('확인하고 5분 공유', 'Review and share for 5 min')
@@ -208,7 +230,7 @@ function FinaleScreen({ snapshot }: { readonly snapshot: StorySessionSnapshot | 
   const { tr } = useLang();
   const verified = snapshot?.mobius.createRetrieveVerified ?? 0;
   const session = snapshot?.browserSession.id ?? '------';
-  return <section className="story-content story-finale" aria-labelledby="story-title" data-finale-receipt="true">
+  return <section className="story-content story-finale" aria-labelledby="story-title" data-finale-receipt="true" data-demo-target="proof">
     <p className="story-finale-kicker"><Icon name="check" size={16} />{tr('전체 흐름 검증 완료', 'End-to-end proof complete')}</p>
     <div className="story-title-block">
       <h1 id="story-title">{tr('작은 신호가 검증된 돌봄으로 이어졌어요', 'One signal became verified care')}</h1>
@@ -287,8 +309,27 @@ function StoryStepper({ scene }: { readonly scene: StoryScene }) {
   return <nav className={`story-stepper story-bottom-nav${scene === 'finale' ? ' is-finale' : ''}`} aria-label={tr('이야기 장면', 'Story scenes')}>
     <a className="story-stepper-prev" href={`#/story/${previous}`} aria-label={tr('이전 장면', 'Previous scene')}><Icon name="chevron" size={18} style={{ transform: 'rotate(180deg)' }} /></a>
     <span className="story-stepper-compact" aria-live="polite">{scene === 'finale' ? labels.finale : `${index + 1}/${storyScenes.length} ${labels[scene]}`}</span>
-    <a className="story-stepper-next" data-special={scene === 'check-in' || undefined} href={`#/story/${next}`} aria-label={scene === 'finale' ? tr('시연 다시 보기', 'Replay the demo') : scene === 'check-in' ? tr('시스템 검증 보기', 'Open the system proof') : tr('다음 장면', 'Next scene')}><Icon name={scene === 'finale' ? 'refresh' : scene === 'check-in' ? 'check' : 'chevron'} size={18} /></a>
+    <a className="story-stepper-next" data-demo-target="next" data-special={scene === 'check-in' || undefined} href={`#/story/${next}`} aria-label={scene === 'finale' ? tr('시연 다시 보기', 'Replay the demo') : scene === 'check-in' ? tr('시스템 검증 보기', 'Open the system proof') : tr('다음 장면', 'Next scene')}><Icon name={scene === 'finale' ? 'refresh' : scene === 'check-in' ? 'check' : 'chevron'} size={18} /></a>
   </nav>;
+}
+
+function StoryCoach({ cue, hidden }: { readonly cue: CoachCue; readonly hidden: boolean }) {
+  const { tr } = useLang();
+  return <aside
+    className="story-coach"
+    data-target={cue.target}
+    aria-hidden={hidden}
+    inert={hidden}
+    hidden={hidden}
+    role="status"
+    aria-live="polite"
+    aria-atomic="true"
+  >
+    <p className="story-coach-label"><span aria-hidden="true" />{cue.label}</p>
+    <strong>{cue.title}</strong>
+    <p className="story-coach-detail">{cue.detail}</p>
+    <p className="story-coach-action"><Icon name="arrow" size={15} /><span><b>{tr('다음 행동', 'Next action')}</b>{cue.action}</span></p>
+  </aside>;
 }
 
 export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
@@ -559,8 +600,96 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
   const startStory = () => { window.location.hash = '#/story/activity-away'; };
   const retry = () => { void refresh(); };
   const careStatus = snapshot?.care.status ?? 'ready';
+  const locationShared = Boolean(snapshot?.location.sharedUntil && Date.parse(snapshot.location.sharedUntil) > Date.now());
+  const locationDrafted = snapshot?.location.status === 'drafted';
+  const coach: CoachCue = (() => {
+    if (demoStage === 'intro') return {
+      target: 'keyring',
+      label: tr('실물 입력', 'Physical input'),
+      title: tr('키링에서 흐름을 시작합니다', 'Start the flow on the keyring'),
+      detail: tr('실제 펌웨어 화면과 같은 가상 키링 입력이 웹서버를 거쳐 Mobius 기록으로 이어집니다.', 'This virtual keyring mirrors the firmware screen and sends the same button observation through the web server to Mobius.'),
+      action: guidedAction === 'keyring-panic' ? tr('주황 비상 버튼을 누르세요.', 'Press the orange emergency button.') : tr('파란 확인 버튼을 누르세요.', 'Press the blue confirmation button.'),
+    };
+    if (demoStage === 'sending') return {
+      target: 'mobius',
+      label: tr('oneM2M 기록 중', 'Writing oneM2M records'),
+      title: tr('하나의 입력을 끝까지 추적합니다', 'Follow one input end to end'),
+      detail: tr('BFF 요청과 contentInstance 생성, CSE 재조회 결과가 같은 리소스 경로로 연결됩니다.', 'The BFF request, contentInstance CREATE and CSE RETRIEVE share one resource path.'),
+      action: tr('CREATE 2001과 RETRIEVE 2000 확인을 기다리세요.', 'Watch for CREATE 2001 and RETRIEVE 2000.'),
+    };
+    if (scene === 'login') return {
+      target: 'app-primary',
+      label: tr('브라우저 격리 로그인', 'Browser-isolated sign-in'),
+      title: tr('시연 정보가 자동으로 채워집니다', 'Demo details fill automatically'),
+      detail: tr('일회용 정보와 서버 자격 증명은 브라우저 세션 경계 안에서 처리됩니다.', 'One-time details and server credentials stay inside the browser-session boundary.'),
+      action: loginStep >= 3 ? tr('시작하기를 누르세요.', 'Select Start.') : tr('자동 입력이 끝날 때까지 잠시 기다리세요.', 'Wait for automatic sign-in to finish.'),
+    };
+    if (scene === 'activity-away' || scene === 'activity-home') return {
+      target: 'mobius',
+      label: tr('검증된 생활 신호', 'Verified daily signal'),
+      title: tr('앱 알림과 CSE 기록을 함께 봅니다', 'Read the app and CSE record together'),
+      detail: tr('앱에는 필요한 생활 상태만 보이고, 왼쪽에는 동일 이벤트의 oneM2M 영수증이 남습니다.', 'The app shows only the useful daily state while the matching oneM2M receipt remains in the browser.'),
+      action: tr('Resource tree를 열어 세로로 스크롤한 뒤 오른쪽 화살표를 누르세요.', 'Open Resource tree, scroll vertically, then use the right arrow.'),
+    };
+    if (scene === 'care-request') return {
+      target: 'app-primary',
+      label: tr('최소 권한 승인', 'Least-privilege approval'),
+      title: tr('범위와 만료 시각을 함께 승인합니다', 'Approve scope and expiry together'),
+      detail: tr('거실의 세 기기와 30초라는 경계가 하나의 승인에 결합됩니다.', 'Three living-room devices and a 30-second deadline are bound to one approval.'),
+      action: tr('30초 동안 승인을 누르세요.', 'Select Approve for 30 seconds.'),
+    };
+    if (scene === 'caregiver-shared' && careStatus !== 'active') return {
+      target: 'app-primary',
+      label: tr('그룹 명령', 'Group command'),
+      title: tr('한 번의 명령을 세 기기에 적용합니다', 'Apply one command to three devices'),
+      detail: tr('Mobius group fan-out 뒤 각 기기의 3/3 readback을 확인합니다.', 'Mobius group fan-out is followed by a 3-of-3 device readback.'),
+      action: tr('모두 켜기를 누르세요.', 'Select All on.'),
+    };
+    if (scene === 'caregiver-shared') return {
+      target: 'app-secondary',
+      label: tr('검증 완료', 'Readback complete'),
+      title: tr('세 기기 응답이 모두 돌아왔습니다', 'All three device responses returned'),
+      detail: tr('명령 성공 화면과 CSE 응답 수가 같은 결과를 보여줍니다.', 'The command result and CSE response count show the same outcome.'),
+      action: tr('종료 시각으로 건너뛰기를 누르세요.', 'Select Skip to the end time.'),
+    };
+    if (scene === 'caregiver-ended') return {
+      target: 'mobius',
+      label: tr('서버 강제 만료', 'Server-enforced expiry'),
+      title: tr('승인 범위가 정해진 시각에 닫힙니다', 'The approved scope closes on schedule'),
+      detail: tr('UI 상태와 별개로 서버 deadline과 명시적 종료 기록이 권한을 닫습니다.', 'The server deadline and explicit expiry record close access independently of the UI state.'),
+      action: tr('CSE 기록을 확인한 뒤 오른쪽 화살표를 누르세요.', 'Check the CSE record, then use the right arrow.'),
+    };
+    if (scene === 'check-in' && locationShared) return {
+      target: 'map',
+      label: tr('승인된 5분 지도', 'Approved five-minute map'),
+      title: tr('지도는 승인된 시간에만 열립니다', 'The map opens only for the approved time'),
+      detail: tr('현재 브라우저 세션과 목적, 수신자, 5분 lease가 맞을 때만 위치 API가 지도와 마커를 제공합니다.', 'The location API provides the map and marker only when browser session, purpose, recipient and five-minute lease match.'),
+      action: callReady ? tr('오른쪽 확인 화살표로 시스템 검증을 여세요.', 'Use the check arrow to open the system proof.') : tr('지도를 확인하고 통화를 누르세요.', 'Inspect the map, then select Call.'),
+    };
+    if (scene === 'check-in' && locationDrafted) return {
+      target: 'app-secondary',
+      label: tr('공유 전 검토', 'Review before sharing'),
+      title: tr('목적, 수신자, 시간을 먼저 확인합니다', 'Confirm purpose, recipient and time first'),
+      detail: tr('위치 좌표는 아직 닫혀 있고 검토한 초안 해시만 기록됩니다.', 'Coordinates remain closed while the reviewed draft hash is recorded.'),
+      action: tr('확인하고 5분 공유를 누르세요.', 'Select Review and share for 5 min.'),
+    };
+    if (scene === 'check-in') return {
+      target: 'app-secondary',
+      label: tr('안부 확인', 'Check-in'),
+      title: tr('위치보다 연락을 먼저 제안합니다', 'Contact comes before location'),
+      detail: tr('비상 입력을 확인하면서 통화와 목적 제한 위치 공유를 분리해 선택합니다.', 'The emergency input keeps Call separate from purpose-bound location sharing.'),
+      action: tr('위치 공유 준비를 누르세요.', 'Select Prepare location share.'),
+    };
+    return {
+      target: 'proof',
+      label: tr('시스템 검증', 'System proof'),
+      title: tr('하나의 신호가 검증된 돌봄으로 이어졌습니다', 'One signal became verified care'),
+      detail: tr('키링 펌웨어, 웹서버, Mobius CSE, 브라우저 보안 경계가 한 영수증으로 연결됩니다.', 'Keyring firmware, web server, Mobius CSE and browser security boundary meet in one receipt.'),
+      action: tr('다시 보기 또는 실제 대시보드 열기를 선택하세요.', 'Choose Replay or open the live dashboard.'),
+    };
+  })();
 
-  return <div className={`story-demo${capture ? ' capture' : ''}`} data-stage={demoStage} data-scene={scene} data-finale={scene === 'finale' || undefined} data-portrait={portraitChoice} data-display-mode={standalone ? 'standalone' : 'browser'}>
+  return <div className={`story-demo${capture ? ' capture' : ''}`} data-stage={demoStage} data-scene={scene} data-finale={scene === 'finale' || undefined} data-portrait={portraitChoice} data-display-mode={standalone ? 'standalone' : 'browser'} data-coach-target={coach.target}>
     <a className="skip" href="#story-app" tabIndex={modalOpen ? -1 : undefined} aria-hidden={modalOpen} onClick={(event) => { event.preventDefault(); document.getElementById('story-app')?.focus(); }}>{tr('앱 화면으로 건너뛰기', 'Skip to the app')}</a>
     <header className="story-topbar" inert={modalOpen}>
       <a className="story-brand" href="#/"><span aria-hidden="true"><Icon name="bubble" size={22} /></span>BubbleLock</a>
@@ -613,8 +742,9 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
         </div>
       </div>
     </main>
+    {!capture ? <StoryCoach cue={coach} hidden={modalOpen} /> : null}
     <StoryStepper scene={scene} />
-    <div className="keyring-dock" inert={modalOpen} data-guided={guidedAction === 'keyring-panic' ? 'panic' : guidedAction === 'keyring-confirm' ? 'confirm' : 'none'}>
+    <div className="keyring-dock" inert={modalOpen} data-demo-target="keyring" data-guided={guidedAction === 'keyring-panic' ? 'panic' : guidedAction === 'keyring-confirm' ? 'confirm' : 'none'}>
       <VirtualKeyring
         snapshot={snapshot}
         runAction={runAction}

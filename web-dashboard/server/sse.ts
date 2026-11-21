@@ -8,6 +8,8 @@ import { ContractError } from '../shared/validation.ts';
 import { integrationAudit } from '../shared/integration.ts';
 import { loadReplay } from './replay.ts';
 import type { DashboardEvent, SourceMode } from '../shared/types.ts';
+import type { ResourceFixture } from '../shared/index.ts';
+import type { MobiusBrowserSnapshot } from '../shared/mobius-browser.ts';
 import { startCseLiveSource } from './cse-live.ts';
 import type { CseLiveConfig, CseLiveSource } from './cse-live.ts';
 import { startGatewayPollSource } from './cse-gateway-poll.ts';
@@ -21,6 +23,7 @@ import { createAlertReplay, createAlertRoutes } from './guardian-alerts.ts';
 import type { AlertRoutes } from './guardian-alerts.ts';
 import { createStoryDemoService } from './story-demo.ts';
 import type { StoryDemoHandler } from './story-demo.ts';
+import { browseReplayResources } from './mobius-browser.ts';
 
 let activeEventStreams = 0;
 
@@ -48,6 +51,7 @@ export interface EventFeed {
   readonly lastSequence: number;
   subscribe?(listener: (event: DashboardEvent) => void): () => void;
   resync?(reason: string): Promise<unknown>;
+  browseResources?(selected?: string | null): Promise<MobiusBrowserSnapshot>;
   describe?(): Record<string, unknown>;
 }
 
@@ -100,6 +104,17 @@ export function createReplayServer(replay: EventFeed, locationFeed?: LocationFee
       case '/api/resources':
         json(response, 200, resources);
         return;
+      case '/api/operator/mobius': {
+        const selected = url.searchParams.get('selected');
+        const snapshot = replay.browseResources
+          ? await replay.browseResources(selected)
+          : browseReplayResources({
+            fixtures: resources.resources as readonly ResourceFixture[], events: replay.events,
+            source: replay.source, simulation: replay.simulation, selected,
+          });
+        json(response, 200, snapshot);
+        return;
+      }
       case '/api/audit': {
         const query = (url.searchParams.get('q') ?? '').toLowerCase();
         const integrated = replay.source === 'integration-journal-replay';

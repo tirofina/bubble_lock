@@ -2,15 +2,16 @@
 name: Privacy Bubble story demo, Apple HIG brief
 role: WEB-DASHBOARD
 doc-rev: 2.0.0
-scope: "#/story/* (StoryDemo, VirtualKeyring, StoryMobiusPanel, StoryMobiusTree, story.css)"
+scope: "#/story/* (StoryDemo, StoryCoach, VirtualKeyring, StoryMobiusPanel, StoryMobiusTree, LocationMap story variant; story.css, location-map.css) and the operator Mobius Resource Browser on every #/operator/* page (OperatorMobiusBrowser, operator-mobius.css)"
 status: canonical design brief for the story demo
 inputs: DESIGN.md (token values), docs/hig-sources.md (HIG pages and their web adaptation)
 ---
 
 # apple.md
 
-This file is the canonical design brief for the Privacy Bubble story demo. Every final
-design decision on `#/story/*` cites a section here (P1 to P12, S1 to S7). `DESIGN.md`
+This file is the canonical design brief for the Privacy Bubble story demo and the operator
+Mobius Resource Browser. Every final design decision on `#/story/*` cites a section here (P1 to
+P13, S1 to S9); the operator browser follows section 12. `DESIGN.md`
 keeps the token values and the rest of the web app; this file decides how the story demo
 uses them. Change the brief first, then the code.
 
@@ -37,6 +38,7 @@ with the hierarchy carried by type size, weight and whitespace instead of boxes.
 | P10 | Inclusive defaults | Korean and English, light and dark from the system setting, full keyboard path, 3px `:focus-visible` ring (inset inside clipped panes), polite live regions for new records. | HIG Accessibility, Dark Mode |
 | P11 | Plain surfaces | Flat canvas, hairline separators, no gradients, no frosted cards, one explanation line per screen. The floating keyring has no background, border, shadow box or tool row. | DESIGN.md 7 |
 | P12 | One viewport | `.story-demo` fills exactly 100vw x 100dvh. The document and every pane keep zero scroll in both axes. The one intentional inner scroller is the Resource tree box (`.mobius-tree-scroll`): it holds the complete oneM2M hierarchy and scrolls vertically by wheel, touch pan and keyboard. Segmented panels switch content and CSE records page one record at a time. Safe-area insets keep every control clear of the notch, Dynamic Island, sensor housing and home indicator. | HIG Layout, WCAG 1.4.10 |
+| P13 | Guide, then step aside | Every scene carries one small guide tip (S9) that names the current idea and the next real action, and one large highlight on the element that action uses. The tip ignores the pointer and lives in a slot the layout already keeps free, so the highlighted target stays fully operable and visible. | HIG Onboarding, Motion |
 
 Sources: https://developer.apple.com/design/human-interface-guidelines/layout ,
 https://developer.apple.com/design/human-interface-guidelines/typography ,
@@ -46,7 +48,11 @@ https://developer.apple.com/design/human-interface-guidelines/accessibility ,
 https://developer.apple.com/design/human-interface-guidelines/buttons (retrieved 2026-10-29, see
 `docs/hig-sources.md`), https://developer.apple.com/design/human-interface-guidelines/motion
 (added for P6 and P7), https://developer.apple.com/design/human-interface-guidelines/segmented-controls
-(panel switcher), https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html ,
+(panel switcher), https://developer.apple.com/design/human-interface-guidelines/onboarding
+(scene guide, P13), https://developer.apple.com/design/human-interface-guidelines/maps (approved
+map, S8), https://osmfoundation.org/wiki/Licence/Attribution_Guidelines and
+https://leafletjs.com/reference.html#control-attribution (map attribution),
+https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html ,
 https://www.w3.org/WAI/WCAG21/Understanding/orientation.html ,
 https://www.w3.org/WAI/WCAG21/Understanding/reflow.html .
 
@@ -70,6 +76,9 @@ Color, type, radius and spacing come from `src/styles.css`. The story demo adds:
 | `--proof-pad` / `--proof-marker` / `--proof-gap` | 28 / 36 / 24px desktop; 14 / 24 / 10-12px phone landscape; 10 / 20 / 6px iPhone mini Safari | System proof receipt (S7); `--proof-title`, `--proof-detail`, `--proof-code`, `--proof-count` set its type per tier |
 | `--finale-slot` | 0px; 92px where the flags sit at the stage's bottom-left (shallow, iPhone mini Safari, installed app) | Leading inset of the System proof actions row |
 | `--flag` (per language button) | inline SVG: Taegukgi for `lang="ko"`, the US flag for `lang="en"` | Language control: 22 x 15px flag in a 44px button |
+| `--coach-halo` / `--coach-wave` | `--accent` at 30% / 36% | Scene guide highlight (S9): a steady 4px halo, and the wave that travels to 10px twice |
+| `--coach-wash` | `--accent` at 6% | Mobius pane highlight: a soft sheet that reaches 6px past the pane (spread shadow in the same color) |
+| `--coach-proof` | `--success` at 34% | System proof highlight: a 4px ring around the receipt and its session footer |
 | `--safe-top/right/bottom/left` | `env(safe-area-inset-*)` | Every edge offset below |
 | `--topbar-h` / `--nav-h` | 56 / 44px desktop, 44 / 44px phone portrait, 0 / 44px phone landscape | Top bar and bottom navigation rows; `--chrome-top` and `--chrome-bottom` add the safe areas |
 | `--z-topbar` / `--z-intro` / `--z-dock` / `--z-modal` / `.skip` | 10 / 20 / 30 / 40 / 50 | Stacking order |
@@ -242,6 +251,10 @@ Resource tree (`.mobius-tree-scroll`), every layout:
   (desktop) or after the path line (below 1024px). It is focusable (`tabindex="0"`, labelled
   with the resource count), shows the 3px focus ring inset, contains its overscroll and pans
   vertically on touch.
+- Vertical axis only, every layout: the box carries `data-scroll-axis="vertical"`,
+  `overflow-x: hidden`, `overflow-y: auto` and `touch-action: pan-y`; TSX pins `scrollLeft` at 0.
+  Names, types and long oneM2M paths wrap inside their row (`overflow-wrap: anywhere`), so the
+  box's scroll width equals its client width and a sideways swipe moves nothing.
 - Scroll cues, both quiet: a thin native scrollbar in `--muted` at 45% (overlay on iOS, so it
   costs no width there) and a 10px edge shade that appears only on the side where more rows
   wait. The shade is a `background-attachment: scroll` gradient under a `local` cover that
@@ -389,12 +402,16 @@ Home Screen web app (next section) is the path to the full screen.
   (x 359, y 195 at 812 x 265). On the intro and the System proof they sit at the screen's
   bottom-left (x 44, y 200).
 - Mobius: a two-line header (12px/700 title and an 11px status badge; 11px session line), the
-  switcher (44px segments, 97px each, every label inside its segment) and one panel. Transaction
+  switcher (44px segments, 97px each, every label inside its segment) and one panel. Outside
+  capture mode the scene guide tip (S9) stands in for the title and session line (196 x 31 at
+  x 44, y 2) and the Live/Replay badge moves to the right end of that line, so the header keeps
+  its box on every page, the Resource tree page included. Transaction
   is one compact receipt: BFF request with its code on one line; CREATE and RETRIEVE
   `<contentInstance>` each with one line per record (resource name, method, RSC); the scene
-  sentence stays in the accessibility tree. Resource tree: the header's two lines go to the
-  rows (the switcher names the panel, the app banner carries any CSE notice); a 300 x 142 scroll
-  box of 44px two-line rows with 6px depth indents and the mono RSC column, then the full path
+  sentence stays in the accessibility tree. Resource tree: the header line holds the scene
+  guide tip (in capture mode the header's two lines go to the rows); a 300 x 111 scroll box
+  (300 x 142 without the tip) of 44px two-line rows with 6px depth indents and the mono RSC
+  column, vertical axis only, then the full path
   (breaks anywhere, two lines) beside a 61 x 44 Sync. CSE records: the record, then the CSE
   root beside its pager.
 - App: no title bar at this size (the pane is the app), 15px screen title, 11-13px card text,
@@ -407,7 +424,8 @@ Home Screen web app (next section) is the path to the full screen.
   236px in every scene (169px under the 93-character banner); Mobius panel 163px. Tightest:
   check-in after a keyring PANIC with two public-length records keeps 9px under the receipt
   (2px with the CSE notice), care-request under the banner 1px. The tree box is the one element
-  whose scroll size exceeds its client size (three full rows of twelve in view, 392px to scroll).
+  whose scroll size exceeds its client size (two full rows and half of the third in view with the
+  scene guide; three full rows without it).
 
 ### Installed web app on iPhone mini (Home Screen launch, 812 x 375, insets 44 / 44 / 21)
 
@@ -555,6 +573,12 @@ with `.story-demo[data-display-mode="standalone"]` (display-mode standalone or f
 | Desktop tree header is one 44px row (title, live count, Sync); below 1024px Sync shares the last line with the selected node's path | A floating Sync over the rows covered row text while rows scrolled under it; the separate section heading repeated the switcher and the Live/Replay badge | P2, P3, P11 |
 | System proof is an unnumbered conclusion: the Mobius pane and the phone chrome step away for a statement, one receipt card and two actions beside the same keyring | Inside a stretched phone frame the receipt was three small cards with 300px of empty canvas above them, and at 812 x 265 the action labels broke into near-vertical words (links inherit `overflow-wrap: anywhere` in narrow grid columns) | P2, P8, P11 |
 | Scene seven's next control becomes a success-tinted check circle that invites twice | It opens a different kind of page (the proof), so it reads as the success family of that page while staying a quiet 44px circle in the stepper | P1, P5 |
+| Approved map: the readout leaves the canvas for a caption line under it; the live chip owns the top-left, the attribution the bottom-right | Before: the readout sat on the attribution in every layout, the pin met the chip at 812 x 265, 844 x 390 and 844 x 320, and chip, readout, action note and meta text rendered at 8-10px | P4, P11, P12 |
+| Approved map below 1024px: eyebrow for screen readers, 32px pin scaled around its tip, coordinates only in the caption; iPhone mini drops the live chip | The map is the answer to the approval; every line above it cost map height (the eyebrow wrapped to two lines at 812 x 375). Scaling around the icon anchor keeps the plotted point exact | P2, P12 |
+| Portrait fallback gives the app pane 50% of the stage while the map shows | At 44% the map was 132px tall and Call covered its attribution | P2, P12 |
+| Scene guide lives in a free slot per layout and never takes the pointer | A floating card next to the target has no room at 812 x 265; the top bar, bottom bar, Mobius rail, flags strip and Mobius identity line are space the layout already keeps, so the map, the keyring and every action stay uncovered | P2, P13 |
+| Highlights: halo for buttons and the map, a soft sheet for the Mobius pane, an aura for the keyring, a success ring for the proof | A ring that hugs a text-filled pane read as a box around words; each target type gets the quietest mark that still reads at a glance, and every one is steady under reduced motion | P5, P7, P13 |
+| Operator browser beside every page, card without shadow, record as a key / value table, workspace as a size container | At 1440 the map was squeezed to 332px beside a 340px list, keys such as `resourceUri` broke into fragments under the global `dl` grid, and `ONEM2M` lost its spelling under an uppercase transform | P4, P5, P11 |
 
 ## 9b. S7 System proof (`#/story/finale`, `data-finale="true"`)
 
@@ -622,6 +646,87 @@ and the browser-session / purpose / scope / expiry boundary.
 - Motion: the seal settles from 60% scale over `--story-base`; the invite rings run twice. Under
   reduced motion both stay still.
 
+## 9c. S8 Approved location map (check-in after approval, `[data-location-shared="true"]`)
+
+Function: check-in offers `Prepare location share` (a reviewed draft, coordinates still closed),
+then `Review and share for 5 min` (the lease). While the lease runs, the scene becomes
+`section.story-check-in-shared[data-location-shared="true"]` with a real Leaflet map. The map
+reads `/api/story/location`, which answers only for the approved five-minute lease of the same
+HttpOnly browser session (403 before approval, after expiry and for any other browser session;
+405 for anything but GET). The countdown counts the lease down from 5:00.
+
+```
+ Mom's location                         [4:57]    title 15-28px/700, countdown pill (success)
+ (o) Approved location   Mom's keyring  [Simulated data]   status line (label and badge from 1024px up)
+ +-----------------------------------------------+
+ | (o) Refreshes every 4 s                       |  live chip, top-left (11px/600)
+ |                     (1)                       |  pin, centered by fitBounds
+ |             (accuracy circle)                 |
+ |       (c) Stadia Maps (c) OpenMapTiles (c) OSM|  tile attribution, bottom-right (11px)
+ |-----------------------------------------------|
+ | Location from the network service  43.7334, 7.4153 |  readout caption line under the canvas
+ +-----------------------------------------------+
+ [ Call ]   (shield) Only you, ends automatically      44-48px Call; flags take the note's slot on iPhone mini
+```
+
+- Hierarchy: heading (title and countdown on one line), status line, the map as the hero taking
+  every remaining pixel (`.story-location-map-target` and the map frame are flex columns), then
+  Call. Below 1024px the eyebrow `Purpose-bound location share` stays for screen readers only;
+  the countdown and the status line carry the purpose.
+- One owner per edge, so nothing covers anything: the live chip owns the canvas top-left, the
+  tile attribution the bottom-right, the pin the middle, and the readout (source and
+  coordinates) is a caption line under the canvas inside the same frame, never over the map.
+  Below 1024px the caption keeps the coordinates and the source stays for screen readers.
+- Pin: 40px on desktop and in capture mode; below 1024px it scales to 32px around its tip
+  (`transform-origin: 20px 46px`, the Leaflet icon anchor), so the point on the map stays exact.
+- iPhone mini Safari (300px tall or less): the live chip steps out (a 118px canvas would put the
+  chip on the pin; the countdown carries the live state there) and the flags take the action
+  note's slot beside Call.
+- Portrait fallback: while the map shows, the app pane takes 50% of the stage instead of 44%.
+- Attribution: the complete tile attribution (Stadia Maps, OpenMapTiles, OpenStreetMap) stays
+  visible at 11px on a frosted strip; the optional Leaflet prefix steps out of the small story
+  map (the operator map keeps it). Nothing in the map renders below 11px.
+- Measured (scratch review, replay CSE, approved map): 1440 x 900 map frame 298 x 483 (canvas
+  296 x 417, caption 296 x 26), Call 115 x 48; 844 x 390 with insets 47 / 47 / 21 canvas 268 x 141;
+  812 x 265 Safari canvas 234 x 118 at x 364, y 50, caption 22px, pin 32px centered, Call 144 x 44
+  at x 455 beside the flags (x 359-447); 812 x 375 installed app canvas 208 x 176, chip 126 x 22,
+  Call 96 x 44; 390 x 844 portrait canvas 334 x 134. In every case the chip, pin, attribution and
+  caption have disjoint boxes, and `.story-content` keeps scroll size = client size.
+
+## 9d. S9 Scene guide (`.story-coach`) and highlight (`[data-demo-target]`)
+
+StoryDemo sets `data-coach-target` on the root (`keyring | mobius | app-primary | app-secondary |
+map | next | proof`), renders one `aside.story-coach[data-target]` (role status, polite) outside
+capture mode, and marks the real element with `data-demo-target`. The tip connects three things:
+the current idea (label, title, detail), the highlighted target and the next real action.
+
+- Tip: `--surface`, a 0.5px hairline and a soft 16px shadow, 14px radius (9-12px on phones),
+  `pointer-events: none`, z-index 32 (above the keyring dock, under the modal sheets). It enters
+  from 97% scale and 40% opacity over `--story-base` and never leaves the viewport while it does.
+  Under `aria-hidden="true"` (a modal is open) it does not render.
+- Content per layout (what stays visible; the rest stays in the live region for screen readers):
+
+| Layout | Slot | Visible | Box |
+| --- | --- | --- | --- |
+| Desktop, 1024px and wider | Top bar center (the 56 or 48px bar) | Label and title on line 1, `Next action` and the action on line 2, 12-13px | max(content, 700px), 44px tall; 1440 x 900: 466 x 45 at y 6 |
+| Phone landscape with a bottom bar (844 x 390) | Bottom bar, right of the scene navigation, under the keyring track | Label, then the action (11px) | 255 x 32-44 at x 542 |
+| Shallow landscape (844 x 320, 1000 x 327) | Mobius identity rail, between the session line and the flags | Label and action, 104px wide | 104 x 75-114 |
+| iPhone mini Safari (812 x 265) | Mobius title and session line; the Live/Replay badge moves to its right end | The action only, two lines | 196 x 31 at x 44, y 2 |
+| Installed web app (812 x 375) | The flags strip under the Mobius column, right of the flags | Label, then the action | 208 x 44 at x 136, y 310; 176px wide on the intro (clear of the hint line); top of the statement on the System proof (the actions row owns the bottom line) |
+| Portrait (390 x 844) | Top bar beside the brand | Label, then the action | 314 x 44 at x 64, y 47 |
+
+- Highlight, one per scene, all large and all quiet: buttons and the map wear a steady 4px halo
+  (`--coach-halo`) that sends two waves to 10px, then rests; the Mobius pane lifts as one soft
+  sheet (`--coach-wash`, 6px past its edges) so no ring hugs a line of text; the keyring keeps
+  its guided-button halo (S5) and the model gains a soft accent aura; the System proof receipt
+  and its session footer wear a 4px success ring drawn by the section's own `::after` grid item.
+  In-app targets sit on the content edge, so `.story-content` reaches 6px into the phone padding
+  (negative margin plus padding) and the halo shows whole while the content keeps its width.
+- Reduced motion: no entrance, no waves, no aura pulse; every highlight is the steady state.
+- Never covered: the tip's box stays clear of the map, the keyring, the scene navigation, the
+  flags, Call and every app action (measured in all six slots above), and the highlighted target
+  answers `elementFromPoint` at its center.
+
 ## 10. Implementation contract (shared by design and function)
 
 Root and stages:
@@ -645,7 +750,7 @@ Root and stages:
 Markup (class names are the contract; CSS owns every visual value):
 
 ```
-div.story-demo[data-stage][data-scene][data-finale][data-portrait][data-display-mode]   grid rows: top chrome, stage, bottom chrome
+div.story-demo[data-stage][data-scene][data-finale][data-portrait][data-display-mode][data-coach-target]   grid rows: top chrome, stage, bottom chrome
   a.skip
   header.story-topbar
     a.story-brand, a.story-topbar-link (family dashboard), LangToggle
@@ -660,7 +765,7 @@ div.story-demo[data-stage][data-scene][data-finale][data-portrait][data-display-
   div.story-rotate[role=dialog] > span.story-rotate-glyph + p.story-rotate-title
     + p.story-rotate-body + button.story-rotate-continue
   main.story-stage (inert unless system and no prompt)
-    aside.story-mobius[lang=en]                    StoryMobiusPanel
+    aside.story-mobius[lang=en][data-demo-target=mobius]   StoryMobiusPanel
       header.story-mobius-head > div > h2 + p.story-mobius-meta, span.badge
       p.story-server-message (only after a failed request)
       nav.story-panel-tabs > button[aria-pressed][aria-controls=story-panel-*](.has-new-event)
@@ -675,7 +780,7 @@ div.story-demo[data-stage][data-scene][data-finale][data-portrait][data-display-
       section#story-panel-tree.story-panel-card.story-mobius-tree-card
         div.story-events-head (screen readers), div.mobius-tree-view > div.mobius-tree-toolbar
           (p > strong + span count, button Sync),
-          div.mobius-tree-scroll[data-scrollable=true][tabindex=0][aria-label] > ul.mobius-tree[role=tree]
+          div.mobius-tree-scroll[data-scrollable=true][data-scroll-axis=vertical][tabindex=0][aria-label] > ul.mobius-tree[role=tree]
           > li.mobius-tree-leaf[aria-level] > button(.selected)(.is-fresh)[data-path][data-fresh]
             > span.mobius-node-dot + span.mobius-node-name + small (type) + b(.verified) (RSC),
           div.mobius-node-detail
@@ -684,16 +789,28 @@ div.story-demo[data-stage][data-scene][data-finale][data-portrait][data-display-
       section#story-panel-scenes.story-panel-card.story-scene-panel (portrait only)
         nav > ol > li > a(.active), li.story-scene-finale > a, a.story-mobile-dashboard-link
     div.story-app-column > div.story-device > div.story-phone#story-app
-      section.story-content.story-finale[data-finale-receipt=true]     (#/story/finale only, S7)
+      button.story-primary[data-demo-target=app-primary], button.story-secondary | .story-text-action[data-demo-target=app-secondary]
+      section.story-content.story-check-in.story-check-in-shared[data-location-shared=true]   (approved lease only, S8)
+        div.story-location-heading > div > p.story-eyebrow + h1, strong.story-location-countdown
+        div.story-location-map-target[data-demo-target=map]
+          > div.location-experience.location-story[data-story-location-map=true][data-location-ready]
+            > div.story-location-meta > span.location-status-dot + strong + span + span.badge
+            p.location-alert (feed error only)
+            div.map-frame > div.location-canvas (Leaflet) + div.map-corner-note + div.story-location-readout > span + code
+        div.story-location-actions > button.story-primary (Call) + span (shield and note)
+      section.story-content.story-finale[data-finale-receipt=true][data-demo-target=proof]     (#/story/finale only, S7)
         p.story-finale-kicker > svg + text
         div.story-title-block > h1 + p.story-subtitle
         ol.story-finale-proof > li[data-proof=keyring|mobius|boundary] > span + div > strong + small, svg | b (count)
         p.story-finale-session > span + code (session id) + b
         div.story-finale-actions > a.story-primary (replay) + a.story-secondary (dashboard)
+  aside.story-coach[data-target][role=status][aria-live=polite][aria-hidden][inert]   outside capture mode, after main (S9)
+    p.story-coach-label > span (dot) + text, strong (title), p.story-coach-detail,
+    p.story-coach-action > svg + span > b ("Next action") + text
   nav.story-stepper.story-bottom-nav(.is-finale)    outside the header, after main
     a.story-stepper-prev, span.story-stepper-compact[aria-live=polite] ("2/7 Went out", "System proof"),
-    a.story-stepper-next[data-special=true on check-in]
-  div.keyring-dock[data-guided=confirm|panic|none]  fixed, outside main
+    a.story-stepper-next[data-demo-target=next][data-special=true on check-in]
+  div.keyring-dock[data-demo-target=keyring][data-guided=confirm|panic|none]  fixed, outside main
     div.virtual-keyring > h3.story-sr + div.keyring-stage[role=application][tabindex=0]
       > div.keyring-model > span.keyring-depth, img, span.keyring-screen-live[data-firmware-screen],
         button.keyring-physical-button.confirm|.panic(.is-guided)(.pressed)
@@ -712,6 +829,12 @@ Behavior owned by function:
 - Keyring pose: rotate only, rotateX within 32deg, rotateY within 58deg; no move and no reset.
 - Existing contracts stay: browser-isolated session cookie, CSRF and Idempotency-Key on
   `/api/story/action`, scene auto-actions, care and location flows, `?capture=1` app shots.
+- Approved map (S8): `/api/story/location` answers GET only, and only for the approved, unexpired
+  five-minute lease of the same HttpOnly session; the map root reports `data-location-ready`.
+- Scene guide (S9): one cue per scene and stage; the root and the tip carry the same target; the
+  tip is `aria-hidden` and `inert` while a modal sheet is open and does not render in capture mode.
+- Resource trees (story and operator): `data-scroll-axis="vertical"`, and the scroll handler pins
+  `scrollLeft` at 0.
 
 ## 11. Verification
 
@@ -741,5 +864,61 @@ tree box (`.mobius-tree-scroll[data-scrollable="true"]`), nothing sits outside t
 | 1440 x 900 Resource tree | system | `.mobius-tree-scroll` has scroll height beyond client height, no `.mobius-tree-pager`, the fresh node inside the box, and a real mouse wheel over the box changes `scrollTop` |
 | System proof: 1440 x 900, 812 x 265 Safari, 812 x 375 installed app | `story-finale-desktop`, `story-finale-iphone13mini-landscape`, `story-finale-iphone13mini-fullscreen` | Scene seven's next control carries `data-special` and opens `#/story/finale` with `data-finale="true"`; three `[data-proof]` steps, `CREATE RSC 2001`, `RETRIEVE RSC 2000` and the browser-session / purpose / scope / expiry line; previous `#/story/check-in`, next `#/story/login`; the receipt and the viewport pass the fit check. Design acceptance (scratch QA, all eight layouts): action labels on one line where the row allows, every control 44px or more, keyring and flags clear of the receipt and actions |
 
+| Approved map (S8): 812 x 265 Safari, 812 x 375 installed app, 390 x 844 capture | `story-location-iphone13mini-landscape`, `story-location-iphone13mini-fullscreen`, `story-location-landscape` | Two real clicks (`Prepare location share`, `Review and share for 5 min`) open `[data-location-shared="true"]`; `data-location-ready="true"`, one keyring marker, countdown 4:xx or 5:00, canvas inside the phone and at least 72 / 112 / 100px tall; the viewport passes the fit check. Design acceptance (scratch QA): live chip, pin, attribution and caption on disjoint boxes; nothing in the map below 11px; Call and the flags 8px apart |
+| Scene guide (S9): desktop intro and Mobius scene, 844 x 390, 390 x 844, 812 x 265 and 812 x 375 intro, location preparation, review, approved map and System proof | (in the captures above) | Root and tip name the same target; the tip is visible, inside the safe area, at scroll size = client size, `pointer-events: none`, contains `Next action`; the target is visible, highlighted (halo, sheet, aura or ring) and answers `elementFromPoint` at its center; the viewport passes the fit check with `.story-coach` among the measured boxes |
+| Resource tree axis: 812 x 265 and 812 x 375 | (tree pages above) | `data-scroll-axis="vertical"`, `overflow-x` hidden, `overflow-y` auto, `touch-action: pan-y`, `scrollLeft` 0 after a sideways attempt, scroll width equals client width |
+| Operator map, 1440 x 900 | `operator-map-mobius-desktop` | `.operator-mobius-browser` beside `.operator-workspace` (`workspace.right <= browser.left`), `data-source="replay"` with `Replay data`, English only, Mobius Resource Browser / Resource tree / applicationEntity / flexContainer / group / RSC 2000 present, vertical-only tree (`overflow-x` hidden, pan-y, `scrollLeft` 0), node rows 44px or taller; the AE record opens in Resource record |
+
 The seven `?capture=1` app screens (390 x 844) keep the full app design: status bar, 56px
 header, 28px titles, home indicator.
+
+## 12. Operator Mobius Resource Browser (`aside.operator-mobius-browser`, every `#/operator/*` page)
+
+A read-only oneM2M inspector beside the operator's work. It is English only, like the story's
+Mobius pane, and it never writes: `GET only, operator AE scope` closes the card.
+
+```
+ 1440 x 900                                                  workspace 714 | browser 374
+ +---------------------------------------------+  +-------------------------------+
+ | Location map (34px)                         |  | oneM2M operator read      (r) |  13px muted, 44px refresh
+ | (o) Connected  Replaying ...  [Simulated]   |  | Mobius Resource Browser       |  17px/700
+ | +-----------------------------------------+ |  | (o) Replay data  RSC 2000  5 resources |  source word first
+ | | Location monitoring        [Show all](r)| |  | [ Resource tree | Resource record ]   |  44px segments
+ | |                                         | |  |-------------------------------|
+ | |          map, full card width           | |  | . Mobius            CSEBase 5 |  44px rows, mono names
+ | |          670 x 560                      | |  | . privacy-bubble-group      9 |  wrap inside the row
+ | |                                         | |  | | keyringB (selected)      28 |  3px accent bar
+ | +-----------------------------------------+ |  |-------------------------------|
+ | | Keyrings (list) | Selected keyring      | |  | /Mobius   GET only, operator AE scope |
+ +---------------------------------------------+  +-------------------------------+
+```
+
+- Placement: `.operator-live-layout` puts the workspace and the browser side by side
+  (`minmax(0, 1fr) clamp(320px, 26vw, 380px)`, 24px gap; 320px from 1320px down). The browser is
+  sticky 20px from the top and at most the viewport tall. At 1068px and narrower it becomes a
+  full-width bottom panel after the work, and its tree or record box takes its content height up
+  to min(420px, 56dvh) (min(380px, 52dvh) at 760px and narrower).
+- Honest source: the status row starts with the source word in its color, `Live Mobius CSE`
+  (success) when `data-source="live"` and `Replay data` (warning) when `data-source="replay"`,
+  then the discovery RSC in mono and the resource count.
+- Card: one surface with a 1px hairline and the card radius, no shadow. Header: `oneM2M operator
+  read` at 13px muted in its own casing (no uppercase transform, so oneM2M keeps its spelling),
+  the 17px/700 title, a quiet 44px refresh icon. Tabs: the story's segmented control (2px track,
+  44px segments, light thumb).
+- Resource tree: the one inner scroller; vertical axis only (`data-scroll-axis="vertical"`,
+  `overflow-x: hidden`, `touch-action: pan-y`, `scrollLeft` pinned at 0). Rows are 44px or taller:
+  a 7px dot, the resource name (12px/600 mono) over its oneM2M type (12px), the `ty` code at the
+  right; names wrap inside the row instead of truncating. The selected row carries
+  `--accent-soft` and a 3px accent bar on the leading edge; depth indents 13px per level (TSX).
+- Resource record: the selected path (12px/600 mono, breaks anywhere), then one key / value
+  table: keys in mono accent at their natural width, values in mono ink, hairline rows. The
+  global `dl` two-column grid used to split keys such as `resourceUri` into fragments; the record
+  table now owns its own columns.
+- Workspace: a size container (`container: operator-workspace`), so the map card lays out by the
+  width it really has: at 1000px or less of workspace the keyring list and the detail move under
+  the map (two columns), at 620px or less into one column. The status strip keeps its source
+  badge on the first line and balances its sentence.
+- Measured (scratch review, replay): 1440 x 900 workspace 714, browser 374 x 442 at x 1026,
+  map canvas 670 x 560; 1200 x 800 browser 320, canvas 488 x 560; 1024 x 768 bottom panel 760 wide;
+  390 x 844 bottom panel 358 wide. The document scrolls on operator pages; the browser keeps zero
+  horizontal scroll.

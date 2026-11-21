@@ -1,0 +1,106 @@
+/* Operator Mobius Resource Browser (apple.md section 12): a read-only oneM2M inspector beside every
+   operator page. One flat card with a hairline; the source word (Live Mobius CSE or Replay data) leads the
+   status row; the Resource tree is the one inner scroller and moves vertically only. */
+.operator-live-layout { display: grid; grid-template-columns: minmax(0, 1fr) clamp(320px, 26vw, 380px); gap: var(--s6); align-items: start; min-width: 0; }
+/* The workspace is a size container, so the map card lays itself out by the width it really has */
+.operator-workspace { container: operator-workspace / inline-size; display: grid; align-content: start; gap: var(--s6); min-width: 0; }
+.operator-mobius-browser {
+  position: sticky; top: var(--s5);
+  display: grid; grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  min-width: 0; max-height: calc(100dvh - 2 * var(--s5));
+  overflow: hidden;
+  border: 1px solid var(--hairline); border-radius: var(--r-card);
+  background: var(--surface); color: var(--ink);
+}
+
+.operator-mobius-header { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); padding: var(--s4) var(--s3) var(--s1) var(--s4); }
+.operator-mobius-header > div { display: grid; gap: 2px; min-width: 0; }
+.operator-mobius-kicker { color: var(--muted); font: 600 var(--t-caption)/1.25 var(--font); }
+.operator-mobius-header h2 { margin: 0; font-size: var(--t-body); font-weight: 700; letter-spacing: -.01em; line-height: 1.25; }
+.operator-mobius-refresh { flex: none; width: var(--control); height: var(--control); padding: 0; border-color: transparent; background: transparent; color: var(--accent-text); }
+.operator-mobius-refresh:hover { background: var(--accent-soft); }
+
+/* Status: the source word first, then the discovery RSC and the resource count */
+.operator-mobius-status { display: flex; align-items: center; flex-wrap: wrap; gap: 2px var(--s3); padding: 0 var(--s4) var(--s3); color: var(--muted); font-size: var(--t-caption); font-variant-numeric: tabular-nums; }
+.operator-mobius-status code { color: var(--success); font-size: 12px; font-weight: 600; }
+.operator-mobius-live { display: inline-flex; align-items: center; gap: 6px; color: var(--warning); font-weight: 600; }
+.operator-mobius-live i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.operator-mobius-live.actual { color: var(--success); }
+
+/* Segmented control: the same track and thumb as the story switcher, 44px segments */
+.operator-mobius-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin: 0 var(--s4) var(--s3); padding: 2px; border-radius: 12px; background: var(--surface-strong); }
+.operator-mobius-tabs button { min-height: var(--control); padding: 0 var(--s2); border: 0; border-radius: 10px; background: transparent; color: var(--muted); font-size: var(--t-caption); font-weight: 600; white-space: nowrap; }
+.operator-mobius-tabs button:hover { background: transparent; color: var(--ink); }
+.operator-mobius-tabs button:active { transform: none; }
+.operator-mobius-tabs button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / .08), 0 0 0 .5px rgb(0 0 0 / .04); }
+.operator-mobius-tabs button:focus-visible { outline-offset: -3px; }
+
+.operator-mobius-error { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); margin: 0 var(--s4) var(--s3); padding: 0 0 0 var(--s3); border-radius: var(--r-nested); background: var(--danger-soft); color: var(--danger); font-size: var(--t-caption); line-height: 1.35; }
+.operator-mobius-error span { min-width: 0; padding-block: var(--s2); overflow-wrap: anywhere; }
+.operator-mobius-error button { flex: none; min-width: var(--control); min-height: var(--control); border-color: transparent; background: transparent; color: inherit; font-size: var(--t-caption); }
+
+/* Panel: one bounded box between hairlines. The tree scrolls vertically only (pan-y, no horizontal
+   offset); every name and path wraps inside its row, so nothing reaches past the box edge. */
+.operator-mobius-panel { min-height: 240px; overflow: hidden; border-top: 1px solid var(--hairline); }
+.operator-mobius-tree-scroll, .operator-mobius-record {
+  height: 100%; max-height: 100%;
+  overflow-x: hidden; overflow-y: auto;
+  overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--muted) 45%, transparent) transparent;
+}
+:is(.operator-mobius-tree-scroll, .operator-mobius-record):focus-visible { outline: var(--focus-width) solid var(--focus); outline-offset: -3px; }
+.operator-mobius-node {
+  width: 100%; min-height: var(--control);
+  display: grid; grid-template-columns: 8px minmax(0, 1fr) auto; align-items: center; gap: 10px;
+  padding-block: 6px; padding-inline-end: var(--s4);
+  border: 0; border-bottom: 1px solid var(--hairline-soft); border-radius: 0;
+  background: transparent; color: var(--ink); text-align: left; font-weight: 400;
+}
+.operator-mobius-node:hover { background: var(--surface-soft); }
+.operator-mobius-node:active { transform: none; }
+.operator-mobius-node[aria-pressed="true"] { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+.operator-mobius-node:focus-visible { outline-offset: -3px; }
+.operator-mobius-node > span:nth-child(2) { min-width: 0; display: grid; gap: 1px; }
+.operator-mobius-node strong { min-width: 0; overflow-wrap: anywhere; font: 600 12px/1.3 var(--mono); }
+.operator-mobius-node small { min-width: 0; overflow-wrap: anywhere; color: var(--muted); font: 12px/1.3 var(--font); }
+.operator-mobius-node > code { align-self: center; color: var(--accent-text); font-size: 12px; font-variant-numeric: tabular-nums; }
+.operator-mobius-branch { width: 7px; height: 7px; border-radius: 50%; background: var(--hairline-strong, var(--control-border)); }
+.operator-mobius-node[aria-pressed="true"] .operator-mobius-branch { background: var(--accent); }
+
+/* Resource record: the selected path, then one key / value table with hairline rows */
+.operator-mobius-record { padding: var(--s3) var(--s4) var(--s4); }
+.operator-mobius-record-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 2px var(--s2); color: var(--muted); font-size: var(--t-caption); }
+.operator-mobius-record-head code { color: var(--success); font-size: 12px; overflow-wrap: anywhere; }
+.operator-mobius-path { margin: var(--s2) 0 var(--s3); color: var(--ink); overflow-wrap: anywhere; font: 600 12px/1.45 var(--mono); }
+.operator-mobius-record dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0; margin: 0; font-size: 12px; }
+.operator-mobius-record dl > div { display: contents; }
+.operator-mobius-record :is(dt, dd) { padding: 7px 0; border-top: 1px solid var(--hairline-soft); }
+.operator-mobius-record dt { padding-right: var(--s4); color: var(--accent-text); font: 600 12px/1.45 var(--mono); }
+.operator-mobius-record dd { min-width: 0; margin: 0; }
+.operator-mobius-record dd code { display: block; color: var(--ink); overflow-wrap: anywhere; white-space: pre-wrap; font-size: 12px; line-height: 1.45; }
+.operator-mobius-empty { display: grid; place-items: center; align-content: center; gap: var(--s3); min-height: 180px; margin: 0; padding: var(--s4); color: var(--muted); text-align: center; font-size: var(--t-caption); }
+.operator-mobius-empty button { min-height: var(--control); }
+.operator-mobius-footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 2px var(--s3); padding: var(--s3) var(--s4); border-top: 1px solid var(--hairline); color: var(--muted); font-size: 12px; }
+.operator-mobius-footer span:first-child { font-family: var(--mono); }
+
+/* The workspace status strip keeps its source badge on the first line: the sentence wraps inside */
+@container operator-workspace (min-width: 480px) {
+  .context-strip { flex-wrap: nowrap; column-gap: var(--s3); }
+  .context-strip > span:nth-child(2) { flex: 1 1 auto; min-width: 0; text-wrap: balance; }
+  .context-strip > :is(.connection-pill, .badge) { flex: none; }
+}
+
+@media (max-width: 1320px) {
+  .operator-live-layout { grid-template-columns: minmax(0, 1fr) 320px; gap: var(--s5); }
+}
+/* 1068px and narrower: the browser follows the work as a full-width bottom panel with a bounded tree */
+@media (max-width: 1068px) {
+  .operator-live-layout { grid-template-columns: minmax(0, 1fr); }
+  .operator-mobius-browser { position: static; max-height: none; grid-template-rows: auto auto auto auto auto; }
+  .operator-mobius-panel { min-height: 0; }
+  .operator-mobius-tree-scroll, .operator-mobius-record { height: auto; max-height: min(420px, 56dvh); }
+}
+@media (max-width: 760px) {
+  .operator-workspace { gap: var(--s4); }
+  .operator-mobius-tree-scroll, .operator-mobius-record { max-height: min(380px, 52dvh); }
+}

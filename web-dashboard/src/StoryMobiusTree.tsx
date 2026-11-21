@@ -260,7 +260,15 @@ export function StoryMobiusTree({ snapshot, freshPath = null, onRefresh }: {
       <p><strong>CSE resource tree</strong><span>{nodes.length} resources</span></p>
       <button type="button" onClick={() => void refresh()} disabled={!snapshot || refreshing} aria-label="Retrieve the Mobius resource tree again"><Icon name="refresh" size={16} />{refreshing ? 'Retrieving' : 'Sync'}</button>
     </div>
-    {roots.length > 0 ? <div ref={scroll} className="mobius-tree-scroll" data-scrollable="true" tabIndex={0} aria-label={`Scrollable oneM2M resource tree, ${nodes.length} resources`}><ul className="mobius-tree" role="tree">
+    {roots.length > 0 ? <div
+      ref={scroll}
+      className="mobius-tree-scroll"
+      data-scrollable="true"
+      data-scroll-axis="vertical"
+      tabIndex={0}
+      aria-label={`Vertically scrollable oneM2M resource tree, ${nodes.length} resources`}
+      onScroll={(event) => { if (event.currentTarget.scrollLeft !== 0) event.currentTarget.scrollLeft = 0; }}
+    ><ul className="mobius-tree" role="tree">
       {rows.map(({ item, depth }) => <TreeRow key={item.id} item={item} depth={depth} selected={selected?.id ?? ''} freshPath={freshPath} onSelect={(next) => { setSelectedId(next.id); setCopied(false); }} />)}
     </ul></div> : <p className="story-server-wait">Connecting to the Mobius CSE resource tree.</p>}
     {selected ? <div className="mobius-node-detail" aria-live="polite">

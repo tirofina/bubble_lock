@@ -152,7 +152,7 @@ try {
       };
       const root = document.querySelector('.story-demo');
       const rootRect = root?.getBoundingClientRect();
-      const major = [...document.querySelectorAll('.story-demo,.story-stage,.story-mobius,.story-panel-card.is-mobile-open,.story-app-column,.story-device,.story-phone,.story-content')].filter(visible);
+      const major = [...document.querySelectorAll('.story-demo,.story-stage,.story-mobius,.story-panel-card.is-mobile-open,.story-app-column,.story-device,.story-phone,.story-content,.story-coach')].filter(visible);
       const overflow = major.filter((element) => element.scrollWidth > element.clientWidth + 1 || element.scrollHeight > element.clientHeight + 1).map((element) => ({
         selector: element.className,
         clientWidth: element.clientWidth,
@@ -170,6 +170,10 @@ try {
         const rect = element.getBoundingClientRect();
         return rect.left < -1 || rect.top < -1 || rect.right > innerWidth + 1 || rect.bottom > innerHeight + 1;
       }).map((element) => element.className);
+      const overflowChildren = [...(root?.querySelectorAll('*') ?? [])].filter(visible).filter((element) => element.scrollWidth > element.clientWidth + 1 || element.scrollHeight > element.clientHeight + 1).slice(0, 12).map((element) => ({
+        selector:element.className||element.tagName,clientWidth:element.clientWidth,scrollWidth:element.scrollWidth,clientHeight:element.clientHeight,scrollHeight:element.scrollHeight,
+      }));
+      const metaChildren=[...(document.querySelector('.story-location-meta')?.children??[])].map((element)=>({selector:element.className||element.tagName,display:getComputedStyle(element).display,width:element.getBoundingClientRect().width,scrollWidth:element.scrollWidth,text:element.textContent}));
       return {
         docWidth: document.documentElement.scrollWidth,
         docHeight: document.documentElement.scrollHeight,
@@ -179,6 +183,8 @@ try {
         overflow,
         scrollContainers,
         outside,
+        overflowChildren,
+        metaChildren,
       };
     })()`);
     if (!metrics.fullScreen || metrics.docWidth !== metrics.viewportWidth || metrics.docHeight !== metrics.viewportHeight
@@ -186,6 +192,46 @@ try {
       throw new Error(`${label} viewport fit failed: ${JSON.stringify(metrics)}`);
     }
     return metrics;
+  };
+  const assertCoach = async (label, expectedTarget) => {
+    const coach = await evaluate(`(() => {
+      const visible=(element)=>{if(!element)return false;const rect=element.getBoundingClientRect();const style=getComputedStyle(element);return rect.width>0&&rect.height>0&&style.display!=='none'&&style.visibility!=='hidden'&&Number(style.opacity)>0;};
+      const rect=(element)=>{const value=element?.getBoundingClientRect();return value?{left:value.left,right:value.right,top:value.top,bottom:value.bottom,width:value.width,height:value.height}:null;};
+      const root=document.querySelector('.story-demo');
+      const card=document.querySelector('.story-coach');
+      const target=[...document.querySelectorAll('[data-demo-target=${JSON.stringify(expectedTarget)}]')].find(visible);
+      const cardRect=rect(card);const targetRect=rect(target);
+      const rootStyle=root?getComputedStyle(root):null;
+      const safeLeft=parseFloat(rootStyle?.getPropertyValue('--safe-left')||'0');
+      const safeRight=parseFloat(rootStyle?.getPropertyValue('--safe-right')||'0');
+      const safeTop=parseFloat(rootStyle?.getPropertyValue('--safe-top')||'0');
+      const safeBottom=parseFloat(rootStyle?.getPropertyValue('--safe-bottom')||'0');
+      const hit=targetRect?document.elementFromPoint(targetRect.left+targetRect.width/2,targetRect.top+targetRect.height/2):null;
+      const targetStyle=target?getComputedStyle(target):null;
+      const before=target?getComputedStyle(target,'::before'):null;
+      const after=target?getComputedStyle(target,'::after'):null;
+      const highlighted=!!targetStyle&&(
+        parseFloat(targetStyle.outlineWidth)>0||targetStyle.boxShadow!=='none'||
+        (!!before&&before.content!=='none'&&(before.boxShadow!=='none'||parseFloat(before.outlineWidth)>0||before.animationName!=='none'))||
+        (!!after&&after.content!=='none'&&(after.boxShadow!=='none'||parseFloat(after.outlineWidth)>0||after.animationName!=='none'))
+      );
+      return {
+        rootTarget:root?.dataset.coachTarget,cardTarget:card?.dataset.target,
+        visible:visible(card),targetVisible:visible(target),cardRect,targetRect,
+        insideSafe:!!cardRect&&cardRect.left>=safeLeft-1&&cardRect.right<=innerWidth-safeRight+1&&cardRect.top>=safeTop-1&&cardRect.bottom<=innerHeight-safeBottom+1,
+        fits:!!card&&card.scrollWidth<=card.clientWidth+1&&card.scrollHeight<=card.clientHeight+1,
+        pointerEvents:card?getComputedStyle(card).pointerEvents:null,
+        copy:card?.textContent??'',
+        targetReachable:!!target&&!!hit&&(target===hit||target.contains(hit)||hit.closest('[data-demo-target]')===target),
+        highlighted,
+      };
+    })()`);
+    if (coach.rootTarget !== expectedTarget || coach.cardTarget !== expectedTarget || !coach.visible || !coach.targetVisible
+      || !coach.insideSafe || !coach.fits || coach.pointerEvents !== 'none' || !coach.copy.includes('Next action')
+      || !coach.targetReachable || !coach.highlighted) {
+      throw new Error(`${label} coach contract failed: ${JSON.stringify(coach)}`);
+    }
+    return coach;
   };
   const openMobiusPanel = async (label) => {
     await evaluate(`[...document.querySelectorAll('.story-panel-tabs button')].find((button)=>button.textContent.trim()===${JSON.stringify(label)})?.click()`);
@@ -420,13 +466,67 @@ try {
     const assertPanels = async (label) => {
       await openMobiusPanel('Resource tree');
       await assertViewportFit(`${label} Resource tree`);
-      const treeFits = await evaluate("(() => { const panel=document.querySelector('#story-panel-tree'); const path=[...(panel?.querySelectorAll('code')??[])].find((item)=>(item.textContent??'').startsWith('/Mobius')); return !!panel&&panel.scrollWidth<=panel.clientWidth+1&&panel.scrollHeight<=panel.clientHeight+1&&!!path&&path.scrollWidth<=path.clientWidth+1&&path.scrollHeight<=path.clientHeight+1; })()");
-      if (!treeFits) throw new Error(`${label} Resource tree contract failed`);
+      const tree = await evaluate(`(() => {
+        const panel=document.querySelector('#story-panel-tree');
+        const box=document.querySelector('.mobius-tree-scroll');
+        const path=[...(panel?.querySelectorAll('code')??[])].find((item)=>(item.textContent??'').startsWith('/Mobius'));
+        const bounds=box?.getBoundingClientRect();
+        return {
+          panelFits:!!panel&&panel.scrollWidth<=panel.clientWidth+1&&panel.scrollHeight<=panel.clientHeight+1,
+          pathFits:!!path&&path.scrollWidth<=path.clientWidth+1&&path.scrollHeight<=path.clientHeight+1,
+          axis:box?.getAttribute('data-scroll-axis'),overflowX:box?getComputedStyle(box).overflowX:null,overflowY:box?getComputedStyle(box).overflowY:null,touch:box?getComputedStyle(box).touchAction:null,
+          left:bounds?.left??0,top:bounds?.top??0,width:bounds?.width??0,height:bounds?.height??0,
+          scrollLeft:box?.scrollLeft??-1,scrollTop:box?.scrollTop??0,scrollWidth:box?.scrollWidth??0,clientWidth:box?.clientWidth??0,scrollHeight:box?.scrollHeight??0,clientHeight:box?.clientHeight??0,
+        };
+      })()`);
+      if (!tree.panelFits || !tree.pathFits || tree.axis !== 'vertical' || !['hidden','clip'].includes(tree.overflowX)
+        || !['auto','scroll'].includes(tree.overflowY) || tree.touch !== 'pan-y' || tree.scrollLeft !== 0 || tree.scrollWidth > tree.clientWidth + 1) {
+        throw new Error(`${label} vertical Resource tree contract failed: ${JSON.stringify(tree)}`);
+      }
+      await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: tree.left + tree.width / 2, y: tree.top + tree.height / 2 });
+      await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: tree.left + tree.width / 2, y: tree.top + tree.height / 2, deltaX: 240, deltaY: 0 });
+      await delay(100);
+      const horizontal = await evaluate("(() => { const box=document.querySelector('.mobius-tree-scroll'); return {treeLeft:box?.scrollLeft??-1,documentLeft:document.documentElement.scrollLeft,bodyLeft:document.body.scrollLeft}; })()");
+      if (horizontal.treeLeft !== 0 || horizontal.documentLeft !== 0 || horizontal.bodyLeft !== 0) {
+        throw new Error(`${label} horizontal Resource tree movement detected: ${JSON.stringify(horizontal)}`);
+      }
+      if (tree.scrollHeight > tree.clientHeight + 1) {
+        const deltaY = tree.scrollTop > 1 ? -Math.min(120, tree.scrollTop) : 120;
+        await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: tree.left + tree.width / 2, y: tree.top + tree.height / 2, deltaX: 0, deltaY });
+        await delay(120);
+        const vertical = Number((await evaluate("document.querySelector('.mobius-tree-scroll')?.scrollTop")) ?? 0);
+        if (Math.abs(vertical - tree.scrollTop) < 1) throw new Error(`${label} vertical Resource tree did not move: before=${tree.scrollTop}, after=${vertical}`);
+      }
       await openMobiusPanel('CSE records');
       await assertViewportFit(`${label} CSE records`);
       const recordsFit = await evaluate("(() => { const panel=document.querySelector('#story-panel-events'); const root=panel?.querySelector('.story-mobius-root'); const path=root?.querySelector('code'); return !!panel&&panel.scrollWidth<=panel.clientWidth+1&&panel.scrollHeight<=panel.clientHeight+1&&(root?.textContent??'').includes('CSE-ID')&&(path?.textContent??'').startsWith('/Mobius'); })()");
       if (!recordsFit) throw new Error(`${label} CSE records contract failed`);
       await openMobiusPanel('Transaction');
+    };
+    const assertSharedMap = async (label, captureName, height, minimumMapHeight) => {
+      await evaluate("window.location.hash='#/story/check-in'");
+      await waitFor("Boolean(document.querySelector('button.story-secondary'))", `${label} location action`);
+      await assertCoach(`${label} location preparation`, 'app-secondary');
+      await clickCenter('button.story-secondary');
+      await waitFor("document.querySelector('button.story-secondary')?.textContent?.includes('Review and share')", `${label} location draft`);
+      await assertCoach(`${label} location review`, 'app-secondary');
+      await clickCenter('button.story-secondary');
+      await waitFor("document.querySelector('[data-location-shared=\"true\"]') && document.querySelector('[data-story-location-map=\"true\"]')?.dataset.locationReady === 'true'", `${label} approved map`);
+      await delay(700);
+      await assertViewportFit(`${label} approved map`);
+      await assertCoach(`${label} approved map`, 'map');
+      const map = await evaluate(`(() => {
+        const rect=(selector)=>{const value=document.querySelector(selector)?.getBoundingClientRect();return value?{left:value.left,right:value.right,top:value.top,bottom:value.bottom,width:value.width,height:value.height}:null;};
+        const phone=rect('.story-phone');
+        const canvas=rect('.location-story .location-canvas');
+        const mapRoot=document.querySelector('[data-story-location-map="true"]');
+        const countdown=document.querySelector('.story-location-countdown')?.textContent??'';
+        return {phone,canvas,ready:mapRoot?.getAttribute('data-location-ready'),pin:document.querySelectorAll('.location-story .keyring-marker').length,countdown,overflow:!!mapRoot&&(mapRoot.scrollWidth>mapRoot.clientWidth+1||mapRoot.scrollHeight>mapRoot.clientHeight+1),inside:!!phone&&!!canvas&&canvas.left>=phone.left-1&&canvas.right<=phone.right+1&&canvas.top>=phone.top-1&&canvas.bottom<=phone.bottom+1};
+      })()`);
+      if (!map.canvas || map.canvas.height < minimumMapHeight || map.ready !== 'true' || map.pin < 1 || !/^4:|^5:/.test(map.countdown) || map.overflow || !map.inside) {
+        throw new Error(`${label} approved map contract failed: ${JSON.stringify(map)}`);
+      }
+      await shot(captureName, width, height);
     };
     const assertFinale = async (label, captureName, height) => {
       await evaluate("window.location.hash='#/story/check-in'");
@@ -435,6 +535,7 @@ try {
       await waitFor("location.hash === '#/story/finale' && document.querySelector('.story-demo')?.dataset.finale === 'true' && Boolean(document.querySelector('[data-finale-receipt=\"true\"]'))", `${label} finale route`);
       await delay(240);
       await assertViewportFit(`${label} finale`);
+      await assertCoach(`${label} finale`, 'proof');
       const finale = await evaluate(`(() => {
         const receipt=document.querySelector('[data-finale-receipt="true"]');
         const next=document.querySelector('.story-stepper-next');
@@ -488,12 +589,14 @@ try {
       throw new Error(`iPhone Safari full-screen launch contract failed: ${JSON.stringify(launchLayout)}`);
     }
     await assertViewportFit('iPhone 13 mini browser intro');
+    await assertCoach('iPhone 13 mini browser intro', 'keyring');
     await exercisePanic('iPhone 13 mini browser');
     const browserLayout = await readLayout();
     assertLayout(browserLayout, { label: 'iPhone 13 mini browser', height: browserHeight, mode: 'browser', minDock: 146, minModel: 136, minScreenWidth: 52, minScreenHeight: 25 });
     await shot('story-system-iphone13mini-landscape', width, browserHeight);
     await assertPanels('iPhone 13 mini browser');
     await assertStoryScenesFit('iPhone 13 mini browser scene');
+    await assertSharedMap('iPhone 13 mini browser', 'story-location-iphone13mini-landscape', browserHeight, 72);
     await assertFinale('iPhone 13 mini browser', 'story-finale-iphone13mini-landscape', browserHeight);
     await assertLandscapeLoginErrorFit();
 
@@ -509,6 +612,7 @@ try {
     await waitFor("document.querySelector('.story-demo')?.dataset.displayMode === 'standalone' && document.querySelector('.story-demo')?.dataset.stage === 'intro' && !document.querySelector('.keyring-physical-button.panic')?.disabled", 'iPhone installed web app intro');
     await delay(180);
     await assertViewportFit('iPhone installed web app intro');
+    await assertCoach('iPhone installed web app intro', 'keyring');
     const installedIntro = await evaluate("(() => { const model=document.querySelector('.keyring-model')?.getBoundingClientRect(); return {modelWidth:model?.width??0,launch:document.querySelectorAll('.story-fullscreen-launch').length,guide:document.querySelectorAll('.story-fullscreen-guide').length}; })()");
     if (installedIntro.modelWidth < 190 || installedIntro.launch !== 0 || installedIntro.guide !== 0) {
       throw new Error(`iPhone installed web app intro contract failed: ${JSON.stringify(installedIntro)}`);
@@ -519,6 +623,7 @@ try {
     await shot('story-system-iphone13mini-fullscreen', width, screenHeight);
     await assertPanels('iPhone installed web app');
     await assertStoryScenesFit('iPhone installed web app scene');
+    await assertSharedMap('iPhone installed web app', 'story-location-iphone13mini-fullscreen', screenHeight, 112);
     await assertFinale('iPhone installed web app', 'story-finale-iphone13mini-fullscreen', screenHeight);
     await assertLandscapeLoginErrorFit();
 
@@ -553,6 +658,7 @@ try {
   if (!introLayout.intro || !introLayout.dock || introLayout.visiblePanels !== 0 || introLayout.modelWidth < 200) {
     throw new Error(`desktop intro contract failed: ${JSON.stringify(introLayout)}`);
   }
+  await assertCoach('desktop intro', 'keyring');
   let keyboardReachedConfirm = false;
   for (let index = 0; index < 12 && !keyboardReachedConfirm; index += 1) {
     await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
@@ -567,6 +673,7 @@ try {
   await waitForAction200(introResponseIndex, 'intro keyring confirm');
   await waitFor("document.querySelector('.story-demo')?.dataset.stage === 'system'", 'desktop system transition');
   await delay(900);
+  await assertCoach('desktop Mobius explanation', 'mobius');
   await waitFor("document.querySelector('.story-trace-title')?.textContent?.includes('Resident confirmation stored') === true", 'resident confirmation record');
   await waitFor("Boolean(document.querySelector('[data-fresh=\"true\"]'))", 'fresh Mobius node');
   await evaluate("[...document.querySelectorAll('.story-panel-tabs button')].find((button)=>button.textContent.includes('Resource tree'))?.click()");
@@ -708,6 +815,7 @@ try {
   await waitFor("document.querySelector('.story-demo')?.dataset.stage === 'system'", 'landscape system');
   await delay(900);
   await assertViewportFit('landscape system');
+  await assertCoach('landscape Mobius explanation', 'mobius');
   await openMobiusPanel('Resource tree');
   await assertViewportFit('landscape resource tree');
   await openMobiusPanel('CSE records');
@@ -766,6 +874,7 @@ try {
   await waitFor("document.querySelector('.story-demo')?.dataset.stage === 'system' && document.querySelector('.story-demo')?.dataset.portrait === 'continue' && document.querySelector('.story-rotate')?.getAttribute('aria-hidden') === 'true'", 'portrait fallback system');
   await delay(900);
   await assertViewportFit('portrait fallback system');
+  await assertCoach('portrait Mobius explanation', 'mobius');
   await openMobiusPanel('Resource tree');
   await assertViewportFit('portrait resource tree');
   await openMobiusPanel('CSE records');
@@ -850,7 +959,12 @@ try {
   await evaluate("document.querySelector('button.story-secondary')?.click()");
   await waitFor("document.querySelector('button.story-secondary')?.textContent?.includes('Review and share')", 'location draft');
   await evaluate("document.querySelector('button.story-secondary')?.click()");
-  await waitFor("document.querySelector('button.story-secondary')?.textContent?.includes('Viewing location')", 'five-minute location share');
+  await waitFor("document.querySelector('[data-location-shared=\"true\"]') && document.querySelector('[data-story-location-map=\"true\"]')?.dataset.locationReady === 'true'", 'five-minute location map');
+  await delay(700);
+  await assertViewportFit('five-minute location map');
+  const sharedMap = await evaluate("(() => { const canvas=document.querySelector('.location-story .location-canvas'); return {pin:document.querySelectorAll('.location-story .keyring-marker').length,canvasHeight:canvas?.getBoundingClientRect().height??0,countdown:document.querySelector('.story-location-countdown')?.textContent??'',ready:document.querySelector('[data-story-location-map=\"true\"]')?.getAttribute('data-location-ready')}; })()");
+  if (sharedMap.pin < 1 || sharedMap.canvasHeight < 100 || sharedMap.ready !== 'true' || !/^4:|^5:/.test(sharedMap.countdown)) throw new Error(`five-minute location map contract failed: ${JSON.stringify(sharedMap)}`);
+  await shot('story-location-landscape', 844, 390);
 
   await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
   await send('Page.navigate', { url: `${previewUrl}/?lang=en#/story/activity-away` });
@@ -882,6 +996,30 @@ try {
     throw new Error(`desktop finale contract failed: ${JSON.stringify(desktopFinale)}`);
   }
   await shot('story-finale-desktop', 1440, 900);
+
+  await send('Page.navigate', { url: `${previewUrl}/?lang=en#/operator/map` });
+  await waitFor("document.querySelectorAll('.operator-mobius-node').length >= 5 && Boolean(document.querySelector('.location-operator .location-canvas'))", 'operator map with Mobius browser');
+  await delay(700);
+  const operatorBrowser = await evaluate(`(() => {
+    const rect=(selector)=>{const value=document.querySelector(selector)?.getBoundingClientRect();return value?{left:value.left,right:value.right,top:value.top,bottom:value.bottom,width:value.width,height:value.height}:null;};
+    const workspace=rect('.operator-workspace');
+    const browser=rect('.operator-mobius-browser');
+    const tree=document.querySelector('.operator-mobius-tree-scroll');
+    const pane=document.querySelector('.operator-mobius-browser');
+    const node=[...document.querySelectorAll('.operator-mobius-node')].find((item)=>(item.textContent??'').includes('applicationEntity'));
+    const nodeRect=node?.getBoundingClientRect();
+    return {workspace,browser,sideBySide:!!workspace&&!!browser&&workspace.right<=browser.left+1,source:pane?.getAttribute('data-source'),englishOnly:!!pane&&!/[가-힣]/.test(pane.textContent??''),hasTerms:['Mobius Resource Browser','Resource tree','applicationEntity','flexContainer','group','RSC 2000'].every((term)=>(pane?.textContent??'').includes(term)),treeAxis:tree?.getAttribute('data-scroll-axis'),treeOverflowX:getComputedStyle(tree).overflowX,treeOverflow:getComputedStyle(tree).overflowY,treeTouch:getComputedStyle(tree).touchAction,treeLeft:tree?.scrollLeft??-1,treeWidth:tree?.clientWidth??0,treeScrollWidth:tree?.scrollWidth??0,nodeTarget:nodeRect?{width:nodeRect.width,height:nodeRect.height}:null};
+  })()`);
+  if (!operatorBrowser.sideBySide || operatorBrowser.source !== 'replay' || !operatorBrowser.englishOnly || !operatorBrowser.hasTerms
+    || operatorBrowser.treeAxis !== 'vertical' || !['hidden','clip'].includes(operatorBrowser.treeOverflowX)
+    || !['auto','scroll'].includes(operatorBrowser.treeOverflow) || operatorBrowser.treeTouch !== 'pan-y'
+    || operatorBrowser.treeLeft !== 0 || operatorBrowser.treeScrollWidth > operatorBrowser.treeWidth + 1
+    || !operatorBrowser.nodeTarget || operatorBrowser.nodeTarget.height < 44) {
+    throw new Error(`operator Mobius browser contract failed: ${JSON.stringify(operatorBrowser)}`);
+  }
+  await evaluate("[...document.querySelectorAll('.operator-mobius-node')].find((item)=>(item.textContent??'').includes('applicationEntity'))?.click()");
+  await waitFor("document.querySelector('.operator-mobius-panel')?.dataset.view === 'record' && Boolean(document.querySelector('.operator-mobius-record dl'))", 'operator Mobius selected record');
+  await shot('operator-map-mobius-desktop', 1440, 900);
 
   await clearStorySession();
   await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
@@ -930,7 +1068,8 @@ try {
       'iPhone portrait notch and home-indicator insets keep controls inside the safe area',
       'fresh Mobius tree node, trace path and newest record share one resource path',
       'Mobius browser is English-only and exposes oneM2M resource types, methods and RSC values without clipped text',
-      'Mobius tree uses touch and wheel scrolling inside its fixed panel while CSE records keep compact paging',
+      'Mobius tree uses vertical-only touch and wheel scrolling with zero horizontal movement while CSE records keep compact paging',
+      'every story stage shows a safe-area overlay that explains the highlighted system element and names the next real action',
       'desktop Mobius stays left of the phone in light and dark mode',
       'phone landscape fits Mobius, app and overlay keyring in one viewport',
       'phone portrait and portrait deep links show the optimized landscape prompt with a 44px Continue upright path',
@@ -944,7 +1083,7 @@ try {
       'keyring firmware screen mirrors READY/CONFIRM/PANIC states',
       'care approval opens the caregiver view',
       'All on returns three readbacks',
-      'draft review opens a five-minute location lease',
+      'guided draft review opens a visible five-minute location map and moves the highlight onto the map',
       'scene seven Next opens a distinct end-to-end system proof and Replay returns to the keyring',
     ],
     captured,

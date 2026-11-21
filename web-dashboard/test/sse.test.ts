@@ -96,12 +96,12 @@ test('returns explicit cursor errors instead of accepting malformed or future ID
   for (const response of responses) await response.arrayBuffer();
 });
 
-test('serves simulated resources audit search and source metadata over HTTP', { timeout: 5000 }, async (t) => {
+test('serves simulated resources, operator Mobius browser, audit search and source metadata over HTTP', { timeout: 5000 }, async (t) => {
   // Given
   const service = await startReplayServer({ port: 0 });
   t.after(service.close);
   // When
-  const responses = await Promise.all(['/api/resources', '/api/audit?q=denied', '/api/source'].map(async (path) => {
+  const responses = await Promise.all(['/api/resources', '/api/operator/mobius?selected=%2FMobius%2Fprivacy-bubble-test-ae', '/api/audit?q=denied', '/api/source'].map(async (path) => {
     const response = await fetch(`${service.url}${path}`, { signal: AbortSignal.timeout(4000) });
     assert.equal(response.status, 200);
     return response.json();
@@ -109,10 +109,15 @@ test('serves simulated resources audit search and source metadata over HTTP', { 
   // Then
   assert.equal(responses[0].simulation, true);
   assert.equal(responses[0].resources.length, 5);
-  assert.equal(responses[1].records.length, 1);
-  assert.equal(responses[1].records[0].outcome, 'denied');
-  assert.equal(responses[2].source, 'fixture-replay');
-  assert.equal(responses[2].roleScopeIsAuthorization, false);
+  assert.equal(responses[1].schemaVersion, '1.0.0');
+  assert.equal(responses[1].actual, false);
+  assert.equal(responses[1].discoveryRsc, 2000);
+  assert.ok(responses[1].nodes.some((node: any) => node.path === '/Mobius/privacy-bubble-test-ae' && node.ty === 2));
+  assert.equal(responses[1].selected.path, '/Mobius/privacy-bubble-test-ae');
+  assert.equal(responses[2].records.length, 1);
+  assert.equal(responses[2].records[0].outcome, 'denied');
+  assert.equal(responses[3].source, 'fixture-replay');
+  assert.equal(responses[3].roleScopeIsAuthorization, false);
 });
 
 test('caps event streams across servers and releases a disconnected slot', { timeout: 5000 }, async (t) => {

@@ -12,6 +12,7 @@ import { discoveredUris, Onem2mClient, startNotificationIngress } from './onem2m
 import type { FetchLike, NotificationIngress } from './onem2m.ts';
 import type { RoleBinding } from './mtls-fetch.ts';
 import type { AlertBackend, AlertFeed } from './guardian-alerts.ts';
+import { browseMobiusCse } from './mobius-browser.ts';
 
 /**
  * Live oneM2M data source for the dashboard server (R03).
@@ -480,6 +481,19 @@ export async function startCseLiveSource(config: CseLiveConfig, options: { fetch
     subscribe: log.subscribe,
     resync,
     refresh,
+    browseResources(selected?: string | null) {
+      return browseMobiusCse({
+        client: operator, cseBase, cseId: cse.cseId, source: LIVE_SOURCE, simulation: config.simulation,
+        ...(selected === undefined ? {} : { selected }),
+        knownPaths: [
+          `${cseBase}/${config.operator.rn}`,
+          ...[...keyrings.values()].map((item) => item.root),
+          ...operatorBindings.keys(),
+          ...subscriptions.keys(),
+          ...log.events.slice(-80).map((event) => event.resourceUri),
+        ],
+      });
+    },
     publishApproved,
     guardianOverlay: overlay,
     alerts,

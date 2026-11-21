@@ -16,6 +16,33 @@
 .map-frame { position: relative; overflow: hidden; border-radius: var(--r-card); border: 1px solid var(--hairline); background: var(--surface); }
 .location-canvas { width: 100%; height: 560px; min-height: 360px; background: var(--surface-soft); font-family: inherit; z-index: 0; }
 .location-user .location-canvas { height: 520px; }
+/* Story variant: the approved five-minute map (apple.md S8). One owner per edge: the live chip at the
+   top-left, the tile attribution at the bottom-right, the pin in the middle, and the readout as a caption
+   line under the canvas, so no overlay covers another or the pin. Nothing renders below 11px. */
+.location-story { display: flex; flex-direction: column; gap: 6px; height: 100%; min-height: 0; }
+.location-story .map-frame { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; border-radius: 14px; }
+.location-story .location-canvas { flex: 1 1 auto; height: auto; min-height: 0; }
+.story-location-meta { flex: none; display: flex; align-items: center; gap: 6px; min-width: 0; color: var(--muted); font-size: 12px; line-height: 16px; }
+.story-location-meta strong { flex: none; color: var(--ink); font-size: 13px; font-weight: 600; }
+.story-location-meta > span:not(.location-status-dot):not(.badge) { min-width: 0; overflow-wrap: anywhere; }
+.story-location-meta .badge { margin-left: auto; flex: none; }
+.location-story .location-alert { flex: none; padding: 6px 10px; font-size: 12px; }
+.location-story .map-corner-note { top: 8px; left: 8px; gap: 6px; padding: 3px 9px 3px 7px; box-shadow: 0 0 0 .5px var(--hairline); font-size: 11px; line-height: 16px; }
+.location-story .map-live-dot { width: 7px; height: 7px; box-shadow: 0 0 0 2px var(--success-soft); }
+.story-location-readout {
+  flex: none; position: static;
+  display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 0 10px;
+  padding: 5px 10px 6px; border-top: 1px solid var(--hairline);
+  background: var(--surface); color: var(--muted); font-size: 11px; line-height: 14px;
+}
+.story-location-readout span { min-width: 0; overflow-wrap: anywhere; }
+.story-location-readout code { color: var(--accent-text); font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* The tile attribution stays complete (Stadia Maps, OpenMapTiles, OpenStreetMap); the optional Leaflet
+   prefix steps out of the small story map */
+.location-story .leaflet-control-attribution { max-width: calc(100% - 16px); padding: 2px 7px; border-top-left-radius: 8px; font-size: 11px; line-height: 14px; text-align: right; }
+.location-story .leaflet-control-attribution > a[href="https://leafletjs.com"],
+.location-story .leaflet-control-attribution > a[href="https://leafletjs.com"] + span { display: none; }
+.location-story :is(.keyring-pin-label, .leaflet-tooltip) { display: none; }
 
 .map-layer-control { position: absolute; top: var(--s4); right: var(--s4); z-index: 402; display: flex; flex-direction: column; align-items: flex-end; gap: var(--s2); }
 .map-layer-button {
@@ -126,6 +153,19 @@
   .keyring-list-header { grid-column: 1; }
   .keyring-list { grid-column: 1; align-content: start; }
   .location-detail { grid-column: 2; grid-row: 1 / span 2; border-top: 0; border-left: 1px solid var(--hairline); }
+}
+/* Operator pages: the map card answers to the workspace width beside the Mobius browser (a size
+   container), so at 1440 the map takes the full card width and the keyring list sits under it */
+@container operator-workspace (max-width: 1000px) {
+  .location-layout { grid-template-columns: minmax(0, 1fr); }
+  .location-side { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .keyring-list-header { grid-column: 1; }
+  .keyring-list { grid-column: 1; align-content: start; }
+  .location-detail { grid-column: 2; grid-row: 1 / span 2; border-top: 0; border-left: 1px solid var(--hairline); }
+}
+@container operator-workspace (max-width: 620px) {
+  .location-side { display: block; }
+  .location-detail { border-left: 0; border-top: 1px solid var(--hairline); }
 }
 @media (max-width: 700px) {
   .location-canvas, .location-user .location-canvas { height: 420px; min-height: 320px; }
