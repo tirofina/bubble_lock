@@ -162,7 +162,8 @@ in over `--story-quick`; trace steps appear together once the response is in.
      in 13px muted (session id, actions left).
   2. Panel switcher: a segmented control (`Transaction | Resource tree | CSE records`),
      max 440px wide, 44px segments, 12px track radius, 10px thumb radius.
-  3. Panel: Transaction is the hero (S4). Resource tree pages three rows at a time with a
+  3. Panel: Transaction is the hero (S4). Resource tree pages three rows at a time (below
+     1024px each row is two lines: dot and name, then type and RSC flowing together) with a
      `< 1/4 >` pager and a quiet `Sync`; the count line ("10 resources") sits left of the pager.
      The node detail under the rows shows the type, the RETRIEVE result, the full path and
      `Copy full path`. CSE records page one record at a time.
@@ -192,11 +193,19 @@ This session stores the away state ... without location coordinates.   15px mute
 - One hero per action: it lists every record the last action wrote (a keyring press writes
   the button observation and the confirmation or panic record; each gets its own path line
   under CREATE and its own line under RETRIEVE).
-- Path: parent segments in `--muted`, the new resource name in accent 600 on `--accent-soft`,
-  kept whole (`white-space: nowrap`). Parent segments wrap anywhere; nothing truncates.
-- Phones: the eyebrow is dropped (the switcher already says Transaction), the title is
-  15px, codes are 11px, the request label and its code share one line, and each RSC follows
-  its path on the same line, so two records per step still fit 844 x 390.
+- Desktop path: parent segments in `--muted`, the new resource name in accent 600 on
+  `--accent-soft`, kept whole (`white-space: nowrap`). Parent segments wrap anywhere; nothing
+  truncates.
+- Below 1024px (phone landscape and portrait) the Transaction panel is a compact receipt:
+  the eyebrow is dropped (the switcher already says Transaction), the title is 15px, codes
+  are 11px, the request label and its code share one line, and each record reads as its
+  resource name token plus `CREATE RSC 2001` or `RETRIEVE RSC 2000` on one line, records side
+  by side and wrapping as whole tokens. The parent path is hidden here and shown in full in
+  Resource tree (node detail) and CSE records, so live CSE paths of any length keep the panel
+  inside its box (P12). `data-trace-path` still carries the full path.
+- Length budget for the compact receipt at 844 x 390: two records per step with live
+  paths such as `/Mobius/dash-operator/story-demo/s-13bd1f81b260c3b6c07/keyring-observation/e-2-f4d325`
+  fit the 288px panel (iPhone landscape insets: 267px; 390 x 844 portrait: 280px).
 - The same new resource name is tinted in three places: the trace path, the tree node and
   the matching record row. Tint: `--accent-soft` background plus a 3px `--accent` inset bar on
   the leading edge; two soft pulses over `--story-fresh`, then the tree node stays in its
@@ -233,18 +242,18 @@ This session stores the away state ... without location coordinates.   15px mute
 | Resource   | Resident confirmation stored     1:51 PM    | Bubble   |
 | Browser    |  v BFF request  POST /api/story/action ...  | Today    |
 | [Replay]   |  v CREATE <contentInstance>                 | Activity |
-| Session .. |    /Mobius/../keyring-observation/e-2 RSC.. |          |
+| Session .. |    e-2-f4d325 CREATE RSC 2001  e-3-.. RSC.. |          |
 |            |  v RETRIEVE <contentInstance>               |          |
 | [keyring]  | This session stores ...                     |          |
 +--------------------------------------------------------------------+
 | (B)               <   2/7 Went out   >                   KO | EN   |  44 + safe bottom
 +--------------------------------------------------------------------+
-   112px rail          Mobius content                    app 36%, min 280px
+   112px rail          Mobius content                    app 40%, min 280px
 ```
 
 - The top bar folds into one bottom bar: brand left, scene navigation centered, language
   right. The content keeps the full height above it (P12).
-- Stage columns: Mobius `minmax(0, 1fr)` and app `minmax(280px, 36%)`, 12px gap, 8px side
+- Stage columns: Mobius `minmax(0, 1fr)` and app `minmax(280px, 40%)`, 12px gap, 8px side
   padding or the left/right insets (47px on iPhone landscape).
 - Mobius pane: a 112px rail on the left holds the title (13px/700), the badge and the
   session meta; the keyring sits in the same rail, 6px above the bottom bar, so it overlays
@@ -252,7 +261,17 @@ This session stores the away state ... without location coordinates.   15px mute
   the column to the right of the rail.
 - App pane: the phone screen without the status bar, bezel or home indicator, on `--canvas`
   inside a 1px hairline with a 20px radius. Compact app type: title 17px, card text 13px,
-  captions 11px, buttons 44px.
+  captions 11px, buttons 44px. In landscape the title bar is 36px (compact-height navigation
+  bar, HIG 32pt) and cards use 6 x 10px padding with 1.25 line height, so every scene fits
+  271px of content height under the iPhone insets.
+- Session error (all layouts below 1024px): the app shows one status row, 12px warning text
+  on `--warning-soft` with a 44px `Reconnect` text button on the right, 8px under the pane top.
+  While it shows, it stands in for the app title bar and the privacy footnote (the footnote
+  stays in the accessibility tree, so the passcode description still resolves); the scene
+  title, cards and actions keep their places and nothing overlaps. The Mobius pane shows its
+  notice as one 11px row above the switcher. Budget: a 93-character English message is a
+  55px row at 844 x 390 (3 lines) and a 70px row under the iPhone insets (4 lines); the
+  tightest scene (care-request) keeps 1px to spare there.
 - Intro in landscape: S1 at 190px, hint line 12px under it, bottom bar visible.
 
 ### Phone portrait (portrait and 760px wide or less)
@@ -289,7 +308,7 @@ This session stores the away state ... without location coordinates.   15px mute
 | Mobius Resource Browser [R]  |  sheet on --surface
 | Presence state stored        |
 |  v BFF request ...           |
-|  v CREATE ... e-2 RSC 2001   |
+|  v CREATE  e-2 RSC 2001      |
 |                              |
 |  ______  [Transaction|Tree ] |  bottom deck: keyring left,
 | |keyrg|  [Records |Scenes  ] |  2 x 2 panel switcher right
@@ -314,11 +333,14 @@ This session stores the away state ... without location coordinates.   15px mute
 | Scene navigation moves to one minimal bottom row | The top bar keeps identity and language only; navigation sits where the thumb and the eye finish | P2, P12 |
 | Phone landscape folds the top bar into the bottom bar | 390px of height leaves room for full paths with RSC only when chrome is one 44px row | P12 |
 | The keyring lives in a reserved gutter (desktop), a Mobius rail (landscape) or a bottom deck (portrait) | A floating overlay must never cover a record; each layout reserves exactly the model box | P8 |
-| Desktop trace is one vertical receipt; compact trace puts each RSC on its path line | Paths read in full at 13px on desktop and at 11px in 844 x 390 without truncation | P4, P6 |
-| Resource names in paths never break (`nowrap`); parent segments break anywhere | The created name is the answer to the press and must read as one token | P2, P4 |
+| Desktop trace is one vertical receipt with full paths; below 1024px the trace shows resource name plus RSC per record and hides the parent path | Live CSE paths (for example `dash-operator` sessions) are longer than replay paths; at 844 x 390 full paths grew the panel to 309px inside 288px. Full paths stay readable in Resource tree and CSE records | P4, P6, P12 |
+| Resource names in desktop paths never break (`nowrap`); in the compact receipt each name-plus-RSC record wraps as a whole token | The created name is the answer to the press and must read as one token | P2, P4 |
 | Panels page instead of scrolling (switcher plus `< n/m >` pagers) | Zero nested scroll keeps the one-viewport contract and the keyring position stable | P12 |
 | Segmented controls and the language toggle share one light thumb token pair; dark mode uses the iOS gray thumb | A dark thumb on a dark track read as a hole | P5, P10 |
 | Disabled pager chevrons are 40% muted glyphs without a fill | Filled grey circles looked like pressed buttons | P5 |
+| A session error banner replaces the app title bar and the privacy footnote while it shows (below 1024px) | At 844 x 390 a 93-character message pushed login 88px past the pane; the title and footnote are the least specific lines on screen, and the scene keeps its own content | P2, P12 |
+| Phone landscape app pane widened from 36% to 40%, 36px title bar, tighter cards | Under the iPhone insets care-request overflowed by 17px with no error; fewer wrapped lines fix every scene | P12 |
+| Compact tree rows are two lines (name; type plus RSC) | With the Mobius error notice the iPhone-inset tree clipped 26px inside its pager page | P12 |
 | Top bar hairline is an inset shadow | A border shrank the 44px controls by 1px and pushed the brand into the safe area | P3, P12 |
 | Focus rings inside the Mobius pane are inset (`outline-offset: -3px`) | The pane clips overflow; an outside ring would be cut at the edges | P10 |
 | Capture mode (`?capture=1`) ignores every compact app rule | The seven 390 x 844 evidence screens keep the full app design | P11 |
@@ -406,6 +428,7 @@ outside the viewport.
 | 844 x 390 landscape | intro, system | All three panels and all seven scenes fit; keyring overlaps the Mobius pane horizontally, model 104px or more; Mobius left of the app; bottom navigation within 16px of the bottom edge and clear of the keyring; no stepper in the top bar; no keyring tool chrome; every visible target 44px or more |
 | 390 x 844 portrait | intro (rotate prompt), fallback system | Prompt and keyring visible, optimized-demo copy, focus on `Continue upright`, 44px button; fallback fits with all four panels and all seven scenes; deep link keeps stage and keyring inert under the dialog |
 | iPhone portrait insets 47 / 34 | prompt | `--safe-top` 47, `--safe-bottom` 34, brand top 47 or more, continue button, keyring and bottom navigation bottoms at 810 or less |
+| 844 x 390 landscape, session error | login | A 93-character English error banner and the login content both fit the phone pane with no overflow, the banner sits above the content without overlap, Reconnect is 44 x 44 or more |
 | iPhone landscape insets 47 left and right, 21 bottom | system | brand, Mobius, keyring and navigation left edges 47 or more; app and navigation right edges 797 or less; keyring and navigation bottoms 369 or less |
 | 1440 x 900, reduced motion | system | No running animations on the dock after the transition |
 | 1440 x 900 interaction | system | Drag rotates the model; no keyring tool chrome; confirm and panic presses return Mobius receipts and panic opens check-in |

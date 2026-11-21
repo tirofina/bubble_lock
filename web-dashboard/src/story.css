@@ -733,22 +733,32 @@
   .story-trace-step[data-step="request"] > div { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--s2); }
   .story-trace-step strong { font-size: 12px; line-height: 20px; }
   .story-trace-step code { font-size: 11px; line-height: 1.35; }
-  .story-trace-rsc { display: inline; margin: 0 0 0 .6em; white-space: nowrap; }
-  .story-trace-path + .story-trace-path { margin-top: 2px; }
+  /* Compact receipt: each record reads as its resource name plus RSC, records side by side.
+     The full path stays in Resource tree (node detail) and CSE records, so live CSE paths of any
+     length never grow the panel (P12). data-trace-path keeps the full path for tests. */
+  .story-trace-parent { display: none; }
+  .story-trace-step:is([data-step="create"], [data-step="readback"]) > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 14px; }
+  .story-trace-step:is([data-step="create"], [data-step="readback"]) > div > strong { flex: 1 0 100%; }
+  .story-trace-step .story-trace-path { display: inline-flex; flex-wrap: wrap; align-items: baseline; column-gap: .6em; max-width: 100%; }
+  .story-trace-path + .story-trace-path { margin-top: 0; }
+  .story-trace-rsc { display: inline; margin: 0; white-space: nowrap; }
+  .story-trace-rn { overflow-wrap: anywhere; white-space: normal; }
   .story-trace-summary { font-size: 12px; line-height: 1.4; }
 
   .mobius-tree-toolbar > p { display: none; }
   .mobius-tree-toolbar { flex-wrap: nowrap; justify-content: space-between; }
   .mobius-tree-scroll { padding: 2px 0; }
+  /* Two-line rows: dot and name, then type and RSC flowing on one line (wrapping when narrow) */
   .mobius-tree summary, .mobius-tree-leaf > button {
-    grid-template-columns: 10px minmax(0, 1fr);
-    grid-template-areas: "dot name" ". kind" ". rsc";
+    display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--s2); row-gap: 0;
     padding-block: 3px;
   }
-  .mobius-node-name { font-size: 13px; }
+  .mobius-node-dot { align-self: center; flex: none; }
+  .mobius-node-name { flex: 1 1 calc(100% - 16px); font-size: 13px; }
+  .mobius-tree summary small, .mobius-tree-leaf small { margin-left: 16px; }
   .mobius-tree summary small, .mobius-tree-leaf small,
   .mobius-tree summary b, .mobius-tree-leaf b { font-size: 11px; line-height: 1.3; }
-  .mobius-tree summary b, .mobius-tree-leaf b { justify-self: start; text-align: left; }
+  .mobius-tree summary b, .mobius-tree-leaf b { text-align: left; }
   .mobius-node-detail p, .mobius-node-detail button, .mobius-node-detail > div { display: none; }
   .mobius-node-detail code { font-size: 11px; line-height: 1.35; }
 
@@ -793,7 +803,25 @@
   .story-demo:not(.capture) .story-auto-form { gap: 6px; margin-top: 0; }
   .story-demo:not(.capture) .story-auto-form label { gap: 2px; font-size: 11px; }
   .story-demo:not(.capture) .story-auto-form input { min-height: 44px; padding: 8px 12px; font-size: var(--t-callout); }
-  .story-demo:not(.capture) .story-inline-error { margin-top: var(--s2); font-size: 12px; }
+  /* Session error: one status row (message, 44px Reconnect). While it shows, it takes the place of
+     the app title bar, so the scene keeps its height and nothing overlaps (P12). */
+  .story-demo:not(.capture) .story-inline-error {
+    flex: none;
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px;
+    margin: 8px 0 0; padding: 4px 4px 4px 12px; border-radius: 12px;
+    font-size: 12px; line-height: 1.3;
+  }
+  .story-demo:not(.capture) .story-inline-error > span { min-width: 0; overflow-wrap: anywhere; }
+  .story-demo:not(.capture) .story-inline-error button { min-width: 44px; min-height: 44px; margin: 0; padding-inline: 10px; font-size: 13px; }
+  .story-demo:not(.capture) .story-phone:has(> .story-inline-error) .story-header { display: none; }
+  .story-demo:not(.capture) .story-inline-error + .story-content { padding-top: 6px; }
+  /* The banner also stands in for the privacy footnote; the footnote stays available to screen
+     readers (login's passcode description still resolves). */
+  .story-demo:not(.capture) .story-inline-error + .story-content .story-privacy-note {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+  .story-demo:not(.capture) .story-server-message { padding: 4px 10px; border-radius: 10px; font-size: 11px; line-height: 1.3; }
 }
 
 /* ---------- Phone landscape: Mobius | app, one bottom bar, keyring in the Mobius rail (S6) ----------
@@ -821,7 +849,7 @@
 
   .story-stage {
     padding: 6px max(8px, var(--safe-right)) 4px max(8px, var(--safe-left));
-    grid-template-columns: minmax(0, 1fr) minmax(280px, 36%);
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 40%);
     column-gap: 12px;
   }
   .story-mobius {
@@ -837,7 +865,14 @@
     justify-items: start; gap: 6px; padding: 4px 0 0;
   }
   .story-mobius-head h2 { font-size: 13px; line-height: 1.3; }
-  .story-server-message { margin-bottom: var(--s2); }
+  .story-server-message { margin-bottom: 6px; }
+
+  /* App pane in 390px of height: compact-height title bar (HIG 32pt) and tighter cards */
+  .story-demo:not(.capture) .story-header { min-height: 36px; }
+  .story-demo:not(.capture) .story-phone { padding-bottom: 6px; }
+  .story-demo:not(.capture) .story-content { padding-top: 6px; }
+  .story-demo:not(.capture) :is(.story-access-card, .story-check-card) { gap: 1px; padding: 6px 10px; line-height: 1.25; }
+  .story-demo:not(.capture) .story-message { padding: 5px 10px; line-height: 1.3; }
 }
 
 /* ---------- Portrait fallback: app above, Mobius sheet below, keyring deck at the bottom-left ----------
