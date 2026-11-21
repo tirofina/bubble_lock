@@ -271,6 +271,9 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
   const [demoStage, setDemoStage] = useState<DemoStage>(capture || scene !== 'login' ? 'system' : 'intro');
   const [portraitChoice, setPortraitChoice] = useState<PortraitChoice>('ask');
   const [portraitViewport, setPortraitViewport] = useState(() => window.matchMedia('(max-width: 760px) and (orientation: portrait)').matches);
+  const [standalone, setStandalone] = useState(false);
+  const [fullscreenEligible, setFullscreenEligible] = useState(false);
+  const [fullscreenPromptOpen, setFullscreenPromptOpen] = useState(false);
   const [focusAction, setFocusAction] = useState<KeyringAction | null>(null);
   const [focusAfterSequence, setFocusAfterSequence] = useState(0);
   const [freshPath, setFreshPath] = useState<string | null>(null);
@@ -284,10 +287,12 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
   const focusAfterSequenceRef = useRef(0);
   const freshTimer = useRef<number | null>(null);
   const rotateContinue = useRef<HTMLButtonElement | null>(null);
+  const fullscreenContinue = useRef<HTMLButtonElement | null>(null);
   const promptReturnFocus = useRef<HTMLElement | null>(null);
   const guidedAction: KeyringAction | null = scene === 'check-in' ? 'keyring-panic'
     : scene === 'login' || scene === 'activity-away' || scene === 'activity-home' ? 'keyring-confirm' : null;
   const orientationPromptOpen = !capture && portraitViewport && portraitChoice === 'ask';
+  const modalOpen = orientationPromptOpen || fullscreenPromptOpen;
 
   useEffect(() => () => {
     if (freshTimer.current !== null) window.clearTimeout(freshTimer.current);
@@ -325,6 +330,35 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
   }, []);
 
   useEffect(() => {
+    const standaloneQuery = window.matchMedia('(display-mode: standalone)');
+    const fullscreenQuery = window.matchMedia('(display-mode: fullscreen)');
+    const appleMobile = /iPhone|iPad|iPod/i.test(window.navigator.userAgent)
+      || (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
+    const syncDisplayMode = () => {
+      const appleStandalone = (window.navigator as Navigator & { readonly standalone?: boolean }).standalone === true;
+      const nextStandalone = appleStandalone || standaloneQuery.matches || fullscreenQuery.matches;
+      setStandalone(nextStandalone);
+      setFullscreenEligible(appleMobile && !nextStandalone);
+      if (nextStandalone) setFullscreenPromptOpen(false);
+    };
+    syncDisplayMode();
+    standaloneQuery.addEventListener('change', syncDisplayMode);
+    fullscreenQuery.addEventListener('change', syncDisplayMode);
+    return () => {
+      standaloneQuery.removeEventListener('change', syncDisplayMode);
+      fullscreenQuery.removeEventListener('change', syncDisplayMode);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (capture || !fullscreenEligible || portraitViewport || demoStage !== 'intro') return;
+    const key = 'bubblelock-story-fullscreen-guide';
+    if (window.sessionStorage.getItem(key) === 'shown') return;
+    window.sessionStorage.setItem(key, 'shown');
+    setFullscreenPromptOpen(true);
+  }, [capture, demoStage, fullscreenEligible, portraitViewport]);
+
+  useEffect(() => {
     if (!orientationPromptOpen) return;
     promptReturnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const frame = window.requestAnimationFrame(() => rotateContinue.current?.focus());
@@ -335,6 +369,12 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
       if (previous && previous !== document.body && previous.isConnected) previous.focus();
     };
   }, [orientationPromptOpen]);
+
+  useEffect(() => {
+    if (!fullscreenPromptOpen) return;
+    const frame = window.requestAnimationFrame(() => fullscreenContinue.current?.focus());
+    return () => window.cancelAnimationFrame(frame);
+  }, [fullscreenPromptOpen]);
 
   useEffect(() => {
     if (capture || scene !== 'login' || demoStage !== 'intro') return;
@@ -493,26 +533,40 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
   const retry = () => { void refresh(); };
   const careStatus = snapshot?.care.status ?? 'ready';
 
-  return <div className={`story-demo${capture ? ' capture' : ''}`} data-stage={demoStage} data-portrait={portraitChoice}>
-    <a className="skip" href="#story-app" tabIndex={orientationPromptOpen ? -1 : undefined} aria-hidden={orientationPromptOpen} onClick={(event) => { event.preventDefault(); document.getElementById('story-app')?.focus(); }}>{tr('앱 화면으로 건너뛰기', 'Skip to the app')}</a>
-    <header className="story-topbar" inert={orientationPromptOpen}>
+  return <div className={`story-demo${capture ? ' capture' : ''}`} data-stage={demoStage} data-portrait={portraitChoice} data-display-mode={standalone ? 'standalone' : 'browser'}>
+    <a className="skip" href="#story-app" tabIndex={modalOpen ? -1 : undefined} aria-hidden={modalOpen} onClick={(event) => { event.preventDefault(); document.getElementById('story-app')?.focus(); }}>{tr('앱 화면으로 건너뛰기', 'Skip to the app')}</a>
+    <header className="story-topbar" inert={modalOpen}>
       <a className="story-brand" href="#/"><span aria-hidden="true"><Icon name="bubble" size={22} /></span>BubbleLock</a>
       <a className="story-topbar-link" href="#/user/overview">{tr('가족 대시보드', 'Family dashboard')}</a>
       <LangToggle />
     </header>
-    <section className="story-intro" inert={demoStage !== 'intro'} aria-hidden={demoStage !== 'intro'}>
+    <section className="story-intro" inert={demoStage !== 'intro' || fullscreenPromptOpen} aria-hidden={demoStage !== 'intro' || fullscreenPromptOpen}>
       <h1 className="story-sr">{tr('Privacy Bubble 키링 시연', 'Privacy Bubble keyring demo')}</h1>
       <p className="story-intro-hint" aria-live="polite"><i className={`story-intro-dot ${guidedAction === 'keyring-panic' ? 'panic' : 'confirm'}`} aria-hidden="true" />
         {message ?? (guidedAction === 'keyring-panic' ? tr('주황 버튼을 눌러 보세요', 'Press the orange button') : tr('파란 버튼을 눌러 보세요', 'Press the blue button'))}
       </p>
     </section>
+    {fullscreenEligible && demoStage === 'intro' ? <button className="story-fullscreen-launch" type="button" aria-haspopup="dialog" aria-expanded={fullscreenPromptOpen} inert={fullscreenPromptOpen} onClick={() => setFullscreenPromptOpen(true)}>
+      <Icon name="arrow" size={17} style={{ transform: 'rotate(-45deg)' }} />{tr('전체 화면', 'Full screen')}
+    </button> : null}
+    {(fullscreenEligible || fullscreenPromptOpen) ? <div className="story-fullscreen-guide" role="dialog" aria-modal="true" aria-labelledby="story-fullscreen-title" aria-describedby="story-fullscreen-body" aria-hidden={!fullscreenPromptOpen} inert={!fullscreenPromptOpen} hidden={!fullscreenPromptOpen}>
+      <span className="story-fullscreen-glyph" aria-hidden="true"><Icon name="bubble" size={24} /></span>
+      <p className="story-fullscreen-title" id="story-fullscreen-title">{tr('Safari 막대 없이 전체 화면으로 보기', 'Open the demo without Safari bars')}</p>
+      <p className="story-fullscreen-body" id="story-fullscreen-body">{tr('공유 버튼을 누르고 홈 화면에 추가한 다음, BubbleLock 아이콘을 열어 가로로 돌리세요.', 'Tap Share, choose Add to Home Screen, open the BubbleLock icon, then turn your phone sideways.')}</p>
+      <ol>
+        <li>{tr('Safari 공유 버튼', 'Safari Share')}</li>
+        <li>{tr('홈 화면에 추가', 'Add to Home Screen')}</li>
+        <li>{tr('BubbleLock 열기', 'Open BubbleLock')}</li>
+      </ol>
+      <button className="story-fullscreen-continue" ref={fullscreenContinue} type="button" onClick={() => setFullscreenPromptOpen(false)}>{tr('Safari에서 계속', 'Continue in Safari')}</button>
+    </div> : null}
     <div className="story-rotate" role="dialog" aria-modal="true" aria-labelledby="story-rotate-title" aria-describedby="story-rotate-body" aria-hidden={!orientationPromptOpen} inert={!orientationPromptOpen}>
       <span className="story-rotate-glyph" aria-hidden="true"><Icon name="activity" size={28} /></span>
       <p className="story-rotate-title" id="story-rotate-title">{tr('최적화된 데모를 위해 가로로 돌려 주세요', 'Turn your phone sideways for the optimized demo')}</p>
       <p className="story-rotate-body" id="story-rotate-body">{tr('키링, Mobius 리소스 브라우저, 앱 동작을 한 화면에서 함께 볼 수 있습니다.', 'See the keyring, Mobius Resource Browser and app behavior together on one screen.')}</p>
       <button className="story-rotate-continue" ref={rotateContinue} type="button" onClick={continueUpright}>{tr('세로로 계속 보기', 'Continue upright')}</button>
     </div>
-    <main className="story-stage" inert={demoStage !== 'system' || orientationPromptOpen}>
+    <main className="story-stage" inert={demoStage !== 'system' || modalOpen}>
       <StoryMobiusPanel scene={scene} snapshot={snapshot} phase={phase} message={message} refresh={refresh} focusAction={focusAction} focusAfterSequence={focusAfterSequence} freshPath={freshPath} />
       <div className="story-app-column">
         <div className="story-device">
@@ -532,7 +586,7 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
       </div>
     </main>
     <StoryStepper scene={scene} />
-    <div className="keyring-dock" inert={orientationPromptOpen} data-guided={guidedAction === 'keyring-panic' ? 'panic' : guidedAction === 'keyring-confirm' ? 'confirm' : 'none'}>
+    <div className="keyring-dock" inert={modalOpen} data-guided={guidedAction === 'keyring-panic' ? 'panic' : guidedAction === 'keyring-confirm' ? 'confirm' : 'none'}>
       <VirtualKeyring
         snapshot={snapshot}
         runAction={runAction}

@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-11-21T06:03:26.156Z",
+  "generatedAt": "2026-11-21T08:35:10.810Z",
   "browser": "Chrome/157.0.8103.80",
-  "mode": "browser-isolated replay CSE; full-viewport shell, fixed keyring overlay, iPhone safe areas, landscape split, portrait fallback, guardian share and caregiver group command exercised",
+  "mode": "browser-isolated replay CSE; full-viewport shell, fixed keyring overlay, iPhone 13 mini Safari visual viewport plus installed fullscreen web app and safe areas, landscape split, portrait fallback, guardian share and caregiver group command exercised",
   "command": "npm --prefix web-dashboard run capture:story",
   "assertions": [
     "intro shows only the keyring product and guidance",
@@ -10,6 +10,12 @@
     "floating keyring is a transparent fixed overlay outside the content grid at z-index 30",
     "all seven story scenes fit landscape and portrait viewports without clipping",
     "844x320 and 1000x327 shallow Safari landscapes fit every scene, the full panic receipt and reconnect state without internal scrolling",
+    "iPhone 13 mini Safari at 812x265, DPR 3 and 44/44/21 safe-area insets fits all seven scenes, full panic receipt and reconnect state without scrolling",
+    "iPhone Safari full-screen guide fits the safe area, owns focus and explains Share, Add to Home Screen and Open BubbleLock",
+    "web app manifest launches the story in fullscreen landscape mode with standalone fallback",
+    "installed iPhone 13 mini web app at 812x375 fits all seven scenes, the full panic receipt and reconnect state without scrolling",
+    "installed iPhone 13 mini keyring is at least 172 CSS px wide and its live firmware screen is at least 192x105 physical pixels",
+    "iPhone 13 mini Mobius tabs are disjoint 90x44px controls with complete labels",
     "landscape login keeps a full reconnect message and 44px action inside the app without overlap",
     "all seven landscape scenes and the reconnect state fit inside iPhone sensor-housing and home-indicator insets",
     "iPhone portrait notch and home-indicator insets keep controls inside the safe area",
@@ -37,7 +43,7 @@
       "width": 390,
       "height": 844,
       "file": "01-login.png",
-      "sha256": "5bf479b166b4b9af0fca6aaf1d66463f0863dfa2a9eb4d7dbccfa38a93336d61"
+      "sha256": "0d2d85945794c8bf026a13a20c2933c9ee8d583b304d69c9c23bee9cbabdc8a1"
     },
     {
       "name": "02-activity-away",
@@ -86,77 +92,98 @@
       "width": 1440,
       "height": 900,
       "file": "story-intro-desktop.png",
-      "sha256": "eab15c3ac7fb93487909b751aac7df6e8e10978df56aff4d689c4f37f8d25ce9"
+      "sha256": "acce612de89f2a0478914b8400fc54971b53b41c2a90f4af763f206c3dc3c5ff"
     },
     {
       "name": "story-system-desktop",
       "width": 1440,
       "height": 900,
       "file": "story-system-desktop.png",
-      "sha256": "7baced4d34ef002a495685731f50d5b490d66e1173424c9b52c6be9c86c3d456"
+      "sha256": "bfd87c182db5ec4eac2af3d0b1e720f07a694c1516c90ff02277d0df4209cb32"
     },
     {
       "name": "story-system-desktop-dark",
       "width": 1440,
       "height": 900,
       "file": "story-system-desktop-dark.png",
-      "sha256": "a19c666aca48f0ebb89210dda61a20f7e3934a43e176e13cb0cca0fd036c0039"
+      "sha256": "ed297da0b00b906882b8f0ee6c4b349862d9e51e71d67054d3dd7972f13e45ae"
     },
     {
       "name": "story-intro-landscape",
       "width": 844,
       "height": 390,
       "file": "story-intro-landscape.png",
-      "sha256": "04f81d2dec243ed2a639214fa7abc338ad188e05daa3feca8ebb0e98a423b843"
+      "sha256": "e8e947f889d4aaf102e6bf5278acb4c34e21a8a843fd99916ac8052167515315"
     },
     {
       "name": "story-system-landscape",
       "width": 844,
       "height": 390,
       "file": "story-system-landscape.png",
-      "sha256": "72738e00ae8615c43b27dce6a56c84178d89fd0ba58ce1f61e6b74705d735cde"
+      "sha256": "6a74cbf33c01a9fa3f7be84adf303115e4aba5b266ef66b66101f35f76343c68"
     },
     {
       "name": "story-system-landscape-844x320",
       "width": 844,
       "height": 320,
       "file": "story-system-landscape-844x320.png",
-      "sha256": "d95c910aae47e377ae190a8b8489d69bb75e87ce17fb24356f8fb0e50b6c27dd"
+      "sha256": "071f605d289ee79ab2ae111f413f3c230b219b792749d57462ca327012411536"
     },
     {
       "name": "story-system-landscape-1000x327",
       "width": 1000,
       "height": 327,
       "file": "story-system-landscape-1000x327.png",
-      "sha256": "e548a6c37e9e37d4f71b845582d934a2000327e5fadc102036e9b0232e4270b4"
+      "sha256": "e0f2856c3da605f407b6d1dfb7d8185239b2366352c8d2b44cb51da6f36314b0"
+    },
+    {
+      "name": "story-iphone13mini-fullscreen-guide",
+      "width": 812,
+      "height": 265,
+      "file": "story-iphone13mini-fullscreen-guide.png",
+      "sha256": "faf1a6bd93dc360ea194fcaf5818d21cbb2e5a175a203efc39048c70afd45458"
+    },
+    {
+      "name": "story-system-iphone13mini-landscape",
+      "width": 812,
+      "height": 265,
+      "file": "story-system-iphone13mini-landscape.png",
+      "sha256": "8e9b60165422c654213ada30ac1a1929ffbd237a434bc9567b1e66351ee5a04a"
+    },
+    {
+      "name": "story-system-iphone13mini-fullscreen",
+      "width": 812,
+      "height": 375,
+      "file": "story-system-iphone13mini-fullscreen.png",
+      "sha256": "f366e9a41615d0c5ec66a78035ec531fa49601e7378d89188b064a674b5bcf2f"
     },
     {
       "name": "story-intro-portrait",
       "width": 390,
       "height": 844,
       "file": "story-intro-portrait.png",
-      "sha256": "a0458ece93fbe2c8114b2af3867c911fb4adf6b87f41247c244329125f92096c"
+      "sha256": "3d11fafc6a19b91f8baa303dc8a01086a689f83158956f40ece41ffc3c6545c9"
     },
     {
       "name": "story-system-portrait",
       "width": 390,
       "height": 844,
       "file": "story-system-portrait.png",
-      "sha256": "764087ab5650bfe24c5172b6c0fa2bb599c3aeb94ad46930fc802eac387706ff"
+      "sha256": "689ef1407ddd3985309343311351a5ac86d05cecfc42e3d655e22f5e4c283eea"
     },
     {
       "name": "story-system-desktop-interaction",
       "width": 1440,
       "height": 900,
       "file": "story-system-desktop-interaction.png",
-      "sha256": "ed29b9dd315b2c7d0e6fe9ec73f419ebefa7f7791ec618a7daa691f592bc6e95"
+      "sha256": "51b0fc73d983abe81cbc9d003479156bb919da75f9e3559f5b9aea66ccb56572"
     },
     {
       "name": "story-screens-overview",
       "width": 1280,
       "height": 1900,
       "file": "story-screens-overview.png",
-      "sha256": "344ac9a95a0bde255cae3bfe9e8716bc259538249c36d234439f2398d1647308"
+      "sha256": "8011be7497cb56587358bc35ddd1a2d00d24993ae886507adb5597e2213841cb"
     }
   ]
 }

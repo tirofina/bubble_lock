@@ -111,14 +111,36 @@
 }
 .story-topbar-link:hover { text-decoration: underline; }
 
-/* Language toggle: the same light segmented thumb as the Mobius panel switcher (P5) */
-.story-topbar .lang-switch { flex: none; gap: 2px; padding: 0; border-radius: 12px; background: transparent; box-shadow: none; }
-.story-topbar .lang-switch button {
-  min-height: var(--control); min-width: var(--control); padding: 0 var(--s3);
-  border-radius: 10px; color: var(--muted); font-size: var(--t-caption); font-weight: 600;
+/* Language: two small flags at the bottom-left of the screen (P10). Each 44px button keeps its word
+   ("한국어", "English") as the accessible name; the flag is the visible label. The chosen language
+   shows at full color with an accent ring, the other one rests at half strength. */
+.story-topbar .lang-switch {
+  position: fixed; z-index: calc(var(--z-topbar) + 2);
+  left: max(var(--gutter), var(--safe-left)); bottom: var(--safe-bottom);
+  flex: none; gap: 0; padding: 0; border-radius: 0; background: transparent; box-shadow: none;
 }
-.story-topbar .lang-switch button[aria-pressed="true"] { background: var(--segment-track); color: var(--ink); }
-.story-topbar .lang-switch button:hover:not([aria-pressed="true"]) { background: transparent; color: var(--ink); }
+.story-topbar .lang-switch button {
+  display: grid; place-items: center;
+  width: var(--control); min-width: var(--control); height: var(--control); min-height: var(--control); padding: 0;
+  border: 0; border-radius: 10px; background: transparent; color: transparent;
+  font-size: 0; line-height: 0; overflow: hidden;
+}
+.story-topbar .lang-switch button::before {
+  content: ""; width: 22px; height: 15px; border-radius: 3px;
+  background: var(--flag) center / cover no-repeat;
+  box-shadow: 0 0 0 .5px rgb(0 0 0 / .28);
+  opacity: .5; filter: saturate(.5);
+  transition: opacity var(--story-quick) linear, filter var(--story-quick) linear, box-shadow var(--story-quick) linear;
+}
+.story-topbar .lang-switch button[lang="ko"] { --flag: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-36 -24 72 48'%3E %3Crect x='-36' y='-24' width='72' height='48' fill='%23fff'/%3E %3Cg transform='rotate(-56.31)'%3E %3Cpath d='M-6-25H6M-6-22H6M-6-19H6M-6 19H6M-6 22H6M-6 25H6' stroke='%23000' stroke-width='2'/%3E %3Cpath d='M0 17v10' stroke='%23fff' stroke-width='1'/%3E %3Ccircle r='12' fill='%23cd2e3a'/%3E %3Cpath d='M0-12A6 6 0 0 0 0 0A6 6 0 0 1 0 12A12 12 0 0 1 0-12z' fill='%230047a0'/%3E %3C/g%3E %3Cg transform='rotate(-123.69)'%3E %3Cpath d='M-6-25H6M-6-22H6M-6-19H6M-6 19H6M-6 22H6M-6 25H6' stroke='%23000' stroke-width='2'/%3E %3Cpath d='M0-23.5v3M0 17v3.5M0 23.5v3' stroke='%23fff' stroke-width='1'/%3E %3C/g%3E %3C/svg%3E"); }
+.story-topbar .lang-switch button[lang="en"] { --flag: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 38 20'%3E %3Crect width='38' height='20' fill='%23fff'/%3E %3Cpath d='M0 0.000h38v1.538H0zM0 3.077h38v1.538H0zM0 6.154h38v1.538H0zM0 9.231h38v1.538H0zM0 12.308h38v1.538H0zM0 15.385h38v1.538H0zM0 18.462h38v1.538H0z' fill='%23b22234'/%3E %3Crect width='15.2' height='10.769' fill='%233c3b6e'/%3E %3Cpath d='M1.260 1.077m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M3.780 1.077m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M6.300 1.077m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M8.820 1.077m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M11.340 1.077m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M13.860 1.077m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M2.520 2.154m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M5.040 2.154m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M7.560 2.154m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M10.080 2.154m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M12.600 2.154m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M1.260 3.231m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M3.780 3.231m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M6.300 3.231m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M8.820 3.231m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M11.340 3.231m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M13.860 3.231m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M2.520 4.308m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M5.040 4.308m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M7.560 4.308m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M10.080 4.308m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M12.600 4.308m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M1.260 5.385m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M3.780 5.385m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M6.300 5.385m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M8.820 5.385m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M11.340 5.385m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M13.860 5.385m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M2.520 6.462m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M5.040 6.462m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M7.560 6.462m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M10.080 6.462m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M12.600 6.462m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M1.260 7.539m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M3.780 7.539m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M6.300 7.539m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M8.820 7.539m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M11.340 7.539m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M13.860 7.539m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M2.520 8.616m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M5.040 8.616m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M7.560 8.616m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M10.080 8.616m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M12.600 8.616m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M1.260 9.693m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M3.780 9.693m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M6.300 9.693m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M8.820 9.693m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M11.340 9.693m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0M13.860 9.693m-.45 0a.45 .45 0 1 0 .9 0a.45 .45 0 1 0-.9 0' fill='%23fff'/%3E %3C/svg%3E"); }
+.story-topbar .lang-switch button:hover { background: transparent; }
+.story-topbar .lang-switch button:hover::before { opacity: .85; filter: none; }
+.story-topbar .lang-switch button[aria-pressed="true"] { background: transparent; }
+.story-topbar .lang-switch button[aria-pressed="true"]::before {
+  opacity: 1; filter: none;
+  box-shadow: 0 0 0 .5px rgb(0 0 0 / .28), 0 0 0 2px var(--canvas), 0 0 0 3.5px var(--accent);
+}
 
 /* ---------- Bottom scene navigation (S3): one quiet row, centered, inside the safe area ---------- */
 .story-bottom-nav {
@@ -198,6 +220,82 @@
   border-color: transparent; color: var(--accent-text); padding-inline: var(--s4);
 }
 .story-rotate-continue:hover { background: var(--accent-soft); }
+
+/* ---------- Full-screen path for iPhone Safari (S6) ----------
+   Page code cannot hide Safari's bars; the Home Screen web app opens without them. The intro offers a quiet
+   "Full screen" control at the bottom-right and a native-style sheet with the three steps. The installed app
+   renders neither (TSX) and the CSS guards it as well. */
+.story-fullscreen-launch {
+  position: fixed; z-index: calc(var(--z-intro) + 1);
+  right: max(12px, var(--safe-right)); bottom: max(4px, var(--safe-bottom));
+  display: inline-flex; align-items: center; gap: 6px;
+  min-width: var(--control); min-height: var(--control); padding: 0 12px;
+  border: 0; border-radius: var(--r-pill); background: transparent;
+  color: var(--muted); font-size: var(--t-caption); font-weight: 600;
+}
+.story-fullscreen-launch:hover { background: var(--segment-track); color: var(--ink); }
+.story-fullscreen-launch svg { flex: none; }
+
+.story-fullscreen-guide {
+  position: fixed; z-index: calc(var(--z-modal) + 5);
+  inset: max(12px, var(--safe-top)) max(12px, var(--safe-right)) max(12px, var(--safe-bottom)) max(12px, var(--safe-left));
+  max-width: 30rem; height: fit-content; max-height: calc(100dvh - max(12px, var(--safe-top)) - max(12px, var(--safe-bottom)));
+  margin: auto;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  grid-template-areas: "glyph title" "glyph body" "steps steps" "action action";
+  align-items: start; column-gap: 12px; row-gap: 6px;
+  padding: 16px 16px 12px 18px;
+  overflow: hidden;
+  border-radius: 18px;
+  background: var(--surface); color: var(--ink);
+  box-shadow: 0 0 0 100vmax rgb(0 0 0 / .3), 0 18px 48px rgb(0 0 0 / .24);
+  animation: story-dock-appear var(--story-base) var(--ease) both;
+}
+.story-fullscreen-guide[hidden] { display: none; }
+.story-fullscreen-glyph {
+  grid-area: glyph; display: grid; place-items: center;
+  width: 40px; height: 40px; border-radius: 10px;
+  background: var(--accent); color: #ffffff;
+}
+.story-fullscreen-title { grid-area: title; font-size: var(--t-body); font-weight: 700; letter-spacing: -0.01em; line-height: 1.25; text-wrap: balance; }
+.story-fullscreen-body { grid-area: body; max-inline-size: none; color: var(--muted); font-size: var(--t-caption); line-height: 1.4; }
+.story-fullscreen-guide ol {
+  grid-area: steps; counter-reset: guide-step;
+  display: flex; flex-wrap: wrap; gap: 6px 8px;
+  margin: 4px 0 0; padding: 0; list-style: none;
+}
+.story-fullscreen-guide li {
+  counter-increment: guide-step;
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 28px; padding: 0 10px 0 4px;
+  border-radius: var(--r-pill); background: var(--segment-track);
+  font-size: var(--t-caption); font-weight: 600; white-space: nowrap;
+}
+.story-fullscreen-guide li::before {
+  content: counter(guide-step);
+  display: grid; place-items: center; flex: none;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--accent); color: var(--on-accent);
+  font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.story-fullscreen-continue {
+  grid-area: action; justify-self: end;
+  min-width: var(--control); min-height: var(--control); margin-top: 4px; padding: 0 16px;
+  border: 0; border-radius: var(--r-pill);
+  background: var(--accent-soft); color: var(--accent-text);
+  font-size: var(--t-callout); font-weight: 600;
+}
+.story-fullscreen-continue:hover { background: color-mix(in srgb, var(--accent) 18%, var(--accent-soft)); }
+
+/* The installed app gives the whole screen to the demo: no Safari path. Under the black-translucent status
+   bar (portrait Home Screen launch) a black band keeps the white status text readable; landscape has no top inset. */
+.story-demo[data-display-mode="standalone"] :is(.story-fullscreen-launch, .story-fullscreen-guide) { display: none !important; }
+.story-demo[data-display-mode="standalone"]::before {
+  content: ""; position: fixed; z-index: calc(var(--z-modal) + 10);
+  top: 0; left: 0; right: 0; height: var(--safe-top);
+  background: #000000; pointer-events: none;
+}
 
 /* ---------- Stage visibility per data-stage (S2) ---------- */
 .story-demo[data-stage="intro"] .story-stage { visibility: hidden; }
@@ -761,7 +859,6 @@
 @media (max-width: 1023px) {
   .story-brand { gap: 0; font-size: 0; }
   .story-topbar-link { display: none; }
-  .story-topbar .lang-switch button { padding: 0 var(--s2); }
 
   .story-mobius-head h2 { font-size: var(--t-callout); }
   .story-mobius-head .badge { min-height: 22px; padding: 2px 8px; font-size: 11px; }
@@ -878,6 +975,7 @@
     box-shadow: none;
   }
   .story-intro-hint { font-size: var(--t-callout); }
+  .story-topbar .lang-switch { left: calc(max(8px, var(--safe-left)) + 48px); bottom: var(--safe-bottom); }
 
   .story-stage {
     padding: 6px max(8px, var(--safe-right)) 4px max(8px, var(--safe-left));
@@ -912,7 +1010,7 @@
     --rail-nav-h: 60px;
     --dock-right: max(8px, var(--safe-right));
     --dock-bottom: calc(max(4px, var(--safe-bottom)) + var(--rail-nav-h) + 6px);
-    --dock-kw: min(112px, calc((100dvh - var(--dock-bottom) - max(4px, var(--safe-top)) - 100px) / 1.3247));
+    --dock-kw: min(112px, calc((100dvh - var(--dock-bottom) - max(4px, var(--safe-top)) - 52px) / 1.3247));
     --dock-left: calc(100vw - var(--dock-right) - (var(--rail-w) + var(--dock-kw)) / 2);
     --intro-scale: 1.7;
     --intro-band: 40px;
@@ -932,8 +1030,8 @@
     padding: max(4px, var(--safe-top)) 0 0;
   }
   .story-brand { margin: 0 auto; }
-  .story-topbar .lang-switch { margin: 0 auto; }
-  .story-topbar .lang-switch button { padding: 0 5px; font-size: 12px; }
+  /* Flags at the bottom-left, under the Mobius identity rail */
+  .story-topbar .lang-switch { left: max(8px, var(--safe-left)); bottom: max(4px, var(--safe-bottom)); }
   .story-bottom-nav {
     grid-column: 2; grid-row: 3;
     justify-self: stretch; align-self: end;
@@ -965,6 +1063,267 @@
   .story-demo:not(.capture) .story-header { min-height: 32px; }
   .story-demo:not(.capture) .story-inline-error { margin-top: 6px; }
   .story-demo:not(.capture) .story-inline-error + .story-content { padding-top: 4px; }
+  /* The banner also stands in for the screen title here; the rail keeps the scene name visible */
+  .story-demo:not(.capture) .story-inline-error + .story-content > h1,
+  .story-demo:not(.capture) .story-inline-error + .story-content > .story-title-block > h1 {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+}
+
+/* ---------- iPhone mini landscape in Safari (300px tall or less; 812 x 265, safe 44 / 44 / 21) ----------
+   Usable box 724 x 244. Columns: Mobius | app | rail (150px), 8px gaps. The rail holds the keyring and
+   the scene navigation; the brand steps out; the language toggle takes the app's bottom-right slot
+   beside the privacy footnote. Every panel is one complete page sized for 244px: the Mobius header
+   is two short lines, the receipt is one line per step, the tree pager stands beside the rows and
+   the record pager beside the CSE root. */
+@media (max-width: 1023px) and (orientation: landscape) and (max-height: 300px) {
+  .story-demo {
+    --rail-w: 150px;
+    --rail-nav-h: 44px;
+    --app-w: 258px;
+    --dock-bottom: calc(max(4px, var(--safe-bottom)) + var(--rail-nav-h) + 2px);
+    --dock-kw: min(148px, calc((100dvh - var(--dock-bottom) - max(2px, var(--safe-top))) / 1.3247));
+    --intro-scale: 1.05;
+    --intro-band: 30px;
+    --intro-gap: 6px;
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+  .story-intro-hint { font-size: var(--t-caption); }
+  .story-stage {
+    padding: max(2px, var(--safe-top)) 0 max(4px, var(--safe-bottom)) max(8px, var(--safe-left));
+    grid-template-columns: minmax(0, 1fr) var(--app-w);
+    column-gap: 8px;
+  }
+  /* Flags: the lowest-left free slot is the app pane's bottom-left, beside the privacy footnote
+     (the Mobius column uses its full height); on the intro they sit at the screen's bottom-left */
+  .story-topbar { height: 0; padding: 0; }
+  .story-brand { display: none; }
+  .story-topbar .lang-switch {
+    left: calc(100vw - var(--dock-right) - var(--rail-w) - 8px - var(--app-w) + 7px);
+    bottom: calc(max(4px, var(--safe-bottom)) + 5px);
+  }
+  .story-demo[data-stage="intro"] .story-topbar .lang-switch { left: max(8px, var(--safe-left)); bottom: max(4px, var(--safe-bottom)); }
+  .story-bottom-nav {
+    grid-column: 2; grid-row: 2;
+    flex-wrap: nowrap; justify-content: space-between;
+    padding-bottom: max(4px, var(--safe-bottom));
+  }
+  .story-stepper-compact { order: 0; flex: 1 1 0; min-width: 0; font-size: 11px; line-height: 13px; white-space: normal; text-wrap: balance; }
+
+  /* Mobius: a two-line header (title and status, session), the switcher, one page */
+  .story-mobius {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+    grid-template-areas: "head" "msg" "tabs" "panel";
+    column-gap: 0;
+  }
+  .story-mobius-head, .story-mobius:has(> .story-server-message) .story-mobius-head {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0 6px; padding: 0 0 2px;
+  }
+  .story-mobius-head h2 { order: 0; font-size: 12px; line-height: 16px; }
+  .story-mobius-head .badge { order: 1; min-height: 16px; padding: 0 6px; font-size: 11px; line-height: 16px; }
+  .story-mobius-head .story-mobius-meta { order: 2; flex-basis: 100%; font-size: 11px; line-height: 13px; }
+  /* The tree page needs every pixel: its pager column carries the status instead */
+  .story-mobius:has(#story-panel-tree.is-mobile-open) .story-mobius-head { display: none; }
+  /* A CSE notice stands in for the session line; on the tree page the app banner carries it */
+  .story-server-message { margin: 0; padding: 0 6px; border-radius: 6px; font-size: 11px; line-height: 13px; }
+  .story-mobius:has(> .story-server-message) .story-mobius-meta { display: none; }
+  .story-mobius:has(> .story-server-message) .story-mobius-head { padding-bottom: 0; }
+  .story-mobius:has(#story-panel-tree.is-mobile-open) > .story-server-message { display: none; }
+  .story-panel-tabs { align-self: auto; }
+  .story-panel-tabs button { padding-inline: 2px; font-size: 11px; }
+  .story-panel-card { padding-top: 4px; gap: 4px; }
+
+  /* Receipt: one line per step where it fits; the scene sentence stays for screen readers */
+  .story-trace { gap: 4px; }
+  .story-trace-heading { flex-wrap: nowrap; }
+  .story-trace-title { font-size: 13px; line-height: 16px; }
+  .story-trace-step { grid-template-columns: 16px minmax(0, 1fr); column-gap: 6px; padding-bottom: 2px; }
+  .story-trace-step:not(:last-child)::before { left: 7.5px; top: 19px; bottom: 2px; }
+  .story-trace-marker { width: 16px; height: 16px; }
+  .story-trace-marker svg { width: 11px; height: 11px; }
+  .story-trace-step strong { font-size: 11px; line-height: 16px; }
+  .story-trace-step code { line-height: 15px; letter-spacing: -.01em; }
+  .story-trace-step:is([data-step="create"], [data-step="readback"]) > div { gap: 0 10px; }
+  .story-trace-summary {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+
+  /* Tree: rows on the left, pager and Sync stacked on the right, full path underneath */
+  .mobius-tree-view {
+    grid-template-columns: minmax(0, 1fr) 52px;
+    grid-template-rows: auto auto;
+    grid-template-areas: "rows tools" "detail detail";
+    column-gap: 6px; row-gap: 4px;
+  }
+  .mobius-tree-toolbar { grid-area: tools; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 2px; }
+  .mobius-tree-pager { flex-direction: column; gap: 0; }
+  .mobius-tree-pager span { min-width: 0; font-size: 11px; line-height: 14px; }
+  .mobius-tree-toolbar > button { min-width: 44px; padding: 0 2px; gap: 2px; font-size: 11px; }
+  .mobius-tree-scroll, .mobius-tree-view > .story-server-wait { grid-area: rows; }
+  .mobius-node-detail { grid-area: detail; }
+  :is(.mobius-node-detail, .story-mobius-events li, .story-mobius-root) code { word-break: break-all; }
+  .mobius-tree-leaf > button { padding-block: 1px; row-gap: 0; }
+  .mobius-node-name { font-size: 12px; line-height: 15px; }
+  .mobius-tree summary small, .mobius-tree-leaf small,
+  .mobius-tree summary b, .mobius-tree-leaf b { line-height: 13px; }
+  .mobius-tree-leaf[aria-level="1"] > button { padding-inline-start: 6px !important; }
+  .mobius-tree-leaf[aria-level="2"] > button { padding-inline-start: 12px !important; }
+  .mobius-tree-leaf[aria-level="3"] > button { padding-inline-start: 18px !important; }
+  .mobius-tree-leaf[aria-level="4"] > button { padding-inline-start: 24px !important; }
+  .mobius-tree-leaf:is([aria-level="5"], [aria-level="6"], [aria-level="7"], [aria-level="8"]) > button { padding-inline-start: 30px !important; }
+
+  /* Records: the record, then the CSE root beside its pager */
+  .story-mobius-events { grid-template-columns: minmax(0, 1fr) auto; align-content: start; column-gap: 6px; }
+  .story-mobius-events > [aria-live] { grid-column: 1 / -1; }
+  .story-events-pager { grid-column: 2; grid-row: 2; align-self: start; }
+  .story-mobius-root { grid-column: 1; grid-row: 2; padding-top: 4px; grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .story-mobius-events li { padding: 4px 6px; }
+
+  /* App: no title bar at this size (the pane is the app), tight type, footnote beside the language slot */
+  .story-demo:not(.capture) .story-header { display: none; }
+  .story-demo:not(.capture) .story-phone { padding: 0 10px 4px; }
+  .story-demo:not(.capture) .story-content { padding-top: 4px; gap: 2px; }
+  .story-demo:not(.capture) .story-content h1 { font-size: var(--t-callout); line-height: 18px; }
+  .story-demo:not(.capture) .story-subtitle { font-size: 11px; }
+  .story-demo:not(.capture) .story-event-list { gap: 4px; }
+  .story-demo:not(.capture) .story-event { min-height: 44px; padding: 4px 10px; }
+  .story-demo:not(.capture) .story-event strong { font-size: 13px; }
+  .story-demo:not(.capture) .story-message { padding: 4px 8px; font-size: 11px; line-height: 1.3; }
+  .story-demo:not(.capture) :is(.story-access-card, .story-check-card) { gap: 0; padding: 3px 8px; font-size: 12px; line-height: 1.2; }
+  .story-demo:not(.capture) .story-access-card h2 { font-size: 13px; }
+  .story-demo:not(.capture) .story-shared-card { padding-block: 4px; }
+  .story-demo:not(.capture) .story-phone :is(button.story-primary, button.story-secondary) { font-size: 13px; }
+  .story-demo:not(.capture) .story-auto-form { gap: 4px; }
+  .story-demo:not(.capture) .story-auto-form label { grid-template-columns: 62px minmax(0, 1fr); align-items: center; gap: 6px; line-height: 1.2; }
+  .story-demo:not(.capture) .story-auto-form input { padding: 6px 10px; font-size: 13px; }
+  .story-demo:not(.capture) .story-privacy-note { min-height: 44px; align-items: center; padding: 0 0 0 92px; }
+  .story-demo:not(.capture) .story-inline-error { margin-top: 2px; font-size: 11px; line-height: 1.25; }
+  .story-demo:not(.capture) .story-inline-error button { padding-inline: 6px; font-size: 12px; }
+  .story-demo:not(.capture) .story-inline-error + .story-content { padding-top: 4px; }
+  /* While the session banner shows, the language slot yields to it (it returns with the session) */
+  .story-demo:has(.story-inline-error) .story-topbar { visibility: hidden; }
+}
+
+/* ---------- Installed web app, phone landscape (Home Screen launch: display-mode standalone or fullscreen) ----------
+   No Safari bars: 812 x 375 on iPhone 13 mini, usable 724 x 354 inside insets 44 / 44 / 21. Columns: Mobius 300 |
+   app | rail 176, 8px gaps. The rail stacks the brand, a 176px keyring and the scene navigation; the flags keep the
+   bottom-left corner under the Mobius column; every Mobius page is one complete page with its header. */
+@media (max-width: 1023px) and (orientation: landscape) and (max-height: 440px) {
+  .story-demo[data-display-mode="standalone"] {
+    --topbar-h: 0px;
+    --nav-h: 0px;
+    --rail-w: 176px;
+    --rail-nav-h: 44px;
+    --app-w: 232px;
+    --dock-right: max(8px, var(--safe-right));
+    --dock-bottom: calc(max(4px, var(--safe-bottom)) + var(--rail-nav-h) + 4px);
+    --dock-kw: min(176px, calc((100dvh - var(--dock-bottom) - max(4px, var(--safe-top)) - 52px) / 1.3247));
+    --dock-left: calc(100vw - var(--dock-right) - (var(--rail-w) + var(--dock-kw)) / 2);
+    --intro-scale: 1.15;
+    --intro-band: 36px;
+    --intro-gap: 8px;
+    grid-template-columns: minmax(0, 1fr) var(--rail-w);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    column-gap: 8px;
+    padding-right: var(--dock-right);
+  }
+  .story-demo[data-display-mode="standalone"] .story-stage {
+    grid-column: 1; grid-row: 1 / -1;
+    padding: max(4px, var(--safe-top)) 0 max(4px, var(--safe-bottom)) max(8px, var(--safe-left));
+    grid-template-columns: minmax(0, 1fr) var(--app-w);
+    column-gap: 8px;
+  }
+  .story-demo[data-display-mode="standalone"] .story-topbar {
+    grid-column: 2; grid-row: 1;
+    height: auto; justify-content: center; gap: 0;
+    padding: max(4px, var(--safe-top)) 0 0;
+    box-shadow: none;
+  }
+  .story-demo[data-display-mode="standalone"] .story-brand { margin: 0 auto; }
+  .story-demo[data-display-mode="standalone"] .story-topbar .lang-switch { left: max(8px, var(--safe-left)); bottom: max(4px, var(--safe-bottom)); }
+  .story-demo[data-display-mode="standalone"] .story-bottom-nav {
+    grid-column: 2; grid-row: 3;
+    justify-self: stretch; align-self: end;
+    height: auto; flex-wrap: nowrap; justify-content: space-between;
+    padding-bottom: max(4px, var(--safe-bottom));
+  }
+  .story-demo[data-display-mode="standalone"] .story-stepper-compact { order: 0; flex: 1 1 0; min-width: 0; font-size: 12px; line-height: 15px; white-space: normal; text-wrap: balance; }
+
+  /* Mobius: two-line header, switcher, one page; the bottom 48px belong to the flags */
+  .story-demo[data-display-mode="standalone"] .story-mobius {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+    grid-template-areas: "head" "msg" "tabs" "panel";
+    column-gap: 0;
+    padding-bottom: 48px;
+  }
+  .story-demo[data-display-mode="standalone"] :is(.story-mobius-head, .story-mobius:has(> .story-server-message) .story-mobius-head) {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0 6px; padding: 0 0 4px;
+  }
+  .story-demo[data-display-mode="standalone"] .story-mobius-head h2 { order: 0; font-size: 13px; line-height: 18px; }
+  .story-demo[data-display-mode="standalone"] .story-mobius-head .badge { order: 1; min-height: 18px; padding: 0 6px; font-size: 11px; line-height: 18px; }
+  .story-demo[data-display-mode="standalone"] .story-mobius-head .story-mobius-meta { display: block; order: 2; flex-basis: 100%; font-size: 11px; line-height: 14px; }
+  .story-demo[data-display-mode="standalone"] .story-server-message { margin: 0; padding: 0 6px; border-radius: 6px; font-size: 11px; line-height: 14px; }
+  .story-demo[data-display-mode="standalone"] .story-mobius:has(> .story-server-message) .story-mobius-meta { display: none; }
+  .story-demo[data-display-mode="standalone"] .story-mobius:has(> .story-server-message) .story-mobius-head { padding-bottom: 0; }
+  .story-demo[data-display-mode="standalone"] .story-panel-tabs button { padding-inline: 2px; font-size: 11px; }
+  .story-demo[data-display-mode="standalone"] .story-panel-card { padding-top: 6px; gap: 4px; }
+
+  /* Receipt: one line per step where it fits, the scene sentence visible under it */
+  .story-demo[data-display-mode="standalone"] .story-trace { gap: 4px; }
+  .story-demo[data-display-mode="standalone"] .story-trace-heading { flex-wrap: nowrap; }
+  .story-demo[data-display-mode="standalone"] .story-trace-title { font-size: 13px; line-height: 17px; }
+  .story-demo[data-display-mode="standalone"] .story-trace-step { grid-template-columns: 18px minmax(0, 1fr); column-gap: 6px; padding-bottom: 3px; }
+  .story-demo[data-display-mode="standalone"] .story-trace-step:not(:last-child)::before { left: 8.5px; top: 21px; bottom: 2px; }
+  .story-demo[data-display-mode="standalone"] .story-trace-marker { width: 18px; height: 18px; }
+  .story-demo[data-display-mode="standalone"] .story-trace-marker svg { width: 12px; height: 12px; }
+  .story-demo[data-display-mode="standalone"] .story-trace-step strong { font-size: 11px; line-height: 18px; }
+  .story-demo[data-display-mode="standalone"] .story-trace-step code { line-height: 15px; letter-spacing: -.01em; }
+  .story-demo[data-display-mode="standalone"] .story-trace-step:is([data-step="create"], [data-step="readback"]) > div { gap: 0 10px; }
+  .story-demo[data-display-mode="standalone"] .story-trace-summary { font-size: 11px; line-height: 1.35; }
+
+  /* Tree: rows on the left, pager and Sync stacked on the right, the full path underneath */
+  .story-demo[data-display-mode="standalone"] .mobius-tree-view {
+    grid-template-columns: minmax(0, 1fr) 52px;
+    grid-template-rows: auto auto;
+    grid-template-areas: "rows tools" "detail detail";
+    column-gap: 6px; row-gap: 4px;
+  }
+  .story-demo[data-display-mode="standalone"] .mobius-tree-toolbar { grid-area: tools; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 2px; }
+  .story-demo[data-display-mode="standalone"] .mobius-tree-pager { flex-direction: column; gap: 0; }
+  .story-demo[data-display-mode="standalone"] .mobius-tree-pager span { min-width: 0; font-size: 11px; line-height: 14px; }
+  .story-demo[data-display-mode="standalone"] .mobius-tree-toolbar > button { min-width: 44px; padding: 0 2px; gap: 2px; font-size: 11px; }
+  .story-demo[data-display-mode="standalone"] :is(.mobius-tree-scroll, .mobius-tree-view > .story-server-wait) { grid-area: rows; }
+  .story-demo[data-display-mode="standalone"] .mobius-node-detail { grid-area: detail; }
+  .story-demo[data-display-mode="standalone"] :is(.mobius-node-detail, .story-mobius-events li, .story-mobius-root) code { word-break: break-all; }
+  .story-demo[data-display-mode="standalone"] .mobius-tree-leaf > button { padding-block: 1px; row-gap: 0; }
+  .story-demo[data-display-mode="standalone"] .mobius-node-name { font-size: 12px; line-height: 15px; }
+  .story-demo[data-display-mode="standalone"] :is(.mobius-tree-leaf small, .mobius-tree-leaf b) { line-height: 13px; }
+  .story-demo[data-display-mode="standalone"] .mobius-tree-leaf[aria-level="1"] > button { padding-inline-start: 6px !important; }
+  .story-demo[data-display-mode="standalone"] .mobius-tree-leaf[aria-level="2"] > button { padding-inline-start: 12px !important; }
+  .story-demo[data-display-mode="standalone"] .mobius-tree-leaf[aria-level="3"] > button { padding-inline-start: 18px !important; }
+  .story-demo[data-display-mode="standalone"] .mobius-tree-leaf[aria-level="4"] > button { padding-inline-start: 24px !important; }
+  .story-demo[data-display-mode="standalone"] .mobius-tree-leaf:is([aria-level="5"], [aria-level="6"], [aria-level="7"], [aria-level="8"]) > button { padding-inline-start: 30px !important; }
+
+  /* Records: the record, then the CSE root beside its pager */
+  .story-demo[data-display-mode="standalone"] .story-mobius-events { grid-template-columns: minmax(0, 1fr) auto; align-content: start; column-gap: 6px; }
+  .story-demo[data-display-mode="standalone"] .story-mobius-events > [aria-live] { grid-column: 1 / -1; }
+  .story-demo[data-display-mode="standalone"] .story-events-pager { grid-column: 2; grid-row: 2; align-self: start; }
+  .story-demo[data-display-mode="standalone"] .story-mobius-root { grid-column: 1; grid-row: 2; padding-top: 4px; grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .story-demo[data-display-mode="standalone"] .story-mobius-events li { padding: 4px 6px; }
+
+  /* App: a 36px title bar and the landscape compact type; narrow column, so actions use 13px labels */
+  .story-demo[data-display-mode="standalone"]:not(.capture) .story-phone { padding: 0 10px 6px; }
+  .story-demo[data-display-mode="standalone"]:not(.capture) .story-message { font-size: 11px; }
+  .story-demo[data-display-mode="standalone"]:not(.capture) :is(.story-access-card, .story-check-card) { font-size: 12px; }
+  .story-demo[data-display-mode="standalone"]:not(.capture) .story-access-card h2 { font-size: 13px; }
+  .story-demo[data-display-mode="standalone"]:not(.capture) .story-phone :is(button.story-primary, button.story-secondary) { font-size: 13px; }
+  .story-demo[data-display-mode="standalone"]:not(.capture) .story-auto-form input { font-size: 13px; }
+  .story-demo[data-display-mode="standalone"]:not(.capture) .story-inline-error { font-size: 11px; line-height: 1.25; }
+  .story-demo[data-display-mode="standalone"]:not(.capture) .story-inline-error button { padding-inline: 6px; font-size: 12px; }
 }
 
 /* ---------- Portrait fallback: app above, Mobius sheet below, keyring deck at the bottom-right ----------
@@ -981,12 +1340,17 @@
   .story-topbar { padding-inline: max(var(--s2), var(--safe-left)) max(var(--s2), var(--safe-right)); }
   .story-bottom-nav {
     justify-self: stretch;
-    padding: 0 calc(var(--dock-right) + var(--dock-kw) + 12px) 0 max(12px, var(--safe-left));
+    padding: 0 calc(var(--dock-right) + var(--dock-kw) + 12px) 0 calc(max(12px, var(--safe-left)) + 92px);
     background: var(--surface);
   }
   /* The sheet surface continues under the home indicator without moving the controls into it. */
   .story-bottom-nav::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: var(--safe-bottom); background: inherit; }
   .story-demo[data-stage="intro"] .story-bottom-nav { background: transparent; }
+  .story-bottom-nav .story-stepper-compact { min-width: 0; flex: 1 1 0; font-size: 11px; line-height: 13px; white-space: normal; text-wrap: balance; }
+  /* Flags at the bottom-left of the deck, before the scene navigation. The top bar's stacking context
+     sits above the deck surface here (they never overlap), so the fixed flags paint over it. */
+  .story-topbar { z-index: calc(var(--z-topbar) + 2); }
+  .story-topbar .lang-switch { left: max(12px, var(--safe-left)); bottom: var(--safe-bottom); }
 
   .story-stage {
     grid-template-columns: minmax(0, 1fr);
@@ -1030,6 +1394,8 @@
   .story-demo[data-portrait="ask"]:not(.capture) .story-rotate { display: flex; }
   .story-demo[data-portrait="ask"] .story-intro-hint { display: none; }
   .story-demo[data-portrait="ask"] .keyring-physical-button.is-guided::after { display: none; }
+  /* The rotate prompt owns portrait: the Safari path waits for landscape */
+  .story-demo[data-portrait="ask"]:not(.capture) :is(.story-fullscreen-launch, .story-fullscreen-guide) { display: none; }
 }
 @media (max-width: 760px) and (orientation: portrait) and (max-height: 700px) {
   .story-demo { --intro-scale: 1.8; --intro-band: 200px; }
@@ -1068,7 +1434,7 @@
   .story-trace-step, .story-trace-step.is-active .story-trace-marker,
   .story-mobius-events li.is-new-event, .mobius-tree .is-fresh,
   .story-panel-tabs button.has-new-event .story-panel-alert { animation: none; }
-  .story-rotate { animation: none; }
+  .story-rotate, .story-fullscreen-guide { animation: none; }
   .story-rotate-glyph::before { animation: none; rotate: -90deg; }
   .story-stepper-prev, .story-stepper-next, .story-topbar, .story-bottom-nav, .story-topbar-link { transition: none; }
 }

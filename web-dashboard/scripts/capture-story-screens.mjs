@@ -296,6 +296,211 @@ try {
     await assertLandscapeLoginErrorFit();
     return layout;
   };
+  const assertIPhone13MiniLandscape = async () => {
+    const width = 812;
+    const screenHeight = 375;
+    const browserHeight = 265;
+    const safe = { top: 0, right: 44, bottom: 21, left: 44 };
+    const iPhoneUserAgent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1';
+    const desktopUserAgent = await evaluate('navigator.userAgent');
+    const installManifest = JSON.parse(await readFile(join(dist, 'manifest.webmanifest'), 'utf8'));
+    if (installManifest.display !== 'fullscreen' || installManifest.orientation !== 'landscape'
+      || installManifest.start_url !== '/?app=bubblelock-story#/story/login'
+      || !installManifest.display_override?.includes('standalone')) {
+      throw new Error(`installed web app manifest contract failed: ${JSON.stringify(installManifest)}`);
+    }
+    const safeArea = await send('Emulation.setSafeAreaInsetsOverride', { insets: safe });
+    if (safeArea.error) throw new Error(`iPhone 13 mini safe-area emulation unavailable: ${JSON.stringify(safeArea.error)}`);
+    await send('Emulation.setUserAgentOverride', { userAgent: iPhoneUserAgent });
+    await send('Network.setExtraHTTPHeaders', { headers: { 'X-Forwarded-For': '192.0.2.13' } });
+    await send('Emulation.setEmulatedMedia', { features: [
+      { name: 'prefers-color-scheme', value: 'light' },
+      { name: 'prefers-reduced-motion', value: 'no-preference' },
+    ] });
+
+    const setMetrics = async (height) => {
+      await send('Emulation.setDeviceMetricsOverride', {
+        width,
+        height,
+        screenWidth: width,
+        screenHeight,
+        deviceScaleFactor: 3,
+        mobile: true,
+        screenOrientation: { type: 'landscapePrimary', angle: 90 },
+      });
+    };
+    const exercisePanic = async (label) => {
+      const responseIndex = actionResponses.length;
+      await clickCenter('.keyring-physical-button.panic');
+      await waitForAction200(responseIndex, `${label} panic`);
+      await waitFor("location.hash === '#/story/check-in' && document.querySelector('.story-demo')?.dataset.stage === 'system'", `${label} check-in`);
+      await waitFor("document.querySelector('.story-trace-title')?.textContent?.includes('Keyring emergency alert stored') === true", `${label} Mobius receipt`);
+      await delay(900);
+      await openMobiusPanel('Transaction');
+      await assertViewportFit(`${label} Transaction`);
+    };
+    const readLayout = async () => evaluate(`(() => {
+      const rect=(selector)=>{const value=document.querySelector(selector)?.getBoundingClientRect();return value?{left:value.left,right:value.right,top:value.top,bottom:value.bottom,width:value.width,height:value.height}:null;};
+      const overlaps=(a,b)=>!!a&&!!b&&a.left<b.right-1&&a.right>b.left+1&&a.top<b.bottom-1&&a.bottom>b.top+1;
+      const root=document.querySelector('.story-demo');
+      const rootStyle=getComputedStyle(root);
+      const safeTop=parseFloat(rootStyle.getPropertyValue('--safe-top'));
+      const safeRight=parseFloat(rootStyle.getPropertyValue('--safe-right'));
+      const safeBottom=parseFloat(rootStyle.getPropertyValue('--safe-bottom'));
+      const safeLeft=parseFloat(rootStyle.getPropertyValue('--safe-left'));
+      const rightLimit=innerWidth-safeRight;
+      const bottomLimit=innerHeight-safeBottom;
+      const dock=rect('.keyring-dock');
+      const model=rect('.keyring-model');
+      const firmwareScreen=rect('.keyring-screen-live');
+      const mobius=rect('.story-mobius');
+      const app=rect('.story-app-column');
+      const navigation=rect('.story-bottom-nav');
+      const language=rect('.lang-switch');
+      const brand=rect('.story-brand');
+      const navigationControls=[...document.querySelectorAll('.story-bottom-nav a,.story-bottom-nav .story-stepper-compact')].map((element)=>{const value=element.getBoundingClientRect();return{left:value.left,right:value.right,top:value.top,bottom:value.bottom,width:value.width,height:value.height};});
+      const trace=document.querySelector('#story-panel-trace');
+      const mobiusElement=document.querySelector('.story-mobius');
+      const mobiusText=mobiusElement?.textContent??'';
+      const tabs=[...document.querySelectorAll('.story-panel-tabs button')].filter((button)=>getComputedStyle(button).display!=='none').map((button)=>{
+        const value=button.getBoundingClientRect();
+        return {label:button.textContent?.trim(),left:value.left,right:value.right,width:value.width,height:value.height,scrollWidth:button.scrollWidth,clientWidth:button.clientWidth,scrollHeight:button.scrollHeight,clientHeight:button.clientHeight};
+      });
+      const tabsDisjoint=tabs.every((tab,index)=>index===0||tabs[index-1].right<=tab.left+1);
+      const clippedTabs=tabs.filter((tab)=>tab.scrollWidth>tab.clientWidth+1||tab.scrollHeight>tab.clientHeight+1);
+      const visibleTargets=[...document.querySelectorAll('button,a,summary')].map((element)=>{const value=element.getBoundingClientRect();const style=getComputedStyle(element);return{className:element.className,width:value.width,height:value.height,visible:style.display!=='none'&&style.visibility!=='hidden'&&Number(style.opacity)>0&&value.width>0&&value.height>0&&value.right>0&&value.bottom>0&&value.left<innerWidth&&value.top<innerHeight};}).filter((item)=>item.visible);
+      const screenLabel=document.querySelector('.keyring-screen-live b');
+      const screenMeta=document.querySelector('.keyring-screen-live small');
+      const screenStyle=screenLabel?getComputedStyle(screenLabel):null;
+      const screenMetaStyle=screenMeta?getComputedStyle(screenMeta):null;
+      const flagButtons=[...document.querySelectorAll('.lang-switch button')].filter((button)=>getComputedStyle(button).display!=='none');
+      const flagsOnTop=flagButtons.every((button)=>{const value=button.getBoundingClientRect();return document.elementFromPoint(value.left+value.width/2,value.top+value.height/2)===button;});
+      return {
+        displayMode:root?.dataset.displayMode,
+        viewport:{width:innerWidth,height:innerHeight,dpr:devicePixelRatio,screenWidth:window.screen.width,screenHeight:window.screen.height},
+        safe:{top:safeTop,right:safeRight,bottom:safeBottom,left:safeLeft},
+        dock,model,screen:firmwareScreen,mobius,app,navigation,navigationControls,language,brand,tabs,
+        safeBounds:!!mobius&&!!app&&!!dock&&!!navigation&&mobius.left>=safeLeft-1&&app.right<=rightLimit+1&&dock.right<=rightLimit+1&&dock.bottom<=bottomLimit+1&&navigationControls.length===3&&navigationControls.every((control)=>control.left>=safeLeft-1&&control.right<=rightLimit+1&&control.top>=safeTop-1&&control.bottom<=bottomLimit+1),
+        columnsDisjoint:!!mobius&&!!app&&!!dock&&mobius.right<=app.left+1&&app.right<=dock.left+1,
+        controlsDisjoint:!overlaps(dock,navigation)&&!overlaps(dock,language)&&!overlaps(dock,brand),
+        tabsDisjoint,clippedTabs,
+        traceFits:!!trace&&trace.scrollWidth<=trace.clientWidth+1&&trace.scrollHeight<=trace.clientHeight+1,
+        completeReceipt:['BFF request','CREATE','RETRIEVE','RSC 2001','RSC 2000','keyring-panic'].every((term)=>(trace?.textContent??'').includes(term)),
+        englishOnly:mobiusElement?.getAttribute('lang')==='en'&&!/[가-힣]/.test(mobiusText),
+        firmwareState:document.querySelector('.keyring-screen-live')?.getAttribute('data-firmware-screen'),
+        screenLabel:screenLabel?.textContent?.trim(),screenMeta:screenMeta?.textContent?.trim(),
+        screenLabelFont:parseFloat(screenStyle?.fontSize??'0'),screenMetaFont:parseFloat(screenMetaStyle?.fontSize??'0'),
+        screenPhysicalWidth:(firmwareScreen?.width??0)*devicePixelRatio,screenPhysicalHeight:(firmwareScreen?.height??0)*devicePixelRatio,
+        flagsOnTop,
+        launchCount:document.querySelectorAll('.story-fullscreen-launch').length,
+        guideCount:document.querySelectorAll('.story-fullscreen-guide').length,
+        guideVisible:document.querySelector('.story-fullscreen-guide')?.hidden===false,
+        smallTargets:visibleTargets.filter((item)=>item.width<44||item.height<44),
+      };
+    })()`);
+    const assertLayout = (layout, { label, height, mode, minDock, minModel, minScreenWidth, minScreenHeight }) => {
+      if (layout.viewport.width !== width || layout.viewport.height !== height || layout.viewport.dpr !== 3
+        || layout.viewport.screenWidth !== width || layout.viewport.screenHeight !== screenHeight
+        || layout.safe.top !== safe.top || layout.safe.right !== safe.right || layout.safe.bottom !== safe.bottom || layout.safe.left !== safe.left
+        || layout.displayMode !== mode || !layout.safeBounds || !layout.columnsDisjoint || !layout.controlsDisjoint
+        || !layout.tabsDisjoint || layout.clippedTabs.length > 0 || layout.tabs.length !== 3
+        || layout.tabs.some((tab) => tab.width < 90 || tab.height < 44)
+        || !layout.traceFits || !layout.completeReceipt || !layout.englishOnly || layout.firmwareState !== 'panic'
+        || !layout.dock || layout.dock.width < minDock || !layout.model || layout.model.width < minModel
+        || !layout.screen || layout.screen.width < minScreenWidth || layout.screen.height < minScreenHeight
+        || layout.screenPhysicalWidth < minScreenWidth * 3 || layout.screenPhysicalHeight < minScreenHeight * 3
+        || layout.screenLabel !== 'PANIC' || !layout.screenMeta || layout.screenLabelFont < 6 || layout.screenMetaFont < 3.5
+        || !layout.flagsOnTop || layout.smallTargets.length > 0 || layout.launchCount !== 0 || layout.guideVisible) {
+        throw new Error(`${label} layout contract failed: ${JSON.stringify(layout)}`);
+      }
+      if (mode === 'standalone' && (!layout.brand || layout.guideCount !== 0)) {
+        throw new Error(`${label} installed-app chrome contract failed: ${JSON.stringify(layout)}`);
+      }
+    };
+    const assertPanels = async (label) => {
+      await openMobiusPanel('Resource tree');
+      await assertViewportFit(`${label} Resource tree`);
+      const treeFits = await evaluate("(() => { const panel=document.querySelector('#story-panel-tree'); const path=[...(panel?.querySelectorAll('code')??[])].find((item)=>(item.textContent??'').startsWith('/Mobius')); return !!panel&&panel.scrollWidth<=panel.clientWidth+1&&panel.scrollHeight<=panel.clientHeight+1&&!!path&&path.scrollWidth<=path.clientWidth+1&&path.scrollHeight<=path.clientHeight+1; })()");
+      if (!treeFits) throw new Error(`${label} Resource tree contract failed`);
+      await openMobiusPanel('CSE records');
+      await assertViewportFit(`${label} CSE records`);
+      const recordsFit = await evaluate("(() => { const panel=document.querySelector('#story-panel-events'); const root=panel?.querySelector('.story-mobius-root'); const path=root?.querySelector('code'); return !!panel&&panel.scrollWidth<=panel.clientWidth+1&&panel.scrollHeight<=panel.clientHeight+1&&(root?.textContent??'').includes('CSE-ID')&&(path?.textContent??'').startsWith('/Mobius'); })()");
+      if (!recordsFit) throw new Error(`${label} CSE records contract failed`);
+      await openMobiusPanel('Transaction');
+    };
+
+    await clearStorySession();
+    await setMetrics(browserHeight);
+    await send('Page.navigate', { url: `${previewUrl}/?lang=en#/story/login` });
+    await waitFor("document.querySelector('.story-fullscreen-guide')?.getAttribute('aria-hidden') === 'false' && document.activeElement?.classList.contains('story-fullscreen-continue')", 'iPhone Safari full-screen guide');
+    await delay(180);
+    await assertViewportFit('iPhone Safari full-screen guide');
+    const guideLayout = await evaluate(`(() => {
+      const rect=(selector)=>{const value=document.querySelector(selector)?.getBoundingClientRect();return value?{left:value.left,right:value.right,top:value.top,bottom:value.bottom,width:value.width,height:value.height}:null;};
+      const dialog=document.querySelector('.story-fullscreen-guide');
+      const button=document.querySelector('.story-fullscreen-continue');
+      const dialogRect=rect('.story-fullscreen-guide');
+      const buttonRect=rect('.story-fullscreen-continue');
+      return {
+        dialog:dialogRect,button:buttonRect,
+        focused:document.activeElement===button,
+        copy:(dialog?.textContent??'').includes('Add to Home Screen'),
+        overflow:!!dialog&&(dialog.scrollWidth>dialog.clientWidth+1||dialog.scrollHeight>dialog.clientHeight+1),
+        safe:!!dialogRect&&dialogRect.left>=44&&dialogRect.right<=768&&dialogRect.top>=0&&dialogRect.bottom<=244,
+        underlyingInert:document.querySelector('.story-topbar')?.inert===true&&document.querySelector('.story-intro')?.inert===true&&document.querySelector('.story-stage')?.inert===true&&document.querySelector('.keyring-dock')?.inert===true,
+        capable:document.querySelector('meta[name="apple-mobile-web-app-capable"]')?.getAttribute('content')==='yes',
+      };
+    })()`);
+    if (!guideLayout.dialog || !guideLayout.button || guideLayout.button.width < 44 || guideLayout.button.height < 44
+      || !guideLayout.focused || !guideLayout.copy || guideLayout.overflow || !guideLayout.safe || !guideLayout.underlyingInert || !guideLayout.capable) {
+      throw new Error(`iPhone Safari full-screen guide contract failed: ${JSON.stringify(guideLayout)}`);
+    }
+    await shot('story-iphone13mini-fullscreen-guide', width, browserHeight);
+    await clickCenter('.story-fullscreen-continue');
+    await waitFor("document.querySelector('.story-fullscreen-guide')?.hidden === true && document.querySelector('.story-fullscreen-launch')?.getAttribute('aria-expanded') === 'false'", 'iPhone Safari guide dismissal');
+    const launchLayout = await evaluate("(() => { const button=document.querySelector('.story-fullscreen-launch'); const r=button?.getBoundingClientRect(); const top=r?document.elementFromPoint(r.left+r.width/2,r.top+r.height/2):null; return {width:r?.width??0,height:r?.height??0,left:r?.left??0,right:r?.right??0,top:r?.top??0,bottom:r?.bottom??0,hit:top===button}; })()");
+    if (launchLayout.width < 44 || launchLayout.height < 44 || launchLayout.left < 44 || launchLayout.right > 768 || launchLayout.bottom > 244 || !launchLayout.hit) {
+      throw new Error(`iPhone Safari full-screen launch contract failed: ${JSON.stringify(launchLayout)}`);
+    }
+    await assertViewportFit('iPhone 13 mini browser intro');
+    await exercisePanic('iPhone 13 mini browser');
+    const browserLayout = await readLayout();
+    assertLayout(browserLayout, { label: 'iPhone 13 mini browser', height: browserHeight, mode: 'browser', minDock: 146, minModel: 136, minScreenWidth: 52, minScreenHeight: 25 });
+    await shot('story-system-iphone13mini-landscape', width, browserHeight);
+    await assertPanels('iPhone 13 mini browser');
+    await assertStoryScenesFit('iPhone 13 mini browser scene');
+    await assertLandscapeLoginErrorFit();
+
+    const standaloneScript = await send('Page.addScriptToEvaluateOnNewDocument', {
+      source: "Object.defineProperty(window.navigator, 'standalone', { configurable: true, get: () => true });",
+    });
+    if (standaloneScript.error || !standaloneScript.result?.identifier) {
+      throw new Error(`installed web app emulation unavailable: ${JSON.stringify(standaloneScript.error)}`);
+    }
+    await clearStorySession();
+    await setMetrics(screenHeight);
+    await send('Page.navigate', { url: `${previewUrl}/?lang=en&app=bubblelock-story#/story/login` });
+    await waitFor("document.querySelector('.story-demo')?.dataset.displayMode === 'standalone' && document.querySelector('.story-demo')?.dataset.stage === 'intro' && !document.querySelector('.keyring-physical-button.panic')?.disabled", 'iPhone installed web app intro');
+    await delay(180);
+    await assertViewportFit('iPhone installed web app intro');
+    const installedIntro = await evaluate("(() => { const model=document.querySelector('.keyring-model')?.getBoundingClientRect(); return {modelWidth:model?.width??0,launch:document.querySelectorAll('.story-fullscreen-launch').length,guide:document.querySelectorAll('.story-fullscreen-guide').length}; })()");
+    if (installedIntro.modelWidth < 190 || installedIntro.launch !== 0 || installedIntro.guide !== 0) {
+      throw new Error(`iPhone installed web app intro contract failed: ${JSON.stringify(installedIntro)}`);
+    }
+    await exercisePanic('iPhone installed web app');
+    const standaloneLayout = await readLayout();
+    assertLayout(standaloneLayout, { label: 'iPhone installed web app', height: screenHeight, mode: 'standalone', minDock: 172, minModel: 164, minScreenWidth: 64, minScreenHeight: 35 });
+    await shot('story-system-iphone13mini-fullscreen', width, screenHeight);
+    await assertPanels('iPhone installed web app');
+    await assertStoryScenesFit('iPhone installed web app scene');
+    await assertLandscapeLoginErrorFit();
+
+    await send('Page.removeScriptToEvaluateOnNewDocument', { identifier: standaloneScript.result.identifier });
+    await send('Network.setExtraHTTPHeaders', { headers: {} });
+    await send('Emulation.setUserAgentOverride', { userAgent: desktopUserAgent });
+    await send('Emulation.setSafeAreaInsetsOverride', { insets: {} });
+    return { browser: browserLayout, standalone: standaloneLayout };
+  };
   for (const [name, scene, expected] of scenes) { await openScene(scene, expected); await shot(name); }
 
   // The public entry starts with one product, then the same keyring travels into the verified system layout.
@@ -514,6 +719,7 @@ try {
   await assertLandscapeLoginErrorFit();
   await assertShallowLandscape(844, 320);
   await assertShallowLandscape(1000, 327);
+  await assertIPhone13MiniLandscape();
 
   await clearStorySession();
   await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
@@ -667,9 +873,42 @@ try {
   const manifest = {
     generatedAt: new Date().toISOString(),
     browser: version.Browser,
-    mode: 'browser-isolated replay CSE; full-viewport shell, fixed keyring overlay, iPhone safe areas, landscape split, portrait fallback, guardian share and caregiver group command exercised',
+    mode: 'browser-isolated replay CSE; full-viewport shell, fixed keyring overlay, iPhone 13 mini Safari visual viewport plus installed fullscreen web app and safe areas, landscape split, portrait fallback, guardian share and caregiver group command exercised',
     command: 'npm --prefix web-dashboard run capture:story',
-    assertions: ['intro shows only the keyring product and guidance', 'real keyring input returns HTTP 200 and transitions into the system stage', 'story shell exactly fills 100vw by 100dvh with zero document or panel overflow', 'floating keyring is a transparent fixed overlay outside the content grid at z-index 30', 'all seven story scenes fit landscape and portrait viewports without clipping', '844x320 and 1000x327 shallow Safari landscapes fit every scene, the full panic receipt and reconnect state without internal scrolling', 'landscape login keeps a full reconnect message and 44px action inside the app without overlap', 'all seven landscape scenes and the reconnect state fit inside iPhone sensor-housing and home-indicator insets', 'iPhone portrait notch and home-indicator insets keep controls inside the safe area', 'fresh Mobius tree node, trace path and newest record share one resource path', 'Mobius browser is English-only and exposes oneM2M resource types, methods and RSC values without clipped text', 'Mobius tree and CSE records paginate inside fixed panels without nested scrolling', 'desktop Mobius stays left of the phone in light and dark mode', 'phone landscape fits Mobius, app and overlay keyring in one viewport', 'phone portrait and portrait deep links show the optimized landscape prompt with a 44px Continue upright path', 'scene arrows use a compact bottom navigation outside the top bar', 'keyring has no Rotate, Move or Reset chrome and every drag rotates it directly', 'system keyring remains large enough to read its firmware screen and physical buttons', 'all visible controls are at least 44px', 'reduced motion leaves no running dock animation', 'keyboard focus reaches the confirm button with a 3px outline', 'Mobius tree exposes a wrapping full resource path', 'keyring firmware screen mirrors READY/CONFIRM/PANIC states', 'care approval opens the caregiver view', 'All on returns three readbacks', 'draft review opens a five-minute location lease'],
+    assertions: [
+      'intro shows only the keyring product and guidance',
+      'real keyring input returns HTTP 200 and transitions into the system stage',
+      'story shell exactly fills 100vw by 100dvh with zero document or panel overflow',
+      'floating keyring is a transparent fixed overlay outside the content grid at z-index 30',
+      'all seven story scenes fit landscape and portrait viewports without clipping',
+      '844x320 and 1000x327 shallow Safari landscapes fit every scene, the full panic receipt and reconnect state without internal scrolling',
+      'iPhone 13 mini Safari at 812x265, DPR 3 and 44/44/21 safe-area insets fits all seven scenes, full panic receipt and reconnect state without scrolling',
+      'iPhone Safari full-screen guide fits the safe area, owns focus and explains Share, Add to Home Screen and Open BubbleLock',
+      'web app manifest launches the story in fullscreen landscape mode with standalone fallback',
+      'installed iPhone 13 mini web app at 812x375 fits all seven scenes, the full panic receipt and reconnect state without scrolling',
+      'installed iPhone 13 mini keyring is at least 172 CSS px wide and its live firmware screen is at least 192x105 physical pixels',
+      'iPhone 13 mini Mobius tabs are disjoint 90x44px controls with complete labels',
+      'landscape login keeps a full reconnect message and 44px action inside the app without overlap',
+      'all seven landscape scenes and the reconnect state fit inside iPhone sensor-housing and home-indicator insets',
+      'iPhone portrait notch and home-indicator insets keep controls inside the safe area',
+      'fresh Mobius tree node, trace path and newest record share one resource path',
+      'Mobius browser is English-only and exposes oneM2M resource types, methods and RSC values without clipped text',
+      'Mobius tree and CSE records paginate inside fixed panels without nested scrolling',
+      'desktop Mobius stays left of the phone in light and dark mode',
+      'phone landscape fits Mobius, app and overlay keyring in one viewport',
+      'phone portrait and portrait deep links show the optimized landscape prompt with a 44px Continue upright path',
+      'scene arrows use a compact bottom navigation outside the top bar',
+      'keyring has no Rotate, Move or Reset chrome and every drag rotates it directly',
+      'system keyring remains large enough to read its firmware screen and physical buttons',
+      'all visible controls are at least 44px',
+      'reduced motion leaves no running dock animation',
+      'keyboard focus reaches the confirm button with a 3px outline',
+      'Mobius tree exposes a wrapping full resource path',
+      'keyring firmware screen mirrors READY/CONFIRM/PANIC states',
+      'care approval opens the caregiver view',
+      'All on returns three readbacks',
+      'draft review opens a five-minute location lease',
+    ],
     captured,
   };
   await writeFile(join(outDir, 'capture-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);

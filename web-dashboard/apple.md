@@ -65,7 +65,8 @@ Color, type, radius and spacing come from `src/styles.css`. The story demo adds:
 | `--story-stagger` | 90ms | Gap between trace steps that are already resolved |
 | `--story-breathe` | 2.4s | Guided-button halo cycle (ease-in-out) |
 | `--story-fresh` | 2.4s | New-record tint: two soft pulses, then a steady selected tint |
-| `--segment-track` / `--segment-thumb` | `--surface-strong` / `--surface`; dark: `rgb(118 118 128 / .24)` / `#636366` | Panel switcher, language toggle, pager hover |
+| `--segment-track` / `--segment-thumb` | `--surface-strong` / `--surface`; dark: `rgb(118 118 128 / .24)` / `#636366` | Panel switcher, pager hover |
+| `--flag` (per language button) | inline SVG: Taegukgi for `lang="ko"`, the US flag for `lang="en"` | Language control: 22 x 15px flag in a 44px button |
 | `--safe-top/right/bottom/left` | `env(safe-area-inset-*)` | Every edge offset below |
 | `--topbar-h` / `--nav-h` | 56 / 44px desktop, 44 / 44px phone portrait, 0 / 44px phone landscape | Top bar and bottom navigation rows; `--chrome-top` and `--chrome-bottom` add the safe areas |
 | `--z-topbar` / `--z-intro` / `--z-dock` / `--z-modal` / `.skip` | 10 / 20 / 30 / 40 / 50 | Stacking order |
@@ -79,7 +80,9 @@ the keyring out at `--dock-kw x --intro-scale` (S2 explains why).
 | Desktop, 1024 to 1279px | 136px | 20px from right and bottom | 2.1 | 286px |
 | Desktop, 820px tall or less | 112px | 20px from right and bottom; 1024 x 768: x 892, y 600 | 2.2 | 246px |
 | Phone landscape, taller than 340px | 112px | Right track beside the app, 6px above the bottom bar; 844 x 390: x 724, y 192 | 1.7 | 190px |
-| Phone landscape, 340px tall or less | up to 112px (shrinks to fit the rail) | Right control rail between language and scene navigation; 844 x 320: x 725, y 104, 110 x 146; 1000 x 327: x 880, y 109 | 1.7 | 190px |
+| Installed web app, phone landscape (`data-display-mode="standalone"`, 440px tall or less) | up to 176px (812 x 375: 176 x 233, OLED 67 x 38) | Right rail between the brand and the scene navigation; 812 x 375 with insets 44 / 44 / 21: x 592, y 73 | 1.15 | 202px |
+| Safari tab, phone landscape 300px tall or less (iPhone mini) | up to 148px (812 x 265: 148 x 196, OLED 57 x 32) | Right rail above the scene navigation; 812 x 265 with insets 44 / 44 / 21: x 619, y 2 | 1.05 | 155px |
+| Phone landscape, 301 to 340px tall | up to 112px (shrinks to fit the rail) | Right control rail between language and scene navigation; 844 x 320: x 725, y 104, 110 x 146; 1000 x 327: x 880, y 109 | 1.7 | 190px |
 | Portrait below 1024px | 112px | 12px from right, 4px from bottom (or the home-indicator inset); 390 x 844: x 266, y 692 | 2.05 | 230px |
 | Phone portrait, 700px tall or less / 600px or less | 112px | same | 1.8 / 1.4 | 202 / 157px |
 
@@ -91,7 +94,7 @@ tilt, so the LCD and both physical buttons stay legible on phones.
 ```
  desktop (1024px and wider)
  +------------------------------------------------------------------------------+
- | (B) BubbleLock                                   Family dashboard  KO | EN    |  56 + safe top
+ | (B) BubbleLock                                           Family dashboard     |  56 + safe top
  +------------------------------------------------------------------------------+
  |      Mobius Resource Browser   [Replay] |   +-------------+   |  gutter     |
  |      [Transaction|Resource tree|Records]|   | 4:31        |   |  (reserved  |
@@ -101,7 +104,7 @@ tilt, so the LCD and both physical buttons stay legible on phones.
  |       o CREATE <contentInstance> ../e-2 |   |             |   |  [keyring]  |
  |       o RETRIEVE <contentInstance>      |   +-------------+   |             |
  +------------------------------------------------------------------------------+
- |                         <   2/7 Went out   >                                 |  44 + safe bottom
+ | [KR][US]                <   2/7 Went out   >                                 |  44 + safe bottom
  +------------------------------------------------------------------------------+
 ```
 
@@ -113,8 +116,9 @@ one formula for every layout.
 
 ## 4. S1 Intro stage (`data-stage="intro"`)
 
-- Full canvas, no cards, no rail, no panels. The top bar shows only the brand and the
-  language toggle; the dashboard link and the bottom navigation wait for the system stage (P1).
+- Full canvas, no cards, no rail, no panels. The top bar shows only the brand and the flags
+  sit at the bottom-left; the dashboard link and the bottom navigation wait for the system
+  stage (P1).
 - The keyring sits at 50% width and on the optical center of the space between the top bar
   and the bottom row, lifted by the hint band, with its own product shadow.
 - One hint line under the keyring (24px gap; 12px in landscape), 17px/600 ink (15px in
@@ -153,7 +157,11 @@ in over `--story-quick`; trace steps appear together once the response is in.
 
 - Top bar, 56px plus the top inset, on the canvas with a 1px hairline drawn as an inset
   shadow (so the 44px controls keep their exact box). Left: brand. Right: `Family dashboard`
-  quiet link and the language toggle (light thumb on the segment track, P5).
+  quiet link.
+- Language: two small flags at the bottom-left of the screen (Taegukgi for 한국어, the US flag
+  for English), each a 22 x 15px flag with a hairline edge centered in a 44px button. The
+  chosen language shows at full color with a 1.5px accent ring; the other rests at 50% with
+  reduced saturation. The words `한국어` and `English` stay as the accessible names (P3, P10).
 - Bottom navigation (`nav.story-stepper.story-bottom-nav`): one centered row, 44px, above
   the bottom inset: previous chevron, `2/7 Went out` (13px/600, tabular, min width 9.5em so
   the chevrons stay put), next chevron. No bar, no background; chevrons are 44px circles
@@ -266,17 +274,17 @@ This session stores the away state ... without location coordinates.   15px mute
 |  v CREATE  e-2 CREATE RSC 2001 ...  |                 |            |
 |  v RETRIEVE ...                     |                 |            |
 +--------------------------------------------------------------------+
-| (B)               <   2/7 Went out   >                   KO | EN   |  44 + safe bottom
+| (B) [KR][US]       <   2/7 Went out   >                             |  44 + safe bottom
 +--------------------------------------------------------------------+
         Mobius 1fr                        app 40%        112px track
 ```
 
-- The top bar folds into one bottom bar: brand left, scene navigation centered, language
-  right. The content keeps the full height above it (P12).
+- The top bar folds into one bottom bar: brand and flags left, scene navigation centered.
+  The content keeps the full height above it (P12).
 - Stage columns: Mobius `minmax(0, 1fr)`, app `minmax(280px, 40%)` and an empty 112px keyring
   track, 12px gaps, 8px side padding or the left/right insets (47px on iPhone landscape).
 - The keyring sits in that right track, 6px above the bottom bar: clear of the app pane
-  (12px), the language toggle (6px) and the scene navigation.
+  (12px), the bottom bar (6px) and the scene navigation.
 - Mobius pane: one title row (15px title plus badge; session meta lives on desktop and in the
   shallow rail), then the switcher and the panel. A CSE notice stands in for the title row
   while it shows.
@@ -295,26 +303,26 @@ This session stores the away state ... without location coordinates.   15px mute
   tightest scene (care-request) keeps 1px to spare there.
 - Intro in landscape: S1 at 190px, hint line 12px under it, bottom bar visible.
 
-### Shallow landscape, 340px tall or less (Safari with toolbars: 844 x 320, 1000 x 327)
+### Shallow landscape, 301 to 340px tall (Safari with toolbars: 844 x 320, 1000 x 327)
 
 ```
 +-------------------------------------------------------------------------+
 | Mobius     | [Transaction|Tree|Records] | Privacy Bubble       |  (B)    |
-| Resource   | Keyring emergency alert    | Check on Mom         | KO | EN |
+| Resource   | Keyring emergency alert    | Check on Mom         |         |
 | Browser    |  v BFF request POST ...    | [emergency card]     |         |
 | [Replay]   |  v CREATE e-11 RSC 2001 .. | [Call] [Prepare ..]  | keyring |
 | Session .. |  v RETRIEVE e-11 RSC 2000  |                      |         |
 | (notice)   | The reason is stored ...   | (footnote)           | 7/7 ... |
-|            |                            |                      |  <   >  |
+| [KR][US]   |                            |                      |  <   >  |
 +-------------------------------------------------------------------------+
   104px rail       Mobius content           app 40%, min 270px   112px rail
 ```
 
 - No bottom bar: the content uses the full height. A right control rail (112px, root grid
-  column) stacks the brand, the language toggle (12px labels), the keyring and the scene
-  navigation (12px label over two 44px chevrons) from top to bottom. The keyring width is
-  `min(112px, (height - rail navigation - brand - language - gaps) / 1.3247)`, so it never
-  touches the controls above or below it, including under a bottom inset.
+  column) stacks the brand, the keyring and the scene navigation (12px label over two 44px
+  chevrons) from top to bottom; the flags sit at the bottom-left under the Mobius identity
+  rail. The keyring width is `min(112px, (height - rail navigation - brand - gaps) / 1.3247)`,
+  so it never touches the controls above or below it, including under a bottom inset.
 - A left Mobius identity rail (104px) keeps the title (13px/700), the badge, the session meta
   and, while it shows, the CSE notice; the switcher and the active panel use the column to its
   right. Every panel is a complete page: no inner scroll and nothing to drag.
@@ -324,6 +332,115 @@ This session stores the away state ... without location coordinates.   15px mute
   (228 with the banner), 1000 x 327 app content 279 (250). The densest case, check-in after a
   keyring PANIC with two public-length records (`e-11-1b8117`, `e-12-2ae5b6`), leaves 33px
   (844 x 320) and 74px (1000 x 327) under the Transaction receipt.
+
+### Safari tab on iPhone mini, 300px tall or less (812 x 265, insets 44 / 44 / 21)
+
+This is the ordinary Safari tab. Page code cannot hide Safari's address and tab bars; the
+Home Screen web app (next section) is the path to the full screen.
+
+```
++--------------------------------------------------------------------------------+
+| Mobius Resource Browser [Live]   | Check on Mom              |   [keyring      |
+| Session D58CB3, 38 of 40 ...     | [emergency card]          |    148 x 196,   |
+| [Transaction|Resource tree|CSE]  | [Call] [Prepare location] |    OLED and     |
+| Keyring emergency alert  4:31 PM |                           |    buttons      |
+|  v BFF request POST ... panic    |                           |    readable]    |
+|  v CREATE <contentInstance>      |                           |                 |
+|    e-11 CREATE RSC 2001          | [KR][US]  (footnote,      |  <  7/7      >  |
+|    e-12 CREATE RSC 2001          |           3 lines)        |     Check-in    |
+|  v RETRIEVE ... RSC 2000 x 2     |                           |                 |
++--------------------------------------------------------------------------------+
+   Mobius 300px                      app 258px                   rail 150px
+```
+
+- Usable box 724 x 244 (812 x 265 minus 44 / 44 / 21). Columns: Mobius `minmax(0, 1fr)` (300px),
+  app 258px, rail 150px, gaps 8px + 8px.
+- Rail: the keyring at up to 148px (`min(148px, (height - bottom inset - 44px nav - gaps) /
+  1.3247)`, 148 x 196 at 812 x 265, top 2px) and the scene navigation under it (two 44px
+  chevrons with an 11px label that wraps to two lines between them). The brand steps out.
+- Flags: the Mobius column uses its full height for the tree and records pages, so the
+  lowest-left free slot is the app pane's bottom-left, beside a three-line privacy footnote
+  (x 359, y 195 at 812 x 265). On the intro they sit at the screen's bottom-left (x 44, y 200).
+- Mobius: a two-line header (12px/700 title and an 11px status badge; 11px session line), the
+  switcher (44px segments, 97px each, every label inside its segment) and one page. Transaction
+  is one compact receipt: BFF request with its code on one line; CREATE and RETRIEVE
+  `<contentInstance>` each with one line per record (resource name, method, RSC); the scene
+  sentence stays in the accessibility tree. Resource tree: three 3-line rows with depth indents
+  of 6px per level, the pager and Sync stacked in a 52px column on the right, the full path
+  underneath (breaks anywhere, two lines); this page uses the header's height, and the app
+  banner carries any CSE notice. CSE records: the record, then the CSE root beside its pager.
+- App: no title bar at this size (the pane is the app), 15px screen title, 11-13px card text,
+  44px actions, inline form labels (62px) on the login screen, 44px footnote row.
+- Session error at this size: the app banner (11px text, 44px Reconnect) stands in for the
+  screen title and the footnote, and the flags yield while it shows; the scene name stays in
+  the rail. The Mobius notice (11px, one 13px line) stands in for the session line.
+- Budget (measured at DPR 3 with insets 44 / 44 / 21, every visible stage, pane, open panel,
+  device, phone, content box and switcher segment at scroll size = client size): app content
+  236px in every scene (169px under the 93-character banner); Mobius page 163px. Tightest:
+  check-in after a keyring PANIC with two public-length records keeps 9px under the receipt
+  (2px with the CSE notice), the tree page 4px, care-request under the banner 1px.
+
+### Installed web app on iPhone mini (Home Screen launch, 812 x 375, insets 44 / 44 / 21)
+
+The Home Screen launch removes Safari's bars (manifest `display: fullscreen`, fallback
+`standalone`; `apple-mobile-web-app-capable`, `black-translucent` status bar). StoryDemo marks it
+with `.story-demo[data-display-mode="standalone"]` (display-mode standalone or fullscreen, or
+`navigator.standalone`). The tier applies to phone landscape up to 440px tall.
+
+```
++---------------------------------------------------------------------------------+
+| Mobius Resource Browser [Live]   | Privacy Bubble        |         (B)          |
+| Session CB0801, 38 of 40 ...     | Check on Mom          |                      |
+| [Transaction|Resource tree|CSE]  | [emergency card]      |   [keyring 176 x 233 |
+| Keyring emergency alert  5:21 PM | [Call] [Prepare ...]  |    OLED 67 x 38,     |
+|  v BFF request POST ... panic    |                       |    both buttons      |
+|  v CREATE e-11, e-12 RSC 2001    |                       |    readable]         |
+|  v RETRIEVE e-11, e-12 RSC 2000  |                       |                      |
+| The reason is stored first ...   | (footnote)            |  <  7/7 Check-in  >  |
+| [KR][US]                         |                       |                      |
++---------------------------------------------------------------------------------+
+   Mobius 300px                      app 232px               rail 176px
+```
+
+- Usable box 724 x 354. Root grid: stage (Mobius 300px | app 232px, 8px gap) and a 176px rail
+  column, 8px gap; the right inset is the root's right padding.
+- Rail: the brand at the top (44px), the keyring as the fixed overlay (width
+  `min(176px, (height - bottom inset - 44px nav - brand - gaps) / 1.3247)`, 176 x 233 at
+  x 592, y 73; OLED 67 x 38 CSS px, 200 x 113 physical px), the scene navigation at the bottom
+  (two 44px chevrons, 12px label). No grid cell or card frames the keyring.
+- Flags: the screen's bottom-left (x 44, y 310), in a 48px strip the Mobius column reserves.
+- Mobius: two-line header (13px title, 11px badge; 11px session line), 97 x 44 segments, one
+  page: the compact receipt with its scene sentence visible, the tree with its pager and Sync
+  stacked beside the rows, the records page with the pager beside the CSE root. A CSE notice
+  stands in for the session line.
+- App: the 36px title bar stays; landscape compact type with 13px card titles and actions.
+- No Safari path: `.story-fullscreen-launch` and `.story-fullscreen-guide` do not render (TSX)
+  and the CSS hides them under `data-display-mode="standalone"`.
+- Status bar: landscape has no top inset. A portrait Home Screen launch paints a black band of
+  `--safe-top` behind the black-translucent status bar so its white text stays readable.
+- Budget (measured at DPR 3, `navigator.standalone`, insets 44 / 44 / 21): every scene, with
+  and without the 93-character banner, at scroll size = client size; check-in after a keyring
+  PANIC keeps 16px under the receipt (20px with the CSE notice), the tree page 26px, the
+  records page 67px.
+
+### Full-screen path in iPhone Safari (`.story-fullscreen-launch`, `.story-fullscreen-guide`)
+
+- Launch control: shown only by StoryDemo on iOS Safari (not installed) during the intro. A
+  quiet text control at the bottom-right inside the insets (812 x 265: 110 x 44 at x 658,
+  y 200): 17px arrow glyph and "Full screen", 13px/600 `--muted`, no fill until hover. It sits
+  below the keyring and its halo in visual priority and never overlaps the keyring or flags.
+- Guide: a native-style sheet centered in the safe area, max 30rem wide, `--surface`, 18px
+  radius, a dimmed backdrop (spread shadow) and a soft drop shadow. Content in a grid: a 40px
+  accent glyph, the 17px/700 title, one 13px muted paragraph, the three numbered steps as one
+  row of 28px pills, and a tinted 44px `Continue in Safari` button at the bottom-right that
+  takes focus. 812 x 265: sheet 480 x 184 at x 166, y 36; steps 111 / 161 / 144px wide;
+  button 152 x 44. The `hidden` attribute removes it; StoryDemo makes the stage, top bar,
+  intro and keyring inert while it is open.
+- Motion: the sheet fades in over `--story-base`; no fade under reduced motion. Light and dark
+  use the same tokens.
+- Coexistence: the portrait rotate prompt owns portrait. Under `data-portrait="ask"` the
+  launch control and the sheet do not show; the sheet (z 45) sits above the rotate prompt
+  (z 40) in the stacking order.
 
 ### Phone portrait (portrait and 760px wide or less)
 
@@ -351,7 +468,7 @@ This session stores the away state ... without location coordinates.   15px mute
 
 ```
 +------------------------------+
-| (B)                 KO | EN  |  44 + safe top
+| (B)                          |  44 + safe top
 | +--------------------------+ |
 | | Privacy Bubble           | |  app pane, 44% of the stage
 | | Today ...                | |
@@ -363,7 +480,7 @@ This session stores the away state ... without location coordinates.   15px mute
 |                              |
 | [Transaction|Tree ]  ______  |  bottom deck: 2 x 2 panel
 | [Records |Scenes  ] |keyrg| |  switcher left, keyring right,
-|  <  2/7 Went out  >  |_____| |  scene navigation under the switcher
+| [KR][US] < 2/7 >     |_____| |  flags and scene navigation under the switcher
 +------------------------------+
 ```
 
@@ -387,7 +504,7 @@ This session stores the away state ... without location coordinates.   15px mute
 | Desktop trace is one vertical receipt with full paths; below 1024px the trace shows resource name plus RSC per record and hides the parent path | Live CSE paths (for example `dash-operator` sessions) are longer than replay paths; at 844 x 390 full paths grew the panel to 309px inside 288px. Full paths stay readable in Resource tree and CSE records | P4, P6, P12 |
 | Resource names in desktop paths never break (`nowrap`); in the compact receipt each name-plus-RSC record wraps as a whole token | The created name is the answer to the press and must read as one token | P2, P4 |
 | Panels page instead of scrolling (switcher plus `< n/m >` pagers) | Zero nested scroll keeps the one-viewport contract and the keyring position stable | P12 |
-| Segmented controls and the language toggle share one light thumb token pair; dark mode uses the iOS gray thumb | A dark thumb on a dark track read as a hole | P5, P10 |
+| Segmented controls share one light thumb token pair; dark mode uses the iOS gray thumb | A dark thumb on a dark track read as a hole | P5, P10 |
 | Disabled pager chevrons are 40% muted glyphs without a fill | Filled grey circles looked like pressed buttons | P5 |
 | A session error banner replaces the app title bar and the privacy footnote while it shows (below 1024px) | At 844 x 390 a 93-character message pushed login 88px past the pane; the title and footnote are the least specific lines on screen, and the scene keeps its own content | P2, P12 |
 | Phone landscape app pane widened from 36% to 40%, 36px title bar, tighter cards | Under the iPhone insets care-request overflowed by 17px with no error; fewer wrapped lines fix every scene | P12 |
@@ -398,6 +515,10 @@ This session stores the away state ... without location coordinates.   15px mute
 | The keyring moves to the bottom-right on every layout | The person's devices (phone, keyring) belong together; the right thumb reaches the keyring; the left side stays the record | P8 |
 | Guidance halo becomes a large double halo (inner ring, travelling outline wave, button tint) | A 2px breathing ring at visual + 10px was easy to miss in the first second of the demo | P2, P5 |
 | Shallow landscape (340px tall or less) drops the bottom bar for a right control rail and a left Mobius identity rail | In Safari with toolbars (1000 x 327) the bottom bar and title row left no room: the keyring covered the Mobius title and the check-in actions were cut | P12 |
+| The language control becomes two small flags at the bottom-left (Taegukgi, US flag) | The user asked for flags at the bottom-left; the top-right slot belongs to identity and the dashboard link, and the bottom-left corner is free on every layout | P10 |
+| The installed web app gets its own landscape tier: 176px keyring rail between brand and scene navigation, Mobius 300px, app 232px, flags in a Mobius bottom strip | The Home Screen launch frees 110px of height (375 vs 265): the keyring grows to 176px so the OLED and both buttons read at a glance, and every page keeps its header | P2, P9, P12 |
+| Safari's bars are explained, not fought: a quiet Full screen control and a three-step sheet | WebKit lets only the Home Screen web app remove Safari's bars; a sheet with the exact steps is the honest path | P1, P11 |
+| iPhone mini landscape (300px tall or less) gets its own tier: 148px keyring rail, two-line Mobius header, stacked tree pager, no app title bar | 812 x 265 in Safari left 244px of height: the 340px tier clipped the tabs, the receipt and the app actions, and the keyring shrank to about 70px | P2, P12 |
 | The error banner rule applies on desktop too; short desktops (820px or less) use compact phone type and a 340px minimum phone width | 1440 x 900 login overflowed 50px with the banner; 1024 x 768 care-request overflowed 90px without it | P12 |
 
 ## 10. Implementation contract (shared by design and function)
@@ -411,6 +532,11 @@ Root and stages:
   no keyring press yet. Deep links to later scenes and `?capture=1` start in `system`.
 - `.story-demo` carries `data-portrait="ask" | "continue"` (default `ask`). Only portrait
   phones read it.
+- `.story-demo` carries `data-display-mode="browser" | "standalone"` (standalone for display-mode
+  standalone or fullscreen, or `navigator.standalone`). Only the installed-app tier reads it.
+- On iOS Safari outside the installed app, the intro renders `.story-fullscreen-launch`; the
+  first landscape intro of a browser session opens `.story-fullscreen-guide` once. Neither
+  renders in the installed app.
 - Regions that are visually hidden for the current stage carry the `inert` attribute.
 - While mounted outside capture mode, the demo sets `overflow: hidden` and
   `overscroll-behavior: none` on `html` and `body`.
@@ -418,13 +544,18 @@ Root and stages:
 Markup (class names are the contract; CSS owns every visual value):
 
 ```
-div.story-demo[data-stage][data-portrait]          grid rows: top chrome, stage, bottom chrome
+div.story-demo[data-stage][data-portrait][data-display-mode]   grid rows: top chrome, stage, bottom chrome
   a.skip
   header.story-topbar
     a.story-brand, a.story-topbar-link (family dashboard), LangToggle
   section.story-intro (inert unless intro)
     h1.story-sr
     p.story-intro-hint[aria-live=polite] > i.story-intro-dot.confirm|.panic + text
+  button.story-fullscreen-launch[aria-haspopup=dialog][aria-expanded]   (iOS Safari intro only)
+    > svg + text
+  div.story-fullscreen-guide[role=dialog][aria-modal][hidden]
+    > span.story-fullscreen-glyph + p.story-fullscreen-title + p.story-fullscreen-body
+      + ol > li x 3 + button.story-fullscreen-continue
   div.story-rotate[role=dialog] > span.story-rotate-glyph + p.story-rotate-title
     + p.story-rotate-body + button.story-rotate-continue
   main.story-stage (inert unless system and no prompt)
@@ -485,6 +616,9 @@ outside the viewport.
 | iPhone portrait insets 47 / 34 | prompt | `--safe-top` 47, `--safe-bottom` 34, brand top 47 or more, continue button, keyring and bottom navigation bottoms at 810 or less |
 | 844 x 390 landscape, session error | login | A 93-character English error banner and the login content both fit the phone pane with no overflow, the banner sits above the content without overlap, Reconnect is 44 x 44 or more |
 | iPhone landscape insets 47 left and right, 21 bottom | system | brand, Mobius, keyring and navigation left edges 47 or more; app and navigation right edges 797 or less; keyring and navigation bottoms 369 or less |
+| 812 x 375 installed web app, DPR 3, insets 44 / 44 / 21, `data-display-mode="standalone"` (acceptance; capture by function via display-mode emulation or `navigator.standalone`) | intro, system, all seven scenes with and without the 93-character banner, check-in after a keyring PANIC on all three tabs | document 812 x 375; every visible stage, pane, open panel, device, phone, content box and switcher segment at scroll size = client size; keyring 172px or wider with both buttons and the OLED visible; Mobius 300px, segments 90 x 44 or larger with complete labels; keyring clear of Mobius, app, brand, flags and navigation; no `.story-fullscreen-launch` or visible `.story-fullscreen-guide`; every control 44px and inside the insets |
+| 812 x 265 Safari tab with an iPhone user agent (acceptance) | intro: guide open, then dismissed | guide inside the insets with scroll size = client size, three steps visible, `Continue in Safari` 44px, focused and topmost; stage, top bar, intro and keyring inert while open; after dismissal the launch control 44px, inside the insets, topmost, clear of keyring and flags; portrait shows only the rotate prompt |
+| 812 x 265 iPhone mini landscape, DPR 3, insets 44 / 44 / 21 (acceptance; capture assertions to be added by function) | system, all seven scenes, with and without the 93-character banner; check-in after a keyring PANIC on all three tabs | document 812 x 265; every visible stage, pane, open panel, device, phone, content box and switcher segment at scroll size = client size; keyring (148px) clear of Mobius, app and controls; flags and scene navigation 44px; every control inside the insets |
 | 844 x 320 and 1000 x 327 shallow landscape (acceptance; capture assertions to be added by function) | system, all seven scenes, with and without the error banner | every visible stage, pane, open panel, device, phone and content box at scroll size = client size; keyring clear of the Mobius head, switcher, open panel, app pane, brand, language and scene navigation; check-in after a keyring PANIC fits the Transaction receipt |
 | 1440 x 900, reduced motion | system | No running animations on the dock after the transition |
 | 1440 x 900 interaction | system | Drag rotates the model; no keyring tool chrome; confirm and panic presses return Mobius receipts and panic opens check-in |
