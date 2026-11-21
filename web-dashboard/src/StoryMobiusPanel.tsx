@@ -4,7 +4,7 @@ import { StoryMobiusTree } from './StoryMobiusTree.tsx';
 import type { StoryScene } from './StoryDemo.tsx';
 import type { StoryActionPhase, StorySessionSnapshot, StoryTrace } from './story-session.ts';
 
-type PanelId = 'tree' | 'events' | 'scenes';
+type PanelId = 'trace' | 'tree' | 'events' | 'scenes';
 type KeyringAction = 'keyring-confirm' | 'keyring-panic';
 
 interface FlowCopy {
@@ -74,10 +74,13 @@ const sceneLabels: Record<StoryScene, string> = {
 };
 
 const panelLabels: Record<PanelId, string> = {
+  trace: 'Transaction',
   tree: 'Resource tree',
   events: 'CSE records',
   scenes: 'Scenes',
 };
+
+const EVENTS_PER_PAGE = 1;
 
 function readableType(type: string): string {
   const words = type.toLowerCase().split('_').filter(Boolean).join(' ');
@@ -132,11 +135,14 @@ export function StoryMobiusPanel({ scene, snapshot, phase, message, refresh, foc
   const traceSending = focusAction ? traceEvents.length === 0 : phase === 'sending';
   const traceVerified = traceEvents.length > 0 && traceEvents.every((event) => event.verified);
   const verifiedCount = snapshot?.mobius.createRetrieveVerified ?? 0;
-  const [mobilePanel, setMobilePanel] = useState<PanelId>('tree');
+  const [mobilePanel, setMobilePanel] = useState<PanelId>('trace');
+  const [eventPage, setEventPage] = useState(0);
   const [flashes, setFlashes] = useState<ReadonlySet<PanelId>>(new Set());
   const seenSequence = useRef<number | null>(null);
   const latestSequence = events[0]?.sequence ?? 0;
   const latestType = events[0]?.type ?? '';
+  const eventPageCount = Math.max(1, Math.ceil(events.length / EVENTS_PER_PAGE));
+  const visibleEvents = events.slice(eventPage * EVENTS_PER_PAGE, (eventPage + 1) * EVENTS_PER_PAGE);
 
   useEffect(() => {
     if (latestSequence === 0) return;
@@ -146,11 +152,16 @@ export function StoryMobiusPanel({ scene, snapshot, phase, message, refresh, foc
     }
     if (latestSequence <= seenSequence.current) return;
     seenSequence.current = latestSequence;
-    setFlashes(new Set<PanelId>(latestType ? ['tree', 'events'] : ['tree']));
-    setMobilePanel('tree');
+    setFlashes(new Set<PanelId>(latestType ? ['trace', 'tree', 'events'] : ['trace', 'tree']));
+    setMobilePanel('trace');
+    setEventPage(0);
     const timer = window.setTimeout(() => setFlashes(new Set()), 3600);
     return () => window.clearTimeout(timer);
   }, [latestSequence, latestType]);
+
+  useEffect(() => {
+    setEventPage((current) => Math.min(current, eventPageCount - 1));
+  }, [eventPageCount]);
 
   const choosePanel = (panel: PanelId) => {
     setMobilePanel(panel);
@@ -175,7 +186,18 @@ export function StoryMobiusPanel({ scene, snapshot, phase, message, refresh, foc
 
     {message ? <p className="story-server-message" role="status">CSE transaction response received. Retry is available.</p> : null}
 
-    <section className="story-trace" data-phase={traceSending ? 'sending' : 'verified'} aria-labelledby="story-trace-title" aria-live="polite">
+    <nav className="story-panel-tabs" aria-label="Mobius browser panels">
+      {(Object.keys(panelLabels) as PanelId[]).map((panel) => <button
+        key={panel}
+        type="button"
+        className={`${mobilePanel === panel ? 'active' : ''}${flashes.has(panel) ? ' has-new-event' : ''}`}
+        aria-pressed={mobilePanel === panel}
+        aria-controls={`story-panel-${panel}`}
+        onClick={() => choosePanel(panel)}
+      >{panelLabels[panel]}<span className="story-panel-alert" aria-hidden="true" /></button>)}
+    </nav>
+
+    <section id="story-panel-trace" className={panelClass('trace', 'story-trace')} data-phase={traceSending ? 'sending' : 'verified'} aria-labelledby="story-trace-title" aria-live="polite">
       <div className="story-trace-heading">
         <div>
           <p className="story-trace-eyebrow">Latest oneM2M transaction</p>
@@ -200,17 +222,6 @@ export function StoryMobiusPanel({ scene, snapshot, phase, message, refresh, foc
       <p className="story-trace-summary">{flow.summary}</p>
     </section>
 
-    <nav className="story-panel-tabs" aria-label="Mobius browser panels">
-      {(Object.keys(panelLabels) as PanelId[]).map((panel) => <button
-        key={panel}
-        type="button"
-        className={`${mobilePanel === panel ? 'active' : ''}${flashes.has(panel) ? ' has-new-event' : ''}`}
-        aria-pressed={mobilePanel === panel}
-        aria-controls={`story-panel-${panel}`}
-        onClick={() => choosePanel(panel)}
-      >{panelLabels[panel]}<span className="story-panel-alert" aria-hidden="true" /></button>)}
-    </nav>
-
     <section id="story-panel-tree" className={panelClass('tree', 'story-mobius-tree-card')} aria-labelledby="story-tree-title">
       <div className="story-events-head">
         <h3 id="story-tree-title">oneM2M resource tree</h3>
@@ -225,7 +236,7 @@ export function StoryMobiusPanel({ scene, snapshot, phase, message, refresh, foc
         <span>{verifiedCount} total</span>
       </div>
       <div aria-live="polite">
-        {events.length > 0 ? <ul>{events.map((event, index) => <li
+        {events.length > 0 ? <ul>{visibleEvents.map((event, index) => <li
           className={event.resource === freshPath ? 'is-new-event is-fresh' : index === 0 && flashes.has('events') ? 'is-new-event' : ''}
           key={`${event.sequence}-${event.type}`}
           data-event-type={event.type}
@@ -239,6 +250,11 @@ export function StoryMobiusPanel({ scene, snapshot, phase, message, refresh, foc
           </div>
         </li>)}</ul> : <p className="story-server-wait">Waiting for the first CSE response.</p>}
       </div>
+      {events.length > EVENTS_PER_PAGE ? <div className="story-events-pager" aria-label="CSE record pages">
+        <button type="button" onClick={() => setEventPage((current) => Math.max(0, current - 1))} disabled={eventPage === 0} aria-label="Previous CSE record page">‹</button>
+        <span>{eventPage + 1} / {eventPageCount}</span>
+        <button type="button" onClick={() => setEventPage((current) => Math.min(eventPageCount - 1, current + 1))} disabled={eventPage >= eventPageCount - 1} aria-label="Next CSE record page">›</button>
+      </div> : null}
       <p className="story-mobius-root"><span>CSE-ID {snapshot?.mobius.cse ?? 'Mobius4'}</span><code>{snapshot?.mobius.root ?? '/Mobius/story-demo/session'}</code></p>
     </section>
 

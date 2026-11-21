@@ -142,6 +142,64 @@ try {
     }
     throw new Error(`Timed out waiting for HTTP 200: ${label}; responses=${JSON.stringify(actionResponses.slice(startIndex))}`);
   };
+  const assertViewportFit = async (label) => {
+    const metrics = await evaluate(`(() => {
+      const visible = (element) => {
+        if (!element) return false;
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) > 0;
+      };
+      const root = document.querySelector('.story-demo');
+      const rootRect = root?.getBoundingClientRect();
+      const major = [...document.querySelectorAll('.story-demo,.story-stage,.story-mobius,.story-panel-card.is-mobile-open,.story-app-column,.story-device,.story-phone,.story-content')].filter(visible);
+      const overflow = major.filter((element) => element.scrollWidth > element.clientWidth + 1 || element.scrollHeight > element.clientHeight + 1).map((element) => ({
+        selector: element.className,
+        clientWidth: element.clientWidth,
+        scrollWidth: element.scrollWidth,
+        clientHeight: element.clientHeight,
+        scrollHeight: element.scrollHeight,
+      }));
+      const scrollContainers = [...(root?.querySelectorAll('*') ?? [])].filter(visible).filter((element) => {
+        const style = getComputedStyle(element);
+        const scrollX = (style.overflowX === 'auto' || style.overflowX === 'scroll') && element.scrollWidth > element.clientWidth + 1;
+        const scrollY = (style.overflowY === 'auto' || style.overflowY === 'scroll') && element.scrollHeight > element.clientHeight + 1;
+        return scrollX || scrollY;
+      }).map((element) => element.className || element.tagName);
+      const outside = major.filter((element) => {
+        const rect = element.getBoundingClientRect();
+        return rect.left < -1 || rect.top < -1 || rect.right > innerWidth + 1 || rect.bottom > innerHeight + 1;
+      }).map((element) => element.className);
+      return {
+        docWidth: document.documentElement.scrollWidth,
+        docHeight: document.documentElement.scrollHeight,
+        viewportWidth: innerWidth,
+        viewportHeight: innerHeight,
+        fullScreen: !!rootRect && Math.abs(rootRect.left) < 1 && Math.abs(rootRect.top) < 1 && Math.abs(rootRect.width - innerWidth) < 1 && Math.abs(rootRect.height - innerHeight) < 1,
+        overflow,
+        scrollContainers,
+        outside,
+      };
+    })()`);
+    if (!metrics.fullScreen || metrics.docWidth !== metrics.viewportWidth || metrics.docHeight !== metrics.viewportHeight
+      || metrics.overflow.length > 0 || metrics.scrollContainers.length > 0 || metrics.outside.length > 0) {
+      throw new Error(`${label} viewport fit failed: ${JSON.stringify(metrics)}`);
+    }
+    return metrics;
+  };
+  const openMobiusPanel = async (label) => {
+    await evaluate(`[...document.querySelectorAll('.story-panel-tabs button')].find((button)=>button.textContent.trim()===${JSON.stringify(label)})?.click()`);
+    await waitFor(`[...document.querySelectorAll('.story-panel-tabs button')].some((button)=>button.textContent.trim()===${JSON.stringify(label)} && button.getAttribute('aria-pressed')==='true')`, `${label} panel`);
+    await delay(120);
+  };
+  const assertStoryScenesFit = async (label) => {
+    for (const [, scene, expected] of scenes) {
+      await evaluate(`window.location.hash=${JSON.stringify(`#/story/${scene}`)}`);
+      await waitFor(`document.body?.innerText.includes(${JSON.stringify(expected)})`, `${label} ${scene}`);
+      await delay(180);
+      await assertViewportFit(`${label} ${scene}`);
+    }
+  };
   for (const [name, scene, expected] of scenes) { await openScene(scene, expected); await shot(name); }
 
   // The public entry starts with one product, then the same keyring travels into the verified system layout.
@@ -181,14 +239,59 @@ try {
   await waitForAction200(introResponseIndex, 'intro keyring confirm');
   await waitFor("document.querySelector('.story-demo')?.dataset.stage === 'system'", 'desktop system transition');
   await delay(900);
-  await waitFor("Boolean(document.querySelector('[data-event-type=\"RESIDENT_CONFIRMED\"]'))", 'resident confirmation record');
+  await waitFor("document.querySelector('.story-trace-title')?.textContent?.includes('Resident confirmation stored') === true", 'resident confirmation record');
   await waitFor("Boolean(document.querySelector('[data-fresh=\"true\"]'))", 'fresh Mobius node');
+  await evaluate("[...document.querySelectorAll('.story-panel-tabs button')].find((button)=>button.textContent.includes('Resource tree'))?.click()");
+  await waitFor("document.querySelector('#story-panel-tree')?.classList.contains('is-mobile-open') === true", 'desktop resource tree panel');
+  const initialTreePage = Number((await evaluate("document.querySelector('.mobius-tree-pager span')?.textContent?.split('/')[0]?.trim()")) ?? 1);
+  while (await evaluate("document.querySelector('[aria-label=\"Previous resource page\"]')?.disabled === false")) {
+    await evaluate("document.querySelector('[aria-label=\"Previous resource page\"]')?.click()");
+    await delay(30);
+  }
+  const treePageCount = Number((await evaluate("document.querySelector('.mobius-tree-pager span')?.textContent?.split('/')[1]?.trim()")) ?? 1);
+  let treeCoverage = '';
+  for (let page = 1; page <= treePageCount; page += 1) {
+    treeCoverage += ` ${(await evaluate("document.querySelector('#story-panel-tree')?.textContent")) ?? ''}`;
+    if (page < treePageCount) {
+      await evaluate("document.querySelector('[aria-label=\"Next resource page\"]')?.click()");
+      await delay(30);
+    }
+  }
+  while (await evaluate("document.querySelector('[aria-label=\"Previous resource page\"]')?.disabled === false")) {
+    await evaluate("document.querySelector('[aria-label=\"Previous resource page\"]')?.click()");
+    await delay(30);
+  }
+  for (let page = 1; page < initialTreePage; page += 1) {
+    await evaluate("document.querySelector('[aria-label=\"Next resource page\"]')?.click()");
+    await delay(30);
+  }
+  await assertViewportFit('desktop resource tree');
+  await openMobiusPanel('CSE records');
+  await assertViewportFit('desktop CSE records');
+  while (await evaluate("document.querySelector('[aria-label=\"Previous CSE record page\"]')?.disabled === false")) {
+    await evaluate("document.querySelector('[aria-label=\"Previous CSE record page\"]')?.click()");
+    await delay(30);
+  }
+  const eventPageCount = Number((await evaluate("document.querySelector('.story-events-pager span')?.textContent?.split('/')[1]?.trim()")) ?? 1);
+  let freshRecordCovered = '';
+  for (let page = 1; page <= eventPageCount; page += 1) {
+    freshRecordCovered ||= (await evaluate("document.querySelector('.story-mobius-events .is-fresh')?.dataset.path")) ?? '';
+    if (page < eventPageCount) {
+      await evaluate("document.querySelector('[aria-label=\"Next CSE record page\"]')?.click()");
+      await delay(30);
+    }
+  }
+  const requiredTerms = ['CSEBase','m2m:ae','m2m:cnt','m2m:cin','CREATE','RETRIEVE','RSC'];
+  const standardTermsCovered = requiredTerms.every((term) => treeCoverage.includes(term));
+  await openMobiusPanel('Transaction');
+  await delay(320);
+  await assertViewportFit('desktop system');
   const desktopSystemLayout = await evaluate(`(() => {
     const rect = (selector) => { const value=document.querySelector(selector)?.getBoundingClientRect(); return value ? {left:value.left,right:value.right,top:value.top,bottom:value.bottom,width:value.width,height:value.height} : null; };
     const dock=rect('.keyring-dock'); const mobius=rect('.story-mobius'); const app=rect('.story-app-column');
+    const dockElement=document.querySelector('.keyring-dock'); const stageElement=document.querySelector('.story-stage');
     const mobiusPanel=document.querySelector('.story-mobius');
-    const mobiusText=mobiusPanel?.innerText ?? '';
-    const requiredTerms=['CSEBase','m2m:ae','m2m:cnt','m2m:cin','CREATE','RETRIEVE','RSC'];
+    const mobiusText=mobiusPanel?.textContent ?? '';
     const clippedText=[...(mobiusPanel?.querySelectorAll('code,h2,h3,strong,small,.mobius-node-name,.mobius-node-detail p') ?? [])].filter((element)=>element.clientWidth>0 && element.scrollWidth>element.clientWidth+1).map((element)=>element.textContent?.trim()).filter(Boolean);
     const freshNode=document.querySelector('[data-fresh="true"]')?.dataset.path ?? '';
     const freshRecord=document.querySelector('.story-mobius-events .is-fresh')?.dataset.path ?? '';
@@ -199,20 +302,21 @@ try {
     return {
       dock,mobius,app,freshNode,freshRecord,tracePaths,
       dockLeft:dock?.left,dockBottom:innerHeight-(dock?.bottom??0),
-      background:style.backgroundColor,border:parseFloat(style.borderTopWidth)||0,zIndex:style.zIndex,
+      background:style.backgroundColor,border:parseFloat(style.borderTopWidth)||0,zIndex:style.zIndex,position:style.position,
+      outsideStage:!!dockElement&&!!stageElement&&!stageElement.contains(dockElement),
       disjoint:!!dock&&!!mobius&&dock.right<=mobius.left,
       ordered:!!mobius&&!!app&&mobius.right<=app.left,
       hit:top?.classList.contains('confirm')===true,
       englishOnly:mobiusPanel?.getAttribute('lang')==='en' && !/[가-힣]/.test(mobiusText),
-      standardTerms:requiredTerms.every((term)=>mobiusText.includes(term)),
       clippedText,
     };
   })()`);
   const transparentDock = ['rgba(0, 0, 0, 0)', 'transparent'].includes(desktopSystemLayout.background);
-  const linkedPath = desktopSystemLayout.freshNode && desktopSystemLayout.freshNode === desktopSystemLayout.freshRecord && desktopSystemLayout.tracePaths.includes(desktopSystemLayout.freshNode);
+  const linkedPath = desktopSystemLayout.freshNode && desktopSystemLayout.freshNode === freshRecordCovered && desktopSystemLayout.tracePaths.includes(desktopSystemLayout.freshNode);
   if (desktopSystemLayout.dockLeft > 48 || desktopSystemLayout.dockBottom > 48 || !transparentDock || desktopSystemLayout.border !== 0
-    || desktopSystemLayout.zIndex !== '30' || !desktopSystemLayout.disjoint || !desktopSystemLayout.ordered || !linkedPath || !desktopSystemLayout.hit
-    || !desktopSystemLayout.englishOnly || !desktopSystemLayout.standardTerms || desktopSystemLayout.clippedText.length > 0) {
+    || desktopSystemLayout.zIndex !== '30' || desktopSystemLayout.position !== 'fixed' || !desktopSystemLayout.outsideStage
+    || !desktopSystemLayout.disjoint || !desktopSystemLayout.ordered || !linkedPath || !desktopSystemLayout.hit
+    || !desktopSystemLayout.englishOnly || !standardTermsCovered || desktopSystemLayout.clippedText.length > 0) {
     throw new Error(`desktop system contract failed: ${JSON.stringify(desktopSystemLayout)}`);
   }
   await shot('story-system-desktop', 1440, 900);
@@ -252,7 +356,7 @@ try {
     throw new Error(`mobile viewport contract failed: ${JSON.stringify(mobileLayout)}`);
   }
   await waitFor("Boolean(document.querySelector('.keyring-physical-button.confirm.is-guided'))", 'guided keyring confirm button');
-  if ((await evaluate("document.querySelector('.keyring-model')?.getBoundingClientRect().width")) > 140) throw new Error('mobile keyring is larger than its compact panel contract');
+  if ((await evaluate("document.querySelector('.keyring-model')?.getBoundingClientRect().width")) < 104) throw new Error('mobile keyring is smaller than its readable system contract');
   await evaluate("document.querySelector('.keyring-physical-button.confirm')?.click()");
   await waitFor("document.querySelector('[data-firmware-screen]')?.dataset.firmwareScreen === 'confirm'", 'firmware confirm screen');
   await waitFor("document.querySelectorAll('.story-panel-tabs .has-new-event').length >= 2", 'panel event highlights');
@@ -275,21 +379,36 @@ try {
   await waitForAction200(landscapeResponseIndex, 'landscape keyring confirm');
   await waitFor("document.querySelector('.story-demo')?.dataset.stage === 'system'", 'landscape system');
   await delay(900);
+  await assertViewportFit('landscape system');
+  await openMobiusPanel('Resource tree');
+  await assertViewportFit('landscape resource tree');
+  await openMobiusPanel('CSE records');
+  await assertViewportFit('landscape CSE records');
+  await openMobiusPanel('Transaction');
   const landscapeLayout = await evaluate(`(() => {
     const rect = (selector) => { const value=document.querySelector(selector)?.getBoundingClientRect(); return value ? {left:value.left,right:value.right,top:value.top,bottom:value.bottom} : null; };
-    const dock=rect('.keyring-dock'); const mobius=rect('.story-mobius'); const app=rect('.story-app-column');
+    const dock=rect('.keyring-dock'); const mobius=rect('.story-mobius'); const app=rect('.story-app-column'); const navigation=rect('.story-bottom-nav');
+    const keyring=rect('.keyring-model');
     const visibleTargets=[...document.querySelectorAll('button,a,summary')].map((element)=>{const r=element.getBoundingClientRect();const s=getComputedStyle(element);return {width:r.width,height:r.height,visible:s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0&&r.right>0&&r.bottom>0&&r.left<innerWidth&&r.top<innerHeight};}).filter((item)=>item.visible);
     return {
       width:document.documentElement.scrollWidth,height:document.documentElement.scrollHeight,
-      viewportWidth:innerWidth,viewportHeight:innerHeight,dock,mobius,app,
-      ordered:!!dock&&!!mobius&&!!app&&dock.right<=mobius.left&&mobius.right<=app.left,
+      viewportWidth:innerWidth,viewportHeight:innerHeight,dock,mobius,app,navigation,keyring,
+      overlaid:!!dock&&!!mobius&&dock.left<mobius.right&&dock.right>mobius.left,
+      ordered:!!mobius&&!!app&&mobius.right<=app.left,
+      navigationAtBottom:!!navigation&&navigation.bottom<=innerHeight&&innerHeight-navigation.bottom<=16&&navigation.top>=innerHeight-80,
+      navigationClear:!!navigation&&!!dock&&(navigation.left>=dock.right||navigation.right<=dock.left||navigation.top>=dock.bottom||navigation.bottom<=dock.top),
+      topbarNavigation:document.querySelector('.story-topbar .story-stepper')!==null,
+      toolChrome:document.querySelectorAll('.keyring-tools,.keyring-mode,.keyring-reset,.keyring-foot,.keyring-counters').length,
       smallTargets:visibleTargets.filter((item)=>item.width<44||item.height<44).length,
     };
   })()`);
-  if (landscapeLayout.width !== 844 || landscapeLayout.height !== 390 || !landscapeLayout.ordered || landscapeLayout.smallTargets !== 0) {
+  if (landscapeLayout.width !== 844 || landscapeLayout.height !== 390 || !landscapeLayout.overlaid || !landscapeLayout.ordered
+    || !landscapeLayout.navigationAtBottom || !landscapeLayout.navigationClear || landscapeLayout.topbarNavigation
+    || landscapeLayout.toolChrome !== 0 || !landscapeLayout.keyring || landscapeLayout.keyring.right - landscapeLayout.keyring.left < 104 || landscapeLayout.smallTargets !== 0) {
     throw new Error(`landscape contract failed: ${JSON.stringify(landscapeLayout)}`);
   }
   await shot('story-system-landscape', 844, 390);
+  await assertStoryScenesFit('landscape scene');
 
   await clearStorySession();
   await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
@@ -303,10 +422,19 @@ try {
   if (!portraitIntro.rotateVisible || !portraitIntro.keyringVisible || !portraitIntro.optimizedCopy || !portraitIntro.focusOnContinue || portraitIntro.buttonWidth < 44 || portraitIntro.buttonHeight < 44) {
     throw new Error(`portrait intro contract failed: ${JSON.stringify(portraitIntro)}`);
   }
+  await assertViewportFit('portrait rotate prompt');
   await shot('story-intro-portrait', 390, 844);
   await clickCenter('.story-rotate-continue');
   await waitFor("document.querySelector('.story-demo')?.dataset.stage === 'system' && document.querySelector('.story-demo')?.dataset.portrait === 'continue' && document.querySelector('.story-rotate')?.getAttribute('aria-hidden') === 'true'", 'portrait fallback system');
   await delay(900);
+  await assertViewportFit('portrait fallback system');
+  await openMobiusPanel('Resource tree');
+  await assertViewportFit('portrait resource tree');
+  await openMobiusPanel('CSE records');
+  await assertViewportFit('portrait CSE records');
+  await openMobiusPanel('Scenes');
+  await assertViewportFit('portrait scenes');
+  await openMobiusPanel('Transaction');
   const portraitSystem = await evaluate(`(() => {
     const visibleTargets=[...document.querySelectorAll('button,a,summary')].map((element)=>{const r=element.getBoundingClientRect();const s=getComputedStyle(element);return {width:r.width,height:r.height,visible:s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0&&r.right>0&&r.bottom>0&&r.left<innerWidth&&r.top<innerHeight};}).filter((item)=>item.visible);
     return {width:document.documentElement.scrollWidth,height:document.documentElement.scrollHeight,smallTargets:visibleTargets.filter((item)=>item.width<44||item.height<44).length};
@@ -315,6 +443,7 @@ try {
     throw new Error(`portrait system contract failed: ${JSON.stringify(portraitSystem)}`);
   }
   await shot('story-system-portrait', 390, 844);
+  await assertStoryScenesFit('portrait scene');
 
   await clearStorySession();
   await send('Page.navigate', { url: `${previewUrl}/?lang=en#/story/activity-away` });
@@ -323,6 +452,51 @@ try {
   if (!portraitGate.mainInert || !portraitGate.dockInert || portraitGate.dialog !== 'dialog') throw new Error(`portrait orientation gate failed: ${JSON.stringify(portraitGate)}`);
   await clickCenter('.story-rotate-continue');
   await waitFor("document.querySelector('.story-rotate')?.getAttribute('aria-hidden') === 'true' && document.querySelector('.story-stage')?.inert === false", 'portrait deep-link continue');
+
+  const portraitSafeArea = await send('Emulation.setSafeAreaInsetsOverride', { insets: { top: 47, right: 0, bottom: 34, left: 0 } });
+  if (portraitSafeArea.error) throw new Error(`safe-area emulation unavailable: ${JSON.stringify(portraitSafeArea.error)}`);
+  await clearStorySession();
+  await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+  await send('Page.navigate', { url: `${previewUrl}/?lang=en#/story/login` });
+  await waitFor("document.querySelector('.story-rotate')?.getAttribute('aria-hidden') === 'false'", 'iPhone portrait safe-area prompt');
+  await delay(180);
+  await assertViewportFit('iPhone portrait safe area');
+  const portraitSafeLayout = await evaluate(`(() => {
+    const brand=document.querySelector('.story-brand')?.getBoundingClientRect();
+    const button=document.querySelector('.story-rotate-continue')?.getBoundingClientRect();
+    const keyring=document.querySelector('.keyring-dock')?.getBoundingClientRect();
+    const navigation=document.querySelector('.story-bottom-nav')?.getBoundingClientRect();
+    const root=getComputedStyle(document.querySelector('.story-demo'));
+    return {safeTop:parseFloat(root.getPropertyValue('--safe-top')),safeBottom:parseFloat(root.getPropertyValue('--safe-bottom')),brandTop:brand?.top,buttonBottom:button?.bottom,keyringBottom:keyring?.bottom,navigationBottom:navigation?.bottom};
+  })()`);
+  if (portraitSafeLayout.safeTop !== 47 || portraitSafeLayout.safeBottom !== 34 || portraitSafeLayout.brandTop < 47
+    || portraitSafeLayout.buttonBottom > 810 || portraitSafeLayout.keyringBottom > 810 || portraitSafeLayout.navigationBottom > 810) {
+    throw new Error(`iPhone portrait safe-area contract failed: ${JSON.stringify(portraitSafeLayout)}`);
+  }
+
+  const landscapeSafeArea = await send('Emulation.setSafeAreaInsetsOverride', { insets: { top: 0, right: 47, bottom: 21, left: 47 } });
+  if (landscapeSafeArea.error) throw new Error(`landscape safe-area emulation unavailable: ${JSON.stringify(landscapeSafeArea.error)}`);
+  await clearStorySession();
+  await send('Emulation.setDeviceMetricsOverride', { width: 844, height: 390, deviceScaleFactor: 1, mobile: true });
+  await send('Page.navigate', { url: `${previewUrl}/?lang=en#/story/activity-away` });
+  await waitFor("document.querySelector('.story-demo')?.dataset.stage === 'system'", 'iPhone landscape safe-area system');
+  await delay(500);
+  await assertViewportFit('iPhone landscape safe area');
+  const landscapeSafeLayout = await evaluate(`(() => {
+    const brand=document.querySelector('.story-brand')?.getBoundingClientRect();
+    const mobius=document.querySelector('.story-mobius')?.getBoundingClientRect();
+    const app=document.querySelector('.story-app-column')?.getBoundingClientRect();
+    const dock=document.querySelector('.keyring-dock')?.getBoundingClientRect();
+    const navigation=document.querySelector('.story-bottom-nav')?.getBoundingClientRect();
+    const root=getComputedStyle(document.querySelector('.story-demo'));
+    return {safeLeft:parseFloat(root.getPropertyValue('--safe-left')),safeRight:parseFloat(root.getPropertyValue('--safe-right')),brandLeft:brand?.left,mobiusLeft:mobius?.left,appRight:app?.right,dockLeft:dock?.left,dockBottom:dock?.bottom,navigationLeft:navigation?.left,navigationRight:navigation?.right,navigationBottom:navigation?.bottom};
+  })()`);
+  if (landscapeSafeLayout.safeLeft !== 47 || landscapeSafeLayout.safeRight !== 47 || landscapeSafeLayout.brandLeft < 47
+    || landscapeSafeLayout.mobiusLeft < 47 || landscapeSafeLayout.appRight > 797 || landscapeSafeLayout.dockLeft < 47 || landscapeSafeLayout.dockBottom > 369
+    || landscapeSafeLayout.navigationLeft < 47 || landscapeSafeLayout.navigationRight > 797 || landscapeSafeLayout.navigationBottom > 369) {
+    throw new Error(`iPhone landscape safe-area contract failed: ${JSON.stringify(landscapeSafeLayout)}`);
+  }
+  await send('Emulation.setSafeAreaInsetsOverride', { insets: {} });
 
   await openScene('care-request', 'Living room access for Mina');
   await evaluate("document.querySelector('button.story-primary')?.click()");
@@ -347,21 +521,17 @@ try {
   await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: stage.x + 46, y: stage.y + 20, button: 'left' });
   await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: stage.x + 46, y: stage.y + 20, button: 'left', clickCount: 1 });
   await waitFor(`document.querySelector('.keyring-model')?.style.transform !== ${JSON.stringify(beforeRotate)}`, 'keyring drag rotation');
-  await evaluate("[...document.querySelectorAll('.keyring-mode button')].find((button)=>button.textContent.includes('Move'))?.click()");
-  const beforeMove = await evaluate("document.querySelector('.keyring-model')?.style.transform");
-  await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: stage.x, y: stage.y, button: 'left', clickCount: 1 });
-  await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: stage.x - 34, y: stage.y + 16, button: 'left' });
-  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: stage.x - 34, y: stage.y + 16, button: 'left', clickCount: 1 });
-  await waitFor(`document.querySelector('.keyring-model')?.style.transform !== ${JSON.stringify(beforeMove)}`, 'keyring drag movement');
+  const keyringChrome = await evaluate("document.querySelectorAll('.keyring-tools,.keyring-mode,.keyring-reset,.keyring-foot,.keyring-counters').length");
+  if (keyringChrome !== 0) throw new Error(`keyring control chrome remains: ${keyringChrome}`);
   await evaluate("document.querySelector('.keyring-physical-button.confirm')?.click()");
-  await waitFor("Boolean(document.querySelector('[data-event-type=\"RESIDENT_CONFIRMED\"]'))", 'keyring confirm Mobius receipt');
+  await waitFor("document.querySelector('.story-trace-title')?.textContent?.includes('Resident confirmation stored') === true", 'keyring confirm Mobius receipt');
   const systemShot = await send('Page.captureScreenshot', { format: 'png' });
   const systemBytes = Buffer.from(systemShot.result.data, 'base64');
   await writeFile(join(outDir, 'story-system-desktop-interaction.png'), systemBytes);
   captured.push({ name: 'story-system-desktop-interaction', width: 1440, height: 900, file: 'story-system-desktop-interaction.png', sha256: createHash('sha256').update(systemBytes).digest('hex') });
   await evaluate("document.querySelector('.keyring-physical-button.panic')?.click()");
   await waitFor("location.hash === '#/story/check-in'", 'keyring panic to check-in transition');
-  await waitFor("Boolean(document.querySelector('[data-event-type=\"PANIC_ALERT\"]'))", 'keyring panic Mobius receipt');
+  await waitFor("document.querySelector('.story-trace-title')?.textContent?.includes('Keyring emergency alert stored') === true", 'keyring panic Mobius receipt');
 
   await clearStorySession();
   await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
@@ -390,9 +560,9 @@ try {
   const manifest = {
     generatedAt: new Date().toISOString(),
     browser: version.Browser,
-    mode: 'browser-isolated replay CSE; keyring-first transition, landscape split, portrait fallback, guardian share and caregiver group command exercised',
+    mode: 'browser-isolated replay CSE; full-viewport shell, fixed keyring overlay, iPhone safe areas, landscape split, portrait fallback, guardian share and caregiver group command exercised',
     command: 'npm --prefix web-dashboard run capture:story',
-    assertions: ['intro shows only the keyring product and guidance', 'real keyring input returns HTTP 200 and transitions into the system stage', 'floating dock is transparent, z-index 30 and disjoint from Mobius', 'fresh Mobius tree node, trace path and newest record share one resource path', 'Mobius browser is English-only and exposes oneM2M resource types, methods and RSC values without clipped text', 'desktop Mobius stays left of the phone in light and dark mode', 'phone landscape fits dock, Mobius and app side by side in one viewport', 'phone portrait and portrait deep links show the optimized landscape prompt with a 44px Continue upright path', 'all visible controls are at least 44px', 'reduced motion leaves no running dock animation', 'keyboard focus reaches the confirm button with a 3px outline', 'Mobius tree exposes a wrapping full resource path', 'keyring firmware screen mirrors READY/CONFIRM/PANIC states', 'keyring supports drag rotation and movement', 'care approval opens the caregiver view', 'All on returns three readbacks', 'draft review opens a five-minute location lease'],
+    assertions: ['intro shows only the keyring product and guidance', 'real keyring input returns HTTP 200 and transitions into the system stage', 'story shell exactly fills 100vw by 100dvh with zero document or panel overflow', 'floating keyring is a transparent fixed overlay outside the content grid at z-index 30', 'all seven story scenes fit landscape and portrait viewports without clipping', 'iPhone portrait notch, landscape sensor housing and home-indicator insets keep controls inside the safe area', 'fresh Mobius tree node, trace path and newest record share one resource path', 'Mobius browser is English-only and exposes oneM2M resource types, methods and RSC values without clipped text', 'Mobius tree and CSE records paginate inside fixed panels without nested scrolling', 'desktop Mobius stays left of the phone in light and dark mode', 'phone landscape fits Mobius, app and overlay keyring in one viewport', 'phone portrait and portrait deep links show the optimized landscape prompt with a 44px Continue upright path', 'scene arrows use a compact bottom navigation outside the top bar', 'keyring has no Rotate, Move or Reset chrome and every drag rotates it directly', 'system keyring remains large enough to read its firmware screen and physical buttons', 'all visible controls are at least 44px', 'reduced motion leaves no running dock animation', 'keyboard focus reaches the confirm button with a 3px outline', 'Mobius tree exposes a wrapping full resource path', 'keyring firmware screen mirrors READY/CONFIRM/PANIC states', 'care approval opens the caregiver view', 'All on returns three readbacks', 'draft review opens a five-minute location lease'],
     captured,
   };
   await writeFile(join(outDir, 'capture-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);

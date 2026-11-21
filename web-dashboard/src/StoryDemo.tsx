@@ -91,7 +91,7 @@ function CareRequestScreen({ pending, approved, onApprove }: {
   readonly onApprove: () => void;
 }) {
   const { tr } = useLang();
-  return <section className="story-content" aria-labelledby="story-title">
+  return <section className="story-content story-care-request" aria-labelledby="story-title">
     <h1 id="story-title">{tr('돌봄 방문', 'Care visit')}</h1>
     <p className="story-message">{tr('미나가 잠깐 거실 기기만 쓰도록 허용해 주세요.', 'Let Mina use only the living-room devices for a short visit.')}</p>
     <article className="story-access-card">
@@ -117,7 +117,7 @@ function CaregiverSharedScreen({ pending, status, onAllOn, onExpire }: {
   const { tr } = useLang();
   const applied = status === 'active';
   const ended = status === 'expired';
-  return <section className="story-content" aria-labelledby="story-title">
+  return <section className="story-content story-care-shared" aria-labelledby="story-title">
     <h1 id="story-title">{tr('나에게 공유됨', 'Shared with you')}</h1>
     <article className="story-access-card story-shared-card">
       <h2>{tr('거실', 'Living room')}</h2>
@@ -134,7 +134,7 @@ function CaregiverSharedScreen({ pending, status, onAllOn, onExpire }: {
 
 function CaregiverEndedScreen({ pending, expired }: { readonly pending: boolean; readonly expired: boolean }) {
   const { tr } = useLang();
-  return <section className="story-content" aria-labelledby="story-title">
+  return <section className="story-content story-care-ended" aria-labelledby="story-title">
     <h1 id="story-title">{tr('돌봄 방문', 'Care visit')}</h1>
     <article className="story-access-card story-ended-card">
       <p className="story-card-caption">{tr('거실', 'Living room')}</p>
@@ -171,7 +171,7 @@ function CheckInScreen({ pending, snapshot, callReady, onCall, onShare }: {
   const countdown = `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`;
   const drafted = snapshot?.location.status === 'drafted';
   const panicCount = snapshot?.keyring.panicPresses ?? 0;
-  return <section className="story-content" aria-labelledby="story-title">
+  return <section className="story-content story-check-in" aria-labelledby="story-title">
     <h1 id="story-title">{tr('어머니 확인', 'Check on Mom')}</h1>
     <article className="story-check-card">
       <p className="story-eyebrow">{panicCount > 0 ? tr('키링 비상 버튼', 'Keyring emergency button') : tr('평소와 다른 멈춤', 'Unusual stop')}</p>
@@ -257,17 +257,9 @@ function StoryStepper({ scene }: { readonly scene: StoryScene }) {
   const index = storyScenes.indexOf(scene);
   const previous = storyScenes[(index + storyScenes.length - 1) % storyScenes.length]!;
   const next = storyScenes[(index + 1) % storyScenes.length]!;
-  return <nav className="story-stepper" aria-label={tr('이야기 장면', 'Story scenes')}>
+  return <nav className="story-stepper story-bottom-nav" aria-label={tr('이야기 장면', 'Story scenes')}>
     <a className="story-stepper-prev" href={`#/story/${previous}`} aria-label={tr('이전 장면', 'Previous scene')}><Icon name="chevron" size={18} style={{ transform: 'rotate(180deg)' }} /></a>
-    <ol>{storyScenes.map((item, itemIndex) => <li key={item}>
-      <a
-        className={`story-stepper-item${item === scene ? ' is-current' : ''}${itemIndex < index ? ' is-past' : ''}`}
-        aria-current={item === scene ? 'page' : undefined}
-        aria-label={`${itemIndex + 1}. ${labels[item]}`}
-        href={`#/story/${item}`}
-      ><span className="story-stepper-dot" aria-hidden="true" /><span className="story-stepper-label">{itemIndex + 1}. {labels[item]}</span></a>
-    </li>)}</ol>
-    <span className="story-stepper-compact">{index + 1}/{storyScenes.length} {labels[scene]}</span>
+    <span className="story-stepper-compact" aria-live="polite">{index + 1}/{storyScenes.length} {labels[scene]}</span>
     <a className="story-stepper-next" href={`#/story/${next}`} aria-label={tr('다음 장면', 'Next scene')}><Icon name="chevron" size={18} /></a>
   </nav>;
 }
@@ -301,6 +293,28 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
     if (freshTimer.current !== null) window.clearTimeout(freshTimer.current);
     if (stageTimer.current !== null) window.clearTimeout(stageTimer.current);
   }, []);
+
+  useEffect(() => {
+    if (capture) return;
+    const root = document.documentElement;
+    const body = document.body;
+    const previous = {
+      rootOverflow: root.style.overflow,
+      rootOverscroll: root.style.overscrollBehavior,
+      bodyOverflow: body.style.overflow,
+      bodyOverscroll: body.style.overscrollBehavior,
+    };
+    root.style.overflow = 'hidden';
+    root.style.overscrollBehavior = 'none';
+    body.style.overflow = 'hidden';
+    body.style.overscrollBehavior = 'none';
+    return () => {
+      root.style.overflow = previous.rootOverflow;
+      root.style.overscrollBehavior = previous.rootOverscroll;
+      body.style.overflow = previous.bodyOverflow;
+      body.style.overscrollBehavior = previous.bodyOverscroll;
+    };
+  }, [capture]);
 
   useEffect(() => {
     const query = window.matchMedia('(max-width: 760px) and (orientation: portrait)');
@@ -483,7 +497,6 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
     <a className="skip" href="#story-app" tabIndex={orientationPromptOpen ? -1 : undefined} aria-hidden={orientationPromptOpen} onClick={(event) => { event.preventDefault(); document.getElementById('story-app')?.focus(); }}>{tr('앱 화면으로 건너뛰기', 'Skip to the app')}</a>
     <header className="story-topbar" inert={orientationPromptOpen}>
       <a className="story-brand" href="#/"><span aria-hidden="true"><Icon name="bubble" size={22} /></span>BubbleLock</a>
-      <StoryStepper scene={scene} />
       <a className="story-topbar-link" href="#/user/overview">{tr('가족 대시보드', 'Family dashboard')}</a>
       <LangToggle />
     </header>
@@ -518,6 +531,7 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
         </div>
       </div>
     </main>
+    <StoryStepper scene={scene} />
     <div className="keyring-dock" inert={orientationPromptOpen} data-guided={guidedAction === 'keyring-panic' ? 'panic' : guidedAction === 'keyring-confirm' ? 'confirm' : 'none'}>
       <VirtualKeyring
         snapshot={snapshot}

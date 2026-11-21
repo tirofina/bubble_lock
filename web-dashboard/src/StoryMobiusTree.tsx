@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Icon } from './Icon.tsx';
 import type { StorySessionSnapshot, StoryTrace } from './story-session.ts';
 
@@ -150,8 +150,13 @@ function flatten(nodes: readonly MobiusTreeNode[]): MobiusTreeNode[] {
   return nodes.flatMap((item) => [item, ...flatten(item.children)]);
 }
 
-function containsPath(item: MobiusTreeNode, path: string | null): boolean {
-  return path !== null && (item.path === path || item.children.some((child) => containsPath(child, path)));
+interface MobiusTreeRow {
+  readonly item: MobiusTreeNode;
+  readonly depth: number;
+}
+
+function flattenRows(nodes: readonly MobiusTreeNode[], depth = 0): MobiusTreeRow[] {
+  return nodes.flatMap((item) => [{ item, depth }, ...flattenRows(item.children, depth + 1)]);
 }
 
 function kindLabel(kind: NodeKind): string {
@@ -159,37 +164,34 @@ function kindLabel(kind: NodeKind): string {
   return value.ty === null ? `${value.name} <${value.tag}>` : `${value.name} / ${value.tag} / ty=${value.ty}`;
 }
 
-function TreeBranch({ item, depth, selected, freshPath, onSelect }: {
+function TreeRow({ item, depth, selected, freshPath, onSelect }: {
   readonly item: MobiusTreeNode;
   readonly depth: number;
   readonly selected: string;
   readonly freshPath: string | null;
   readonly onSelect: (item: MobiusTreeNode) => void;
 }) {
-  const [open, setOpen] = useState(depth < 4);
   const fresh = item.path === freshPath;
-  const freshWithin = containsPath(item, freshPath);
-  useEffect(() => {
-    if (freshWithin) setOpen(true);
-  }, [freshWithin]);
   const label = item.eventType ? EVENT_LABELS[item.eventType] ?? item.eventType : item.name;
-  const line = <>
-    <span className={`mobius-node-dot kind-${item.kind}`} aria-hidden="true" />
-    <span className="mobius-node-name">{label}</span>
-    <small>{kindLabel(item.kind)}</small>
-    <b className={item.verified ? 'verified' : ''}>RETRIEVE / RSC {item.rsc}</b>
-  </>;
   const className = `${selected === item.id ? 'selected' : ''}${fresh ? ' is-fresh' : ''}`.trim();
-  if (item.children.length === 0) return <li className="mobius-tree-leaf">
-    <button type="button" className={className} data-path={item.path} data-fresh={fresh || undefined} onClick={() => onSelect(item)}>{line}</button>
-  </li>;
-  return <li>
-    <details open={open} onToggle={(event) => setOpen(event.currentTarget.open)}>
-      <summary className={className} data-path={item.path} data-fresh={fresh || undefined} onClick={() => onSelect(item)}>{line}</summary>
-      <ul>{item.children.map((child) => <TreeBranch key={child.id} item={child} depth={depth + 1} selected={selected} freshPath={freshPath} onSelect={onSelect} />)}</ul>
-    </details>
+  return <li className="mobius-tree-leaf" role="treeitem" aria-level={depth + 1}>
+    <button
+      type="button"
+      className={className}
+      data-path={item.path}
+      data-fresh={fresh || undefined}
+      style={{ paddingInlineStart: `${8 + Math.min(depth, 6) * 14}px` }}
+      onClick={() => onSelect(item)}
+    >
+      <span className={`mobius-node-dot kind-${item.kind}`} aria-hidden="true" />
+      <span className="mobius-node-name">{label}</span>
+      <small>{kindLabel(item.kind)}</small>
+      <b className={item.verified ? 'verified' : ''}>RETRIEVE / RSC {item.rsc}</b>
+    </button>
   </li>;
 }
+
+const TREE_PAGE_SIZE = 3;
 
 export function StoryMobiusTree({ snapshot, freshPath = null, onRefresh }: {
   readonly snapshot: StorySessionSnapshot | null;
@@ -198,37 +200,32 @@ export function StoryMobiusTree({ snapshot, freshPath = null, onRefresh }: {
 }) {
   const roots = useMemo(() => snapshot ? buildTree(snapshot) : [], [snapshot]);
   const nodes = useMemo(() => flatten(roots), [roots]);
+  const rows = useMemo(() => flattenRows(roots), [roots]);
   const preferred = nodes.find((item) => item.path === freshPath)
     ?? nodes.find((item) => item.path === snapshot?.mobius.root) ?? nodes[0] ?? null;
   const [selectedId, setSelectedId] = useState('');
+  const [page, setPage] = useState(0);
   const [copied, setCopied] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const scroll = useRef<HTMLDivElement | null>(null);
   const selected = nodes.find((item) => item.id === selectedId) ?? preferred;
+  const pageCount = Math.max(1, Math.ceil(rows.length / TREE_PAGE_SIZE));
+  const pageRows = rows.slice(page * TREE_PAGE_SIZE, (page + 1) * TREE_PAGE_SIZE);
 
   useEffect(() => {
     if (preferred && !nodes.some((item) => item.id === selectedId)) setSelectedId(preferred.id);
   }, [nodes, preferred, selectedId]);
 
   useEffect(() => {
-    if (!freshPath) return;
-    const fresh = nodes.find((item) => item.path === freshPath);
-    if (fresh) setSelectedId(fresh.id);
-    const frame = window.requestAnimationFrame(() => {
-      const box = scroll.current;
-      const freshNode = box?.querySelector<HTMLElement>('[data-fresh="true"]');
-      if (!box || !freshNode) return;
-      const boxRect = box.getBoundingClientRect();
-      const nodeRect = freshNode.getBoundingClientRect();
-      const nodeTop = nodeRect.top - boxRect.top + box.scrollTop;
-      const centeredTop = nodeTop - (box.clientHeight - nodeRect.height) / 2;
-      box.scrollTo({
-        top: Math.max(0, centeredTop),
-        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-      });
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [freshPath, nodes]);
+    const target = freshPath ? rows.findIndex(({ item }) => item.path === freshPath) : -1;
+    if (target >= 0) {
+      setSelectedId(rows[target]!.item.id);
+      setPage(Math.floor(target / TREE_PAGE_SIZE));
+    }
+  }, [freshPath, rows]);
+
+  useEffect(() => {
+    setPage((current) => Math.min(current, pageCount - 1));
+  }, [pageCount]);
 
   const copyPath = async () => {
     if (!selected) return;
@@ -247,10 +244,15 @@ export function StoryMobiusTree({ snapshot, freshPath = null, onRefresh }: {
   return <div className="mobius-tree-view" lang="en">
     <div className="mobius-tree-toolbar">
       <p><strong>CSE resource tree</strong><span>{nodes.length} resources</span></p>
+      <div className="mobius-tree-pager" aria-label="Resource tree pages">
+        <button type="button" onClick={() => setPage((current) => Math.max(0, current - 1))} disabled={page === 0} aria-label="Previous resource page">‹</button>
+        <span>{page + 1} / {pageCount}</span>
+        <button type="button" onClick={() => setPage((current) => Math.min(pageCount - 1, current + 1))} disabled={page >= pageCount - 1} aria-label="Next resource page">›</button>
+      </div>
       <button type="button" onClick={() => void refresh()} disabled={!snapshot || refreshing} aria-label="Retrieve the Mobius resource tree again"><Icon name="refresh" size={16} />{refreshing ? 'Retrieving' : 'Sync'}</button>
     </div>
-    {roots.length > 0 ? <div className="mobius-tree-scroll" ref={scroll}><ul className="mobius-tree" role="tree">
-      {roots.map((item) => <TreeBranch key={item.id} item={item} depth={0} selected={selected?.id ?? ''} freshPath={freshPath} onSelect={(next) => { setSelectedId(next.id); setCopied(false); }} />)}
+    {roots.length > 0 ? <div className="mobius-tree-scroll"><ul className="mobius-tree" role="tree">
+      {pageRows.map(({ item, depth }) => <TreeRow key={item.id} item={item} depth={depth} selected={selected?.id ?? ''} freshPath={freshPath} onSelect={(next) => { setSelectedId(next.id); setCopied(false); }} />)}
     </ul></div> : <p className="story-server-wait">Connecting to the Mobius CSE resource tree.</p>}
     {selected ? <div className="mobius-node-detail" aria-live="polite">
       <div><span>{kindLabel(selected.kind)}</span><b>{selected.status === 'removed' ? 'DELETE verified, RETRIEVE RSC 4004' : selected.verified ? `RETRIEVE verified, RSC ${selected.rsc}` : 'RETRIEVE pending'}</b></div>

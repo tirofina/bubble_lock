@@ -1,5 +1,6 @@
-/* Privacy Bubble story demo. Canonical brief: web-dashboard/apple.md (P1-P11, S1-S6).
-   Tokens come from src/styles.css. One keyring instance (.keyring-dock) travels from the intro
+/* Privacy Bubble story demo. Canonical brief: web-dashboard/apple.md (P1-P12, S1-S7).
+   Tokens come from src/styles.css. The shell owns exactly one viewport (100vw x 100dvh) and never
+   scrolls. One keyring instance (.keyring-dock, fixed, outside .story-stage) travels from the intro
    center to the bottom-left by transform only; the page reads keyring -> Mobius -> phone (P8). */
 
 .story-demo {
@@ -16,57 +17,81 @@
   --z-dock: 30;
   --z-modal: 40;
   --story-screen-width: 390px;
-  --story-screen-height: clamp(560px, calc(100dvh - 130px), 844px);
+  --segment-track: var(--surface-strong);
+  --segment-thumb: var(--surface);
+  --segment-shadow: 0 1px 2px rgb(0 0 0 / .08), 0 0 0 .5px rgb(0 0 0 / .04);
+
+  /* Safe areas (notch, Dynamic Island, sensor housing, home indicator) */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+
+  /* Chrome (S3): top bar for brand, dashboard link and language; bottom bar for scene navigation */
   --topbar-h: 56px;
+  --nav-h: 44px;
+  --chrome-top: calc(var(--topbar-h) + var(--safe-top));
+  --chrome-bottom: calc(var(--nav-h) + var(--safe-bottom));
+  --gutter: 24px;
+  --content-max: 1040px;
 
-  /* Dock geometry (S5). --dock-kw is the model width while docked; the render is 271 x 359. */
-  --dock-kw: 152px;
+  /* Keyring (S5). --dock-kw is the docked model width; the render is 271 x 359 (h = w x 1.3247). */
+  --dock-kw: 160px;
   --dock-kh: calc(var(--dock-kw) * 1.3247);
-  --dock-w: 184px;
-  --dock-left: 32px;
-  --dock-bottom: 32px;
-  --dock-gap: 8px;
-  --dock-tools-h: 44px;
-  --dock-h: calc(var(--dock-kh) + var(--dock-gap) + var(--dock-tools-h));
-  --dock-top: calc(100dvh - var(--dock-bottom) - var(--dock-h));
-  --gutter: calc(var(--dock-left) + var(--dock-w));
+  --dock-left: max(var(--gutter), var(--safe-left));
+  --dock-bottom: max(var(--gutter), var(--safe-bottom));
+  --dock-top: calc(100dvh - var(--dock-bottom) - var(--dock-kh));
+  --dock-reserve: calc(var(--dock-left) + var(--dock-kw) + var(--gutter));
 
-  /* Intro (S1): the keyring is laid out at dock size x --intro-scale, centered above one hint line. */
-  --intro-scale: 1.75;
+  /* Intro (S1): the keyring is laid out at dock width x --intro-scale above one hint line. */
+  --intro-scale: 1.9;
   --intro-band: 64px;
-  --intro-cy: calc(var(--topbar-h) + (100dvh - var(--topbar-h) - var(--intro-band)) / 2);
+  --intro-gap: 24px;
+  --intro-cy: calc(var(--chrome-top) + (100dvh - var(--chrome-top) - var(--chrome-bottom) - var(--intro-band)) / 2);
 
-  min-height: 100dvh;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: var(--chrome-top) minmax(0, 1fr) var(--chrome-bottom);
+  isolation: isolate;
   background: var(--canvas);
   color: var(--ink);
 }
-.story-demo[data-stage="intro"] { height: 100dvh; overflow: hidden; }
+@media (prefers-color-scheme: dark) {
+  .story-demo {
+    --segment-track: rgb(118 118 128 / .24);
+    --segment-thumb: #636366;
+    --segment-shadow: none;
+  }
+}
 
-.story-sr, .keyring-dock #virtual-keyring-title {
+.story-sr {
   position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
 
-/* ---------- Top bar and scene stepper (S3) ---------- */
+/* ---------- Top bar (S3) ---------- */
 .story-topbar {
-  position: sticky; top: 0; z-index: var(--z-topbar);
-  height: var(--topbar-h);
-  display: flex; align-items: center; gap: var(--s4);
-  padding: 0 var(--s6);
-  background: var(--frost);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 1px solid var(--hairline);
-  transition: background-color var(--story-base) var(--ease), border-color var(--story-base) var(--ease);
+  grid-row: 1; grid-column: 1;
+  position: relative; z-index: var(--z-topbar);
+  height: var(--chrome-top);
+  min-width: 0;
+  display: flex; align-items: center; gap: var(--s2);
+  padding: var(--safe-top) max(var(--gutter), var(--safe-right)) 0 max(var(--gutter), var(--safe-left));
+  box-shadow: inset 0 -1px 0 var(--hairline);
+  transition: box-shadow var(--story-base) var(--ease);
 }
-.story-demo[data-stage="intro"] .story-topbar {
-  background: transparent; border-bottom-color: transparent;
-  -webkit-backdrop-filter: none; backdrop-filter: none;
-}
+.story-demo[data-stage="intro"] .story-topbar { box-shadow: none; }
 .story-brand {
   flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-  min-width: var(--control); min-height: var(--control); color: var(--ink);
-  font-size: var(--t-body); font-weight: 700; letter-spacing: -0.01em; text-decoration: none;
+  min-width: var(--control); min-height: var(--control); margin-right: auto;
+  color: var(--ink); font-size: var(--t-body); font-weight: 700; letter-spacing: -0.01em; text-decoration: none;
 }
 .story-brand:hover { text-decoration: none; }
 .story-brand > span {
@@ -74,44 +99,6 @@
   width: 30px; height: 30px; border-radius: 8px;
   background: var(--accent); color: #ffffff;
 }
-
-.story-stepper {
-  flex: 1 1 auto; min-width: 0;
-  display: flex; align-items: center; justify-content: center; gap: var(--s1);
-  transition: opacity var(--story-quick) linear 120ms, visibility 0s linear 120ms;
-}
-.story-stepper ol { list-style: none; margin: 0; padding: 0; display: flex; align-items: center; }
-.story-stepper-prev, .story-stepper-next {
-  display: inline-grid; place-items: center; flex: none;
-  width: var(--control); height: var(--control); border-radius: 50%;
-  color: var(--muted); text-decoration: none;
-  transition: background-color .2s var(--ease), color .2s var(--ease);
-}
-.story-stepper-prev:hover, .story-stepper-next:hover { background: var(--surface-strong); color: var(--ink); }
-.story-stepper-item {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-width: var(--control); min-height: var(--control);
-  border-radius: 22px; text-decoration: none;
-}
-.story-stepper-item:hover { text-decoration: none; }
-.story-stepper-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--control-border);
-  transition: background-color .2s var(--ease), transform .2s var(--ease);
-}
-.story-stepper-item.is-past .story-stepper-dot { background: var(--muted); }
-.story-stepper-item:hover .story-stepper-dot { background: var(--ink); transform: scale(1.25); }
-.story-stepper-label { display: none; }
-.story-stepper-item.is-current .story-stepper-dot { display: none; }
-.story-stepper-item.is-current .story-stepper-label {
-  display: inline-flex; align-items: center;
-  min-height: 30px; padding: 0 var(--s3); margin-inline: var(--s1);
-  border-radius: var(--r-pill);
-  background: var(--accent-soft); color: var(--accent-text);
-  font-size: var(--t-caption); font-weight: 600;
-}
-.story-stepper-compact { display: none; }
-
 .story-topbar-link {
   flex: none; display: inline-flex; align-items: center;
   min-height: var(--control); padding: 0 var(--s2);
@@ -119,18 +106,40 @@
   transition: opacity var(--story-quick) linear 120ms, visibility 0s linear 120ms;
 }
 .story-topbar-link:hover { text-decoration: underline; }
-.story-demo[data-stage="intro"] :is(.story-stepper, .story-topbar-link) {
+
+/* Language toggle: the same light segmented thumb as the Mobius panel switcher (P5) */
+.story-topbar .lang-switch { flex: none; gap: 2px; padding: 0; border-radius: 12px; background: transparent; box-shadow: none; }
+.story-topbar .lang-switch button {
+  min-height: var(--control); min-width: var(--control); padding: 0 var(--s3);
+  border-radius: 10px; color: var(--muted); font-size: var(--t-caption); font-weight: 600;
+}
+.story-topbar .lang-switch button[aria-pressed="true"] { background: var(--segment-track); color: var(--ink); }
+.story-topbar .lang-switch button:hover:not([aria-pressed="true"]) { background: transparent; color: var(--ink); }
+
+/* ---------- Bottom scene navigation (S3): one quiet row, centered, inside the safe area ---------- */
+.story-bottom-nav {
+  grid-row: 3; grid-column: 1; justify-self: center; align-self: start;
+  position: relative; z-index: calc(var(--z-topbar) + 1);
+  height: var(--nav-h);
+  display: flex; align-items: center; justify-content: center; gap: 2px;
+  transition: opacity var(--story-quick) linear 120ms, visibility 0s linear 120ms;
+}
+.story-stepper-prev, .story-stepper-next {
+  display: inline-grid; place-items: center; flex: none;
+  width: var(--control); height: var(--control); border-radius: 50%;
+  color: var(--muted); text-decoration: none;
+  transition: background-color .2s var(--ease), color .2s var(--ease);
+}
+.story-stepper-prev:hover, .story-stepper-next:hover { background: var(--segment-track); color: var(--ink); text-decoration: none; }
+.story-stepper-compact {
+  min-width: 9.5em; padding: 0 var(--s1);
+  color: var(--ink); font-size: var(--t-caption); font-weight: 600; text-align: center;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.story-demo[data-stage="intro"] :is(.story-bottom-nav, .story-topbar-link) {
   opacity: 0; visibility: hidden;
   transition: opacity var(--story-quick) linear, visibility 0s linear var(--story-quick);
 }
-
-.story-topbar .lang-switch { flex: none; padding: 0; gap: 2px; background: transparent; box-shadow: none; }
-.story-topbar .lang-switch button {
-  min-height: var(--control); min-width: var(--control); padding: 0 var(--s3);
-  font-size: var(--t-caption); font-weight: 600;
-}
-.story-topbar .lang-switch button[aria-pressed="true"] { background: var(--surface-strong); color: var(--ink); }
-.story-topbar .lang-switch button:hover:not([aria-pressed="true"]) { background: var(--surface-strong); color: var(--ink); }
 
 /* ---------- Intro (S1) and rotate prompt (S6) ---------- */
 .story-intro {
@@ -141,26 +150,25 @@
 .story-demo:not([data-stage="intro"]) .story-intro { opacity: 0; visibility: hidden; }
 .story-intro-hint {
   position: absolute; left: var(--s4); right: var(--s4);
-  top: calc(var(--intro-cy) + var(--dock-kh) * var(--intro-scale) / 2 + 28px);
-}
-.story-intro-hint {
+  top: calc(var(--intro-cy) + var(--dock-kh) * var(--intro-scale) / 2 + var(--intro-gap));
   display: flex; align-items: center; justify-content: center; gap: 10px;
   margin: 0 auto; max-inline-size: 32rem;
   color: var(--ink); font-size: var(--t-body); font-weight: 600; line-height: 1.4; text-align: center;
 }
 .story-intro-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--keyring-confirm); }
 .story-intro-dot.panic { background: var(--keyring-panic); }
-/* Orientation prompt (S6): a calm modal shown only on portrait phones while data-portrait="ask".
-   Over the intro it has no scrim, so the keyring stays as context; over a deep-linked system
-   stage it covers the page with a canvas wash. */
+
+/* Orientation prompt: a calm modal shown only on portrait phones while data-portrait="ask".
+   Over the intro it has no scrim, so the keyring stays sharp above it as the product context;
+   over a deep-linked system stage it covers the page with a canvas wash. */
 .story-rotate {
   display: none;
   position: fixed; inset: 0; z-index: var(--z-modal);
   flex-direction: column; align-items: center; justify-content: center; gap: var(--s2);
   overflow-y: auto; overscroll-behavior: contain;
   padding:
-    max(var(--s6), env(safe-area-inset-top)) max(var(--s6), env(safe-area-inset-right))
-    max(var(--s6), env(safe-area-inset-bottom)) max(var(--s6), env(safe-area-inset-left));
+    max(var(--s6), var(--safe-top)) max(var(--s6), var(--safe-right))
+    max(var(--s6), var(--safe-bottom)) max(var(--s6), var(--safe-left));
   background: color-mix(in srgb, var(--canvas) 94%, transparent);
   -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
   text-align: center;
@@ -169,18 +177,18 @@
 .story-rotate > * { max-inline-size: 22rem; }
 .story-demo[data-stage="intro"] .story-rotate {
   justify-content: flex-start;
-  padding-top: calc(var(--intro-cy) + var(--dock-kh) * var(--intro-scale) / 2 + 28px);
+  padding-top: calc(var(--intro-cy) + var(--dock-kh) * var(--intro-scale) / 2 + var(--intro-gap));
   background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none;
 }
-.story-rotate-glyph { position: relative; display: grid; place-items: center; width: 44px; height: 44px; color: var(--ink); }
+.story-rotate-glyph { position: relative; display: grid; place-items: center; flex: none; width: 44px; height: 44px; color: var(--muted); }
 .story-rotate-glyph svg { display: none; }
 .story-rotate-glyph::before {
-  content: ""; width: 20px; height: 34px;
-  border: 2px solid currentColor; border-radius: 6px;
+  content: ""; width: 18px; height: 30px;
+  border: 2px solid currentColor; border-radius: 5px;
   animation: story-rotate-phone 1.6s var(--ease) .5s 1 both;
 }
-.story-rotate-title { font-size: var(--t-headline); font-weight: 700; letter-spacing: -0.01em; line-height: 1.3; text-align: center; }
-.story-rotate-body { color: var(--muted); font-size: var(--t-callout); line-height: 1.45; text-align: center; }
+.story-rotate-title { font-size: var(--t-headline); font-weight: 700; letter-spacing: -0.01em; line-height: 1.3; text-align: center; text-wrap: balance; }
+.story-rotate-body { color: var(--muted); font-size: var(--t-callout); line-height: 1.45; text-align: center; text-wrap: balance; }
 .story-rotate-continue {
   flex: none; min-height: var(--control); margin-top: var(--s2);
   border-color: transparent; color: var(--accent-text); padding-inline: var(--s4);
@@ -200,44 +208,104 @@
   opacity: 0; transform: translateX(12px); visibility: hidden; transition: none;
 }
 
-/* ---------- Desktop stage: gutter | Mobius | phone (S3) ---------- */
+/* ---------- Desktop stage: [keyring gutter] Mobius | phone (S3) ----------
+   The left padding reserves the keyring gutter, so the fixed overlay never covers Mobius. */
 .story-stage {
+  grid-row: 2; grid-column: 1;
+  --phone-w: min(390px, calc((100dvh - var(--chrome-top) - var(--chrome-bottom) - 16px) * .47));
+  width: 100%; height: 100%;
+  min-width: 0; min-height: 0;
+  overflow: hidden;
   display: grid;
-  grid-template-columns: minmax(var(--gutter), 1fr) minmax(340px, 560px) auto minmax(0, 1fr);
-  column-gap: clamp(24px, 3vw, 48px);
-  align-items: start;
-  padding: var(--s6) 0 var(--s12);
+  grid-template-columns: minmax(0, 1fr) var(--phone-w);
+  grid-template-rows: minmax(0, 1fr);
+  column-gap: clamp(20px, 2.6vw, 40px);
+  align-items: stretch;
+  padding:
+    clamp(8px, 1.6dvh, 16px)
+    max(var(--gutter), var(--safe-right), (100vw - var(--content-max)) / 2)
+    0
+    max(var(--dock-reserve), (100vw - var(--content-max)) / 2);
 }
-.story-mobius { grid-column: 2; grid-row: 1; min-width: 0; display: flex; flex-direction: column; overflow-wrap: break-word; }
-.story-app-column { grid-column: 3; grid-row: 1; position: sticky; top: calc(var(--topbar-h) + var(--s6)); min-width: 0; }
+.story-mobius {
+  grid-column: 1; grid-row: 1;
+  min-width: 0; min-height: 0; height: 100%;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  grid-template-areas: "head" "msg" "tabs" "panel";
+  overflow-wrap: break-word;
+}
+.story-app-column { grid-column: 2; grid-row: 1; position: static; min-width: 0; min-height: 0; height: 100%; display: grid; grid-template-rows: minmax(0, 1fr); }
 
-/* ---------- Mobius column: flat sections on hairlines (P11) ---------- */
+/* ---------- Mobius pane: flat sections, one panel at a time (P11) ---------- */
+.story-mobius :focus-visible { outline-offset: -3px; }
 .story-mobius-head {
+  grid-area: head;
   display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "title badge" "meta meta";
   align-items: center; gap: 2px var(--s3);
-  padding-bottom: var(--s4);
+  padding-bottom: var(--s3);
 }
 .story-mobius-head > div { display: contents; }
-.story-mobius-head h2 { grid-area: title; min-width: 0; }
+.story-mobius-head h2 { grid-area: title; min-width: 0; font-size: var(--t-body); letter-spacing: -0.01em; }
 .story-mobius-head .story-mobius-meta { grid-area: meta; }
-.story-mobius-head .badge { grid-area: badge; }
-.story-mobius-head h2 { font-size: var(--t-body); letter-spacing: -0.01em; }
-.story-mobius-head .badge { flex: none; }
+.story-mobius-head .badge { grid-area: badge; flex: none; justify-self: start; }
 .story-mobius-meta { color: var(--muted); font-size: var(--t-caption); overflow-wrap: anywhere; }
 .story-mobius-meta code { color: var(--ink); font-size: 1em; }
 .story-server-message {
-  margin-bottom: var(--s3); padding: var(--s3) var(--s4);
+  grid-area: msg;
+  margin-bottom: var(--s3); padding: var(--s2) var(--s3);
   border-radius: var(--r-nested); background: var(--warning-soft); color: var(--warning);
-  font-size: var(--t-callout); overflow-wrap: anywhere;
+  font-size: var(--t-caption); overflow-wrap: anywhere;
 }
 
-/* Trace hero (S4): request -> created -> read back, real values only */
-.story-trace {
-  display: grid; gap: var(--s4); min-width: 0;
-  padding: var(--s5) 0 var(--s6);
-  border-top: 1px solid var(--hairline);
+/* Panel switcher: a segmented control, light thumb on a soft track */
+.story-panel-tabs {
+  grid-area: tabs;
+  justify-self: start;
+  width: min(100%, 440px);
+  display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 2px;
+  padding: 2px;
+  border-radius: 12px;
+  background: var(--segment-track);
 }
-.story-trace-heading { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: var(--s1) var(--s3); }
+.story-panel-tabs button {
+  position: relative;
+  min-width: var(--control); min-height: var(--control);
+  padding: 0 var(--s2);
+  border: 0; border-radius: 10px;
+  background: transparent; color: var(--muted);
+  font-size: var(--t-caption); font-weight: 600; white-space: nowrap;
+}
+.story-panel-tabs button:hover { background: transparent; color: var(--ink); }
+.story-panel-tabs button:active { transform: none; }
+.story-panel-tabs button.active, .story-panel-tabs button[aria-pressed="true"] {
+  background: var(--segment-thumb); color: var(--ink); box-shadow: var(--segment-shadow);
+}
+.story-panel-tabs button[aria-controls="story-panel-scenes"] { display: none; }
+.story-panel-alert { position: absolute; top: 9px; right: 10px; width: 6px; height: 6px; border-radius: 50%; background: transparent; }
+.story-panel-tabs button.has-new-event:not(.active) .story-panel-alert { background: var(--accent); animation: story-tab-notice 1.2s var(--ease) 3; }
+
+.story-panel-card {
+  grid-area: panel;
+  min-width: 0; min-height: 0; height: 100%;
+  overflow: hidden;
+  display: none;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: var(--s3);
+  padding-top: var(--s5);
+}
+.story-panel-card.is-mobile-open { display: grid; }
+.story-panel-card h3 { font-size: var(--t-callout); font-weight: 600; }
+.story-scene-panel { display: none; }
+.story-events-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: var(--s1) var(--s3); }
+.story-events-head span { color: var(--muted); font-size: var(--t-caption); font-variant-numeric: tabular-nums; }
+
+/* Trace hero (S4): request -> CREATE -> RETRIEVE on one vertical line, real values only (P6) */
+.story-trace { gap: var(--s4); }
+.story-trace-heading { display: flex; align-items: last baseline; justify-content: space-between; flex-wrap: wrap; gap: var(--s1) var(--s3); }
 .story-trace-heading > div { min-width: 0; }
 .story-trace-eyebrow { color: var(--accent-text); font-size: var(--t-caption); font-weight: 600; }
 .story-trace-title { margin-top: 2px; font-size: var(--t-headline); letter-spacing: -0.01em; overflow-wrap: anywhere; }
@@ -255,7 +323,7 @@
   content: ""; position: absolute; left: 11.5px; top: 28px; bottom: 4px; width: 1px;
   background: var(--hairline);
 }
-.story-trace-step.is-done:not(:last-child)::before { background: color-mix(in srgb, var(--success) 45%, var(--hairline)); }
+.story-trace-step.is-done:not(:last-child)::before { background: color-mix(in srgb, var(--success) 40%, var(--hairline)); }
 .story-trace-marker {
   display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%;
   background: var(--surface-strong); color: var(--muted);
@@ -272,30 +340,19 @@
 }
 .story-trace-parent { color: var(--muted); }
 .story-trace-rn {
-  padding: 0 3px; border-radius: 4px;
+  padding: 0 3px; border-radius: 4px; white-space: nowrap;
   background: var(--accent-soft); color: var(--accent-text); font-weight: 600;
 }
 .story-trace-rsc { display: block; margin-top: 2px; color: var(--success); font-weight: 600; font-variant-numeric: tabular-nums; }
 .story-trace-path + .story-trace-path { margin-top: var(--s2); }
 .story-trace-summary { color: var(--muted); font-size: var(--t-callout); line-height: 1.5; }
 
-/* Sections below the hero */
-.story-panel-tabs { display: none; }
-.story-panel-card {
-  min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s3);
-  padding: var(--s6) 0; border-top: 1px solid var(--hairline);
-}
-.story-panel-card h3 { font-size: var(--t-callout); font-weight: 600; }
-.story-scene-panel { display: none; }
-.story-events-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: var(--s1) var(--s3); }
-.story-events-head span { color: var(--muted); font-size: var(--t-caption); font-variant-numeric: tabular-nums; }
-
+/* CSE records */
 .story-mobius-events ul { list-style: none; margin: 0; padding: 0; display: grid; }
 .story-mobius-events li {
   display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: var(--s3);
-  padding: var(--s3) var(--s2); border-top: 1px solid var(--hairline); border-radius: 10px;
+  padding: var(--s3) var(--s2); border-radius: 10px;
 }
-.story-mobius-events li:first-child { border-top: 0; }
 .story-event-check { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--success-soft); color: var(--success); }
 .story-mobius-events li div { min-width: 0; display: grid; gap: 2px; }
 .story-mobius-events li strong { font-size: var(--t-callout); font-weight: 600; overflow-wrap: anywhere; }
@@ -312,7 +369,9 @@
 .story-mobius-events li.is-new-event:not(.is-fresh) {
   background: color-mix(in srgb, var(--accent-soft) 45%, transparent); box-shadow: none; animation: none;
 }
-.story-mobius-events li.is-new-event + li { border-top-color: transparent; }
+.story-events-pager { display: flex; align-items: center; justify-content: center; gap: 2px; }
+.story-events-pager button { min-width: var(--control); min-height: var(--control); padding: 0; border-color: transparent; color: var(--accent-text); font-size: var(--t-body); }
+.story-events-pager span { min-width: 42px; color: var(--muted); font-size: var(--t-caption); text-align: center; font-variant-numeric: tabular-nums; }
 .story-server-wait { color: var(--muted); font-size: var(--t-callout); }
 .story-mobius-root {
   display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; gap: var(--s2);
@@ -322,39 +381,33 @@
 .story-mobius-root span { font-weight: 600; overflow-wrap: anywhere; }
 
 /* Mobius tree: exact server paths and RSC codes, nothing truncated */
-.mobius-tree-view { min-width: 0; display: grid; gap: var(--s3); }
-.mobius-tree-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--s2) var(--s3); }
-.mobius-tree-toolbar p { display: grid; gap: 2px; min-width: 0; }
-.mobius-tree-toolbar strong { font-size: var(--t-caption); font-weight: 600; }
+.mobius-tree-view { min-width: 0; min-height: 0; display: grid; grid-template-rows: auto auto minmax(0, 1fr); align-content: start; gap: var(--s2); overflow: hidden; }
+.mobius-tree-toolbar { display: flex; align-items: center; justify-content: flex-start; flex-wrap: wrap; gap: var(--s2) var(--s3); }
+.mobius-tree-toolbar p { display: grid; gap: 2px; min-width: 0; margin-right: auto; }
+.mobius-tree-toolbar strong { display: none; }
 .mobius-tree-toolbar span { color: var(--muted); font-size: var(--t-caption); }
 .mobius-tree-toolbar button, .mobius-node-detail button {
   min-height: var(--control); padding: 0 var(--s3); gap: var(--s2);
   border-color: transparent; color: var(--accent-text); font-size: var(--t-caption);
 }
 .mobius-tree-toolbar button:hover, .mobius-node-detail button:hover { background: var(--accent-soft); }
-.mobius-tree-scroll {
-  max-height: 40dvh; overflow: auto; overscroll-behavior: contain;
-  padding: var(--s1) 0;
-  border-block: 1px solid var(--hairline);
-  scrollbar-gutter: stable; scrollbar-width: thin;
+.mobius-tree-pager { display: flex; align-items: center; gap: 2px; }
+.mobius-tree-pager button { min-width: var(--control); padding: 0; font-size: var(--t-body); }
+.mobius-tree-pager span { min-width: 42px; text-align: center; font-variant-numeric: tabular-nums; }
+.mobius-tree-pager button:disabled, .story-events-pager button:disabled {
+  background: transparent; border-color: transparent; color: var(--muted); opacity: .4; cursor: default;
 }
+.mobius-tree-scroll { min-width: 0; overflow: visible; padding: var(--s1) 0; border-block: 1px solid var(--hairline); }
 .mobius-tree, .mobius-tree ul { list-style: none; margin: 0; padding: 0; }
-.mobius-tree ul { margin-left: 11px; padding-left: 10px; border-left: 1px solid var(--hairline); }
-.mobius-tree details { min-width: 0; }
 .mobius-tree summary, .mobius-tree-leaf > button {
   width: 100%; min-width: 0; min-height: var(--control);
-  display: grid; grid-template-columns: 12px 10px minmax(0, 1fr) auto;
-  grid-template-areas: "chev dot name rsc" ". . kind kind";
+  display: grid; grid-template-columns: 10px minmax(0, 1fr) auto;
+  grid-template-areas: "dot name rsc" ". kind kind";
   align-items: center; column-gap: var(--s2); row-gap: 0;
   padding: 6px var(--s2);
   border: 0; border-radius: 10px; background: transparent; color: var(--ink);
   font-size: var(--t-callout); font-weight: 400; line-height: 1.35; text-align: left; cursor: pointer;
 }
-.mobius-tree summary { list-style: none; position: relative; }
-.mobius-tree summary::-webkit-details-marker { display: none; }
-.mobius-tree summary::marker { content: ""; }
-.mobius-tree summary::before { grid-area: chev; justify-self: center; margin: 0; color: var(--muted); }
-.mobius-tree details[open] > summary { margin-bottom: 0; }
 .mobius-tree summary:hover, .mobius-tree-leaf > button:hover { background: var(--surface-strong); }
 .mobius-tree summary:active, .mobius-tree-leaf > button:active { transform: none; }
 .mobius-tree summary.selected, .mobius-tree-leaf > button.selected { background: var(--accent-soft); }
@@ -366,7 +419,7 @@
 .mobius-tree summary small, .mobius-tree-leaf small { grid-area: kind; min-width: 0; color: var(--muted); font-size: var(--t-caption); font-weight: 400; overflow-wrap: break-word; }
 .mobius-tree summary b, .mobius-tree-leaf b { grid-area: rsc; justify-self: end; color: var(--muted); font-size: var(--t-caption); font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: break-word; text-align: right; }
 .mobius-tree summary b.verified, .mobius-tree-leaf b.verified { color: var(--success); }
-.mobius-node-detail { min-width: 0; display: grid; gap: 6px; padding-top: var(--s1); }
+.mobius-node-detail { min-width: 0; min-height: 0; display: grid; align-content: start; gap: 4px; padding-top: var(--s1); overflow: hidden; }
 .mobius-node-detail > div { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--s1) var(--s3); }
 .mobius-node-detail > div span { color: var(--muted); font-size: var(--t-caption); font-weight: 600; }
 .mobius-node-detail > div b { color: var(--success); font-size: var(--t-caption); }
@@ -379,18 +432,25 @@
 .mobius-node-detail button:hover { background: transparent; text-decoration: underline; }
 
 /* ---------- Phone (witness) ---------- */
-.story-device { padding: 12px; border: 1px solid var(--hairline); border-radius: 56px; background: var(--surface); }
+.story-device {
+  --device-r: clamp(36px, 5.6dvh, 54px);
+  align-self: center;
+  width: 100%; height: 100%; max-height: 880px;
+  padding: 10px; overflow: hidden;
+  border: 1px solid var(--hairline); border-radius: var(--device-r);
+  background: var(--surface);
+}
 .story-phone {
   position: relative;
-  width: var(--story-screen-width); height: var(--story-screen-height);
+  width: 100%; height: 100%;
   overflow: hidden;
   display: flex; flex-direction: column;
   padding: 0 var(--s6) var(--s2);
-  border-radius: 44px;
+  border-radius: calc(var(--device-r) - 10px);
   background: var(--canvas);
 }
 .story-phone:focus { outline: none; }
-.story-phone:focus-visible { outline: var(--focus-width) solid var(--focus); outline-offset: 2px; }
+.story-phone:focus-visible { outline: var(--focus-width) solid var(--focus); outline-offset: -3px; }
 
 .story-status {
   flex: none; height: 48px;
@@ -405,8 +465,7 @@
 .story-header { flex: none; display: flex; align-items: center; min-height: 56px; border-bottom: 1px solid var(--hairline); }
 .story-app-name { font-size: var(--t-headline); font-weight: 700; letter-spacing: -0.01em; }
 
-.story-content { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; display: flex; flex-direction: column; gap: var(--s4); padding-top: var(--s6); min-width: 0; }
-.story-content::-webkit-scrollbar { display: none; }
+.story-content { flex: 1 1 auto; min-width: 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: var(--s4); padding-top: var(--s6); }
 .story-content h1 { font-size: var(--t-title); letter-spacing: -0.015em; }
 .story-title-block { display: grid; gap: var(--s1); }
 .story-subtitle { color: var(--muted); font-size: var(--t-callout); }
@@ -488,77 +547,37 @@
 .story-auto-form input { background: var(--surface); text-overflow: ellipsis; }
 .story-auto-form input:read-only:focus { border-color: var(--control-border); }
 
-/* ---------- Floating keyring dock (S5) ----------
-   Transparent, borderless, z-index 30. The wrapper ignores the pointer; the 3D stage, the two
-   hit areas and the text tools take it. One element travels from intro to dock (S2). */
+/* ---------- Floating keyring (S5) ----------
+   No box, border or tools: the product render with its own shadow floats above the page.
+   The wrapper ignores the pointer; the 3D stage and the two hit areas take it. */
 .keyring-dock {
   --kw: var(--dock-kw);
   --kh: calc(var(--kw) * 1.3247);
   position: fixed; z-index: var(--z-dock);
   left: var(--dock-left); top: var(--dock-top);
-  width: var(--dock-w); height: var(--dock-h);
+  width: var(--kw); height: var(--kh);
   background: transparent; border: 0;
   pointer-events: none;
-  transform-origin: 50% calc(var(--dock-kh) / 2);
+  transform-origin: 50% 50%;
 }
 /* Intro: laid out at full size (sharp render and LCD), centered. */
 .story-demo[data-stage="intro"] .keyring-dock {
   --kw: calc(var(--dock-kw) * var(--intro-scale));
   left: calc(50vw - var(--kw) / 2); top: calc(var(--intro-cy) - var(--kh) / 2);
-  width: var(--kw); height: var(--kh);
   animation: story-dock-appear var(--story-base) var(--ease) both;
 }
 /* Sending: the same element starts on the intro geometry and settles into the dock (S2). */
 .story-demo[data-stage="sending"] .keyring-dock { animation: story-dock-travel var(--story-travel) var(--ease) both; }
-.keyring-dock .virtual-keyring {
-  position: relative; width: 100%; height: 100%;
-  display: grid; grid-template-rows: var(--kh) auto; justify-items: center; row-gap: var(--dock-gap);
-}
-.keyring-dock .virtual-keyring-head, .keyring-dock .keyring-foot { display: contents; }
-.keyring-dock .keyring-counters { display: none; }
+.keyring-dock .virtual-keyring { position: relative; width: 100%; height: 100%; }
 .keyring-dock .keyring-stage {
-  grid-row: 1; position: relative;
+  position: relative;
   width: var(--kw); height: var(--kh);
   overflow: visible; border-radius: 24px;
   perspective: 800px; touch-action: none; user-select: none; cursor: grab;
   pointer-events: auto;
 }
-.keyring-dock .keyring-stage.mode-move { cursor: move; }
 .keyring-dock .keyring-stage:active { cursor: grabbing; }
 .keyring-dock .keyring-stage:focus-visible { outline-offset: 6px; }
-
-/* Tools: plain text controls, 44px tall, no track, no box (P3, P11) */
-.keyring-dock .keyring-tools {
-  grid-row: 2; pointer-events: auto;
-  display: flex; align-items: center; justify-content: center; gap: 2px;
-  transition: opacity var(--story-base) linear var(--story-travel), visibility 0s linear var(--story-travel);
-}
-.keyring-dock .keyring-mode { display: inline-flex; gap: 2px; padding: 0; border-radius: 0; background: transparent; }
-.keyring-dock .keyring-mode button, .keyring-dock .keyring-reset {
-  position: relative;
-  min-height: var(--control); min-width: var(--control); padding: 0 10px;
-  border: 0; border-radius: var(--r-nested); background: transparent;
-  color: var(--muted); font-size: var(--t-caption); font-weight: 600;
-}
-.keyring-dock .keyring-mode button:hover, .keyring-dock .keyring-reset:hover { background: transparent; color: var(--ink); }
-.keyring-dock .keyring-mode button.active, .keyring-dock .keyring-mode button.active:hover { background: transparent; color: var(--ink); }
-.keyring-dock .keyring-mode button.active {
-  text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px;
-}
-.keyring-dock .keyring-reset { color: var(--accent-text); }
-.keyring-dock .keyring-reset:hover { color: var(--accent-pressed); }
-
-/* Guidance caption sits above the dock box, inside the gutter */
-.keyring-dock .keyring-help {
-  position: absolute; left: 0; right: 0; bottom: calc(100% + var(--s2));
-  color: var(--accent-text); font-size: var(--t-caption); font-weight: 600; line-height: 1.4; text-align: center;
-  transition: opacity var(--story-base) linear var(--story-travel), visibility 0s linear var(--story-travel);
-}
-.keyring-dock .keyring-help:not(.is-guidance) { display: none; }
-.story-demo[data-stage="intro"] .keyring-dock :is(.keyring-tools, .keyring-help) {
-  opacity: 0; visibility: hidden;
-  transition: opacity var(--story-quick) linear, visibility 0s linear var(--story-quick);
-}
 
 /* Model: the real render with the live firmware screen. Every size follows --kw. */
 .keyring-model {
@@ -569,7 +588,10 @@
 .keyring-model img {
   position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain;
   pointer-events: none; transform: translateZ(1px);
-  filter: drop-shadow(3px 5px 15px rgb(0 0 0 / .22));
+  filter: drop-shadow(2px 6px 14px rgb(0 0 0 / .2)) drop-shadow(0 1px 2px rgb(0 0 0 / .08));
+}
+@media (prefers-color-scheme: dark) {
+  .keyring-model img { filter: drop-shadow(0 8px 22px rgb(0 0 0 / .7)) drop-shadow(0 0 1px rgb(255 255 255 / .12)); }
 }
 .keyring-screen-live {
   position: absolute; left: 30.4%; top: 43%; width: 38.6%; height: 15.6%;
@@ -595,8 +617,8 @@
 .firmware-panic b { color: #ff6961; }
 
 /* Hit areas: 46px circles on the real buttons, so the default 3D tilt still projects 44px or more
-   (P3, P9). When the dock is small, the two targets move apart to meet at the midpoint (49.6%) and
-   still cover the visual button; --shift keeps the press tint and the halo on the visual button. */
+   (P3, P9). When the keyring is small, the two targets move apart to meet at the midpoint (49.6%)
+   and still cover the visual button; --shift keeps the press tint and the halo on the button. */
 .keyring-physical-button {
   --visual: calc(var(--kw) * .163);
   --shift: 0px;
@@ -630,7 +652,7 @@
 @keyframes story-dock-travel {
   from {
     transform:
-      translate(calc(50vw - var(--dock-left) - var(--dock-w) / 2), calc(var(--intro-cy) - var(--dock-top) - var(--dock-kh) / 2))
+      translate(calc(50vw - var(--dock-left) - var(--dock-kw) / 2), calc(var(--intro-cy) - var(--dock-top) - var(--dock-kh) / 2))
       scale(var(--intro-scale));
   }
   to { transform: none; }
@@ -664,208 +686,242 @@
   70%, 100% { rotate: -90deg; }
 }
 
-/* ---------- Narrow desktop and tablet landscape ---------- */
+/* ---------- Narrow and short desktop ---------- */
 @media (max-width: 1279px) {
-  .story-demo { --dock-kw: 136px; --dock-w: 168px; --dock-left: 24px; --dock-bottom: 24px; --intro-scale: 1.9; }
-  .story-stage { column-gap: 24px; }
+  .story-demo { --gutter: 20px; --dock-kw: 136px; --intro-scale: 2.1; }
   .story-topbar-link { font-size: var(--t-caption); }
 }
 @media (max-height: 760px) and (min-width: 1024px) {
-  .story-demo { --intro-scale: 1.45; }
-}
-
-/* ---------- Phone and small-window landscape: dock | Mobius | app (S6) ---------- */
-@media (max-width: 1023px) and (orientation: landscape) {
-  .story-demo {
-    --topbar-h: 44px;
-    --dock-kw: 88px; --dock-w: 96px;
-    --dock-left: max(8px, env(safe-area-inset-left));
-    --dock-bottom: max(8px, env(safe-area-inset-bottom));
-    --dock-gap: 6px; --dock-tools-h: 140px;
-    --gutter: calc(var(--dock-left) + var(--dock-w) + 8px);
-    --intro-scale: 1.9; --intro-band: 56px;
-    height: 100dvh; min-height: 0; overflow: hidden;
-    display: grid; grid-template-rows: var(--topbar-h) minmax(0, 1fr);
-  }
-  .story-topbar { gap: var(--s2); padding: 0 max(var(--s3), env(safe-area-inset-right)) 0 max(var(--s3), env(safe-area-inset-left)); }
-  .story-brand { gap: 0; font-size: 0; }
-  .story-stepper ol { display: none; }
-  .story-stepper-compact { display: inline-flex; align-items: center; padding: 0 var(--s1); font-size: var(--t-caption); font-weight: 600; font-variant-numeric: tabular-nums; }
-  .story-topbar-link { font-size: var(--t-caption); }
-  .story-topbar .lang-switch button { padding: 0 var(--s2); }
-
-  .story-stage {
-    min-height: 0; height: 100%; overflow: hidden;
-    grid-template-columns: var(--gutter) minmax(0, 1fr) minmax(300px, 42%);
-    grid-template-rows: minmax(0, 1fr);
-    column-gap: var(--s3);
-    padding: var(--s2) max(var(--s3), env(safe-area-inset-right)) var(--s2) 0;
-  }
-  .story-mobius {
-    grid-column: 2; height: 100%; min-height: 0;
-    overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin;
-    padding: var(--s1) var(--s1) var(--s4) 0;
-  }
-  .story-app-column { grid-column: 3; position: static; height: 100%; min-height: 0; }
-  .story-device { height: 100%; padding: 0; border-radius: var(--s6); background: var(--canvas); overflow: hidden; }
-  .story-phone { width: 100%; height: 100%; padding: 0 var(--s4) var(--s2); border-radius: 0; background: transparent; }
-  .story-status, .story-home-indicator { display: none; }
-  .story-header { min-height: 44px; }
-  .story-app-name { font-size: var(--t-body); }
+  .story-demo { --topbar-h: 48px; --dock-kw: 112px; --intro-scale: 2.2; --intro-band: 56px; }
+  .story-stage { padding-top: 8px; }
+  .story-mobius-head { padding-bottom: var(--s2); }
+  .story-panel-card { padding-top: var(--s3); }
+  .story-trace { gap: var(--s3); }
+  .story-trace-title { font-size: var(--t-body); }
+  .story-trace-step { padding-bottom: var(--s3); }
+  .story-trace-summary, .story-trace-step code { font-size: 12px; line-height: 1.4; }
+  .story-status { height: 40px; }
+  .story-header { min-height: 48px; }
   .story-content { padding-top: var(--s4); gap: var(--s3); }
   .story-content h1 { font-size: var(--t-headline); }
-
-  .story-mobius-head { padding-bottom: var(--s3); }
-  .story-trace { gap: var(--s3); padding: var(--s3) 0 var(--s4); }
-  .story-trace-title { font-size: var(--t-body); }
-  .story-trace-summary { font-size: var(--t-caption); }
-  .story-trace-step { padding-bottom: var(--s3); }
-
-  .story-panel-tabs {
-    display: flex; gap: 2px; padding: 2px; margin-bottom: var(--s1);
-    border-radius: var(--r-pill); background: var(--surface-strong);
-  }
-  .story-panel-tabs button[aria-controls="story-panel-scenes"] { display: none; }
-  .story-mobile-panel { display: none; }
-  .story-mobile-panel.is-mobile-open:not(.story-scene-panel) { display: grid; }
-  .story-panel-card { padding: var(--s3) 0 0; border-top: 0; }
-  .mobius-tree-scroll { max-height: min(240px, 62dvh); }
-
-  .keyring-dock .keyring-tools, .keyring-dock .keyring-mode { flex-direction: column; gap: 4px; }
-  .keyring-dock .keyring-tools { justify-content: flex-start; width: 100%; }
-  .keyring-dock .keyring-mode { width: 100%; }
-  .keyring-dock .keyring-mode button, .keyring-dock .keyring-reset { width: 100%; padding: 0 var(--s1); }
-  .keyring-dock .keyring-help { display: none; }
-}
-@media (max-width: 1023px) and (orientation: landscape) and (min-height: 521px) {
-  .story-demo { --intro-scale: 2.6; }
+  .story-event { min-height: 64px; padding: var(--s3) var(--s4); }
+  .story-access-card, .story-check-card { padding: var(--s4); }
 }
 
-/* ---------- Portrait below 1024px: app on top, Mobius sheet below, dock beside the sheet (S6) ---------- */
-@media (max-width: 1023px) and (orientation: portrait) {
-  .story-demo {
-    --topbar-h: 52px;
-    --dock-kw: 104px; --dock-w: 112px;
-    --dock-left: max(8px, env(safe-area-inset-left));
-    --dock-bottom: max(8px, env(safe-area-inset-bottom));
-    --dock-gap: 4px; --dock-tools-h: 140px;
-    --gutter: calc(var(--dock-left) + var(--dock-w) + 8px);
-    --intro-scale: 2.2; --intro-band: 64px;
-    height: 100dvh; min-height: 0; overflow: hidden;
-    display: grid; grid-template-rows: var(--topbar-h) minmax(0, 1fr);
-  }
-  .story-topbar { gap: var(--s2); padding: 0 var(--s3); }
+/* ---------- Phones and small windows: shared compact type (never below 11px) ---------- */
+@media (max-width: 1023px) {
   .story-brand { gap: 0; font-size: 0; }
-  .story-stepper ol { display: none; }
-  .story-stepper-compact { display: inline-flex; align-items: center; padding: 0 var(--s1); font-size: var(--t-caption); font-weight: 600; font-variant-numeric: tabular-nums; }
   .story-topbar-link { display: none; }
   .story-topbar .lang-switch button { padding: 0 var(--s2); }
 
-  .story-stage {
-    min-height: 0; height: 100%; overflow: hidden;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr) minmax(0, 44%);
-    column-gap: 0; padding: 0;
+  .story-mobius-head h2 { font-size: var(--t-callout); }
+  .story-mobius-head .badge { min-height: 22px; padding: 2px 8px; font-size: 11px; }
+  .story-mobius-meta { font-size: 11px; line-height: 1.35; }
+  .story-panel-tabs { width: 100%; }
+  .story-panel-tabs button { padding-inline: 4px; font-size: 12px; }
+  .story-panel-card { gap: var(--s2); padding-top: var(--s2); }
+  .story-events-head { display: none; }
+
+  .story-trace { gap: var(--s2); }
+  .story-trace-eyebrow { display: none; }
+  .story-trace-title { margin-top: 0; font-size: var(--t-callout); }
+  .story-trace-time { font-size: 11px; }
+  .story-trace-step { grid-template-columns: 20px minmax(0, 1fr); column-gap: var(--s2); padding-bottom: 6px; }
+  .story-trace-step:not(:last-child)::before { left: 9.5px; top: 23px; bottom: 3px; }
+  .story-trace-marker { width: 20px; height: 20px; font-size: 11px; }
+  .story-trace-step > div { gap: 2px; }
+  .story-trace-step[data-step="request"] > div { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--s2); }
+  .story-trace-step strong { font-size: 12px; line-height: 20px; }
+  .story-trace-step code { font-size: 11px; line-height: 1.35; }
+  .story-trace-rsc { display: inline; margin: 0 0 0 .6em; white-space: nowrap; }
+  .story-trace-path + .story-trace-path { margin-top: 2px; }
+  .story-trace-summary { font-size: 12px; line-height: 1.4; }
+
+  .mobius-tree-toolbar > p { display: none; }
+  .mobius-tree-toolbar { flex-wrap: nowrap; justify-content: space-between; }
+  .mobius-tree-scroll { padding: 2px 0; }
+  .mobius-tree summary, .mobius-tree-leaf > button {
+    grid-template-columns: 10px minmax(0, 1fr);
+    grid-template-areas: "dot name" ". kind" ". rsc";
+    padding-block: 3px;
   }
-  .story-app-column { grid-column: 1; grid-row: 1; position: static; height: 100%; min-height: 0; }
+  .mobius-node-name { font-size: 13px; }
+  .mobius-tree summary small, .mobius-tree-leaf small,
+  .mobius-tree summary b, .mobius-tree-leaf b { font-size: 11px; line-height: 1.3; }
+  .mobius-tree summary b, .mobius-tree-leaf b { justify-self: start; text-align: left; }
+  .mobius-node-detail p, .mobius-node-detail button, .mobius-node-detail > div { display: none; }
+  .mobius-node-detail code { font-size: 11px; line-height: 1.35; }
+
+  .story-mobius-events li { padding: var(--s2) var(--s2); gap: var(--s2); grid-template-columns: 20px minmax(0, 1fr); }
+  .story-event-check { width: 20px; height: 20px; }
+  .story-mobius-events li strong { font-size: 13px; }
+  .story-mobius-events li small, .story-mobius-events li code,
+  .story-mobius-root, .story-mobius-root code { font-size: 11px; line-height: 1.35; }
+  .story-mobius-root { padding-top: var(--s2); }
+
+  /* App pane: the phone screen without a drawn device. Capture mode keeps the full 390 x 844 screen. */
+  .story-demo:not(.capture) .story-device { padding: 0; border-radius: 20px; background: var(--canvas); }
+  .story-demo:not(.capture) .story-phone { padding: 0 14px 8px; border-radius: 19px; background: transparent; }
+  .story-demo:not(.capture) :is(.story-status, .story-home-indicator, .story-login-mark, .story-login .story-subtitle) { display: none; }
+  .story-demo:not(.capture) .story-header { min-height: 40px; }
+  .story-demo:not(.capture) .story-app-name { font-size: var(--t-callout); }
+  .story-demo:not(.capture) .story-content { padding-top: var(--s2); gap: 6px; }
+  .story-demo:not(.capture) .story-content h1 { font-size: var(--t-body); line-height: 1.2; }
+  .story-demo:not(.capture) .story-title-block { gap: 0; }
+  .story-demo:not(.capture) .story-subtitle { font-size: var(--t-caption); }
+  .story-demo:not(.capture) .story-event-list { margin-top: 2px; gap: var(--s2); }
+  .story-demo:not(.capture) .story-event { min-height: 56px; padding: var(--s2) var(--s3); gap: var(--s3); }
+  .story-demo:not(.capture) .story-event time { font-size: 11px; }
+  .story-demo:not(.capture) .story-event strong { font-size: var(--t-callout); }
+  .story-demo:not(.capture) .story-message { align-self: stretch; max-width: none; padding: 6px 10px; font-size: 12px; line-height: 1.35; border-radius: 12px 12px 4px 12px; }
+  .story-demo:not(.capture) :is(.story-access-card, .story-check-card) { gap: 2px; padding: var(--s2) var(--s3); border-radius: 14px; font-size: 13px; line-height: 1.3; }
+  .story-demo:not(.capture) .story-access-card h2 { font-size: var(--t-callout); line-height: 1.25; }
+  .story-demo:not(.capture) :is(.story-access-card > small, .story-check-card > small, .story-eyebrow, .story-card-caption) { font-size: 11px; line-height: 1.3; }
+  .story-demo:not(.capture) .story-ended-card .story-card-body { font-size: 13px; }
+  .story-demo:not(.capture) :is(.story-deadline, .story-check-card > small) { margin-top: 0; }
+  .story-demo:not(.capture) .story-shared-card { padding-block: var(--s2); }
+  .story-demo:not(.capture) .story-phone :is(button.story-primary, button.story-secondary) { min-height: 44px; margin-top: 0; font-size: var(--t-callout); }
+  .story-demo:not(.capture) .story-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .story-demo:not(.capture) .story-text-action { min-height: 44px; font-size: 13px; }
+  .story-demo:not(.capture) .story-result { font-size: 12px; line-height: 1.3; }
+  .story-demo:not(.capture) .story-result svg { width: 14px; height: 14px; margin-top: 1px; }
+  .story-demo:not(.capture) .story-draft-proof { gap: 0; padding: 4px 10px; }
+  .story-demo:not(.capture) :is(.story-draft-proof span, .story-draft-proof code) { font-size: 11px; }
+  .story-demo:not(.capture) .story-draft-proof strong { font-size: 12px; }
+  .story-demo:not(.capture) .story-privacy-note { gap: 6px; padding: 6px 0 0; font-size: 11px; line-height: 1.3; }
+  .story-demo:not(.capture) .story-privacy-note svg { width: 14px; height: 14px; margin-top: 0; }
+  .story-demo:not(.capture) .story-auto-form { gap: 6px; margin-top: 0; }
+  .story-demo:not(.capture) .story-auto-form label { gap: 2px; font-size: 11px; }
+  .story-demo:not(.capture) .story-auto-form input { min-height: 44px; padding: 8px 12px; font-size: var(--t-callout); }
+  .story-demo:not(.capture) .story-inline-error { margin-top: var(--s2); font-size: 12px; }
+}
+
+/* ---------- Phone landscape: Mobius | app, one bottom bar, keyring in the Mobius rail (S6) ----------
+   The top bar folds into the bottom bar (brand left, scene navigation center, language right),
+   so the content keeps the full height. The keyring sits in the left rail of the Mobius pane,
+   under the pane title, and never covers a record. */
+@media (max-width: 1023px) and (orientation: landscape) {
+  .story-demo {
+    --topbar-h: 0px;
+    --gutter: 8px;
+    --dock-kw: 112px;
+    --dock-left: max(8px, var(--safe-left));
+    --dock-bottom: calc(var(--chrome-bottom) + 6px);
+    --intro-scale: 1.7;
+    --intro-band: 40px;
+    --intro-gap: 12px;
+  }
+  .story-topbar {
+    grid-row: 3;
+    height: var(--chrome-bottom);
+    padding: 0 max(8px, var(--safe-right)) var(--safe-bottom) max(8px, var(--safe-left));
+    box-shadow: none;
+  }
+  .story-intro-hint { font-size: var(--t-callout); }
+
+  .story-stage {
+    padding: 6px max(8px, var(--safe-right)) 4px max(8px, var(--safe-left));
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 36%);
+    column-gap: 12px;
+  }
   .story-mobius {
-    grid-column: 1; grid-row: 2; height: 100%; min-height: 0;
-    overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin;
-    padding: var(--s3) var(--s4) max(var(--s3), env(safe-area-inset-bottom)) var(--gutter);
-    background: var(--surface); border-top: 1px solid var(--hairline);
+    grid-template-columns: var(--dock-kw) minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-areas: "head msg" "head tabs" "head panel";
+    column-gap: 12px;
+  }
+  .story-mobius-head {
+    align-self: start;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "title" "badge" "meta";
+    justify-items: start; gap: 6px; padding: 4px 0 0;
+  }
+  .story-mobius-head h2 { font-size: 13px; line-height: 1.3; }
+  .story-server-message { margin-bottom: var(--s2); }
+}
+
+/* ---------- Portrait fallback: app above, Mobius sheet below, keyring deck at the bottom-left ----------
+   The bottom deck holds the keyring (left), the panel switcher and the scene navigation (right). */
+@media (max-width: 1023px) and (orientation: portrait) {
+  .story-demo {
+    --topbar-h: 44px;
+    --gutter: 12px;
+    --dock-kw: 112px;
+    --dock-left: max(12px, var(--safe-left));
+    --dock-bottom: max(4px, var(--safe-bottom));
+    --intro-scale: 2.05;
+  }
+  .story-topbar { padding-inline: max(var(--s2), var(--safe-left)) max(var(--s2), var(--safe-right)); }
+  .story-bottom-nav {
+    justify-self: stretch;
+    padding: 0 max(12px, var(--safe-right)) 0 calc(var(--dock-left) + var(--dock-kw) + 12px);
+    background: var(--surface);
+  }
+  /* The sheet surface continues under the home indicator without moving the controls into it. */
+  .story-bottom-nav::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: var(--safe-bottom); background: inherit; }
+  .story-demo[data-stage="intro"] .story-bottom-nav { background: transparent; }
+
+  .story-stage {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 44%) minmax(0, 1fr);
+    column-gap: 0;
+    padding: 0;
+  }
+  .story-app-column { grid-column: 1; grid-row: 1; padding: 6px max(var(--s3), var(--safe-right)) 6px max(var(--s3), var(--safe-left)); }
+  .story-mobius {
+    grid-column: 1; grid-row: 2;
+    grid-template-columns: var(--dock-kw) minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-areas: "head head" "msg msg" "panel panel" ". tabs";
+    column-gap: 12px;
+    padding: 6px max(var(--s3), var(--safe-right)) 6px max(var(--s3), var(--safe-left));
+    background: var(--surface);
+    border-top: 1px solid var(--hairline);
   }
   .story-demo[data-stage="intro"] .story-mobius { transform: translateY(12px); }
   .story-demo:is([data-stage="intro"], [data-stage="sending"]) .story-app-column { transform: none; }
-  .story-device { height: 100%; padding: 0; border: 0; border-radius: 0; background: transparent; }
-  .story-phone { width: 100%; max-width: 560px; height: 100%; margin: 0 auto; padding: 0 var(--s4) var(--s2); border-radius: 0; }
-  .story-status, .story-home-indicator { display: none; }
-  .story-header { min-height: 48px; }
-  .story-content { padding-top: var(--s4); }
+  .story-mobius-head { padding-bottom: 4px; }
+  .story-mobius-head .story-mobius-meta { display: none; }
+  .story-panel-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: row; margin-top: var(--s2); }
+  .story-panel-tabs button[aria-controls="story-panel-scenes"] { display: inline-flex; }
+  .story-panel-card { padding-top: 0; }
 
-  .story-mobius-head { padding-bottom: var(--s2); }
-  .story-trace { gap: var(--s3); padding: var(--s3) 0 var(--s4); }
-  .story-trace-title { font-size: var(--t-body); }
-  .story-trace-summary { font-size: var(--t-caption); }
-  .story-trace-step { padding-bottom: var(--s3); }
-  .story-panel-tabs {
-    display: flex; gap: 2px; padding: 2px; margin-bottom: var(--s1);
-    border-radius: var(--r-pill); background: var(--surface-strong);
-  }
-  .story-mobile-panel { display: none; }
-  .story-mobile-panel.is-mobile-open { display: grid; }
-  .story-panel-card { padding: var(--s3) 0 0; border-top: 0; }
-  .mobius-tree-scroll { max-height: min(240px, 62dvh); }
-  .story-scene-panel { gap: var(--s3); }
-  .story-scene-panel ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s1); }
-  .story-scene-panel a {
-    min-height: var(--control); display: flex; align-items: center; gap: var(--s2); padding: var(--s1) var(--s2);
-    border-radius: var(--r-nested); color: var(--ink); text-decoration: none; font-size: var(--t-caption); font-weight: 600;
-  }
-  .story-scene-panel a:hover { background: var(--surface-soft); }
+  .story-scene-panel { gap: var(--s2); }
+  .story-scene-panel > h3 { display: none; }
+  .story-scene-panel ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px var(--s2); }
+  .story-scene-panel a { min-height: 44px; display: flex; align-items: center; gap: var(--s2); padding: 0 var(--s2); border-radius: 10px; color: var(--ink); text-decoration: none; font-size: 13px; font-weight: 600; }
+  .story-scene-panel a:hover { background: var(--surface-strong); }
   .story-scene-panel a.active { background: var(--accent-soft); color: var(--accent-text); }
-  .story-scene-panel a span { display: grid; place-items: center; flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--surface-strong); font-variant-numeric: tabular-nums; }
-  .story-mobile-dashboard-link {
-    min-height: var(--control); display: flex; align-items: center; justify-content: space-between;
-    border-top: 1px solid var(--hairline); font-size: var(--t-callout); font-weight: 600; text-decoration: none;
-  }
-
-  .keyring-dock .keyring-tools, .keyring-dock .keyring-mode { flex-direction: column; gap: 4px; }
-  .keyring-dock .keyring-tools { justify-content: flex-start; width: 100%; }
-  .keyring-dock .keyring-mode { width: 100%; }
-  .keyring-dock .keyring-mode button, .keyring-dock .keyring-reset { width: 100%; padding: 0 var(--s1); }
-  .keyring-dock .keyring-help { display: none; }
+  .story-scene-panel a span { display: grid; place-items: center; flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--surface-strong); font-size: 11px; font-variant-numeric: tabular-nums; }
+  .story-scene-panel a.active span { background: var(--accent); color: var(--on-accent); }
+  .story-scene-panel a.story-mobile-dashboard-link { justify-content: space-between; border-top: 1px solid var(--hairline); border-radius: 0; color: var(--accent-text); }
 }
 
-/* Phone portrait: every entry asks for landscape first and offers Continue upright (WCAG 1.3.4) */
+/* Phone portrait: ask for landscape first and keep a WCAG orientation fallback. */
 @media (max-width: 760px) and (orientation: portrait) {
-  .story-demo { --dock-kw: 72px; --dock-w: 80px; --intro-scale: 2.7; --intro-band: 248px; }
+  .story-demo { --intro-band: 220px; --intro-gap: 20px; }
   .story-demo[data-portrait="ask"]:not(.capture) .story-rotate { display: flex; }
   .story-demo[data-portrait="ask"] .story-intro-hint { display: none; }
   .story-demo[data-portrait="ask"] .keyring-physical-button.is-guided::after { display: none; }
 }
 @media (max-width: 760px) and (orientation: portrait) and (max-height: 700px) {
-  .story-demo { --intro-scale: 2.2; }
+  .story-demo { --intro-scale: 1.8; --intro-band: 200px; }
 }
-
-/* Narrow Mobius panes: tree rows put kind and RSC on a second line instead of clipping */
-@media (max-width: 1023px) {
-  .mobius-tree ul { margin-left: 7px; padding-left: 8px; }
-  .mobius-tree summary, .mobius-tree-leaf > button {
-    grid-template-columns: 12px 10px minmax(0, 1fr);
-    grid-template-areas: "chev dot name" ". . kind" ". . rsc";
-    padding-inline: 4px;
-  }
-  .mobius-tree summary b, .mobius-tree-leaf b { justify-self: start; text-align: left; }
-  .story-panel-tabs button {
-    position: relative; flex: 1 1 0; min-height: var(--control); min-width: var(--control); padding: 0 var(--s2);
-    border: 0; border-radius: var(--r-pill); background: transparent;
-    color: var(--muted); font-size: var(--t-caption); font-weight: 600;
-  }
-  .story-panel-tabs button:hover { background: transparent; color: var(--ink); }
-  .story-panel-tabs button.active, .story-panel-tabs button[aria-pressed="true"] {
-    background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgb(0 0 0 / .1);
-  }
-  .story-panel-alert { position: absolute; top: 9px; right: 12px; width: 6px; height: 6px; border-radius: 50%; background: transparent; }
-  .story-panel-tabs button.has-new-event:not(.active) .story-panel-alert { background: var(--accent); animation: story-tab-notice 1.2s var(--ease) 3; }
+@media (max-width: 760px) and (orientation: portrait) and (max-height: 600px) {
+  .story-demo { --intro-scale: 1.4; --intro-band: 190px; --intro-gap: 12px; }
+  .story-rotate-title { font-size: var(--t-body); }
 }
 
 /* ---------- Capture mode: the bare 390 x 844 app screen ---------- */
-.story-demo.capture { display: block; width: var(--story-screen-width); height: auto; min-height: 0; overflow: visible; }
-.story-demo.capture .story-topbar, .story-demo.capture .story-intro, .story-demo.capture .story-mobius,
-.story-demo.capture .keyring-dock, .story-demo.capture .skip, .story-demo.capture .story-rotate { display: none; }
+.story-demo.capture { position: static; inset: auto; display: block; width: var(--story-screen-width); height: auto; min-height: 0; overflow: visible; }
+.story-demo.capture :is(.story-topbar, .story-intro, .story-mobius, .story-bottom-nav, .keyring-dock, .skip, .story-rotate) { display: none; }
 .story-demo.capture .story-stage { display: block; height: auto; padding: 0; overflow: visible; }
-.story-demo.capture .story-app-column { display: block; position: static; height: auto; opacity: 1; transform: none; visibility: visible; }
-.story-demo.capture .story-device { height: auto; padding: 0; border: 0; border-radius: 0; background: transparent; }
+.story-demo.capture .story-app-column { display: block; position: static; height: auto; padding: 0; opacity: 1; transform: none; visibility: visible; }
+.story-demo.capture .story-device { height: auto; max-height: none; padding: 0; border: 0; border-radius: 0; background: transparent; }
 .story-demo.capture .story-phone {
   width: var(--story-screen-width); max-width: none; height: 844px; min-height: 0;
   margin: 0; padding: 0 var(--s6) var(--s2); overflow: hidden; border-radius: 0; background: var(--canvas);
 }
-.story-demo.capture .story-status { display: flex; }
-.story-demo.capture .story-header { min-height: 56px; }
-.story-demo.capture .story-app-name { font-size: var(--t-headline); }
-.story-demo.capture .story-content { padding-top: var(--s6); gap: var(--s4); }
-.story-demo.capture .story-content h1 { font-size: var(--t-title); }
-.story-demo.capture .story-home-indicator { display: block; }
 
 /* ---------- Reduced motion (P7): no travel, no pulses, short crossfades ---------- */
 @media (prefers-reduced-motion: reduce) {
@@ -882,6 +938,5 @@
   .story-panel-tabs button.has-new-event .story-panel-alert { animation: none; }
   .story-rotate { animation: none; }
   .story-rotate-glyph::before { animation: none; rotate: -90deg; }
-  .story-stepper-dot { transition: none; }
-  .story-stepper-item:hover .story-stepper-dot { transform: none; }
+  .story-stepper-prev, .story-stepper-next, .story-topbar, .story-bottom-nav, .story-topbar-link { transition: none; }
 }
