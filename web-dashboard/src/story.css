@@ -482,26 +482,56 @@
 }
 .story-mobius-root span { font-weight: 600; overflow-wrap: anywhere; }
 
-/* Mobius tree: exact server paths and RSC codes, nothing truncated */
-.mobius-tree-view { min-width: 0; min-height: 0; display: grid; grid-template-rows: auto auto minmax(0, 1fr); align-content: start; gap: var(--s2); overflow: hidden; }
-.mobius-tree-toolbar { display: flex; align-items: center; justify-content: flex-start; flex-wrap: wrap; gap: var(--s2) var(--s3); }
-.mobius-tree-toolbar p { display: grid; gap: 2px; min-width: 0; margin-right: auto; }
-.mobius-tree-toolbar strong { display: none; }
-.mobius-tree-toolbar span { color: var(--muted); font-size: var(--t-caption); }
+/* Mobius tree (S4): the complete oneM2M hierarchy in one bounded scroll box, exact server paths
+   and RSC codes, nothing truncated. The box is the single intentional inner scroller (P12): wheel,
+   touch pan and keyboard focus move it, TSX centers the newest fresh node inside it, and two quiet
+   cues make it discoverable without a pager or a toolbar column: a thin native scrollbar and soft
+   edge shades that appear only on the side where more rows wait (background-attachment local over
+   scroll, so no script and no layout cost). */
+.story-mobius-tree-card > .story-events-head {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.mobius-tree-view {
+  min-width: 0; min-height: 0; overflow: hidden;
+  display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto;
+  align-content: stretch; gap: var(--s2);
+}
+/* Desktop header row: title and live count on the left, Sync on the right, one 44px row */
+.mobius-tree-toolbar { min-width: 0; display: flex; align-items: center; gap: var(--s3); }
+.mobius-tree-toolbar p { min-width: 0; margin-right: auto; display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 var(--s2); }
+.mobius-tree-toolbar strong { font-size: var(--t-callout); font-weight: 600; }
+.mobius-tree-toolbar span { color: var(--muted); font-size: var(--t-caption); font-variant-numeric: tabular-nums; }
 .mobius-tree-toolbar button, .mobius-node-detail button {
   min-height: var(--control); padding: 0 var(--s3); gap: var(--s2);
   border-color: transparent; color: var(--accent-text); font-size: var(--t-caption);
 }
 .mobius-tree-toolbar button:hover, .mobius-node-detail button:hover { background: var(--accent-soft); }
-.mobius-tree-pager { display: flex; align-items: center; gap: 2px; }
-.mobius-tree-pager button { min-width: var(--control); padding: 0; font-size: var(--t-body); }
-.mobius-tree-pager span { min-width: 42px; text-align: center; font-variant-numeric: tabular-nums; }
-.mobius-tree-pager button:disabled, .story-events-pager button:disabled {
+.story-events-pager button:disabled {
   background: transparent; border-color: transparent; color: var(--muted); opacity: .4; cursor: default;
 }
-.mobius-tree-scroll { min-width: 0; overflow: visible; padding: var(--s1) 0; border-block: 1px solid var(--hairline); }
+.mobius-tree-scroll {
+  --tree-bg: var(--canvas);
+  --tree-shade: color-mix(in srgb, var(--muted) 26%, transparent);
+  min-width: 0; min-height: 0;
+  overflow-x: hidden; overflow-y: auto;
+  padding: var(--s1) 0;
+  border-block: 1px solid var(--hairline);
+  background:
+    linear-gradient(var(--tree-bg) 40%, transparent) top / 100% 20px no-repeat local,
+    linear-gradient(transparent, var(--tree-bg) 60%) bottom / 100% 20px no-repeat local,
+    linear-gradient(var(--tree-shade), transparent) top / 100% 10px no-repeat scroll,
+    linear-gradient(transparent, var(--tree-shade)) bottom / 100% 10px no-repeat scroll,
+    var(--tree-bg);
+  overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--muted) 45%, transparent) transparent;
+  scrollbar-gutter: stable;
+}
+.mobius-tree-scroll:focus-visible { outline: var(--focus-width) solid var(--focus); outline-offset: -3px; }
 .mobius-tree, .mobius-tree ul { list-style: none; margin: 0; padding: 0; }
-.mobius-tree summary, .mobius-tree-leaf > button {
+/* Row: dot, name and RSC on the first line; the oneM2M type under the name */
+.mobius-tree-leaf > button {
   width: 100%; min-width: 0; min-height: var(--control);
   display: grid; grid-template-columns: 10px minmax(0, 1fr) auto;
   grid-template-areas: "dot name rsc" ". kind kind";
@@ -510,17 +540,21 @@
   border: 0; border-radius: 10px; background: transparent; color: var(--ink);
   font-size: var(--t-callout); font-weight: 400; line-height: 1.35; text-align: left; cursor: pointer;
 }
-.mobius-tree summary:hover, .mobius-tree-leaf > button:hover { background: var(--surface-strong); }
-.mobius-tree summary:active, .mobius-tree-leaf > button:active { transform: none; }
-.mobius-tree summary.selected, .mobius-tree-leaf > button.selected { background: var(--accent-soft); }
+.mobius-tree-leaf > button:hover { background: var(--surface-strong); }
+.mobius-tree-leaf > button:active { transform: none; }
+.mobius-tree-leaf > button.selected { background: var(--accent-soft); }
 .mobius-node-dot { grid-area: dot; width: 8px; height: 8px; border: 2px solid var(--muted); border-radius: 50%; }
 .mobius-node-dot.kind-cse, .mobius-node-dot.kind-ae { border-color: var(--accent); background: var(--accent); }
 .mobius-node-dot.kind-group, .mobius-node-dot.kind-fanout { border-color: var(--warning); background: var(--warning-soft); }
 .mobius-node-dot.kind-contentInstance { border-color: var(--success); background: var(--success-soft); }
 .mobius-node-name { grid-area: name; min-width: 0; overflow-wrap: anywhere; font-size: var(--t-callout); font-weight: 600; }
-.mobius-tree summary small, .mobius-tree-leaf small { grid-area: kind; min-width: 0; color: var(--muted); font-size: var(--t-caption); font-weight: 400; overflow-wrap: break-word; }
-.mobius-tree summary b, .mobius-tree-leaf b { grid-area: rsc; justify-self: end; color: var(--muted); font-size: var(--t-caption); font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: break-word; text-align: right; }
-.mobius-tree summary b.verified, .mobius-tree-leaf b.verified { color: var(--success); }
+.mobius-tree-leaf small { grid-area: kind; min-width: 0; color: var(--muted); font-size: var(--t-caption); font-weight: 400; overflow-wrap: break-word; }
+.mobius-tree-leaf b {
+  grid-area: rsc; justify-self: end;
+  color: var(--muted); font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: -.01em;
+  font-variant-numeric: tabular-nums; overflow-wrap: break-word; text-align: right;
+}
+.mobius-tree-leaf b.verified { color: var(--success); }
 .mobius-node-detail { min-width: 0; min-height: 0; display: grid; align-content: start; gap: 4px; padding-top: var(--s1); overflow: hidden; }
 .mobius-node-detail > div { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--s1) var(--s3); }
 .mobius-node-detail > div span { color: var(--muted); font-size: var(--t-caption); font-weight: 600; }
@@ -891,20 +925,32 @@
   .story-trace-rn { overflow-wrap: anywhere; white-space: normal; }
   .story-trace-summary { font-size: 12px; line-height: 1.4; }
 
-  .mobius-tree-toolbar > p { display: none; }
-  .mobius-tree-toolbar { flex-wrap: nowrap; justify-content: space-between; }
-  .mobius-tree-scroll { padding: 2px 0; }
-  /* Two-line rows: dot and name, then type and RSC flowing on one line (wrapping when narrow) */
-  .mobius-tree summary, .mobius-tree-leaf > button {
-    display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--s2); row-gap: 0;
-    padding-block: 3px;
+  /* Tree: the scroll box takes every row of the panel; the selected node's full path and Sync share
+     the last line (path left, Sync right), so no toolbar row or column is spent above the rows. */
+  .mobius-tree-view {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-areas: "rows rows" "detail tools";
+    column-gap: var(--s2); row-gap: 4px;
   }
-  .mobius-node-dot { align-self: center; flex: none; }
-  .mobius-node-name { flex: 1 1 calc(100% - 16px); font-size: 13px; }
-  .mobius-tree summary small, .mobius-tree-leaf small { margin-left: 16px; }
-  .mobius-tree summary small, .mobius-tree-leaf small,
-  .mobius-tree summary b, .mobius-tree-leaf b { font-size: 11px; line-height: 1.3; }
-  .mobius-tree summary b, .mobius-tree-leaf b { text-align: left; }
+  .mobius-tree-toolbar { grid-area: tools; align-self: center; }
+  .mobius-tree-toolbar > p { display: none; }
+  .mobius-tree-toolbar > button { min-width: var(--control); padding: 0 8px 0 6px; gap: 4px; font-size: 12px; }
+  .mobius-tree-scroll, .mobius-tree-view > .story-server-wait { grid-area: rows; }
+  .mobius-tree-scroll { padding: 2px 0; }
+  .mobius-node-detail { grid-area: detail; align-self: center; padding-top: 0; }
+  /* Two-line rows: dot and name over the oneM2M type; the RSC stands in its own right column as two
+     short mono lines (RETRIEVE / RSC 2000), so names and types keep the width */
+  .mobius-tree-leaf > button {
+    grid-template-columns: 8px minmax(0, 1fr) auto;
+    grid-template-areas: "dot name rsc" ". kind rsc";
+    align-items: baseline; column-gap: 6px;
+    padding-block: 3px; padding-inline-end: 6px;
+  }
+  .mobius-node-dot { align-self: center; }
+  .mobius-node-name { font-size: 13px; line-height: 16px; }
+  .mobius-tree-leaf small { font-size: 11px; line-height: 14px; }
+  .mobius-tree-leaf b { align-self: center; inline-size: 10ch; font-size: 11px; line-height: 13px; letter-spacing: 0; }
   .mobius-node-detail p, .mobius-node-detail button, .mobius-node-detail > div { display: none; }
   .mobius-node-detail code { font-size: 11px; line-height: 1.35; }
 
@@ -1002,7 +1048,7 @@
 /* ---------- Shallow landscape (340px tall or less: Safari with toolbars, 844 x 320, 1000 x 327) ----------
    No bottom bar. A right control rail stacks brand, language, the keyring and the scene navigation;
    a left Mobius rail keeps the pane title, badge, session meta and CSE notice. Content uses the full
-   height, every panel is a complete page (no inner scroll, nothing to drag). */
+   height; the Resource tree scroll box is the only inner scroller. */
 @media (max-width: 1023px) and (orientation: landscape) and (max-height: 340px) {
   .story-demo {
     --nav-h: 0px;
@@ -1074,9 +1120,9 @@
 /* ---------- iPhone mini landscape in Safari (300px tall or less; 812 x 265, safe 44 / 44 / 21) ----------
    Usable box 724 x 244. Columns: Mobius | app | rail (150px), 8px gaps. The rail holds the keyring and
    the scene navigation; the brand steps out; the language toggle takes the app's bottom-right slot
-   beside the privacy footnote. Every panel is one complete page sized for 244px: the Mobius header
-   is two short lines, the receipt is one line per step, the tree pager stands beside the rows and
-   the record pager beside the CSE root. */
+   beside the privacy footnote. Every panel is sized for 244px: the Mobius header is two short lines,
+   the receipt is one line per step, the tree scrolls inside its own box above the path and Sync, and
+   the record pager stands beside the CSE root. */
 @media (max-width: 1023px) and (orientation: landscape) and (max-height: 300px) {
   .story-demo {
     --rail-w: 150px;
@@ -1124,7 +1170,7 @@
   .story-mobius-head h2 { order: 0; font-size: 12px; line-height: 16px; }
   .story-mobius-head .badge { order: 1; min-height: 16px; padding: 0 6px; font-size: 11px; line-height: 16px; }
   .story-mobius-head .story-mobius-meta { order: 2; flex-basis: 100%; font-size: 11px; line-height: 13px; }
-  /* The tree page needs every pixel: its pager column carries the status instead */
+  /* The tree page gives the header's two lines to the scrolling rows; the switcher names the page */
   .story-mobius:has(#story-panel-tree.is-mobile-open) .story-mobius-head { display: none; }
   /* A CSE notice stands in for the session line; on the tree page the app banner carries it */
   .story-server-message { margin: 0; padding: 0 6px; border-radius: 6px; font-size: 11px; line-height: 13px; }
@@ -1151,24 +1197,12 @@
     overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
   }
 
-  /* Tree: rows on the left, pager and Sync stacked on the right, full path underneath */
-  .mobius-tree-view {
-    grid-template-columns: minmax(0, 1fr) 52px;
-    grid-template-rows: auto auto;
-    grid-template-areas: "rows tools" "detail detail";
-    column-gap: 6px; row-gap: 4px;
-  }
-  .mobius-tree-toolbar { grid-area: tools; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 2px; }
-  .mobius-tree-pager { flex-direction: column; gap: 0; }
-  .mobius-tree-pager span { min-width: 0; font-size: 11px; line-height: 14px; }
-  .mobius-tree-toolbar > button { min-width: 44px; padding: 0 2px; gap: 2px; font-size: 11px; }
-  .mobius-tree-scroll, .mobius-tree-view > .story-server-wait { grid-area: rows; }
-  .mobius-node-detail { grid-area: detail; }
+  /* Tree: tight two-line rows and 6px depth steps; path and Sync share the last line (shared rule) */
+  .mobius-tree-toolbar > button { font-size: 11px; }
   :is(.mobius-node-detail, .story-mobius-events li, .story-mobius-root) code { word-break: break-all; }
-  .mobius-tree-leaf > button { padding-block: 1px; row-gap: 0; }
+  .mobius-tree-leaf > button { padding-block: 2px; }
   .mobius-node-name { font-size: 12px; line-height: 15px; }
-  .mobius-tree summary small, .mobius-tree-leaf small,
-  .mobius-tree summary b, .mobius-tree-leaf b { line-height: 13px; }
+  .mobius-tree-leaf small { line-height: 13px; }
   .mobius-tree-leaf[aria-level="1"] > button { padding-inline-start: 6px !important; }
   .mobius-tree-leaf[aria-level="2"] > button { padding-inline-start: 12px !important; }
   .mobius-tree-leaf[aria-level="3"] > button { padding-inline-start: 18px !important; }
@@ -1210,7 +1244,8 @@
 /* ---------- Installed web app, phone landscape (Home Screen launch: display-mode standalone or fullscreen) ----------
    No Safari bars: 812 x 375 on iPhone 13 mini, usable 724 x 354 inside insets 44 / 44 / 21. Columns: Mobius 300 |
    app | rail 176, 8px gaps. The rail stacks the brand, a 176px keyring and the scene navigation; the flags keep the
-   bottom-left corner under the Mobius column; every Mobius page is one complete page with its header. */
+   bottom-left corner under the Mobius column; every Mobius page keeps its header, and only the tree
+   scrolls inside its own box. */
 @media (max-width: 1023px) and (orientation: landscape) and (max-height: 440px) {
   .story-demo[data-display-mode="standalone"] {
     --topbar-h: 0px;
@@ -1252,7 +1287,7 @@
   }
   .story-demo[data-display-mode="standalone"] .story-stepper-compact { order: 0; flex: 1 1 0; min-width: 0; font-size: 12px; line-height: 15px; white-space: normal; text-wrap: balance; }
 
-  /* Mobius: two-line header, switcher, one page; the bottom 48px belong to the flags */
+  /* Mobius: two-line header, switcher, one panel; the bottom 48px belong to the flags */
   .story-demo[data-display-mode="standalone"] .story-mobius {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto auto minmax(0, 1fr);
@@ -1285,23 +1320,12 @@
   .story-demo[data-display-mode="standalone"] .story-trace-step:is([data-step="create"], [data-step="readback"]) > div { gap: 0 10px; }
   .story-demo[data-display-mode="standalone"] .story-trace-summary { font-size: 11px; line-height: 1.35; }
 
-  /* Tree: rows on the left, pager and Sync stacked on the right, the full path underneath */
-  .story-demo[data-display-mode="standalone"] .mobius-tree-view {
-    grid-template-columns: minmax(0, 1fr) 52px;
-    grid-template-rows: auto auto;
-    grid-template-areas: "rows tools" "detail detail";
-    column-gap: 6px; row-gap: 4px;
-  }
-  .story-demo[data-display-mode="standalone"] .mobius-tree-toolbar { grid-area: tools; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 2px; }
-  .story-demo[data-display-mode="standalone"] .mobius-tree-pager { flex-direction: column; gap: 0; }
-  .story-demo[data-display-mode="standalone"] .mobius-tree-pager span { min-width: 0; font-size: 11px; line-height: 14px; }
-  .story-demo[data-display-mode="standalone"] .mobius-tree-toolbar > button { min-width: 44px; padding: 0 2px; gap: 2px; font-size: 11px; }
-  .story-demo[data-display-mode="standalone"] :is(.mobius-tree-scroll, .mobius-tree-view > .story-server-wait) { grid-area: rows; }
-  .story-demo[data-display-mode="standalone"] .mobius-node-detail { grid-area: detail; }
+  /* Tree: tight two-line rows and 6px depth steps; path and Sync share the last line (shared rule) */
+  .story-demo[data-display-mode="standalone"] .mobius-tree-toolbar > button { font-size: 11px; }
   .story-demo[data-display-mode="standalone"] :is(.mobius-node-detail, .story-mobius-events li, .story-mobius-root) code { word-break: break-all; }
-  .story-demo[data-display-mode="standalone"] .mobius-tree-leaf > button { padding-block: 1px; row-gap: 0; }
+  .story-demo[data-display-mode="standalone"] .mobius-tree-leaf > button { padding-block: 2px; }
   .story-demo[data-display-mode="standalone"] .mobius-node-name { font-size: 12px; line-height: 15px; }
-  .story-demo[data-display-mode="standalone"] :is(.mobius-tree-leaf small, .mobius-tree-leaf b) { line-height: 13px; }
+  .story-demo[data-display-mode="standalone"] .mobius-tree-leaf small { line-height: 13px; }
   .story-demo[data-display-mode="standalone"] .mobius-tree-leaf[aria-level="1"] > button { padding-inline-start: 6px !important; }
   .story-demo[data-display-mode="standalone"] .mobius-tree-leaf[aria-level="2"] > button { padding-inline-start: 12px !important; }
   .story-demo[data-display-mode="standalone"] .mobius-tree-leaf[aria-level="3"] > button { padding-inline-start: 18px !important; }
@@ -1376,6 +1400,7 @@
   .story-panel-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: row; margin-top: var(--s2); }
   .story-panel-tabs button[aria-controls="story-panel-scenes"] { display: inline-flex; }
   .story-panel-card { padding-top: 0; }
+  .mobius-tree-scroll { --tree-bg: var(--surface); }
 
   .story-scene-panel { gap: var(--s2); }
   .story-scene-panel > h3 { display: none; }
@@ -1385,6 +1410,9 @@
   .story-scene-panel a.active { background: var(--accent-soft); color: var(--accent-text); }
   .story-scene-panel a span { display: grid; place-items: center; flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--surface-strong); font-size: 11px; font-variant-numeric: tabular-nums; }
   .story-scene-panel a.active span { background: var(--accent); color: var(--on-accent); }
+  /* The unnumbered System proof link: a check in the success family of the proof (S7) */
+  .story-scene-panel .story-scene-finale a span { background: var(--success-soft); color: var(--success); }
+  .story-scene-panel .story-scene-finale a.active span { background: var(--success); color: var(--on-accent); }
   .story-scene-panel a.story-mobile-dashboard-link { justify-content: space-between; border-top: 1px solid var(--hairline); border-radius: 0; color: var(--accent-text); }
 }
 
@@ -1403,6 +1431,255 @@
 @media (max-width: 760px) and (orientation: portrait) and (max-height: 600px) {
   .story-demo { --intro-scale: 1.4; --intro-band: 190px; --intro-gap: 12px; }
   .story-rotate-title { font-size: var(--t-body); }
+}
+
+/* ---------- System proof (#/story/finale, S7): the unnumbered conclusion after scene seven ----------
+   Scene seven's Next opens it; the stepper reads "System proof" and its next control replays from the
+   keyring. The Mobius pane and the phone chrome step away, so the page reads as a conclusion and never
+   as an eighth scene: one statement on the left, one end-to-end receipt on the right (keyring input,
+   Mobius CREATE RSC 2001 / RETRIEVE RSC 2000 with the session's verified-record count, the
+   browser-session / purpose / scope / expiry boundary) closed by the session footer, beside the same
+   keyring. Every value comes from the live session snapshot (P6). */
+
+/* Scene seven's Next: a tinted success circle with a check that invites twice, then rests */
+.story-stepper-next[data-special="true"] {
+  background: var(--success-soft); color: var(--success);
+  animation: story-proof-invite 1.8s var(--ease) .6s 2 both;
+}
+.story-stepper-next[data-special="true"]:hover { background: color-mix(in srgb, var(--success) 18%, var(--success-soft)); color: var(--success); }
+.story-bottom-nav.is-finale .story-stepper-next { color: var(--accent-text); }
+.story-bottom-nav.is-finale .story-stepper-next:hover { background: var(--accent-soft); color: var(--accent-text); }
+
+.story-demo[data-finale="true"] .story-mobius { display: none; }
+.story-demo[data-finale="true"] .story-stage { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); column-gap: 0; }
+.story-demo[data-finale="true"] .story-app-column { grid-column: 1; grid-row: 1; }
+.story-demo[data-finale="true"]:not(.capture) .story-device {
+  max-height: none; padding: 0; border-color: transparent; border-radius: 0; background: transparent;
+}
+/* 6px keeps the outside focus ring of the actions inside the clipped phone box */
+.story-demo[data-finale="true"]:not(.capture) .story-phone { padding: 6px; border-radius: 0; background: transparent; }
+.story-demo[data-finale="true"]:not(.capture) :is(.story-status, .story-header, .story-home-indicator) { display: none; }
+
+.story-demo[data-finale="true"] .story-finale {
+  --proof-pad: 28px;
+  --proof-marker: 36px;
+  --proof-gap: var(--s6);
+  --proof-title: var(--t-body);
+  --proof-title-lh: 26px;
+  --proof-detail: var(--t-callout);
+  --proof-code: var(--t-caption);
+  --proof-count: var(--t-headline);
+  --finale-slot: 0px;
+  /* The outer 1fr rows center the whole block. The receipt spans the kicker and title rows, which
+     share its extra height evenly; the kicker sits at the end of its row and the title at the start
+     of its row, so the statement rests on the receipt's center and the footer stays attached. */
+  display: grid;
+  grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
+  grid-template-rows: 1fr auto auto auto auto 1fr;
+  grid-template-areas:
+    ".       ."
+    "kicker  proof"
+    "title   proof"
+    ".       session"
+    ".       actions"
+    ".       .";
+  column-gap: clamp(32px, 5vw, 72px); row-gap: 0;
+  padding: 0;
+}
+/* Statement: a success seal, the one headline, one sentence */
+.story-finale-kicker {
+  grid-area: kicker; align-self: end;
+  display: flex; align-items: center; gap: var(--s3);
+  margin-bottom: var(--s4);
+  color: var(--success); font-size: var(--t-callout); font-weight: 600; line-height: 1.3;
+}
+.story-finale-kicker svg {
+  flex: none; width: 40px; height: 40px; padding: 10px;
+  border-radius: 50%; background: var(--success-soft);
+  animation: story-proof-seal var(--story-base) var(--ease) both;
+}
+.story-demo[data-finale="true"] .story-finale .story-title-block { grid-area: title; align-self: start; gap: var(--s3); }
+.story-demo[data-finale="true"] .story-finale h1 { font-size: var(--t-display); line-height: 1.1; letter-spacing: -0.02em; text-wrap: balance; }
+.story-demo[data-finale="true"] .story-finale .story-subtitle { max-inline-size: 30rem; color: var(--muted); font-size: var(--t-body); line-height: 1.45; text-wrap: pretty; }
+
+/* Receipt: one card, three resolved steps on one success line (the S4 trace, completed) */
+.story-finale-proof {
+  grid-area: proof; min-width: 0;
+  display: grid; align-content: center; gap: var(--proof-gap);
+  margin: 0; padding: var(--proof-pad) var(--proof-pad) calc(var(--proof-pad) - 2px);
+  list-style: none;
+  border: 1px solid var(--hairline); border-bottom: 0;
+  border-radius: var(--r-card) var(--r-card) 0 0;
+  background: var(--surface);
+}
+/* Step grid: marker, title and status on the first line; the detail runs under title and status,
+   so the RSC line keeps its tokens together next to a two-digit live count */
+.story-finale-proof li {
+  position: relative; min-width: 0;
+  display: grid; grid-template-columns: var(--proof-marker) minmax(0, 1fr) auto;
+  grid-template-areas: "marker title status" ". detail detail";
+  align-items: center; column-gap: var(--s4); row-gap: 2px;
+}
+.story-finale-proof li:not(:last-child)::before {
+  content: ""; position: absolute;
+  left: calc(var(--proof-marker) / 2 - .5px); top: calc(var(--proof-marker) + 4px); bottom: calc(4px - var(--proof-gap));
+  width: 1px; background: color-mix(in srgb, var(--success) 40%, var(--hairline));
+}
+.story-finale-proof li > span {
+  grid-area: marker; display: grid; place-items: center;
+  width: var(--proof-marker); height: var(--proof-marker); border-radius: 50%;
+  background: var(--success-soft); color: var(--success);
+  font-size: var(--t-caption); font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.story-finale-proof li > div { display: contents; }
+.story-finale-proof strong { grid-area: title; min-width: 0; font-size: var(--proof-title); font-weight: 600; line-height: var(--proof-title-lh); }
+.story-finale-proof small { grid-area: detail; min-width: 0; color: var(--muted); font-size: var(--proof-detail); line-height: 1.4; overflow-wrap: break-word; }
+.story-finale-proof [data-proof="mobius"] small {
+  color: var(--success); font-family: var(--mono); font-size: var(--proof-code); font-weight: 600;
+  letter-spacing: -.01em; font-variant-numeric: tabular-nums;
+}
+.story-finale-proof li > svg {
+  grid-area: status; width: calc(var(--proof-title-lh) - 4px); height: calc(var(--proof-title-lh) - 4px);
+  color: var(--success);
+}
+/* The live count of CSE records whose CREATE and RETRIEVE both verified in this session */
+.story-finale-proof li > b {
+  grid-area: status; color: var(--success); font-size: var(--proof-count); font-weight: 700; line-height: var(--proof-title-lh);
+  font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+}
+.story-finale-proof li > b::before { content: "\00D7" / ""; margin-right: 1px; font-weight: 500; opacity: .7; }
+.story-finale-session {
+  grid-area: session; min-width: 0;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 2px var(--s2);
+  min-height: 56px; padding: var(--s3) var(--proof-pad);
+  border: 1px solid var(--hairline); border-radius: 0 0 var(--r-card) var(--r-card);
+  background: var(--surface-soft);
+  color: var(--muted); font-size: var(--t-caption); line-height: 1.35;
+}
+.story-finale-session code { color: var(--ink); font-size: 1em; font-variant-numeric: tabular-nums; }
+.story-finale-session b { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; color: var(--success); font-weight: 600; }
+.story-finale-session b::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+/* Actions: one filled primary (replay) and one plain secondary, labels on one line, 44px or taller */
+/* Actions sit under the receipt, next to the keyring the replay returns to (P8) */
+.story-finale-actions {
+  grid-area: actions; min-width: 0;
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3);
+  margin-top: var(--s5); padding-inline-start: var(--finale-slot);
+}
+.story-finale-actions a {
+  min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+  padding: 0 var(--s5); border: 1px solid transparent; border-radius: var(--r-pill);
+  color: var(--accent-text); font-size: var(--t-callout); font-weight: 600; line-height: 1.2;
+  text-decoration: none; white-space: nowrap; overflow-wrap: normal;
+  transition: background-color .2s var(--ease), border-color .2s var(--ease);
+}
+.story-finale-actions a svg { flex: none; }
+.story-finale-actions a:hover { text-decoration: none; }
+.story-finale-actions a.story-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.story-finale-actions a.story-primary:hover { background: var(--accent-pressed); border-color: var(--accent-pressed); }
+.story-finale-actions a.story-secondary:hover { background: var(--accent-soft); }
+
+@keyframes story-proof-invite {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 35%, transparent); }
+  70%, 100% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--success) 0%, transparent); }
+}
+@keyframes story-proof-seal {
+  from { transform: scale(.6); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+/* Short desktop (1024 x 768, 1280 x 720) */
+@media (max-height: 820px) and (min-width: 1024px) {
+  .story-demo[data-finale="true"] .story-finale { --proof-pad: var(--s5); --proof-marker: 28px; --proof-gap: var(--s4); }
+  .story-demo[data-finale="true"] .story-finale h1 { font-size: var(--t-title); }
+  .story-demo[data-finale="true"] .story-finale .story-subtitle { font-size: var(--t-callout); }
+}
+
+/* Phone landscape: statement | receipt, actions in one row underneath; the keyring keeps its track */
+@media (max-width: 1023px) and (orientation: landscape) {
+  .story-demo[data-finale="true"] .story-stage { grid-template-columns: minmax(0, 1fr) var(--dock-kw); column-gap: 12px; }
+  .story-demo[data-finale="true"] .story-finale {
+    --proof-pad: 14px; --proof-marker: 24px; --proof-gap: 10px;
+    --proof-title: 13px; --proof-title-lh: 18px; --proof-detail: 12px; --proof-code: 11px; --proof-count: 15px;
+    grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
+    grid-template-rows: 1fr auto auto auto 1fr auto;
+    grid-template-areas:
+      ".       ."
+      "kicker  proof"
+      "title   proof"
+      ".       session"
+      ".       ."
+      "actions actions";
+    column-gap: var(--s4);
+  }
+  .story-finale-kicker { gap: var(--s2); margin-bottom: var(--s2); font-size: 12px; }
+  .story-finale-kicker svg { width: 24px; height: 24px; padding: 5px; }
+  .story-demo[data-finale="true"] .story-finale .story-title-block { gap: 6px; }
+  .story-demo[data-finale="true"] .story-finale h1 { font-size: var(--t-headline); line-height: 1.15; }
+  .story-demo[data-finale="true"] .story-finale .story-subtitle { font-size: var(--t-caption); line-height: 1.4; }
+  .story-finale-proof li { column-gap: 10px; }
+  .story-finale-proof li > span { font-size: 11px; }
+  .story-finale-session { min-height: 0; padding: 6px var(--proof-pad); font-size: 11px; }
+  .story-finale-actions { margin-top: 10px; flex-wrap: nowrap; gap: var(--s2); }
+  .story-finale-actions a { min-height: var(--control); padding: 0 14px; font-size: 13px; }
+}
+
+/* Shallow landscape: the rail holds the keyring, so the stage is one column; the flags keep the
+   bottom-left slot and the actions start after it */
+@media (max-width: 1023px) and (orientation: landscape) and (max-height: 340px) {
+  .story-demo[data-finale="true"] .story-stage { grid-template-columns: minmax(0, 1fr); column-gap: 0; }
+  .story-demo[data-finale="true"] .story-finale { --finale-slot: 92px; }
+}
+
+/* iPhone mini in Safari (812 x 265): the same composition at 11-17px; flags at the screen's bottom-left */
+@media (max-width: 1023px) and (orientation: landscape) and (max-height: 300px) {
+  .story-demo[data-finale="true"] .story-finale {
+    --proof-pad: 10px; --proof-marker: 20px; --proof-gap: 6px;
+    --proof-title: 12px; --proof-title-lh: 16px; --proof-detail: 11px; --proof-code: 11px; --proof-count: 13px;
+    column-gap: 12px;
+  }
+  .story-finale-kicker { gap: 6px; margin-bottom: 4px; font-size: 11px; line-height: 14px; }
+  .story-finale-kicker svg { width: 20px; height: 20px; padding: 4px; }
+  .story-demo[data-finale="true"] .story-finale .story-title-block { gap: 2px; }
+  .story-demo[data-finale="true"] .story-finale h1 { font-size: 17px; line-height: 20px; }
+  .story-demo[data-finale="true"] .story-finale .story-subtitle { font-size: 11px; line-height: 14px; }
+  .story-finale-proof li > span { font-size: 11px; }
+  .story-finale-proof small { line-height: 14px; }
+  .story-finale-session { padding: 4px var(--proof-pad); line-height: 14px; }
+  .story-finale-actions { margin-top: 6px; }
+  .story-demo[data-finale="true"] .story-topbar .lang-switch { left: max(8px, var(--safe-left)); bottom: max(4px, var(--safe-bottom)); }
+}
+
+/* Installed web app (812 x 375): the keyring rail sits outside the stage; flags at the bottom-left */
+@media (max-width: 1023px) and (orientation: landscape) and (max-height: 440px) {
+  .story-demo[data-display-mode="standalone"][data-finale="true"] .story-stage { grid-template-columns: minmax(0, 1fr); column-gap: 0; }
+  .story-demo[data-display-mode="standalone"][data-finale="true"] .story-finale {
+    --proof-pad: 14px; --proof-marker: 24px; --proof-gap: 12px;
+    --proof-title: 14px; --proof-title-lh: 18px; --proof-detail: 12px; --proof-code: 11px; --proof-count: 15px;
+    --finale-slot: 92px;
+  }
+}
+
+/* Portrait fallback: one column above the keyring deck */
+@media (max-width: 1023px) and (orientation: portrait) {
+  .story-demo[data-finale="true"] .story-app-column { padding-bottom: calc(var(--dock-kh) + 12px); }
+  .story-demo[data-finale="true"] .story-finale {
+    --proof-pad: var(--s4); --proof-marker: 24px; --proof-gap: 12px;
+    --proof-title: var(--t-callout); --proof-title-lh: 20px; --proof-detail: var(--t-caption); --proof-code: 12px; --proof-count: var(--t-body);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-template-areas: "kicker" "title" "proof" "session" "actions";
+    align-content: center;
+  }
+  .story-finale-kicker { margin-bottom: var(--s2); font-size: var(--t-caption); }
+  .story-finale-kicker svg { width: 28px; height: 28px; padding: 6px; }
+  .story-demo[data-finale="true"] .story-finale .story-title-block { gap: var(--s1); margin-bottom: var(--s4); }
+  .story-demo[data-finale="true"] .story-finale h1 { font-size: var(--t-title); line-height: 1.12; }
+  .story-demo[data-finale="true"] .story-finale .story-subtitle { font-size: var(--t-callout); }
+  .story-finale-session { min-height: 44px; padding: var(--s2) var(--proof-pad); }
+  .story-finale-actions { margin-top: var(--s4); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s1); }
+  .story-finale-actions a { min-height: var(--control); padding: 0 var(--s3); font-size: var(--t-callout); }
 }
 
 /* ---------- Capture mode: the bare 390 x 844 app screen ---------- */
@@ -1435,6 +1712,8 @@
   .story-mobius-events li.is-new-event, .mobius-tree .is-fresh,
   .story-panel-tabs button.has-new-event .story-panel-alert { animation: none; }
   .story-rotate, .story-fullscreen-guide { animation: none; }
+  .story-stepper-next[data-special="true"], .story-finale-kicker svg { animation: none; }
+  .mobius-tree-scroll { scroll-behavior: auto; }
   .story-rotate-glyph::before { animation: none; rotate: -90deg; }
   .story-stepper-prev, .story-stepper-next, .story-topbar, .story-bottom-nav, .story-topbar-link { transition: none; }
 }

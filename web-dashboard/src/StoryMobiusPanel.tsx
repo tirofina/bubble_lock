@@ -41,6 +41,10 @@ const flows: Record<StoryScene, FlowCopy> = {
     title: 'Reason first, location after approval',
     summary: 'The reason is stored first; a location lease opens for the approved five-minute interval.',
   },
+  finale: {
+    title: 'End-to-end trust receipt',
+    summary: 'Keyring input, BFF authorization, CSE write and authenticated readback remain bound to one browser session.',
+  },
 };
 
 const eventLabels: Readonly<Record<string, string>> = {
@@ -71,6 +75,7 @@ const sceneLabels: Record<StoryScene, string> = {
   'caregiver-shared': 'Room control',
   'caregiver-ended': 'Automatic end',
   'check-in': 'Check-in',
+  finale: 'System proof',
 };
 
 const panelLabels: Record<PanelId, string> = {
@@ -264,7 +269,7 @@ export function StoryMobiusPanel({ scene, snapshot, phase, message, refresh, foc
         <a className={item === scene ? 'active' : ''} aria-current={item === scene ? 'page' : undefined} href={`#/story/${item}`}>
           <span>{index + 1}</span>{sceneLabels[item]}
         </a>
-      </li>)}</ol></nav>
+      </li>)}<li className="story-scene-finale"><a className={scene === 'finale' ? 'active' : ''} aria-current={scene === 'finale' ? 'page' : undefined} href="#/story/finale"><span><Icon name="check" size={14} /></span>{sceneLabels.finale}</a></li></ol></nav>
       <a className="story-mobile-dashboard-link" href="#/user/overview">Family dashboard<Icon name="arrow" size={17} /></a>
     </section>
   </aside>;

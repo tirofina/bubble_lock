@@ -36,7 +36,7 @@ with the hierarchy carried by type size, weight and whitespace instead of boxes.
 | P9 | Firmware truth | The LCD shows only READY, CONFIRM and PANIC with the firmware glyphs and colors. The hit areas sit on the real button positions measured from the product render. | Keyring firmware r26 |
 | P10 | Inclusive defaults | Korean and English, light and dark from the system setting, full keyboard path, 3px `:focus-visible` ring (inset inside clipped panes), polite live regions for new records. | HIG Accessibility, Dark Mode |
 | P11 | Plain surfaces | Flat canvas, hairline separators, no gradients, no frosted cards, one explanation line per screen. The floating keyring has no background, border, shadow box or tool row. | DESIGN.md 7 |
-| P12 | One viewport | `.story-demo` fills exactly 100vw x 100dvh. The document and every pane have zero scroll in both axes; long content pages (segmented panels, tree and record pagers) instead of scrolling. Safe-area insets keep every control clear of the notch, Dynamic Island, sensor housing and home indicator. | HIG Layout, WCAG 1.4.10 |
+| P12 | One viewport | `.story-demo` fills exactly 100vw x 100dvh. The document and every pane keep zero scroll in both axes. The one intentional inner scroller is the Resource tree box (`.mobius-tree-scroll`): it holds the complete oneM2M hierarchy and scrolls vertically by wheel, touch pan and keyboard. Segmented panels switch content and CSE records page one record at a time. Safe-area insets keep every control clear of the notch, Dynamic Island, sensor housing and home indicator. | HIG Layout, WCAG 1.4.10 |
 
 Sources: https://developer.apple.com/design/human-interface-guidelines/layout ,
 https://developer.apple.com/design/human-interface-guidelines/typography ,
@@ -65,7 +65,10 @@ Color, type, radius and spacing come from `src/styles.css`. The story demo adds:
 | `--story-stagger` | 90ms | Gap between trace steps that are already resolved |
 | `--story-breathe` | 2.4s | Guided-button halo cycle (ease-in-out) |
 | `--story-fresh` | 2.4s | New-record tint: two soft pulses, then a steady selected tint |
-| `--segment-track` / `--segment-thumb` | `--surface-strong` / `--surface`; dark: `rgb(118 118 128 / .24)` / `#636366` | Panel switcher, pager hover |
+| `--segment-track` / `--segment-thumb` | `--surface-strong` / `--surface`; dark: `rgb(118 118 128 / .24)` / `#636366` | Panel switcher, scene chevron hover |
+| `--tree-bg` / `--tree-shade` | `--canvas` (`--surface` on the portrait sheet) / `--muted` at 26% | Resource tree edge shades: 10px shade over a 20px cover that travels with the rows (S4) |
+| `--proof-pad` / `--proof-marker` / `--proof-gap` | 28 / 36 / 24px desktop; 14 / 24 / 10-12px phone landscape; 10 / 20 / 6px iPhone mini Safari | System proof receipt (S7); `--proof-title`, `--proof-detail`, `--proof-code`, `--proof-count` set its type per tier |
+| `--finale-slot` | 0px; 92px where the flags sit at the stage's bottom-left (shallow, iPhone mini Safari, installed app) | Leading inset of the System proof actions row |
 | `--flag` (per language button) | inline SVG: Taegukgi for `lang="ko"`, the US flag for `lang="en"` | Language control: 22 x 15px flag in a 44px button |
 | `--safe-top/right/bottom/left` | `env(safe-area-inset-*)` | Every edge offset below |
 | `--topbar-h` / `--nav-h` | 56 / 44px desktop, 44 / 44px phone portrait, 0 / 44px phone landscape | Top bar and bottom navigation rows; `--chrome-top` and `--chrome-bottom` add the safe areas |
@@ -174,11 +177,12 @@ in over `--story-quick`; trace steps appear together once the response is in.
      in 13px muted (session id, actions left).
   2. Panel switcher: a segmented control (`Transaction | Resource tree | CSE records`),
      max 440px wide, 44px segments, 12px track radius, 10px thumb radius.
-  3. Panel: Transaction is the hero (S4). Resource tree pages three rows at a time (below
-     1024px each row is two lines: dot and name, then type and RSC flowing together) with a
-     `< 1/4 >` pager and a quiet `Sync`; the count line ("10 resources") sits left of the pager.
-     The node detail under the rows shows the type, the RETRIEVE result, the full path and
-     `Copy full path`. CSE records page one record at a time.
+  3. Panel: Transaction is the hero (S4). Resource tree shows the complete hierarchy in one
+     bounded scroll box under a single 44px header row (`CSE resource tree` 15px/600, the live
+     count `12 resources` 13px muted, a quiet `Sync` on the right); the switcher already names
+     the panel, so the section heading stays for screen readers only. The node detail under the
+     box shows the type, the RETRIEVE result, the full path and `Copy full path`. CSE records
+     page one record at a time. 1440 x 900: box 626 x 478, nine of twelve rows in full view.
 - Phone: 390px frame (hairline bezel, outer radius `clamp(36px, 5.6dvh, 54px)`, inner radius
   outer minus 10px), centered vertically, max 880px tall.
 - At 820px tall or less the top bar is 48px, the trace tightens (title 17px, codes 12px) and the
@@ -228,8 +232,29 @@ This session stores the away state ... without location coordinates.   15px mute
 - The same new resource name is tinted in three places: the trace path, the tree node and
   the matching record row. Tint: `--accent-soft` background plus a 3px `--accent` inset bar on
   the leading edge; two soft pulses over `--story-fresh`, then the tree node stays in its
-  selected state. The tree pages to the node and selects it (P8).
+  selected state. The tree selects the node and centers it inside its scroll box, smoothly or
+  at once under reduced motion (P7, P8).
 - The trace hero is a polite live region: screen readers hear the record label and RSC once.
+
+Resource tree (`.mobius-tree-scroll`), every layout:
+
+- One bounded box between two hairlines takes all the height the panel leaves after its header
+  (desktop) or after the path line (below 1024px). It is focusable (`tabindex="0"`, labelled
+  with the resource count), shows the 3px focus ring inset, contains its overscroll and pans
+  vertically on touch.
+- Scroll cues, both quiet: a thin native scrollbar in `--muted` at 45% (overlay on iOS, so it
+  costs no width there) and a 10px edge shade that appears only on the side where more rows
+  wait. The shade is a `background-attachment: scroll` gradient under a `local` cover that
+  travels with the first and last rows, so it needs no script and no layout space.
+- Rows are 44px targets. Desktop: dot, name (15px/600) and RSC on the first line, the oneM2M
+  type (13px muted) under the name. Below 1024px: dot and name (13px/600; 12px on iPhone mini
+  tiers) over the type (11px), and the RSC as its own right column of two short mono lines
+  (`RETRIEVE /`, `RSC 2000`, 11px, 10ch) so names and types keep the width.
+- RSC values use `--mono` 600 with tabular numbers, success when verified. Depth indents 14px
+  per level (6px on the iPhone mini tiers).
+- Below 1024px the selected node's full path (11px mono, breaks anywhere) and `Sync` (44px,
+  icon and 11-12px label) share the last line, path left and Sync right, so no toolbar row or
+  column sits above the rows.
 
 ## 8. S5 Floating keyring
 
@@ -325,7 +350,8 @@ This session stores the away state ... without location coordinates.   15px mute
   so it never touches the controls above or below it, including under a bottom inset.
 - A left Mobius identity rail (104px) keeps the title (13px/700), the badge, the session meta
   and, while it shows, the CSE notice; the switcher and the active panel use the column to its
-  right. Every panel is a complete page: no inner scroll and nothing to drag.
+  right. Transaction and CSE records fit as complete pages; Resource tree scrolls inside its own
+  box (844 x 320: 299 x 210) above the path and Sync line.
 - App pane: 32px title bar, compact cards, 44px actions whose labels may wrap to two lines.
 - Budget (measured, all seven scenes, with and without the 93-character error banner, every
   `.story-content` and open panel at scroll size = client size): 844 x 320 app content 272
@@ -358,17 +384,19 @@ Home Screen web app (next section) is the path to the full screen.
 - Rail: the keyring at up to 148px (`min(148px, (height - bottom inset - 44px nav - gaps) /
   1.3247)`, 148 x 196 at 812 x 265, top 2px) and the scene navigation under it (two 44px
   chevrons with an 11px label that wraps to two lines between them). The brand steps out.
-- Flags: the Mobius column uses its full height for the tree and records pages, so the
+- Flags: the Mobius column uses its full height for the tree and records panels, so the
   lowest-left free slot is the app pane's bottom-left, beside a three-line privacy footnote
-  (x 359, y 195 at 812 x 265). On the intro they sit at the screen's bottom-left (x 44, y 200).
+  (x 359, y 195 at 812 x 265). On the intro and the System proof they sit at the screen's
+  bottom-left (x 44, y 200).
 - Mobius: a two-line header (12px/700 title and an 11px status badge; 11px session line), the
-  switcher (44px segments, 97px each, every label inside its segment) and one page. Transaction
+  switcher (44px segments, 97px each, every label inside its segment) and one panel. Transaction
   is one compact receipt: BFF request with its code on one line; CREATE and RETRIEVE
   `<contentInstance>` each with one line per record (resource name, method, RSC); the scene
-  sentence stays in the accessibility tree. Resource tree: three 3-line rows with depth indents
-  of 6px per level, the pager and Sync stacked in a 52px column on the right, the full path
-  underneath (breaks anywhere, two lines); this page uses the header's height, and the app
-  banner carries any CSE notice. CSE records: the record, then the CSE root beside its pager.
+  sentence stays in the accessibility tree. Resource tree: the header's two lines go to the
+  rows (the switcher names the panel, the app banner carries any CSE notice); a 300 x 142 scroll
+  box of 44px two-line rows with 6px depth indents and the mono RSC column, then the full path
+  (breaks anywhere, two lines) beside a 61 x 44 Sync. CSE records: the record, then the CSE
+  root beside its pager.
 - App: no title bar at this size (the pane is the app), 15px screen title, 11-13px card text,
   44px actions, inline form labels (62px) on the login screen, 44px footnote row.
 - Session error at this size: the app banner (11px text, 44px Reconnect) stands in for the
@@ -376,9 +404,10 @@ Home Screen web app (next section) is the path to the full screen.
   the rail. The Mobius notice (11px, one 13px line) stands in for the session line.
 - Budget (measured at DPR 3 with insets 44 / 44 / 21, every visible stage, pane, open panel,
   device, phone, content box and switcher segment at scroll size = client size): app content
-  236px in every scene (169px under the 93-character banner); Mobius page 163px. Tightest:
+  236px in every scene (169px under the 93-character banner); Mobius panel 163px. Tightest:
   check-in after a keyring PANIC with two public-length records keeps 9px under the receipt
-  (2px with the CSE notice), the tree page 4px, care-request under the banner 1px.
+  (2px with the CSE notice), care-request under the banner 1px. The tree box is the one element
+  whose scroll size exceeds its client size (three full rows of twelve in view, 392px to scroll).
 
 ### Installed web app on iPhone mini (Home Screen launch, 812 x 375, insets 44 / 44 / 21)
 
@@ -410,8 +439,8 @@ with `.story-demo[data-display-mode="standalone"]` (display-mode standalone or f
   (two 44px chevrons, 12px label). No grid cell or card frames the keyring.
 - Flags: the screen's bottom-left (x 44, y 310), in a 48px strip the Mobius column reserves.
 - Mobius: two-line header (13px title, 11px badge; 11px session line), 97 x 44 segments, one
-  page: the compact receipt with its scene sentence visible, the tree with its pager and Sync
-  stacked beside the rows, the records page with the pager beside the CSE root. A CSE notice
+  panel: the compact receipt with its scene sentence visible, the tree as a 300 x 164 scroll box
+  above the path and Sync line, the records page with the pager beside the CSE root. A CSE notice
   stands in for the session line.
 - App: the 36px title bar stays; landscape compact type with 13px card titles and actions.
 - No Safari path: `.story-fullscreen-launch` and `.story-fullscreen-guide` do not render (TSX)
@@ -420,8 +449,8 @@ with `.story-demo[data-display-mode="standalone"]` (display-mode standalone or f
   `--safe-top` behind the black-translucent status bar so its white text stays readable.
 - Budget (measured at DPR 3, `navigator.standalone`, insets 44 / 44 / 21): every scene, with
   and without the 93-character banner, at scroll size = client size; check-in after a keyring
-  PANIC keeps 16px under the receipt (20px with the CSE notice), the tree page 26px, the
-  records page 67px.
+  PANIC keeps 16px under the receipt (20px with the CSE notice) and the records page 67px; the
+  tree box scrolls (three full rows of twelve in view, 370px to scroll).
 
 ### Full-screen path in iPhone Safari (`.story-fullscreen-launch`, `.story-fullscreen-guide`)
 
@@ -490,7 +519,8 @@ with `.story-demo[data-display-mode="standalone"]` (display-mode standalone or f
   bottom-right, 12px from the right edge. The sheet surface continues under the home indicator. The panel above
   the deck spans the full width, so the keyring never covers a record (P8, P12).
 - Scenes panel: seven scene links in two columns (44px rows, 13px/600, numbered 22px
-  circles, current scene in accent) and a `Family dashboard` row.
+  circles, current scene in accent), then the unnumbered `System proof` link with a check in a
+  success-tinted circle, and a `Family dashboard` row.
 
 ## 9a. Visual decisions recorded during the story.css passes
 
@@ -503,12 +533,12 @@ with `.story-demo[data-display-mode="standalone"]` (display-mode standalone or f
 | The keyring lives in a reserved right gutter (desktop), a right track or control rail (landscape) or the bottom-right of the deck (portrait) | A floating overlay must never cover a record; each layout reserves exactly the model box | P8 |
 | Desktop trace is one vertical receipt with full paths; below 1024px the trace shows resource name plus RSC per record and hides the parent path | Live CSE paths (for example `dash-operator` sessions) are longer than replay paths; at 844 x 390 full paths grew the panel to 309px inside 288px. Full paths stay readable in Resource tree and CSE records | P4, P6, P12 |
 | Resource names in desktop paths never break (`nowrap`); in the compact receipt each name-plus-RSC record wraps as a whole token | The created name is the answer to the press and must read as one token | P2, P4 |
-| Panels page instead of scrolling (switcher plus `< n/m >` pagers) | Zero nested scroll keeps the one-viewport contract and the keyring position stable | P12 |
+| Panels switch instead of scrolling; CSE records page one record at a time; Resource tree is the one bounded inner scroller | Every other pane keeps zero scroll, so the one-viewport contract and the keyring position stay stable; the tree is a hierarchy and reads best whole | P12 |
 | Segmented controls share one light thumb token pair; dark mode uses the iOS gray thumb | A dark thumb on a dark track read as a hole | P5, P10 |
-| Disabled pager chevrons are 40% muted glyphs without a fill | Filled grey circles looked like pressed buttons | P5 |
+| Disabled record-pager chevrons are 40% muted glyphs without a fill | Filled grey circles looked like pressed buttons | P5 |
 | A session error banner replaces the app title bar and the privacy footnote while it shows (below 1024px) | At 844 x 390 a 93-character message pushed login 88px past the pane; the title and footnote are the least specific lines on screen, and the scene keeps its own content | P2, P12 |
 | Phone landscape app pane widened from 36% to 40%, 36px title bar, tighter cards | Under the iPhone insets care-request overflowed by 17px with no error; fewer wrapped lines fix every scene | P12 |
-| Compact tree rows are two lines (name; type plus RSC) | With the Mobius error notice the iPhone-inset tree clipped 26px inside its pager page | P12 |
+| Compact tree rows are two lines (name over oneM2M type) with the RSC as a right column of two short mono lines | Name, type and RSC flowing together wrapped to three lines per node; the RSC column keeps names and types at full width and shows a third more nodes per screen | P4, P12 |
 | Top bar hairline is an inset shadow | A border shrank the 44px controls by 1px and pushed the brand into the safe area | P3, P12 |
 | Focus rings inside the Mobius pane are inset (`outline-offset: -3px`) | The pane clips overflow; an outside ring would be cut at the edges | P10 |
 | Capture mode (`?capture=1`) ignores every compact app rule | The seven 390 x 844 evidence screens keep the full app design | P11 |
@@ -518,8 +548,79 @@ with `.story-demo[data-display-mode="standalone"]` (display-mode standalone or f
 | The language control becomes two small flags at the bottom-left (Taegukgi, US flag) | The user asked for flags at the bottom-left; the top-right slot belongs to identity and the dashboard link, and the bottom-left corner is free on every layout | P10 |
 | The installed web app gets its own landscape tier: 176px keyring rail between brand and scene navigation, Mobius 300px, app 232px, flags in a Mobius bottom strip | The Home Screen launch frees 110px of height (375 vs 265): the keyring grows to 176px so the OLED and both buttons read at a glance, and every page keeps its header | P2, P9, P12 |
 | Safari's bars are explained, not fought: a quiet Full screen control and a three-step sheet | WebKit lets only the Home Screen web app remove Safari's bars; a sheet with the exact steps is the honest path | P1, P11 |
-| iPhone mini landscape (300px tall or less) gets its own tier: 148px keyring rail, two-line Mobius header, stacked tree pager, no app title bar | 812 x 265 in Safari left 244px of height: the 340px tier clipped the tabs, the receipt and the app actions, and the keyring shrank to about 70px | P2, P12 |
+| iPhone mini landscape (300px tall or less) gets its own tier: 148px keyring rail, two-line Mobius header, tree scroll box above a path and Sync line, no app title bar | 812 x 265 in Safari left 244px of height: the 340px tier clipped the tabs, the receipt and the app actions, and the keyring shrank to about 70px | P2, P12 |
 | The error banner rule applies on desktop too; short desktops (820px or less) use compact phone type and a 340px minimum phone width | 1440 x 900 login overflowed 50px with the banner; 1024 x 768 care-request overflowed 90px without it | P12 |
+| Resource tree shows the complete hierarchy in one bounded scroll box (wheel, touch pan, keyboard focus) and centers the fresh node; the `< n/m >` tree pager is gone | Three rows per page split twelve resources over four pages and hid the parent-child depth; one box shows nine of twelve rows at 1440 x 900 and three or more on every phone tier | P8, P12 |
+| Scroll cues are a thin native scrollbar and 10px edge shades that appear only where more rows wait (local cover over a scroll-attached shade) | A pager or a cue column would spend width; the shades need no script and no layout space and read in light and dark | P11, P12 |
+| Desktop tree header is one 44px row (title, live count, Sync); below 1024px Sync shares the last line with the selected node's path | A floating Sync over the rows covered row text while rows scrolled under it; the separate section heading repeated the switcher and the Live/Replay badge | P2, P3, P11 |
+| System proof is an unnumbered conclusion: the Mobius pane and the phone chrome step away for a statement, one receipt card and two actions beside the same keyring | Inside a stretched phone frame the receipt was three small cards with 300px of empty canvas above them, and at 812 x 265 the action labels broke into near-vertical words (links inherit `overflow-wrap: anywhere` in narrow grid columns) | P2, P8, P11 |
+| Scene seven's next control becomes a success-tinted check circle that invites twice | It opens a different kind of page (the proof), so it reads as the success family of that page while staying a quiet 44px circle in the stepper | P1, P5 |
+
+## 9b. S7 System proof (`#/story/finale`, `data-finale="true"`)
+
+The conclusion after scene seven, outside the seven numbered scenes. It connects the three
+layers the demo proved: keyring input, the Mobius CREATE RSC 2001 / RETRIEVE RSC 2000 readback
+and the browser-session / purpose / scope / expiry boundary.
+
+```
+ desktop 1440 x 900
+ +------------------------------------------------------------------------------+
+ | (B) BubbleLock                                           Family dashboard     |
+ +------------------------------------------------------------------------------+
+ |                                     +------------------------------------+   |
+ |  (v) End-to-end proof complete      | (1) Keyring input                v |   |
+ |  One signal became                  |  |  Firmware state and button ...  |   |
+ |  verified care            34px/700  | (2) Mobius CSE                 x17 |   |
+ |  The same intent and boundary ...   |  |  CREATE RSC 2001 / RETRIEVE ... |   |
+ |                                     | (3) Security boundary       shield |   |
+ |                                     |     Browser session, purpose, ...  |   |
+ |                                     |------------------------------------|   |
+ |                                     | Demo session 55C134  * CSE readback|   |
+ |                                     +------------------------------------+   |
+ |                                     [Replay from the keyring] Open the live > |
+ |                                                                   [keyring]  |
+ | [KR][US]                  <   System proof   (replay)                         |
+ +------------------------------------------------------------------------------+
+```
+
+- Entry: scene seven's next control carries `data-special`; it reads as a 44px success-tinted
+  circle with a check (`--success-soft`, `--success`) that invites with two soft rings, then rests.
+  Its accessible name is `Open the system proof`. The stepper on the finale shows `System proof`
+  without a number; previous returns to check-in and next (a refresh glyph in accent) replays
+  from the keyring (`#/story/login`).
+- Stage: the Mobius pane and the phone chrome (bezel, status bar, app title bar, home
+  indicator) step away, so the page reads as a conclusion and the keyring stays in its own
+  right gutter, rail or track exactly as in the scenes (S5). Nothing covers the keyring.
+- Statement (left, 0.8fr): a 40px success seal with the kicker `End-to-end proof complete`
+  (15px/600 success), the one headline `One signal became verified care` (34px/700, balanced)
+  and one 17px muted sentence.
+- Receipt (right, 1.2fr): one surface card with a hairline. Three steps on one success line,
+  the S4 trace completed: 36px numbered markers in `--success-soft`, 17px/600 titles, 15px muted
+  details, a check, the live count (`x` plus `createRetrieveVerified`, the session's CSE records
+  whose CREATE and RETRIEVE both verified) and a shield on the right. The Mobius detail is
+  13px mono success, and each detail line runs under the status column, so `RETRIEVE RSC 2000`
+  stays whole beside a two-digit count. A footer stub on `--surface-soft` closes the card:
+  `Demo session` with the live session id (mono) and `CSE readback verified` with a success dot.
+  Every value comes from the session snapshot (P6).
+- Actions under the receipt, beside the keyring the replay returns to (P8): a filled accent pill
+  `Replay from the keyring` and a plain accent `Open the live dashboard`, labels on one line,
+  48px tall on desktop and 44px on phones.
+- Composition: the outer rows center the block; the receipt spans the kicker and headline rows,
+  which share its extra height, so the statement rests on the receipt's center and the footer
+  stays attached. 1440 x 900: receipt 568 x 277 plus a 56px footer at x 657, y 263; actions
+  227 x 48 and 232 x 48 at y 616; keyring 160 x 212 at x 1256, y 664.
+- Phone landscape (below 1024px): the same statement | receipt pair (21px headline, 13px step
+  titles, 12px details, 11px mono, 24px markers) and one actions row pinned to the bottom line,
+  starting after the flags (`--finale-slot` 92px where the flags sit at the stage's bottom-left).
+  844 x 390 keeps the 112px keyring track. Measured: 812 x 265 Safari receipt 324 x 139 at
+  x 279, actions 193 x 44 and 198 x 44 at y 193 (flags x 44-132, keyring 148 x 196 with a
+  57 x 32 OLED); 812 x 375 installed app receipt 306 x 195, actions at y 303 beside the flags at
+  y 310 and the scene navigation, keyring 176 x 233 with a 67 x 38 OLED.
+- iPhone mini Safari (812 x 265): 17px headline, 11-12px receipt type, 20px markers, 6px step gap.
+- Portrait fallback: one column (kicker, headline, receipt, footer, two full-width 44px actions)
+  above the keyring deck.
+- Motion: the seal settles from 60% scale over `--story-base`; the invite rings run twice. Under
+  reduced motion both stay still.
 
 ## 10. Implementation contract (shared by design and function)
 
@@ -544,7 +645,7 @@ Root and stages:
 Markup (class names are the contract; CSS owns every visual value):
 
 ```
-div.story-demo[data-stage][data-portrait][data-display-mode]   grid rows: top chrome, stage, bottom chrome
+div.story-demo[data-stage][data-scene][data-finale][data-portrait][data-display-mode]   grid rows: top chrome, stage, bottom chrome
   a.skip
   header.story-topbar
     a.story-brand, a.story-topbar-link (family dashboard), LangToggle
@@ -572,16 +673,26 @@ div.story-demo[data-stage][data-portrait][data-display-mode]   grid rows: top ch
              + span.story-trace-rsc)
         p.story-trace-summary
       section#story-panel-tree.story-panel-card.story-mobius-tree-card
-        div.story-events-head, div.mobius-tree-view > div.mobius-tree-toolbar
-          (p, div.mobius-tree-pager, button Sync), div.mobius-tree-scroll > ul.mobius-tree
-          > li.mobius-tree-leaf > button(.selected)(.is-fresh)[data-path][data-fresh], div.mobius-node-detail
+        div.story-events-head (screen readers), div.mobius-tree-view > div.mobius-tree-toolbar
+          (p > strong + span count, button Sync),
+          div.mobius-tree-scroll[data-scrollable=true][tabindex=0][aria-label] > ul.mobius-tree[role=tree]
+          > li.mobius-tree-leaf[aria-level] > button(.selected)(.is-fresh)[data-path][data-fresh]
+            > span.mobius-node-dot + span.mobius-node-name + small (type) + b(.verified) (RSC),
+          div.mobius-node-detail
       section#story-panel-events.story-panel-card.story-mobius-events (li.is-new-event.is-fresh,
         div.story-events-pager, p.story-mobius-root)
       section#story-panel-scenes.story-panel-card.story-scene-panel (portrait only)
-        nav > ol > li > a(.active), a.story-mobile-dashboard-link
+        nav > ol > li > a(.active), li.story-scene-finale > a, a.story-mobile-dashboard-link
     div.story-app-column > div.story-device > div.story-phone#story-app
-  nav.story-stepper.story-bottom-nav                outside the header, after main
-    a.story-stepper-prev, span.story-stepper-compact[aria-live=polite] ("2/7 Went out"), a.story-stepper-next
+      section.story-content.story-finale[data-finale-receipt=true]     (#/story/finale only, S7)
+        p.story-finale-kicker > svg + text
+        div.story-title-block > h1 + p.story-subtitle
+        ol.story-finale-proof > li[data-proof=keyring|mobius|boundary] > span + div > strong + small, svg | b (count)
+        p.story-finale-session > span + code (session id) + b
+        div.story-finale-actions > a.story-primary (replay) + a.story-secondary (dashboard)
+  nav.story-stepper.story-bottom-nav(.is-finale)    outside the header, after main
+    a.story-stepper-prev, span.story-stepper-compact[aria-live=polite] ("2/7 Went out", "System proof"),
+    a.story-stepper-next[data-special=true on check-in]
   div.keyring-dock[data-guided=confirm|panic|none]  fixed, outside main
     div.virtual-keyring > h3.story-sr + div.keyring-stage[role=application][tabindex=0]
       > div.keyring-model > span.keyring-depth, img, span.keyring-screen-live[data-firmware-screen],
@@ -590,8 +701,13 @@ div.story-demo[data-stage][data-portrait][data-display-mode]   grid rows: top ch
 
 Behavior owned by function:
 
-- Tree: the node whose path equals the newest record gets `.is-fresh` and `data-fresh`
-  for 4000ms, becomes selected, and the tree pages to it (three rows per page).
+- Tree: every resource renders in `.mobius-tree-scroll`. The node whose path equals the newest
+  record gets `.is-fresh` and `data-fresh` for 4000ms, becomes selected, and the box scrolls to
+  center it (smooth, instant under reduced motion, again when the box resizes).
+- System proof: scene seven's next control (`data-special`) opens `#/story/finale`; the root
+  carries `data-scene="finale"` and `data-finale="true"`; the finale's previous control returns
+  to check-in and its next control replays from `#/story/login`. The receipt reads
+  `createRetrieveVerified` and the browser-session id from the live snapshot.
 - CSE records page one record at a time; the first record of a new action gets `.is-new-event`.
 - Keyring pose: rotate only, rotateX within 32deg, rotateY within 58deg; no move and no reset.
 - Existing contracts stay: browser-isolated session cookie, CSRF and Idempotency-Key on
@@ -603,8 +719,8 @@ Behavior owned by function:
 records hashes in `evidence/story-screens/capture-manifest.json`. Every viewport below also
 runs the fit check: `.story-demo` equals the viewport, document scroll size equals the
 viewport, and no visible stage, pane, open panel, device, phone or content box has
-`scrollWidth` or `scrollHeight` beyond its client size, no element scrolls, nothing sits
-outside the viewport.
+`scrollWidth` or `scrollHeight` beyond its client size, no element scrolls except the Resource
+tree box (`.mobius-tree-scroll[data-scrollable="true"]`), nothing sits outside the viewport.
 
 | Viewport | Captures | Assertions |
 | --- | --- | --- |
@@ -622,6 +738,8 @@ outside the viewport.
 | 844 x 320 and 1000 x 327 shallow landscape (acceptance; capture assertions to be added by function) | system, all seven scenes, with and without the error banner | every visible stage, pane, open panel, device, phone and content box at scroll size = client size; keyring clear of the Mobius head, switcher, open panel, app pane, brand, language and scene navigation; check-in after a keyring PANIC fits the Transaction receipt |
 | 1440 x 900, reduced motion | system | No running animations on the dock after the transition |
 | 1440 x 900 interaction | system | Drag rotates the model; no keyring tool chrome; confirm and panic presses return Mobius receipts and panic opens check-in |
+| 1440 x 900 Resource tree | system | `.mobius-tree-scroll` has scroll height beyond client height, no `.mobius-tree-pager`, the fresh node inside the box, and a real mouse wheel over the box changes `scrollTop` |
+| System proof: 1440 x 900, 812 x 265 Safari, 812 x 375 installed app | `story-finale-desktop`, `story-finale-iphone13mini-landscape`, `story-finale-iphone13mini-fullscreen` | Scene seven's next control carries `data-special` and opens `#/story/finale` with `data-finale="true"`; three `[data-proof]` steps, `CREATE RSC 2001`, `RETRIEVE RSC 2000` and the browser-session / purpose / scope / expiry line; previous `#/story/check-in`, next `#/story/login`; the receipt and the viewport pass the fit check. Design acceptance (scratch QA, all eight layouts): action labels on one line where the row allows, every control 44px or more, keyring and flags clear of the receipt and actions |
 
 The seven `?capture=1` app screens (390 x 844) keep the full app design: status bar, 56px
 header, 28px titles, home indicator.

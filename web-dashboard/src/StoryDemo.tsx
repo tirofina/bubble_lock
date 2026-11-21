@@ -8,10 +8,11 @@ import { useStorySession } from './story-session.ts';
 import type { StorySessionSnapshot } from './story-session.ts';
 
 export const storyScenes = ['login', 'activity-away', 'activity-home', 'care-request', 'caregiver-shared', 'caregiver-ended', 'check-in'] as const;
-export type StoryScene = (typeof storyScenes)[number];
+export type NumberedStoryScene = (typeof storyScenes)[number];
+export type StoryScene = NumberedStoryScene | 'finale';
 
 export function resolveStoryScene(value: string | undefined): StoryScene {
-  return storyScenes.includes(value as StoryScene) ? value as StoryScene : 'login';
+  return value === 'finale' || storyScenes.includes(value as NumberedStoryScene) ? value as StoryScene : 'login';
 }
 
 type PendingAction = 'approve' | 'all-on' | 'expire' | 'call' | 'share' | null;
@@ -31,6 +32,7 @@ const sceneTime: Record<StoryScene, string> = {
   'caregiver-shared': '2:05',
   'caregiver-ended': '4:00',
   'check-in': '5:13',
+  finale: '5:14',
 };
 
 function StoryStatus({ time }: { readonly time: string }) {
@@ -202,6 +204,29 @@ function CheckInScreen({ pending, snapshot, callReady, onCall, onShare }: {
   </section>;
 }
 
+function FinaleScreen({ snapshot }: { readonly snapshot: StorySessionSnapshot | null }) {
+  const { tr } = useLang();
+  const verified = snapshot?.mobius.createRetrieveVerified ?? 0;
+  const session = snapshot?.browserSession.id ?? '------';
+  return <section className="story-content story-finale" aria-labelledby="story-title" data-finale-receipt="true">
+    <p className="story-finale-kicker"><Icon name="check" size={16} />{tr('전체 흐름 검증 완료', 'End-to-end proof complete')}</p>
+    <div className="story-title-block">
+      <h1 id="story-title">{tr('작은 신호가 검증된 돌봄으로 이어졌어요', 'One signal became verified care')}</h1>
+      <p className="story-subtitle">{tr('키링에서 Mobius까지 같은 의도와 경계가 이어졌습니다.', 'The same intent and boundary travelled from the keyring to Mobius.')}</p>
+    </div>
+    <ol className="story-finale-proof" aria-label={tr('검증된 시스템 흐름', 'Verified system flow')}>
+      <li data-proof="keyring"><span>1</span><div><strong>{tr('키링 입력', 'Keyring input')}</strong><small>{tr('실제 펌웨어 상태와 버튼 관측', 'Firmware state and button observation')}</small></div><Icon name="check" size={16} /></li>
+      <li data-proof="mobius"><span>2</span><div><strong>Mobius CSE</strong><small>CREATE RSC 2001 / RETRIEVE RSC 2000</small></div><b>{verified}</b></li>
+      <li data-proof="boundary"><span>3</span><div><strong>{tr('보안 경계', 'Security boundary')}</strong><small>{tr('브라우저 세션, 목적, 범위, 만료 시각 결합', 'Browser session, purpose, scope and expiry bound')}</small></div><Icon name="shield" size={16} /></li>
+    </ol>
+    <p className="story-finale-session"><span>{tr('시연 세션', 'Demo session')}</span><code>{session}</code><b>{tr('CSE 읽기 검증', 'CSE readback verified')}</b></p>
+    <div className="story-finale-actions">
+      <a className="story-primary" href="#/story/login"><Icon name="refresh" size={17} />{tr('키링부터 다시 보기', 'Replay from the keyring')}</a>
+      <a className="story-secondary" href="#/user/overview">{tr('실제 대시보드 열기', 'Open the live dashboard')}<Icon name="arrow" size={17} /></a>
+    </div>
+  </section>;
+}
+
 function StoryGuide({ scene }: { readonly scene: StoryScene }) {
   const { tr } = useLang();
   const labels: Record<StoryScene, string> = {
@@ -212,6 +237,7 @@ function StoryGuide({ scene }: { readonly scene: StoryScene }) {
     'caregiver-shared': tr('거실 제어', 'Room control'),
     'caregiver-ended': tr('자동 종료', 'Automatic end'),
     'check-in': tr('키링과 안부 확인', 'Keyring and check-in'),
+    finale: tr('시스템 검증', 'System proof'),
   };
   return <aside className="story-guide" aria-labelledby="story-guide-title">
     <div className="story-guide-inner">
@@ -233,13 +259,13 @@ function StoryGuide({ scene }: { readonly scene: StoryScene }) {
 
 function StoryFooter({ scene }: { readonly scene: StoryScene }) {
   const { tr } = useLang();
-  const index = storyScenes.indexOf(scene);
-  const previous = storyScenes[(index + storyScenes.length - 1) % storyScenes.length]!;
-  const next = storyScenes[(index + 1) % storyScenes.length]!;
+  const index = storyScenes.indexOf(scene as NumberedStoryScene);
+  const previous: StoryScene = scene === 'finale' ? 'check-in' : storyScenes[(index + storyScenes.length - 1) % storyScenes.length]!;
+  const next: StoryScene = scene === 'check-in' ? 'finale' : scene === 'finale' ? 'login' : storyScenes[index + 1]!;
   return <nav className="story-footer" aria-label={tr('장면 이동', 'Scene navigation')}>
     <a className="button" href={`#/story/${previous}`}>{tr('이전', 'Previous')}</a>
-    <span>{tr(`장면 ${index + 1} / ${storyScenes.length}`, `Scene ${index + 1} of ${storyScenes.length}`)}</span>
-    <a className="button" href={`#/story/${next}`}>{tr('다음', 'Next')}</a>
+    <span>{scene === 'finale' ? tr('시스템 검증', 'System proof') : tr(`장면 ${index + 1} / ${storyScenes.length}`, `Scene ${index + 1} of ${storyScenes.length}`)}</span>
+    <a className="button" href={`#/story/${next}`}>{scene === 'finale' ? tr('다시 보기', 'Replay') : scene === 'check-in' ? tr('검증 보기', 'View proof') : tr('다음', 'Next')}</a>
   </nav>;
 }
 
@@ -253,14 +279,15 @@ function StoryStepper({ scene }: { readonly scene: StoryScene }) {
     'caregiver-shared': tr('거실 제어', 'Room control'),
     'caregiver-ended': tr('자동 종료', 'Automatic end'),
     'check-in': tr('안부 확인', 'Check-in'),
+    finale: tr('시스템 검증', 'System proof'),
   };
-  const index = storyScenes.indexOf(scene);
-  const previous = storyScenes[(index + storyScenes.length - 1) % storyScenes.length]!;
-  const next = storyScenes[(index + 1) % storyScenes.length]!;
-  return <nav className="story-stepper story-bottom-nav" aria-label={tr('이야기 장면', 'Story scenes')}>
+  const index = storyScenes.indexOf(scene as NumberedStoryScene);
+  const previous: StoryScene = scene === 'finale' ? 'check-in' : storyScenes[(index + storyScenes.length - 1) % storyScenes.length]!;
+  const next: StoryScene = scene === 'check-in' ? 'finale' : scene === 'finale' ? 'login' : storyScenes[index + 1]!;
+  return <nav className={`story-stepper story-bottom-nav${scene === 'finale' ? ' is-finale' : ''}`} aria-label={tr('이야기 장면', 'Story scenes')}>
     <a className="story-stepper-prev" href={`#/story/${previous}`} aria-label={tr('이전 장면', 'Previous scene')}><Icon name="chevron" size={18} style={{ transform: 'rotate(180deg)' }} /></a>
-    <span className="story-stepper-compact" aria-live="polite">{index + 1}/{storyScenes.length} {labels[scene]}</span>
-    <a className="story-stepper-next" href={`#/story/${next}`} aria-label={tr('다음 장면', 'Next scene')}><Icon name="chevron" size={18} /></a>
+    <span className="story-stepper-compact" aria-live="polite">{scene === 'finale' ? labels.finale : `${index + 1}/${storyScenes.length} ${labels[scene]}`}</span>
+    <a className="story-stepper-next" data-special={scene === 'check-in' || undefined} href={`#/story/${next}`} aria-label={scene === 'finale' ? tr('시연 다시 보기', 'Replay the demo') : scene === 'check-in' ? tr('시스템 검증 보기', 'Open the system proof') : tr('다음 장면', 'Next scene')}><Icon name={scene === 'finale' ? 'refresh' : scene === 'check-in' ? 'check' : 'chevron'} size={18} /></a>
   </nav>;
 }
 
@@ -533,7 +560,7 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
   const retry = () => { void refresh(); };
   const careStatus = snapshot?.care.status ?? 'ready';
 
-  return <div className={`story-demo${capture ? ' capture' : ''}`} data-stage={demoStage} data-portrait={portraitChoice} data-display-mode={standalone ? 'standalone' : 'browser'}>
+  return <div className={`story-demo${capture ? ' capture' : ''}`} data-stage={demoStage} data-scene={scene} data-finale={scene === 'finale' || undefined} data-portrait={portraitChoice} data-display-mode={standalone ? 'standalone' : 'browser'}>
     <a className="skip" href="#story-app" tabIndex={modalOpen ? -1 : undefined} aria-hidden={modalOpen} onClick={(event) => { event.preventDefault(); document.getElementById('story-app')?.focus(); }}>{tr('앱 화면으로 건너뛰기', 'Skip to the app')}</a>
     <header className="story-topbar" inert={modalOpen}>
       <a className="story-brand" href="#/"><span aria-hidden="true"><Icon name="bubble" size={22} /></span>BubbleLock</a>
@@ -580,6 +607,7 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
             {scene === 'caregiver-shared' && <CaregiverSharedScreen pending={pending === 'all-on' || pending === 'expire'} status={careStatus} onAllOn={() => void allOn()} onExpire={() => void expireNow()} />}
             {scene === 'caregiver-ended' && <CaregiverEndedScreen pending={pending === 'expire'} expired={careStatus === 'expired'} />}
             {scene === 'check-in' && <CheckInScreen pending={pending} snapshot={snapshot} callReady={callReady} onCall={() => void callMom()} onShare={() => void shareLocation()} />}
+            {scene === 'finale' && <FinaleScreen snapshot={snapshot} />}
             <span className="story-home-indicator" aria-hidden="true" />
           </div>
         </div>
