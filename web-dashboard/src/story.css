@@ -1,11 +1,14 @@
 /* Privacy Bubble story demo. Canonical brief: web-dashboard/apple.md (P1-P12, S1-S7).
    Tokens come from src/styles.css. The shell owns exactly one viewport (100vw x 100dvh) and never
    scrolls. One keyring instance (.keyring-dock, fixed, outside .story-stage) travels from the intro
-   center to the bottom-left by transform only; the page reads keyring -> Mobius -> phone (P8). */
+   center to the bottom-right by transform only: the record sits on the left, the person's two
+   devices (phone and keyring) on the right (P8). */
 
 .story-demo {
   --keyring-confirm: #4b9fd6;
   --keyring-panic: #ef7a3d;
+  --halo-confirm: #2b86d6;
+  --halo-panic: #ea5a1c;
   --story-quick: 160ms;
   --story-base: 280ms;
   --story-travel: 640ms;
@@ -38,10 +41,11 @@
   /* Keyring (S5). --dock-kw is the docked model width; the render is 271 x 359 (h = w x 1.3247). */
   --dock-kw: 160px;
   --dock-kh: calc(var(--dock-kw) * 1.3247);
-  --dock-left: max(var(--gutter), var(--safe-left));
+  --dock-right: max(var(--gutter), var(--safe-right));
+  --dock-left: calc(100vw - var(--dock-right) - var(--dock-kw));
   --dock-bottom: max(var(--gutter), var(--safe-bottom));
   --dock-top: calc(100dvh - var(--dock-bottom) - var(--dock-kh));
-  --dock-reserve: calc(var(--dock-left) + var(--dock-kw) + var(--gutter));
+  --dock-reserve: calc(var(--dock-right) + var(--dock-kw) + var(--gutter));
 
   /* Intro (S1): the keyring is laid out at dock width x --intro-scale above one hint line. */
   --intro-scale: 1.9;
@@ -208,11 +212,11 @@
   opacity: 0; transform: translateX(12px); visibility: hidden; transition: none;
 }
 
-/* ---------- Desktop stage: [keyring gutter] Mobius | phone (S3) ----------
-   The left padding reserves the keyring gutter, so the fixed overlay never covers Mobius. */
+/* ---------- Desktop stage: Mobius | phone [keyring gutter] (S3) ----------
+   The right padding reserves the keyring gutter, so the fixed overlay never covers the phone. */
 .story-stage {
   grid-row: 2; grid-column: 1;
-  --phone-w: min(390px, calc((100dvh - var(--chrome-top) - var(--chrome-bottom) - 16px) * .47));
+  --phone-w: min(390px, max(340px, calc((100dvh - var(--chrome-top) - var(--chrome-bottom) - 16px) * .47)));
   width: 100%; height: 100%;
   min-width: 0; min-height: 0;
   overflow: hidden;
@@ -223,9 +227,9 @@
   align-items: stretch;
   padding:
     clamp(8px, 1.6dvh, 16px)
-    max(var(--gutter), var(--safe-right), (100vw - var(--content-max)) / 2)
+    max(var(--dock-reserve), (100vw - var(--content-max)) / 2)
     0
-    max(var(--dock-reserve), (100vw - var(--content-max)) / 2);
+    max(var(--gutter), var(--safe-left), (100vw - var(--content-max)) / 2);
 }
 .story-mobius {
   grid-column: 1; grid-row: 1;
@@ -540,6 +544,24 @@
   font-size: var(--t-callout);
 }
 .story-inline-error button { flex: none; margin-left: auto; border-color: transparent; color: var(--accent-text); padding-inline: var(--s3); }
+/* Session error (live app, every layout): one status row (message, 44px Reconnect). While it shows,
+   it takes the place of the app title bar, so the scene keeps its height and nothing overlaps (P12). */
+.story-demo:not(.capture) .story-inline-error {
+  flex: none;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px;
+  margin: 8px 0 0; padding: 4px 4px 4px 12px; border-radius: 12px;
+  font-size: 13px; line-height: 1.35;
+}
+.story-demo:not(.capture) .story-inline-error > span { min-width: 0; overflow-wrap: anywhere; }
+.story-demo:not(.capture) .story-inline-error button { min-width: 44px; min-height: 44px; margin: 0; padding-inline: 10px; font-size: 13px; }
+.story-demo:not(.capture) .story-phone:has(> .story-inline-error) .story-header { display: none; }
+.story-demo:not(.capture) .story-inline-error + .story-content { padding-top: 6px; }
+/* The banner also stands in for the privacy footnote; the footnote stays available to screen
+   readers (login's passcode description still resolves). */
+.story-demo:not(.capture) .story-inline-error + .story-content .story-privacy-note {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
 .story-home-indicator { flex: none; align-self: center; width: 134px; height: 5px; margin: var(--s2) 0 var(--s1); border-radius: var(--r-pill); background: var(--ink); }
 
 .story-login-mark { display: grid; place-items: center; width: 48px; height: 48px; border-radius: var(--r-nested); background: var(--accent); color: #ffffff; }
@@ -633,20 +655,32 @@
   content: ""; position: absolute; left: 50%; top: 50%; border-radius: 50%;
   transform: translate(calc(-50% + var(--shift)), -50%);
 }
-.keyring-physical-button::before { width: var(--visual); height: var(--visual); background: rgb(0 0 0 / 0); transition: background-color .15s var(--ease); }
+.keyring-physical-button::before { width: var(--visual); height: var(--visual); background: rgb(0 0 0 / 0); transition: background-color .15s var(--ease); pointer-events: none; }
 .keyring-physical-button:hover, .keyring-physical-button:disabled { background: transparent; box-shadow: none; }
 .keyring-physical-button:hover:not(:disabled)::before { background: rgb(0 0 0 / .1); }
 .keyring-physical-button:active, .keyring-physical-button.pressed { transform: translate(-50%, -50%) translateZ(3px) scale(.96); }
 .keyring-physical-button:active::before, .keyring-physical-button.pressed::before { background: rgb(0 0 0 / .22); }
 .keyring-physical-button:disabled { cursor: default; }
 .keyring-physical-button:focus-visible { outline-offset: 0; }
+/* Guidance halo (S5): centered on the real button, never on the hit area. A steady 3px inner ring
+   (visual + 22px) over a soft tint, an outer wave whose 2.5px edge (outline) travels 18px out
+   and fades over a soft fill (visual + 63px: 81 to 89px on docked keyrings, 113px on the intro),
+   and a tint that swells the button by 10%. The wave stays below the LCD, so READY/CONFIRM/PANIC
+   remain readable. */
 .keyring-physical-button.is-guided::after {
-  width: calc(var(--visual) + 10px); height: calc(var(--visual) + 10px);
-  border: 2px solid currentColor;
-  animation: keyring-guidance var(--story-breathe) ease-in-out infinite;
+  width: calc(var(--visual) + 22px); height: calc(var(--visual) + 22px);
+  border: 3px solid currentColor;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  outline: 2.5px solid transparent; outline-offset: 0;
+  pointer-events: none;
+  animation: keyring-halo 1.6s cubic-bezier(.15, .6, .3, 1) infinite;
 }
-.keyring-physical-button.confirm.is-guided { color: var(--keyring-confirm); }
-.keyring-physical-button.panic.is-guided { color: var(--keyring-panic); }
+.keyring-physical-button.is-guided:not(:active):not(.pressed)::before {
+  background: color-mix(in srgb, currentColor 26%, transparent);
+  animation: keyring-swell 1.6s ease-in-out infinite;
+}
+.keyring-physical-button.confirm.is-guided { color: var(--halo-confirm); }
+.keyring-physical-button.panic.is-guided { color: var(--halo-panic); }
 
 /* ---------- Motion (P6, P7) ---------- */
 @keyframes story-dock-travel {
@@ -661,9 +695,19 @@
   from { opacity: 0; }
   to { opacity: 1; }
 }
-@keyframes keyring-guidance {
-  0%, 100% { opacity: .35; scale: .94; }
-  50% { opacity: .75; scale: 1.06; }
+@keyframes keyring-halo {
+  0% {
+    outline-offset: 0; outline-color: color-mix(in srgb, currentColor 85%, transparent);
+    box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 20%, transparent);
+  }
+  70%, 100% {
+    outline-offset: 18px; outline-color: color-mix(in srgb, currentColor 0%, transparent);
+    box-shadow: 0 0 0 18px color-mix(in srgb, currentColor 0%, transparent);
+  }
+}
+@keyframes keyring-swell {
+  0%, 100% { scale: 1; }
+  40% { scale: 1.1; }
 }
 @keyframes story-breathe {
   0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent); }
@@ -691,7 +735,7 @@
   .story-demo { --gutter: 20px; --dock-kw: 136px; --intro-scale: 2.1; }
   .story-topbar-link { font-size: var(--t-caption); }
 }
-@media (max-height: 760px) and (min-width: 1024px) {
+@media (max-height: 820px) and (min-width: 1024px) {
   .story-demo { --topbar-h: 48px; --dock-kw: 112px; --intro-scale: 2.2; --intro-band: 56px; }
   .story-stage { padding-top: 8px; }
   .story-mobius-head { padding-bottom: var(--s2); }
@@ -702,10 +746,15 @@
   .story-trace-summary, .story-trace-step code { font-size: 12px; line-height: 1.4; }
   .story-status { height: 40px; }
   .story-header { min-height: 48px; }
-  .story-content { padding-top: var(--s4); gap: var(--s3); }
+  .story-content { padding-top: var(--s4); gap: var(--s2); }
   .story-content h1 { font-size: var(--t-headline); }
   .story-event { min-height: 64px; padding: var(--s3) var(--s4); }
-  .story-access-card, .story-check-card { padding: var(--s4); }
+  .story-access-card, .story-check-card { gap: var(--s1); padding: var(--s3) var(--s4); }
+  .story-access-card h2 { font-size: var(--t-body); }
+  .story-message { padding: var(--s2) var(--s3); font-size: var(--t-callout); line-height: 1.4; }
+  .story-phone button.story-primary, .story-phone button.story-secondary { min-height: 44px; }
+  .story-phone button.story-primary { margin-top: 0; }
+  .story-privacy-note { padding-block: var(--s2); font-size: var(--t-caption); }
 }
 
 /* ---------- Phones and small windows: shared compact type (never below 11px) ---------- */
@@ -803,37 +852,20 @@
   .story-demo:not(.capture) .story-auto-form { gap: 6px; margin-top: 0; }
   .story-demo:not(.capture) .story-auto-form label { gap: 2px; font-size: 11px; }
   .story-demo:not(.capture) .story-auto-form input { min-height: 44px; padding: 8px 12px; font-size: var(--t-callout); }
-  /* Session error: one status row (message, 44px Reconnect). While it shows, it takes the place of
-     the app title bar, so the scene keeps its height and nothing overlaps (P12). */
-  .story-demo:not(.capture) .story-inline-error {
-    flex: none;
-    display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px;
-    margin: 8px 0 0; padding: 4px 4px 4px 12px; border-radius: 12px;
-    font-size: 12px; line-height: 1.3;
-  }
-  .story-demo:not(.capture) .story-inline-error > span { min-width: 0; overflow-wrap: anywhere; }
-  .story-demo:not(.capture) .story-inline-error button { min-width: 44px; min-height: 44px; margin: 0; padding-inline: 10px; font-size: 13px; }
-  .story-demo:not(.capture) .story-phone:has(> .story-inline-error) .story-header { display: none; }
-  .story-demo:not(.capture) .story-inline-error + .story-content { padding-top: 6px; }
-  /* The banner also stands in for the privacy footnote; the footnote stays available to screen
-     readers (login's passcode description still resolves). */
-  .story-demo:not(.capture) .story-inline-error + .story-content .story-privacy-note {
-    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
-    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
-  }
+  .story-demo:not(.capture) .story-inline-error { font-size: 12px; line-height: 1.3; }
   .story-demo:not(.capture) .story-server-message { padding: 4px 10px; border-radius: 10px; font-size: 11px; line-height: 1.3; }
 }
 
-/* ---------- Phone landscape: Mobius | app, one bottom bar, keyring in the Mobius rail (S6) ----------
+/* ---------- Phone landscape: Mobius | app | keyring, one bottom bar (S6) ----------
    The top bar folds into the bottom bar (brand left, scene navigation center, language right),
-   so the content keeps the full height. The keyring sits in the left rail of the Mobius pane,
-   under the pane title, and never covers a record. */
+   so the content keeps the full height. The keyring owns the right track beside the app, above
+   the language toggle, so it never covers a record, the app or a control. */
 @media (max-width: 1023px) and (orientation: landscape) {
   .story-demo {
     --topbar-h: 0px;
     --gutter: 8px;
     --dock-kw: 112px;
-    --dock-left: max(8px, var(--safe-left));
+    --dock-right: max(8px, var(--safe-right));
     --dock-bottom: calc(var(--chrome-bottom) + 6px);
     --intro-scale: 1.7;
     --intro-band: 40px;
@@ -849,23 +881,16 @@
 
   .story-stage {
     padding: 6px max(8px, var(--safe-right)) 4px max(8px, var(--safe-left));
-    grid-template-columns: minmax(0, 1fr) minmax(280px, 40%);
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 40%) var(--dock-kw);
     column-gap: 12px;
   }
-  .story-mobius {
-    grid-template-columns: var(--dock-kw) minmax(0, 1fr);
-    grid-template-rows: auto auto minmax(0, 1fr);
-    grid-template-areas: "head msg" "head tabs" "head panel";
-    column-gap: 12px;
-  }
-  .story-mobius-head {
-    align-self: start;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "title" "badge" "meta";
-    justify-items: start; gap: 6px; padding: 4px 0 0;
-  }
-  .story-mobius-head h2 { font-size: 13px; line-height: 1.3; }
+  /* Mobius: one title row (meta lives on desktop and in the shallow rail); a CSE notice stands in for it */
+  .story-mobius-head { grid-template-areas: "title badge"; padding-bottom: 4px; }
+  .story-mobius-head .story-mobius-meta { display: none; }
+  .story-mobius:has(> .story-server-message) .story-mobius-head { display: none; }
   .story-server-message { margin-bottom: 6px; }
+  .story-panel-card { padding-top: 6px; }
+  .mobius-tree-view { gap: 4px; }
 
   /* App pane in 390px of height: compact-height title bar (HIG 32pt) and tighter cards */
   .story-demo:not(.capture) .story-header { min-height: 36px; }
@@ -873,23 +898,90 @@
   .story-demo:not(.capture) .story-content { padding-top: 6px; }
   .story-demo:not(.capture) :is(.story-access-card, .story-check-card) { gap: 1px; padding: 6px 10px; line-height: 1.25; }
   .story-demo:not(.capture) .story-message { padding: 5px 10px; line-height: 1.3; }
+  .story-demo:not(.capture) .story-actions button { padding-inline: 8px; line-height: 1.15; }
 }
 
-/* ---------- Portrait fallback: app above, Mobius sheet below, keyring deck at the bottom-left ----------
-   The bottom deck holds the keyring (left), the panel switcher and the scene navigation (right). */
+/* ---------- Shallow landscape (340px tall or less: Safari with toolbars, 844 x 320, 1000 x 327) ----------
+   No bottom bar. A right control rail stacks brand, language, the keyring and the scene navigation;
+   a left Mobius rail keeps the pane title, badge, session meta and CSE notice. Content uses the full
+   height, every panel is a complete page (no inner scroll, nothing to drag). */
+@media (max-width: 1023px) and (orientation: landscape) and (max-height: 340px) {
+  .story-demo {
+    --nav-h: 0px;
+    --rail-w: 112px;
+    --rail-nav-h: 60px;
+    --dock-right: max(8px, var(--safe-right));
+    --dock-bottom: calc(max(4px, var(--safe-bottom)) + var(--rail-nav-h) + 6px);
+    --dock-kw: min(112px, calc((100dvh - var(--dock-bottom) - max(4px, var(--safe-top)) - 100px) / 1.3247));
+    --dock-left: calc(100vw - var(--dock-right) - (var(--rail-w) + var(--dock-kw)) / 2);
+    --intro-scale: 1.7;
+    --intro-band: 40px;
+    grid-template-columns: minmax(0, 1fr) var(--rail-w);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    column-gap: 8px;
+    padding-right: var(--dock-right);
+  }
+  .story-stage {
+    grid-column: 1; grid-row: 1 / -1;
+    padding: max(4px, var(--safe-top)) 0 max(4px, var(--safe-bottom)) max(8px, var(--safe-left));
+    grid-template-columns: minmax(0, 1fr) minmax(270px, 40%);
+  }
+  .story-topbar {
+    grid-column: 2; grid-row: 1;
+    height: auto; flex-wrap: wrap; justify-content: center; gap: 0;
+    padding: max(4px, var(--safe-top)) 0 0;
+  }
+  .story-brand { margin: 0 auto; }
+  .story-topbar .lang-switch { margin: 0 auto; }
+  .story-topbar .lang-switch button { padding: 0 5px; font-size: 12px; }
+  .story-bottom-nav {
+    grid-column: 2; grid-row: 3;
+    justify-self: stretch; align-self: end;
+    height: auto; flex-wrap: wrap; justify-content: center; row-gap: 0;
+    padding-bottom: max(4px, var(--safe-bottom));
+  }
+  .story-stepper-compact { order: -1; flex: 1 0 100%; min-width: 0; padding: 0; font-size: 12px; line-height: 16px; }
+
+  /* Mobius identity rail: title, badge, session meta and the CSE notice stay readable */
+  .story-mobius {
+    grid-template-columns: 104px minmax(0, 1fr);
+    grid-template-rows: 48px auto minmax(0, 1fr);
+    grid-template-areas: "head tabs" "head panel" "msg panel";
+    column-gap: 10px;
+  }
+  .story-mobius:has(> .story-server-message) .story-mobius-head { display: grid; }
+  .story-mobius-head {
+    align-self: start;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "title" "badge" "meta";
+    justify-items: start; gap: 6px; padding: 2px 0 6px;
+  }
+  .story-mobius-head h2 { font-size: 13px; line-height: 1.3; }
+  .story-mobius-head .story-mobius-meta { display: block; }
+  .story-server-message { align-self: start; margin: 0; padding: 4px 8px; }
+  .story-panel-tabs { align-self: start; }
+  .story-panel-card { padding-top: 6px; }
+
+  .story-demo:not(.capture) .story-header { min-height: 32px; }
+  .story-demo:not(.capture) .story-inline-error { margin-top: 6px; }
+  .story-demo:not(.capture) .story-inline-error + .story-content { padding-top: 4px; }
+}
+
+/* ---------- Portrait fallback: app above, Mobius sheet below, keyring deck at the bottom-right ----------
+   The bottom deck holds the panel switcher and the scene navigation (left) and the keyring (right). */
 @media (max-width: 1023px) and (orientation: portrait) {
   .story-demo {
     --topbar-h: 44px;
     --gutter: 12px;
     --dock-kw: 112px;
-    --dock-left: max(12px, var(--safe-left));
+    --dock-right: max(12px, var(--safe-right));
     --dock-bottom: max(4px, var(--safe-bottom));
     --intro-scale: 2.05;
   }
   .story-topbar { padding-inline: max(var(--s2), var(--safe-left)) max(var(--s2), var(--safe-right)); }
   .story-bottom-nav {
     justify-self: stretch;
-    padding: 0 max(12px, var(--safe-right)) 0 calc(var(--dock-left) + var(--dock-kw) + 12px);
+    padding: 0 calc(var(--dock-right) + var(--dock-kw) + 12px) 0 max(12px, var(--safe-left));
     background: var(--surface);
   }
   /* The sheet surface continues under the home indicator without moving the controls into it. */
@@ -905,9 +997,9 @@
   .story-app-column { grid-column: 1; grid-row: 1; padding: 6px max(var(--s3), var(--safe-right)) 6px max(var(--s3), var(--safe-left)); }
   .story-mobius {
     grid-column: 1; grid-row: 2;
-    grid-template-columns: var(--dock-kw) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) var(--dock-kw);
     grid-template-rows: auto auto minmax(0, 1fr) auto;
-    grid-template-areas: "head head" "msg msg" "panel panel" ". tabs";
+    grid-template-areas: "head head" "msg msg" "panel panel" "tabs .";
     column-gap: 12px;
     padding: 6px max(var(--s3), var(--safe-right)) 6px max(var(--s3), var(--safe-left));
     background: var(--surface);
@@ -964,7 +1056,12 @@
     transition: none !important; animation: none !important;
   }
   .keyring-physical-button:active, .keyring-physical-button.pressed { transform: translate(-50%, -50%) translateZ(3px); }
-  .keyring-physical-button.is-guided::after { opacity: .7; }
+  /* A large static double ring: the 3px inner ring plus a 2px outer ring 7px out over a soft fill */
+  .keyring-physical-button.is-guided::after {
+    outline: 2px solid color-mix(in srgb, currentColor 75%, transparent); outline-offset: 7px;
+    box-shadow: 0 0 0 7px color-mix(in srgb, currentColor 12%, transparent);
+  }
+  .keyring-physical-button.is-guided:not(:active):not(.pressed)::before { scale: 1.06; }
   .story-mobius, .story-app-column { transition: opacity var(--story-quick) linear, visibility 0s; }
   .story-demo[data-stage="intro"] .story-mobius,
   .story-demo:is([data-stage="intro"], [data-stage="sending"]) .story-app-column { transform: none; }

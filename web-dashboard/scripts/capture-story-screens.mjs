@@ -244,6 +244,58 @@ try {
       throw new Error(`landscape login error contract failed: ${JSON.stringify(layout)}`);
     }
   };
+  const assertShallowLandscape = async (width, height) => {
+    await clearStorySession();
+    await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: true });
+    await send('Emulation.setEmulatedMedia', { features: [
+      { name: 'prefers-color-scheme', value: 'light' },
+      { name: 'prefers-reduced-motion', value: 'no-preference' },
+    ] });
+    await send('Page.navigate', { url: `${previewUrl}/?lang=en#/story/login` });
+    await waitFor("document.querySelector('.story-demo')?.dataset.stage === 'intro' && !document.querySelector('.keyring-physical-button.panic')?.disabled", `${width}x${height} shallow intro`);
+    const responseIndex = actionResponses.length;
+    await clickCenter('.keyring-physical-button.panic');
+    await waitForAction200(responseIndex, `${width}x${height} shallow panic`);
+    await waitFor("location.hash === '#/story/check-in' && document.querySelector('.story-demo')?.dataset.stage === 'system'", `${width}x${height} shallow check-in`);
+    await waitFor("document.querySelector('.story-trace-title')?.textContent?.includes('Keyring emergency alert stored') === true", `${width}x${height} shallow Mobius receipt`);
+    await delay(900);
+    await openMobiusPanel('Transaction');
+    await assertViewportFit(`${width}x${height} shallow Transaction`);
+    const layout = await evaluate(`(() => {
+      const rect=(selector)=>{const value=document.querySelector(selector)?.getBoundingClientRect();return value?{left:value.left,right:value.right,top:value.top,bottom:value.bottom,width:value.width,height:value.height}:null;};
+      const overlaps=(a,b)=>!!a&&!!b&&a.left<b.right-1&&a.right>b.left+1&&a.top<b.bottom-1&&a.bottom>b.top+1;
+      const dock=rect('.keyring-dock');
+      const mobius=rect('.story-mobius');
+      const app=rect('.story-app-column');
+      const traceElement=document.querySelector('#story-panel-trace');
+      const phoneContent=document.querySelector('.story-content');
+      const tabs=rect('.story-panel-tabs');
+      const navigation=rect('.story-bottom-nav');
+      const language=rect('.lang-switch');
+      const brand=rect('.story-brand');
+      const visibleTargets=[...document.querySelectorAll('button,a,summary')].map((element)=>{const value=element.getBoundingClientRect();const style=getComputedStyle(element);return{width:value.width,height:value.height,visible:style.display!=='none'&&style.visibility!=='hidden'&&value.width>0&&value.height>0&&value.right>0&&value.bottom>0&&value.left<innerWidth&&value.top<innerHeight};}).filter((item)=>item.visible);
+      return {
+        width:innerWidth,height:innerHeight,docWidth:document.documentElement.scrollWidth,docHeight:document.documentElement.scrollHeight,
+        dock,mobius,app,
+        rightGap:dock?innerWidth-dock.right:null,
+        dockClear:!!dock&&!!mobius&&!!app&&dock.left>=mobius.right&&dock.left>=app.right,
+        controlClear:[tabs,navigation,language,brand].every((item)=>!overlaps(dock,item)),
+        traceFits:!!traceElement&&traceElement.scrollWidth<=traceElement.clientWidth+1&&traceElement.scrollHeight<=traceElement.clientHeight+1,
+        contentFits:!!phoneContent&&phoneContent.scrollWidth<=phoneContent.clientWidth+1&&phoneContent.scrollHeight<=phoneContent.clientHeight+1,
+        hasPanicReceipt:(traceElement?.textContent??'').includes('keyring-panic')&&(traceElement?.textContent??'').includes('CREATE')&&(traceElement?.textContent??'').includes('RETRIEVE')&&(traceElement?.textContent??'').includes('RSC 2001')&&(traceElement?.textContent??'').includes('RSC 2000'),
+        smallTargets:visibleTargets.filter((item)=>item.width<44||item.height<44).length,
+      };
+    })()`);
+    if (layout.width !== width || layout.height !== height || layout.docWidth !== width || layout.docHeight !== height
+      || !layout.dockClear || !layout.controlClear || layout.rightGap > 48 || !layout.traceFits || !layout.contentFits
+      || !layout.hasPanicReceipt || layout.smallTargets !== 0) {
+      throw new Error(`${width}x${height} shallow landscape contract failed: ${JSON.stringify(layout)}`);
+    }
+    await shot(`story-system-landscape-${width}x${height}`, width, height);
+    await assertStoryScenesFit(`${width}x${height} shallow scene`);
+    await assertLandscapeLoginErrorFit();
+    return layout;
+  };
   for (const [name, scene, expected] of scenes) { await openScene(scene, expected); await shot(name); }
 
   // The public entry starts with one product, then the same keyring travels into the verified system layout.
@@ -345,10 +397,10 @@ try {
     const style=getComputedStyle(document.querySelector('.keyring-dock'));
     return {
       dock,mobius,app,freshNode,freshRecord,tracePaths,
-      dockLeft:dock?.left,dockBottom:innerHeight-(dock?.bottom??0),
+      dockRight:innerWidth-(dock?.right??innerWidth),dockBottom:innerHeight-(dock?.bottom??0),
       background:style.backgroundColor,border:parseFloat(style.borderTopWidth)||0,zIndex:style.zIndex,position:style.position,
       outsideStage:!!dockElement&&!!stageElement&&!stageElement.contains(dockElement),
-      disjoint:!!dock&&!!mobius&&dock.right<=mobius.left,
+      disjoint:!!dock&&!!app&&dock.left>=app.right,
       ordered:!!mobius&&!!app&&mobius.right<=app.left,
       hit:top?.classList.contains('confirm')===true,
       englishOnly:mobiusPanel?.getAttribute('lang')==='en' && !/[가-힣]/.test(mobiusText),
@@ -357,7 +409,7 @@ try {
   })()`);
   const transparentDock = ['rgba(0, 0, 0, 0)', 'transparent'].includes(desktopSystemLayout.background);
   const linkedPath = desktopSystemLayout.freshNode && desktopSystemLayout.freshNode === freshRecordCovered && desktopSystemLayout.tracePaths.includes(desktopSystemLayout.freshNode);
-  if (desktopSystemLayout.dockLeft > 48 || desktopSystemLayout.dockBottom > 48 || !transparentDock || desktopSystemLayout.border !== 0
+  if (desktopSystemLayout.dockRight > 48 || desktopSystemLayout.dockBottom > 48 || !transparentDock || desktopSystemLayout.border !== 0
     || desktopSystemLayout.zIndex !== '30' || desktopSystemLayout.position !== 'fixed' || !desktopSystemLayout.outsideStage
     || !desktopSystemLayout.disjoint || !desktopSystemLayout.ordered || !linkedPath || !desktopSystemLayout.hit
     || !desktopSystemLayout.englishOnly || !standardTermsCovered || desktopSystemLayout.clippedText.length > 0) {
@@ -443,7 +495,7 @@ try {
     return {
       width:document.documentElement.scrollWidth,height:document.documentElement.scrollHeight,
       viewportWidth:innerWidth,viewportHeight:innerHeight,dock,mobius,app,navigation,keyring,
-      overlaid:!!dock&&!!mobius&&dock.left<mobius.right&&dock.right>mobius.left,
+      overlaid:!!dock&&!!mobius&&!!app&&dock.left>=app.right&&dock.left>=mobius.right&&innerWidth-dock.right<=48,
       ordered:!!mobius&&!!app&&mobius.right<=app.left,
       navigationAtBottom:!!navigation&&navigation.bottom<=innerHeight&&innerHeight-navigation.bottom<=16&&navigation.top>=innerHeight-80,
       navigationClear:!!navigation&&!!dock&&(navigation.left>=dock.right||navigation.right<=dock.left||navigation.top>=dock.bottom||navigation.bottom<=dock.top),
@@ -460,6 +512,8 @@ try {
   await shot('story-system-landscape', 844, 390);
   await assertStoryScenesFit('landscape scene');
   await assertLandscapeLoginErrorFit();
+  await assertShallowLandscape(844, 320);
+  await assertShallowLandscape(1000, 327);
 
   await clearStorySession();
   await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
@@ -615,7 +669,7 @@ try {
     browser: version.Browser,
     mode: 'browser-isolated replay CSE; full-viewport shell, fixed keyring overlay, iPhone safe areas, landscape split, portrait fallback, guardian share and caregiver group command exercised',
     command: 'npm --prefix web-dashboard run capture:story',
-    assertions: ['intro shows only the keyring product and guidance', 'real keyring input returns HTTP 200 and transitions into the system stage', 'story shell exactly fills 100vw by 100dvh with zero document or panel overflow', 'floating keyring is a transparent fixed overlay outside the content grid at z-index 30', 'all seven story scenes fit landscape and portrait viewports without clipping', 'landscape login keeps a full reconnect message and 44px action inside the app without overlap', 'all seven landscape scenes and the reconnect state fit inside iPhone sensor-housing and home-indicator insets', 'iPhone portrait notch and home-indicator insets keep controls inside the safe area', 'fresh Mobius tree node, trace path and newest record share one resource path', 'Mobius browser is English-only and exposes oneM2M resource types, methods and RSC values without clipped text', 'Mobius tree and CSE records paginate inside fixed panels without nested scrolling', 'desktop Mobius stays left of the phone in light and dark mode', 'phone landscape fits Mobius, app and overlay keyring in one viewport', 'phone portrait and portrait deep links show the optimized landscape prompt with a 44px Continue upright path', 'scene arrows use a compact bottom navigation outside the top bar', 'keyring has no Rotate, Move or Reset chrome and every drag rotates it directly', 'system keyring remains large enough to read its firmware screen and physical buttons', 'all visible controls are at least 44px', 'reduced motion leaves no running dock animation', 'keyboard focus reaches the confirm button with a 3px outline', 'Mobius tree exposes a wrapping full resource path', 'keyring firmware screen mirrors READY/CONFIRM/PANIC states', 'care approval opens the caregiver view', 'All on returns three readbacks', 'draft review opens a five-minute location lease'],
+    assertions: ['intro shows only the keyring product and guidance', 'real keyring input returns HTTP 200 and transitions into the system stage', 'story shell exactly fills 100vw by 100dvh with zero document or panel overflow', 'floating keyring is a transparent fixed overlay outside the content grid at z-index 30', 'all seven story scenes fit landscape and portrait viewports without clipping', '844x320 and 1000x327 shallow Safari landscapes fit every scene, the full panic receipt and reconnect state without internal scrolling', 'landscape login keeps a full reconnect message and 44px action inside the app without overlap', 'all seven landscape scenes and the reconnect state fit inside iPhone sensor-housing and home-indicator insets', 'iPhone portrait notch and home-indicator insets keep controls inside the safe area', 'fresh Mobius tree node, trace path and newest record share one resource path', 'Mobius browser is English-only and exposes oneM2M resource types, methods and RSC values without clipped text', 'Mobius tree and CSE records paginate inside fixed panels without nested scrolling', 'desktop Mobius stays left of the phone in light and dark mode', 'phone landscape fits Mobius, app and overlay keyring in one viewport', 'phone portrait and portrait deep links show the optimized landscape prompt with a 44px Continue upright path', 'scene arrows use a compact bottom navigation outside the top bar', 'keyring has no Rotate, Move or Reset chrome and every drag rotates it directly', 'system keyring remains large enough to read its firmware screen and physical buttons', 'all visible controls are at least 44px', 'reduced motion leaves no running dock animation', 'keyboard focus reaches the confirm button with a 3px outline', 'Mobius tree exposes a wrapping full resource path', 'keyring firmware screen mirrors READY/CONFIRM/PANIC states', 'care approval opens the caregiver view', 'All on returns three readbacks', 'draft review opens a five-minute location lease'],
     captured,
   };
   await writeFile(join(outDir, 'capture-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);

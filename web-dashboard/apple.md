@@ -32,7 +32,7 @@ with the hierarchy carried by type size, weight and whitespace instead of boxes.
 | P5 | Restrained color and depth | One blue family for actions and highlights. Keyring blue `#4b9fd6` and orange `#ef7a3d` appear only on and around the keyring. Status always carries a word. Depth comes from surface change and a 1px hairline; the product shadow belongs to the keyring alone. | HIG Color, DESIGN.md 6 |
 | P6 | Motion follows real state | A success mark appears only after the server response is in. Staggering orders data that has already arrived; it never stands in for a pending request. | HIG Motion |
 | P7 | Reduced motion | Under `prefers-reduced-motion: reduce`, travel becomes a 160ms crossfade, breathing halos become a steady ring, pulses become a steady tint, the rotate glyph is drawn already turned. | HIG Accessibility, Motion |
-| P8 | State change and spatial relation first | Layout reads left to right as the data moves: keyring (input) -> Mobius (record) -> phone (person). Transitions move the same object from one place to another; nothing appears from nowhere. | HIG Layout |
+| P8 | State change and spatial relation first | The record sits on the left (Mobius); the person's two devices sit together on the right (phone, then the keyring at the outer edge, under the right thumb). A press travels right to left into the record and the phone shows the result. Transitions move the same object from one place to another; nothing appears from nowhere. | HIG Layout |
 | P9 | Firmware truth | The LCD shows only READY, CONFIRM and PANIC with the firmware glyphs and colors. The hit areas sit on the real button positions measured from the product render. | Keyring firmware r26 |
 | P10 | Inclusive defaults | Korean and English, light and dark from the system setting, full keyboard path, 3px `:focus-visible` ring (inset inside clipped panes), polite live regions for new records. | HIG Accessibility, Dark Mode |
 | P11 | Plain surfaces | Flat canvas, hairline separators, no gradients, no frosted cards, one explanation line per screen. The floating keyring has no background, border, shadow box or tool row. | DESIGN.md 7 |
@@ -56,8 +56,9 @@ Color, type, radius and spacing come from `src/styles.css`. The story demo adds:
 
 | Token | Value | Use |
 | --- | --- | --- |
-| `--keyring-confirm` | `#4b9fd6` | Confirm halo, confirm dot in hints |
-| `--keyring-panic` | `#ef7a3d` | Emergency halo, emergency dot in hints |
+| `--keyring-confirm` | `#4b9fd6` | Confirm dot in hints |
+| `--keyring-panic` | `#ef7a3d` | Emergency dot in hints |
+| `--halo-confirm` / `--halo-panic` | `#2b86d6` / `#ea5a1c` | Guidance halo around the confirm (blue) and emergency (orange-red) button |
 | `--story-quick` | 160ms | Opacity and color changes, reduced-motion crossfade |
 | `--story-base` | 280ms | Pane entrance (opacity plus 12px slide) |
 | `--story-travel` | 640ms | Keyring travel from intro to dock |
@@ -74,11 +75,12 @@ the keyring out at `--dock-kw x --intro-scale` (S2 explains why).
 
 | Place | Docked width (`--dock-kw`) | Dock position | Intro scale | Intro width |
 | --- | --- | --- | --- | --- |
-| Desktop, 1280px and wider | 160px | 24px from left and bottom (plus safe areas) | 1.9 | 304px |
-| Desktop, 1024 to 1279px | 136px | 20px from left and bottom | 2.1 | 286px |
-| Desktop, 760px tall or less | 112px | 20px from left and bottom | 2.2 | 246px |
-| Phone landscape (below 1024px) | 112px | Mobius rail, 6px above the bottom bar | 1.7 | 190px |
-| Portrait below 1024px | 112px | 12px from left, 4px from bottom (or the home-indicator inset) | 2.05 | 230px |
+| Desktop, 1280px and wider | 160px | 24px from right and bottom (plus safe areas); 1440 x 900: x 1256, y 664, 160 x 212 | 1.9 | 304px |
+| Desktop, 1024 to 1279px | 136px | 20px from right and bottom | 2.1 | 286px |
+| Desktop, 820px tall or less | 112px | 20px from right and bottom; 1024 x 768: x 892, y 600 | 2.2 | 246px |
+| Phone landscape, taller than 340px | 112px | Right track beside the app, 6px above the bottom bar; 844 x 390: x 724, y 192 | 1.7 | 190px |
+| Phone landscape, 340px tall or less | up to 112px (shrinks to fit the rail) | Right control rail between language and scene navigation; 844 x 320: x 725, y 104, 110 x 146; 1000 x 327: x 880, y 109 | 1.7 | 190px |
+| Portrait below 1024px | 112px | 12px from right, 4px from bottom (or the home-indicator inset); 390 x 844: x 266, y 692 | 2.05 | 230px |
 | Phone portrait, 700px tall or less / 600px or less | 112px | same | 1.8 / 1.4 | 202 / 157px |
 
 The compact width of 112px keeps the projected model at 104px or more after the default
@@ -91,21 +93,23 @@ tilt, so the LCD and both physical buttons stay legible on phones.
  +------------------------------------------------------------------------------+
  | (B) BubbleLock                                   Family dashboard  KO | EN    |  56 + safe top
  +------------------------------------------------------------------------------+
- |  gutter     |  Mobius Resource Browser   [Replay] |   +-------------+        |
- |  (reserved  |  [Transaction|Resource tree|Records]|   | 4:31        |        |
- |   for the   |  Latest oneM2M transaction          |   | Privacy     |        |
- |   keyring)  |  Resident confirmation stored       |   | Bubble      |        |
- |             |   o BFF request  POST /api/...      |   |             |        |
- |  [keyring]  |   o CREATE <contentInstance> ../e-2 |   |             |        |
- |             |   o RETRIEVE <contentInstance>      |   +-------------+        |
+ |      Mobius Resource Browser   [Replay] |   +-------------+   |  gutter     |
+ |      [Transaction|Resource tree|Records]|   | 4:31        |   |  (reserved  |
+ |      Latest oneM2M transaction          |   | Privacy     |   |   for the   |
+ |      Resident confirmation stored       |   | Bubble      |   |   keyring)  |
+ |       o BFF request  POST /api/...      |   |             |   |             |
+ |       o CREATE <contentInstance> ../e-2 |   |             |   |  [keyring]  |
+ |       o RETRIEVE <contentInstance>      |   +-------------+   |             |
  +------------------------------------------------------------------------------+
  |                         <   2/7 Went out   >                                 |  44 + safe bottom
  +------------------------------------------------------------------------------+
 ```
 
-The stage pads its left edge by the keyring reserve (`dock-left + dock-kw + gutter`) or by
+The stage pads its right edge by the keyring reserve (`dock-right + dock-kw + gutter`) or by
 half of the space beyond the 1040px content width, whichever is larger. The fixed keyring
-therefore lives in its own gutter and never overlaps Mobius (P8, P12).
+therefore lives in its own gutter beside the phone and never overlaps the app or a control
+(P8, P12). `--dock-left` is derived (`100vw - dock-right - dock-kw`), so the S2 travel keeps
+one formula for every layout.
 
 ## 4. S1 Intro stage (`data-stage="intro"`)
 
@@ -117,9 +121,8 @@ therefore lives in its own gutter and never overlaps Mobius (P8, P12).
   landscape), led by a 10px dot in the guided button's color: `파란 버튼을 눌러 보세요` /
   `Press the blue button` (check-in scene: `주황 버튼을 눌러 보세요` / `Press the orange button`).
   This is the only text on the intro besides the top bar (P2, P11).
-- The guided button carries a 2px ring in its product color, centered on the visual
-  button (not on the hit area), diameter = visual button + 10px, breathing between 35% and
-  75% opacity and scale 0.94 to 1.06 every `--story-breathe` (P5, P7).
+- The guided button carries the guidance halo of S5 (blue for confirm, orange-red for
+  emergency), centered on the visual button, not on the hit area (P5, P7).
 - Dragging the keyring rotates it and the focused stage takes arrow keys (P10).
 - Both buttons are live. Either press starts S2.
 
@@ -155,8 +158,9 @@ in over `--story-quick`; trace steps appear together once the response is in.
   the bottom inset: previous chevron, `2/7 Went out` (13px/600, tabular, min width 9.5em so
   the chevrons stay put), next chevron. No bar, no background; chevrons are 44px circles
   in `--muted` with a track-colored hover (P2, P11). Hidden during the intro.
-- Grid: `[keyring gutter] [Mobius minmax(0, 1fr)] [phone]`, column gap `clamp(20px, 2.6vw, 40px)`.
-  Phone width `min(390px, (stage height - 16px) x 0.47)`, so the frame keeps the iPhone aspect.
+- Grid: `[Mobius minmax(0, 1fr)] [phone] [keyring gutter]`, column gap `clamp(20px, 2.6vw, 40px)`.
+  Phone width `min(390px, max(340px, (stage height - 16px) x 0.47))`, so the frame keeps the
+  iPhone aspect and never drops below 340px of text width.
 - Mobius pane, flat, one panel at a time (P12):
   1. Header: `Mobius Resource Browser` 17px/700, Live/Replay badge with its word, meta line
      in 13px muted (session id, actions left).
@@ -169,7 +173,14 @@ in over `--story-quick`; trace steps appear together once the response is in.
      `Copy full path`. CSE records page one record at a time.
 - Phone: 390px frame (hairline bezel, outer radius `clamp(36px, 5.6dvh, 54px)`, inner radius
   outer minus 10px), centered vertically, max 880px tall.
-- Below 760px tall the top bar is 48px and the trace tightens (title 17px, codes 12px).
+- At 820px tall or less the top bar is 48px, the trace tightens (title 17px, codes 12px) and the
+  phone uses 21px titles, 15px bubbles, 17px card titles and 44px buttons, so 1024 x 768 and
+  1280 x 720 fit every scene.
+- Session error (live app, every layout): one status row, warning text on `--warning-soft`
+  (13px on desktop, 12px on phones) with a 44px `Reconnect` text button on the right. While it
+  shows it stands in for the app title bar and the privacy footnote (the footnote stays in the
+  accessibility tree, so the passcode description still resolves); the scene title, cards and
+  actions keep their places and nothing overlaps.
 
 ## 7. S4 Trace hero and fresh-record highlight
 
@@ -224,6 +235,16 @@ This session stores the away state ... without location coordinates.   15px mute
   shadow deepens and a 1px light rim separates the mint body from the black canvas.
 - Interaction: drag rotates (rotateX within 32deg, rotateY within 58deg); arrow keys rotate
   the focused stage, Shift doubles the step. Rotate, Move and Reset controls do not exist.
+- Position: bottom-right on every layout (S3, S6). Desktop: 24px (20px below 1280px wide)
+  from the right and bottom edges plus safe areas, inside a reserved gutter beside the phone.
+- Guidance halo (one per guided button, `.is-guided`): a 3px inner ring of `visual + 22px`
+  over a 14% tint; an outer wave whose 2.5px edge (an animated outline) travels 18px out and
+  fades over a soft 20% fill, every 1.6s (`visual + 63px`: 81px at 112px keyrings, 85px at
+  136px, 89px at 160px, 113px on the 304px intro); and a 26% tint on the button itself that
+  swells 10%. Confirm uses `--halo-confirm`, emergency `--halo-panic`. The wave stays below the
+  LCD, so READY/CONFIRM/PANIC remain readable; halos ignore the pointer, so hit areas keep
+  their 46px. Reduced motion: no animation; a static double ring (the 3px inner ring plus a 2px
+  outer ring 7px out over a 12% fill) and the button tint at 106%.
 - Hit areas: 46px circles centered on the real buttons, so the default pose (rotateX 8deg,
   rotateY -10deg) still projects 45px or more on screen. When the model is small enough that
   the circles would overlap, each target shifts outward so they meet at the midpoint between
@@ -234,31 +255,31 @@ This session stores the away state ... without location coordinates.   15px mute
 
 ## 9. S6 Phones
 
-### Phone landscape (below 1024px wide, landscape), the primary phone layout
+### Phone landscape taller than 340px (below 1024px wide, landscape), for example 844 x 390
 
 ```
 +--------------------------------------------------------------------+
-| Mobius     | [Transaction | Resource tree | CSE records] | Privacy  |
-| Resource   | Resident confirmation stored     1:51 PM    | Bubble   |
-| Browser    |  v BFF request  POST /api/story/action ...  | Today    |
-| [Replay]   |  v CREATE <contentInstance>                 | Activity |
-| Session .. |    e-2-f4d325 CREATE RSC 2001  e-3-.. RSC.. |          |
-|            |  v RETRIEVE <contentInstance>               |          |
-| [keyring]  | This session stores ...                     |          |
+| Mobius Resource Browser [Replay] | Privacy Bubble      |            |
+| [Transaction | Resource tree | CSE records]             |            |
+| Resident confirmation stored 1:51 PM | Today          |            |
+|  v BFF request  POST /api/story/action  | Activity    |  [keyring] |
+|  v CREATE  e-2 CREATE RSC 2001 ...  |                 |            |
+|  v RETRIEVE ...                     |                 |            |
 +--------------------------------------------------------------------+
 | (B)               <   2/7 Went out   >                   KO | EN   |  44 + safe bottom
 +--------------------------------------------------------------------+
-   112px rail          Mobius content                    app 40%, min 280px
+        Mobius 1fr                        app 40%        112px track
 ```
 
 - The top bar folds into one bottom bar: brand left, scene navigation centered, language
   right. The content keeps the full height above it (P12).
-- Stage columns: Mobius `minmax(0, 1fr)` and app `minmax(280px, 40%)`, 12px gap, 8px side
-  padding or the left/right insets (47px on iPhone landscape).
-- Mobius pane: a 112px rail on the left holds the title (13px/700), the badge and the
-  session meta; the keyring sits in the same rail, 6px above the bottom bar, so it overlays
-  the Mobius pane horizontally and never covers a record. The switcher and the panel use
-  the column to the right of the rail.
+- Stage columns: Mobius `minmax(0, 1fr)`, app `minmax(280px, 40%)` and an empty 112px keyring
+  track, 12px gaps, 8px side padding or the left/right insets (47px on iPhone landscape).
+- The keyring sits in that right track, 6px above the bottom bar: clear of the app pane
+  (12px), the language toggle (6px) and the scene navigation.
+- Mobius pane: one title row (15px title plus badge; session meta lives on desktop and in the
+  shallow rail), then the switcher and the panel. A CSE notice stands in for the title row
+  while it shows.
 - App pane: the phone screen without the status bar, bezel or home indicator, on `--canvas`
   inside a 1px hairline with a 20px radius. Compact app type: title 17px, card text 13px,
   captions 11px, buttons 44px. In landscape the title bar is 36px (compact-height navigation
@@ -273,6 +294,36 @@ This session stores the away state ... without location coordinates.   15px mute
   55px row at 844 x 390 (3 lines) and a 70px row under the iPhone insets (4 lines); the
   tightest scene (care-request) keeps 1px to spare there.
 - Intro in landscape: S1 at 190px, hint line 12px under it, bottom bar visible.
+
+### Shallow landscape, 340px tall or less (Safari with toolbars: 844 x 320, 1000 x 327)
+
+```
++-------------------------------------------------------------------------+
+| Mobius     | [Transaction|Tree|Records] | Privacy Bubble       |  (B)    |
+| Resource   | Keyring emergency alert    | Check on Mom         | KO | EN |
+| Browser    |  v BFF request POST ...    | [emergency card]     |         |
+| [Replay]   |  v CREATE e-11 RSC 2001 .. | [Call] [Prepare ..]  | keyring |
+| Session .. |  v RETRIEVE e-11 RSC 2000  |                      |         |
+| (notice)   | The reason is stored ...   | (footnote)           | 7/7 ... |
+|            |                            |                      |  <   >  |
++-------------------------------------------------------------------------+
+  104px rail       Mobius content           app 40%, min 270px   112px rail
+```
+
+- No bottom bar: the content uses the full height. A right control rail (112px, root grid
+  column) stacks the brand, the language toggle (12px labels), the keyring and the scene
+  navigation (12px label over two 44px chevrons) from top to bottom. The keyring width is
+  `min(112px, (height - rail navigation - brand - language - gaps) / 1.3247)`, so it never
+  touches the controls above or below it, including under a bottom inset.
+- A left Mobius identity rail (104px) keeps the title (13px/700), the badge, the session meta
+  and, while it shows, the CSE notice; the switcher and the active panel use the column to its
+  right. Every panel is a complete page: no inner scroll and nothing to drag.
+- App pane: 32px title bar, compact cards, 44px actions whose labels may wrap to two lines.
+- Budget (measured, all seven scenes, with and without the 93-character error banner, every
+  `.story-content` and open panel at scroll size = client size): 844 x 320 app content 272
+  (228 with the banner), 1000 x 327 app content 279 (250). The densest case, check-in after a
+  keyring PANIC with two public-length records (`e-11-1b8117`, `e-12-2ae5b6`), leaves 33px
+  (844 x 320) and 74px (1000 x 327) under the Transaction receipt.
 
 ### Phone portrait (portrait and 760px wide or less)
 
@@ -310,16 +361,16 @@ This session stores the away state ... without location coordinates.   15px mute
 |  v BFF request ...           |
 |  v CREATE  e-2 RSC 2001      |
 |                              |
-|  ______  [Transaction|Tree ] |  bottom deck: keyring left,
-| |keyrg|  [Records |Scenes  ] |  2 x 2 panel switcher right
-| |_____|   <  2/7 Went out  > |  scene navigation under it
+| [Transaction|Tree ]  ______  |  bottom deck: 2 x 2 panel
+| [Records |Scenes  ] |keyrg| |  switcher left, keyring right,
+|  <  2/7 Went out  >  |_____| |  scene navigation under the switcher
 +------------------------------+
 ```
 
 - App pane on top (44% of the stage), Mobius sheet below on `--surface` with a hairline top.
-- Bottom deck: the keyring (112px) sits bottom-left; to its right, the switcher as a 2 x 2
-  segmented grid (`Transaction | Resource tree`, `CSE records | Scenes`) and the scene
-  navigation under it. The sheet surface continues under the home indicator. The panel above
+- Bottom deck: the switcher as a 2 x 2 segmented grid (`Transaction | Resource tree`,
+  `CSE records | Scenes`) and the scene navigation under it on the left; the keyring (112px)
+  bottom-right, 12px from the right edge. The sheet surface continues under the home indicator. The panel above
   the deck spans the full width, so the keyring never covers a record (P8, P12).
 - Scenes panel: seven scene links in two columns (44px rows, 13px/600, numbered 22px
   circles, current scene in accent) and a `Family dashboard` row.
@@ -332,7 +383,7 @@ This session stores the away state ... without location coordinates.   15px mute
 | The keyring tool row is gone; drag and arrow keys rotate | The physical product is the control; text tools boxed it in and cost 48px of height on phones | P2, P11 |
 | Scene navigation moves to one minimal bottom row | The top bar keeps identity and language only; navigation sits where the thumb and the eye finish | P2, P12 |
 | Phone landscape folds the top bar into the bottom bar | 390px of height leaves room for full paths with RSC only when chrome is one 44px row | P12 |
-| The keyring lives in a reserved gutter (desktop), a Mobius rail (landscape) or a bottom deck (portrait) | A floating overlay must never cover a record; each layout reserves exactly the model box | P8 |
+| The keyring lives in a reserved right gutter (desktop), a right track or control rail (landscape) or the bottom-right of the deck (portrait) | A floating overlay must never cover a record; each layout reserves exactly the model box | P8 |
 | Desktop trace is one vertical receipt with full paths; below 1024px the trace shows resource name plus RSC per record and hides the parent path | Live CSE paths (for example `dash-operator` sessions) are longer than replay paths; at 844 x 390 full paths grew the panel to 309px inside 288px. Full paths stay readable in Resource tree and CSE records | P4, P6, P12 |
 | Resource names in desktop paths never break (`nowrap`); in the compact receipt each name-plus-RSC record wraps as a whole token | The created name is the answer to the press and must read as one token | P2, P4 |
 | Panels page instead of scrolling (switcher plus `< n/m >` pagers) | Zero nested scroll keeps the one-viewport contract and the keyring position stable | P12 |
@@ -344,6 +395,10 @@ This session stores the away state ... without location coordinates.   15px mute
 | Top bar hairline is an inset shadow | A border shrank the 44px controls by 1px and pushed the brand into the safe area | P3, P12 |
 | Focus rings inside the Mobius pane are inset (`outline-offset: -3px`) | The pane clips overflow; an outside ring would be cut at the edges | P10 |
 | Capture mode (`?capture=1`) ignores every compact app rule | The seven 390 x 844 evidence screens keep the full app design | P11 |
+| The keyring moves to the bottom-right on every layout | The person's devices (phone, keyring) belong together; the right thumb reaches the keyring; the left side stays the record | P8 |
+| Guidance halo becomes a large double halo (inner ring, travelling outline wave, button tint) | A 2px breathing ring at visual + 10px was easy to miss in the first second of the demo | P2, P5 |
+| Shallow landscape (340px tall or less) drops the bottom bar for a right control rail and a left Mobius identity rail | In Safari with toolbars (1000 x 327) the bottom bar and title row left no room: the keyring covered the Mobius title and the check-in actions were cut | P12 |
+| The error banner rule applies on desktop too; short desktops (820px or less) use compact phone type and a 340px minimum phone width | 1440 x 900 login overflowed 50px with the banner; 1024 x 768 care-request overflowed 90px without it | P12 |
 
 ## 10. Implementation contract (shared by design and function)
 
@@ -422,14 +477,15 @@ outside the viewport.
 
 | Viewport | Captures | Assertions |
 | --- | --- | --- |
-| 1440 x 900 light | intro, system | Intro: only `.story-intro` and `.keyring-dock` visible, no panel visible, model width 200px or more, Tab reaches the confirm button with a 3px outline. A real click on the confirm hit center returns HTTP 200 from `/api/story/action`. System (Transaction, Resource tree, CSE records each fit): dock within 48px of the left and bottom edges, transparent, border 0, fixed, z-index 30, outside `.story-stage`, left of and disjoint from `.story-mobius`; Mobius left of the app; fresh node path equals the fresh record path and a trace path; `elementFromPoint` at the confirm center returns the confirm button; Mobius pane is English only and shows CSEBase, m2m:ae, m2m:cnt, m2m:cin, CREATE, RETRIEVE and RSC with no clipped text |
+| 1440 x 900 light | intro, system | Intro: only `.story-intro` and `.keyring-dock` visible, no panel visible, model width 200px or more, Tab reaches the confirm button with a 3px outline. A real click on the confirm hit center returns HTTP 200 from `/api/story/action`. System (Transaction, Resource tree, CSE records each fit): dock within 48px of the right and bottom edges, transparent, border 0, fixed, z-index 30, outside `.story-stage`, right of and disjoint from `.story-app-column` (`dock.left >= app.right`); Mobius left of the app; fresh node path equals the fresh record path and a trace path; `elementFromPoint` at the confirm center returns the confirm button; Mobius pane is English only and shows CSEBase, m2m:ae, m2m:cnt, m2m:cin, CREATE, RETRIEVE and RSC with no clipped text |
 | 1440 x 900 dark | system | Mobius left of the app |
 | 390 x 844 mobile, deep link | none | 44px targets, keyring model 104px wide or more, firmware CONFIRM after a press, wrapping full path in the node detail |
-| 844 x 390 landscape | intro, system | All three panels and all seven scenes fit; keyring overlaps the Mobius pane horizontally, model 104px or more; Mobius left of the app; bottom navigation within 16px of the bottom edge and clear of the keyring; no stepper in the top bar; no keyring tool chrome; every visible target 44px or more |
+| 844 x 390 landscape | intro, system | All three panels and all seven scenes fit; keyring in the right track (`dock.left >= app.right`, `dock.left >= mobius.right`, within 48px of the right edge), model 104px or more; Mobius left of the app; bottom navigation within 16px of the bottom edge and clear of the keyring; no stepper in the top bar; no keyring tool chrome; every visible target 44px or more |
 | 390 x 844 portrait | intro (rotate prompt), fallback system | Prompt and keyring visible, optimized-demo copy, focus on `Continue upright`, 44px button; fallback fits with all four panels and all seven scenes; deep link keeps stage and keyring inert under the dialog |
 | iPhone portrait insets 47 / 34 | prompt | `--safe-top` 47, `--safe-bottom` 34, brand top 47 or more, continue button, keyring and bottom navigation bottoms at 810 or less |
 | 844 x 390 landscape, session error | login | A 93-character English error banner and the login content both fit the phone pane with no overflow, the banner sits above the content without overlap, Reconnect is 44 x 44 or more |
 | iPhone landscape insets 47 left and right, 21 bottom | system | brand, Mobius, keyring and navigation left edges 47 or more; app and navigation right edges 797 or less; keyring and navigation bottoms 369 or less |
+| 844 x 320 and 1000 x 327 shallow landscape (acceptance; capture assertions to be added by function) | system, all seven scenes, with and without the error banner | every visible stage, pane, open panel, device, phone and content box at scroll size = client size; keyring clear of the Mobius head, switcher, open panel, app pane, brand, language and scene navigation; check-in after a keyring PANIC fits the Transaction receipt |
 | 1440 x 900, reduced motion | system | No running animations on the dock after the transition |
 | 1440 x 900 interaction | system | Drag rotates the model; no keyring tool chrome; confirm and panic presses return Mobius receipts and panic opens check-in |
 
