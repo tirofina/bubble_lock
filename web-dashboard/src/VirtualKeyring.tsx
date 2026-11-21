@@ -11,13 +11,15 @@ interface Pose { readonly rotateX: number; readonly rotateY: number; readonly x:
 interface Gesture { readonly pointerId: number; readonly x: number; readonly y: number; readonly pose: Pose }
 
 const initialPose: Pose = { rotateX: 8, rotateY: -10, x: 0, y: 0 };
-const limits = { rotateX: 32, rotateY: 58, x: 72, y: 32 } as const;
+const limits = { rotateX: 32, rotateY: 58, minX: -16, maxX: 72, minY: -32, maxY: 16 } as const;
 const clamp = (value: number, minimum: number, maximum: number) => Math.min(maximum, Math.max(minimum, value));
 
-export function VirtualKeyring({ snapshot, runAction, onVerified, guidedAction = null }: {
+export function VirtualKeyring({ snapshot, runAction, onActionStart, onVerified, onFailed, guidedAction = null }: {
   readonly snapshot: StorySessionSnapshot | null;
   readonly runAction: (action: StoryServerAction, idempotencyKey: string) => Promise<StorySessionSnapshot>;
-  readonly onVerified?: (action: KeyringAction) => void;
+  readonly onActionStart?: (action: KeyringAction) => void;
+  readonly onVerified?: (action: KeyringAction, snapshot: StorySessionSnapshot) => void;
+  readonly onFailed?: (action: KeyringAction) => void;
   readonly guidedAction?: KeyringAction | null;
 }) {
   const { tr } = useLang();
@@ -40,7 +42,7 @@ export function VirtualKeyring({ snapshot, runAction, onVerified, guidedAction =
     if (mode === 'rotate') {
       setPose({ ...start.pose, rotateX: clamp(start.pose.rotateX - dy * 0.35, -limits.rotateX, limits.rotateX), rotateY: clamp(start.pose.rotateY + dx * 0.45, -limits.rotateY, limits.rotateY) });
     } else {
-      setPose({ ...start.pose, x: clamp(start.pose.x + dx, -limits.x, limits.x), y: clamp(start.pose.y + dy, -limits.y, limits.y) });
+      setPose({ ...start.pose, x: clamp(start.pose.x + dx, limits.minX, limits.maxX), y: clamp(start.pose.y + dy, limits.minY, limits.maxY) });
     }
   };
   const pointerEnd = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -59,21 +61,23 @@ export function VirtualKeyring({ snapshot, runAction, onVerified, guidedAction =
       }
       const x = event.key === 'ArrowLeft' ? current.x - step : event.key === 'ArrowRight' ? current.x + step : current.x;
       const y = event.key === 'ArrowUp' ? current.y - step : event.key === 'ArrowDown' ? current.y + step : current.y;
-      return { ...current, x: clamp(x, -limits.x, limits.x), y: clamp(y, -limits.y, limits.y) };
+      return { ...current, x: clamp(x, limits.minX, limits.maxX), y: clamp(y, limits.minY, limits.maxY) };
     });
   };
 
   const press = async (action: KeyringAction) => {
     if (!snapshot || active) return;
+    onActionStart?.(action);
     setActive(action);
     setVerified(null);
     const count = action === 'keyring-confirm' ? snapshot.keyring.confirmPresses + 1 : snapshot.keyring.panicPresses + 1;
     try {
-      await runAction(action, `${action}:${snapshot.browserSession.id}:${count}`);
+      const next = await runAction(action, `${action}:${snapshot.browserSession.id}:${count}`);
       setVerified(action);
-      onVerified?.(action);
+      onVerified?.(action, next);
     } catch {
       setVerified(null);
+      onFailed?.(action);
     } finally {
       setActive(null);
     }

@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { Icon } from './Icon.tsx';
 import { LangToggle, useLang } from './i18n.tsx';
 import { StoryMobiusPanel } from './StoryMobiusPanel.tsx';
+import { VirtualKeyring } from './VirtualKeyring.tsx';
 import { useStorySession } from './story-session.ts';
 import type { StorySessionSnapshot } from './story-session.ts';
 
@@ -14,6 +15,9 @@ export function resolveStoryScene(value: string | undefined): StoryScene {
 }
 
 type PendingAction = 'approve' | 'all-on' | 'expire' | 'call' | 'share' | null;
+type DemoStage = 'intro' | 'sending' | 'system';
+type PortraitChoice = 'ask' | 'continue';
+type KeyringAction = 'keyring-confirm' | 'keyring-panic';
 
 function careCycle(snapshot: StorySessionSnapshot | null): number {
   return snapshot?.mobius.events.filter((event) => event.type === 'CARE_GRANT_APPROVED').length ?? 0;
@@ -239,15 +243,90 @@ function StoryFooter({ scene }: { readonly scene: StoryScene }) {
   </nav>;
 }
 
+function StoryStepper({ scene }: { readonly scene: StoryScene }) {
+  const { tr } = useLang();
+  const labels: Record<StoryScene, string> = {
+    login: tr('시작', 'Start'),
+    'activity-away': tr('외출', 'Went out'),
+    'activity-home': tr('귀가', 'Came home'),
+    'care-request': tr('돌봄 승인', 'Care approval'),
+    'caregiver-shared': tr('거실 제어', 'Room control'),
+    'caregiver-ended': tr('자동 종료', 'Automatic end'),
+    'check-in': tr('안부 확인', 'Check-in'),
+  };
+  const index = storyScenes.indexOf(scene);
+  const previous = storyScenes[(index + storyScenes.length - 1) % storyScenes.length]!;
+  const next = storyScenes[(index + 1) % storyScenes.length]!;
+  return <nav className="story-stepper" aria-label={tr('이야기 장면', 'Story scenes')}>
+    <a className="story-stepper-prev" href={`#/story/${previous}`} aria-label={tr('이전 장면', 'Previous scene')}><Icon name="chevron" size={18} style={{ transform: 'rotate(180deg)' }} /></a>
+    <ol>{storyScenes.map((item, itemIndex) => <li key={item}>
+      <a
+        className={`story-stepper-item${item === scene ? ' is-current' : ''}${itemIndex < index ? ' is-past' : ''}`}
+        aria-current={item === scene ? 'page' : undefined}
+        aria-label={`${itemIndex + 1}. ${labels[item]}`}
+        href={`#/story/${item}`}
+      ><span className="story-stepper-dot" aria-hidden="true" /><span className="story-stepper-label">{itemIndex + 1}. {labels[item]}</span></a>
+    </li>)}</ol>
+    <span className="story-stepper-compact">{index + 1}/{storyScenes.length} {labels[scene]}</span>
+    <a className="story-stepper-next" href={`#/story/${next}`} aria-label={tr('다음 장면', 'Next scene')}><Icon name="chevron" size={18} /></a>
+  </nav>;
+}
+
 export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
   const { tr } = useLang();
   const capture = new URLSearchParams(window.location.search).get('capture') === '1';
   const [loginStep, setLoginStep] = useState(capture ? 3 : scene === 'login' ? 0 : 3);
-  const sessionEnabled = scene !== 'login' || loginStep >= 2;
+  const [demoStage, setDemoStage] = useState<DemoStage>(capture || scene !== 'login' ? 'system' : 'intro');
+  const [portraitChoice, setPortraitChoice] = useState<PortraitChoice>('ask');
+  const [portraitViewport, setPortraitViewport] = useState(() => window.matchMedia('(max-width: 760px) and (orientation: portrait)').matches);
+  const [focusAction, setFocusAction] = useState<KeyringAction | null>(null);
+  const [focusAfterSequence, setFocusAfterSequence] = useState(0);
+  const [freshPath, setFreshPath] = useState<string | null>(null);
+  const sessionEnabled = true;
   const { snapshot, phase, message, refresh, runAction } = useStorySession(sessionEnabled);
   const [pending, setPending] = useState<PendingAction>(null);
   const [callReady, setCallReady] = useState(false);
   const automatic = useRef(new Set<string>());
+  const transitionStarted = useRef(0);
+  const stageTimer = useRef<number | null>(null);
+  const focusAfterSequenceRef = useRef(0);
+  const freshTimer = useRef<number | null>(null);
+  const rotateContinue = useRef<HTMLButtonElement | null>(null);
+  const promptReturnFocus = useRef<HTMLElement | null>(null);
+  const guidedAction: KeyringAction | null = scene === 'check-in' ? 'keyring-panic'
+    : scene === 'login' || scene === 'activity-away' || scene === 'activity-home' ? 'keyring-confirm' : null;
+  const orientationPromptOpen = !capture && portraitViewport && portraitChoice === 'ask';
+
+  useEffect(() => () => {
+    if (freshTimer.current !== null) window.clearTimeout(freshTimer.current);
+    if (stageTimer.current !== null) window.clearTimeout(stageTimer.current);
+  }, []);
+
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 760px) and (orientation: portrait)');
+    const syncOrientation = () => setPortraitViewport(query.matches);
+    syncOrientation();
+    query.addEventListener('change', syncOrientation);
+    return () => query.removeEventListener('change', syncOrientation);
+  }, []);
+
+  useEffect(() => {
+    if (!orientationPromptOpen) return;
+    promptReturnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const frame = window.requestAnimationFrame(() => rotateContinue.current?.focus());
+    return () => {
+      window.cancelAnimationFrame(frame);
+      const previous = promptReturnFocus.current;
+      promptReturnFocus.current = null;
+      if (previous && previous !== document.body && previous.isConnected) previous.focus();
+    };
+  }, [orientationPromptOpen]);
+
+  useEffect(() => {
+    if (capture || scene !== 'login' || demoStage !== 'intro') return;
+    const hasKeyringPress = snapshot?.mobius.events.some((event) => event.action === 'keyring-confirm' || event.action === 'keyring-panic') === true;
+    if (hasKeyringPress) setDemoStage('system');
+  }, [capture, demoStage, scene, snapshot]);
 
   useEffect(() => {
     if (scene !== 'login') { setLoginStep(3); return; }
@@ -264,21 +343,17 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
       const verified = setTimeout(() => setLoginStep(3), 350);
       return () => clearTimeout(verified);
     }
-    if (!capture) {
-      const enter = setTimeout(() => { window.location.hash = '#/story/activity-away'; }, 1100);
-      return () => clearTimeout(enter);
-    }
   }, [capture, loginStep, scene, snapshot]);
 
   useEffect(() => {
-    if (!snapshot) return;
+    if (!snapshot || demoStage !== 'system') return;
     const action = scene === 'activity-away' ? 'activity-away' : scene === 'activity-home' ? 'activity-home' : scene === 'check-in' ? 'check-in' : null;
     if (!action) return;
     const key = `${snapshot.browserSession.id}:scene:${action}`;
     if (automatic.current.has(key)) return;
     automatic.current.add(key);
     void runAction(action, `scene:${action}:v1`).catch(() => automatic.current.delete(key));
-  }, [runAction, scene, snapshot]);
+  }, [demoStage, runAction, scene, snapshot]);
 
   useEffect(() => {
     if (scene !== 'caregiver-ended' || !snapshot || snapshot.care.status === 'expired' || pending === 'expire') return;
@@ -341,22 +416,91 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
     } finally { setPending(null); }
   };
 
-  const keyringVerified = (action: 'keyring-confirm' | 'keyring-panic') => {
-    if (action === 'keyring-panic') setTimeout(() => { window.location.hash = '#/story/check-in'; }, 650);
+  const keyringStarted = (action: KeyringAction) => {
+    const sequence = snapshot?.mobius.events[0]?.sequence ?? 0;
+    focusAfterSequenceRef.current = sequence;
+    setFocusAfterSequence(sequence);
+    setFocusAction(action);
+    setFreshPath(null);
+    if (demoStage === 'intro') {
+      transitionStarted.current = performance.now();
+      setDemoStage('sending');
+    } else {
+      transitionStarted.current = 0;
+    }
+  };
+
+  const keyringVerified = (action: KeyringAction, next: StorySessionSnapshot) => {
+    const actionEvents = next.mobius.events.filter((event) => event.action === action && event.sequence > focusAfterSequenceRef.current);
+    const primary = actionEvents.find((event) => event.type !== 'KEYRING_BUTTON_OBSERVATION') ?? actionEvents[0];
+    if (primary) {
+      setFreshPath(primary.resource);
+      if (freshTimer.current !== null) window.clearTimeout(freshTimer.current);
+      freshTimer.current = window.setTimeout(() => setFreshPath(null), 4000);
+    }
+    const settle = () => {
+      transitionStarted.current = 0;
+      stageTimer.current = null;
+      setDemoStage('system');
+      if (scene === 'login') window.location.hash = action === 'keyring-panic' ? '#/story/check-in' : '#/story/activity-away';
+      else if (action === 'keyring-panic') window.location.hash = '#/story/check-in';
+    };
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const elapsed = transitionStarted.current > 0 ? performance.now() - transitionStarted.current : 640;
+    if (stageTimer.current !== null) window.clearTimeout(stageTimer.current);
+    stageTimer.current = window.setTimeout(settle, reduced ? 0 : Math.max(0, 640 - elapsed));
+  };
+
+  const keyringFailed = () => {
+    if (stageTimer.current !== null) window.clearTimeout(stageTimer.current);
+    stageTimer.current = null;
+    if (transitionStarted.current > 0) setDemoStage('intro');
+    transitionStarted.current = 0;
+    setFreshPath(null);
+  };
+
+  const continueUpright = () => {
+    setPortraitChoice('continue');
+    if (demoStage !== 'intro') return;
+    transitionStarted.current = performance.now();
+    setDemoStage('sending');
+    const settle = () => {
+      transitionStarted.current = 0;
+      stageTimer.current = null;
+      setDemoStage('system');
+      if (scene === 'login') window.location.hash = '#/story/activity-away';
+    };
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (stageTimer.current !== null) window.clearTimeout(stageTimer.current);
+    stageTimer.current = window.setTimeout(settle, reduced ? 0 : 640);
   };
 
   const startStory = () => { window.location.hash = '#/story/activity-away'; };
   const retry = () => { void refresh(); };
   const careStatus = snapshot?.care.status ?? 'ready';
 
-  return <div className={`story-demo${capture ? ' capture' : ''}`}>
-    <a className="skip" href="#story-app" onClick={(event) => { event.preventDefault(); document.getElementById('story-app')?.focus(); }}>{tr('앱 화면으로 건너뛰기', 'Skip to the app')}</a>
-    <header className="story-topbar">
+  return <div className={`story-demo${capture ? ' capture' : ''}`} data-stage={demoStage} data-portrait={portraitChoice}>
+    <a className="skip" href="#story-app" tabIndex={orientationPromptOpen ? -1 : undefined} aria-hidden={orientationPromptOpen} onClick={(event) => { event.preventDefault(); document.getElementById('story-app')?.focus(); }}>{tr('앱 화면으로 건너뛰기', 'Skip to the app')}</a>
+    <header className="story-topbar" inert={orientationPromptOpen}>
       <a className="story-brand" href="#/"><span aria-hidden="true"><Icon name="bubble" size={22} /></span>BubbleLock</a>
+      <StoryStepper scene={scene} />
+      <a className="story-topbar-link" href="#/user/overview">{tr('가족 대시보드', 'Family dashboard')}</a>
       <LangToggle />
     </header>
-    <StoryGuide scene={scene} />
-    <main className="story-stage">
+    <section className="story-intro" inert={demoStage !== 'intro'} aria-hidden={demoStage !== 'intro'}>
+      <h1 className="story-sr">{tr('Privacy Bubble 키링 시연', 'Privacy Bubble keyring demo')}</h1>
+      <p className="story-intro-hint" aria-live="polite"><i className={`story-intro-dot ${guidedAction === 'keyring-panic' ? 'panic' : 'confirm'}`} aria-hidden="true" />
+        {message ?? (guidedAction === 'keyring-panic' ? tr('주황 버튼을 눌러 보세요', 'Press the orange button') : tr('파란 버튼을 눌러 보세요', 'Press the blue button'))}
+      </p>
+    </section>
+    <div className="story-rotate" role="dialog" aria-modal="true" aria-labelledby="story-rotate-title" aria-describedby="story-rotate-body" aria-hidden={!orientationPromptOpen} inert={!orientationPromptOpen}>
+      <span className="story-rotate-glyph" aria-hidden="true"><Icon name="activity" size={28} /></span>
+      <p className="story-rotate-title" id="story-rotate-title">{tr('최적화된 데모를 위해 가로로 돌려 주세요', 'Turn your phone sideways for the optimized demo')}</p>
+      <p className="story-rotate-body" id="story-rotate-body">{tr('키링, Mobius 리소스 브라우저, 앱 동작을 한 화면에서 함께 볼 수 있습니다.', 'See the keyring, Mobius Resource Browser and app behavior together on one screen.')}</p>
+      <button className="story-rotate-continue" ref={rotateContinue} type="button" onClick={continueUpright}>{tr('세로로 계속 보기', 'Continue upright')}</button>
+    </div>
+    <main className="story-stage" inert={demoStage !== 'system' || orientationPromptOpen}>
+      <StoryMobiusPanel scene={scene} snapshot={snapshot} phase={phase} message={message} refresh={refresh} focusAction={focusAction} focusAfterSequence={focusAfterSequence} freshPath={freshPath} />
       <div className="story-app-column">
         <div className="story-device">
           <div className="story-phone" id="story-app" role="region" aria-label={tr('Privacy Bubble 앱', 'Privacy Bubble app')} tabIndex={-1}>
@@ -372,9 +516,17 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
             <span className="story-home-indicator" aria-hidden="true" />
           </div>
         </div>
-        <StoryFooter scene={scene} />
       </div>
-      <StoryMobiusPanel scene={scene} snapshot={snapshot} phase={phase} message={message} runAction={runAction} refresh={refresh} onKeyringVerified={keyringVerified} />
     </main>
+    <div className="keyring-dock" inert={orientationPromptOpen} data-guided={guidedAction === 'keyring-panic' ? 'panic' : guidedAction === 'keyring-confirm' ? 'confirm' : 'none'}>
+      <VirtualKeyring
+        snapshot={snapshot}
+        runAction={runAction}
+        guidedAction={guidedAction}
+        onActionStart={keyringStarted}
+        onVerified={keyringVerified}
+        onFailed={keyringFailed}
+      />
+    </div>
   </div>;
 }

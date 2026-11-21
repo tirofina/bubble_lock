@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from './Icon.tsx';
-import { useLang } from './i18n.tsx';
 import type { StorySessionSnapshot, StoryTrace } from './story-session.ts';
 
 type NodeKind = 'cse' | 'ae' | 'container' | 'group' | 'fanout' | 'contentInstance';
@@ -18,28 +17,37 @@ interface MobiusTreeNode {
   readonly children: MobiusTreeNode[];
 }
 
+const KIND: Record<NodeKind, { readonly name: string; readonly tag: string; readonly ty: number | null }> = {
+  cse: { name: 'CSEBase', tag: 'm2m:cb', ty: 5 },
+  ae: { name: 'applicationEntity', tag: 'm2m:ae', ty: 2 },
+  container: { name: 'container', tag: 'm2m:cnt', ty: 3 },
+  contentInstance: { name: 'contentInstance', tag: 'm2m:cin', ty: 4 },
+  group: { name: 'group', tag: 'm2m:grp', ty: 9 },
+  fanout: { name: 'fanOutPoint', tag: 'fopt', ty: null },
+};
+
 const DEVICE_NAMES = [
-  ['living-room-light', '거실 조명', 'Living-room light'],
-  ['living-room-tv', '거실 TV', 'Living-room TV'],
-  ['living-room-fan', '거실 선풍기', 'Living-room fan'],
+  ['living-room-light', 'Living-room light'],
+  ['living-room-tv', 'Living-room TV'],
+  ['living-room-fan', 'Living-room fan'],
 ] as const;
 
-const EVENT_LABELS: Readonly<Record<string, readonly [string, string]>> = {
-  SESSION_STARTED: ['브라우저 세션', 'Browser session'],
-  PRESENCE_CHANGED: ['외출·귀가 상태', 'Presence state'],
-  CARE_GRANT_APPROVED: ['돌봄 권한 승인', 'Care grant'],
-  ROOM_GROUP_ON: ['거실 그룹 켜기', 'Room group on'],
-  ROOM_GROUP_OFF: ['거실 그룹 끄기', 'Room group off'],
-  GRANT_EXPIRED: ['돌봄 권한 만료', 'Grant expiry'],
-  ROUTINE_ALERT: ['안부 확인 알림', 'Check-in alert'],
-  CHECK_IN_CALL_STARTED: ['안부 전화', 'Check-in call'],
-  SHARE_DRAFT: ['위치 공유 초안', 'Share draft'],
-  GUARDIAN_DECISION: ['보호자 승인', 'Guardian decision'],
-  LOCATION_LEASE: ['5분 위치 공유', 'Five-minute location lease'],
-  LOCATION_LEASE_EXPIRED: ['위치 공유 만료', 'Location lease expiry'],
-  KEYRING_BUTTON_OBSERVATION: ['키링 버튼 관측', 'Keyring button observation'],
-  RESIDENT_CONFIRMED: ['거주자 안전 확인', 'Resident confirmed'],
-  PANIC_ALERT: ['키링 비상 알림', 'Keyring panic alert'],
+const EVENT_LABELS: Readonly<Record<string, string>> = {
+  SESSION_STARTED: 'Browser session',
+  PRESENCE_CHANGED: 'Presence state',
+  CARE_GRANT_APPROVED: 'Care grant',
+  ROOM_GROUP_ON: 'Room group ON',
+  ROOM_GROUP_OFF: 'Room group OFF',
+  GRANT_EXPIRED: 'Grant expiry',
+  ROUTINE_ALERT: 'Check-in alert',
+  CHECK_IN_CALL_STARTED: 'Check-in call',
+  SHARE_DRAFT: 'Location-share draft',
+  GUARDIAN_DECISION: 'Guardian decision',
+  LOCATION_LEASE: 'Five-minute location lease',
+  LOCATION_LEASE_EXPIRED: 'Location lease expiry',
+  KEYRING_BUTTON_OBSERVATION: 'Keyring button observation',
+  RESIDENT_CONFIRMED: 'Resident confirmation',
+  PANIC_ALERT: 'Keyring PANIC alert',
 };
 
 function resourceName(path: string): string {
@@ -67,7 +75,7 @@ function node(path: string, name: string, kind: NodeKind, detail: string, option
 }
 
 function eventNode(event: StoryTrace, path = event.resource): MobiusTreeNode {
-  return node(path, resourceName(path), 'contentInstance', event.detail, {
+  return node(path, resourceName(path), 'contentInstance', `CREATE RSC ${event.createRsc}; RETRIEVE RSC ${event.retrieveRsc}; payload readback ${event.verified ? 'verified' : 'pending'}.`, {
     rsc: event.retrieveRsc,
     verified: event.verified,
     eventType: event.type,
@@ -77,24 +85,24 @@ function eventNode(event: StoryTrace, path = event.resource): MobiusTreeNode {
 function buildTree(snapshot: StorySessionSnapshot): MobiusTreeNode[] {
   const rootPath = snapshot.mobius.root;
   const parts = rootPath.split('/').filter(Boolean);
-  const csePath = `/${parts[0] ?? snapshot.mobius.cse}`;
+  const csePath = `/${parts[0] ?? 'Mobius'}`;
   const storyPath = parts.length > 1 ? `/${parts.slice(0, -1).join('/')}` : rootPath;
   const aePath = parts.length > 2 ? `/${parts.slice(0, -2).join('/')}` : csePath;
-  const cse = node(csePath, snapshot.mobius.cse, 'cse', '실제 oneM2M CSE 바인딩');
-  const ae = node(aePath, resourceName(aePath), 'ae', '스토리 데모 AE');
-  const story = node(storyPath, resourceName(storyPath), 'container', '브라우저별 세션 상위 컨테이너');
-  const session = node(rootPath, resourceName(rootPath), 'container', `${snapshot.browserSession.id} 전용 세션 컨테이너`);
+  const cse = node(csePath, resourceName(csePath), 'cse', `Mobius4 CSEBase; CSE-ID ${snapshot.mobius.cse}.`);
+  const ae = node(aePath, resourceName(aePath), 'ae', 'Story-demo application entity registered on this CSE.');
+  const story = node(storyPath, resourceName(storyPath), 'container', 'Parent container for browser-isolated story sessions.');
+  const session = node(rootPath, resourceName(rootPath), 'container', `Container bound to browser session ${snapshot.browserSession.id}.`);
   cse.children.push(ae);
   ae.children.push(story);
   story.children.push(session);
 
   const devices = new Map<string, MobiusTreeNode>();
-  for (const [resource, ko] of DEVICE_NAMES) {
-    const device = node(`${rootPath}/${resource}`, ko, 'container', '그룹 명령 대상 컨테이너');
+  for (const [resource, label] of DEVICE_NAMES) {
+    const device = node(`${rootPath}/${resource}`, label, 'container', 'Target container for oneM2M group fan-out readback.');
     devices.set(resource, device);
     session.children.push(device);
   }
-  const keyring = node(`${rootPath}/keyring-observation`, '키링 관측', 'container', '펌웨어가 전달한 키링 버튼 관측');
+  const keyring = node(`${rootPath}/keyring-observation`, 'Keyring observations', 'container', 'Container for button observations delivered by the keyring path.');
   session.children.push(keyring);
 
   let group: MobiusTreeNode | null = null;
@@ -105,11 +113,13 @@ function buildTree(snapshot: StorySessionSnapshot): MobiusTreeNode[] {
       const groupPath = event.resource.slice(0, fanoutAt);
       if (!group) {
         const removed = snapshot.care.status === 'expired';
-        group = node(groupPath, resourceName(groupPath), 'group', removed ? '서버 마감 후 RETRIEVE RSC 4004 확인' : '승인 범위에 묶인 임시 그룹', {
+        group = node(groupPath, resourceName(groupPath), 'group', removed
+          ? 'The temporary group was deleted at the server deadline; RETRIEVE returns RSC 4004.'
+          : 'Temporary group whose memberIDs are limited to the approved living-room resources.', {
           rsc: removed ? 4004 : 2000,
           status: removed ? 'removed' : 'active',
         });
-        fanout = node(`${groupPath}/fopt`, 'fopt', 'fanout', '한 번의 CREATE를 세 구성원에 배포');
+        fanout = node(`${groupPath}/fopt`, 'fopt', 'fanout', 'Virtual fanOutPoint: one request is distributed to every group member.');
         group.children.push(fanout);
         ae.children.push(group);
       }
@@ -118,7 +128,7 @@ function buildTree(snapshot: StorySessionSnapshot): MobiusTreeNode[] {
       event.members.forEach((member, index) => {
         const deviceName = DEVICE_NAMES[index]?.[0];
         const device = deviceName ? devices.get(deviceName) : undefined;
-        if (device && rn) device.children.push(node(`${device.path}/${rn}`, rn, 'contentInstance', `${member.label} ${member.state ? 'ON' : 'OFF'} readback`, {
+        if (device && rn) device.children.push(node(`${device.path}/${rn}`, rn, 'contentInstance', `${member.label}: ${member.state ? 'ON' : 'OFF'}; member readback RSC ${member.rsc}.`, {
           rsc: member.rsc,
           verified: member.verified,
           eventType: event.type,
@@ -140,56 +150,85 @@ function flatten(nodes: readonly MobiusTreeNode[]): MobiusTreeNode[] {
   return nodes.flatMap((item) => [item, ...flatten(item.children)]);
 }
 
-function kindLabel(kind: NodeKind, ko: boolean): string {
-  const labels: Record<NodeKind, readonly [string, string]> = {
-    cse: ['CSE', 'CSE'], ae: ['AE', 'AE'], container: ['컨테이너', 'container'], group: ['그룹', 'group'],
-    fanout: ['팬아웃', 'fan-out'], contentInstance: ['기록', 'contentInstance'],
-  };
-  return labels[kind][ko ? 0 : 1];
+function containsPath(item: MobiusTreeNode, path: string | null): boolean {
+  return path !== null && (item.path === path || item.children.some((child) => containsPath(child, path)));
 }
 
-function TreeBranch({ item, depth, selected, onSelect }: {
+function kindLabel(kind: NodeKind): string {
+  const value = KIND[kind];
+  return value.ty === null ? `${value.name} <${value.tag}>` : `${value.name} / ${value.tag} / ty=${value.ty}`;
+}
+
+function TreeBranch({ item, depth, selected, freshPath, onSelect }: {
   readonly item: MobiusTreeNode;
   readonly depth: number;
   readonly selected: string;
+  readonly freshPath: string | null;
   readonly onSelect: (item: MobiusTreeNode) => void;
 }) {
-  const { lang } = useLang();
   const [open, setOpen] = useState(depth < 4);
-  const label = item.eventType ? EVENT_LABELS[item.eventType]?.[lang === 'en' ? 1 : 0] ?? item.eventType : item.name;
+  const fresh = item.path === freshPath;
+  const freshWithin = containsPath(item, freshPath);
+  useEffect(() => {
+    if (freshWithin) setOpen(true);
+  }, [freshWithin]);
+  const label = item.eventType ? EVENT_LABELS[item.eventType] ?? item.eventType : item.name;
   const line = <>
     <span className={`mobius-node-dot kind-${item.kind}`} aria-hidden="true" />
     <span className="mobius-node-name">{label}</span>
-    <small>{kindLabel(item.kind, lang === 'ko')}</small>
-    <b className={item.verified ? 'verified' : ''}>RSC {item.rsc}</b>
+    <small>{kindLabel(item.kind)}</small>
+    <b className={item.verified ? 'verified' : ''}>RETRIEVE / RSC {item.rsc}</b>
   </>;
+  const className = `${selected === item.id ? 'selected' : ''}${fresh ? ' is-fresh' : ''}`.trim();
   if (item.children.length === 0) return <li className="mobius-tree-leaf">
-    <button type="button" className={selected === item.id ? 'selected' : ''} onClick={() => onSelect(item)}>{line}</button>
+    <button type="button" className={className} data-path={item.path} data-fresh={fresh || undefined} onClick={() => onSelect(item)}>{line}</button>
   </li>;
   return <li>
     <details open={open} onToggle={(event) => setOpen(event.currentTarget.open)}>
-      <summary className={selected === item.id ? 'selected' : ''} onClick={() => onSelect(item)}>{line}</summary>
-      <ul>{item.children.map((child) => <TreeBranch key={child.id} item={child} depth={depth + 1} selected={selected} onSelect={onSelect} />)}</ul>
+      <summary className={className} data-path={item.path} data-fresh={fresh || undefined} onClick={() => onSelect(item)}>{line}</summary>
+      <ul>{item.children.map((child) => <TreeBranch key={child.id} item={child} depth={depth + 1} selected={selected} freshPath={freshPath} onSelect={onSelect} />)}</ul>
     </details>
   </li>;
 }
 
-export function StoryMobiusTree({ snapshot, onRefresh }: {
+export function StoryMobiusTree({ snapshot, freshPath = null, onRefresh }: {
   readonly snapshot: StorySessionSnapshot | null;
+  readonly freshPath?: string | null;
   readonly onRefresh?: () => Promise<unknown> | unknown;
 }) {
-  const { lang, tr } = useLang();
   const roots = useMemo(() => snapshot ? buildTree(snapshot) : [], [snapshot]);
   const nodes = useMemo(() => flatten(roots), [roots]);
-  const preferred = nodes.find((item) => item.path === snapshot?.mobius.root) ?? nodes[0] ?? null;
+  const preferred = nodes.find((item) => item.path === freshPath)
+    ?? nodes.find((item) => item.path === snapshot?.mobius.root) ?? nodes[0] ?? null;
   const [selectedId, setSelectedId] = useState('');
   const [copied, setCopied] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const scroll = useRef<HTMLDivElement | null>(null);
   const selected = nodes.find((item) => item.id === selectedId) ?? preferred;
 
   useEffect(() => {
     if (preferred && !nodes.some((item) => item.id === selectedId)) setSelectedId(preferred.id);
   }, [nodes, preferred, selectedId]);
+
+  useEffect(() => {
+    if (!freshPath) return;
+    const fresh = nodes.find((item) => item.path === freshPath);
+    if (fresh) setSelectedId(fresh.id);
+    const frame = window.requestAnimationFrame(() => {
+      const box = scroll.current;
+      const freshNode = box?.querySelector<HTMLElement>('[data-fresh="true"]');
+      if (!box || !freshNode) return;
+      const boxRect = box.getBoundingClientRect();
+      const nodeRect = freshNode.getBoundingClientRect();
+      const nodeTop = nodeRect.top - boxRect.top + box.scrollTop;
+      const centeredTop = nodeTop - (box.clientHeight - nodeRect.height) / 2;
+      box.scrollTo({
+        top: Math.max(0, centeredTop),
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [freshPath, nodes]);
 
   const copyPath = async () => {
     if (!selected) return;
@@ -205,19 +244,19 @@ export function StoryMobiusTree({ snapshot, onRefresh }: {
     try { await onRefresh(); } finally { setRefreshing(false); }
   };
 
-  return <div className="mobius-tree-view">
+  return <div className="mobius-tree-view" lang="en">
     <div className="mobius-tree-toolbar">
-      <p><strong>{tr('실제 CSE 자원', 'Live CSE resources')}</strong><span>{tr(`${nodes.length}개 노드`, `${nodes.length} nodes`)}</span></p>
-      <button type="button" onClick={() => void refresh()} disabled={!snapshot || refreshing} aria-label={tr('Mobius 트리 다시 읽기', 'Read the Mobius tree again')}><Icon name="refresh" size={16} />{refreshing ? tr('동기화 중', 'Syncing') : tr('동기화', 'Sync')}</button>
+      <p><strong>CSE resource tree</strong><span>{nodes.length} resources</span></p>
+      <button type="button" onClick={() => void refresh()} disabled={!snapshot || refreshing} aria-label="Retrieve the Mobius resource tree again"><Icon name="refresh" size={16} />{refreshing ? 'Retrieving' : 'Sync'}</button>
     </div>
-    {roots.length > 0 ? <div className="mobius-tree-scroll"><ul className="mobius-tree" role="tree">
-      {roots.map((item) => <TreeBranch key={item.id} item={item} depth={0} selected={selected?.id ?? ''} onSelect={(next) => { setSelectedId(next.id); setCopied(false); }} />)}
-    </ul></div> : <p className="story-server-wait">{tr('Mobius 세션 트리를 연결하고 있어요.', 'Connecting the Mobius session tree.')}</p>}
+    {roots.length > 0 ? <div className="mobius-tree-scroll" ref={scroll}><ul className="mobius-tree" role="tree">
+      {roots.map((item) => <TreeBranch key={item.id} item={item} depth={0} selected={selected?.id ?? ''} freshPath={freshPath} onSelect={(next) => { setSelectedId(next.id); setCopied(false); }} />)}
+    </ul></div> : <p className="story-server-wait">Connecting to the Mobius CSE resource tree.</p>}
     {selected ? <div className="mobius-node-detail" aria-live="polite">
-      <div><span>{kindLabel(selected.kind, lang === 'ko')}</span><b>{selected.status === 'removed' ? tr('만료·삭제 확인', 'Expiry and deletion verified') : selected.verified ? tr('RETRIEVE 확인', 'RETRIEVE verified') : tr('확인 중', 'Verifying')}</b></div>
+      <div><span>{kindLabel(selected.kind)}</span><b>{selected.status === 'removed' ? 'DELETE verified, RETRIEVE RSC 4004' : selected.verified ? `RETRIEVE verified, RSC ${selected.rsc}` : 'RETRIEVE pending'}</b></div>
       <code>{selected.path}</code>
       <p>{selected.detail}</p>
-      <button type="button" onClick={() => void copyPath()}>{copied ? tr('경로 복사 완료', 'Path copied') : tr('전체 경로 복사', 'Copy full path')}</button>
+      <button type="button" onClick={() => void copyPath()}>{copied ? 'Path copied' : 'Copy full path'}</button>
     </div> : null}
   </div>;
 }

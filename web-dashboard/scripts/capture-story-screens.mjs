@@ -93,10 +93,16 @@ try {
   const created = await (await fetch(`http://127.0.0.1:${debugPort}/json/new?about:blank`, { method: 'PUT' })).json();
   const socket = new WebSocket(created.webSocketDebuggerUrl);
   await new Promise((resolve, reject) => { socket.onopen = resolve; socket.onerror = reject; });
-  let nextId = 1; const pending = new Map();
-  socket.onmessage = (message) => { const data = JSON.parse(message.data); if (data.id && pending.has(data.id)) { pending.get(data.id)(data); pending.delete(data.id); } };
+  let nextId = 1; const pending = new Map(); const actionResponses = [];
+  socket.onmessage = (message) => {
+    const data = JSON.parse(message.data);
+    if (data.id && pending.has(data.id)) { pending.get(data.id)(data); pending.delete(data.id); return; }
+    if (data.method === 'Network.responseReceived' && data.params?.response?.url?.includes('/api/story/action')) {
+      actionResponses.push({ status: data.params.response.status, url: data.params.response.url });
+    }
+  };
   const send = (method, params = {}) => new Promise((resolve) => { const id = nextId++; pending.set(id, resolve); socket.send(JSON.stringify({ id, method, params })); });
-  await send('Page.enable'); await send('Runtime.enable');
+  await send('Page.enable'); await send('Runtime.enable'); await send('Network.enable');
   const evaluate = async (expression) => (await send('Runtime.evaluate', { expression, returnByValue: true })).result?.result?.value;
   const waitFor = async (expression, label, timeout = 15000) => {
     const end = Date.now() + timeout;
@@ -110,15 +116,121 @@ try {
     await waitFor(`document.body?.innerText.includes(${JSON.stringify(expected)})`, expected);
     await delay(400);
   };
-  const shot = async (name) => {
+  const shot = async (name, width = 390, height = 844) => {
     const result = await send('Page.captureScreenshot', { format: 'png' });
     const bytes = Buffer.from(result.result.data, 'base64');
     await writeFile(join(outDir, `${name}.png`), bytes);
-    captured.push({ name, width: 390, height: 844, file: `${name}.png`, sha256: createHash('sha256').update(bytes).digest('hex') });
+    captured.push({ name, width, height, file: `${name}.png`, sha256: createHash('sha256').update(bytes).digest('hex') });
+  };
+  const clearStorySession = async () => {
+    await send('Network.clearBrowserCookies');
+    await send('Page.navigate', { url: 'about:blank' });
+    await delay(120);
+  };
+  const clickCenter = async (selector) => {
+    const point = await evaluate(`(() => { const element=document.querySelector(${JSON.stringify(selector)}); if(!element)return null; const rect=element.getBoundingClientRect(); return {x:rect.left+rect.width/2,y:rect.top+rect.height/2}; })()`);
+    if (!point) throw new Error(`Missing click target ${selector}`);
+    await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: point.x, y: point.y, button: 'left', clickCount: 1 });
+    await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: point.x, y: point.y, button: 'left', clickCount: 1 });
+  };
+  const waitForAction200 = async (startIndex, label) => {
+    const end = Date.now() + 20000;
+    while (Date.now() < end) {
+      const response = actionResponses.slice(startIndex).find((item) => item.status === 200);
+      if (response) return response;
+      await delay(120);
+    }
+    throw new Error(`Timed out waiting for HTTP 200: ${label}; responses=${JSON.stringify(actionResponses.slice(startIndex))}`);
   };
   for (const [name, scene, expected] of scenes) { await openScene(scene, expected); await shot(name); }
 
+  // The public entry starts with one product, then the same keyring travels into the verified system layout.
+  await clearStorySession();
+  await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
+  await send('Emulation.setEmulatedMedia', { features: [
+    { name: 'prefers-color-scheme', value: 'light' },
+    { name: 'prefers-reduced-motion', value: 'no-preference' },
+  ] });
+  await send('Page.navigate', { url: `${previewUrl}/?lang=en#/story/login` });
+  await waitFor("document.querySelector('.story-demo')?.dataset.stage === 'intro' && !document.querySelector('.keyring-physical-button.confirm')?.disabled", 'desktop keyring intro');
+  await delay(300);
+  const introLayout = await evaluate(`(() => {
+    const visible = (element) => { if(!element)return false; const rect=element.getBoundingClientRect(); const style=getComputedStyle(element); return rect.width>0 && rect.height>0 && style.display!=='none' && style.visibility!=='hidden' && Number(style.opacity)>0; };
+    const model=document.querySelector('.keyring-model')?.getBoundingClientRect();
+    return {
+      intro: visible(document.querySelector('.story-intro')),
+      dock: visible(document.querySelector('.keyring-dock')),
+      visiblePanels: [...document.querySelectorAll('.story-panel-card')].filter(visible).length,
+      modelWidth: model?.width ?? 0,
+    };
+  })()`);
+  if (!introLayout.intro || !introLayout.dock || introLayout.visiblePanels !== 0 || introLayout.modelWidth < 200) {
+    throw new Error(`desktop intro contract failed: ${JSON.stringify(introLayout)}`);
+  }
+  let keyboardReachedConfirm = false;
+  for (let index = 0; index < 12 && !keyboardReachedConfirm; index += 1) {
+    await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
+    await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
+    keyboardReachedConfirm = await evaluate("document.activeElement?.classList.contains('confirm') === true");
+  }
+  const focusOutline = await evaluate("(() => { const button=document.querySelector('.keyring-physical-button.confirm'); return button===document.activeElement ? parseFloat(getComputedStyle(button).outlineWidth)||0 : 0; })()");
+  if (!keyboardReachedConfirm || focusOutline < 3) throw new Error(`intro keyboard focus contract failed: reached=${keyboardReachedConfirm}, outline=${focusOutline}`);
+  await shot('story-intro-desktop', 1440, 900);
+  const introResponseIndex = actionResponses.length;
+  await clickCenter('.keyring-physical-button.confirm');
+  await waitForAction200(introResponseIndex, 'intro keyring confirm');
+  await waitFor("document.querySelector('.story-demo')?.dataset.stage === 'system'", 'desktop system transition');
+  await delay(900);
+  await waitFor("Boolean(document.querySelector('[data-event-type=\"RESIDENT_CONFIRMED\"]'))", 'resident confirmation record');
+  await waitFor("Boolean(document.querySelector('[data-fresh=\"true\"]'))", 'fresh Mobius node');
+  const desktopSystemLayout = await evaluate(`(() => {
+    const rect = (selector) => { const value=document.querySelector(selector)?.getBoundingClientRect(); return value ? {left:value.left,right:value.right,top:value.top,bottom:value.bottom,width:value.width,height:value.height} : null; };
+    const dock=rect('.keyring-dock'); const mobius=rect('.story-mobius'); const app=rect('.story-app-column');
+    const mobiusPanel=document.querySelector('.story-mobius');
+    const mobiusText=mobiusPanel?.innerText ?? '';
+    const requiredTerms=['CSEBase','m2m:ae','m2m:cnt','m2m:cin','CREATE','RETRIEVE','RSC'];
+    const clippedText=[...(mobiusPanel?.querySelectorAll('code,h2,h3,strong,small,.mobius-node-name,.mobius-node-detail p') ?? [])].filter((element)=>element.clientWidth>0 && element.scrollWidth>element.clientWidth+1).map((element)=>element.textContent?.trim()).filter(Boolean);
+    const freshNode=document.querySelector('[data-fresh="true"]')?.dataset.path ?? '';
+    const freshRecord=document.querySelector('.story-mobius-events .is-fresh')?.dataset.path ?? '';
+    const tracePaths=[...document.querySelectorAll('[data-trace-path]')].map((item)=>item.dataset.tracePath);
+    const confirm=document.querySelector('.keyring-physical-button.confirm')?.getBoundingClientRect();
+    const top=confirm ? document.elementFromPoint(confirm.left+confirm.width/2,confirm.top+confirm.height/2) : null;
+    const style=getComputedStyle(document.querySelector('.keyring-dock'));
+    return {
+      dock,mobius,app,freshNode,freshRecord,tracePaths,
+      dockLeft:dock?.left,dockBottom:innerHeight-(dock?.bottom??0),
+      background:style.backgroundColor,border:parseFloat(style.borderTopWidth)||0,zIndex:style.zIndex,
+      disjoint:!!dock&&!!mobius&&dock.right<=mobius.left,
+      ordered:!!mobius&&!!app&&mobius.right<=app.left,
+      hit:top?.classList.contains('confirm')===true,
+      englishOnly:mobiusPanel?.getAttribute('lang')==='en' && !/[가-힣]/.test(mobiusText),
+      standardTerms:requiredTerms.every((term)=>mobiusText.includes(term)),
+      clippedText,
+    };
+  })()`);
+  const transparentDock = ['rgba(0, 0, 0, 0)', 'transparent'].includes(desktopSystemLayout.background);
+  const linkedPath = desktopSystemLayout.freshNode && desktopSystemLayout.freshNode === desktopSystemLayout.freshRecord && desktopSystemLayout.tracePaths.includes(desktopSystemLayout.freshNode);
+  if (desktopSystemLayout.dockLeft > 48 || desktopSystemLayout.dockBottom > 48 || !transparentDock || desktopSystemLayout.border !== 0
+    || desktopSystemLayout.zIndex !== '30' || !desktopSystemLayout.disjoint || !desktopSystemLayout.ordered || !linkedPath || !desktopSystemLayout.hit
+    || !desktopSystemLayout.englishOnly || !desktopSystemLayout.standardTerms || desktopSystemLayout.clippedText.length > 0) {
+    throw new Error(`desktop system contract failed: ${JSON.stringify(desktopSystemLayout)}`);
+  }
+  await shot('story-system-desktop', 1440, 900);
+  await send('Emulation.setEmulatedMedia', { features: [
+    { name: 'prefers-color-scheme', value: 'dark' },
+    { name: 'prefers-reduced-motion', value: 'no-preference' },
+  ] });
+  await delay(180);
+  const darkOrder = await evaluate("(() => { const m=document.querySelector('.story-mobius')?.getBoundingClientRect(); const a=document.querySelector('.story-app-column')?.getBoundingClientRect(); return !!m&&!!a&&m.right<=a.left; })()");
+  if (!darkOrder) throw new Error('dark desktop layout contract failed');
+  await shot('story-system-desktop-dark', 1440, 900);
+  await send('Emulation.setEmulatedMedia', { features: [
+    { name: 'prefers-color-scheme', value: 'light' },
+    { name: 'prefers-reduced-motion', value: 'no-preference' },
+  ] });
+
   // The interactive mobile shell owns exactly one viewport. Its lower dock unfolds one panel at a time.
+  await clearStorySession();
   await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
   await send('Page.navigate', { url: `${previewUrl}/?lang=en#/story/activity-away` });
   await waitFor("Boolean(document.querySelector('.story-panel-tabs'))", 'mobile panel dock');
@@ -139,16 +251,78 @@ try {
   if (mobileLayout.width !== mobileLayout.viewportWidth || mobileLayout.height !== mobileLayout.viewportHeight || mobileLayout.smallTargets !== 0) {
     throw new Error(`mobile viewport contract failed: ${JSON.stringify(mobileLayout)}`);
   }
-  await evaluate("[...document.querySelectorAll('.story-panel-tabs button')].find((button)=>button.textContent.includes('Keyring'))?.click()");
   await waitFor("Boolean(document.querySelector('.keyring-physical-button.confirm.is-guided'))", 'guided keyring confirm button');
   if ((await evaluate("document.querySelector('.keyring-model')?.getBoundingClientRect().width")) > 140) throw new Error('mobile keyring is larger than its compact panel contract');
   await evaluate("document.querySelector('.keyring-physical-button.confirm')?.click()");
   await waitFor("document.querySelector('[data-firmware-screen]')?.dataset.firmwareScreen === 'confirm'", 'firmware confirm screen');
-  await waitFor("document.querySelectorAll('.story-panel-tabs .has-new-event').length >= 3", 'panel event highlights');
-  await evaluate("[...document.querySelectorAll('.story-panel-tabs button')].find((button)=>button.textContent.includes('Mobius'))?.click()");
+  await waitFor("document.querySelectorAll('.story-panel-tabs .has-new-event').length >= 2", 'panel event highlights');
+  await evaluate("[...document.querySelectorAll('.story-panel-tabs button')].find((button)=>button.textContent.includes('Resource tree'))?.click()");
   await waitFor("Boolean(document.querySelector('.mobius-node-detail code'))", 'interactive Mobius tree');
   const pathLayout = await evaluate("(() => { const code=document.querySelector('.mobius-node-detail code'); return {text:code?.textContent, width:code?.clientWidth, scrollWidth:code?.scrollWidth}; })()");
   if (!pathLayout.text?.startsWith('/Mobius/') || pathLayout.scrollWidth > pathLayout.width) throw new Error(`Mobius full path layout failed: ${JSON.stringify(pathLayout)}`);
+
+  await clearStorySession();
+  await send('Emulation.setDeviceMetricsOverride', { width: 844, height: 390, deviceScaleFactor: 1, mobile: true });
+  await send('Emulation.setEmulatedMedia', { features: [
+    { name: 'prefers-color-scheme', value: 'light' },
+    { name: 'prefers-reduced-motion', value: 'no-preference' },
+  ] });
+  await send('Page.navigate', { url: `${previewUrl}/?lang=en#/story/login` });
+  await waitFor("document.querySelector('.story-demo')?.dataset.stage === 'intro' && !document.querySelector('.keyring-physical-button.confirm')?.disabled", 'landscape keyring intro');
+  await shot('story-intro-landscape', 844, 390);
+  const landscapeResponseIndex = actionResponses.length;
+  await clickCenter('.keyring-physical-button.confirm');
+  await waitForAction200(landscapeResponseIndex, 'landscape keyring confirm');
+  await waitFor("document.querySelector('.story-demo')?.dataset.stage === 'system'", 'landscape system');
+  await delay(900);
+  const landscapeLayout = await evaluate(`(() => {
+    const rect = (selector) => { const value=document.querySelector(selector)?.getBoundingClientRect(); return value ? {left:value.left,right:value.right,top:value.top,bottom:value.bottom} : null; };
+    const dock=rect('.keyring-dock'); const mobius=rect('.story-mobius'); const app=rect('.story-app-column');
+    const visibleTargets=[...document.querySelectorAll('button,a,summary')].map((element)=>{const r=element.getBoundingClientRect();const s=getComputedStyle(element);return {width:r.width,height:r.height,visible:s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0&&r.right>0&&r.bottom>0&&r.left<innerWidth&&r.top<innerHeight};}).filter((item)=>item.visible);
+    return {
+      width:document.documentElement.scrollWidth,height:document.documentElement.scrollHeight,
+      viewportWidth:innerWidth,viewportHeight:innerHeight,dock,mobius,app,
+      ordered:!!dock&&!!mobius&&!!app&&dock.right<=mobius.left&&mobius.right<=app.left,
+      smallTargets:visibleTargets.filter((item)=>item.width<44||item.height<44).length,
+    };
+  })()`);
+  if (landscapeLayout.width !== 844 || landscapeLayout.height !== 390 || !landscapeLayout.ordered || landscapeLayout.smallTargets !== 0) {
+    throw new Error(`landscape contract failed: ${JSON.stringify(landscapeLayout)}`);
+  }
+  await shot('story-system-landscape', 844, 390);
+
+  await clearStorySession();
+  await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+  await send('Page.navigate', { url: `${previewUrl}/?lang=en#/story/login` });
+  await waitFor("document.querySelector('.story-demo')?.dataset.stage === 'intro' && document.querySelector('.story-rotate')?.getAttribute('aria-hidden') === 'false' && document.activeElement?.classList.contains('story-rotate-continue')", 'portrait rotate prompt');
+  const portraitIntro = await evaluate(`(() => {
+    const rotate=document.querySelector('.story-rotate'); const button=document.querySelector('.story-rotate-continue'); const keyring=document.querySelector('.keyring-model');
+    const rr=rotate?.getBoundingClientRect(); const br=button?.getBoundingClientRect(); const kr=keyring?.getBoundingClientRect();
+    return { rotateVisible:!!rr&&rr.width>0&&rr.height>0, buttonWidth:br?.width??0, buttonHeight:br?.height??0, keyringVisible:!!kr&&kr.width>0&&kr.height>0, optimizedCopy:rotate?.textContent?.includes('optimized demo')===true, focusOnContinue:document.activeElement===button };
+  })()`);
+  if (!portraitIntro.rotateVisible || !portraitIntro.keyringVisible || !portraitIntro.optimizedCopy || !portraitIntro.focusOnContinue || portraitIntro.buttonWidth < 44 || portraitIntro.buttonHeight < 44) {
+    throw new Error(`portrait intro contract failed: ${JSON.stringify(portraitIntro)}`);
+  }
+  await shot('story-intro-portrait', 390, 844);
+  await clickCenter('.story-rotate-continue');
+  await waitFor("document.querySelector('.story-demo')?.dataset.stage === 'system' && document.querySelector('.story-demo')?.dataset.portrait === 'continue' && document.querySelector('.story-rotate')?.getAttribute('aria-hidden') === 'true'", 'portrait fallback system');
+  await delay(900);
+  const portraitSystem = await evaluate(`(() => {
+    const visibleTargets=[...document.querySelectorAll('button,a,summary')].map((element)=>{const r=element.getBoundingClientRect();const s=getComputedStyle(element);return {width:r.width,height:r.height,visible:s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0&&r.right>0&&r.bottom>0&&r.left<innerWidth&&r.top<innerHeight};}).filter((item)=>item.visible);
+    return {width:document.documentElement.scrollWidth,height:document.documentElement.scrollHeight,smallTargets:visibleTargets.filter((item)=>item.width<44||item.height<44).length};
+  })()`);
+  if (portraitSystem.width !== 390 || portraitSystem.height !== 844 || portraitSystem.smallTargets !== 0) {
+    throw new Error(`portrait system contract failed: ${JSON.stringify(portraitSystem)}`);
+  }
+  await shot('story-system-portrait', 390, 844);
+
+  await clearStorySession();
+  await send('Page.navigate', { url: `${previewUrl}/?lang=en#/story/activity-away` });
+  await waitFor("document.querySelector('.story-demo')?.dataset.stage === 'system' && document.querySelector('.story-rotate')?.getAttribute('aria-hidden') === 'false' && document.activeElement?.classList.contains('story-rotate-continue')", 'portrait deep-link rotate prompt');
+  const portraitGate = await evaluate("(() => ({mainInert:document.querySelector('.story-stage')?.inert===true,dockInert:document.querySelector('.keyring-dock')?.inert===true,dialog:document.querySelector('.story-rotate')?.getAttribute('role')}))()");
+  if (!portraitGate.mainInert || !portraitGate.dockInert || portraitGate.dialog !== 'dialog') throw new Error(`portrait orientation gate failed: ${JSON.stringify(portraitGate)}`);
+  await clickCenter('.story-rotate-continue');
+  await waitFor("document.querySelector('.story-rotate')?.getAttribute('aria-hidden') === 'true' && document.querySelector('.story-stage')?.inert === false", 'portrait deep-link continue');
 
   await openScene('care-request', 'Living room access for Mina');
   await evaluate("document.querySelector('button.story-primary')?.click()");
@@ -164,7 +338,7 @@ try {
   await evaluate("document.querySelector('button.story-secondary')?.click()");
   await waitFor("document.querySelector('button.story-secondary')?.textContent?.includes('Viewing location')", 'five-minute location share');
 
-  await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
+  await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
   await send('Page.navigate', { url: `${previewUrl}/?lang=en#/story/activity-away` });
   await waitFor("Boolean(document.querySelector('.keyring-physical-button.confirm:not(:disabled)'))", 'interactive virtual keyring');
   const beforeRotate = await evaluate("document.querySelector('.keyring-model')?.style.transform");
@@ -183,11 +357,25 @@ try {
   await waitFor("Boolean(document.querySelector('[data-event-type=\"RESIDENT_CONFIRMED\"]'))", 'keyring confirm Mobius receipt');
   const systemShot = await send('Page.captureScreenshot', { format: 'png' });
   const systemBytes = Buffer.from(systemShot.result.data, 'base64');
-  await writeFile(join(outDir, 'story-system-desktop.png'), systemBytes);
-  captured.push({ name: 'story-system-desktop', width: 1440, height: 1000, file: 'story-system-desktop.png', sha256: createHash('sha256').update(systemBytes).digest('hex') });
+  await writeFile(join(outDir, 'story-system-desktop-interaction.png'), systemBytes);
+  captured.push({ name: 'story-system-desktop-interaction', width: 1440, height: 900, file: 'story-system-desktop-interaction.png', sha256: createHash('sha256').update(systemBytes).digest('hex') });
   await evaluate("document.querySelector('.keyring-physical-button.panic')?.click()");
   await waitFor("location.hash === '#/story/check-in'", 'keyring panic to check-in transition');
   await waitFor("Boolean(document.querySelector('[data-event-type=\"PANIC_ALERT\"]'))", 'keyring panic Mobius receipt');
+
+  await clearStorySession();
+  await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
+  await send('Emulation.setEmulatedMedia', { features: [
+    { name: 'prefers-color-scheme', value: 'light' },
+    { name: 'prefers-reduced-motion', value: 'reduce' },
+  ] });
+  await send('Page.navigate', { url: `${previewUrl}/?lang=en#/story/login` });
+  await waitFor("document.querySelector('.story-demo')?.dataset.stage === 'intro' && !document.querySelector('.keyring-physical-button.confirm')?.disabled", 'reduced-motion intro');
+  await clickCenter('.keyring-physical-button.confirm');
+  await waitFor("document.querySelector('.story-demo')?.dataset.stage === 'system'", 'reduced-motion system');
+  await delay(200);
+  const dockAnimations = await evaluate("document.querySelector('.keyring-dock')?.getAnimations({subtree:true}).filter((animation)=>animation.playState==='running').length ?? 0");
+  if (dockAnimations !== 0) throw new Error(`reduced-motion contract failed: ${dockAnimations} running dock animations`);
 
   await send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 1900, deviceScaleFactor: 1, mobile: false });
   await send('Page.navigate', { url: `${previewUrl}/story-gallery` });
@@ -202,9 +390,9 @@ try {
   const manifest = {
     generatedAt: new Date().toISOString(),
     browser: version.Browser,
-    mode: 'browser-isolated replay CSE; auto-login, virtual keyring, guardian share and caregiver group command exercised',
+    mode: 'browser-isolated replay CSE; keyring-first transition, landscape split, portrait fallback, guardian share and caregiver group command exercised',
     command: 'npm --prefix web-dashboard run capture:story',
-    assertions: ['auto-login creates an isolated CSE session', 'mobile shell fits one viewport with 44px controls and collapsible panels', 'Mobius tree exposes a wrapping full resource path', 'event panels receive a soft notification highlight', 'keyring firmware screen mirrors READY/CONFIRM/PANIC states', 'keyring supports drag rotation and movement', 'keyring buttons create verified Mobius records', 'care approval opens the caregiver view', 'All on returns three readbacks', 'draft review opens a five-minute location lease'],
+    assertions: ['intro shows only the keyring product and guidance', 'real keyring input returns HTTP 200 and transitions into the system stage', 'floating dock is transparent, z-index 30 and disjoint from Mobius', 'fresh Mobius tree node, trace path and newest record share one resource path', 'Mobius browser is English-only and exposes oneM2M resource types, methods and RSC values without clipped text', 'desktop Mobius stays left of the phone in light and dark mode', 'phone landscape fits dock, Mobius and app side by side in one viewport', 'phone portrait and portrait deep links show the optimized landscape prompt with a 44px Continue upright path', 'all visible controls are at least 44px', 'reduced motion leaves no running dock animation', 'keyboard focus reaches the confirm button with a 3px outline', 'Mobius tree exposes a wrapping full resource path', 'keyring firmware screen mirrors READY/CONFIRM/PANIC states', 'keyring supports drag rotation and movement', 'care approval opens the caregiver view', 'All on returns three readbacks', 'draft review opens a five-minute location lease'],
     captured,
   };
   await writeFile(join(outDir, 'capture-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
