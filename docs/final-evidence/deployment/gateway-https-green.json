@@ -1,0 +1,13 @@
+{
+  "status": "GATEWAY_HTTPS_PASS",
+  "gatewayId": "gateway-1",
+  "api": 200,
+  "missingCertificate": 403,
+  "mismatchedCertificate": 403,
+  "forgedCertificateHeaders": 403,
+  "foreignGateway": 403,
+  "actualCseRead": "2000",
+  "actualCseCreate": "2001",
+  "actualCseStoredRead": "2000",
+  "forcedOriginatorMutationDenied": "4103"
+}

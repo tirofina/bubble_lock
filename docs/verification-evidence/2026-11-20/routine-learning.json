@@ -1422,7 +1422,7 @@
     "companionSandboxTrips": true
   },
   "sandbox": {
-    "host": "192.168.0.103",
+    "host": "192.0.2.103",
     "definitionSource": {
       "sha256": "fdc608968f04fc3481c12b4ac288824fb2b0d5936a7f9506b8c6826b4ae4f572",
       "schema": "pb.mec-sandbox.dayofcare.v1"

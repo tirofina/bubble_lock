@@ -7,7 +7,7 @@ import { createReceiptNotificationWorker } from '../../integration-candidate/rec
 const container = '/Mobius/bench/command-receipts-a';
 const subscriptionRef = `${container.slice(1)}/settlement`; // Mobius4 structured ID omits the leading slash.
 const nativeRef = `${container}/gw-${'a'.repeat(64)}`;
-const registration = { cseKey: 'scoped', originator: '/Mobius4', subscriptionRef, receiptContainer: container };
+const registration = { cseKey: 'scoped', originator: '/Mobius4', subscriptionRef, receiptContainer: container, creators: ['CKeyringAdmin'] };
 const headers = { 'x-m2m-origin': '/Mobius4', 'x-m2m-ri': 'http-noti-test', 'x-m2m-rvi': '4' };
 const delivery = (signal, verifiedCseKey = 'scoped') => ({ verifiedCseKey, headers,
   body: Buffer.from(JSON.stringify({ 'm2m:sgn': { sur: subscriptionRef, ...signal } })) });
@@ -16,12 +16,21 @@ const event = { nev: { net: 3, rep: { 'm2m:uri': nativeRef.slice(1) } } };
 test('verification only responds, and the receipt callback enqueues the canonical URI', async () => {
   const queued = [];
   const receive = createReceiptNotificationIngress({ subscriptions: [registration], enqueue: async (...args) => queued.push(args) });
-  assert.deepEqual(await receive(delivery({ vrq: true })), {
+  assert.deepEqual(await receive(delivery({ vrq: true, cr: 'CKeyringAdmin' })), {
     httpStatus: 200, headers: { 'x-m2m-rsc': '2000', 'x-m2m-ri': 'http-noti-test' },
+  });
+  assert.deepEqual(await receive(delivery({ vrq: true, cr: 'COther' })), {
+    httpStatus: 403, headers: { 'x-m2m-rsc': '4101', 'x-m2m-ri': 'http-noti-test' },
   });
   assert.deepEqual(queued, []);
   assert.equal((await receive(delivery(event))).httpStatus, 200);
   assert.deepEqual(queued, [[{ cseKey: 'scoped', nativeRef }, 'CSE_CALLBACK']]);
+});
+
+test('verification is refused when no creator is configured', async () => {
+  const { creators, ...withoutCreators } = registration;
+  const receive = createReceiptNotificationIngress({ subscriptions: [withoutCreators], enqueue: async () => {} });
+  assert.equal((await receive(delivery({ vrq: true, cr: 'CKeyringAdmin' }))).headers['x-m2m-rsc'], '4101');
 });
 
 test('records both delivery paths in the same transaction as their inbox insertion attempts', async () => {

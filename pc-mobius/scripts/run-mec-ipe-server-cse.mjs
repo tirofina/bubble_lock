@@ -13,8 +13,8 @@
  * A listener on the PC (PB_LISTENER_HOST:PB_LISTENER_PORT, an origin the CSE allows for notifications)
  * receives the guardian's location/rnis notifications, the request status and the IPE lifecycle.
  *
- * Environment: PB_CSE_RELAY (http://192.168.0.103:17599), MEC_BASE_URL (https://192.168.0.103),
- * MEC_SANDBOX_NAME (dayofcare), MEC_CA_FILE (.local/mec-sandbox/ca.pem), PB_LISTENER_HOST (192.168.0.106),
+ * Environment: PB_CSE_RELAY (http://192.0.2.103:17599), MEC_BASE_URL (https://192.0.2.103),
+ * MEC_SANDBOX_NAME (dayofcare), MEC_CA_FILE (.local/mec-sandbox/ca.pem), PB_LISTENER_HOST (192.0.2.106),
  * PB_LISTENER_PORT (18096), PB_STEP_MS (2500), PB_VM_SSH, PB_VM_KEY, PB_VM_KNOWN_HOSTS (pod logs).
  * Writes docs/verification-evidence/2026-11-20/mec-ipe-server-cse.json and mec-ipe-server-cse-trace.jsonl.
  */
@@ -36,14 +36,14 @@ const SERVER_DOMAIN = process.env.SERVER_DOMAIN ?? '<SERVER_DOMAIN>';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const env = process.env;
-const relayBase = (env.PB_CSE_RELAY ?? 'http://192.168.0.103:17599').replace(/\/+$/, '');
-const mecBase = (env.MEC_BASE_URL ?? 'https://192.168.0.103').replace(/\/+$/, '');
+const relayBase = (env.PB_CSE_RELAY ?? 'http://192.0.2.103:17599').replace(/\/+$/, '');
+const mecBase = (env.MEC_BASE_URL ?? 'https://192.0.2.103').replace(/\/+$/, '');
 const sandboxName = env.MEC_SANDBOX_NAME ?? 'dayofcare';
 const caFile = resolve(root, env.MEC_CA_FILE ?? '.local/mec-sandbox/ca.pem');
-const listenerHost = env.PB_LISTENER_HOST ?? '192.168.0.106';
+const listenerHost = env.PB_LISTENER_HOST ?? '192.0.2.106';
 const listenerPort = Number(env.PB_LISTENER_PORT ?? 18096);
 const stepMs = Number(env.PB_STEP_MS ?? 2500);
-const vmSsh = env.PB_VM_SSH ?? 'mec@192.168.0.103';
+const vmSsh = env.PB_VM_SSH ?? 'mec@192.0.2.103';
 const vmKey = env.PB_VM_KEY ?? join(homedir(), 'VMs', 'mec-sandbox', 'id_ed25519');
 const vmKnownHosts = env.PB_VM_KNOWN_HOSTS ?? join(homedir(), 'VMs', 'mec-sandbox', 'known_hosts');
 const evidenceDir = join(root, 'docs', 'verification-evidence', '2026-11-20');
@@ -238,9 +238,9 @@ const receipt = {
   simulation: { mec: false, ue: 'sandbox-scenario', cse: false },
   transport: {
     cse: 'https mTLS via nginx originator binding',
-    ipeRoute: 'https://<SERVER_DOMAIN>:8443/onem2m/Mobius (pod hostAlias <SERVER_DOMAIN> -> 192.168.0.103; SNI and Host <SERVER_DOMAIN>; client certificate CN pb-mec-ipe, EKU clientAuth; server trust bundle from the server deployment; nginx sets X-M2M-Origin Cpb-mec-ipe)',
+    ipeRoute: 'https://<SERVER_DOMAIN>:8443/onem2m/Mobius (pod hostAlias <SERVER_DOMAIN> -> 192.0.2.103; SNI and Host <SERVER_DOMAIN>; client certificate CN pb-mec-ipe, EKU clientAuth; server trust bundle from the server deployment; nginx sets X-M2M-Origin Cpb-mec-ipe)',
     requesterPath: `${relayBase} (server owner LAN relay, CSE takes X-M2M-Origin as sent; PC and pod CIDR only; used here for Cguardian-app, Cpb-orchestrator and Cpb-dash-guardian)`,
-    notificationsFromCse: `CSE notification allowlist: http://192.168.0.103:31881 (IPE NodePort) and http://${listenerHost}:${listenerPort} (this run's listener)`,
+    notificationsFromCse: `CSE notification allowlist: http://192.0.2.103:31881 (IPE NodePort) and http://${listenerHost}:${listenerPort} (this run's listener)`,
     mec: `${mecBase}/${sandboxName}/${instance.mep} through the sandbox ingress with the pinned lab CA`,
   },
   hosts: [

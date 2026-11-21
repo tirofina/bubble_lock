@@ -189,7 +189,7 @@ deployment:
                                             name: pb-ipe-mep1
                                             type: EDGE-APP
                                             image: 'meep-docker-registry:30001/pb-onem2m-ipe'
-                                            environment: 'PB_IPE_MEP=mep1,MEC_MEP=mep1,MEC_SANDBOX_NAME=dayofcare,MEC_APP_INSTANCE_ID=0d0c0a00-0000-4000-8000-0000000001a1,MEC_CALLBACK_PUBLIC_URL=http://192.168.0.103:31881,MEC_IPE_ONEM2M_URL=http://192.168.0.103:31881,ONEM2M_CSE_URL=https://192.168.0.106:17599'
+                                            environment: 'PB_IPE_MEP=mep1,MEC_MEP=mep1,MEC_SANDBOX_NAME=dayofcare,MEC_APP_INSTANCE_ID=0d0c0a00-0000-4000-8000-0000000001a1,MEC_CALLBACK_PUBLIC_URL=http://192.0.2.103:31881,MEC_IPE_ONEM2M_URL=http://192.0.2.103:31881,ONEM2M_CSE_URL=https://192.0.2.106:17599'
                                             serviceConfig:
                                                 name: pb-ipe-mep1
                                                 meSvcName: pb-onem2m-ipe

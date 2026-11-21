@@ -8,10 +8,10 @@
  * with the IPE pods. Story time is compressed (minutes to seconds); the walk holds before park-district
  * until the pre-placed instance is ready, which keeps the real-time order of a 6 min walk.
  *
- * Environment: MOBIUS4_ROOT, MEC_BASE_URL (https://192.168.0.103), MEC_SANDBOX_NAME (dayofcare),
- * MEC_CA_FILE (.local/mec-sandbox/ca.pem), PB_CSE_PUBLIC_HOST (192.168.0.106), PB_CSE_PUBLIC_PORT (17599),
+ * Environment: MOBIUS4_ROOT, MEC_BASE_URL (https://192.0.2.103), MEC_SANDBOX_NAME (dayofcare),
+ * MEC_CA_FILE (.local/mec-sandbox/ca.pem), PB_CSE_PUBLIC_HOST (192.0.2.106), PB_CSE_PUBLIC_PORT (17599),
  * PB_CSE_TLS_KEY / PB_CSE_TLS_CERT (.local/mec-sandbox/pc-cse-server.key/.crt), PB_STEP_MS (1500),
- * PB_VM_SSH (mec@192.168.0.103), PB_VM_KEY, PB_VM_KNOWN_HOSTS (pod logs and pod timestamps; optional),
+ * PB_VM_SSH (mec@192.0.2.103), PB_VM_KEY, PB_VM_KNOWN_HOSTS (pod logs and pod timestamps; optional),
  * PB_IPE_IMAGE_DIGEST (informational).
  */
 import { cp, mkdir, readFile, writeFile, symlink, lstat } from 'node:fs/promises';
@@ -36,15 +36,15 @@ import { Onem2mHttpClient, parseContent } from '../integration/src/onem2m-http-c
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const env = process.env;
 const upstream = resolve(env.MOBIUS4_ROOT ?? join(root, '..', 'mobius4'));
-const mecBase = (env.MEC_BASE_URL ?? 'https://192.168.0.103').replace(/\/+$/, '');
+const mecBase = (env.MEC_BASE_URL ?? 'https://192.0.2.103').replace(/\/+$/, '');
 const sandboxName = env.MEC_SANDBOX_NAME ?? 'dayofcare';
 const caFile = resolve(root, env.MEC_CA_FILE ?? '.local/mec-sandbox/ca.pem');
-const publicHost = env.PB_CSE_PUBLIC_HOST ?? '192.168.0.106';
+const publicHost = env.PB_CSE_PUBLIC_HOST ?? '192.0.2.106';
 const publicPort = Number(env.PB_CSE_PUBLIC_PORT ?? 17599);
 const tlsKey = resolve(root, env.PB_CSE_TLS_KEY ?? '.local/mec-sandbox/pc-cse-server.key');
 const tlsCert = resolve(root, env.PB_CSE_TLS_CERT ?? '.local/mec-sandbox/pc-cse-server.crt');
 const stepMs = Number(env.PB_STEP_MS ?? 1500);
-const vmSsh = env.PB_VM_SSH ?? 'mec@192.168.0.103';
+const vmSsh = env.PB_VM_SSH ?? 'mec@192.0.2.103';
 const vmKey = env.PB_VM_KEY ?? join(homedir(), 'VMs', 'mec-sandbox', 'id_ed25519');
 const vmKnownHosts = env.PB_VM_KNOWN_HOSTS ?? join(homedir(), 'VMs', 'mec-sandbox', 'known_hosts');
 const useSsh = env.PB_VM_SSH !== '' && existsSync(vmKey);

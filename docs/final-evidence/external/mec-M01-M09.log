@@ -1,0 +1,174 @@
+TAP version 13
+# Subtest: JSON 배포 manifest는 OpenAPI hash·callback ref·실제 method/path를 검증한다
+ok 1 - JSON 배포 manifest는 OpenAPI hash·callback ref·실제 method/path를 검증한다
+  ---
+  duration_ms: 31.195106
+  type: 'test'
+  ...
+# Subtest: R15/R16: Location/RNIS discovery, query and subscription CRUD use real local HTTP
+    # Subtest: Location
+    ok 1 - Location
+      ---
+      duration_ms: 76.369756
+      type: 'test'
+      ...
+    # Subtest: RNIS
+    ok 2 - RNIS
+      ---
+      duration_ms: 32.224407
+      type: 'test'
+      ...
+    1..2
+ok 2 - R15/R16: Location/RNIS discovery, query and subscription CRUD use real local HTTP
+  ---
+  duration_ms: 109.1876
+  type: 'test'
+  ...
+# Subtest: M01: service, UE and provider identity bind to the opaque route
+ok 3 - M01: service, UE and provider identity bind to the opaque route
+  ---
+  duration_ms: 38.076108
+  type: 'test'
+  ...
+# Subtest: M02: old generation, expired route and revoked grant produce minimal receipts
+ok 4 - M02: old generation, expired route and revoked grant produce minimal receipts
+  ---
+  duration_ms: 64.473419
+  type: 'test'
+  ...
+# Subtest: M03: concurrent delivery and canonical payload coalescing commit one row/outbox
+ok 5 - M03: concurrent delivery and canonical payload coalescing commit one row/outbox
+  ---
+  duration_ms: 79.104193
+  type: 'test'
+  ...
+# Subtest: M04: older, stale, future and unknown source time preserve watermark
+ok 6 - M04: older, stale, future and unknown source time preserve watermark
+  ---
+  duration_ms: 38.52197
+  type: 'test'
+  ...
+# Subtest: M05: revocation commit wins over a queued callback transaction
+ok 7 - M05: revocation commit wins over a queued callback transaction
+  ---
+  duration_ms: 129.647865
+  type: 'test'
+  ...
+# Subtest: M06: ciphertext survives restart while current grant gates each decrypt and execution
+ok 8 - M06: ciphertext survives restart while current grant gates each decrypt and execution
+  ---
+  duration_ms: 188.792974
+  type: 'test'
+  ...
+# Subtest: M07: POST timeout, late callback and list reconciliation retain one subscription
+ok 9 - M07: POST timeout, late callback and list reconciliation retain one subscription
+  ---
+  duration_ms: 344.280105
+  type: 'test'
+  ...
+# Subtest: M08: cancel timeout, restart, late callback and independent new generation
+ok 10 - M08: cancel timeout, restart, late callback and independent new generation
+  ---
+  duration_ms: 356.339866
+  type: 'test'
+  ...
+# Subtest: M09: relative links normalize; external links and oversized payloads stay in review
+ok 11 - M09: relative links normalize; external links and oversized payloads stay in review
+  ---
+  duration_ms: 57.441683
+  type: 'test'
+  ...
+# Subtest: approved policy owns target edge; coordinate, geofence and health gate handover
+ok 12 - approved policy owns target edge; coordinate, geofence and health gate handover
+  ---
+  duration_ms: 136.052359
+  type: 'test'
+  ...
+# Subtest: sequence identity, retry budget and retention are durable
+ok 13 - sequence identity, retry budget and retention are durable
+  ---
+  duration_ms: 112.0991
+  type: 'test'
+  ...
+# Subtest: 공급자 cleanup 완료 후 24시간에 구독 상세·tombstone을 정리하고 삭제 receipt를 기록한다
+ok 14 - 공급자 cleanup 완료 후 24시간에 구독 상세·tombstone을 정리하고 삭제 receipt를 기록한다
+  ---
+  duration_ms: 54.014079
+  type: 'test'
+  ...
+# Subtest: API callback binds transport identity and masks token on authorization error
+ok 15 - API callback binds transport identity and masks token on authorization error
+  ---
+  duration_ms: 61.156866
+  type: 'test'
+  ...
+# Subtest: store transaction publishes one snapshot and rolls back failed work
+ok 16 - store transaction publishes one snapshot and rolls back failed work
+  ---
+  duration_ms: 0.353714
+  type: 'test'
+  ...
+# Subtest: complete provider inventory confirms missing subscription before fresh generation
+ok 17 - complete provider inventory confirms missing subscription before fresh generation
+  ---
+  duration_ms: 58.760245
+  type: 'test'
+  ...
+# Subtest: RNIS and Location source timestamps map to verified observedAt
+    # Subtest: Location
+    ok 1 - Location
+      ---
+      duration_ms: 43.762807
+      type: 'test'
+      ...
+    # Subtest: RNIS
+    ok 2 - RNIS
+      ---
+      duration_ms: 45.775857
+      type: 'test'
+      ...
+    1..2
+ok 18 - RNIS and Location source timestamps map to verified observedAt
+  ---
+  duration_ms: 89.889843
+  type: 'test'
+  ...
+# Subtest: live ingestion requires deployment schema validation and current consent
+ok 19 - live ingestion requires deployment schema validation and current consent
+  ---
+  duration_ms: 64.057057
+  type: 'test'
+  ...
+# Subtest: 자동 zone 이동은 실제 경계 20m와 원본 관측 10초 연속 체류를 사용한다
+ok 20 - 자동 zone 이동은 실제 경계 20m와 원본 관측 10초 연속 체류를 사용한다
+  ---
+  duration_ms: 7.839642
+  type: 'test'
+  ...
+# Subtest: zone 밖 관측과 uncertainty가 경계 체류를 초기화하고 같은 event 재시도는 시간을 늘리지 않는다
+ok 21 - zone 밖 관측과 uncertainty가 경계 체류를 초기화하고 같은 event 재시도는 시간을 늘리지 않는다
+  ---
+  duration_ms: 4.011908
+  type: 'test'
+  ...
+# Subtest: RNIS 건강 이동은 1초 간격 실패 3회와 최소 체류·이동 후 cooldown을 함께 검사한다
+ok 22 - RNIS 건강 이동은 1초 간격 실패 3회와 최소 체류·이동 후 cooldown을 함께 검사한다
+  ---
+  duration_ms: 5.840178
+  type: 'test'
+  ...
+# Subtest: 현재 grant 회수·policy revision·오래된 source 시각은 자동 이동보다 먼저 검사한다
+ok 23 - 현재 grant 회수·policy revision·오래된 source 시각은 자동 이동보다 먼저 검사한다
+  ---
+  duration_ms: 2.515667
+  type: 'test'
+  ...
+1..23
+# tests 27
+# suites 0
+# pass 27
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2051.121947

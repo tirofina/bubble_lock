@@ -1,0 +1,45 @@
+✖ partial approval keeps already issued members out of Gateway polling until CSE publication (50.451378ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 170.855571
+
+✖ failing tests:
+
+test at pc-mobius/test/group-product.test.mjs:138:1
+✖ partial approval keeps already issued members out of Gateway polling until CSE publication (50.451378ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   {
+  +     claimId: 'claim-31eb4f44-57e2-4a6c-8aa6-a658c51a750a',
+  +     commandId: 'portal-3415ae16f6104bacf710be52dd3e91af',
+  +     deadline: '2026-11-12T10:05:00.000Z',
+  +     desiredState: {
+  +       state: true
+  +     },
+  +     deviceId: 'keyring-A',
+  +     gatewayId: 'pi-01',
+  +     grantRevision: 1,
+  +     issuedAt: '2026-11-12T10:00:00.000Z',
+  +     ownershipEpoch: 0,
+  +     version: 1
+  +   }
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file:///home/gunp4ng/working/bubblelock-final-20261112/repo/pc-mobius/test/group-product.test.mjs:147:10)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ { version: 1, gatewayId: 'pi-01', deviceId: 'keyring-A', commandId: 'portal-3415ae16f6104bacf710be52dd3e91af', claimId: 'claim-31eb4f44-57e2-4a6c-8aa6-a658c51a750a', desiredState: [Object], issuedAt: '2026-11-12T10:00:00.000Z', deadline: '2026-11-12T10:05:00.000Z', grantRevision: 1, ownershipEpoch: 0 } ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

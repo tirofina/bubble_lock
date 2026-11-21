@@ -4,7 +4,7 @@
 // stopped with systemctl stop while it trains (no update), the round closes by deadline and quorum, the next
 // round excludes it as HEARTBEAT_STALE, and the worker is started again and selected in a later round.
 // Usage: node pc-mobius/scripts/run-fl-onem2m-server-cse.mjs --deploy=<dir with coordinator.config.json and vm/*.config.json>
-//          [--vm=mec@192.168.0.103] [--ssh-key=<path>] [--known-hosts=<path>] [--victim=w2]
+//          [--vm=mec@192.0.2.103] [--ssh-key=<path>] [--known-hosts=<path>] [--victim=w2]
 // Writes docs/verification-evidence/2026-11-20/fl-server-cse.json and fl-server-cse-trace.jsonl. No secrets are read
 // into the receipt: the deploy dir holds them, the VM keeps the client certificates in place.
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
@@ -23,7 +23,7 @@ import { evaluateModel } from '../integration/src/fl-numerics.mjs';
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const arg = (name, fallback = null) => process.argv.find((v) => v.startsWith(`--${name}=`))?.slice(name.length + 3) ?? fallback;
 const deploy = resolve(arg('deploy') ?? '');
-const vm = arg('vm', 'mec@192.168.0.103');
+const vm = arg('vm', 'mec@192.0.2.103');
 const sshArgs = ['-i', arg('ssh-key', 'C:/Users/user/VMs/mec-sandbox/id_ed25519'), '-o', `UserKnownHostsFile=${arg('known-hosts', 'C:/Users/user/VMs/mec-sandbox/known_hosts')}`, '-o', 'BatchMode=yes', vm];
 const victim = arg('victim', 'w2');
 const evidenceDir = join(root, 'docs', 'verification-evidence', '2026-11-20');

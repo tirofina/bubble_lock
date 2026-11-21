@@ -106,7 +106,7 @@ try {
   const client = (name) => new Onem2mHttp({ endpoint: cse.endpoint, originator: ids[name] });
   const resident = client('resident'); const ipe = client('ipe'); const routine = client('routine'); const triage = client('triage'); const incidentWriter = client('automation');
   const decisions = new Map(); const drafts = new Map();
-  ingress = await startNotificationServer({ cseId: cse.cseId, onNotify: async ({ sgn }) => {
+  ingress = await startNotificationServer({ cseId: cse.cseId, creators: { triage: [ids.triage] }, onNotify: async ({ sgn }) => {
     const cin = sgn.nev?.rep?.['m2m:cin']; if (!cin) return;
     if (normalizeSid(sgn.sur, cse.cseBase) !== `${paths.approvals}/sub-triage`) return;
     try { await onApprovalRecord(cin); } catch (error) { log('TRIAGE_RUNTIME_REVIEW', { error: error.message }); }

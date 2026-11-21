@@ -41,7 +41,7 @@ const sandboxChoice = args.sandbox ?? 'auto';
 const useDayofcare = sandboxChoice === 'dayofcare' || (sandboxChoice === 'auto' && existsSync(DAYOFCARE_JSON));
 const dayofcareText = useDayofcare ? readFileSync(DAYOFCARE_JSON, 'utf8') : null;
 const definition = useDayofcare ? dayofcareDefinition(JSON.parse(dayofcareText)) : DEV_MAP_BUBBLE;
-const mecBase = (env.MEC_BASE_URL ?? 'https://192.168.0.103').replace(/\/+$/, '');
+const mecBase = (env.MEC_BASE_URL ?? 'https://192.0.2.103').replace(/\/+$/, '');
 const caFile = resolve(root, env.MEC_CA_FILE ?? '.local/mec-sandbox/ca.pem');
 const sandboxRoot = `${mecBase}/${definition.sandbox}`;
 const meps = definition.meps?.length ? definition.meps : [env.MEC_MEP ?? 'mep1'];

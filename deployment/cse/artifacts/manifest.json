@@ -1,0 +1,46 @@
+{
+  "repository": "https://github.com/IoTKETI/mobius4",
+  "revision": "e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8",
+  "version": "4.25.0",
+  "archive": "https://codeload.github.com/IoTKETI/mobius4/tar.gz/e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8",
+  "archiveSHA256": "cd22adacf6800a1450c2c45033ba1f58079ef9104bd7f06b3c24fbcc994c8aa4",
+  "cseSource": "upstream-unmodified",
+  "artifact": "mobius4-e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8-upstream.tar.gz",
+  "artifactSHA256": "5fde2378568aeb11ae8366b69e7b9b029b31d229fc6b1e845127fc68d25ad56e",
+  "lockSHA256": "3000582f544a8bec07c2e28acea6b73efb4ea1f35da6e7bc68160ea97ff7231c",
+  "dependencyPatch": {
+    "patch": "BUBBLE_DEPENDENCIES_V1",
+    "files": [
+      {
+        "file": "package.json",
+        "status": "APPLIED",
+        "beforeSHA256": "4becf0cd79cf85f3d79c4f5b3475555b2c716b2c554260c2749a7e8a51f55a5a",
+        "sha256": "a436885310e90f67a6a887cb6f8f112ddd3a2635aae2406e680b3a339a9a7b03"
+      },
+      {
+        "file": "package-lock.json",
+        "status": "APPLIED",
+        "beforeSHA256": "100e29c3b4feecc3fcd95f4af5b214180305326a5890651b165ec63fea72aea6",
+        "sha256": "3000582f544a8bec07c2e28acea6b73efb4ea1f35da6e7bc68160ea97ff7231c"
+      }
+    ]
+  },
+  "repeatedDependencies": {
+    "patch": "BUBBLE_DEPENDENCIES_V1",
+    "files": [
+      {
+        "file": "package.json",
+        "status": "ALREADY_APPLIED",
+        "beforeSHA256": "4becf0cd79cf85f3d79c4f5b3475555b2c716b2c554260c2749a7e8a51f55a5a",
+        "sha256": "a436885310e90f67a6a887cb6f8f112ddd3a2635aae2406e680b3a339a9a7b03"
+      },
+      {
+        "file": "package-lock.json",
+        "status": "ALREADY_APPLIED",
+        "beforeSHA256": "100e29c3b4feecc3fcd95f4af5b214180305326a5890651b165ec63fea72aea6",
+        "sha256": "3000582f544a8bec07c2e28acea6b73efb4ea1f35da6e7bc68160ea97ff7231c"
+      }
+    ]
+  },
+  "dependencyPatcherSHA256": "9556512c8a12b4bd2a239464f83870c1302aa80f7d6b34237539f70f6efb62c2"
+}

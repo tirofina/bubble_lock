@@ -1,5 +1,5 @@
 {"proc":"pc:coordinator#1","t":"2026-11-20T11:25:29.151Z","role":"coordinator","pid":2204,"event":"BOOTSTRAPPED","resumed":false,"previousEpoch":null,"coordinatorEpoch":1,"completedRounds":0,"lastRoundNumber":0,"openRound":null,"modelVersion":0,"members":[],"discoveryAcp":"created","repairedCurrentModel":false,"halfOpenRound":null}
-{"proc":"pc:coordinator#1","t":"2026-11-20T11:25:29.151Z","role":"coordinator","pid":2204,"event":"NOTIFY_ENDPOINT","notifyUrl":null,"transport":{"scheme":"https","mutualTls":true,"pinnedCa":true,"servername":"<SERVER_DOMAIN>","connectHost":"192.168.0.103"}}
+{"proc":"pc:coordinator#1","t":"2026-11-20T11:25:29.151Z","role":"coordinator","pid":2204,"event":"NOTIFY_ENDPOINT","notifyUrl":null,"transport":{"scheme":"https","mutualTls":true,"pinnedCa":true,"servername":"<SERVER_DOMAIN>","connectHost":"192.0.2.103"}}
 {"proc":"pc:coordinator#1","t":"2026-11-20T11:25:29.172Z","role":"coordinator","pid":2204,"event":"WAITING_PARTICIPANTS","roundNumber":1,"eligible":0,"excluded":[]}
 {"t":"2026-11-20T11:25:29.402Z","role":"harness","event":"WORKER_UNIT_STARTED","workerId":"w1","command":"start-worker.sh w1 (systemd-run)"}
 {"t":"2026-11-20T11:25:29.691Z","role":"harness","event":"WORKER_UNIT_STARTED","workerId":"w2","command":"start-worker.sh w2 (systemd-run)"}

@@ -1,0 +1,252 @@
+{
+  "status": "PASS",
+  "generatedAt": "2026-11-12T10:42:48.001Z",
+  "transport": "actual local Mobius HTTP /fopt + TLS1.3 mTLS portal/Gateway API",
+  "devices": "two simulated keyrings on two simulated Gateways; third device excluded",
+  "cseEndpoint": "http://127.0.0.1:40773",
+  "providerPath": "/Mobius/group-final-f654c081",
+  "partial": {
+    "contractId": "privacy-bubble.group-dispatch",
+    "groupId": "group-home",
+    "commandId": "request-085f757852113ee02224a60d",
+    "state": true,
+    "status": "IN_FLIGHT",
+    "attempts": 1,
+    "memberCount": 2,
+    "appliedCount": 0,
+    "members": [
+      {
+        "memberId": "keyring-A",
+        "memberCommandId": "portal-af44f6334ef24d46a93a495148205314",
+        "deviceId": "keyring-A",
+        "gatewayId": "pi-01",
+        "status": "DISPATCHED",
+        "attempts": 1
+      },
+      {
+        "memberId": "keyring-B",
+        "memberCommandId": "portal-7dc5ebd96fe86127c222afc2fe01a9e1",
+        "deviceId": "keyring-B",
+        "gatewayId": "pi-02",
+        "status": "RETRY_PENDING",
+        "attempts": 1,
+        "error": "CSE member response 4103"
+      }
+    ],
+    "timestamp": "2026-11-12T10:42:47.881Z"
+  },
+  "csePartial": {
+    "A": true,
+    "B": false,
+    "C": false
+  },
+  "afterAck": {
+    "contractId": "privacy-bubble.group-dispatch",
+    "groupId": "group-home",
+    "commandId": "request-085f757852113ee02224a60d",
+    "state": true,
+    "status": "IN_FLIGHT",
+    "attempts": 1,
+    "memberCount": 2,
+    "appliedCount": 1,
+    "members": [
+      {
+        "memberId": "keyring-A",
+        "memberCommandId": "portal-af44f6334ef24d46a93a495148205314",
+        "deviceId": "keyring-A",
+        "gatewayId": "pi-01",
+        "status": "READBACK_VERIFIED",
+        "attempts": 1,
+        "ackTimestamp": "2026-11-12T10:42:47.912Z"
+      },
+      {
+        "memberId": "keyring-B",
+        "memberCommandId": "portal-7dc5ebd96fe86127c222afc2fe01a9e1",
+        "deviceId": "keyring-B",
+        "gatewayId": "pi-02",
+        "status": "RETRY_PENDING",
+        "attempts": 1,
+        "error": "CSE member response 4103"
+      }
+    ],
+    "timestamp": "2026-11-12T10:42:47.918Z"
+  },
+  "retried": {
+    "contractId": "privacy-bubble.group-dispatch",
+    "groupId": "group-home",
+    "commandId": "request-085f757852113ee02224a60d",
+    "state": true,
+    "status": "IN_FLIGHT",
+    "attempts": 2,
+    "memberCount": 2,
+    "appliedCount": 1,
+    "members": [
+      {
+        "memberId": "keyring-A",
+        "memberCommandId": "portal-af44f6334ef24d46a93a495148205314",
+        "deviceId": "keyring-A",
+        "gatewayId": "pi-01",
+        "status": "READBACK_VERIFIED",
+        "attempts": 1,
+        "ackTimestamp": "2026-11-12T10:42:47.912Z"
+      },
+      {
+        "memberId": "keyring-B",
+        "memberCommandId": "portal-7dc5ebd96fe86127c222afc2fe01a9e1",
+        "deviceId": "keyring-B",
+        "gatewayId": "pi-02",
+        "status": "DISPATCHED",
+        "attempts": 2
+      }
+    ],
+    "timestamp": "2026-11-12T10:42:47.959Z"
+  },
+  "recovered": {
+    "contractId": "privacy-bubble.group-dispatch",
+    "groupId": "group-home",
+    "commandId": "request-085f757852113ee02224a60d",
+    "state": true,
+    "status": "SETTLED",
+    "attempts": 2,
+    "memberCount": 2,
+    "appliedCount": 2,
+    "members": [
+      {
+        "memberId": "keyring-A",
+        "memberCommandId": "portal-af44f6334ef24d46a93a495148205314",
+        "deviceId": "keyring-A",
+        "gatewayId": "pi-01",
+        "status": "READBACK_VERIFIED",
+        "attempts": 1,
+        "ackTimestamp": "2026-11-12T10:42:47.912Z"
+      },
+      {
+        "memberId": "keyring-B",
+        "memberCommandId": "portal-7dc5ebd96fe86127c222afc2fe01a9e1",
+        "deviceId": "keyring-B",
+        "gatewayId": "pi-02",
+        "status": "READBACK_VERIFIED",
+        "attempts": 2,
+        "ackTimestamp": "2026-11-12T10:42:47.978Z"
+      }
+    ],
+    "timestamp": "2026-11-12T10:42:47.993Z"
+  },
+  "publications": [
+    {
+      "contractId": "privacy-bubble.integration.v1",
+      "docRevision": "2.0.0",
+      "eventId": "evt-d27e6eb9-bff9-449e-b161-c87b8486c10b",
+      "timestamp": "2026-11-12T10:42:47.869Z",
+      "type": "GROUP_CSE_MEMBER_PUBLISHED",
+      "groupId": "group-home",
+      "groupCommandId": "request-085f757852113ee02224a60d",
+      "commandId": "portal-af44f6334ef24d46a93a495148205314",
+      "deviceId": "keyring-A",
+      "claimId": "claim-6f11c0b2-eec7-4fdd-9bd3-87787646dd82",
+      "payloadHash": "b4da8431fe1adbb4e32bbe00f9c4d590af7699efa18549bd423dc9a267ef435c",
+      "grantRevision": 1,
+      "ownershipEpoch": 3,
+      "deadline": "2026-11-12T10:47:47.805Z",
+      "resourcePath": "Mobius/group-final-f654c081/switch-A",
+      "foptPath": "/Mobius/group-final-f654c081/group-1fcbaaa0633b8870ee2f578e01e0c1e6/fopt",
+      "rsc": 2004,
+      "published": true
+    },
+    {
+      "contractId": "privacy-bubble.integration.v1",
+      "docRevision": "2.0.0",
+      "eventId": "evt-3e62b2bf-743e-414e-b1cd-17a04ab17890",
+      "timestamp": "2026-11-12T10:42:47.872Z",
+      "type": "GROUP_CSE_MEMBER_PUBLISHED",
+      "groupId": "group-home",
+      "groupCommandId": "request-085f757852113ee02224a60d",
+      "commandId": "portal-7dc5ebd96fe86127c222afc2fe01a9e1",
+      "deviceId": "keyring-B",
+      "claimId": "claim-eba19dba-6d71-49bd-9382-747ee3b10f48",
+      "payloadHash": "68ee0a4b47de97927b9ca34f9aee85c40aa237404702b457609ae6c444f30413",
+      "grantRevision": 1,
+      "ownershipEpoch": 3,
+      "deadline": "2026-11-12T10:47:47.805Z",
+      "resourcePath": "Mobius/group-final-f654c081/switch-B",
+      "foptPath": "/Mobius/group-final-f654c081/group-1fcbaaa0633b8870ee2f578e01e0c1e6/fopt",
+      "rsc": 4103,
+      "published": false
+    },
+    {
+      "contractId": "privacy-bubble.integration.v1",
+      "docRevision": "2.0.0",
+      "eventId": "evt-373c0914-3268-4c50-939a-5fd4920117f2",
+      "timestamp": "2026-11-12T10:42:47.952Z",
+      "type": "GROUP_CSE_MEMBER_PUBLISHED",
+      "groupId": "group-home",
+      "groupCommandId": "request-085f757852113ee02224a60d",
+      "commandId": "portal-7dc5ebd96fe86127c222afc2fe01a9e1",
+      "deviceId": "keyring-B",
+      "claimId": "claim-eba19dba-6d71-49bd-9382-747ee3b10f48",
+      "payloadHash": "68ee0a4b47de97927b9ca34f9aee85c40aa237404702b457609ae6c444f30413",
+      "grantRevision": 1,
+      "ownershipEpoch": 3,
+      "deadline": "2026-11-12T10:47:47.805Z",
+      "resourcePath": "Mobius/group-final-f654c081/switch-B",
+      "foptPath": "/Mobius/group-final-f654c081/group-f3f14d610f2f59f28091f935e55e295d/fopt",
+      "rsc": 2004,
+      "published": true
+    }
+  ],
+  "canonicalCommands": [
+    {
+      "version": 1,
+      "gatewayId": "pi-01",
+      "deviceId": "keyring-A",
+      "commandId": "portal-af44f6334ef24d46a93a495148205314",
+      "claimId": "claim-6f11c0b2-eec7-4fdd-9bd3-87787646dd82",
+      "desiredState": {
+        "state": true
+      },
+      "issuedAt": "2026-11-12T10:42:47.812Z",
+      "deadline": "2026-11-12T10:47:47.805Z",
+      "grantRevision": 1,
+      "ownershipEpoch": 3
+    },
+    {
+      "version": 1,
+      "gatewayId": "pi-02",
+      "deviceId": "keyring-B",
+      "commandId": "portal-7dc5ebd96fe86127c222afc2fe01a9e1",
+      "claimId": "claim-eba19dba-6d71-49bd-9382-747ee3b10f48",
+      "desiredState": {
+        "state": true
+      },
+      "issuedAt": "2026-11-12T10:42:47.822Z",
+      "deadline": "2026-11-12T10:47:47.805Z",
+      "grantRevision": 1,
+      "ownershipEpoch": 3
+    }
+  ],
+  "simulatedDeviceJournal": {
+    "keyring-A": {
+      "commandId": "portal-af44f6334ef24d46a93a495148205314",
+      "payloadHash": "b4da8431fe1adbb4e32bbe00f9c4d590af7699efa18549bd423dc9a267ef435c",
+      "state": true
+    },
+    "keyring-B": {
+      "commandId": "portal-7dc5ebd96fe86127c222afc2fe01a9e1",
+      "payloadHash": "68ee0a4b47de97927b9ca34f9aee85c40aa237404702b457609ae6c444f30413",
+      "state": true
+    }
+  },
+  "restartCount": 2,
+  "checks": [
+    "partial permission 2004/4103",
+    "failed member hidden from poll",
+    "CSE response never substitutes device ACK",
+    "native ACK/readback settlement",
+    "restart before retry and after settlement",
+    "original claim/deadline/revision/epoch/payload",
+    "forged receipt rejection",
+    "duplicate receipt after restart",
+    "unselected member untouched",
+    "partial canonical issue failure blocks Gateway poll until CSE publication"
+  ]
+}

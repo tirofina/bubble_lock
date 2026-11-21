@@ -49,7 +49,7 @@
       "mutualTls": true,
       "pinnedCa": true,
       "servername": "<SERVER_DOMAIN>",
-      "connectHost": "192.168.0.103"
+      "connectHost": "192.0.2.103"
     },
     "workerTls": {
       "servername": "<SERVER_DOMAIN>",

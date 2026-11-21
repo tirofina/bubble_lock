@@ -10,7 +10,7 @@ COPY ca.pem /etc/pb-ipe/ca.pem
 # Defaults; the scenario process `environment` sets MEC_MEP, MEC_SANDBOX_NAME, MEC_APP_INSTANCE_ID,
 # MEC_CALLBACK_PUBLIC_URL, MEC_IPE_ONEM2M_URL and ONEM2M_CSE_URL per instance.
 ENV NODE_ENV=production \
-    MEC_BASE_URL=https://192.168.0.103 \
+    MEC_BASE_URL=https://192.0.2.103 \
     MEC_CA_FILE=/etc/pb-ipe/ca.pem \
     MEC_LOCATION_VERSION=v3 \
     MEC_AMS_MEP=mep1 \

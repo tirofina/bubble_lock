@@ -1,0 +1,42 @@
+✔ central command survives restart and binds Gateway poll/authorize to exact payload (48.860805ms)
+✔ revocation, epoch change, credential rotation and expiry fence Gateway execution (105.182954ms)
+✔ transport principal, scopes, ownership and subject remain authoritative (22.157454ms)
+✔ all service receipts share one journal and handover epochs survive restart (138.504192ms)
+✔ bounded polling eventually delivers every active command while preserving retries (62.497374ms)
+✔ D01/D02 reserved command expires at five seconds before admission (30.917293ms)
+✔ D05/D07 claim retries preserve deadline and expired admitted lane waits for exact readback (51.532929ms)
+✔ authenticated native receipt settles the canonical claim after revocation and deduplicates across restart (49.490401ms)
+✔ timeout keeps the lane fenced and native rejection or later verified readback settles the exact claim (50.000982ms)
+✔ dispatch start rechecks the committed claim and records one durable start timestamp (37.195587ms)
+✔ D09 desired generations fence stale work while late receipts preserve the current lane and latest readback (36.379417ms)
+✔ GroupDispatcher fans out a command and settles member readback (2.450871ms)
+✔ GroupDispatcher retries the member whose ACK remains pending (0.713937ms)
+✔ GroupDispatcher forwards issued member claims and keeps retry payloads identical (3.902864ms)
+✔ GroupDispatcher keeps immediate ACKs while fan-out is publishing (0.366549ms)
+✔ 한 구성원의 송신 오류 뒤 다음 구성원 전송과 부분 readback을 보존 (0.588527ms)
+✔ 재시작 뒤 확인한 구성원을 보존하고 남은 동일 명령만 동시 재시도 (36.316256ms)
+✔ 재시도 직전 현재 권한·마감·기기 재바인딩을 검사 (1.084846ms)
+✔ portal approval durably fans out only selected canonical members and preserves partial CSE results (88.016128ms)
+✔ restart retries failed CSE member with original claim while keeping published member untouched (97.558233ms)
+✔ expired claim prevents retry publication and unrelated household cannot inspect group (90.089091ms)
+✔ only a validated native receipt settles group readback and survives restart (83.746865ms)
+✔ failed durable approval never publishes a CSE side effect (84.079786ms)
+✔ partial approval keeps already issued members out of Gateway polling until CSE publication (77.203016ms)
+✔ revoked grant blocks failed member retry and concurrent approval replay sends once (72.067589ms)
+✔ 포털 조회는 가구 멤버 범위와 보호자/방문자 역할을 보존한다 (55.244183ms)
+✔ 가구 생성과 기기 등록은 등록된 Gateway subject를 확인한다 (37.734635ms)
+✔ 동의/권한의 동시 재전송은 원래 intent로 한 번 반영한다 (42.612545ms)
+✔ 방문자 요청을 보호자가 승인하면 현재 claim을 가진 명령이 Gateway 큐에 들어간다 (61.553642ms)
+✔ 권한 만료와 다른 가구 권한은 명령 승인에 반영한다 (61.524071ms)
+✔ 방문자 위치는 현재 가구 위치 권한과 동의·회수·만료에 연결된다 (61.308911ms)
+✔ 안전 요청과 알림 확인은 본인/가구 권한을 유지하며 재시작 뒤 보존한다 (55.329432ms)
+✔ 일부 큐 등록 뒤 장애는 PARTIAL로 보존하고 동일 commandId로 복구한다 (64.620314ms)
+✔ 저장 장애는 동의와 idempotency를 함께 롤백하고 재시작 재전송을 복구한다 (67.58259ms)
+ℹ tests 34
+ℹ suites 0
+ℹ pass 34
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 754.881943

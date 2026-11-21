@@ -1,0 +1,20 @@
+{
+  "status": "HTTP_TLS_POLICY_PASS",
+  "tls": "TLSv1.3",
+  "health": 200,
+  "unauthenticatedPortal": 401,
+  "denied": {
+    "/identity/admin/": 403,
+    "/identity/management/": 403,
+    "/Mobius": 403,
+    "/v1/portal/snapshot": 403,
+    "/admin": 403,
+    "/metrics": 403
+  },
+  "redirect": {
+    "status": 308,
+    "location": "https://bubble.localhost:19443/sample"
+  },
+  "rateLimitedRequests": 61,
+  "totalRequests": 100
+}

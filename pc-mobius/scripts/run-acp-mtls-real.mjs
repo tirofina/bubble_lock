@@ -22,8 +22,8 @@ import { basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 import mqtt from 'mqtt';
-import { applyMobiusSecurity } from './apply-mobius-security.mjs';
 import { encodeBinarySwitch } from '../src/sdt-adapter.mjs';
+import { subscribeWithTransientCreate, revokeSubscriber } from '../integration/src/cse-subscription-lifecycle.mjs';
 import { BINDING_TABLE_VERSION, BindingTableSource, HashChainedAudit, verifyAuditChain, writeBindingTable } from '../src/originator-binding.mjs';
 import { renderMosquittoAcl, renderMosquittoConf, startMqttOriginatorGuard, topicId } from '../src/mqtt-originator-guard.mjs';
 
@@ -40,7 +40,7 @@ const directory = join(root, '.local/acp-mtls', runId);
 const source = join(directory, 'source'); const pkiDir = join(directory, 'pki'); const auditDir = join(directory, 'audit');
 const ROLES = ['guardian', 'visitor', 'relay', 'mecIPE', 'executor', 'operator', 'policyDeployer'];
 const IDENTITIES = ['provisioner', 'parent', 'sink', ...ROLES];
-const children = []; const secrets = []; const results = []; const notifications = []; const fronts = [];
+const children = []; const secrets = []; const results = []; const notifications = []; const fronts = []; const trustedCreators = new Set();
 let pool; let receiver; let broker; let guard; let guardClient; let connection; const databases = [];
 
 function sanitized(value) { let text = String(value); for (const secret of secrets) if (secret) text = text.replaceAll(secret, '[secret]'); return text; }
@@ -164,6 +164,7 @@ async function roleMatrix(provider, sinkUrl) {
     roles[name].id = roles[name].aei;
     check(p, 'registration', `${name}:AE-ID=bound-originator`, provider.originatorOf(name), roles[name].aei);
   }
+  trustedCreators.add(roles.mecIPE.id);
   const resources = [];
   const add = async (name, masks, ty = 3) => {
     const policy = { pv: { acr: [{ acor: [provider.admin], acop: 63 }, ...Object.entries(masks).map(([role, acop]) => ({ acor: [roles[role].id], acop }))] }, pvs: { acr: [{ acor: [provider.admin], acop: 63 }, { acor: [roles.policyDeployer.id], acop: 14 }] } };
@@ -173,7 +174,7 @@ async function roleMatrix(provider, sinkUrl) {
   };
   const abstract = await add('abstract', { guardian: 34 }); await add('incident', { guardian: 1 }); const groupResource = await add('group', { visitor: 34 }, 9); await add('intent', { visitor: 1 });
   const observation = await add('observation', { relay: 1 }); await add('receipt', { relay: 1 }); const desired = await add('desired', { mecIPE: 2 }); await add('actual', { mecIPE: 5 });
-  const actuator = await add('actuator', { executor: 6 }, 28); await add('health', { operator: 2 });
+  const actuator = await add('actuator', { executor: 6 }, 28); const health = await add('health', { operator: 2 });
   const notifyPolicy = await create('provisioner', parent.path, 1, { 'm2m:acp': { rn: 'notify-acp', pv: { acr: [{ acor: [provider.admin], acop: 63 }, { acor: [roles.mecIPE.id, provider.cseId], acop: 16 }] }, pvs: { acr: [{ acor: [provider.admin], acop: 63 }, { acor: [roles.policyDeployer.id], acop: 14 }] } } });
   const sink = await create('sink', '/Mobius', 2, { 'm2m:ae': { rn: `acp-${run}-${provider.index}-sink`, api: 'N.privacy.bubble.receiver', rr: true, poa: [sinkUrl] } });
   check(p, 'registration', 'sink:AE-ID=bound-originator', provider.originatorOf('sink'), sink.aei);
@@ -207,8 +208,21 @@ async function roleMatrix(provider, sinkUrl) {
   check(p, group, 'policyDeployer:ACP:update', 2004, deployed.rsc, { requestId: deployed.rqi });
   const replaced = await call(provider, 'executor', 'PUT', actuator.path, { payload: { 'cod:binSh': { acpi: [desired.acp.ri] } } });
   check(p, group, 'executor:resource:acpi-replacement', 4103, replaced.rsc, { requestId: replaced.rqi });
-  const subscribed = await call(provider, 'mecIPE', 'POST', desired.path, { payload: { 'm2m:sub': { rn: 'desired-events', nu: [sink.path.replace(/^\//, '')], enc: { net: [1] }, nct: 1 } }, ty: 23 });
-  check(p, group, 'mecIPE:RETRIEVE-only:SUBSCRIBE', 2001, subscribed.rsc, { requestId: subscribed.rqi });
+  const lifecycleAdmin = {
+    request: (method, path, body) => admin(method, path, body),
+    read: async (path) => (await admin('GET', path)).body,
+  };
+  const desiredSubscription = { 'm2m:sub': { rn: 'desired-events', nu: [sink.path.replace(/^\//, '')], enc: { net: [1] }, nct: 1 } };
+  const retrieveOnly = await call(provider, 'mecIPE', 'POST', desired.path, { payload: desiredSubscription, ty: 23 });
+  check(p, group, 'mecIPE:RETRIEVE-only:SUBSCRIBE', 4103, retrieveOnly.rsc, { requestId: retrieveOnly.rqi });
+  const subscribed = await subscribeWithTransientCreate({ admin: lifecycleAdmin, acpPath: desired.acp.path, policy: desired.policy.pv, subscriberId: roles.mecIPE.id, createAsSubscriber: () => call(provider, 'mecIPE', 'POST', desired.path, { payload: desiredSubscription, ty: 23 }) });
+  check(p, group, 'mecIPE:transient-CREATE:SUBSCRIBE', 2001, subscribed.rsc, { requestId: subscribed.rqi });
+  const restoredPolicy = Object.values(await lifecycleAdmin.read(desired.acp.path))[0].pv;
+  check(p, group, 'mecIPE:transient-CREATE:policy-restored', false, restoredPolicy.acr.some((rule) => rule.acor.includes(roles.mecIPE.id) && (rule.acop & 1)));
+  const commandCreate = await call(provider, 'mecIPE', 'POST', desired.path, { payload: { 'm2m:cin': { cnf: 'application/json', con: { abstractState: 'SAFE' } } }, ty: 4 });
+  check(p, group, 'mecIPE:after-subscribe:CREATE-command', 4103, commandCreate.rsc, { requestId: commandCreate.rqi });
+  const unverified = await subscribeWithTransientCreate({ admin: lifecycleAdmin, acpPath: health.acp.path, policy: health.policy.pv, subscriberId: roles.operator.id, createAsSubscriber: () => call(provider, 'operator', 'POST', health.path, { payload: { 'm2m:sub': { rn: 'health-events', nu: [sink.path.replace(/^\//, '')], enc: { net: [1] }, nct: 1 } }, ty: 23 }) });
+  check(p, group, 'operator:no-NOTIFY-target:verification-refused', 5204, unverified.rsc, { requestId: unverified.rqi });
   const unreadable = await call(provider, 'relay', 'POST', observation.path, { payload: { 'm2m:sub': { rn: 'unreadable-events', nu: [sinkUrl], enc: { net: [1] }, nct: 1 } }, ty: 23 });
   check(p, group, 'relay:CREATE-only:SUBSCRIBE', 4103, unreadable.rsc, { requestId: unreadable.rqi });
   if (subscribed.rsc === 2001) {
@@ -216,9 +230,10 @@ async function roleMatrix(provider, sinkUrl) {
     await admin('PUT', desired.path, { 'm2m:cnt': { lbl: ['before-revoke'] } });
     for (let attempt = 0; attempt < 100 && matches('before-revoke').length === 0; attempt++) await delay(10);
     check(p, group, 'subscription:authorized-notification', true, matches('before-revoke').length > 0);
-    await admin('PUT', desired.acp.path, { 'm2m:acp': { pv: { acr: [{ acor: [provider.admin], acop: 63 }] } } });
+    const revoked = await revokeSubscriber({ admin: lifecycleAdmin, subscriptionPaths: [`${desired.path}/desired-events`], acpPath: desired.acp.path, revokedPolicy: { acr: [{ acor: [provider.admin], acop: 63 }] } });
+    check(p, group, 'revocation:subscription-deleted-before-ACP', 2002, revoked.subscriptions[0].rsc);
     await admin('PUT', desired.path, { 'm2m:cnt': { lbl: ['after-revoke'] } }); await delay(500);
-    check(p, group, 'subscription:current-RETRIEVE-revocation', 0, matches('after-revoke').length);
+    check(p, group, 'revocation:no-notification-after-revoke', 0, matches('after-revoke').length);
   }
   return { parent, roles, abstract, observation, actuator, groupResource, desired };
 }
@@ -386,14 +401,13 @@ try {
   await mkdir(auditDir, { recursive: true });
   await cp(upstream, source, { recursive: true, filter: (path) => !['node_modules', '.git', 'logs'].includes(basename(path)) });
   await symlink(join(upstream, 'node_modules'), join(source, 'node_modules'), 'junction');
-  const patch = await applyMobiusSecurity(source);
   const prepared = spawnSync(process.execPath, [join(root, 'pc-mobius/scripts/prepare-specialization.mjs'), '--mobius-root', upstream, '--config-dir', join(source, 'config')], { cwd: root, encoding: 'utf8', windowsHide: true });
   if (prepared.status !== 0) throw new Error('CSE canonical registry preparation failed.');
   await writeFile(join(directory, 'loopback-only.cjs'), "const net=require('node:net');const original=net.Server.prototype.listen;net.Server.prototype.listen=function(...args){if(typeof args[0]==='number'&&typeof args[1]!=='string')args.splice(1,0,'127.0.0.1');return original.apply(this,args);};\n");
   connection = JSON.parse(await readFile(join(root, '.local/postgres/connection.json'), 'utf8')); secrets.push(connection.password);
   pool = new pg.Pool({ host: connection.host, port: connection.port, user: connection.user, password: connection.password, database: connection.database });
   const pki = await buildPki();
-  receiver = httpServer(async (req, res) => { try { const chunks = []; for await (const chunk of req) chunks.push(chunk); notifications.push({ path: req.url, body: JSON.parse(Buffer.concat(chunks).toString()), origin: req.headers['x-m2m-origin'] }); res.writeHead(200, { 'X-M2M-RSC': '2000', 'X-M2M-RI': req.headers['x-m2m-ri'] ?? '' }); res.end(); } catch { res.writeHead(400); res.end(); } });
+  receiver = httpServer(async (req, res) => { try { const chunks = []; for await (const chunk of req) chunks.push(chunk); const body = JSON.parse(Buffer.concat(chunks).toString()); notifications.push({ path: req.url, body, origin: req.headers['x-m2m-origin'] }); const signal = body?.['m2m:sgn']; const rsc = signal?.vrq === true && !trustedCreators.has(signal.cr) ? '4101' : '2000'; res.writeHead(rsc === '2000' ? 200 : 403, { 'X-M2M-RSC': rsc, 'X-M2M-RI': req.headers['x-m2m-ri'] ?? '' }); res.end(); } catch { res.writeHead(400); res.end(); } });
   receiver.listen(0, '127.0.0.1'); await once(receiver, 'listening'); const sinkUrl = `http://127.0.0.1:${receiver.address().port}`;
   const ports = mqttEnabled ? { internal: await freePort(), external: await freePort() } : null;
   const providers = []; for (let index = 0; index < providerCount; index++) providers.push(await startProvider(index, pki, ports?.internal));
@@ -437,7 +451,7 @@ try {
     transport: 'TLS 1.3 mTLS originator-binding front (Node https, child process) -> loopback HTTP -> actual Mobius4' + (mqttEnabled ? '; TLS 1.3 mTLS Mosquitto (CN ACL, mount_point) -> originator guard -> Mobius4 MQTT binding' : ''),
     cseVersion: JSON.parse(await readFile(join(upstream, 'package.json'), 'utf8')).version,
     sourceRevision: spawnSync('git', ['rev-parse', 'HEAD'], { cwd: upstream, encoding: 'utf8', windowsHide: true }).stdout.trim() || null,
-    securityPatch: patch.patch, postgres: (await pool.query('SELECT version()')).rows[0].version.split(',')[0], node: process.version,
+    cseSource: 'unmodified-upstream', postgres: (await pool.query('SELECT version()')).rows[0].version.split(',')[0], node: process.version,
     openssl: spawnSync(openssl, ['version'], { encoding: 'utf8', windowsHide: true }).stdout.trim(),
     pki: { generator: 'openssl (run-local throwaway CA under .local, deleted with the run directory)', keyType: 'EC P-256', caSubject: new X509Certificate(pki.ca).subject, caFingerprint256: new X509Certificate(pki.ca).fingerprint256, identities: Object.values(pki.certs).filter((cert) => cert.name !== 'server').map(({ name, cn, uri, fingerprint256, validTo, issuer }) => ({ name, cn, uri, fingerprint256, validTo, issuer })) },
     bindingModel: { identity: 'SAN URI (urn:privacy-bubble:acp-mtls:<role>) with SHA-256 certificate pin; CN used as MQTT username', originatorRule: 'one certificate identity -> exactly one AE originator; AE-ID pre-assigned and registered by the certificate holder', mismatch: 'HTTP 403 + X-M2M-RSC 4103 + pb:originatorBinding.code, request never forwarded', absent: 'front injects the bound originator', revocation: 'remove the row from the binding table; the front re-reads the file per request (stat key) without restart', auditPrivacy: 'originators logged as domain-separated SHA-256 digests (16 hex), request bodies as SHA-256 only, no payload content' },

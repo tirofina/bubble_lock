@@ -1,0 +1,24 @@
+✖ private container bind accepts a request from the bridge address (101.359051ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 260.969537
+
+✖ failing tests:
+
+test at deployment/test/bff-bind.test.mjs:8:1
+✖ private container bind accepts a request from the bridge address (101.359051ms)
+  [TypeError: fetch failed] {
+    [cause]: Error: connect ECONNREFUSED 172.30.62.47:39007
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1645:16) {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '172.30.62.47',
+      port: 39007
+    }
+  }

@@ -24,6 +24,10 @@ await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 console.log(JSON.stringify({ origin: `https://127.0.0.1:${server.address().port}`, command }));
 const input = createInterface({ input: process.stdin });
 for await (const line of input) {
+  if (line === 'enroll') console.log(JSON.stringify(await runtime.api.handle({ method: 'POST', path: '/v1/portal/keyring-enrollments', principal,
+    body: { householdId: 'test-household', gatewayId: 'gw-test', deviceId: 'kr-new', label: '새 TLS 키링', idempotencyKey: 'tls-enrollment' } })));
+  if (line === 'enrollment') console.log(JSON.stringify({ device: runtime.store.get('portalDevices', 'kr-new'),
+    binding: runtime.store.get('keyringBindings', 'kr-new'), enrollment: runtime.portalService.snapshot(principal).keyringEnrollments[0] }));
   if (line === 'locations') console.log(JSON.stringify(await runtime.portalLocations.read(principal)));
   if (line === 'snapshot') console.log(JSON.stringify({ command: runtime.store.get('gatewayCommands', command.commandId), activeLanes: runtime.handoverCoordinator.activeLanes('kr-test'), receipts: runtime.store.list('gatewayDeviceReceipts'), incidents: runtime.store.list('portalIncidents'), notifications: runtime.store.list('portalNotifications'), deviceEvents: runtime.store.list('deviceIncidentEvents') }));
   if (line === 'revoke') {

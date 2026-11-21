@@ -1,0 +1,55 @@
+{
+  "status": "PACKAGED",
+  "artifact": "mobius4-e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8-bubble-subscription-v1.tar.gz",
+  "repository": "https://github.com/IoTKETI/mobius4",
+  "revision": "e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8",
+  "version": "4.25.0",
+  "archive": "https://codeload.github.com/IoTKETI/mobius4/tar.gz/e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8",
+  "archiveSHA256": "cd22adacf6800a1450c2c45033ba1f58079ef9104bd7f06b3c24fbcc994c8aa4",
+  "securityPatch": {
+    "patch": "BUBBLE_SUBSCRIPTION_SECURITY_V1",
+    "files": [
+      {
+        "file": "cse/reqPrim.js",
+        "status": "APPLIED",
+        "beforeSHA256": "4d51d85ecef0a9c30ed49fd5b1b409566de6db9066ad40bff98f240262892ce7",
+        "sha256": "aac60be64056be87fdcb72cf2e29716b17e82e098abded1a81328b9139e06cb2"
+      },
+      {
+        "file": "cse/hostingCSE.js",
+        "status": "APPLIED",
+        "beforeSHA256": "11128f360fbf9fcb5deae1684a3a2c430375f1b724b9ffcfc234a13b4a14bb47",
+        "sha256": "977148f24340bb1d0680d8536d0b1302ac10fe8df469318b49bec935490efa30"
+      },
+      {
+        "file": "cse/noti.js",
+        "status": "APPLIED",
+        "beforeSHA256": "0535478aafa4e3dce108cd785dc6715223ffb2674ec5156c98634ca254f3ca19",
+        "sha256": "f222306d4c4e3e438830d4a2735a328bc0f7b62c8115676201ca7426cd2ceff8"
+      }
+    ]
+  },
+  "artifactSHA256": "7118c23ac70da3c947e4c12df4c5b2c56577cc5bff1f97a8551fc0fb09ff7721",
+  "lockSHA256": "100e29c3b4feecc3fcd95f4af5b214180305326a5890651b165ec63fea72aea6",
+  "patcherSHA256": "9dfa3c0a6fd708b412909e9e57a091fc373ad1f59e521ba744b69ea7cf89bae0",
+  "repeatedApplication": {
+    "patch": "BUBBLE_SUBSCRIPTION_SECURITY_V1",
+    "files": [
+      {
+        "file": "cse/reqPrim.js",
+        "status": "ALREADY_APPLIED",
+        "sha256": "aac60be64056be87fdcb72cf2e29716b17e82e098abded1a81328b9139e06cb2"
+      },
+      {
+        "file": "cse/hostingCSE.js",
+        "status": "ALREADY_APPLIED",
+        "sha256": "977148f24340bb1d0680d8536d0b1302ac10fe8df469318b49bec935490efa30"
+      },
+      {
+        "file": "cse/noti.js",
+        "status": "ALREADY_APPLIED",
+        "sha256": "f222306d4c4e3e438830d4a2735a328bc0f7b62c8115676201ca7426cd2ceff8"
+      }
+    ]
+  }
+}

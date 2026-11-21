@@ -14,6 +14,7 @@ import { randomBytes, createHash, X509Certificate } from 'node:crypto';
 import { createInterface } from 'node:readline';
 import { join, resolve, basename, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { subscribeWithTransientCreate } from '../integration/src/cse-subscription-lifecycle.mjs';
 import os from 'node:os';
 import pg from 'pg';
 import { MatrixBroker } from './protocol-matrix/broker.mjs';
@@ -130,7 +131,8 @@ try {
   expect(gwAe.body['m2m:ae'].aei === gwAei, 'gateway AE-ID binding');
   const appAe = await step('app AE', appClient, 'POST', '/Mobius', { 'm2m:ae': { rn: 'pb-app-matrix', api: 'Npb.app.matrix', rr: false, srv: ['4'] } }, 2);
   expect(appAe.body['m2m:ae'].aei === appAei, 'app AE-ID binding');
-  const acp = await step('data ACP', gatewayClient, 'POST', aePath, { 'm2m:acp': { rn: 'gateway-data-acp', pv: { acr: [{ acor: [gwAei], acop: 63 }, { acor: [appAei], acop: 34 }] }, pvs: { acr: [{ acor: [gwAei], acop: 63 }] } } }, 1);
+  const dataPolicy = { acr: [{ acor: [gwAei], acop: 63 }, { acor: [appAei], acop: 34 }] };
+  const acp = await step('data ACP', gatewayClient, 'POST', aePath, { 'm2m:acp': { rn: 'gateway-data-acp', pv: dataPolicy, pvs: { acr: [{ acor: [gwAei], acop: 63 }] } } }, 1);
   const acpRi = acp.body['m2m:acp'].ri;
   for (const rn of ['observations', 'receipts', 'health']) await step(`${rn} container`, gatewayClient, 'POST', aePath, { 'm2m:cnt': { rn, mni: 20000, acpi: [acpRi] } }, 3);
   const denied = await appClient.request('POST', `${aePath}/observations`, { 'm2m:cin': { con: { forged: true } } }, 4);
@@ -139,10 +141,15 @@ try {
   const impersonation = await new OneM2MClient({ port: frontPort, identity: pki.app, ca: pki.ca, originator: gwAei }).request('GET', `${aePath}/observations`);
   provisioning.push({ label: 'app certificate using gateway originator', status: impersonation.status, rsc: impersonation.rsc });
   expect(impersonation.status === 403, 'certificate/originator binding');
-  let subscriptionOwner = 'app-ae';
-  let sub = await appClient.request('POST', `${aePath}/observations`, { 'm2m:sub': { rn: 'app-push', nu: [`https://127.0.0.1:${sinkPort}/notify`], enc: { net: [3] }, nct: 1 } }, 23);
-  provisioning.push({ label: 'app subscription', originator: 'app-ae', status: sub.status, rsc: sub.rsc });
-  if (sub.rsc !== 2001) { subscriptionOwner = 'gateway-ae'; sub = await step('subscription by owner', gatewayClient, 'POST', `${aePath}/observations`, { 'm2m:sub': { rn: 'app-push', nu: [`https://127.0.0.1:${sinkPort}/notify`], enc: { net: [3] }, nct: 1 } }, 23); }
+  const subscriptionOwner = 'app-ae';
+  const subscriptionBody = { 'm2m:sub': { rn: 'app-push', nu: [`https://127.0.0.1:${sinkPort}/notify`], enc: { net: [3] }, nct: 1 } };
+  const lifecycleAdmin = {
+    request: (method, path, body) => gatewayClient.request(method, path, body),
+    read: async (path) => (await gatewayClient.request('GET', path)).body,
+  };
+  const sub = await subscribeWithTransientCreate({ admin: lifecycleAdmin, acpPath: `${aePath}/gateway-data-acp`, policy: dataPolicy, subscriberId: appAei, createAsSubscriber: () => appClient.request('POST', `${aePath}/observations`, subscriptionBody, 23) });
+  provisioning.push({ label: 'app subscription with transient CREATE', originator: 'app-ae', status: sub.status, rsc: sub.rsc });
+  expect(sub.rsc === 2001, `app subscription: ${sub.status}/${sub.rsc}`);
 
   // Central API (team pc-mobius integration runtime) behind a byte-counting TCP proxy.
   const apiPort = await freePort();

@@ -1,0 +1,116 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 575B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/node:24.14.0-bookworm-slim
+#2 ...
+
+#3 [auth] library/node:pull token for registry-1.docker.io
+#3 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/node:24.14.0-bookworm-slim
+#2 DONE 5.2s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 2B done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 1.44MB 0.0s done
+#5 DONE 0.0s
+
+#6 [build 1/4] FROM docker.io/library/node:24.14.0-bookworm-slim@sha256:d8e448a56fc63242f70026718378bd4b00f8c82e78d20eefb199224a4d8e33d8
+#6 resolve docker.io/library/node:24.14.0-bookworm-slim@sha256:d8e448a56fc63242f70026718378bd4b00f8c82e78d20eefb199224a4d8e33d8 0.0s done
+#6 DONE 0.1s
+
+#6 [build 1/4] FROM docker.io/library/node:24.14.0-bookworm-slim@sha256:d8e448a56fc63242f70026718378bd4b00f8c82e78d20eefb199224a4d8e33d8
+#6 sha256:776241850f38a30fe88eaf208cc912a7a0e33e1fd8f7c587061f548caa924125 0B / 445B 0.2s
+#6 sha256:776241850f38a30fe88eaf208cc912a7a0e33e1fd8f7c587061f548caa924125 445B / 445B 0.2s done
+#6 sha256:93ee29de81c9263806a610d22d4f26397e90f873bee4ad3ba765dc167b86b4d0 0B / 1.71MB 0.3s
+#6 sha256:a57bdd3e230f749f2933290b5dc58aec8a1c451658b915deaabc080db7eb6631 0B / 49.25MB 0.2s
+#6 sha256:f338f4ce51e01bb68984dfe040d1127c733a14b68e7336987193d3519f5044d2 0B / 3.31kB 0.2s
+#6 sha256:6db0909c4473287ed4d1f950d26b8bc5b7b4206d365a0e7740cb89e46979153e 0B / 28.24MB 0.2s
+#6 sha256:93ee29de81c9263806a610d22d4f26397e90f873bee4ad3ba765dc167b86b4d0 1.71MB / 1.71MB 0.6s done
+#6 sha256:f338f4ce51e01bb68984dfe040d1127c733a14b68e7336987193d3519f5044d2 3.31kB / 3.31kB 0.7s done
+#6 sha256:a57bdd3e230f749f2933290b5dc58aec8a1c451658b915deaabc080db7eb6631 4.19MB / 49.25MB 1.1s
+#6 sha256:a57bdd3e230f749f2933290b5dc58aec8a1c451658b915deaabc080db7eb6631 7.34MB / 49.25MB 1.4s
+#6 sha256:a57bdd3e230f749f2933290b5dc58aec8a1c451658b915deaabc080db7eb6631 10.49MB / 49.25MB 1.7s
+#6 sha256:6db0909c4473287ed4d1f950d26b8bc5b7b4206d365a0e7740cb89e46979153e 2.10MB / 28.24MB 1.5s
+#6 sha256:a57bdd3e230f749f2933290b5dc58aec8a1c451658b915deaabc080db7eb6631 13.63MB / 49.25MB 2.0s
+#6 sha256:a57bdd3e230f749f2933290b5dc58aec8a1c451658b915deaabc080db7eb6631 16.78MB / 49.25MB 2.3s
+#6 sha256:6db0909c4473287ed4d1f950d26b8bc5b7b4206d365a0e7740cb89e46979153e 4.19MB / 28.24MB 2.3s
+#6 sha256:a57bdd3e230f749f2933290b5dc58aec8a1c451658b915deaabc080db7eb6631 20.97MB / 49.25MB 2.7s
+#6 sha256:6db0909c4473287ed4d1f950d26b8bc5b7b4206d365a0e7740cb89e46979153e 6.29MB / 28.24MB 2.9s
+#6 sha256:a57bdd3e230f749f2933290b5dc58aec8a1c451658b915deaabc080db7eb6631 25.17MB / 49.25MB 3.2s
+#6 sha256:6db0909c4473287ed4d1f950d26b8bc5b7b4206d365a0e7740cb89e46979153e 8.39MB / 28.24MB 3.3s
+#6 sha256:a57bdd3e230f749f2933290b5dc58aec8a1c451658b915deaabc080db7eb6631 28.31MB / 49.25MB 3.6s
+#6 sha256:6db0909c4473287ed4d1f950d26b8bc5b7b4206d365a0e7740cb89e46979153e 10.49MB / 28.24MB 3.8s
+#6 sha256:a57bdd3e230f749f2933290b5dc58aec8a1c451658b915deaabc080db7eb6631 31.46MB / 49.25MB 4.1s
+#6 sha256:6db0909c4473287ed4d1f950d26b8bc5b7b4206d365a0e7740cb89e46979153e 12.58MB / 28.24MB 4.1s
+#6 sha256:6db0909c4473287ed4d1f950d26b8bc5b7b4206d365a0e7740cb89e46979153e 14.68MB / 28.24MB 4.4s
+#6 sha256:a57bdd3e230f749f2933290b5dc58aec8a1c451658b915deaabc080db7eb6631 34.60MB / 49.25MB 4.7s
+#6 sha256:6db0909c4473287ed4d1f950d26b8bc5b7b4206d365a0e7740cb89e46979153e 16.78MB / 28.24MB 4.7s
+#6 sha256:6db0909c4473287ed4d1f950d26b8bc5b7b4206d365a0e7740cb89e46979153e 18.87MB / 28.24MB 4.8s
+#6 sha256:6db0909c4473287ed4d1f950d26b8bc5b7b4206d365a0e7740cb89e46979153e 20.97MB / 28.24MB 5.1s
+#6 sha256:a57bdd3e230f749f2933290b5dc58aec8a1c451658b915deaabc080db7eb6631 37.75MB / 49.25MB 5.4s
+#6 sha256:6db0909c4473287ed4d1f950d26b8bc5b7b4206d365a0e7740cb89e46979153e 24.12MB / 28.24MB 5.4s
+#6 sha256:6db0909c4473287ed4d1f950d26b8bc5b7b4206d365a0e7740cb89e46979153e 26.21MB / 28.24MB 5.7s
+#6 sha256:6db0909c4473287ed4d1f950d26b8bc5b7b4206d365a0e7740cb89e46979153e 28.24MB / 28.24MB 5.8s done
+#6 extracting sha256:6db0909c4473287ed4d1f950d26b8bc5b7b4206d365a0e7740cb89e46979153e
+#6 sha256:a57bdd3e230f749f2933290b5dc58aec8a1c451658b915deaabc080db7eb6631 40.89MB / 49.25MB 6.3s
+#6 extracting sha256:6db0909c4473287ed4d1f950d26b8bc5b7b4206d365a0e7740cb89e46979153e 0.4s done
+#6 extracting sha256:f338f4ce51e01bb68984dfe040d1127c733a14b68e7336987193d3519f5044d2
+#6 sha256:a57bdd3e230f749f2933290b5dc58aec8a1c451658b915deaabc080db7eb6631 44.04MB / 49.25MB 6.6s
+#6 extracting sha256:f338f4ce51e01bb68984dfe040d1127c733a14b68e7336987193d3519f5044d2 0.0s done
+#6 sha256:a57bdd3e230f749f2933290b5dc58aec8a1c451658b915deaabc080db7eb6631 47.19MB / 49.25MB 6.9s
+#6 sha256:a57bdd3e230f749f2933290b5dc58aec8a1c451658b915deaabc080db7eb6631 49.25MB / 49.25MB 7.0s done
+#6 extracting sha256:a57bdd3e230f749f2933290b5dc58aec8a1c451658b915deaabc080db7eb6631
+#6 extracting sha256:a57bdd3e230f749f2933290b5dc58aec8a1c451658b915deaabc080db7eb6631 0.5s done
+#6 DONE 7.7s
+
+#6 [build 1/4] FROM docker.io/library/node:24.14.0-bookworm-slim@sha256:d8e448a56fc63242f70026718378bd4b00f8c82e78d20eefb199224a4d8e33d8
+#6 extracting sha256:93ee29de81c9263806a610d22d4f26397e90f873bee4ad3ba765dc167b86b4d0 0.0s done
+#6 extracting sha256:776241850f38a30fe88eaf208cc912a7a0e33e1fd8f7c587061f548caa924125 0.0s done
+#6 DONE 7.7s
+
+#7 [build 2/4] WORKDIR /app
+#7 DONE 0.5s
+
+#8 [build 3/4] COPY deployment/cse/artifacts/mobius4-*-bubble-subscription-v1.tar.gz /tmp/mobius.tar.gz
+#8 DONE 0.1s
+
+#9 [build 4/4] RUN tar xzf /tmp/mobius.tar.gz -C /app     && npm ci --omit=dev --ignore-scripts --no-audit --no-fund     && rm /tmp/mobius.tar.gz
+#9 0.800 npm warn deprecated topo@3.0.3: This module has moved and is now available at @hapi/topo. Please update your dependencies as this version is no longer maintained an may contain bugs and security issues.
+#9 1.046 npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+#9 1.069 npm warn deprecated hoek@6.1.3: This module has moved and is now available at @hapi/hoek. Please update your dependencies as this version is no longer maintained an may contain bugs and security issues.
+#9 1.110 npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+#9 1.403 npm warn deprecated joi@14.3.1: This module has moved and is now available at @hapi/joi. Please update your dependencies as this version is no longer maintained an may contain bugs and security issues.
+#9 3.244 
+#9 3.244 added 219 packages in 3s
+#9 3.244 npm notice
+#9 3.244 npm notice New minor version of npm available! 11.9.0 -> 11.21.2
+#9 3.244 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.21.2
+#9 3.244 npm notice To update run: npm install -g npm@11.21.2
+#9 3.244 npm notice
+#9 DONE 3.5s
+
+#10 [stage-1 3/4] COPY --from=build /app /app
+#10 DONE 0.6s
+
+#11 [stage-1 4/4] RUN mkdir -p /var/lib/mobius4 && chown node:node /var/lib/mobius4
+#11 DONE 0.2s
+
+#12 exporting to image
+#12 exporting layers
+#12 exporting layers 1.3s done
+#12 exporting manifest sha256:9b24f688a9d1e51263f287ecf92f526517e405016d4fce147c3580816c76a723 0.0s done
+#12 exporting config sha256:0936c150ba28f9abb068ce7a43b6713b7166d6b1b2ec0515ce0b17e54328e204 0.0s done
+#12 exporting attestation manifest sha256:15daf3d048415d2b4e599c5d13f0ca044e9a367fb48ab10f4286cb42a1d9f766 0.0s done
+#12 exporting manifest list sha256:2e77edcbd2e5b078c8262ecffd590e0b1a955eebb703d8d39f68e264fe0ca722 0.0s done
+#12 naming to docker.io/bubblelock/mobius4:4.25.0-bubble-subscription-v1
+#12 naming to docker.io/bubblelock/mobius4:4.25.0-bubble-subscription-v1 done
+#12 unpacking to docker.io/bubblelock/mobius4:4.25.0-bubble-subscription-v1
+#12 unpacking to docker.io/bubblelock/mobius4:4.25.0-bubble-subscription-v1 0.8s done
+#12 DONE 2.2s

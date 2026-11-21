@@ -14,7 +14,7 @@
   "hosts": [
     {
       "host": "pc",
-      "address": "192.168.0.106",
+      "address": "192.0.2.106",
       "os": "Windows 11",
       "roles": [
         "Mobius4 CSE /pb-cse (HTTPS 17599 on the LAN with the lab CA, loopback HTTP for local AEs)",
@@ -26,7 +26,7 @@
     },
     {
       "host": "vm mec-sandbox",
-      "address": "192.168.0.103",
+      "address": "192.0.2.103",
       "os": "Ubuntu 22.04 (single-node kubeadm)",
       "roles": [
         "ETSI MEC Sandbox STF_685",
@@ -140,7 +140,7 @@
   },
   "sandbox": {
     "name": "dayofcare",
-    "host": "192.168.0.103",
+    "host": "192.0.2.103",
     "implementation": "ETSI MEC Sandbox STF_685 (local kubeadm install)",
     "caSHA256": "41b040e74ccdada474afe8972813df3adcebef77fdbf04fc9a0bfe7f52898bc4"
   },

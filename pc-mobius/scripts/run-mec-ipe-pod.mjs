@@ -3,7 +3,7 @@
  * instance on a MEP of the ETSI MEC Sandbox. Settings come from the environment (the sandbox scenario
  * process `environment` string cannot hold ',' or '=' inside values, so list values also accept ';').
  *
- *   MEC_BASE_URL (https://192.168.0.103), MEC_SANDBOX_NAME, MEC_MEP / PB_IPE_MEP, MEC_CA_FILE,
+ *   MEC_BASE_URL (https://192.0.2.103), MEC_SANDBOX_NAME, MEC_MEP / PB_IPE_MEP, MEC_CA_FILE,
  *   MEC_APP_INSTANCE_ID (scenario process id), MEC_AMS_MEP (MEP whose MEC021 is used, default mep1),
  *   MEC_CALLBACK_PUBLIC_URL and MEC_IPE_ONEM2M_URL (NodePort URL of this instance),
  *   ONEM2M_CSE_URL (https, may carry a path prefix), ONEM2M_CA_FILE (default MEC_CA_FILE), ONEM2M_CSE_BASE,

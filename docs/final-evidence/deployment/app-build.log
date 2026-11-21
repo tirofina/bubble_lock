@@ -1,0 +1,93 @@
+ Image bubblelock-app:local Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 794B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 1.29kB done
+#2 DONE 0.0s
+
+#3 [auth] library/node:pull token for registry-1.docker.io
+#3 DONE 0.0s
+
+#4 [internal] load metadata for docker.io/library/node:22.22.0-bookworm-slim
+#4 DONE 1.0s
+
+#5 [build  1/12] FROM docker.io/library/node:22.22.0-bookworm-slim@sha256:dd9d21971ec4395903fa6143c2b9267d048ae01ca6d3ea96f16cb30df6187d94
+#5 resolve docker.io/library/node:22.22.0-bookworm-slim@sha256:dd9d21971ec4395903fa6143c2b9267d048ae01ca6d3ea96f16cb30df6187d94 0.0s done
+#5 DONE 0.0s
+
+#6 [internal] load build context
+#6 transferring context: 49.28kB 0.0s done
+#6 DONE 0.0s
+
+#7 [build  4/12] COPY web-dashboard/package*.json web-dashboard/
+#7 CACHED
+
+#8 [build  6/12] COPY pc-mobius pc-mobius
+#8 CACHED
+
+#9 [build  5/12] RUN npm --prefix pc-mobius ci && npm --prefix web-dashboard ci
+#9 CACHED
+
+#10 [build  3/12] COPY pc-mobius/package*.json pc-mobius/
+#10 CACHED
+
+#11 [build  2/12] WORKDIR /app
+#11 CACHED
+
+#12 [build  7/12] COPY web-dashboard web-dashboard
+#12 CACHED
+
+#13 [build  8/12] COPY docs docs
+#13 DONE 0.1s
+
+#14 [build  9/12] COPY contracts contracts
+#14 DONE 0.1s
+
+#15 [build 10/12] COPY deployment/mqtt-bridge.mjs deployment/mqtt-bridge.mjs
+#15 DONE 0.1s
+
+#16 [build 11/12] COPY deployment/provision-cse.mjs deployment/provision-cse.mjs
+#16 DONE 0.1s
+
+#17 [build 12/12] RUN npm --prefix web-dashboard run build
+#17 0.219 
+#17 0.219 > bubblelock-web-dashboard@0.1.0 build
+#17 0.219 > tsc --noEmit && vite build
+#17 0.219 
+#17 3.023 vite v7.3.7 building client environment for production...
+#17 3.056 transforming...
+#17 3.993 ✓ 244 modules transformed.
+#17 4.092 rendering chunks...
+#17 4.138 computing gzip size...
+#17 4.146 dist/index.html                         0.41 kB │ gzip:   0.28 kB
+#17 4.146 dist/assets/LocationMap-vuxvUX3U.css   25.87 kB │ gzip:   9.05 kB
+#17 4.146 dist/assets/index-DHRLY1NI.css         29.40 kB │ gzip:   7.07 kB
+#17 4.146 dist/assets/LocationMap-Dc9A_4fS.js   169.34 kB │ gzip:  50.56 kB
+#17 4.146 dist/assets/index-BSxbcn4g.js         464.16 kB │ gzip: 140.43 kB
+#17 4.146 ✓ built in 1.11s
+#17 DONE 4.2s
+
+#11 [build  2/12] WORKDIR /app
+#11 CACHED
+
+#18 [stage-1 3/3] COPY --from=build /app /app
+#18 DONE 0.6s
+
+#19 exporting to image
+#19 exporting layers
+#19 exporting layers 2.3s done
+#19 exporting manifest sha256:cc0caf538de9c12ed9f368c2d65008c00b42c84bedd8a9e7821a5e7c76af40e6 0.0s done
+#19 exporting config sha256:f19989eea57e765585cf676886639f9e477a37c4e21952df2c82dcccc55210fb 0.0s done
+#19 exporting attestation manifest sha256:77a2abc18efcbf32f74c70b9022758736bc8098ef8f9f27ea1c21ef6db37ff5a 0.0s done
+#19 exporting manifest list sha256:aa9155cd8f004289708381eb23c906c399f02e4c5739256491f06237c8e64f63 0.0s done
+#19 naming to docker.io/library/bubblelock-app:local
+#19 naming to docker.io/library/bubblelock-app:local done
+#19 unpacking to docker.io/library/bubblelock-app:local
+#19 unpacking to docker.io/library/bubblelock-app:local 0.5s done
+#19 DONE 2.9s
+
+#20 resolving provenance for metadata file
+#20 DONE 0.0s
+ Image bubblelock-app:local Built 

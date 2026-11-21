@@ -1,0 +1,133 @@
+{
+  "generatedAt": "2026-11-12T10:34:57.894Z",
+  "status": "PASS",
+  "mode": "LOCAL_SIMULATION",
+  "externalServicesCalled": false,
+  "physicalHosts": 1,
+  "baseline": "Root setup and all 13 verify stages passed, supplied by lead; not repeated.",
+  "steps": [
+    {
+      "id": "configured-runners",
+      "command": [
+        "/home/gunp4ng/.nvm/versions/node/v24.14.0/bin/node",
+        "--test",
+        "--test-reporter=tap",
+        "pc-mobius/test/external-runner.test.mjs",
+        "pc-mobius/test/external-scenarios.test.mjs",
+        "pc-mobius/test/external-fl.test.mjs",
+        "pc-mobius/test/external-edge-callback.test.mjs",
+        "pc-mobius/test/external-worker-config.test.mjs"
+      ],
+      "exitCode": 0,
+      "milliseconds": 8119,
+      "log": "configured-runners.log",
+      "sha256": "244153cf28fd7a3bf2d8fff4dc96a626afb5bd1ef9104f22f3dbe2fe0bc7d4d7",
+      "passed": 8,
+      "failed": 0
+    },
+    {
+      "id": "mec-M01-M09",
+      "command": [
+        "/home/gunp4ng/.nvm/versions/node/v24.14.0/bin/node",
+        "--test",
+        "--test-reporter=tap",
+        "pc-mobius/test/mec-http.test.mjs",
+        "pc-mobius/test/mec-trigger.test.mjs",
+        "pc-mobius/test/mec-deployment-schema.test.mjs"
+      ],
+      "exitCode": 0,
+      "milliseconds": 2069,
+      "log": "mec-M01-M09.log",
+      "sha256": "385b223151be9b09315540d7a67ca0ea4bca5b12dd2f6f011bc6e2f793bc7e30",
+      "passed": 27,
+      "failed": 0
+    },
+    {
+      "id": "handover-faults",
+      "command": [
+        "/home/gunp4ng/.nvm/versions/node/v24.14.0/bin/node",
+        "--test",
+        "--test-reporter=tap",
+        "pc-mobius/test/handover-http.test.mjs"
+      ],
+      "exitCode": 0,
+      "milliseconds": 5018,
+      "log": "handover-faults.log",
+      "sha256": "1e4231a1b968a5c5dd5a7dafbf5f9cd4d2ec2999ff2937406787380a6346c193",
+      "passed": 9,
+      "failed": 0
+    },
+    {
+      "id": "fl-faults",
+      "command": [
+        "/home/gunp4ng/.nvm/versions/node/v24.14.0/bin/node",
+        "--test",
+        "--test-reporter=tap",
+        "pc-mobius/test/fl-coordinator.test.mjs"
+      ],
+      "exitCode": 0,
+      "milliseconds": 1659,
+      "log": "fl-faults.log",
+      "sha256": "15daf507ddf6c9840fca245f5c081375c0ef4fa3d947b3468a318e5adb3fb2b3",
+      "passed": 12,
+      "failed": 0
+    },
+    {
+      "id": "fl-numeric",
+      "command": [
+        "/home/gunp4ng/.nvm/versions/node/v24.14.0/bin/node",
+        "pc-mobius/scripts/run-fl-verification.mjs",
+        "--output=/home/gunp4ng/working/bubblelock-final-20261112/repo/.local/external-rehearsal/tmp/run-rOoodg/fl"
+      ],
+      "exitCode": 0,
+      "milliseconds": 2061,
+      "log": "fl-numeric.log",
+      "sha256": "3a0218250e95212fce30db90b441fe40e79e80ac4ef660101a6508ccb517d820",
+      "passed": 0,
+      "failed": 0
+    }
+  ],
+  "artifacts": [
+    {
+      "file": "fl-manifest-101.json",
+      "bytes": 1891,
+      "sha256": "4b68bde5960cc8c2288d366a4dde133665c62743e4f725abf088b58584143789"
+    },
+    {
+      "file": "fl-manifest-202.json",
+      "bytes": 1891,
+      "sha256": "b1224c823f0666f172bad2b41dd3fa9de7813b4c793788523e14ca650f56ec10"
+    },
+    {
+      "file": "fl-manifest-303.json",
+      "bytes": 1891,
+      "sha256": "12576886e8f6e838bc57ca97cdb4a88198740b80a4a47c3fe302ede251872dd4"
+    },
+    {
+      "file": "fl-model-101.f32",
+      "bytes": 108,
+      "sha256": "fd9023c84855f6cb9a6eb5f67685f34a6e4a70373bed29c71256003bc5b3997a"
+    },
+    {
+      "file": "fl-model-202.f32",
+      "bytes": 108,
+      "sha256": "559bfd94b84b426c086155df61fed545b4fd8ac47b1f87b7c2f5b2b7a963e136"
+    },
+    {
+      "file": "fl-model-303.f32",
+      "bytes": 108,
+      "sha256": "eb72bb76a5b995429027b1d0053f33f5191f4f3048e03aacd34cfdd9e8450078"
+    },
+    {
+      "file": "fl-report.json",
+      "bytes": 34974,
+      "sha256": "229b6dd040684d2df558a3539d8cb0764ce60b7f4d7368cc67cb4b0e5a7ef05d"
+    }
+  ],
+  "cleanup": {
+    "temporary": "/home/gunp4ng/working/bubblelock-final-20261112/repo/.local/external-rehearsal/tmp/run-rOoodg",
+    "cache": "/home/gunp4ng/working/bubblelock-final-20261112/repo/.local/external-rehearsal/tmp/run-rOoodg/cache",
+    "status": "REMOVED",
+    "receipt": "Only this run-created directory was removed recursively; child handles settled before removal."
+  }
+}

@@ -85,14 +85,7 @@ THIRD-PARTY MATERIAL INCLUDED IN THIS REPOSITORY
      MAX9850 (Analog Devices / Maxim Integrated). The datasheet itself is not
      included and remains the property of its publisher.
 
-5. Mobius4 source excerpts
-   File: pc-mobius/scripts/apply-mobius-security.mjs
-   Contains short excerpts of Mobius4 source lines that serve as patch
-     anchors for the local subscription-security patch.
-   Mobius4: https://github.com/IoTKETI/mobius4
-   Copyright (c) 2025, IoTKETI. BSD 3-Clause License.
-
-6. JD9853 display reference
+5. JD9853 display reference
    keyring/firmware/src/jd9853_display.cpp was informed by jd9853-rs
      (https://github.com/drindr/jd9853-rs, MIT OR Apache-2.0,
      Copyright (c) 2026 Drin). No vendor initialization table was copied.

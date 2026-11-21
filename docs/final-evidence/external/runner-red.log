@@ -1,0 +1,67 @@
+✖ configuration check resolves environment and relative files without contacting a provider (21.629592ms)
+✖ invalid external plans fail before execution and never disclose environment secrets (17.469592ms)
+✖ unsupported scenario fails instead of silently producing a successful receipt (13.838926ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 0
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 97.009723
+
+✖ failing tests:
+
+test at pc-mobius/test/external-runner.test.mjs:12:1
+✖ configuration check resolves environment and relative files without contacting a provider (21.629592ms)
+  AssertionError [ERR_ASSERTION]: node:internal/modules/cjs/loader:1459
+    throw err;
+    ^
+  
+  Error: Cannot find module '/home/gunp4ng/working/bubblelock-final-20261112/repo/pc-mobius/scripts/run-external-services.mjs'
+      at Module._resolveFilename (node:internal/modules/cjs/loader:1456:15)
+      at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)
+      at Module._load (node:internal/modules/cjs/loader:1242:25)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+      at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+      at node:internal/main/run_main_module:33:47 {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: []
+  }
+  
+  Node.js v24.14.0
+  
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///home/gunp4ng/working/bubblelock-final-20261112/repo/pc-mobius/test/external-runner.test.mjs:32:10)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at pc-mobius/test/external-runner.test.mjs:37:1
+✖ invalid external plans fail before execution and never disclose environment secrets (17.469592ms)
+  SyntaxError: Unexpected token 'o', "node:intern"... is not valid JSON
+      at JSON.parse (<anonymous>)
+      at TestContext.<anonymous> (file:///home/gunp4ng/working/bubblelock-final-20261112/repo/pc-mobius/test/external-runner.test.mjs:50:23)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7)
+
+test at pc-mobius/test/external-runner.test.mjs:55:1
+✖ unsupported scenario fails instead of silently producing a successful receipt (13.838926ms)
+  SyntaxError: Unexpected token 'o', "node:intern"... is not valid JSON
+      at JSON.parse (<anonymous>)
+      at TestContext.<anonymous> (file:///home/gunp4ng/working/bubblelock-final-20261112/repo/pc-mobius/test/external-runner.test.mjs:58:21)
+      at Test.runInAsyncScope (node:async_hooks:228:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7)

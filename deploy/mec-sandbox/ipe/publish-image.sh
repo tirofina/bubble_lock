@@ -4,7 +4,7 @@
 # The build context lives in .local/mec-sandbox/ipe-build (gitignored) because it holds the lab CA certificate.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-VM="${VM:-mec@192.168.0.103}"
+VM="${VM:-mec@192.0.2.103}"
 KEY="${VM_KEY:-$HOME/VMs/mec-sandbox/id_ed25519}"
 KNOWN="${VM_KNOWN_HOSTS:-$HOME/VMs/mec-sandbox/known_hosts}"
 IMAGE="meep-docker-registry:30001/pb-onem2m-ipe"

@@ -1,0 +1,77 @@
+{
+  "status": "BROWSER_OIDC_ROLES_PASS",
+  "evidence": [
+    {
+      "role": "guardian",
+      "principalId": "guardian-1",
+      "scopes": [
+        "portal:read",
+        "household:write",
+        "device:write",
+        "consent:write",
+        "grant:write",
+        "grant:revoke",
+        "command:request",
+        "bubble:command",
+        "incident:write",
+        "incident:resolve"
+      ],
+      "authorization": {
+        "snapshot": 200,
+        "operator": 403,
+        "write": 403
+      },
+      "tokenBefore": "2026-11-12T10:43:06.000Z",
+      "tokenAfter": "2026-11-12T10:43:24.000Z",
+      "refresh": "PASS",
+      "logout": {
+        "status": 200,
+        "authenticated": false,
+        "portal": 401
+      }
+    },
+    {
+      "role": "visitor",
+      "principalId": "visitor-1",
+      "scopes": [
+        "portal:read",
+        "command:request",
+        "incident:write"
+      ],
+      "authorization": {
+        "snapshot": 200,
+        "operator": 403,
+        "write": 403
+      },
+      "tokenBefore": "2026-11-12T10:43:27.000Z",
+      "tokenAfter": "2026-11-12T10:43:42.000Z",
+      "refresh": "PASS",
+      "logout": {
+        "status": 200,
+        "authenticated": false,
+        "portal": 401
+      }
+    },
+    {
+      "role": "operator",
+      "principalId": "operator-1",
+      "scopes": [
+        "portal:read",
+        "dashboard:read"
+      ],
+      "authorization": {
+        "snapshot": 200,
+        "operator": 200,
+        "write": 403
+      },
+      "tokenBefore": "2026-11-12T10:43:44.000Z",
+      "tokenAfter": "2026-11-12T10:43:59.000Z",
+      "refresh": "PASS",
+      "logout": {
+        "status": 200,
+        "authenticated": false,
+        "portal": 401
+      }
+    }
+  ]
+}

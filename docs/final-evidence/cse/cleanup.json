@@ -1,0 +1,19 @@
+{
+  "children": [
+    {
+      "pid": 1977818,
+      "exitCode": 0,
+      "signalCode": null
+    },
+    {
+      "pid": 1977915,
+      "exitCode": 0,
+      "signalCode": null
+    }
+  ],
+  "databases": [
+    "bubble_acp_1794478918429_331b82_a",
+    "bubble_acp_1794478918429_331b82_b"
+  ],
+  "remainingDatabases": []
+}

@@ -1,0 +1,198 @@
+{
+  "project": "bubblelock-secure",
+  "status": "PASS",
+  "results": [
+    {
+      "service": "web",
+      "running": true,
+      "ports": [],
+      "user": "1000:1000",
+      "readOnly": true,
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "bubblelock-secure_web-config",
+          "Destination": "/run/bubble",
+          "RW": false
+        }
+      ]
+    },
+    {
+      "service": "api",
+      "running": true,
+      "ports": [],
+      "user": "1000:1000",
+      "readOnly": true,
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "bubblelock-secure_api-config",
+          "Destination": "/run/bubble",
+          "RW": false
+        },
+        {
+          "Type": "volume",
+          "Name": "bubblelock-secure_receipts",
+          "Destination": "/var/lib/bubble",
+          "RW": true
+        }
+      ]
+    },
+    {
+      "service": "mqtt-bridge",
+      "running": true,
+      "ports": [],
+      "user": "1000:1000",
+      "readOnly": true,
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "bubblelock-secure_bridge-config",
+          "Destination": "/run/bridge",
+          "RW": false
+        }
+      ]
+    },
+    {
+      "service": "static",
+      "running": false,
+      "ports": [],
+      "user": "1000:1000",
+      "readOnly": true,
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "bubblelock-secure_web-static",
+          "Destination": "/srv",
+          "RW": true
+        }
+      ]
+    },
+    {
+      "service": "mqtt",
+      "running": true,
+      "ports": [
+        "19883"
+      ],
+      "user": "1883:1883",
+      "readOnly": true,
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "bubblelock-secure_mqtt-config",
+          "Destination": "/run/mqtt",
+          "RW": false
+        },
+        {
+          "Type": "volume",
+          "Name": "bubblelock-secure_mqtt-data",
+          "Destination": "/mosquitto/data",
+          "RW": true
+        },
+        {
+          "Type": "volume",
+          "Name": "bubblelock-secure_mqtt-log",
+          "Destination": "/mosquitto/log",
+          "RW": true
+        }
+      ]
+    },
+    {
+      "service": "proxy",
+      "running": true,
+      "ports": [
+        "19443",
+        "19080"
+      ],
+      "user": "101:101",
+      "readOnly": true,
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "bubblelock-secure_proxy-config",
+          "Destination": "/run/proxy",
+          "RW": false
+        },
+        {
+          "Type": "volume",
+          "Name": "bubblelock-secure_acme-web",
+          "Destination": "/var/www/acme",
+          "RW": false
+        },
+        {
+          "Type": "volume",
+          "Name": "bubblelock-secure_web-static",
+          "Destination": "/srv",
+          "RW": false
+        }
+      ]
+    },
+    {
+      "service": "cse",
+      "running": true,
+      "ports": [],
+      "user": "1000:1000",
+      "readOnly": false,
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "bubblelock-secure_cse-data",
+          "Destination": "/var/lib/mobius4",
+          "RW": true
+        },
+        {
+          "Type": "volume",
+          "Name": "bubblelock-secure_cse-config",
+          "Destination": "/run/cse",
+          "RW": false
+        }
+      ]
+    },
+    {
+      "service": "keycloak",
+      "running": true,
+      "ports": [],
+      "user": "1000:1000",
+      "readOnly": false,
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "bubblelock-secure_identity-config",
+          "Destination": "/opt/keycloak/data/import",
+          "RW": false
+        }
+      ]
+    },
+    {
+      "service": "postgres",
+      "running": true,
+      "ports": [],
+      "user": "70:70",
+      "readOnly": false,
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "bubblelock-secure_postgres",
+          "Destination": "/var/lib/postgresql/data",
+          "RW": true
+        }
+      ]
+    },
+    {
+      "service": "cse-db",
+      "running": true,
+      "ports": [],
+      "user": "999:999",
+      "readOnly": false,
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "bubblelock-secure_cse-db",
+          "Destination": "/var/lib/postgresql/data",
+          "RW": true
+        }
+      ]
+    }
+  ],
+  "failures": []
+}

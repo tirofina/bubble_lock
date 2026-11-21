@@ -7,8 +7,8 @@
  * UE movement comes from the sandbox GIS engine (location update + MOBILITY automation), so the
  * sandbox itself reassigns the POA and emits the cell change.
  *
- * Environment: MEC_BASE_URL (default https://192.168.0.103), MEC_SANDBOX_NAME (bubble), MEC_MEP (mep1),
- * MEC_CA_FILE (.local/mec-sandbox/ca.pem), MEC_CALLBACK_HOST (192.168.0.106), MEC_IPE_LISTEN_PORT (18092),
+ * Environment: MEC_BASE_URL (default https://192.0.2.103), MEC_SANDBOX_NAME (bubble), MEC_MEP (mep1),
+ * MEC_CA_FILE (.local/mec-sandbox/ca.pem), MEC_CALLBACK_HOST (192.0.2.106), MEC_IPE_LISTEN_PORT (18092),
  * MEC_UE (33633442878), MEC_SCENARIO (dep-opt-b), MEC_SANDBOX_REVISION (informational).
  */
 import { cp, mkdir, readFile, writeFile, symlink, lstat } from 'node:fs/promises';
@@ -36,11 +36,11 @@ import { Onem2mHttpClient, parseContent } from '../integration/src/onem2m-http-c
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const env = process.env;
 const upstream = resolve(env.MOBIUS4_ROOT ?? join(root, '..', 'mobius4'));
-const mecBase = (env.MEC_BASE_URL ?? 'https://192.168.0.103').replace(/\/+$/, '');
+const mecBase = (env.MEC_BASE_URL ?? 'https://192.0.2.103').replace(/\/+$/, '');
 const sandboxName = env.MEC_SANDBOX_NAME ?? 'bubble';
 const mep = env.MEC_MEP ?? 'mep1';
 const caFile = resolve(root, env.MEC_CA_FILE ?? '.local/mec-sandbox/ca.pem');
-const callbackHost = env.MEC_CALLBACK_HOST ?? '192.168.0.106';
+const callbackHost = env.MEC_CALLBACK_HOST ?? '192.0.2.106';
 const listenPort = Number(env.MEC_IPE_LISTEN_PORT ?? 18092);
 const ueAddress = env.MEC_UE ?? '33633442878';
 const scenarioName = env.MEC_SCENARIO ?? 'dep-opt-b';

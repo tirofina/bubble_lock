@@ -1,0 +1,191 @@
+/* Tokens and brand mark follow web-dashboard/src/portal.css and PortalShell.tsx.
+   The deployed portal intentionally stays light in both OS color schemes. */
+:root {
+  color-scheme: light;
+  --background: #f5f7fa;
+  --surface: #fff;
+  --text: #1e2d43;
+  --muted: #65748b;
+  --border: #e3e9f0;
+  --accent: #087e80;
+  --accent-hover: #086769;
+  --danger: #b03d52;
+  --radius: 12px;
+  --pf-v5-global--FontFamily--text: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --pf-v5-global--FontFamily--heading: var(--pf-v5-global--FontFamily--text);
+  --pf-v5-global--Color--100: var(--text);
+  --pf-v5-global--Color--200: var(--muted);
+  --pf-v5-global--primary-color--100: var(--accent);
+  --pf-v5-global--primary-color--200: var(--accent-hover);
+  --pf-v5-global--active-color--100: var(--accent);
+  --pf-v5-global--danger-color--100: var(--danger);
+}
+.login-pf body {
+  min-height: 100dvh;
+  height: auto;
+  background: var(--background);
+  color: var(--text);
+  font: 15px/1.6 var(--pf-v5-global--FontFamily--text);
+  letter-spacing: -.012em;
+}
+.pf-v5-c-login {
+  min-height: 100dvh;
+  padding: 32px 24px;
+  background: var(--background);
+}
+.pf-v5-c-login__container {
+  width: min(100%, 30rem);
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+  margin: auto;
+  padding: 0;
+}
+.pf-v5-c-login__header {
+  margin: 0;
+}
+#kc-header-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 11px;
+  color: var(--text) !important;
+  font: 750 24px/1.4 var(--pf-v5-global--FontFamily--text);
+  letter-spacing: -.7px;
+  text-transform: none;
+  padding: 0;
+}
+#kc-header-wrapper::before {
+  content: "";
+  width: 41px;
+  height: 43px;
+  flex-shrink: 0;
+  background: url("../img/bubblelock-mark.svg") center / contain no-repeat;
+}
+.pf-v5-c-login__main {
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 3px 16px #1a385006;
+}
+.pf-v5-c-login__main-header {
+  border-top: 0;
+  padding: 32px 32px 24px;
+}
+#kc-page-title {
+  color: var(--text);
+  font: 700 26px/1.4 var(--pf-v5-global--FontFamily--text);
+  letter-spacing: -.7px;
+  overflow-wrap: anywhere;
+}
+.pf-v5-c-login__main-body {
+  padding: 0 32px 32px;
+}
+.pf-v5-c-form {
+  gap: 24px;
+}
+.pf-v5-c-form__label {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+}
+.pf-v5-c-form-control {
+  --pf-v5-c-form-control--BorderColor: var(--muted);
+  --pf-v5-c-form-control--after--BorderBottomWidth: 0;
+  --pf-v5-c-form-control--hover--after--BorderBottomWidth: 0;
+  --pf-v5-c-form-control--focus-within--after--BorderBottomWidth: 0;
+  --pf-v5-c-form-control--invalid--BorderColor: var(--danger);
+  background: var(--surface);
+  border: 1px solid var(--muted);
+  border-radius: 9px;
+}
+.pf-v5-c-form-control::before,
+.pf-v5-c-form-control::after {
+  border: 0;
+}
+.pf-v5-c-form-control > input {
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  color: var(--text);
+  background: transparent;
+  border-radius: inherit;
+  font: inherit;
+  caret-color: var(--accent);
+}
+.pf-v5-c-input-group {
+  gap: 8px;
+}
+.pf-v5-c-input-group__item {
+  min-width: 0;
+  border-inline-start: 0;
+}
+.pf-v5-c-button {
+  min-height: 44px;
+  border-radius: 10px;
+  font: 600 15px/1.6 var(--pf-v5-global--FontFamily--text);
+}
+.pf-v5-c-button::after {
+  border-radius: inherit;
+}
+.pf-v5-c-button.pf-m-primary {
+  color: var(--surface);
+  background: var(--accent);
+}
+.pf-v5-c-button.pf-m-primary:hover,
+.pf-v5-c-button.pf-m-primary:active {
+  background: var(--accent-hover);
+}
+.pf-v5-c-button.pf-m-control {
+  min-width: 44px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--muted);
+  border-radius: 9px;
+}
+.pf-v5-c-button.pf-m-control::after {
+  border: 0;
+}
+.pf-v5-c-button.pf-m-control:hover {
+  background: var(--background);
+}
+.pf-v5-c-button:disabled {
+  opacity: .65;
+  cursor: not-allowed;
+}
+:is(input, button, a):focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+a {
+  color: var(--accent);
+  text-underline-offset: .2em;
+}
+a:hover {
+  color: var(--accent-hover);
+}
+::selection {
+  background: #e8f5f3;
+  color: var(--text);
+}
+html {
+  scrollbar-color: var(--muted) var(--background);
+}
+.pf-v5-c-helper-text,
+.pf-v5-c-alert {
+  overflow-wrap: anywhere;
+}
+.pf-v5-c-helper-text__item-text.pf-m-error {
+  color: var(--danger);
+}
+.pf-v5-c-login__main-footer:empty {
+  display: none;
+}
+@media (max-width: 600px) {
+  .pf-v5-c-login { padding: 24px 16px; }
+  .pf-v5-c-login__main-header { padding: 24px 24px 20px; }
+  .pf-v5-c-login__main-body { padding: 0 24px 24px; }
+  .login-pf body, .pf-v5-c-form__label, .pf-v5-c-button { font-size: 17px; }
+  .pf-v5-c-helper-text { font-size: 15px; }
+  #kc-page-title { font-size: 24px; }
+}

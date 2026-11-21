@@ -83,6 +83,7 @@ export interface NotificationIngress {
 /** CSE → AE notification endpoint. Path prefix selects the application (/operator, /guardian). */
 export async function startNotificationIngress(options: {
   cseId: string; host?: string; port?: number;
+  verificationCreators: Readonly<Record<string, readonly string[]>>;
   onNotify: (app: string, body: unknown, receivedAt: string) => Promise<void> | void;
 }): Promise<NotificationIngress> {
   const stats = { received: 0, rejected: 0, verification: 0 };
@@ -100,7 +101,13 @@ export async function startNotificationIngress(options: {
       const app = new URL(request.url ?? '/', 'http://loopback').pathname.split('/').filter(Boolean)[0] ?? '';
       const sgn = typeof body === 'object' && body !== null ? (body as Record<string, unknown>)['m2m:sgn'] : undefined;
       if (typeof sgn !== 'object' || sgn === null) { stats.rejected += 1; reply(400, 4000); return; }
-      if ((sgn as Record<string, unknown>)['vrq'] === true) { stats.verification += 1; reply(200, 2000); return; }
+      if ((sgn as Record<string, unknown>)['vrq'] === true) {
+        stats.verification += 1;
+        const creator = (sgn as Record<string, unknown>)['cr'];
+        const allowed = typeof creator === 'string' && (options.verificationCreators[app] ?? []).includes(creator);
+        reply(allowed ? 200 : 403, allowed ? 2000 : 4101);
+        return;
+      }
       stats.received += 1;
       reply(200, 2000);
       await options.onNotify(app, body, new Date().toISOString());

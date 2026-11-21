@@ -23,7 +23,7 @@
     "real": true,
     "implementation": "ETSI MEC Sandbox STF_685 (local kubeadm install on VirtualBox VM)",
     "revision": "STF_685 backend 8c66f08 (+ local meep-rnis expiry fix, meep-loc-serv link fix), frontend df11a72",
-    "host": "192.168.0.103",
+    "host": "192.0.2.103",
     "sandboxName": "bubble",
     "mep": "mep1",
     "scenario": "dep-opt-b",

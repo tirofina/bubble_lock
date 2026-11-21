@@ -1,0 +1,24 @@
+QA image health
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Access-Control-Allow-Origin: *
+X-M2M-RI: image-health-final
+X-M2M-RSC: 2000
+X-M2M-RVI: 4
+Content-Type: application/json; charset=utf-8
+Content-Length: 319
+ETag: W/"13f-4wND8bIXEbbgNA0Oi+E/W3KVsKM"
+Date: Thu, 12 Nov 2026 10:23:27 GMT
+Connection: keep-alive
+Keep-Alive: timeout=60
+
+{"m2m:cb":{"ri":"75p9zbf7g4","ty":5,"rn":"Mobius","pi":"","ct":"20261112T102249","lt":"20261112T102249","cst":1,"csi":"/image-cse","srt":[1,2,3,4,5,9,16,23,28,29,30],"srv":["4","3","2a","2","1"],"poa":["http://127.0.0.1:47599"],"nl":"Mobius/nl","acpi":["Mobius/cb_default_acp","Mobius/cb_admin_acp"],"lbl":["Mobius4"]}}
+QA image metadata
+"sha256:2e77edcbd2e5b078c8262ecffd590e0b1a955eebb703d8d39f68e264fe0ca722" 92233834
+bubble-cse-st01a1cf42-image 43.49MiB / 384MiB
+QA patch bytes inside image
+aac60be64056be87fdcb72cf2e29716b17e82e098abded1a81328b9139e06cb2  cse/reqPrim.js
+977148f24340bb1d0680d8536d0b1302ac10fe8df469318b49bec935490efa30  cse/hostingCSE.js
+f222306d4c4e3e438830d4a2735a328bc0f7b62c8115676201ca7426cd2ceff8  cse/noti.js
+QA owned smoke cleanup
+bubble-cse-st01a1cf42-image

@@ -65,6 +65,15 @@ class CentralGatewayTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(locations[0]["location"], {"lat": 37.5665, "lon": 126.978, "source": "gps", "accuracyM": 6})
         self.assertEqual(locations[0]["rssiDbm"], -60)
         self.assertFalse(locations[0]["simulation"])
+        pending = await inspect("enroll")
+        self.assertEqual(pending["status"], 200)
+        self.assertEqual(pending["body"]["status"], "PENDING")
+        await hub.publish("new-keyring-released", "@central/telemetry",
+                          observation(deviceId="kr-new", sequence=1, buttonState="released"))
+        confirmed = await hub.publish("new-keyring-confirm", "@central/telemetry",
+                                      observation(deviceId="kr-new", sequence=2, buttonState="confirm"))
+        self.assertEqual(confirmed["enrollmentStatus"], "COMPLETED")
+        self.assertEqual((await inspect("enrollment"))["device"]["householdId"], "test-household")
         self.assertEqual(await hub.credential_status(), {"gatewayId": "gw-test", "credentialRevision": "1", "status": "ACTIVE"})
         commands = await hub.poll_commands()
         self.assertEqual(commands, [ready["command"]])

@@ -1,0 +1,196 @@
+{
+  "project": "bubblelock-deploy",
+  "status": "FAIL",
+  "results": [
+    {
+      "service": "web",
+      "running": true,
+      "ports": [],
+      "user": "",
+      "readOnly": false,
+      "mounts": [
+        {
+          "Type": "bind",
+          "Destination": "/run/bubble",
+          "RW": false
+        }
+      ]
+    },
+    {
+      "service": "api",
+      "running": true,
+      "ports": [],
+      "user": "",
+      "readOnly": false,
+      "mounts": [
+        {
+          "Type": "bind",
+          "Destination": "/run/bubble",
+          "RW": false
+        },
+        {
+          "Type": "volume",
+          "Name": "bubblelock-deploy_receipts",
+          "Destination": "/var/lib/bubble",
+          "RW": true
+        }
+      ]
+    },
+    {
+      "service": "static",
+      "running": false,
+      "ports": [],
+      "user": "",
+      "readOnly": false,
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "bubblelock-deploy_web-static",
+          "Destination": "/srv",
+          "RW": true
+        }
+      ]
+    },
+    {
+      "service": "proxy",
+      "running": true,
+      "ports": [
+        "19443",
+        "19080"
+      ],
+      "user": "",
+      "readOnly": false,
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "bubblelock-deploy_caddy-data",
+          "Destination": "/data",
+          "RW": true
+        },
+        {
+          "Type": "volume",
+          "Name": "bubblelock-deploy_caddy-config",
+          "Destination": "/config",
+          "RW": true
+        },
+        {
+          "Type": "bind",
+          "Destination": "/etc/caddy/Caddyfile",
+          "RW": false
+        },
+        {
+          "Type": "bind",
+          "Destination": "/run/pki",
+          "RW": false
+        },
+        {
+          "Type": "volume",
+          "Name": "bubblelock-deploy_web-static",
+          "Destination": "/srv",
+          "RW": false
+        }
+      ]
+    },
+    {
+      "service": "keycloak",
+      "running": true,
+      "ports": [],
+      "user": "1000",
+      "readOnly": false,
+      "mounts": [
+        {
+          "Type": "bind",
+          "Destination": "/opt/keycloak/data/import/bubble-realm.json",
+          "RW": false
+        }
+      ]
+    },
+    {
+      "service": "postgres",
+      "running": true,
+      "ports": [],
+      "user": "",
+      "readOnly": false,
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "bubblelock-deploy_postgres",
+          "Destination": "/var/lib/postgresql/data",
+          "RW": true
+        },
+        {
+          "Type": "bind",
+          "Destination": "/docker-entrypoint-initdb.d/10-keycloak.sql",
+          "RW": false
+        }
+      ]
+    },
+    {
+      "service": "mqtt",
+      "running": true,
+      "ports": [
+        "19883"
+      ],
+      "user": "",
+      "readOnly": false,
+      "mounts": [
+        {
+          "Type": "bind",
+          "Destination": "/mosquitto/config/mosquitto.conf",
+          "RW": false
+        },
+        {
+          "Type": "bind",
+          "Destination": "/mosquitto/config/acl",
+          "RW": false
+        },
+        {
+          "Type": "bind",
+          "Destination": "/run/pki",
+          "RW": false
+        },
+        {
+          "Type": "volume",
+          "Name": "bubblelock-deploy_mqtt-data",
+          "Destination": "/mosquitto/data",
+          "RW": true
+        },
+        {
+          "Type": "bind",
+          "Destination": "/run/mqtt-entrypoint.sh",
+          "RW": false
+        },
+        {
+          "Type": "volume",
+          "Name": "37734ca8909a964a919d56641a0ac315e61e1e0814cc57258b37bf71be778e97",
+          "Destination": "/mosquitto/log",
+          "RW": true
+        }
+      ]
+    }
+  ],
+  "failures": [
+    "web: non-volume host mount",
+    "web: root runtime user",
+    "web: writable root filesystem",
+    "web: missing no-new-privileges",
+    "api: non-volume host mount",
+    "api: root runtime user",
+    "api: writable root filesystem",
+    "api: missing no-new-privileges",
+    "static: root runtime user",
+    "proxy: non-volume host mount",
+    "proxy: root runtime user",
+    "proxy: writable root filesystem",
+    "proxy: missing no-new-privileges",
+    "keycloak: non-volume host mount",
+    "keycloak: missing no-new-privileges",
+    "postgres: non-volume host mount",
+    "postgres: root runtime user",
+    "postgres: missing no-new-privileges",
+    "mqtt: non-volume host mount",
+    "mqtt: root runtime user",
+    "mqtt: writable root filesystem",
+    "mqtt: missing no-new-privileges"
+  ]
+}

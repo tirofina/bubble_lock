@@ -243,10 +243,15 @@ test('registers two AEs with their own subscriptions and pushes CSE notification
     body: JSON.stringify({ 'm2m:sgn': { sur: 'Mobius/pb-gateway-pi-01/keyring-A/observation/sub-operator', nev: { net: 3, rep: { 'm2m:cin': observationCin(3, 'live3') } } } }) });
   const spoofed = await notify('operator', '/other-cse');
   const accepted = await notify('operator', '/test-cse');
+  const verify = (app: string, cr: string) => fetch(`${ingress}/${app}`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-M2M-Origin': '/test-cse', 'X-M2M-RI': `v-${cr}` }, body: JSON.stringify({ 'm2m:sgn': { vrq: true, cr } }) });
+  const trustedVerification = await verify('operator', 'Coperator01');
+  const foreignVerification = await verify('operator', GUARDIAN);
   const events = await streamed;
   // Then
   assert.equal(spoofed.status, 403);
   assert.equal(accepted.headers.get('X-M2M-RSC'), '2000');
+  assert.equal(trustedVerification.headers.get('X-M2M-RSC'), '2000');
+  assert.equal(foreignVerification.headers.get('X-M2M-RSC'), '4101');
   assert.equal(events.at(-1)?.currentRevision, 'live3');
   const operatorSubs = cse.subscriptions.filter((item) => item.origin === 'Coperator01').map((item) => item.path).sort();
   const guardianSubs = cse.subscriptions.filter((item) => item.origin === GUARDIAN).map((item) => item.path).sort();

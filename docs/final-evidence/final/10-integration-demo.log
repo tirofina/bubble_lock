@@ -1,0 +1,18 @@
+
+> privacy-bubble-pc-mobius-core@0.1.0 integration
+> node scripts/run-integration.mjs
+
+{
+  "contractId": "privacy-bubble.integration.v1",
+  "docRevision": "2.0.0",
+  "owner": "PC-MOBIUS-INTEGRATION",
+  "status": "PASS",
+  "consentId": "consent-cc36b09c-6f80-441f-a102-85f0077c729c",
+  "grantId": "grant-e28f7392-a3ed-4efe-9aae-321390b3a51f",
+  "mecEventId": "mec-demo-grant-e28f7392-a3ed-4efe-9aae-321390b3a51f",
+  "handoverEpoch": 1,
+  "flRoundId": "privacy-risk-grant-e28f7392-a3ed-4efe-9aae-321390b3a51f-r1",
+  "modelHash": "5c3e1d3bee87fef6946ecf7eb0c2c9b86b8605b76b9585709d57a9517dc4a2a8",
+  "mcpRunId": "mcp-run-1f527de3-4360-488f-848f-0a84d9757372",
+  "receiptPath": "/home/gunp4ng/working/bubblelock-final-20261112/repo/pc-mobius/receipts/integration-demo.jsonl"
+}

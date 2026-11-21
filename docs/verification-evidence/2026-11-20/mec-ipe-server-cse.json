@@ -14,15 +14,15 @@
   },
   "transport": {
     "cse": "https mTLS via nginx originator binding",
-    "ipeRoute": "https://<SERVER_DOMAIN>:8443/onem2m/Mobius (pod hostAlias <SERVER_DOMAIN> -> 192.168.0.103; SNI and Host <SERVER_DOMAIN>; client certificate CN pb-mec-ipe, EKU clientAuth, from the k8s secret pb-ipe-server-cse; server trust bundle from the server deployment; nginx sets X-M2M-Origin Cpb-mec-ipe)",
-    "requesterPath": "http://192.168.0.103:17599 (server owner LAN relay, CSE takes X-M2M-Origin as sent; PC and pod CIDR only; used for Cguardian-app, Cpb-orchestrator and Cpb-dash-guardian; retired after this run)",
-    "notificationsFromCse": "CSE allowlist NOTIFICATION_ALLOWED_ORIGINS http://192.168.0.103:31881, http://192.168.0.103:31882, http://192.168.0.106:18096",
-    "mec": "https://192.168.0.103/dayofcare/mep1 through the sandbox ingress with the pinned lab CA"
+    "ipeRoute": "https://<SERVER_DOMAIN>:8443/onem2m/Mobius (pod hostAlias <SERVER_DOMAIN> -> 192.0.2.103; SNI and Host <SERVER_DOMAIN>; client certificate CN pb-mec-ipe, EKU clientAuth, from the k8s secret pb-ipe-server-cse; server trust bundle from the server deployment; nginx sets X-M2M-Origin Cpb-mec-ipe)",
+    "requesterPath": "http://192.0.2.103:17599 (server owner LAN relay, CSE takes X-M2M-Origin as sent; PC and pod CIDR only; used for Cguardian-app, Cpb-orchestrator and Cpb-dash-guardian; retired after this run)",
+    "notificationsFromCse": "CSE allowlist NOTIFICATION_ALLOWED_ORIGINS http://192.0.2.103:31881, http://192.0.2.103:31882, http://192.0.2.106:18096",
+    "mec": "https://192.0.2.103/dayofcare/mep1 through the sandbox ingress with the pinned lab CA"
   },
   "hosts": [
     {
       "host": "pc",
-      "address": "192.168.0.106",
+      "address": "192.0.2.106",
       "os": "Windows 11",
       "roles": [
         "run driver pc-mobius/scripts/run-mec-ipe-server-cse.mjs",
@@ -32,7 +32,7 @@
     },
     {
       "host": "vm mec-sandbox",
-      "address": "192.168.0.103",
+      "address": "192.0.2.103",
       "os": "Ubuntu 22.04 (single-node kubeadm)",
       "roles": [
         "ETSI MEC Sandbox STF_685, sandbox dayofcare (scenario day-of-care)",
@@ -149,7 +149,7 @@
     ]
   },
   "notificationToListener": {
-    "method": "subscription by Cpb-dash-guardian (dashboard guardian reader, acop 50) through the relay; nu http://192.168.0.106:18096/location",
+    "method": "subscription by Cpb-dash-guardian (dashboard guardian reader, acop 50) through the relay; nu http://192.0.2.106:18096/location",
     "received": "yes",
     "firstNotifiedCinRi": "rijtgz1eax",
     "creatorSeen": "Cpb-mec-ipe"

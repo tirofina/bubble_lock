@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { approvalHash } from './integration-utils.mjs';
+import { revokeSubscriber } from './cse-subscription-lifecycle.mjs';
 
 const resourceName = (value) => {
   if (typeof value !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(value)) throw new Error('CSE 자원 이름을 확인하세요.');
@@ -146,11 +147,15 @@ export class OneM2mEdgeClient {
     return { path: result.path, ri: result.ri, duplicate: result.duplicate, payloadHash: observation.payloadHash };
   }
   async fence(binding) {
-    const result = await this.request('PUT', binding.acpPath, { 'm2m:acp': { pv: { acr: [{ acor: [this.originator], acop: 63 }, { acor: [binding.aeId], acop: 2 }] } } });
-    if (result.missing) throw new Error('출발 CSE ACP 정산을 확인하세요.');
-    const readback = rootAttributes(await this.read(binding.acpPath));
-    if (readback.pv?.acr?.some((rule) => rule.acor?.includes(binding.aeId) && (rule.acop & 4))) throw new Error('출발 CSE UPDATE 권한 정산을 확인하세요.');
-    return { fenced: true, acpPath: binding.acpPath, readbackHash: approvalHash(readback.pv) };
+    const revokedPolicy = { acr: [{ acor: [this.originator], acop: 63 }, { acor: [binding.aeId], acop: 2 }] };
+    const revoked = await revokeSubscriber({
+      admin: this,
+      subscriptionPaths: (binding.subscriptions ?? []).map((subscription) => subscription.path),
+      acpPath: binding.acpPath,
+      revokedPolicy,
+    });
+    if (revoked.pv?.acr?.some((rule) => rule.acor?.includes(binding.aeId) && (rule.acop & 4))) throw new Error('출발 CSE UPDATE 권한 정산을 확인하세요.');
+    return { fenced: true, acpPath: binding.acpPath, subscriptions: revoked.subscriptions, readbackHash: approvalHash(revoked.pv) };
   }
   async probeNotifications(binding) {
     for (const subscription of binding.subscriptions ?? []) {

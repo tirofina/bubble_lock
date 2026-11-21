@@ -42,6 +42,7 @@ export async function startAutomation(config, { report = () => {} } = {}) {
 
   const notifications = await startNotificationServer({
     cseId: cse.cseId,
+    creators: { automation: [automation.aeId] },
     onNotify: async ({ sgn, receivedAt }) => {
       const notifiedMs = Date.now();
       const binding = bindings.get(normalizeSid(sgn.sur, cse.cseBase));

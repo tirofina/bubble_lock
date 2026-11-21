@@ -207,7 +207,16 @@ export async function startCseLiveSource(config: CseLiveConfig, options: { fetch
     alertLogs[app].append(binding, cin, receivedAt);
   }
 
-  const ingress: NotificationIngress = await startNotificationIngress({ cseId: cse.cseId, ...(config.notification?.host ? { host: config.notification.host } : {}), ...(config.notification?.port === undefined ? {} : { port: config.notification.port }), onNotify });
+  const ingress: NotificationIngress = await startNotificationIngress({
+    cseId: cse.cseId,
+    verificationCreators: {
+      operator: [config.operator.aeId],
+      ...(config.guardian ? { guardian: [config.guardian.aeId] } : {}),
+    },
+    ...(config.notification?.host ? { host: config.notification.host } : {}),
+    ...(config.notification?.port === undefined ? {} : { port: config.notification.port }),
+    onNotify,
+  });
   await operator.registerAe(cseBase, { rn: config.operator.rn, api: 'Npb.operator.dashboard', poa: [`${ingress.url}/operator`], lbl: ['pb-app-operator'] });
   if (guardian && config.guardian) await guardian.registerAe(cseBase, { rn: config.guardian.rn, api: 'Npb.guardian.portal', poa: [`${ingress.url}/guardian`], lbl: ['pb-app-guardian'] });
 

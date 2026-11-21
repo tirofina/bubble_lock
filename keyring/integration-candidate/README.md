@@ -59,17 +59,23 @@ const settle = createCommandReceiptSettlement({
 
 Mobius4의 Gateway 전용 영수증 컨테이너 아래 `ty=23` 구독을 둔다. `enc`에는 `net:[3]`과 `chty:[4]`, `nct`에는 `3`을 지정한다. 알림은 `m2m:sgn.sur`에 구독의 structured ID를, `nev.rep.m2m:uri`에 새 cin의 structured ID를 담는다. [Mobius4 알림 구현](https://github.com/IoTKETI/mobius4/blob/e8f75b1d6ee13a0e034379ec8dab26a6ef4fe8f8/cse/noti.js)
 
-[수신 함수](receipt-notification-ingress.mjs)는 인증된 전송 계층이 부여한 `verifiedCseKey`로 등록을 찾는다. 구독의 정확한 wire `sur`, oneM2M originator와 RVI를 대조한다. 구독 확인 요청은 응답만 하고, 등록된 컨테이너 바로 아래의 `gw-<해시>` URI만 [PostgreSQL 대기열](receipt-notification-postgres.mjs)에 넣는다. `verifiedCseKey`는 HTTP 본문이나 클라이언트 헤더로 전달하지 않는다. 콜백은 등록된 경로의 POST에서 최대 8 KiB의 JSON 바이트를 넘기고 함수가 반환한 HTTP 상태·oneM2M 헤더로 응답한다.
+[수신 함수](receipt-notification-ingress.mjs)는 인증된 전송 계층이 부여한 `verifiedCseKey`로 등록을 찾는다. 구독의 정확한 wire `sur`, oneM2M originator와 RVI를 대조한다. 구독 확인 요청의 `cr`이 등록된 creator와 일치하면 2000, 다른 creator이면 4101을 반환한다. 등록된 컨테이너 바로 아래의 `gw-<해시>` URI만 [PostgreSQL 대기열](receipt-notification-postgres.mjs)에 넣는다. `verifiedCseKey`는 HTTP 본문이나 클라이언트 헤더로 전달하지 않는다. 콜백은 등록된 경로의 POST에서 최대 8 KiB의 JSON 바이트를 넘기고 함수가 반환한 HTTP 상태·oneM2M 헤더로 응답한다.
 
 [HTTPS 전송 어댑터](receipt-notification-https.mjs)는 TLS 1.3에서 검증된 클라이언트 인증서의 SHA-256 지문을 등록 CSE 키에 연결한다. 정해진 경로·메서드와 JSON 요청만 넘긴다. 수신 서버에 등록할 지문은 승인된 CSE 발신 또는 중계 인증서에서 읽는다. [Node.js TLS 인증 상태](https://nodejs.org/docs/latest-v22.x/api/tls.html#tlssocketauthorized)
 
 ```js
 const inbox = createPostgresReceiptInbox(pgPool);
-const receive = createReceiptNotificationIngress({ subscriptions, enqueue: inbox.enqueue });
+const receive = createReceiptNotificationIngress({
+  subscriptions: subscriptions.map((subscription) => ({
+    ...subscription,
+    creators: [configuredSubscriptionCreator],
+  })),
+  enqueue: inbox.enqueue,
+});
 const drainOne = createReceiptNotificationWorker({ inbox, resolveSettlement });
 ```
 
-팀 서버 설정의 `subscriptions`에는 `{ cseKey, originator, rvi, subscriptionRef, receiptContainer }`를 넣는다. `subscriptionRef`는 실제 Mobius4가 보내는 `Mobius/.../settlement` 형식, `receiptContainer`는 조회에 쓸 `/Mobius/...` 형식이다. `resolveSettlement(cseKey)`는 고정된 인증 CSE 조회와 PostgreSQL 정산을 묶은 기존 `settle` 함수를 돌려준다. CORE 작업 루프는 `drainOne()`을 반복 호출하고 `IDLE`일 때 대기한다.
+팀 서버 설정의 `subscriptions`에는 `{ cseKey, originator, rvi, subscriptionRef, receiptContainer, creators }`를 넣는다. `creators`는 해당 구독을 생성하는 Originator 목록이다. `subscriptionRef`는 실제 Mobius4가 보내는 `Mobius/.../settlement` 형식, `receiptContainer`는 조회에 쓸 `/Mobius/...` 형식이다. `resolveSettlement(cseKey)`는 고정된 인증 CSE 조회와 PostgreSQL 정산을 묶은 기존 `settle` 함수를 돌려준다. CORE 작업 루프는 `drainOne()`을 반복 호출하고 `IDLE`일 때 대기한다.
 
 [대기열 테이블](sql/002_receipt_notification_inbox.sql)은 `(cse_key, native_ref)`별로 중복 알림을 합친다. 수신 성공은 대기열 커밋 이후에만 반환한다. [작업자](receipt-notification-worker.mjs)는 제한 시간 동안 한 행을 맡고 원본을 조회해 정산한다. 일시 실패는 간격을 늘려 다시 시도한다. 한도를 넘겼거나 영수증이 검토로 분류되면 운영자가 확인할 상태와 코드가 남는다. 처리 도중 프로세스가 끝나면 기한 뒤 다른 작업자가 같은 URI를 처리할 수 있다.
 

@@ -1,0 +1,19 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: {"mode":"live","message":"로그인하여 대시보드에 연결하세요."}
+
+401 !== 200
+
+    at file:///home/gunp4ng/working/bubblelock-final-20261112/repo/deployment/test/gateway-https-live.mjs:28:8
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 401,
+  expected: 200,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.14.0

@@ -129,7 +129,7 @@ The sandbox runs require a local ETSI MEC Sandbox; [deploy/mec-sandbox](deploy/m
 ## Deployment
 
 - **Raspberry Pi Gateway:** systemd service under its own user, with certificates in `/etc/privacy-bubble/tls`: [raspberry-pi-gateway](keyring/raspberry-pi-gateway/README.md).
-- **Central server:** Mobius4 with PostgreSQL and PostGIS, the binarySwitch specialization (`prepare-specialization`) and the subscription security patch ([CSE_SECURITY.md](pc-mobius/integration/CSE_SECURITY.md)). The stack also includes an MQTT broker with TLS 1.3 and per-Gateway ACLs ([dev stack](keyring/dev/mobius4/README.md)), the integration API ([Gateway registration](pc-mobius/integration/GATEWAY_REGISTRATION.md)) and web apps with an OIDC backend ([oidc-session.md](web-dashboard/docs/oidc-session.md)).
+- **Central server:** Mobius4 with PostgreSQL and PostGIS, the binarySwitch specialization (`prepare-specialization`) and standard subscription verification on an unmodified Mobius4 ([CSE_SECURITY.md](pc-mobius/integration/CSE_SECURITY.md)). The stack also includes an MQTT broker with TLS 1.3 and per-Gateway ACLs ([dev stack](keyring/dev/mobius4/README.md)), the integration API ([Gateway registration](pc-mobius/integration/GATEWAY_REGISTRATION.md)) and web apps with an OIDC backend ([oidc-session.md](web-dashboard/docs/oidc-session.md)).
 - **ETSI MEC Sandbox and the MEC IPE image:** [deploy/mec-sandbox](deploy/mec-sandbox/README.md).
 
 Certificates, private keys, passkeys, databases and runtime state belong in git-ignored paths such as `.local/` and `/etc/privacy-bubble/`.

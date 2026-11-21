@@ -1,0 +1,528 @@
+{
+  "date": "2026-11-12",
+  "route": "http://127.0.0.1:5276/#/user/map",
+  "browser": "task-owned Chromium headless shell via omowright",
+  "environment": {
+    "VITE_STADIA_MAPS_KEY": "",
+    "VITE_STADIA_MAPS_DOMAIN": "",
+    "VITE_MAP_TILE_URL": "",
+    "VITE_MAP_ATTRIBUTION": "",
+    "envDir": "owned temporary directory; no project .env loaded"
+  },
+  "viewports": [
+    {
+      "width": 1440,
+      "height": 900,
+      "dpr": 1
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "dpr": 3,
+      "mobile": true,
+      "touch": true
+    }
+  ],
+  "checks": [
+    {
+      "name": "키링 선택과 핀 동기화",
+      "pass": true,
+      "actual": {
+        "selected": "키링 B",
+        "selectedPin": "키링 B"
+      }
+    },
+    {
+      "name": "BLE 원 숨김과 복원",
+      "pass": true,
+      "actual": "3 -> 0 -> 3"
+    },
+    {
+      "name": "지도 확대",
+      "pass": true,
+      "actual": {
+        "beforeZoom": "30 m",
+        "afterZoom": "20 m"
+      }
+    },
+    {
+      "name": "타일 실패 중 위치와 BLE 유지",
+      "pass": true,
+      "actual": {
+        "alert": "배경 지도 연결을 확인해 주세요. 위치와 수신 범위는 계속 표시합니다.일반 지도 사용",
+        "markers": 3,
+        "blePaths": 3,
+        "selected": "키링 B"
+      },
+      "abortedRequests": 4
+    },
+    {
+      "name": "타일 실패 후 일반 지도 복구",
+      "pass": true,
+      "actual": {
+        "markers": 3,
+        "selected": "키링 B",
+        "loadedTiles": 4
+      }
+    },
+    {
+      "name": "일반 지도 타일 다시 불러오기",
+      "pass": true
+    }
+  ],
+  "renderedDefault": {
+    "provider": "OpenStreetMap",
+    "markers": 3,
+    "horizontalOverflow": false
+  },
+  "network": {
+    "interceptionInstalledBeforeNavigation": true,
+    "externalDnsBlocked": true,
+    "externalRequestsContinued": 0,
+    "apiKeyQueries": 0,
+    "intercepted": 96,
+    "fulfilled": 86,
+    "aborted": 10,
+    "requests": [
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/12/3492/1586.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/12/3493/1586.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/12/3492/1585.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/12/3493/1585.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/12/3492/1587.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/12/3493/1587.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/12/3491/1586.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/12/3494/1586.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/12/3491/1585.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/12/3494/1585.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/12/3491/1587.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/12/3494/1587.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/18/223534/101516.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/18/223535/101516.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/18/223534/101515.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/18/223535/101515.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/18/223534/101517.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/18/223535/101517.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/18/223533/101516.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/18/223536/101516.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/18/223533/101515.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/18/223536/101515.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/18/223533/101517.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/18/223536/101517.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/12/3492/1586.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/12/3493/1586.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/12/3492/1585.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/12/3493/1585.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/12/3492/1587.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/12/3493/1587.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/12/3491/1586.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/12/3494/1586.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/12/3491/1585.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/12/3494/1585.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/12/3491/1587.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/12/3494/1587.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/18/223534/101516.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/18/223535/101516.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/18/223534/101515.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/18/223535/101515.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/18/223534/101517.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/18/223535/101517.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/18/223533/101516.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/18/223536/101516.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/18/223533/101515.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/18/223536/101515.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/18/223533/101517.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth/18/223536/101517.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/12/3492/1586.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/12/3493/1586.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/12/3492/1585.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/12/3493/1585.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/12/3492/1587.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/12/3493/1587.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/12/3491/1586.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/12/3494/1586.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/12/3491/1585.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/12/3494/1585.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/12/3491/1587.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/12/3494/1587.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/18/223534/101516.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/18/223535/101516.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/18/223534/101515.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/18/223535/101515.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/18/223534/101517.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/18/223535/101517.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/18/223533/101516.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/18/223536/101516.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/18/223533/101515.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/18/223536/101515.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/18/223533/101517.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/18/223536/101517.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/19/447068/203032.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/19/447069/203032.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/19/447068/203033.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/19/447069/203033.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/19/447068/203032.png",
+        "action": "aborted"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/19/447069/203032.png",
+        "action": "aborted"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/19/447068/203033.png",
+        "action": "aborted"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/19/447069/203033.png",
+        "action": "aborted"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/19/447068/203032.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/19/447069/203032.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/19/447068/203033.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/19/447069/203033.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/18/223534/101516.png",
+        "action": "aborted"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/18/223535/101516.png",
+        "action": "aborted"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/18/223534/101515.png",
+        "action": "aborted"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/18/223535/101515.png",
+        "action": "aborted"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/18/223534/101517.png",
+        "action": "aborted"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/18/223535/101517.png",
+        "action": "aborted"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/18/223534/101516.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/18/223535/101516.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/18/223534/101515.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/18/223535/101515.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/18/223534/101517.png",
+        "action": "fulfilled locally"
+      },
+      {
+        "url": "https://tile.openstreetmap.org/18/223535/101517.png",
+        "action": "fulfilled locally"
+      }
+    ]
+  },
+  "screenshots": [
+    {
+      "file": "before-desktop.png",
+      "width": 1425,
+      "height": 1376
+    },
+    {
+      "file": "before-mobile.png",
+      "width": 1170,
+      "height": 6207
+    },
+    {
+      "file": "after-desktop.png",
+      "width": 1425,
+      "height": 1376
+    },
+    {
+      "file": "after-mobile.png",
+      "width": 1170,
+      "height": 6207
+    },
+    {
+      "file": "tile-failure-mobile.png",
+      "width": 1170,
+      "height": 6624
+    },
+    {
+      "file": "recovered-mobile.png",
+      "width": 1170,
+      "height": 6207
+    }
+  ],
+  "tests": {
+    "red": {
+      "pass": 4,
+      "fail": 3,
+      "exitCode": 1
+    },
+    "green": {
+      "pass": 7,
+      "fail": 0,
+      "exitCode": 0
+    },
+    "typecheck": {
+      "exitCode": 0
+    }
+  },
+  "limitations": [
+    "Provider tiles were replaced with visibly labeled LOCAL QA TILE fixtures; real provider authentication and geographic tile content were not tested.",
+    "Location and portal APIs were fulfilled with local demo fixtures; this is not an authentication or backend integration test."
+  ],
+  "qaToolCorrections": [
+    "Navigation reset emulation to desktop; mobile emulation was reapplied after navigation and dimensions recorded.",
+    "Cached tiles did not trigger the first failure probe; task-owned browser cache was disabled before the successful failure and recovery checks."
+  ]
+}

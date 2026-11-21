@@ -101,7 +101,7 @@ export function discoveredPaths(payload) {
 }
 
 /** Notification ingress for one or more AEs. Each AE gets the prefix /<app>. */
-export async function startNotificationServer({ cseId, host = '127.0.0.1', port = 0, onNotify }) {
+export async function startNotificationServer({ cseId, creators = {}, host = '127.0.0.1', port = 0, onNotify }) {
   const stats = { received: 0, rejected: 0, verification: 0, deletion: 0 };
   const server = createServer(async (request, response) => {
     const reply = (status, rsc) => { response.writeHead(status, { 'X-M2M-RSC': String(rsc), 'X-M2M-RI': String(request.headers['x-m2m-ri'] ?? ''), 'Content-Length': '0' }); response.end(); };
@@ -114,7 +114,11 @@ export async function startNotificationServer({ cseId, host = '127.0.0.1', port 
       const sgn = body?.['m2m:sgn'];
       if (!sgn || typeof sgn !== 'object') { stats.rejected += 1; return reply(400, 4000); }
       const app = new URL(request.url ?? '/', 'http://loopback').pathname.split('/').filter(Boolean)[0] ?? '';
-      if (sgn.vrq) { stats.verification += 1; return reply(200, 2000); }
+      if (sgn.vrq) {
+        stats.verification += 1;
+        const allowed = typeof sgn.cr === 'string' && (creators[app] ?? []).includes(sgn.cr);
+        return reply(allowed ? 200 : 403, allowed ? 2000 : 4101);
+      }
       if (sgn.sud) stats.deletion += 1;
       stats.received += 1;
       reply(200, 2000);

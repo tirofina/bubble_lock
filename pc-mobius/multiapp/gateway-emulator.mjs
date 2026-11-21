@@ -197,6 +197,7 @@ export async function startGatewayEmulator(config, { report = () => {} } = {}) {
 
   const notifications = await startNotificationServer({
     cseId: cse.cseId,
+    creators: { gateway: [gateway.aeId] },
     onNotify: async ({ sgn }) => {
       const notifiedMs = Date.now();
       const sur = normalizeSid(sgn.sur, cse.cseBase);

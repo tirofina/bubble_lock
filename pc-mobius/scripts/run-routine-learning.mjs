@@ -42,7 +42,7 @@ const sanitize = (text) => secrets.filter(Boolean).reduce((value, secret) => val
 const log = (entry) => { const line = sanitize(JSON.stringify({ ...entry, at: nowIso() })); console.log(line); appendFileSync(join(runDir, 'runner.jsonl'), `${line}\n`); };
 const pool = new pg.Pool({ host: connection.host, port: connection.port, user: connection.user, password: connection.password, database: connection.database });
 const database = `bubble_learning_${runTag}`; let databaseCreated = false; let cse = null; let exitCode = 1;
-const mecBase = (env.MEC_BASE_URL ?? 'https://192.168.0.103').replace(/\/+$/, ''); const caFile = resolve(root, env.MEC_CA_FILE ?? '.local/mec-sandbox/ca.pem');
+const mecBase = (env.MEC_BASE_URL ?? 'https://192.0.2.103').replace(/\/+$/, ''); const caFile = resolve(root, env.MEC_CA_FILE ?? '.local/mec-sandbox/ca.pem');
 const sandboxRoot = `${mecBase}/${definition.sandbox}`; const mecFetch = createMecFetch({ caFile });
 const sandbox = async (method, path, body, expected = [200, 201, 204]) => {
   const response = await mecFetch(`${sandboxRoot}${path}`, { method, headers: { accept: 'application/json', ...(body ? { 'content-type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(8000) });

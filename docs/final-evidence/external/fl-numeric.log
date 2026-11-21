@@ -1,0 +1,28 @@
+{
+  "status": "PASS",
+  "runtimeMode": "LOCAL_SIMULATION",
+  "reportPath": "/home/gunp4ng/working/bubblelock-final-20261112/repo/.local/external-rehearsal/tmp/run-rOoodg/fl/report.json",
+  "runs": [
+    {
+      "seed": 101,
+      "rounds": 10,
+      "macroF1": 1,
+      "localOnlyMacroF1": 0.8655421143925254,
+      "modelHash": "fd9023c84855f6cb9a6eb5f67685f34a6e4a70373bed29c71256003bc5b3997a"
+    },
+    {
+      "seed": 202,
+      "rounds": 10,
+      "macroF1": 1,
+      "localOnlyMacroF1": 0.8678860262182526,
+      "modelHash": "559bfd94b84b426c086155df61fed545b4fd8ac47b1f87b7c2f5b2b7a963e136"
+    },
+    {
+      "seed": 303,
+      "rounds": 10,
+      "macroF1": 1,
+      "localOnlyMacroF1": 0.8669551511739821,
+      "modelHash": "eb72bb76a5b995429027b1d0053f33f5191f4f3048e03aacd34cfdd9e8450078"
+    }
+  ]
+}

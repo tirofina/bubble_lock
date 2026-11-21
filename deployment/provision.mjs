@@ -1,0 +1,18 @@
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { readFile, writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { X509Certificate } from 'node:crypto';
+const exec = promisify(execFile);
+const directory = resolve(process.env.RUN_TMP ?? '.local/deployment');
+const result = await exec('docker', ['compose', '-f', 'deployment/compose.yaml', '--profile', 'tools', 'run', '--rm', 'provision'], { maxBuffer: 2 * 1024 * 1024 });
+const group = JSON.parse(result.stdout.trim());
+const gatewayId = Object.values(group.members)[0].gatewayId;
+const path = resolve(directory, 'api.json');
+const api = JSON.parse(await readFile(path, 'utf8'));
+api.core.group = group;
+const fingerprint = new X509Certificate(await readFile(resolve(directory, 'pki/gateway-1.pem'))).fingerprint256;
+api.principals = [...api.principals.filter((entry) => entry.principalId !== gatewayId), { principalId: gatewayId, mtlsFingerprint: fingerprint, scopes: [] }];
+api.gateways = [{ gatewayId, principalId: gatewayId, fingerprint, devices: { 'keyring-A': 'household-1', 'keyring-B': 'household-1' }, credentialRevision: '1', ownershipEpoch: 0, status: 'ACTIVE' }];
+await writeFile(path, `${JSON.stringify(api, null, 2)}\n`, { mode: 0o600 });
+console.log(JSON.stringify({ status: 'CSE_GROUP_PROVISIONED', devices: Object.keys(group.members), next: 'Run init-volumes.mjs and recreate api' }));

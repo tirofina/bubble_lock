@@ -8,9 +8,10 @@ const utf8 = new TextDecoder('utf-8', { fatal: true });
 /** verifiedCseKey is supplied by the authenticated server transport, never by the request. */
 export function createReceiptNotificationIngress({ subscriptions, enqueue }) {
   const bindings = new Map();
-  for (const { cseKey, originator, rvi = '4', subscriptionRef, receiptContainer } of subscriptions) {
+  for (const { cseKey, originator, rvi = '4', subscriptionRef, receiptContainer, creators = [] } of subscriptions) {
     if (!exact(cseId, cseKey) || typeof originator !== 'string' || !originator || typeof rvi !== 'string'
-        || !exact(pathPattern, receiptContainer) || typeof subscriptionRef !== 'string') {
+        || !exact(pathPattern, receiptContainer) || typeof subscriptionRef !== 'string'
+        || !Array.isArray(creators) || creators.some((creator) => typeof creator !== 'string' || !creator)) {
       throw new Error('INVALID_RECEIPT_SUBSCRIPTION');
     }
     const wireContainer = subscriptionRef.startsWith('/') ? receiptContainer : receiptContainer.slice(1);
@@ -20,7 +21,7 @@ export function createReceiptNotificationIngress({ subscriptions, enqueue }) {
     if (subscriptionRef.slice(0, slash) !== wireContainer || !exact(cseId, subscriptionName) || bindings.has(key)) {
       throw new Error('INVALID_RECEIPT_SUBSCRIPTION');
     }
-    bindings.set(key, { originator, rvi, receiptContainer, wireContainer });
+    bindings.set(key, { originator, rvi, receiptContainer, wireContainer, creators: new Set(creators) });
   }
 
   return async function receive({ verifiedCseKey, headers, body }) {
@@ -40,7 +41,10 @@ export function createReceiptNotificationIngress({ subscriptions, enqueue }) {
     if (!binding || headers['x-m2m-origin'] !== binding.originator || headers['x-m2m-rvi'] !== binding.rvi) {
       return reply(403, 4103);
     }
-    if (signal.vrq === true && !Object.hasOwn(signal, 'nev') && !Object.hasOwn(signal, 'sud')) return reply(200, 2000);
+    // TS-0004 7.5.1.2.3: 수신기는 등록된 creator의 검증 요청만 승인한다.
+    if (signal.vrq === true && !Object.hasOwn(signal, 'nev') && !Object.hasOwn(signal, 'sud')) {
+      return binding.creators.has(signal.cr) ? reply(200, 2000) : reply(403, 4101);
+    }
     const rep = signal.nev?.rep;
     const uri = rep?.['m2m:uri'];
     if (Object.hasOwn(signal, 'vrq') || Object.hasOwn(signal, 'sud') || signal.nev?.net !== 3

@@ -1,0 +1,1164 @@
+{
+  "generatedAt": "2026-11-12T10:35:16.807Z",
+  "status": "PASS",
+  "runtimeMode": "LOCAL_SIMULATION",
+  "acceptanceIds": [
+    "A13",
+    "A14",
+    "A15"
+  ],
+  "fixture": {
+    "version": "synthetic-mobility-v1",
+    "count": 600,
+    "split": [
+      360,
+      120,
+      120
+    ],
+    "normalization": {
+      "offset": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    "means": [
+      [
+        0.3,
+        0.8,
+        0.5,
+        0.1,
+        0.8,
+        0.2,
+        0.1,
+        0.2
+      ],
+      [
+        0.8,
+        0.1,
+        0.1,
+        0.2,
+        0.7,
+        0.1,
+        0.9,
+        0.8
+      ],
+      [
+        0.5,
+        0.5,
+        0.8,
+        0.9,
+        0.1,
+        0.8,
+        0.4,
+        0.9
+      ]
+    ],
+    "std": 0.16,
+    "proportions": [
+      [
+        0.7,
+        0.2,
+        0.1
+      ],
+      [
+        0.2,
+        0.7,
+        0.1
+      ],
+      [
+        0.2,
+        0.2,
+        0.6
+      ],
+      [
+        0.4,
+        0.3,
+        0.3
+      ]
+    ]
+  },
+  "evaluation": "각 seed의 동일 고정 test split; local-only는 각 참여자의 실제 FL 선정 횟수와 동일 local epoch budget",
+  "rawDataLocation": "client synthetic generator",
+  "externalGate": {
+    "status": "ESTIMED_ACCOUNT_AND_DEPLOYMENT_RECEIPT_REQUIRED",
+    "required": [
+      "ESTIMED allocation ticket",
+      "HTTPS worker host/process/image identity",
+      "oneM2M publication readback"
+    ]
+  },
+  "results": [
+    {
+      "seed": 101,
+      "taskId": "mobility-seed-101",
+      "runtimeMode": "LOCAL_SIMULATION",
+      "datasets": [
+        {
+          "datasetId": "mobility-seed-101-client-1",
+          "datasetVersion": 1,
+          "seed": 101,
+          "clientIndex": 0,
+          "featureSchemaVersion": "privacy-motion-8-v1",
+          "fixtureVersion": "synthetic-mobility-v1",
+          "trainCount": 360,
+          "splitHash": "6831d65b1fcdbd0f446c2ddb8fad86acef7508bba8dfa45d5b26ad026824280d"
+        },
+        {
+          "datasetId": "mobility-seed-101-client-2",
+          "datasetVersion": 1,
+          "seed": 202,
+          "clientIndex": 1,
+          "featureSchemaVersion": "privacy-motion-8-v1",
+          "fixtureVersion": "synthetic-mobility-v1",
+          "trainCount": 360,
+          "splitHash": "8ec0c91a8f3ac7458136c863f07419e241454f57e7a2802d5f88a1168cc7c86c"
+        },
+        {
+          "datasetId": "mobility-seed-101-client-3",
+          "datasetVersion": 1,
+          "seed": 303,
+          "clientIndex": 2,
+          "featureSchemaVersion": "privacy-motion-8-v1",
+          "fixtureVersion": "synthetic-mobility-v1",
+          "trainCount": 360,
+          "splitHash": "2c9b06493cf25799caa720522c66af8555161daacb6e1d5f19b6a118980b5bc7"
+        },
+        {
+          "datasetId": "mobility-seed-101-client-4",
+          "datasetVersion": 1,
+          "seed": 404,
+          "clientIndex": 3,
+          "featureSchemaVersion": "privacy-motion-8-v1",
+          "fixtureVersion": "synthetic-mobility-v1",
+          "trainCount": 360,
+          "splitHash": "8a7af07a69a4b1d436489bd3ec2a6dac97a01ec403454d98a7bc66f05b017cdd"
+        }
+      ],
+      "rounds": [
+        {
+          "roundNumber": 1,
+          "roundId": "mobility-seed-101-r1",
+          "selected": [
+            "client-1",
+            "client-2",
+            "client-3"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "32546664c3b39f3cd873e435455b4cd9cbb1a4eff9114bb41f5364f81023b5a2",
+          "parentModelHash": "2f3d20ad814d46187abe91dcb991342aea76e30152670dfe7569fa154c564f52",
+          "manifestHash": "6578aaeb66614fc599c4b4a6242ad47c68b8fcfb068e62081912e03351f4757f",
+          "publication": "PUBLISHED",
+          "seconds": 0.05949428500000001
+        },
+        {
+          "roundNumber": 2,
+          "roundId": "mobility-seed-101-r2",
+          "selected": [
+            "client-1",
+            "client-2",
+            "client-3"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "ce5754752a784422c80cef79b2dfc732a496dd8d166acbc03452e8bd3d15dc07",
+          "parentModelHash": "32546664c3b39f3cd873e435455b4cd9cbb1a4eff9114bb41f5364f81023b5a2",
+          "manifestHash": "301962ecc372770e7d55be972fdb0d90a8b343514e747121c1b47eef159be3a5",
+          "publication": "PUBLISHED",
+          "seconds": 0.04823336599999999
+        },
+        {
+          "roundNumber": 3,
+          "roundId": "mobility-seed-101-r3",
+          "selected": [
+            "client-4",
+            "client-1",
+            "client-2"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "88f6f8ffd5a0f4c5680f43c599a269d29ad7a4864d99459f95aeeafd56f44039",
+          "parentModelHash": "ce5754752a784422c80cef79b2dfc732a496dd8d166acbc03452e8bd3d15dc07",
+          "manifestHash": "20628af57cb83dae319e20621fd3ec6adff90bffdc20bf780acf17ecc94f67e8",
+          "publication": "PUBLISHED",
+          "seconds": 0.058524282999999996
+        },
+        {
+          "roundNumber": 4,
+          "roundId": "mobility-seed-101-r4",
+          "selected": [
+            "client-4",
+            "client-3",
+            "client-1"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "627f558a37e6ed206ffe2200d8239b9ba96096937a366857f61251c817cd6997",
+          "parentModelHash": "88f6f8ffd5a0f4c5680f43c599a269d29ad7a4864d99459f95aeeafd56f44039",
+          "manifestHash": "a338332efa2b3c17563e3464910be555f5f8525732d8ed6606bf2a1f0ac6d750",
+          "publication": "PUBLISHED",
+          "seconds": 0.060804851000000014
+        },
+        {
+          "roundNumber": 5,
+          "roundId": "mobility-seed-101-r5",
+          "selected": [
+            "client-4",
+            "client-3",
+            "client-1"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "7e6ee5f4940ae1d3ecb08ccb333192052e259c1ef5a09d48452ce506bf785d4b",
+          "parentModelHash": "627f558a37e6ed206ffe2200d8239b9ba96096937a366857f61251c817cd6997",
+          "manifestHash": "00e4d4999e1e6aab6871204cc835eb4be69d5c532f87e5b17302b6aa66c99a00",
+          "publication": "PUBLISHED",
+          "seconds": 0.055941239
+        },
+        {
+          "roundNumber": 6,
+          "roundId": "mobility-seed-101-r6",
+          "selected": [
+            "client-4",
+            "client-3",
+            "client-1"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "ae6ae0ede88f350f8e9387d765adfdd70abb77d204615f36f1b62fe8aa7301bf",
+          "parentModelHash": "7e6ee5f4940ae1d3ecb08ccb333192052e259c1ef5a09d48452ce506bf785d4b",
+          "manifestHash": "963762023c9717f6bf00a0da861dfa616a66c7d058b3a0f4fd4d83f4e91e1f6d",
+          "publication": "PUBLISHED",
+          "seconds": 0.063673387
+        },
+        {
+          "roundNumber": 7,
+          "roundId": "mobility-seed-101-r7",
+          "selected": [
+            "client-4",
+            "client-3",
+            "client-1"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "5c45feaae4f9a8f6159ba792efd86f79ceb1c647e1e8798243410e70edd0b6ae",
+          "parentModelHash": "ae6ae0ede88f350f8e9387d765adfdd70abb77d204615f36f1b62fe8aa7301bf",
+          "manifestHash": "db341b850066391161c5101022871b328dc5dcb43b4c8c3b7669373acfa72294",
+          "publication": "PUBLISHED",
+          "seconds": 0.06837728599999997
+        },
+        {
+          "roundNumber": 8,
+          "roundId": "mobility-seed-101-r8",
+          "selected": [
+            "client-4",
+            "client-3",
+            "client-1"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "5022b938556a324a7f39ba66acad7ecc7cd6d8b57a0b39c3c2e30c9ce49f0e23",
+          "parentModelHash": "5c45feaae4f9a8f6159ba792efd86f79ceb1c647e1e8798243410e70edd0b6ae",
+          "manifestHash": "232e5db6a35fbd21f72cbd6b7afbe7270cc9aad709728f8b886780395cc8d103",
+          "publication": "PUBLISHED",
+          "seconds": 0.06699401100000006
+        },
+        {
+          "roundNumber": 9,
+          "roundId": "mobility-seed-101-r9",
+          "selected": [
+            "client-4",
+            "client-3",
+            "client-1"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "05a9e4759524ae699026f67ad5c9283579cdf4bf095c9fece1959d7027c73236",
+          "parentModelHash": "5022b938556a324a7f39ba66acad7ecc7cd6d8b57a0b39c3c2e30c9ce49f0e23",
+          "manifestHash": "6f3a43231de48ccfda12eba4aa2db972066dee22170ec5adbe5727ebfa1a1247",
+          "publication": "PUBLISHED",
+          "seconds": 0.06732660599999997
+        },
+        {
+          "roundNumber": 10,
+          "roundId": "mobility-seed-101-r10",
+          "selected": [
+            "client-4",
+            "client-3",
+            "client-1"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "fd9023c84855f6cb9a6eb5f67685f34a6e4a70373bed29c71256003bc5b3997a",
+          "parentModelHash": "05a9e4759524ae699026f67ad5c9283579cdf4bf095c9fece1959d7027c73236",
+          "manifestHash": "4b68bde5960cc8c2288d366a4dde133665c62743e4f725abf088b58584143789",
+          "publication": "PUBLISHED",
+          "seconds": 0.06986530600000003
+        }
+      ],
+      "participation": {
+        "client-1": 10,
+        "client-2": 3,
+        "client-3": 9,
+        "client-4": 8
+      },
+      "bytes": {
+        "modelUpload": 3240,
+        "modelDownload": 3240,
+        "updateEnvelope": 397530
+      },
+      "federated": {
+        "macroF1": 1,
+        "errorRate": 0,
+        "crossEntropy": 0.25782764194522206,
+        "confusionMatrix": [
+          [
+            178,
+            0,
+            0
+          ],
+          [
+            0,
+            174,
+            0
+          ],
+          [
+            0,
+            0,
+            128
+          ]
+        ],
+        "samples": 480
+      },
+      "localOnly": [
+        {
+          "participantId": "client-1",
+          "localEpochs": 20,
+          "metrics": {
+            "macroF1": 0.9644525536071992,
+            "errorRate": 0.033333333333333326,
+            "crossEntropy": 0.38495151149966433,
+            "confusionMatrix": [
+              [
+                178,
+                0,
+                0
+              ],
+              [
+                2,
+                172,
+                0
+              ],
+              [
+                14,
+                0,
+                114
+              ]
+            ],
+            "samples": 480
+          }
+        },
+        {
+          "participantId": "client-2",
+          "localEpochs": 6,
+          "metrics": {
+            "macroF1": 0.5021831224624426,
+            "errorRate": 0.4041666666666667,
+            "crossEntropy": 0.7205005939043921,
+            "confusionMatrix": [
+              [
+                103,
+                75,
+                0
+              ],
+              [
+                0,
+                174,
+                0
+              ],
+              [
+                0,
+                119,
+                9
+              ]
+            ],
+            "samples": 480
+          }
+        },
+        {
+          "participantId": "client-3",
+          "localEpochs": 18,
+          "metrics": {
+            "macroF1": 0.9955327815004599,
+            "errorRate": 0.004166666666666652,
+            "crossEntropy": 0.3737592110857263,
+            "confusionMatrix": [
+              [
+                176,
+                0,
+                2
+              ],
+              [
+                0,
+                174,
+                0
+              ],
+              [
+                0,
+                0,
+                128
+              ]
+            ],
+            "samples": 480
+          }
+        },
+        {
+          "participantId": "client-4",
+          "localEpochs": 16,
+          "metrics": {
+            "macroF1": 1,
+            "errorRate": 0,
+            "crossEntropy": 0.28164918435061853,
+            "confusionMatrix": [
+              [
+                178,
+                0,
+                0
+              ],
+              [
+                0,
+                174,
+                0
+              ],
+              [
+                0,
+                0,
+                128
+              ]
+            ],
+            "samples": 480
+          }
+        }
+      ],
+      "meanLocalOnlyMacroF1": 0.8655421143925254,
+      "modelHash": "fd9023c84855f6cb9a6eb5f67685f34a6e4a70373bed29c71256003bc5b3997a",
+      "manifestHash": "4b68bde5960cc8c2288d366a4dde133665c62743e4f725abf088b58584143789",
+      "artifacts": {
+        "model": "model-101.f32",
+        "manifest": "manifest-101.json",
+        "state": "state-101.json"
+      },
+      "nextRound": 11
+    },
+    {
+      "seed": 202,
+      "taskId": "mobility-seed-202",
+      "runtimeMode": "LOCAL_SIMULATION",
+      "datasets": [
+        {
+          "datasetId": "mobility-seed-202-client-1",
+          "datasetVersion": 1,
+          "seed": 101,
+          "clientIndex": 0,
+          "featureSchemaVersion": "privacy-motion-8-v1",
+          "fixtureVersion": "synthetic-mobility-v1",
+          "trainCount": 360,
+          "splitHash": "025c0cd1e74f2ff19e632f64a2fdced08c4e93bdeccf2f578603380d52e3cd28"
+        },
+        {
+          "datasetId": "mobility-seed-202-client-2",
+          "datasetVersion": 1,
+          "seed": 202,
+          "clientIndex": 1,
+          "featureSchemaVersion": "privacy-motion-8-v1",
+          "fixtureVersion": "synthetic-mobility-v1",
+          "trainCount": 360,
+          "splitHash": "2602bc0dfd72f7ac737bf21ccbf238d28a47325309c0b13153a5ad22154475c5"
+        },
+        {
+          "datasetId": "mobility-seed-202-client-3",
+          "datasetVersion": 1,
+          "seed": 303,
+          "clientIndex": 2,
+          "featureSchemaVersion": "privacy-motion-8-v1",
+          "fixtureVersion": "synthetic-mobility-v1",
+          "trainCount": 360,
+          "splitHash": "4f9bc538cb47308194fc2481ffbb2a0245bd7a326225ef6111fc189dd0a6d8db"
+        },
+        {
+          "datasetId": "mobility-seed-202-client-4",
+          "datasetVersion": 1,
+          "seed": 404,
+          "clientIndex": 3,
+          "featureSchemaVersion": "privacy-motion-8-v1",
+          "fixtureVersion": "synthetic-mobility-v1",
+          "trainCount": 360,
+          "splitHash": "325b5b81dc45ce0e1cd2ff924677c1c843d094efa8f5e5ad358620855b2e8a64"
+        }
+      ],
+      "rounds": [
+        {
+          "roundNumber": 1,
+          "roundId": "mobility-seed-202-r1",
+          "selected": [
+            "client-1",
+            "client-2",
+            "client-3"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "cff42637fdfec31eb0ceb8b4775e9d2be3a64151756dba6ec8c751989caffa66",
+          "parentModelHash": "db620778bae36e4d5b2f9ee1be63de23dc63a309200b6bebd43bc78efcae614e",
+          "manifestHash": "ef65283d9b844ba92ad2a070cec098f59eb4fa445ab28ee64c5d07493adabcf4",
+          "publication": "PUBLISHED",
+          "seconds": 0.03799283200000002
+        },
+        {
+          "roundNumber": 2,
+          "roundId": "mobility-seed-202-r2",
+          "selected": [
+            "client-1",
+            "client-2",
+            "client-3"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "3bb389f4d39cdc0972b83c4e79ddeb777bdbc39efe4afe651d051fba1e38aa5d",
+          "parentModelHash": "cff42637fdfec31eb0ceb8b4775e9d2be3a64151756dba6ec8c751989caffa66",
+          "manifestHash": "58a308b84be6f40ecb07e1a3f6d50cc8de6e3f7c89d7ac82cb809da517968dfa",
+          "publication": "PUBLISHED",
+          "seconds": 0.047001435000000015
+        },
+        {
+          "roundNumber": 3,
+          "roundId": "mobility-seed-202-r3",
+          "selected": [
+            "client-4",
+            "client-1",
+            "client-2"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "b73a4656b10da404675ce9b9d8854c3e370ea8bc2e2a79670bb8a9659996dc59",
+          "parentModelHash": "3bb389f4d39cdc0972b83c4e79ddeb777bdbc39efe4afe651d051fba1e38aa5d",
+          "manifestHash": "abac7cce5952fa078dff41b97b6f8d1c88f5564b8e2489fc04f92c5aad73895f",
+          "publication": "PUBLISHED",
+          "seconds": 0.06361957399999994
+        },
+        {
+          "roundNumber": 4,
+          "roundId": "mobility-seed-202-r4",
+          "selected": [
+            "client-4",
+            "client-3",
+            "client-1"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "c94eed89f5dcd663f8ed78c8cc62e88740f36d6436ef8ba86a1a865bbc1db150",
+          "parentModelHash": "b73a4656b10da404675ce9b9d8854c3e370ea8bc2e2a79670bb8a9659996dc59",
+          "manifestHash": "8e8c4c4746423e2031c24fa23ae033807f52843af628262645e7cad9dd481565",
+          "publication": "PUBLISHED",
+          "seconds": 0.05468307200000004
+        },
+        {
+          "roundNumber": 5,
+          "roundId": "mobility-seed-202-r5",
+          "selected": [
+            "client-4",
+            "client-3",
+            "client-1"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "02049ab322fa406ca3a5bc729eded57aea2cba846093cbc4f1c7a68702002c22",
+          "parentModelHash": "c94eed89f5dcd663f8ed78c8cc62e88740f36d6436ef8ba86a1a865bbc1db150",
+          "manifestHash": "0ce565edef3bb4ed47e6ab87bc7119a3850a30a051627f14bc41bd5d41e207a2",
+          "publication": "PUBLISHED",
+          "seconds": 0.061667796000000066
+        },
+        {
+          "roundNumber": 6,
+          "roundId": "mobility-seed-202-r6",
+          "selected": [
+            "client-4",
+            "client-3",
+            "client-1"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "b63b1919d77ee8678b186df5e9ead043e3e5148d35aca687803dc7e2845de587",
+          "parentModelHash": "02049ab322fa406ca3a5bc729eded57aea2cba846093cbc4f1c7a68702002c22",
+          "manifestHash": "66ac33f788011086d09583108fee3bbb4c9ae9d95f00054f87f86f577742c98a",
+          "publication": "PUBLISHED",
+          "seconds": 0.07089626099999986
+        },
+        {
+          "roundNumber": 7,
+          "roundId": "mobility-seed-202-r7",
+          "selected": [
+            "client-4",
+            "client-3",
+            "client-1"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "dd14740aad4935d697221ceda5c963077fd8b814bb5cea20092916713028e8ac",
+          "parentModelHash": "b63b1919d77ee8678b186df5e9ead043e3e5148d35aca687803dc7e2845de587",
+          "manifestHash": "25da544048a15f91f88d0266ae018ee4cae8706f5316dce9a94f8e1ce7507233",
+          "publication": "PUBLISHED",
+          "seconds": 0.06715301299999987
+        },
+        {
+          "roundNumber": 8,
+          "roundId": "mobility-seed-202-r8",
+          "selected": [
+            "client-4",
+            "client-3",
+            "client-1"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "1a789c5b9ce8ff6de93bc6f8405fa827616db3f4d83b75064d813f75bef27742",
+          "parentModelHash": "dd14740aad4935d697221ceda5c963077fd8b814bb5cea20092916713028e8ac",
+          "manifestHash": "91286091dd4ae2c9783b37d69d80590b0e7e446fc862c727dc43236240365906",
+          "publication": "PUBLISHED",
+          "seconds": 0.07073070899999993
+        },
+        {
+          "roundNumber": 9,
+          "roundId": "mobility-seed-202-r9",
+          "selected": [
+            "client-4",
+            "client-3",
+            "client-1"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "8d7e4f721ebcb75d9e605fcaa132d11cc235e7f596973c0327f7bb5c5d065fe9",
+          "parentModelHash": "1a789c5b9ce8ff6de93bc6f8405fa827616db3f4d83b75064d813f75bef27742",
+          "manifestHash": "b4785e45b45c3d94351134292a1ff80dedb45a84c4b179875b12cc40a703338b",
+          "publication": "PUBLISHED",
+          "seconds": 0.07981904000000009
+        },
+        {
+          "roundNumber": 10,
+          "roundId": "mobility-seed-202-r10",
+          "selected": [
+            "client-4",
+            "client-3",
+            "client-1"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "559bfd94b84b426c086155df61fed545b4fd8ac47b1f87b7c2f5b2b7a963e136",
+          "parentModelHash": "8d7e4f721ebcb75d9e605fcaa132d11cc235e7f596973c0327f7bb5c5d065fe9",
+          "manifestHash": "b1224c823f0666f172bad2b41dd3fa9de7813b4c793788523e14ca650f56ec10",
+          "publication": "PUBLISHED",
+          "seconds": 0.07200353599999994
+        }
+      ],
+      "participation": {
+        "client-1": 10,
+        "client-2": 3,
+        "client-3": 9,
+        "client-4": 8
+      },
+      "bytes": {
+        "modelUpload": 3240,
+        "modelDownload": 3240,
+        "updateEnvelope": 397531
+      },
+      "federated": {
+        "macroF1": 1,
+        "errorRate": 0,
+        "crossEntropy": 0.25786879685733094,
+        "confusionMatrix": [
+          [
+            178,
+            0,
+            0
+          ],
+          [
+            0,
+            174,
+            0
+          ],
+          [
+            0,
+            0,
+            128
+          ]
+        ],
+        "samples": 480
+      },
+      "localOnly": [
+        {
+          "participantId": "client-1",
+          "localEpochs": 20,
+          "metrics": {
+            "macroF1": 0.9644525536071992,
+            "errorRate": 0.033333333333333326,
+            "crossEntropy": 0.38590407226275064,
+            "confusionMatrix": [
+              [
+                178,
+                0,
+                0
+              ],
+              [
+                2,
+                172,
+                0
+              ],
+              [
+                14,
+                0,
+                114
+              ]
+            ],
+            "samples": 480
+          }
+        },
+        {
+          "participantId": "client-2",
+          "localEpochs": 6,
+          "metrics": {
+            "macroF1": 0.5115587697653513,
+            "errorRate": 0.39375000000000004,
+            "crossEntropy": 0.7218517652620766,
+            "confusionMatrix": [
+              [
+                108,
+                70,
+                0
+              ],
+              [
+                0,
+                174,
+                0
+              ],
+              [
+                0,
+                119,
+                9
+              ]
+            ],
+            "samples": 480
+          }
+        },
+        {
+          "participantId": "client-3",
+          "localEpochs": 18,
+          "metrics": {
+            "macroF1": 0.9955327815004599,
+            "errorRate": 0.004166666666666652,
+            "crossEntropy": 0.3732830264905564,
+            "confusionMatrix": [
+              [
+                176,
+                0,
+                2
+              ],
+              [
+                0,
+                174,
+                0
+              ],
+              [
+                0,
+                0,
+                128
+              ]
+            ],
+            "samples": 480
+          }
+        },
+        {
+          "participantId": "client-4",
+          "localEpochs": 16,
+          "metrics": {
+            "macroF1": 1,
+            "errorRate": 0,
+            "crossEntropy": 0.28165301376126006,
+            "confusionMatrix": [
+              [
+                178,
+                0,
+                0
+              ],
+              [
+                0,
+                174,
+                0
+              ],
+              [
+                0,
+                0,
+                128
+              ]
+            ],
+            "samples": 480
+          }
+        }
+      ],
+      "meanLocalOnlyMacroF1": 0.8678860262182526,
+      "modelHash": "559bfd94b84b426c086155df61fed545b4fd8ac47b1f87b7c2f5b2b7a963e136",
+      "manifestHash": "b1224c823f0666f172bad2b41dd3fa9de7813b4c793788523e14ca650f56ec10",
+      "artifacts": {
+        "model": "model-202.f32",
+        "manifest": "manifest-202.json",
+        "state": "state-202.json"
+      },
+      "nextRound": 11
+    },
+    {
+      "seed": 303,
+      "taskId": "mobility-seed-303",
+      "runtimeMode": "LOCAL_SIMULATION",
+      "datasets": [
+        {
+          "datasetId": "mobility-seed-303-client-1",
+          "datasetVersion": 1,
+          "seed": 101,
+          "clientIndex": 0,
+          "featureSchemaVersion": "privacy-motion-8-v1",
+          "fixtureVersion": "synthetic-mobility-v1",
+          "trainCount": 360,
+          "splitHash": "5456a37496a813c3ffce325b75393bcafccfbfbca01fa2e5a4dfcb2fa939257c"
+        },
+        {
+          "datasetId": "mobility-seed-303-client-2",
+          "datasetVersion": 1,
+          "seed": 202,
+          "clientIndex": 1,
+          "featureSchemaVersion": "privacy-motion-8-v1",
+          "fixtureVersion": "synthetic-mobility-v1",
+          "trainCount": 360,
+          "splitHash": "9b111da30807193d7495995f98ef964f383bdbfc9d8ec3aa33779c3c97f0ce0a"
+        },
+        {
+          "datasetId": "mobility-seed-303-client-3",
+          "datasetVersion": 1,
+          "seed": 303,
+          "clientIndex": 2,
+          "featureSchemaVersion": "privacy-motion-8-v1",
+          "fixtureVersion": "synthetic-mobility-v1",
+          "trainCount": 360,
+          "splitHash": "4f2d83e75d50cc62e48cdfde08f5abd977b287c24e368653ce238cc6f2bb890e"
+        },
+        {
+          "datasetId": "mobility-seed-303-client-4",
+          "datasetVersion": 1,
+          "seed": 404,
+          "clientIndex": 3,
+          "featureSchemaVersion": "privacy-motion-8-v1",
+          "fixtureVersion": "synthetic-mobility-v1",
+          "trainCount": 360,
+          "splitHash": "5455f4eca42e4d55f6672b9ce4e81d61844f9b2ad5ec434fea779f4b8049375e"
+        }
+      ],
+      "rounds": [
+        {
+          "roundNumber": 1,
+          "roundId": "mobility-seed-303-r1",
+          "selected": [
+            "client-1",
+            "client-2",
+            "client-3"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "217ea2e3a98af9eb2e6f53d9691fb708285b346892a7efc78a49b3cd5b34842a",
+          "parentModelHash": "b646be760288a0df745f8c7688c1e46f4ee5a3b0c8694a7b3f2f30829fc7774b",
+          "manifestHash": "9f310b397218007031e59da1238ecec01d1e963211919ebbb2b64c7bc416da76",
+          "publication": "PUBLISHED",
+          "seconds": 0.03698444100000006
+        },
+        {
+          "roundNumber": 2,
+          "roundId": "mobility-seed-303-r2",
+          "selected": [
+            "client-1",
+            "client-2",
+            "client-3"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "407f6491b6fe2dc006e82620bf9225152f6e6d4dff1acd2e02e2c8dc538d69bf",
+          "parentModelHash": "217ea2e3a98af9eb2e6f53d9691fb708285b346892a7efc78a49b3cd5b34842a",
+          "manifestHash": "6c19caed53b02322b767a2596086a8c5a0d5003f16d70d85ef68bdf4bd64adbb",
+          "publication": "PUBLISHED",
+          "seconds": 0.04579003000000011
+        },
+        {
+          "roundNumber": 3,
+          "roundId": "mobility-seed-303-r3",
+          "selected": [
+            "client-4",
+            "client-1",
+            "client-2"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "cc45191d1ce1ba0dcbc1e3f175f0203d43b6450ba9ba617985c6fa05ece28ffa",
+          "parentModelHash": "407f6491b6fe2dc006e82620bf9225152f6e6d4dff1acd2e02e2c8dc538d69bf",
+          "manifestHash": "69a9fe19084faef0c70a1120331de6d8297bd825ae7b1894fe81f6c894cf1b59",
+          "publication": "PUBLISHED",
+          "seconds": 0.056617872000000034
+        },
+        {
+          "roundNumber": 4,
+          "roundId": "mobility-seed-303-r4",
+          "selected": [
+            "client-4",
+            "client-3",
+            "client-1"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "e4a496e873a73b5ef7cd7e7154f436f3d58dd6341bc8817118ba8282b60627ff",
+          "parentModelHash": "cc45191d1ce1ba0dcbc1e3f175f0203d43b6450ba9ba617985c6fa05ece28ffa",
+          "manifestHash": "7bd8987fce2654e36342d50ec93ca0fe08fa8c99693c6ca384a0dfa55b467399",
+          "publication": "PUBLISHED",
+          "seconds": 0.05234253899999999
+        },
+        {
+          "roundNumber": 5,
+          "roundId": "mobility-seed-303-r5",
+          "selected": [
+            "client-4",
+            "client-3",
+            "client-1"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "03831b6ae1eaf7e8ba9bcac02484b6184a26f794b3baaf255c6a06dff5a4ec8a",
+          "parentModelHash": "e4a496e873a73b5ef7cd7e7154f436f3d58dd6341bc8817118ba8282b60627ff",
+          "manifestHash": "ef34628561f8e2ff1e2562aacca2a4892e69bab729130bc303779d22c479e17b",
+          "publication": "PUBLISHED",
+          "seconds": 0.052656936000000085
+        },
+        {
+          "roundNumber": 6,
+          "roundId": "mobility-seed-303-r6",
+          "selected": [
+            "client-4",
+            "client-3",
+            "client-1"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "c9ad1c924e3c71251fef66a62e2662cee1d8b2abc7ad32551b0dc5c79b837543",
+          "parentModelHash": "03831b6ae1eaf7e8ba9bcac02484b6184a26f794b3baaf255c6a06dff5a4ec8a",
+          "manifestHash": "82c50bcca4cdbbf289974966f77c1c46593c11ff8a4a153871b6ab5a8db2e781",
+          "publication": "PUBLISHED",
+          "seconds": 0.06807957499999998
+        },
+        {
+          "roundNumber": 7,
+          "roundId": "mobility-seed-303-r7",
+          "selected": [
+            "client-4",
+            "client-3",
+            "client-1"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "a9014183ed76d8591110f81407718fcc5d0cba010a53ef5e94b1c8f7d35417a7",
+          "parentModelHash": "c9ad1c924e3c71251fef66a62e2662cee1d8b2abc7ad32551b0dc5c79b837543",
+          "manifestHash": "225fc80014380c878e906203735537aff2bdac280c918fdf64fef6e11f27d672",
+          "publication": "PUBLISHED",
+          "seconds": 0.07024424999999997
+        },
+        {
+          "roundNumber": 8,
+          "roundId": "mobility-seed-303-r8",
+          "selected": [
+            "client-4",
+            "client-3",
+            "client-1"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "deb42a76ec3788eb7a6dfc78c6de1d10409c27e280324fd4058548bab33beaba",
+          "parentModelHash": "a9014183ed76d8591110f81407718fcc5d0cba010a53ef5e94b1c8f7d35417a7",
+          "manifestHash": "9eb8d0f117f39eb2808ea3e4541922376905e8b9e68200c1fffc50deba307ccf",
+          "publication": "PUBLISHED",
+          "seconds": 0.08060716900000012
+        },
+        {
+          "roundNumber": 9,
+          "roundId": "mobility-seed-303-r9",
+          "selected": [
+            "client-4",
+            "client-3",
+            "client-1"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "d1df0f8ea381465a83f7dd8f1fcfde0d8f9f1b87515f2938eaf41ba0111bc257",
+          "parentModelHash": "deb42a76ec3788eb7a6dfc78c6de1d10409c27e280324fd4058548bab33beaba",
+          "manifestHash": "d8be716ecd1bdf003c7c961ad727a8ceaec5aaa55628d4ba99cc6d4d70183613",
+          "publication": "PUBLISHED",
+          "seconds": 0.08043839000000003
+        },
+        {
+          "roundNumber": 10,
+          "roundId": "mobility-seed-303-r10",
+          "selected": [
+            "client-4",
+            "client-3",
+            "client-1"
+          ],
+          "state": "COMPLETED",
+          "modelHash": "eb72bb76a5b995429027b1d0053f33f5191f4f3048e03aacd34cfdd9e8450078",
+          "parentModelHash": "d1df0f8ea381465a83f7dd8f1fcfde0d8f9f1b87515f2938eaf41ba0111bc257",
+          "manifestHash": "12576886e8f6e838bc57ca97cdb4a88198740b80a4a47c3fe302ede251872dd4",
+          "publication": "PUBLISHED",
+          "seconds": 0.08778847999999993
+        }
+      ],
+      "participation": {
+        "client-1": 10,
+        "client-2": 3,
+        "client-3": 9,
+        "client-4": 8
+      },
+      "bytes": {
+        "modelUpload": 3240,
+        "modelDownload": 3240,
+        "updateEnvelope": 397526
+      },
+      "federated": {
+        "macroF1": 1,
+        "errorRate": 0,
+        "crossEntropy": 0.25754354178711636,
+        "confusionMatrix": [
+          [
+            178,
+            0,
+            0
+          ],
+          [
+            0,
+            174,
+            0
+          ],
+          [
+            0,
+            0,
+            128
+          ]
+        ],
+        "samples": 480
+      },
+      "localOnly": [
+        {
+          "participantId": "client-1",
+          "localEpochs": 20,
+          "metrics": {
+            "macroF1": 0.9644525536071992,
+            "errorRate": 0.033333333333333326,
+            "crossEntropy": 0.3850448465859269,
+            "confusionMatrix": [
+              [
+                178,
+                0,
+                0
+              ],
+              [
+                2,
+                172,
+                0
+              ],
+              [
+                14,
+                0,
+                114
+              ]
+            ],
+            "samples": 480
+          }
+        },
+        {
+          "participantId": "client-2",
+          "localEpochs": 6,
+          "metrics": {
+            "macroF1": 0.5078352695882694,
+            "errorRate": 0.3979166666666667,
+            "crossEntropy": 0.7196617391649149,
+            "confusionMatrix": [
+              [
+                106,
+                72,
+                0
+              ],
+              [
+                0,
+                174,
+                0
+              ],
+              [
+                0,
+                119,
+                9
+              ]
+            ],
+            "samples": 480
+          }
+        },
+        {
+          "participantId": "client-3",
+          "localEpochs": 18,
+          "metrics": {
+            "macroF1": 0.9955327815004599,
+            "errorRate": 0.004166666666666652,
+            "crossEntropy": 0.3728040134363248,
+            "confusionMatrix": [
+              [
+                176,
+                0,
+                2
+              ],
+              [
+                0,
+                174,
+                0
+              ],
+              [
+                0,
+                0,
+                128
+              ]
+            ],
+            "samples": 480
+          }
+        },
+        {
+          "participantId": "client-4",
+          "localEpochs": 16,
+          "metrics": {
+            "macroF1": 1,
+            "errorRate": 0,
+            "crossEntropy": 0.281311891840535,
+            "confusionMatrix": [
+              [
+                178,
+                0,
+                0
+              ],
+              [
+                0,
+                174,
+                0
+              ],
+              [
+                0,
+                0,
+                128
+              ]
+            ],
+            "samples": 480
+          }
+        }
+      ],
+      "meanLocalOnlyMacroF1": 0.8669551511739821,
+      "modelHash": "eb72bb76a5b995429027b1d0053f33f5191f4f3048e03aacd34cfdd9e8450078",
+      "manifestHash": "12576886e8f6e838bc57ca97cdb4a88198740b80a4a47c3fe302ede251872dd4",
+      "artifacts": {
+        "model": "model-303.f32",
+        "manifest": "manifest-303.json",
+        "state": "state-303.json"
+      },
+      "nextRound": 11
+    }
+  ]
+}

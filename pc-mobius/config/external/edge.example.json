@@ -1,0 +1,50 @@
+{
+  "mode": "EXTERNAL",
+  "server": {
+    "host": "0.0.0.0", "port": 8787,
+    "tls": { "ca": "${PKI_DIR}/ca.pem", "cert": "${PKI_DIR}/server.pem", "key": "${PKI_DIR}/server.key" }
+  },
+  "core": {
+    "handover": {
+      "drainBudgetMs": 5000,
+      "attemptBudgetMs": 120000,
+      "edges": [
+        {
+          "edgeId": "edge-A", "region": "seoul", "endpoint": "${EDGE_A_CSE_ENDPOINT}",
+          "cseBase": "/Mobius", "cseId": "/edge-a", "originator": "${EDGE_A_ORIGINATOR}", "simulation": false,
+          "callbackUrl": "${EDGE_CALLBACK_BASE_URL}/onem2m/edge-A", "notificationFingerprint": "${EDGE_A_CSE_FINGERPRINT}",
+          "tls": { "ca": "${PKI_DIR}/cse-ca.pem", "cert": "${PKI_DIR}/controller.pem", "key": "${PKI_DIR}/controller.key" },
+          "deployment": {
+            "endpoint": "${EDGE_A_AGENT_ENDPOINT}", "hostId": "${EDGE_A_HOST_ID}",
+            "appId": "integration-api", "version": "1.0.0", "imageDigest": "${EDGE_A_IMAGE_DIGEST}",
+            "tls": { "ca": "${PKI_DIR}/ca.pem", "cert": "${PKI_DIR}/controller.pem", "key": "${PKI_DIR}/controller.key" }
+          }
+        },
+        {
+          "edgeId": "edge-B", "region": "seoul", "endpoint": "${EDGE_B_CSE_ENDPOINT}",
+          "cseBase": "/Mobius", "cseId": "/edge-b", "originator": "${EDGE_B_ORIGINATOR}", "simulation": false,
+          "callbackUrl": "${EDGE_CALLBACK_BASE_URL}/onem2m/edge-B", "notificationFingerprint": "${EDGE_B_CSE_FINGERPRINT}",
+          "tls": { "ca": "${PKI_DIR}/cse-ca.pem", "cert": "${PKI_DIR}/controller.pem", "key": "${PKI_DIR}/controller.key" },
+          "deployment": {
+            "endpoint": "${EDGE_B_AGENT_ENDPOINT}", "hostId": "${EDGE_B_HOST_ID}",
+            "appId": "integration-api", "version": "1.0.0", "imageDigest": "${EDGE_B_IMAGE_DIGEST}",
+            "tls": { "ca": "${PKI_DIR}/ca.pem", "cert": "${PKI_DIR}/controller.pem", "key": "${PKI_DIR}/controller.key" }
+          }
+        }
+      ],
+      "manifests": [
+        {
+          "ueId": "external-rehearsal-keyring", "aeName": "external-rehearsal-relay",
+          "region": "seoul", "capabilities": ["policy", "handover"], "requireCallbackVerification": true,
+          "resources": [
+            { "logicalId": "observations", "ty": 3, "body": { "m2m:cnt": { "rn": "observations" } } },
+            { "logicalId": "switch", "ty": 28, "body": { "cod:binSh": { "rn": "switch", "cnd": "org.onem2m.common.moduleclass.binarySwitch", "state": false } }, "verifyFields": ["state"] }
+          ],
+          "groups": [{ "logicalId": "switches", "rn": "switches", "memberLogicalIds": ["switch"], "memberType": 28 }],
+          "subscriptions": [{ "logicalId": "state", "rn": "state-sub", "parentLogicalId": "switch" }]
+        }
+      ]
+    }
+  },
+  "scenario": { "ueId": "external-rehearsal-keyring" }
+}
