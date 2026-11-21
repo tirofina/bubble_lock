@@ -14,10 +14,11 @@ const initialPose: Pose = { rotateX: 8, rotateY: -10, x: 0, y: 0 };
 const limits = { rotateX: 32, rotateY: 58, x: 72, y: 32 } as const;
 const clamp = (value: number, minimum: number, maximum: number) => Math.min(maximum, Math.max(minimum, value));
 
-export function VirtualKeyring({ snapshot, runAction, onVerified }: {
+export function VirtualKeyring({ snapshot, runAction, onVerified, guidedAction = null }: {
   readonly snapshot: StorySessionSnapshot | null;
   readonly runAction: (action: StoryServerAction, idempotencyKey: string) => Promise<StorySessionSnapshot>;
   readonly onVerified?: (action: KeyringAction) => void;
+  readonly guidedAction?: KeyringAction | null;
 }) {
   const { tr } = useLang();
   const [mode, setMode] = useState<ManipulationMode>('rotate');
@@ -78,12 +79,16 @@ export function VirtualKeyring({ snapshot, runAction, onVerified }: {
     }
   };
 
-  const display = active !== null ? tr('보내는 중', 'Sending')
-    : verified === 'keyring-panic' ? tr('도움 요청', 'Help sent')
-      : verified === 'keyring-confirm' ? tr('안전 확인', 'Safe')
-        : snapshot ? tr('준비됨', 'Ready') : tr('연결 중', 'Linking');
+  const latestKeyringAction = snapshot?.mobius.events.find((event) => event.action === 'keyring-confirm' || event.action === 'keyring-panic')?.action;
+  const latchedAction = active ?? verified ?? (latestKeyringAction === 'keyring-confirm' || latestKeyringAction === 'keyring-panic' ? latestKeyringAction : null);
+  const firmwareState = latchedAction === 'keyring-panic' ? 'panic' : latchedAction === 'keyring-confirm' ? 'confirm' : 'ready';
+  const guidedComplete = guidedAction === null || verified === guidedAction
+    || snapshot?.mobius.events.some((event) => event.action === guidedAction) === true;
+  const guidance = guidedAction === 'keyring-panic'
+    ? tr('주황색 비상 버튼을 눌러 도움 요청 흐름을 시연해 보세요.', 'Press the orange emergency button to try the help flow.')
+    : tr('파란색 확인 버튼을 눌러 안전 신호를 남겨 보세요.', 'Press the blue confirm button to record a safe signal.');
 
-  return <section className="story-panel-card virtual-keyring" aria-labelledby="virtual-keyring-title">
+  return <div className="virtual-keyring" aria-labelledby="virtual-keyring-title">
     <div className="virtual-keyring-head">
       <h3 id="virtual-keyring-title">{tr('키링', 'Keyring')}</h3>
       <div className="keyring-tools">
@@ -112,9 +117,13 @@ export function VirtualKeyring({ snapshot, runAction, onVerified }: {
       <div className="keyring-model" style={{ transform: `translate3d(${pose.x}px, ${pose.y}px, 0) rotateX(${pose.rotateX}deg) rotateY(${pose.rotateY}deg)` }}>
         <span className="keyring-depth" aria-hidden="true" />
         <img src={keyringImage} alt={tr('확인 버튼과 비상 버튼이 있는 Privacy Bubble 키링', 'Privacy Bubble keyring with confirm and emergency buttons')} draggable={false} />
-        <span className="keyring-screen-live" aria-live="polite"><b>{display}</b></span>
+        <span className={`keyring-screen-live firmware-${firmwareState}`} data-firmware-screen={firmwareState} aria-live="polite">
+          <i className="keyring-firmware-glyph" aria-hidden="true"><span /></i>
+          <b>{firmwareState === 'panic' ? 'PANIC' : firmwareState === 'confirm' ? 'CONFIRM' : 'READY'}</b>
+          <small>{firmwareState === 'panic' ? 'Emergency input' : firmwareState === 'confirm' ? 'Input received' : 'Press a button'}</small>
+        </span>
         <button
-          className={`keyring-physical-button confirm${active === 'keyring-confirm' ? ' pressed' : ''}`}
+          className={`keyring-physical-button confirm${active === 'keyring-confirm' ? ' pressed' : ''}${snapshot && guidedAction === 'keyring-confirm' && !guidedComplete ? ' is-guided' : ''}`}
           disabled={!snapshot || active !== null}
           onPointerDown={(event) => event.stopPropagation()}
           onClick={() => void press('keyring-confirm')}
@@ -123,7 +132,7 @@ export function VirtualKeyring({ snapshot, runAction, onVerified }: {
           aria-label={tr('키링 확인 버튼 누르기', 'Press the keyring confirm button')}
         />
         <button
-          className={`keyring-physical-button panic${active === 'keyring-panic' ? ' pressed' : ''}`}
+          className={`keyring-physical-button panic${active === 'keyring-panic' ? ' pressed' : ''}${snapshot && guidedAction === 'keyring-panic' && !guidedComplete ? ' is-guided' : ''}`}
           disabled={!snapshot || active !== null}
           onPointerDown={(event) => event.stopPropagation()}
           onClick={() => void press('keyring-panic')}
@@ -135,13 +144,13 @@ export function VirtualKeyring({ snapshot, runAction, onVerified }: {
     </div>
 
     <div className="keyring-foot">
-      <p className="keyring-help">{mode === 'rotate'
-        ? tr('끌어서 돌려 보고, 아래 두 버튼을 눌러 보세요.', 'Drag to turn it, then press either button.')
+      <p className={`keyring-help${guidedAction && !guidedComplete ? ' is-guidance' : ''}`}>{guidedAction && !guidedComplete ? guidance : mode === 'rotate'
+        ? tr('끌어서 돌려 보거나 버튼을 눌러 보세요.', 'Drag to turn it or try a button.')
         : tr('끌어서 위치를 옮겨 보세요.', 'Drag to move it around.')}</p>
       <p className="keyring-counters">
         <span><i className="confirm" aria-hidden="true" />{tr('확인', 'Confirm')} <b>{snapshot?.keyring.confirmPresses ?? 0}</b></span>
         <span><i className="panic" aria-hidden="true" />{tr('비상', 'Emergency')} <b>{snapshot?.keyring.panicPresses ?? 0}</b></span>
       </p>
     </div>
-  </section>;
+  </div>;
 }

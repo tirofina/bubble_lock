@@ -374,7 +374,7 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
         </div>
         <StoryFooter scene={scene} />
       </div>
-      <StoryMobiusPanel scene={scene} snapshot={snapshot} phase={phase} message={message} runAction={runAction} onKeyringVerified={keyringVerified} />
+      <StoryMobiusPanel scene={scene} snapshot={snapshot} phase={phase} message={message} runAction={runAction} refresh={refresh} onKeyringVerified={keyringVerified} />
     </main>
   </div>;
 }

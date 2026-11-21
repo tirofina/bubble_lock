@@ -1,5 +1,7 @@
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from './Icon.tsx';
 import { useLang } from './i18n.tsx';
+import { StoryMobiusTree } from './StoryMobiusTree.tsx';
 import { VirtualKeyring } from './VirtualKeyring.tsx';
 import type { StoryScene } from './StoryDemo.tsx';
 import type { StoryActionPhase, StoryServerAction, StorySessionSnapshot } from './story-session.ts';
@@ -83,22 +85,29 @@ function readableType(type: string): string {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-function shortPath(path: string): string {
-  const parts = path.split('/').filter(Boolean);
-  return `/${parts.slice(-4).join('/')}`;
-}
-
 function formatTime(value: string, locale: string): string {
   const parsed = Date.parse(value);
   return Number.isFinite(parsed) ? new Date(parsed).toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit', second: '2-digit' }) : value;
 }
 
-export function StoryMobiusPanel({ scene, snapshot, phase, message, runAction, onKeyringVerified }: {
+type PanelId = 'keyring' | 'flow' | 'tree' | 'events' | 'scenes';
+
+const mobileScenes: readonly StoryScene[] = ['login', 'activity-away', 'activity-home', 'care-request', 'caregiver-shared', 'caregiver-ended', 'check-in'];
+
+function relatedPanels(type: string): ReadonlySet<PanelId> {
+  const panels = new Set<PanelId>(['tree', 'events']);
+  if (['KEYRING_BUTTON_OBSERVATION', 'RESIDENT_CONFIRMED', 'PANIC_ALERT'].includes(type)) panels.add('keyring');
+  else panels.add('flow');
+  return panels;
+}
+
+export function StoryMobiusPanel({ scene, snapshot, phase, message, runAction, refresh, onKeyringVerified }: {
   readonly scene: StoryScene;
   readonly snapshot: StorySessionSnapshot | null;
   readonly phase: StoryActionPhase;
   readonly message: string | null;
   readonly runAction: (action: StoryServerAction, idempotencyKey: string) => Promise<StorySessionSnapshot>;
+  readonly refresh?: () => Promise<StorySessionSnapshot | null>;
   readonly onKeyringVerified?: (action: 'keyring-confirm' | 'keyring-panic') => void;
 }) {
   const { lang, tr } = useLang();
@@ -106,9 +115,53 @@ export function StoryMobiusPanel({ scene, snapshot, phase, message, runAction, o
   const pick = (copy: Copy) => copy[lang === 'en' ? 1 : 0];
   const actual = snapshot?.mobius.actual === true;
   const completed = phase === 'verified' ? 3 : phase === 'sending' ? 2 : snapshot ? 1 : 0;
-  const events = snapshot?.mobius.events.slice(0, 3) ?? [];
+  const events = snapshot?.mobius.events.slice(0, 4) ?? [];
   const locale = lang === 'en' ? 'en-US' : 'ko-KR';
   const verifiedCount = snapshot?.mobius.createRetrieveVerified ?? 0;
+  const [mobilePanel, setMobilePanel] = useState<PanelId | null>(null);
+  const [flashes, setFlashes] = useState<ReadonlySet<PanelId>>(new Set());
+  const seenSequence = useRef<number | null>(null);
+  const latestSequence = events[0]?.sequence ?? 0;
+  const latestType = events[0]?.type ?? '';
+  const guidedAction = scene === 'check-in' ? 'keyring-panic'
+    : scene === 'activity-away' || scene === 'activity-home' ? 'keyring-confirm' : null;
+  const sceneLabels: Record<StoryScene, string> = {
+    login: tr('자동 로그인', 'Sign in'),
+    'activity-away': tr('외출 알림', 'Went out'),
+    'activity-home': tr('귀가 알림', 'Came home'),
+    'care-request': tr('돌봄 승인', 'Care approval'),
+    'caregiver-shared': tr('거실 제어', 'Room control'),
+    'caregiver-ended': tr('자동 종료', 'Automatic end'),
+    'check-in': tr('키링과 안부 확인', 'Keyring and check-in'),
+  };
+  const panelLabels: Record<PanelId, string> = {
+    keyring: tr('키링', 'Keyring'), flow: tr('흐름', 'Flow'), tree: 'Mobius', events: tr('기록', 'Records'), scenes: tr('장면', 'Scenes'),
+  };
+
+  useEffect(() => {
+    if (latestSequence === 0) return;
+    if (seenSequence.current === null) {
+      seenSequence.current = latestSequence;
+      return;
+    }
+    if (latestSequence <= seenSequence.current) return;
+    const next = relatedPanels(latestType);
+    seenSequence.current = latestSequence;
+    setFlashes(next);
+    setMobilePanel((current) => current ?? (next.has('keyring') ? 'keyring' : 'tree'));
+    const timer = window.setTimeout(() => setFlashes(new Set()), 3600);
+    return () => window.clearTimeout(timer);
+  }, [latestSequence, latestType]);
+
+  const choosePanel = (panel: PanelId) => {
+    setMobilePanel((current) => current === panel ? null : panel);
+    setFlashes((current) => {
+      const next = new Set(current);
+      next.delete(panel);
+      return next;
+    });
+  };
+  const panelClass = (panel: PanelId, extra: string) => `story-panel-card story-mobile-panel ${extra}${mobilePanel === panel ? ' is-mobile-open' : ''}${flashes.has(panel) ? ' has-new-event' : ''}`;
 
   return <aside className="story-mobius" aria-labelledby="story-mobius-title">
     <header className="story-mobius-head">
@@ -123,9 +176,22 @@ export function StoryMobiusPanel({ scene, snapshot, phase, message, runAction, o
 
     {message ? <p className="story-server-message" role="status">{message}</p> : null}
 
-    <VirtualKeyring snapshot={snapshot} runAction={runAction} {...(onKeyringVerified ? { onVerified: onKeyringVerified } : {})} />
+    <nav className="story-panel-tabs" aria-label={tr('시연 패널', 'Demo panels')}>
+      {(Object.keys(panelLabels) as PanelId[]).map((panel) => <button
+        key={panel}
+        type="button"
+        className={`${mobilePanel === panel ? 'active' : ''}${flashes.has(panel) ? ' has-new-event' : ''}`}
+        aria-expanded={mobilePanel === panel}
+        aria-controls={`story-panel-${panel}`}
+        onClick={() => choosePanel(panel)}
+      >{panelLabels[panel]}<span className="story-panel-alert" aria-hidden="true" /></button>)}
+    </nav>
 
-    <section className="story-panel-card story-flow" aria-labelledby="story-flow-title">
+    <section id="story-panel-keyring" className={panelClass('keyring', 'virtual-keyring-card')} aria-labelledby="virtual-keyring-title">
+      <VirtualKeyring snapshot={snapshot} runAction={runAction} guidedAction={guidedAction} {...(onKeyringVerified ? { onVerified: onKeyringVerified } : {})} />
+    </section>
+
+    <section id="story-panel-flow" className={panelClass('flow', 'story-flow')} aria-labelledby="story-flow-title">
       <div className="story-flow-copy">
         <h3 id="story-flow-title">{pick(flow.title)}</h3>
         <p>{pick(flow.summary)}</p>
@@ -144,22 +210,40 @@ export function StoryMobiusPanel({ scene, snapshot, phase, message, runAction, o
       <p className="story-flow-guard"><Icon name="shield" size={18} />{pick(flow.guard)}</p>
     </section>
 
-    <section className="story-panel-card story-mobius-events" aria-labelledby="story-events-title">
+    <section id="story-panel-tree" className={panelClass('tree', 'story-mobius-tree-card')} aria-labelledby="story-tree-title">
+      <div className="story-events-head">
+        <h3 id="story-tree-title">{tr('실제 Mobius 트리', 'Live Mobius tree')}</h3>
+        <span>{actual ? tr('CSE readback', 'CSE readback') : tr('동일 계약 재생', 'Contract replay')}</span>
+      </div>
+      <StoryMobiusTree snapshot={snapshot} {...(refresh ? { onRefresh: refresh } : {})} />
+    </section>
+
+    <section id="story-panel-events" className={panelClass('events', 'story-mobius-events')} aria-labelledby="story-events-title">
       <div className="story-events-head">
         <h3 id="story-events-title">{tr('확인한 기록', 'Verified records')}</h3>
         <span>{tr(`${verifiedCount}건`, `${verifiedCount} total`)}</span>
       </div>
       <div aria-live="polite">
-        {events.length > 0 ? <ul>{events.map((event) => <li key={`${event.sequence}-${event.type}`} data-event-type={event.type}>
+        {events.length > 0 ? <ul>{events.map((event, index) => <li className={index === 0 && flashes.has('events') ? 'is-new-event' : ''} key={`${event.sequence}-${event.type}`} data-event-type={event.type}>
           <span className="story-event-check" aria-hidden="true"><Icon name="check" size={14} /></span>
           <div>
             <strong>{eventLabels[event.type]?.[lang === 'en' ? 1 : 0] ?? readableType(event.type)}</strong>
             <small>{formatTime(event.at, locale)}, {tr('응답 코드(RSC)', 'response (RSC)')} {event.createRsc}/{event.retrieveRsc}</small>
-            <code title={event.resource}>{shortPath(event.resource)}</code>
+            <code>{event.resource}</code>
           </div>
         </li>)}</ul> : <p className="story-server-wait">{tr('웹서버가 이 브라우저의 첫 기록을 준비하고 있어요.', 'The web server is preparing the first record for this browser.')}</p>}
       </div>
-      <p className="story-mobius-root"><span>{snapshot?.mobius.cse ?? 'Mobius4'}</span><code title={snapshot?.mobius.root}>{snapshot ? shortPath(snapshot.mobius.root) : '/Mobius/story-demo/session'}</code></p>
+      <p className="story-mobius-root"><span>{snapshot?.mobius.cse ?? 'Mobius4'}</span><code>{snapshot?.mobius.root ?? '/Mobius/story-demo/session'}</code></p>
+    </section>
+
+    <section id="story-panel-scenes" className={panelClass('scenes', 'story-scene-panel')} aria-labelledby="story-scenes-title">
+      <h3 id="story-scenes-title">{tr('이야기 장면', 'Story scenes')}</h3>
+      <nav aria-label={tr('이야기 장면', 'Story scenes')}><ol>{mobileScenes.map((item, index) => <li key={item}>
+        <a className={item === scene ? 'active' : ''} aria-current={item === scene ? 'page' : undefined} href={`#/story/${item}`}>
+          <span>{index + 1}</span>{sceneLabels[item]}
+        </a>
+      </li>)}</ol></nav>
+      <a className="story-mobile-dashboard-link" href="#/user/overview">{tr('가족 대시보드', 'Family dashboard')}<Icon name="arrow" size={17} /></a>
     </section>
   </aside>;
 }

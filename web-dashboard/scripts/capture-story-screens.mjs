@@ -118,6 +118,38 @@ try {
   };
   for (const [name, scene, expected] of scenes) { await openScene(scene, expected); await shot(name); }
 
+  // The interactive mobile shell owns exactly one viewport. Its lower dock unfolds one panel at a time.
+  await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+  await send('Page.navigate', { url: `${previewUrl}/?lang=en#/story/activity-away` });
+  await waitFor("Boolean(document.querySelector('.story-panel-tabs'))", 'mobile panel dock');
+  const mobileLayout = await evaluate(`(() => {
+    const visibleTargets = [...document.querySelectorAll('button,a,summary')].map((element) => {
+      const rect = element.getBoundingClientRect(); const style = getComputedStyle(element);
+      return { width: rect.width, height: rect.height, visible: style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0 };
+    }).filter((item) => item.visible);
+    return {
+      width: document.documentElement.scrollWidth,
+      height: document.documentElement.scrollHeight,
+      viewportWidth: innerWidth,
+      viewportHeight: innerHeight,
+      smallTargets: visibleTargets.filter((item) => item.width < 44 || item.height < 44).length,
+      keyringWidth: document.querySelector('.keyring-model')?.getBoundingClientRect().width ?? 999,
+    };
+  })()`);
+  if (mobileLayout.width !== mobileLayout.viewportWidth || mobileLayout.height !== mobileLayout.viewportHeight || mobileLayout.smallTargets !== 0) {
+    throw new Error(`mobile viewport contract failed: ${JSON.stringify(mobileLayout)}`);
+  }
+  await evaluate("[...document.querySelectorAll('.story-panel-tabs button')].find((button)=>button.textContent.includes('Keyring'))?.click()");
+  await waitFor("Boolean(document.querySelector('.keyring-physical-button.confirm.is-guided'))", 'guided keyring confirm button');
+  if ((await evaluate("document.querySelector('.keyring-model')?.getBoundingClientRect().width")) > 140) throw new Error('mobile keyring is larger than its compact panel contract');
+  await evaluate("document.querySelector('.keyring-physical-button.confirm')?.click()");
+  await waitFor("document.querySelector('[data-firmware-screen]')?.dataset.firmwareScreen === 'confirm'", 'firmware confirm screen');
+  await waitFor("document.querySelectorAll('.story-panel-tabs .has-new-event').length >= 3", 'panel event highlights');
+  await evaluate("[...document.querySelectorAll('.story-panel-tabs button')].find((button)=>button.textContent.includes('Mobius'))?.click()");
+  await waitFor("Boolean(document.querySelector('.mobius-node-detail code'))", 'interactive Mobius tree');
+  const pathLayout = await evaluate("(() => { const code=document.querySelector('.mobius-node-detail code'); return {text:code?.textContent, width:code?.clientWidth, scrollWidth:code?.scrollWidth}; })()");
+  if (!pathLayout.text?.startsWith('/Mobius/') || pathLayout.scrollWidth > pathLayout.width) throw new Error(`Mobius full path layout failed: ${JSON.stringify(pathLayout)}`);
+
   await openScene('care-request', 'Living room access for Mina');
   await evaluate("document.querySelector('button.story-primary')?.click()");
   await waitFor("location.hash === '#/story/caregiver-shared'", 'care approval transition');
@@ -172,7 +204,7 @@ try {
     browser: version.Browser,
     mode: 'browser-isolated replay CSE; auto-login, virtual keyring, guardian share and caregiver group command exercised',
     command: 'npm --prefix web-dashboard run capture:story',
-    assertions: ['auto-login creates an isolated CSE session', 'keyring supports drag rotation and movement', 'keyring buttons create verified Mobius records', 'care approval opens the caregiver view', 'All on returns three readbacks', 'draft review opens a five-minute location lease'],
+    assertions: ['auto-login creates an isolated CSE session', 'mobile shell fits one viewport with 44px controls and collapsible panels', 'Mobius tree exposes a wrapping full resource path', 'event panels receive a soft notification highlight', 'keyring firmware screen mirrors READY/CONFIRM/PANIC states', 'keyring supports drag rotation and movement', 'keyring buttons create verified Mobius records', 'care approval opens the caregiver view', 'All on returns three readbacks', 'draft review opens a five-minute location lease'],
     captured,
   };
   await writeFile(join(outDir, 'capture-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
