@@ -133,12 +133,12 @@ test_evidence_rechecks_saved_health_at_or_after_the_final_release (test_display_
 test_release_sequences_and_observer_result_are_reported_separately_from_software (test_display_evidence.DisplayEvidenceTests.test_release_sequences_and_observer_result_are_reported_separately_from_software) ... ok
 test_requires_same_capture_boot_and_a_release_in_the_selected_session (test_display_evidence.DisplayEvidenceTests.test_requires_same_capture_boot_and_a_release_in_the_selected_session) ... ok
 test_shared_video_requires_two_distinct_increasing_offsets (test_display_evidence.DisplayEvidenceTests.test_shared_video_requires_two_distinct_increasing_offsets) ... ok
-test_missing_client_certificate_is_rejected_before_http (test_https_tls.HttpsTlsTests.test_missing_client_certificate_is_rejected_before_http) ... Executing <Task pending name='Task-408' coro=<HttpsTlsTests.test_missing_client_certificate_is_rejected_before_http() running at C:\Users\user\orca\workspaces\bubble_lock\최종작업\keyring\raspberry-pi-gateway\tests\test_https_tls.py:105> cb=[_run_until_complete_cb() at C:\Users\user\AppData\Local\Programs\Python\Python312\Lib\asyncio\base_events.py:181] created at C:\Users\user\AppData\Local\Programs\Python\Python312\Lib\asyncio\runners.py:100> took 0.125 seconds
+test_missing_client_certificate_is_rejected_before_http (test_https_tls.HttpsTlsTests.test_missing_client_certificate_is_rejected_before_http) ... Executing <Task pending name='Task-408' coro=<HttpsTlsTests.test_missing_client_certificate_is_rejected_before_http() running at C:\Users\user\orca\workspaces\bubble_lock\최종작업\keyring\raspberry-pi-gateway\tests\test_https_tls.py:105> cb=[_run_until_complete_cb() at C:\Users\user\AppData\Local\Programs\Python\Python312\Lib\asyncio\base_events.py:181] created at C:\Users\user\AppData\Local\Programs\Python\Python312\Lib\asyncio\runners.py:100> took 0.141 seconds
 ok
 test_proxy_and_ca_environment_do_not_override_configured_tls (test_https_tls.HttpsTlsTests.test_proxy_and_ca_environment_do_not_override_configured_tls) ... ok
 test_publish_uses_tls13_mtls_and_actual_onem2m_headers (test_https_tls.HttpsTlsTests.test_publish_uses_tls13_mtls_and_actual_onem2m_headers) ... ok
 test_redirect_is_not_followed (test_https_tls.HttpsTlsTests.test_redirect_is_not_followed) ... ok
-test_separate_pc_api_tls_uses_the_correct_issuer_and_client_certificate (test_https_tls.HttpsTlsTests.test_separate_pc_api_tls_uses_the_correct_issuer_and_client_certificate) ... Executing <Task pending name='Task-431' coro=<HttpsTlsTests.test_separate_pc_api_tls_uses_the_correct_issuer_and_client_certificate() running at C:\Users\user\orca\workspaces\bubble_lock\최종작업\keyring\raspberry-pi-gateway\tests\test_https_tls.py:84> cb=[_run_until_complete_cb() at C:\Users\user\AppData\Local\Programs\Python\Python312\Lib\asyncio\base_events.py:181] created at C:\Users\user\AppData\Local\Programs\Python\Python312\Lib\asyncio\runners.py:100> took 0.328 seconds
+test_separate_pc_api_tls_uses_the_correct_issuer_and_client_certificate (test_https_tls.HttpsTlsTests.test_separate_pc_api_tls_uses_the_correct_issuer_and_client_certificate) ... Executing <Task pending name='Task-431' coro=<HttpsTlsTests.test_separate_pc_api_tls_uses_the_correct_issuer_and_client_certificate() running at C:\Users\user\orca\workspaces\bubble_lock\최종작업\keyring\raspberry-pi-gateway\tests\test_https_tls.py:84> cb=[_run_until_complete_cb() at C:\Users\user\AppData\Local\Programs\Python\Python312\Lib\asyncio\base_events.py:181] created at C:\Users\user\AppData\Local\Programs\Python\Python312\Lib\asyncio\runners.py:100> took 0.360 seconds
 ok
 test_server_ip_identity_mismatch_is_rejected_before_http (test_https_tls.HttpsTlsTests.test_server_ip_identity_mismatch_is_rejected_before_http) ... ok
 test_tls12_only_peer_is_rejected_without_downgrade (test_https_tls.HttpsTlsTests.test_tls12_only_peer_is_rejected_without_downgrade) ... ok
@@ -212,7 +212,7 @@ test_expired_fragment_is_not_joined_to_later_command (test_protocol.FrameTests.t
 test_fragmented_multibyte_and_multiple_frames (test_protocol.FrameTests.test_fragmented_multibyte_and_multiple_frames) ... ok
 test_power_units_negative_rounding_and_invalid_state_nulls (test_protocol.FrameTests.test_power_units_negative_rounding_and_invalid_state_nulls) ... ok
 test_already_expired_observation_still_stages_native_without_a_central_copy (test_receipt_outbox.ReceiptOutboxTests.test_already_expired_observation_still_stages_native_without_a_central_copy) ... ok
-test_backed_off_receipts_do_not_hide_later_unstaged_receipts_after_restart (test_receipt_outbox.ReceiptOutboxTests.test_backed_off_receipts_do_not_hide_later_unstaged_receipts_after_restart) ... Executing <Task finished name='Task-629' coro=<ReceiptOutboxTests.test_backed_off_receipts_do_not_hide_later_unstaged_receipts_after_restart() done, defined at C:\Users\user\orca\workspaces\bubble_lock\최종작업\keyring\raspberry-pi-gateway\tests\test_receipt_outbox.py:207> result=None created at C:\Users\user\AppData\Local\Programs\Python\Python312\Lib\asyncio\runners.py:100> took 0.188 seconds
+test_backed_off_receipts_do_not_hide_later_unstaged_receipts_after_restart (test_receipt_outbox.ReceiptOutboxTests.test_backed_off_receipts_do_not_hide_later_unstaged_receipts_after_restart) ... Executing <Task finished name='Task-629' coro=<ReceiptOutboxTests.test_backed_off_receipts_do_not_hide_later_unstaged_receipts_after_restart() done, defined at C:\Users\user\orca\workspaces\bubble_lock\최종작업\keyring\raspberry-pi-gateway\tests\test_receipt_outbox.py:207> result=None created at C:\Users\user\AppData\Local\Programs\Python\Python312\Lib\asyncio\runners.py:100> took 0.141 seconds
 ok
 test_capacity_failure_does_not_leave_half_a_receipt_pair (test_receipt_outbox.ReceiptOutboxTests.test_capacity_failure_does_not_leave_half_a_receipt_pair) ... ok
 test_central_copy_stages_even_when_native_pair_cannot_fit (test_receipt_outbox.ReceiptOutboxTests.test_central_copy_stages_even_when_native_pair_cannot_fit) ... ok
@@ -341,6 +341,6 @@ ok
 test_uncertain_receipt_replay_can_confirm_a_later_central_settlement (test_transport.TransportMockTests.test_uncertain_receipt_replay_can_confirm_a_later_central_settlement) ... ok
 
 ----------------------------------------------------------------------
-Ran 278 tests in 9.176s
+Ran 278 tests in 7.727s
 
 OK

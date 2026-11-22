@@ -18,7 +18,7 @@ computing gzip size...
 [2mdist/[22m[35massets/index-DpIU9Nft.css                   [39m[1m[2m 44.19 kB[22m[1m[22m[2m │ gzip:   8.77 kB[22m
 [2mdist/[22m[36massets/LocationMap-fJd2vq5i.js              [39m[1m[2m174.58 kB[22m[1m[22m[2m │ gzip:  52.65 kB[22m
 [2mdist/[22m[36massets/index-BuZminsf.js                    [39m[1m[33m623.47 kB[39m[22m[2m │ gzip: 145.14 kB[22m
-[32m✓ built in 1.52s[39m
+[32m✓ built in 1.60s[39m
 [33m
 (!) Some chunks are larger than 500 kB after minification. Consider:
 - Using dynamic import() to code-split the application

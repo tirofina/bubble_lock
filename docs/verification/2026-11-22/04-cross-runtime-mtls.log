@@ -11,6 +11,6 @@ test_discovery_read_and_toggle_follow_onem2m_http_binding (test_sdt_python_clien
 test_verify_command_toggles_and_restores (test_sdt_python_client.PythonSdtClientTest.test_verify_command_toggles_and_restores) ... ok
 
 ----------------------------------------------------------------------
-Ran 11 tests in 11.619s
+Ran 11 tests in 11.322s
 
 OK

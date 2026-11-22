@@ -64,6 +64,11 @@ async function main() {
   }
 
   const argument = (name, fallback) => { const index = process.argv.indexOf(name); return index > 0 ? Number(process.argv[index + 1]) : fallback; };
+  // Two-host mode: edge-b is a Mobius4 CSE that already runs on another physical host and is reached through a
+  // forwarded local port (for example `ssh -L`). Its notifications come back through HANDOVER_CALLBACK_PORT (`ssh -R`).
+  const remoteB = process.env.HANDOVER_REMOTE_EDGE_B_PORT ? { port: Number(process.env.HANDOVER_REMOTE_EDGE_B_PORT), admin: process.env.HANDOVER_REMOTE_EDGE_B_ADMIN, host: process.env.HANDOVER_REMOTE_EDGE_B_HOST ?? 'second host', cseVersion: process.env.HANDOVER_REMOTE_EDGE_B_VERSION ?? null, path: process.env.HANDOVER_REMOTE_EDGE_B_PATH ?? 'forwarded TCP port' } : null;
+  if (remoteB && !remoteB.admin) throw new Error('HANDOVER_REMOTE_EDGE_B_ADMIN is required in two-host mode');
+  const callbackPort = Number(process.env.HANDOVER_CALLBACK_PORT ?? 0);
   const rounds = argument('--rounds', 5); const rateMs = argument('--rate-ms', 50);
   const root = fileURLToPath(new URL('../..', import.meta.url));
   const upstream = resolve(process.env.MOBIUS4_ROOT ?? join(root, '..', 'mobius4'));
@@ -127,6 +132,7 @@ async function main() {
   try {
     // 1. Mobius4 CSE 두 개(PostgreSQL DB 분리)와 각 CSE 앞의 지연 proxy
     for (const label of ['a', 'b']) {
+      if (label === 'b' && remoteB) { secrets.push(remoteB.admin); cses['edge-b'] = { config: null, port: remoteB.port, admin: remoteB.admin, starts: 1, child: null, remote: true }; await startProxy('edge-b', remoteB.port); record({ type: 'cse-remote', edgeId: 'edge-b', host: remoteB.host }); continue; }
       const database = `bubble_hoauto_${runId}_${label}`; databases.push(database);
       await pool.query(`CREATE DATABASE "${database}"`);
       const db = new pg.Client({ host: connection.host, port: connection.port, user: connection.user, password: connection.password, database });
@@ -161,7 +167,7 @@ async function main() {
         res.writeHead(200, { 'X-M2M-RSC': '2000', 'X-M2M-RI': req.headers['x-m2m-ri'] ?? '' }); res.end();
       } catch { res.writeHead(400); res.end(); }
     });
-    callback.listen(0, '127.0.0.1'); await once(callback, 'listening');
+    callback.listen(callbackPort, '127.0.0.1'); await once(callback, 'listening');
     for (const label of ['a', 'b']) {
       const edgeId = `edge-${label}`; const state = cses[edgeId];
       coordinator.registerEdge({ edgeId, endpoint: `http://127.0.0.1:${proxies[edgeId].port}`, cseId: `/${edgeId}`, cseBase: '/Mobius', originator: state.admin, callbackUrl: `http://127.0.0.1:${callback.address().port}/${edgeId}`, simulation: false, timeoutMs: 1500, zones: edgeZones[edgeId], region: 'loopback' });
@@ -349,16 +355,17 @@ async function main() {
     status = pass ? 'PASS' : 'REVIEW';
     const receipt = {
       status, rubric: 'R12', docRevision: '2.0.0', generatedAt: new Date().toISOString(), runId,
-      scope: { physicalHosts: 1, cseProcesses: 2, cseImplementation: 'Mobius4', cseVersion: JSON.parse(await readFile(join(upstream, 'package.json'), 'utf8')).version, sourceRevision: spawnSync('git', ['rev-parse', 'HEAD'], { cwd: upstream, encoding: 'utf8', windowsHide: true }).stdout.trim() || null, postgres: (await pool.query('SELECT version()')).rows[0].version, transport: 'actual-mobius4-loopback-http-through-latency-proxy', host: 'single Windows host, loopback only' },
+      scope: { physicalHosts: remoteB ? 2 : 1, cseProcesses: 2, cseImplementation: 'Mobius4', cseVersion: JSON.parse(await readFile(join(upstream, 'package.json'), 'utf8')).version, sourceRevision: spawnSync('git', ['rev-parse', 'HEAD'], { cwd: upstream, encoding: 'utf8', windowsHide: true }).stdout.trim() || null, postgres: (await pool.query('SELECT version()')).rows[0].version, transport: remoteB ? 'actual-mobius4-http-through-latency-proxy; edge-b over a forwarded TCP port to the second host' : 'actual-mobius4-loopback-http-through-latency-proxy', host: remoteB ? 'edge-a and the orchestrator on a Windows host; edge-b on a second physical host' : 'single Windows host, loopback only', ...(remoteB ? { edgeB: { host: remoteB.host, cseVersion: remoteB.cseVersion, path: remoteB.path } } : {}) },
       simulation: { cse: false, device: true, deviceNote: 'keyring telemetry generated in-process at a fixed rate (Gateway telemetry schema 1.0.0); no BLE hardware', location: true, locationNote: 'scripted MEC Location reports through MecPolicyReconciler and approved zone policies', availabilityFault: false, availabilityNote: 'edge-a Mobius4 process is terminated (TerminateProcess) and restarted on the same PostgreSQL database', latency: 'real probe RTT; extra delay injected by a loopback TCP proxy process', load: true, loadNote: 'edge-agent load value set by the scenario (simulated report)', coordinatorStore: 'run-local in-memory IntegrationStore subclass (shallow collection copy per transaction)' },
       triggerPolicy, intervals, baseOneWayDelayMs: baseDelayMs, injectedOneWayDelayMs: injectedDelayMs, zones, edgeZones, rounds,
       interruptionDefinition: 'time between the last observation acknowledged by the source CSE and the first acknowledgement on the target CSE of a newer sequence (live write or cutover replay)',
       targets, summary, steps, handovers, runtimeEvidenceDirectory: `.local/handover-auto-cse/${runId}`,
     };
     await writeFile(join(directory, 'event-log.json'), `${JSON.stringify({ log, notifications }, null, 0)}\n`, { mode: 0o600 });
-    const evidence = join(root, 'docs/verification-evidence/2026-11-19'); await mkdir(evidence, { recursive: true });
-    await writeFile(join(evidence, 'handover-auto-real-cse.json'), `${JSON.stringify(receipt, null, 2)}\n`);
-    await mkdir(join(root, 'pc-mobius/receipts'), { recursive: true }); await writeFile(join(root, 'pc-mobius/receipts/handover-auto-real-cse.json'), `${JSON.stringify(receipt, null, 2)}\n`);
+    const receiptName = remoteB ? 'handover-two-host-real-cse.json' : 'handover-auto-real-cse.json';
+    const evidence = join(root, 'docs/verification-evidence', remoteB ? '2026-11-23' : '2026-11-19'); await mkdir(evidence, { recursive: true });
+    await writeFile(join(evidence, receiptName), `${JSON.stringify(receipt, null, 2)}\n`);
+    await mkdir(join(root, 'pc-mobius/receipts'), { recursive: true }); await writeFile(join(root, 'pc-mobius/receipts', receiptName), `${JSON.stringify(receipt, null, 2)}\n`);
     console.log(JSON.stringify({ status, handovers: summary.handovers, byKind: summary.byKind, observations: summary.observations.produced, lost, duplicatesInCse: cseDuplicates, appMissing: appMissing.length, interruptionMs: summary.interruptionMs, interruptionMsByKind: summary.interruptionMsByKind, detectionMsByKind: summary.detectionMsByKind, security: summary.security, eventLoop: summary.orchestratorEventLoopDelayMs }, null, 2));
     if (!pass) process.exitCode = 1;
   } catch (error) { failure = error; console.error(sanitized(error.stack)); process.exitCode = 1; }
