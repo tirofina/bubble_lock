@@ -701,6 +701,12 @@
   border-radius: var(--r-pill); background: var(--success-soft); color: var(--success);
   text-align: center; font-size: var(--t-body); font-weight: 700; font-variant-numeric: tabular-nums;
 }
+/* PANIC during the approved share: the title, the countdown and the (desktop) eyebrow turn to the danger
+   tokens; the row keeps its height, so compact layouts fit as before */
+.story-check-in-shared[data-emergency] .story-location-heading h1 { color: var(--danger); }
+.story-check-in-shared[data-emergency] .story-location-countdown { background: var(--danger-soft); color: var(--danger); }
+.story-emergency-eyebrow { display: inline-flex; align-items: center; gap: 4px; color: var(--danger); }
+.story-emergency-eyebrow svg { flex: none; }
 .story-location-map-target { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; border-radius: 14px; }
 .story-location-map-target > * { flex: 1 1 auto; min-height: 0; }
 /* Status line: words never split. The keyring name keeps at least its longest word, and when the row is

@@ -664,7 +664,13 @@ try {
       await assertCoach(`${label} call action`, 'app-primary');
       await assertSingleGuide(`${label} call action`, 'app-primary');
       await clickCenter('.story-location-actions .story-primary');
-      await waitFor("document.querySelector('.story-demo')?.dataset.coachTarget === 'next' && document.querySelector('.story-location-actions .story-primary')?.textContent?.includes('Call requested')", `${label} call completion`);
+      await waitFor("document.querySelector('.story-demo')?.dataset.coachTarget === 'keyring' && document.querySelector('.story-location-actions .story-primary')?.textContent?.includes('Call requested')", `${label} call completion`);
+      await assertCoach(`${label} PANIC action`, 'keyring');
+      await assertSingleGuide(`${label} PANIC action`, 'keyring');
+      await waitFor("document.querySelector('.keyring-physical-button.panic')?.classList.contains('is-guided') === true", `${label} guided PANIC button`);
+      await clickCenter('.keyring-physical-button.panic');
+      await waitFor("document.querySelector('.story-demo')?.dataset.coachTarget === 'next' && document.querySelector('.story-check-in-shared')?.dataset.emergency === 'true' && document.querySelector('.story-trace-title')?.textContent?.includes('Keyring emergency alert stored') === true", `${label} PANIC escalation`);
+      await assertViewportFit(`${label} PANIC escalation`);
       await assertCoach(`${label} system proof action`, 'next');
       await assertSingleGuide(`${label} system proof action`, 'next');
     };
@@ -1138,7 +1144,11 @@ try {
   await waitFor("document.querySelector('.story-demo')?.dataset.coachTarget === 'app-primary' && document.querySelector('.story-location-actions .story-primary')?.disabled === false", 'landscape map inspection');
   await assertSingleGuide('landscape call action', 'app-primary');
   await clickCenter('.story-location-actions .story-primary');
-  await waitFor("document.querySelector('.story-demo')?.dataset.coachTarget === 'next'", 'landscape call completion');
+  await waitFor("document.querySelector('.story-demo')?.dataset.coachTarget === 'keyring'", 'landscape call completion');
+  await assertSingleGuide('landscape PANIC action', 'keyring');
+  await clickCenter('.keyring-physical-button.panic');
+  await waitFor("document.querySelector('.story-demo')?.dataset.coachTarget === 'next' && document.querySelector('.story-check-in-shared')?.dataset.emergency === 'true'", 'landscape PANIC escalation');
+  await shot('story-panic-landscape', 844, 390);
   await assertSingleGuide('landscape system proof action', 'next');
 
   await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
@@ -1246,7 +1256,7 @@ try {
       'Mobius tree uses vertical-only touch and wheel scrolling with zero horizontal movement while CSE records keep compact paging',
       'every story stage shows a safe-area overlay that explains the single highlighted system element and names the next real action',
       'exactly one guidance owner is visible at a time and its pulse remains active until the required click or inspection advances the queue',
-      'scenario actions, Mobius evidence, the approved map, Call and the next arrow advance in order; inspecting the tree advances guidance to Next',
+      'scenario actions, Mobius evidence, the approved map, Call, the guided PANIC press and the next arrow advance in order; inspecting the tree advances guidance to Next',
       'visible story text remains fully readable and language, coach and navigation overlays do not cover app or Mobius content',
       'desktop Mobius stays left of the phone in light and dark mode',
       'phone landscape fits Mobius, app and overlay keyring in one viewport',
