@@ -14,7 +14,6 @@
   --story-travel: 640ms;
   --story-stagger: 90ms;
   --story-breathe: 2.4s;
-  --story-fresh: 2.4s;
   --z-topbar: 10;
   --z-intro: 20;
   --z-dock: 30;
@@ -33,8 +32,11 @@
   /* Chrome (S3): top bar for brand, dashboard link and language; bottom bar for scene navigation */
   --topbar-h: 56px;
   --nav-h: 44px;
+  /* Room under the scene navigation when the device has no bottom inset, so the guided Next arrow keeps
+     its whole 4px halo above the window edge (S9); 8px on desktop, 6px in the landscape bottom bar */
+  --nav-floor: 0px;
   --chrome-top: calc(var(--topbar-h) + var(--safe-top));
-  --chrome-bottom: calc(var(--nav-h) + var(--safe-bottom));
+  --chrome-bottom: calc(var(--nav-h) + max(var(--safe-bottom), var(--nav-floor)));
   --gutter: 24px;
   --content-max: 1040px;
 
@@ -139,9 +141,11 @@
 .story-topbar .lang-switch button:hover { background: transparent; }
 .story-topbar .lang-switch button:hover::before { opacity: .85; filter: none; }
 .story-topbar .lang-switch button[aria-pressed="true"] { background: transparent; }
+/* The chosen flag: full color and a neutral 1.5px ring. Accent rings belong to the one guided target (S9),
+   so the language state never reads as a second highlight beside it */
 .story-topbar .lang-switch button[aria-pressed="true"]::before {
   opacity: 1; filter: none;
-  box-shadow: 0 0 0 .5px rgb(0 0 0 / .28), 0 0 0 2px var(--canvas), 0 0 0 3.5px var(--accent);
+  box-shadow: 0 0 0 .5px rgb(0 0 0 / .28), 0 0 0 2px var(--canvas), 0 0 0 3.5px color-mix(in srgb, var(--ink) 34%, transparent);
 }
 
 /* ---------- Bottom scene navigation (S3): one quiet row, centered, inside the safe area ---------- */
@@ -158,7 +162,9 @@
   color: var(--muted); text-decoration: none;
   transition: background-color .2s var(--ease), color .2s var(--ease);
 }
-.story-stepper-prev:hover, .story-stepper-next:hover { background: var(--segment-track); color: var(--ink); text-decoration: none; }
+/* Tinted hovers only where a pointer can hover: a tap on iPhone leaves :hover on the control under the
+   finger, which would read as a second highlight on the next page (S9) */
+@media (hover: hover) { .story-stepper-prev:hover, .story-stepper-next:hover { background: var(--segment-track); color: var(--ink); text-decoration: none; } }
 .story-stepper-compact {
   min-width: 9.5em; padding: 0 var(--s1);
   color: var(--ink); font-size: var(--t-caption); font-weight: 600; text-align: center;
@@ -364,32 +370,43 @@
   font-size: var(--t-caption); overflow-wrap: anywhere;
 }
 
-/* Panel switcher: a segmented control, light thumb on a soft track */
+/* Panel switcher: a compact segmented control. Each segment is a full 44px hit target; the soft track
+   (36px) and the light thumb (32px) are drawn inset inside that height, so the strip is exactly one 44px
+   row with no track padding above or below (P3, P12) */
 .story-panel-tabs {
   grid-area: tabs;
+  position: relative; isolation: isolate;
   justify-self: start;
   width: min(100%, 440px);
   display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 2px;
-  padding: 2px;
-  border-radius: 12px;
-  background: var(--segment-track);
+  padding: 0 2px;
+  background: transparent;
+}
+.story-panel-tabs::before {
+  content: ""; position: absolute; inset: 4px 0; z-index: -1;
+  border-radius: 10px; background: var(--segment-track); pointer-events: none;
 }
 .story-panel-tabs button {
   position: relative;
   min-width: var(--control); min-height: var(--control);
   padding: 0 var(--s2);
-  border: 0; border-radius: 10px;
+  border: 0; border-radius: 8px;
   background: transparent; color: var(--muted);
   font-size: var(--t-caption); font-weight: 600; white-space: nowrap;
 }
+.story-panel-tabs button::before {
+  content: ""; position: absolute; inset: 6px 0; z-index: -1;
+  border-radius: 8px; background: transparent; pointer-events: none;
+}
 .story-panel-tabs button:hover { background: transparent; color: var(--ink); }
 .story-panel-tabs button:active { transform: none; }
-.story-panel-tabs button.active, .story-panel-tabs button[aria-pressed="true"] {
-  background: var(--segment-thumb); color: var(--ink); box-shadow: var(--segment-shadow);
-}
+.story-panel-tabs button.active, .story-panel-tabs button[aria-pressed="true"] { background: transparent; color: var(--ink); }
+.story-panel-tabs button:is(.active, [aria-pressed="true"])::before { background: var(--segment-thumb); box-shadow: var(--segment-shadow); }
 .story-panel-tabs button[aria-controls="story-panel-scenes"] { display: none; }
-.story-panel-alert { position: absolute; top: 9px; right: 10px; width: 6px; height: 6px; border-radius: 50%; background: transparent; }
-.story-panel-tabs button.has-new-event:not(.active) .story-panel-alert { background: var(--accent); animation: story-tab-notice 1.2s var(--ease) 3; }
+.story-panel-alert { position: absolute; top: 10px; right: 9px; width: 6px; height: 6px; border-radius: 50%; background: transparent; }
+/* The new-record dot belongs to the guided tab only and stays steady: the tab's own mark (S9) carries
+   the motion, so the dot never flashes on a rhythm of its own */
+.story-demo[data-coach-target="mobius"] .story-panel-tabs button.has-new-event[data-guide-strength="primary"]:not(.active) .story-panel-alert { background: var(--accent); }
 
 .story-panel-card {
   grid-area: panel;
@@ -399,7 +416,7 @@
   grid-template-columns: minmax(0, 1fr);
   align-content: start;
   gap: var(--s3);
-  padding-top: var(--s5);
+  padding-top: var(--s3);
 }
 .story-panel-card.is-mobile-open { display: grid; }
 .story-panel-card h3 { font-size: var(--t-callout); font-weight: 600; }
@@ -465,12 +482,14 @@
   display: block; min-width: 0; color: var(--muted); font-size: var(--t-caption); line-height: 1.5;
   overflow-wrap: anywhere; word-break: break-word; white-space: normal;
 }
-.story-mobius-events li.is-new-event, .mobius-tree .is-fresh {
+/* Fresh record tint: steady, and only while that panel is the guided evidence. The region ring around it
+   carries the guide's motion, so the record never pulses on a second rhythm */
+.story-demo[data-coach-target="mobius"][data-coach-evidence="events"] .story-mobius-events li.is-new-event,
+.story-demo[data-coach-target="mobius"][data-coach-evidence="tree"] .mobius-tree .is-fresh {
   background: var(--accent-soft);
   box-shadow: inset 3px 0 0 var(--accent);
-  animation: story-fresh calc(var(--story-fresh) / 2) var(--ease) 2;
 }
-.story-mobius-events li.is-new-event:not(.is-fresh) {
+.story-demo[data-coach-target="mobius"][data-coach-evidence="events"] .story-mobius-events li.is-new-event:not(.is-fresh) {
   background: color-mix(in srgb, var(--accent-soft) 45%, transparent); box-shadow: none; animation: none;
 }
 .story-events-pager { display: flex; align-items: center; justify-content: center; gap: 2px; }
@@ -508,7 +527,7 @@
   min-height: var(--control); padding: 0 var(--s3); gap: var(--s2);
   border-color: transparent; color: var(--accent-text); font-size: var(--t-caption);
 }
-.mobius-tree-toolbar button:hover, .mobius-node-detail button:hover { background: var(--accent-soft); }
+@media (hover: hover) { .mobius-tree-toolbar button:hover, .mobius-node-detail button:hover { background: var(--accent-soft); } }
 .story-events-pager button:disabled {
   background: transparent; border-color: transparent; color: var(--muted); opacity: .4; cursor: default;
 }
@@ -542,7 +561,7 @@
   border: 0; border-radius: 10px; background: transparent; color: var(--ink);
   font-size: var(--t-callout); font-weight: 400; line-height: 1.35; text-align: left; cursor: pointer;
 }
-.mobius-tree-leaf > button:hover { background: var(--surface-strong); }
+@media (hover: hover) { .mobius-tree-leaf > button:hover { background: var(--surface-strong); } }
 .mobius-tree-leaf > button:active { transform: none; }
 .mobius-tree-leaf > button.selected { background: var(--accent-soft); }
 .mobius-node-dot { grid-area: dot; width: 8px; height: 8px; border: 2px solid var(--muted); border-radius: 50%; }
@@ -656,7 +675,7 @@
 }
 .story-phone button.done:disabled { background: var(--success-soft); border-color: transparent; color: var(--success); transform: none; }
 .story-text-action { align-self: center; border-color: transparent; color: var(--accent-text); padding-inline: var(--s3); }
-.story-text-action:hover { background: var(--accent-soft); }
+@media (hover: hover) { .story-text-action:hover { background: var(--accent-soft); } }
 
 .story-result { display: flex; align-items: flex-start; gap: var(--s2); color: var(--success); font-size: var(--t-callout); font-weight: 600; line-height: 1.45; }
 .story-result svg { flex: none; margin-top: 2px; }
@@ -671,6 +690,9 @@
 /* Approved five-minute map (S8): heading (title and countdown), status line, the map as the hero
    taking every remaining pixel, then Call. */
 .story-check-in-shared { gap: var(--s3); padding-top: var(--s4); }
+/* Call sits on the content's bottom edge and .story-content clips: 6px of bottom padding (taken from the
+   map, the flexible hero) keeps Call's 4px guide halo whole, as the 6px inline reach does at the sides */
+.story-demo:not(.capture) .story-check-in-shared { padding-bottom: 6px; }
 .story-check-in-shared > *, .story-check-in-shared .location-story, .story-check-in-shared .map-frame { min-width: 0; max-width: 100%; }
 .story-location-heading { flex: none; display: flex; align-items: center; justify-content: space-between; gap: var(--s3); }
 .story-location-heading > div { display: grid; gap: 2px; min-width: 0; }
@@ -836,11 +858,11 @@
   background: color-mix(in srgb, currentColor 14%, transparent);
   outline: 2.5px solid transparent; outline-offset: 0;
   pointer-events: none;
-  animation: keyring-halo 1.6s cubic-bezier(.15, .6, .3, 1) infinite;
+  animation: keyring-halo 1.6s cubic-bezier(.15, .6, .3, 1) .45s infinite;
 }
 .keyring-physical-button.is-guided:not(:active):not(.pressed)::before {
   background: color-mix(in srgb, currentColor 26%, transparent);
-  animation: keyring-swell 1.6s ease-in-out infinite;
+  animation: keyring-swell 1.6s ease-in-out .45s infinite;
 }
 .keyring-physical-button.confirm.is-guided { color: var(--halo-confirm); }
 .keyring-physical-button.panic.is-guided { color: var(--halo-panic); }
@@ -880,18 +902,12 @@
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: none; }
 }
-@keyframes story-fresh {
-  0%, 100% { background: var(--accent-soft); }
-  50% { background: color-mix(in srgb, var(--accent) 22%, var(--accent-soft)); }
-}
-@keyframes story-tab-notice {
-  0%, 100% { opacity: .45; }
-  50% { opacity: 1; }
-}
 @keyframes story-rotate-phone {
   0%, 30% { rotate: 0deg; }
   70%, 100% { rotate: -90deg; }
 }
+
+@media (min-width: 1024px) { .story-demo { --nav-floor: 8px; } }
 
 /* ---------- Narrow and short desktop ---------- */
 @media (max-width: 1279px) {
@@ -902,7 +918,7 @@
   .story-demo { --topbar-h: 48px; --dock-kw: 112px; --intro-scale: 2.2; --intro-band: 56px; }
   .story-stage { padding-top: 8px; }
   .story-mobius-head { padding-bottom: var(--s2); }
-  .story-panel-card { padding-top: var(--s3); }
+  .story-panel-card { padding-top: var(--s2); }
   .story-trace { gap: var(--s3); }
   .story-trace-title { font-size: var(--t-body); }
   .story-trace-step { padding-bottom: var(--s3); }
@@ -918,6 +934,12 @@
   .story-phone button.story-primary, .story-phone button.story-secondary { min-height: 44px; }
   .story-phone button.story-primary { margin-top: 0; }
   .story-privacy-note { padding-block: var(--s2); font-size: var(--t-caption); }
+  /* As below 1024px, the reviewed draft states purpose, recipient and time, so it stands in for the
+     footnote that says the same (1280 x 720 cut the footnote by 20px); screen readers keep both */
+  .story-demo:not(.capture) .story-check-in:has(.story-draft-proof) .story-privacy-note {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
 }
 
 /* ---------- Phones and small windows: shared compact type (never below 11px) ---------- */
@@ -930,7 +952,7 @@
   .story-mobius-meta { font-size: 11px; line-height: 1.35; }
   .story-panel-tabs { width: 100%; }
   .story-panel-tabs button { padding-inline: 4px; font-size: 12px; }
-  .story-panel-card { gap: var(--s2); padding-top: var(--s2); }
+  .story-panel-card { gap: var(--s2); padding-top: 4px; }
   .story-events-head { display: none; }
 
   .story-trace { gap: var(--s2); }
@@ -1060,6 +1082,7 @@
 @media (max-width: 1023px) and (orientation: landscape) {
   .story-demo {
     --topbar-h: 0px;
+    --nav-floor: 6px;
     --gutter: 8px;
     --dock-kw: 112px;
     --dock-right: max(8px, var(--safe-right));
@@ -1071,7 +1094,7 @@
   .story-topbar {
     grid-row: 3;
     height: var(--chrome-bottom);
-    padding: 0 max(8px, var(--safe-right)) var(--safe-bottom) max(8px, var(--safe-left));
+    padding: 0 max(8px, var(--safe-right)) max(var(--safe-bottom), var(--nav-floor)) max(8px, var(--safe-left));
     box-shadow: none;
   }
   .story-intro-hint { font-size: var(--t-callout); }
@@ -1091,7 +1114,7 @@
   .story-mobius-head .story-mobius-meta { display: none; }
   .story-mobius:has(> .story-server-message) .story-mobius-head { display: none; }
   .story-server-message { margin-bottom: 6px; }
-  .story-panel-card { padding-top: 6px; }
+  .story-panel-card { padding-top: 3px; }
   .mobius-tree-view { gap: 4px; }
 
   /* App pane in 390px of height: compact-height title bar (HIG 32pt) and tighter cards */
@@ -1113,6 +1136,7 @@
 @media (max-width: 1023px) and (orientation: landscape) and (max-height: 340px) {
   .story-demo {
     --nav-h: 0px;
+    --nav-floor: 0px;
     --rail-w: 112px;
     --rail-nav-h: 60px;
     --dock-right: max(8px, var(--safe-right));
@@ -1166,7 +1190,7 @@
   .story-mobius-head .story-mobius-meta { display: block; }
   .story-server-message { align-self: start; margin: 0; padding: 4px 8px; }
   .story-panel-tabs { align-self: start; }
-  .story-panel-card { padding-top: 6px; }
+  .story-panel-card { padding-top: 3px; }
 
   .story-demo:not(.capture) .story-header { min-height: 32px; }
   .story-demo:not(.capture) .story-inline-error { margin-top: 6px; }
@@ -1243,7 +1267,7 @@
   .story-mobius:has(#story-panel-tree.is-mobile-open) > .story-server-message { display: none; }
   .story-panel-tabs { align-self: auto; }
   .story-panel-tabs button { padding-inline: 2px; font-size: 11px; }
-  .story-panel-card { padding-top: 4px; gap: 4px; }
+  .story-panel-card { padding-top: 2px; gap: 4px; }
 
   /* Receipt: one line per step where it fits; the scene sentence stays for screen readers */
   .story-trace { gap: 4px; }
@@ -1340,6 +1364,7 @@
   .story-demo[data-display-mode="standalone"] {
     --topbar-h: 0px;
     --nav-h: 0px;
+    --nav-floor: 0px;
     --rail-w: 176px;
     --rail-nav-h: 44px;
     --app-w: 232px;
@@ -1377,25 +1402,28 @@
   }
   .story-demo[data-display-mode="standalone"] .story-stepper-compact { order: 0; flex: 1 1 0; min-width: 0; font-size: 12px; line-height: 15px; white-space: normal; text-wrap: balance; }
 
-  /* Mobius: two-line header, switcher, one panel; the bottom 48px belong to the scene guide */
+  /* Mobius: the top 48px belong to the quest (S9), then the switcher and one panel; the two-line header
+     (title and source badge, session) closes the column as a quiet status footer */
   .story-demo[data-display-mode="standalone"] .story-mobius {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto auto minmax(0, 1fr);
-    grid-template-areas: "head" "msg" "tabs" "panel";
+    grid-template-rows: 48px auto auto minmax(0, 1fr) auto;
+    grid-template-areas: "quest" "msg" "tabs" "panel" "head";
     column-gap: 0;
-    padding-bottom: 48px;
+    padding-bottom: 0;
   }
   .story-demo[data-display-mode="standalone"] :is(.story-mobius-head, .story-mobius:has(> .story-server-message) .story-mobius-head) {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 0 6px; padding: 0 0 4px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0 6px; padding: 4px 0 0;
+    box-shadow: inset 0 .5px 0 var(--hairline);
   }
-  .story-demo[data-display-mode="standalone"] .story-mobius-head h2 { order: 0; font-size: 13px; line-height: 18px; }
+  .story-demo[data-display-mode="standalone"] .story-mobius-head h2 { order: 0; font-size: 12px; font-weight: 600; line-height: 18px; }
   .story-demo[data-display-mode="standalone"] .story-mobius-head .badge { order: 1; min-height: 18px; padding: 0 6px; font-size: 11px; line-height: 18px; }
   .story-demo[data-display-mode="standalone"] .story-mobius-head .story-mobius-meta { display: block; order: 2; flex-basis: 100%; font-size: 11px; line-height: 14px; }
   .story-demo[data-display-mode="standalone"] .story-server-message { margin: 0; padding: 0 6px; border-radius: 6px; font-size: 11px; line-height: 14px; }
   .story-demo[data-display-mode="standalone"] .story-mobius:has(> .story-server-message) .story-mobius-meta { display: none; }
   .story-demo[data-display-mode="standalone"] .story-mobius:has(> .story-server-message) .story-mobius-head { padding-bottom: 0; }
+  .story-demo[data-display-mode="standalone"] .story-server-message { margin-bottom: 4px; }
   .story-demo[data-display-mode="standalone"] .story-panel-tabs button { padding-inline: 2px; font-size: 11px; }
-  .story-demo[data-display-mode="standalone"] .story-panel-card { padding-top: 6px; gap: 4px; }
+  .story-demo[data-display-mode="standalone"] .story-panel-card { padding-top: 3px; gap: 4px; }
 
   /* Receipt: one line per step where it fits, the scene sentence visible under it */
   .story-demo[data-display-mode="standalone"] .story-trace { gap: 4px; }
@@ -1529,14 +1557,17 @@
    browser-session / purpose / scope / expiry boundary) closed by the session footer, beside the same
    keyring. Every value comes from the live session snapshot (P6). */
 
-/* Scene seven's Next: a tinted success circle with a check that invites twice, then rests */
-.story-stepper-next[data-special="true"] {
+/* Scene seven's Next: once Call is done and it owns the guide, a tinted success circle with a check whose
+   halo and wave are success-tinted too, so the one mark reads in one color family. Before that it is a
+   plain muted check, so it never competes with the map or Call */
+.story-demo[data-coach-target="next"] .story-stepper-next[data-special="true"] {
+  --coach-halo: color-mix(in srgb, var(--success) 30%, transparent);
+  --coach-wave: color-mix(in srgb, var(--success) 36%, transparent);
   background: var(--success-soft); color: var(--success);
-  animation: story-proof-invite 1.8s var(--ease) .6s 2 both;
 }
-.story-stepper-next[data-special="true"]:hover { background: color-mix(in srgb, var(--success) 18%, var(--success-soft)); color: var(--success); }
+@media (hover: hover) { .story-demo[data-coach-target="next"] .story-stepper-next[data-special="true"]:hover { background: color-mix(in srgb, var(--success) 18%, var(--success-soft)); color: var(--success); } }
 .story-bottom-nav.is-finale .story-stepper-next { color: var(--accent-text); }
-.story-bottom-nav.is-finale .story-stepper-next:hover { background: var(--accent-soft); color: var(--accent-text); }
+@media (hover: hover) { .story-bottom-nav.is-finale .story-stepper-next:hover { background: var(--accent-soft); color: var(--accent-text); } }
 
 .story-demo[data-finale="true"] .story-mobius { display: none; }
 .story-demo[data-finale="true"] .story-stage { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); column-gap: 0; }
@@ -1669,12 +1700,8 @@
 .story-finale-actions a:hover { text-decoration: none; }
 .story-finale-actions a.story-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .story-finale-actions a.story-primary:hover { background: var(--accent-pressed); border-color: var(--accent-pressed); }
-.story-finale-actions a.story-secondary:hover { background: var(--accent-soft); }
+@media (hover: hover) { .story-finale-actions a.story-secondary:hover { background: var(--accent-soft); } }
 
-@keyframes story-proof-invite {
-  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 35%, transparent); }
-  70%, 100% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--success) 0%, transparent); }
-}
 @keyframes story-proof-seal {
   from { transform: scale(.6); opacity: 0; }
   to { transform: none; opacity: 1; }
@@ -1755,6 +1782,8 @@
     --proof-pad: 14px; --proof-marker: 24px; --proof-gap: 12px;
     --proof-title: 14px; --proof-title-lh: 18px; --proof-detail: 12px; --proof-code: 11px; --proof-count: 15px;
     --finale-slot: 0px;
+    /* The quest owns the stage's top 48px (S9), so the statement and receipt start under it */
+    padding-top: 42px;
   }
 }
 
@@ -1779,23 +1808,27 @@
   .story-finale-actions a { min-height: var(--control); padding: 0 var(--s3); font-size: var(--t-callout); }
 }
 
-/* ---------- Scene guide (S9): one small overlay tip per scene and three strengths of highlight ----------
+/* ---------- Scene guide (S9): one small overlay tip per scene and exactly one highlighted owner ----------
    StoryDemo names the target on the root (data-coach-target) and on the tip (.story-coach[data-target]);
    the real element carries data-demo-target. The tip reads label, then the next real action; it ignores
    the pointer and sits in a slot each layout keeps free (top bar, bottom bar, Mobius rail, guide strip,
    Mobius identity line), so it never covers the map, the keyring, a record or an action.
-   Hierarchy: 1. the keyring button keeps its large double halo (S5), the strongest mark on screen;
-   2. the exact next action (app button, map, Next arrow, the guided Mobius tab or the open guided panel
-   region) wears one medium mark that sends two soft waves, then rests; 3. secondary Mobius evidence
-   (data-guide-strength="secondary") wears the weakest mark: an accent label and dot on its tab and a
-   1px soft ring on its record region (P5, P6, P7, P13). */
+   One owner at a time, in a click queue: the keyring (intro only), the guided Mobius tab or open region
+   (only while data-coach-target="mobius"), the app action, the map, Call, the Next arrow, the proof.
+   Its mark keeps moving until the required click or inspection advances the queue (infinite loops that
+   start and end on the steady state); nothing else on screen pulses, flashes or wears an accent ring
+   (P5, P6, P7, P13). Keyboard focus keeps the crisp 3px ring: a static outline reads as "you are here",
+   the moving soft halo as "go here". */
 .story-demo {
   --coach-halo: color-mix(in srgb, var(--accent) 30%, transparent);
   --coach-wave: color-mix(in srgb, var(--accent) 36%, transparent);
   --coach-proof: color-mix(in srgb, var(--success) 34%, transparent);
   --guide-fill: color-mix(in srgb, var(--accent) 12%, transparent);
   --guide-ring: color-mix(in srgb, var(--accent) 60%, transparent);
-  --guide-soft: color-mix(in srgb, var(--accent) 30%, transparent);
+  --guide-glow: color-mix(in srgb, var(--accent) 16%, transparent);
+  /* Keyboard focus inside the demo is a neutral ink ring (P10): accent belongs to the one guided target,
+     so a focus ring left on a control the guide has moved past never reads as a second highlight */
+  --focus: var(--ink);
 }
 .story-coach {
   position: fixed; z-index: calc(var(--z-dock) + 2);
@@ -1816,83 +1849,98 @@
 }
 .story-coach[aria-hidden="true"] { display: none; }
 .story-coach > p { min-width: 0; margin: 0; }
-.story-coach-label { grid-area: label; display: flex; align-items: center; gap: 6px; color: var(--accent-text); font-size: 12px; font-weight: 600; white-space: nowrap; }
+/* Quest hierarchy: the accent label names the idea, the action (600, ink) is the read; the title is the
+   quieter middle line. The one accent cue is the filled arrow disc before the action, so the quest reads
+   as the next step and never as another highlighted target */
+.story-coach-label { grid-area: label; display: flex; align-items: center; gap: 6px; color: var(--accent-text); font-size: 12px; font-weight: 700; white-space: nowrap; }
 .story-coach-label > span { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
-.story-coach > strong { grid-area: title; min-width: 0; font-weight: 600; }
-.story-coach-action { grid-area: action; display: flex; align-items: flex-start; gap: 6px; }
-.story-coach-action svg { flex: none; width: 14px; height: 14px; margin-top: 1.5px; color: var(--accent-text); }
-.story-coach-action b { margin-right: 6px; color: var(--muted); font-weight: 600; }
+.story-coach > strong { grid-area: title; min-width: 0; color: var(--muted); font-weight: 500; }
+.story-coach-action { grid-area: action; display: flex; align-items: flex-start; gap: 6px; font-weight: 600; }
+.story-coach-action svg {
+  flex: none; box-sizing: border-box; width: 16px; height: 16px; margin-top: .5px; padding: 2.5px;
+  border-radius: 50%; background: var(--accent); color: var(--on-accent);
+}
+.story-coach-action b { margin-right: 6px; color: var(--muted); font-weight: 500; }
+/* Desktop: the action line is the largest line of the quest (15px/600), so it reads before the keyring halo */
+@media (min-width: 1024px) {
+  .story-coach-label, .story-coach > strong { line-height: 16px; }
+  .story-coach-action { font-size: 15px; line-height: 18px; }
+  .story-coach-action b { font-size: 13px; }
+  .story-coach-action svg { margin-top: 1px; }
+}
 .story-coach-detail {
   position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
-@keyframes story-coach-in { from { opacity: .4; transform: scale(.97); } to { opacity: 1; transform: none; } }
+/* Entrance: the quest arrives first (opacity from 20% and a 2% settle over --story-base); every target mark starts
+   its loop .45s later, so the eye reads the quest, then finds the one target it names */
+@keyframes story-coach-in { from { opacity: .2; transform: scale(.98); } to { opacity: 1; transform: none; } }
 
-/* 2. Medium: the exact next action wears a 4px accent halo, two soft waves, then a steady halo */
+/* The exact next action wears a 4px accent halo whose soft wave repeats until the click */
 .story-demo[data-coach-target="map"] [data-demo-target="map"],
 .story-demo[data-coach-target="app-primary"] [data-demo-target="app-primary"],
 .story-demo[data-coach-target="app-secondary"] [data-demo-target="app-secondary"],
 .story-demo[data-coach-target="next"] [data-demo-target="next"] {
   box-shadow: 0 0 0 4px var(--coach-halo);
-  animation: story-coach-halo 1.6s var(--ease) .3s 2 both;
+  animation: story-coach-halo 1.6s var(--ease) .45s infinite;
 }
 .story-demo[data-coach-target="app-secondary"] .story-text-action[data-demo-target="app-secondary"] { background: var(--accent-soft); }
-/* 2. Medium, inside Mobius: no sheet over the pane. While the guided panel is closed, its tab is the
-   action: an inset ring and tint drawn exactly over that segment by the pane's own grid item (the pane
-   clips at its edges, so the mark stays inside the segment). Segment geometry follows the switcher:
-   2px track padding and 2px gaps around three equal segments (2 x 2 in portrait). */
-.story-panel-tabs button[data-guide-strength="primary"]:not([aria-pressed="true"]) { color: var(--accent-text); }
-.story-mobius:has(.story-panel-tabs button[data-guide-strength="primary"]:not([aria-pressed="true"]))::after {
+/* Inside Mobius, only while the root names Mobius as the owner (data-coach-target="mobius"), and only on a
+   real evidence tab (data-evidence-target): the portrait-only Scenes tab and every other scene stay plain.
+   No sheet over the pane. While the guided panel is closed, its tab is the action: an inset ring and tint
+   drawn exactly over that segment by the pane's own grid item (the pane clips at its edges, so the mark
+   stays inside the segment). Segment geometry follows the switcher: 2px side padding and 2px gaps around
+   three equal 44px segments (2 x 2 in portrait); the mark takes the thumb's box, 32px tall and 6px down. */
+.story-demo[data-coach-target="mobius"] .story-panel-tabs button[data-evidence-target][data-guide-strength="primary"]:not([aria-pressed="true"]) { color: var(--accent-text); }
+.story-demo[data-coach-target="mobius"] .story-mobius:has(.story-panel-tabs button[data-evidence-target][data-guide-strength="primary"]:not([aria-pressed="true"]))::after {
   --tabs-w: min(100%, 440px);
   --seg-w: calc((var(--tabs-w) - 8px) / 3);
   content: ""; grid-area: tabs; z-index: 1;
   justify-self: start; align-self: start;
-  width: var(--seg-w); height: 44px;
-  margin: 2px 0 0 calc(2px + var(--seg-i, 0) * (var(--seg-w) + 2px));
-  border-radius: 10px;
+  width: var(--seg-w); height: 32px;
+  margin: 6px 0 0 calc(2px + var(--seg-i, 0) * (var(--seg-w) + 2px));
+  border-radius: 8px;
   background: var(--guide-fill);
   box-shadow: inset 0 0 0 1.5px var(--guide-ring);
   pointer-events: none;
-  animation: story-guide-tab 1.6s var(--ease) .3s 2 both;
+  animation: story-guide-tab 1.6s var(--ease) .45s infinite;
 }
-.story-mobius:has(.story-panel-tabs button[aria-controls="story-panel-tree"][data-guide-strength="primary"]:not([aria-pressed="true"]))::after { --seg-i: 1; }
-.story-mobius:has(.story-panel-tabs button[aria-controls="story-panel-events"][data-guide-strength="primary"]:not([aria-pressed="true"]))::after { --seg-i: 2; }
+.story-demo[data-coach-target="mobius"] .story-mobius:has(.story-panel-tabs button[data-evidence-target="tree"][data-guide-strength="primary"]:not([aria-pressed="true"]))::after { --seg-i: 1; }
+.story-demo[data-coach-target="mobius"] .story-mobius:has(.story-panel-tabs button[data-evidence-target="events"][data-guide-strength="primary"]:not([aria-pressed="true"]))::after { --seg-i: 2; }
 /* Once the guided panel is open, its record region is the action: the tree box (scroll it or select
-   the fresh node) wears a 2px inset ring. Inset rings sit inside the region's own padding, so no ring
-   touches a line of text. */
-.story-panel-card.is-mobile-open[data-guide-strength="primary"] .mobius-tree-scroll,
-.story-panel-card.is-mobile-open[data-guide-strength="primary"].story-mobius-events li {
+   the fresh node) wears a steady 2px inset ring over a soft inner glow that breathes until the inspection,
+   so it reads as a highlight and never as a bare focus outline. Both sit inside the region's own padding,
+   so nothing touches a line of text. The fresh record keeps its 3px accent bar through --region-bar. */
+.story-demo[data-coach-target="mobius"] .story-panel-card.is-mobile-open[data-guide-strength="primary"] .mobius-tree-scroll,
+.story-demo[data-coach-target="mobius"] .story-panel-card.is-mobile-open[data-guide-strength="primary"].story-mobius-events li {
   outline: 2px solid var(--guide-ring); outline-offset: -2px;
-  animation: story-guide-region 1.6s var(--ease) .3s 2 both;
+  box-shadow: var(--region-bar, 0 0 0 0 transparent), inset 0 0 12px 1px var(--guide-glow);
+  animation: story-guide-region 1.6s var(--ease) .45s infinite;
+}
+.story-demo[data-coach-target="mobius"] .story-panel-card.is-mobile-open[data-guide-strength="primary"].story-mobius-events li.is-fresh { --region-bar: inset 3px 0 0 var(--accent); }
+/* Keyboard focus on the open tree box: the crisp ink focus ring replaces the guide ring and the glow keeps
+   breathing under it, so focus and guidance both stay visible */
+.story-demo[data-coach-target="mobius"] .story-panel-card.is-mobile-open[data-guide-strength="primary"] .mobius-tree-scroll:focus-visible {
+  outline: var(--focus-width) solid var(--focus); outline-offset: -3px;
 }
 /* Transaction receipt: its text runs edge to edge, so its region mark avoids every line of text. A rule
-   sits in the panel's own top padding (the empty band under the switcher), and the medium mark adds a
-   tinted spine behind the step markers, the receipt's one column without text. */
+   sits in the panel's own top padding (the empty band under the switcher) and a tinted spine runs behind
+   the step markers, the receipt's one column without text. */
 .story-trace { --trace-marker: 24px; }
 .story-trace-steps { position: relative; }
-.story-panel-card.story-trace.is-mobile-open[data-guide-strength="primary"] { box-shadow: inset 0 2px 0 var(--guide-ring); }
-.story-panel-card.story-trace.is-mobile-open[data-guide-strength="primary"] .story-trace-steps::before {
+.story-demo[data-coach-target="mobius"] .story-panel-card.story-trace.is-mobile-open[data-guide-strength="primary"] { box-shadow: inset 0 2px 0 var(--guide-ring); }
+.story-demo[data-coach-target="mobius"] .story-panel-card.story-trace.is-mobile-open[data-guide-strength="primary"] .story-trace-steps::before {
   content: ""; position: absolute; left: 0; top: 0; bottom: 0;
   width: var(--trace-marker); border-radius: calc(var(--trace-marker) / 2);
   background: var(--guide-fill);
   pointer-events: none;
-  animation: story-guide-tab 1.6s var(--ease) .3s 2 both;
+  animation: story-guide-tab 1.6s var(--ease) .45s infinite;
 }
-.story-panel-card.story-trace.is-mobile-open[data-guide-strength="secondary"] { box-shadow: inset 0 1px 0 var(--guide-soft); }
 @media (max-width: 1023px) { .story-trace { --trace-marker: 20px; } }
 @media (max-width: 1023px) and (orientation: portrait) { .story-panel-card.story-trace { padding-top: 4px; } }
 @media (max-width: 1023px) and (orientation: landscape) and (max-height: 300px) { .story-trace { --trace-marker: 16px; } }
 @media (max-width: 1023px) and (orientation: landscape) and (max-height: 440px) {
   .story-demo[data-display-mode="standalone"] .story-trace { --trace-marker: 18px; }
-}
-/* 3. Weakest: secondary evidence. The tab label turns accent with a steady 6px dot; the open record
-   region wears a 1px soft ring (on the receipt, a 1px soft rule in its top padding). It stays findable
-   and never competes with the action's halo. */
-.story-panel-tabs button[data-guide-strength="secondary"]:not([aria-pressed="true"]) { color: var(--accent-text); }
-.story-panel-tabs button[data-guide-strength="secondary"] .story-panel-alert { background: var(--guide-ring); }
-.story-panel-card.is-mobile-open[data-guide-strength="secondary"] .mobius-tree-scroll,
-.story-panel-card.is-mobile-open[data-guide-strength="secondary"].story-mobius-events li {
-  outline: 1px solid var(--guide-soft); outline-offset: -1px;
 }
 /* In-app targets sit on the content edge: the content box reaches 6px into the phone padding, so the
    halo shows whole while the content keeps its width */
@@ -1903,7 +1951,7 @@
   border-radius: 50%;
   box-shadow: 0 0 0 1.5px var(--coach-halo), 0 0 36px 14px color-mix(in srgb, var(--accent) 14%, transparent);
   pointer-events: none;
-  animation: story-coach-aura 1.6s var(--ease) .3s 2 both;
+  animation: story-coach-aura 1.6s var(--ease) .45s infinite;
 }
 /* System proof: the receipt and its session footer wear a success halo drawn by the section itself */
 .story-demo[data-coach-target="proof"][data-finale="true"] .story-finale[data-demo-target="proof"]::after {
@@ -1912,7 +1960,7 @@
   margin: -1px; border-radius: var(--r-card);
   box-shadow: 0 0 0 4px var(--coach-proof);
   pointer-events: none;
-  animation: story-coach-proof 1.6s var(--ease) .3s 2 both;
+  animation: story-coach-proof 1.6s var(--ease) .45s infinite;
 }
 @keyframes story-coach-halo {
   0% { box-shadow: 0 0 0 4px var(--coach-halo), 0 0 0 4px var(--coach-wave); }
@@ -1923,13 +1971,12 @@
   40% { background: color-mix(in srgb, var(--accent) 24%, transparent); }
 }
 @keyframes story-guide-region {
-  0%, 100% { outline-color: var(--guide-ring); }
-  40% { outline-color: color-mix(in srgb, var(--accent) 25%, transparent); }
+  0%, 100% { box-shadow: var(--region-bar, 0 0 0 0 transparent), inset 0 0 12px 1px var(--guide-glow); }
+  40% { box-shadow: var(--region-bar, 0 0 0 0 transparent), inset 0 0 18px 3px color-mix(in srgb, var(--accent) 26%, transparent); }
 }
 @keyframes story-coach-aura {
-  0% { opacity: .55; scale: .96; }
+  0%, 100% { opacity: .7; scale: .98; }
   50% { opacity: 1; scale: 1.02; }
-  100% { opacity: 1; scale: 1; }
 }
 @keyframes story-coach-proof {
   0% { box-shadow: 0 0 0 4px var(--coach-proof), 0 0 0 4px var(--coach-proof); }
@@ -1945,7 +1992,7 @@
    navigation, under the keyring track; the title and detail stay for screen readers */
 @media (max-width: 1023px) and (orientation: landscape) {
   .story-coach {
-    top: auto; bottom: var(--safe-bottom);
+    top: auto; bottom: max(var(--safe-bottom), var(--nav-floor));
     left: calc(50% + 120px); right: max(8px, var(--safe-right));
     translate: none; width: auto; max-width: none; min-height: 0; max-height: 44px;
     grid-template-columns: minmax(0, 1fr); grid-template-areas: "label" "action";
@@ -1955,7 +2002,7 @@
   }
   .story-coach-label { font-size: 11px; }
   .story-coach-action { gap: 4px; }
-  .story-coach-action svg { width: 12px; height: 12px; margin-top: .5px; }
+  .story-coach-action svg { width: 14px; height: 14px; padding: 2px; margin-top: -.5px; }
   .story-coach-action b { margin-right: 4px; }
   .story-coach > strong {
     position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
@@ -1980,10 +2027,12 @@
   .story-demo:has(.story-mobius > .story-server-message) .story-coach { display: none; }
 }
 
-/* iPhone mini in Safari (812 x 265): the tip stands in for the Mobius title and session line (the
-   Live/Replay badge stays at the right end of that line); it reads the next action only */
+/* iPhone mini in Safari (812 x 265): the quest owns the whole top-left line, the full Mobius column width
+   over the Mobius title and session line, and reads the next action only. The Live/Replay source badge
+   leaves that line: it becomes a quiet status in the Transaction heading's metadata slot (where the time
+   sits; the time stays for screen readers), so the quest is one continuous region and the first read */
 @media (max-width: 1023px) and (orientation: landscape) and (max-height: 300px) {
-  .story-demo { --coach-mini-w: calc(100vw - max(8px, var(--safe-left)) - var(--app-w) - var(--rail-w) - var(--dock-right) - 16px - 104px); }
+  .story-demo { --coach-mini-w: calc(100vw - max(8px, var(--safe-left)) - var(--app-w) - var(--rail-w) - var(--dock-right) - 16px); }
   .story-coach {
     top: max(2px, var(--safe-top)); bottom: auto;
     left: max(8px, var(--safe-left)); width: var(--coach-mini-w);
@@ -1991,19 +2040,55 @@
     grid-template-areas: "action";
     padding: 2px 8px; border-radius: 9px;
   }
+  /* Intro: the keyring stands at the center; the quest stays clear of its left edge */
+  .story-demo[data-stage="intro"] .story-coach { width: min(var(--coach-mini-w), 260px); }
+  /* System proof: the receipt owns the stage's top-right, so the quest keeps the statement column */
+  .story-demo[data-finale="true"] .story-coach { width: min(var(--coach-mini-w), 218px); }
+  .story-coach-action { font-size: 12px; line-height: 13.5px; }
   .story-coach-label, .story-coach-action b {
     position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
     overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
   }
-  .story-demo:has(> .story-coach:not([aria-hidden="true"])) .story-mobius-head :is(h2, .story-mobius-meta) { opacity: 0; }
-  .story-demo:has(> .story-coach:not([aria-hidden="true"])) .story-mobius-head .badge { margin-left: auto; }
-  .story-demo:has(> .story-coach:not([aria-hidden="true"])) .story-mobius:has(#story-panel-tree.is-mobile-open) .story-mobius-head { display: flex; }
+  /* The header's lines keep the row the quest stands on; the head itself steps aside (display: contents),
+     so the badge can take its own grid area inside the pane */
+  .story-demo:has(> .story-coach:not([aria-hidden="true"])) .story-mobius {
+    grid-template-rows: auto auto auto auto minmax(0, 1fr);
+    grid-template-areas: "head" "meta" "msg" "tabs" "panel";
+  }
+  .story-demo:has(> .story-coach:not([aria-hidden="true"])) .story-mobius .story-mobius-head,
+  .story-demo:has(> .story-coach:not([aria-hidden="true"])) .story-mobius:has(#story-panel-tree.is-mobile-open) .story-mobius-head { display: contents; }
+  .story-demo:has(> .story-coach:not([aria-hidden="true"])) .story-mobius-head h2 { grid-area: head; opacity: 0; }
+  .story-demo:has(> .story-coach:not([aria-hidden="true"])) .story-mobius-head .story-mobius-meta { grid-area: meta; padding-bottom: 2px; opacity: 0; }
+  .story-demo:has(> .story-coach:not([aria-hidden="true"])) .story-mobius-head .badge {
+    grid-area: panel; align-self: start; justify-self: end; z-index: 2;
+    margin-top: 2px; min-height: 16px; padding: 0; border-radius: 0;
+    display: inline-flex; align-items: center; gap: 4px;
+    background: transparent; font-size: 11px; line-height: 16px; font-weight: 600;
+  }
+  .story-demo:has(> .story-coach:not([aria-hidden="true"])) .story-mobius-head .badge::before {
+    content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%; background: currentColor;
+  }
+  /* Transaction metadata: the heading keeps the badge's width free and its time for screen readers */
+  .story-demo:has(> .story-coach:not([aria-hidden="true"])) .story-trace-heading { padding-inline-end: 96px; }
+  .story-demo:has(> .story-coach:not([aria-hidden="true"])) .story-trace-title { font-size: 12px; }
+  .story-demo:has(> .story-coach:not([aria-hidden="true"])) .story-trace-time {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+  /* Resource tree and CSE records start with rows at the panel's top edge; there the badge stays in the
+     accessibility tree only (as it already does on the tree page without the quest) */
+  .story-demo:has(> .story-coach:not([aria-hidden="true"])) .story-mobius:is(:has(#story-panel-tree.is-mobile-open), :has(#story-panel-events.is-mobile-open)) .story-mobius-head .badge {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
 }
 
-/* Installed web app (812 x 375): the tip owns the 48px strip under the Mobius column, full column width */
+/* Installed web app (812 x 375): the quest owns the top 48px of the Mobius column, full column width, so it
+   is the first read on entry; the Mobius title, source badge and session line sit under the panel as a
+   quiet status footer (see the Mobius rules of this tier) */
 @media (max-width: 1023px) and (orientation: landscape) and (max-height: 440px) {
   .story-demo[data-display-mode="standalone"] .story-coach {
-    top: auto; bottom: max(4px, var(--safe-bottom));
+    top: max(4px, var(--safe-top)); bottom: auto;
     left: max(8px, var(--safe-left)); right: auto;
     width: calc(100vw - max(8px, var(--safe-left)) - var(--app-w) - var(--rail-w) - var(--dock-right) - 16px);
     min-height: 44px; max-height: 44px;
@@ -2014,8 +2099,7 @@
     overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
   }
   .story-demo[data-display-mode="standalone"][data-stage="intro"] .story-coach { width: 232px; }
-  /* System proof: the actions row owns the bottom line, so the tip takes the free top of the statement */
-  .story-demo[data-display-mode="standalone"][data-finale="true"] .story-coach { top: max(4px, var(--safe-top)); bottom: auto; left: max(8px, var(--safe-left)); }
+  /* System proof: the tip keeps the free top of the statement; the actions row owns the bottom line */
 }
 
 /* Portrait: the tip takes the top bar between the brand and the flags */
@@ -2029,12 +2113,12 @@
     font-size: 11px; line-height: 13px;
   }
   /* The guided tab mark follows the 2 x 2 switcher: two equal columns, 44px rows, 2px gaps */
-  .story-mobius:has(.story-panel-tabs button[data-guide-strength="primary"]:not([aria-pressed="true"]))::after {
+  .story-demo[data-coach-target="mobius"] .story-mobius:has(.story-panel-tabs button[data-evidence-target][data-guide-strength="primary"]:not([aria-pressed="true"]))::after {
     --seg-w: calc((100% - 6px) / 2);
-    margin: calc(var(--s2) + 2px + var(--seg-row, 0) * 46px) 0 0 calc(2px + var(--seg-col, 0) * (var(--seg-w) + 2px));
+    margin: calc(var(--s2) + 6px + var(--seg-row, 0) * 46px) 0 0 calc(2px + var(--seg-col, 0) * (var(--seg-w) + 2px));
   }
-  .story-mobius:has(.story-panel-tabs button[aria-controls="story-panel-tree"][data-guide-strength="primary"]:not([aria-pressed="true"]))::after { --seg-col: 1; --seg-row: 0; }
-  .story-mobius:has(.story-panel-tabs button[aria-controls="story-panel-events"][data-guide-strength="primary"]:not([aria-pressed="true"]))::after { --seg-col: 0; --seg-row: 1; }
+  .story-demo[data-coach-target="mobius"] .story-mobius:has(.story-panel-tabs button[data-evidence-target="tree"][data-guide-strength="primary"]:not([aria-pressed="true"]))::after { --seg-col: 1; --seg-row: 0; }
+  .story-demo[data-coach-target="mobius"] .story-mobius:has(.story-panel-tabs button[data-evidence-target="events"][data-guide-strength="primary"]:not([aria-pressed="true"]))::after { --seg-col: 0; --seg-row: 1; }
   /* The approved map is the scene's answer: the app pane grows to half the stage while it shows */
   .story-demo:has([data-location-shared="true"]) .story-stage { grid-template-rows: minmax(0, 50%) minmax(0, 1fr); }
   /* Between the brand and the flags the tip keeps the next action only (two lines at most); the label,
@@ -2044,7 +2128,7 @@
     position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
     overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
   }
-  .story-coach-action svg { width: 12px; height: 12px; margin-top: 1px; }
+  .story-coach-action svg { width: 14px; height: 14px; padding: 2px; margin-top: 0; }
   .story-coach > strong {
     position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
     overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
@@ -2077,11 +2161,9 @@
   .story-mobius, .story-app-column { transition: opacity var(--story-quick) linear, visibility 0s; }
   .story-demo[data-stage="intro"] .story-mobius,
   .story-demo:is([data-stage="intro"], [data-stage="sending"]) .story-app-column { transform: none; }
-  .story-trace-step, .story-trace-step.is-active .story-trace-marker,
-  .story-mobius-events li.is-new-event, .mobius-tree .is-fresh,
-  .story-panel-tabs button.has-new-event .story-panel-alert { animation: none; }
+  .story-trace-step, .story-trace-step.is-active .story-trace-marker { animation: none; }
   .story-rotate, .story-fullscreen-guide { animation: none; }
-  .story-stepper-next[data-special="true"], .story-finale-kicker svg { animation: none; }
+  .story-finale-kicker svg { animation: none; }
   .mobius-tree-scroll { scroll-behavior: auto; }
   .story-rotate-glyph::before { animation: none; rotate: -90deg; }
   .story-stepper-prev, .story-stepper-next, .story-topbar, .story-bottom-nav, .story-topbar-link { transition: none; }

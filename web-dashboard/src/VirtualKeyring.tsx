@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
 import keyringImage from './assets/privacy-bubble-keyring.png';
 import { useLang } from './i18n.tsx';
@@ -26,6 +26,10 @@ export function VirtualKeyring({ snapshot, runAction, onActionStart, onVerified,
   const [active, setActive] = useState<KeyringAction | null>(null);
   const [verified, setVerified] = useState<KeyringAction | null>(null);
   const gesture = useRef<Gesture | null>(null);
+
+  useEffect(() => {
+    if (guidedAction !== null) setVerified(null);
+  }, [guidedAction]);
 
   const pointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) return;
@@ -83,8 +87,7 @@ export function VirtualKeyring({ snapshot, runAction, onActionStart, onVerified,
   const latestKeyringAction = snapshot?.mobius.events.find((event) => event.action === 'keyring-confirm' || event.action === 'keyring-panic')?.action;
   const latchedAction = active ?? verified ?? (latestKeyringAction === 'keyring-confirm' || latestKeyringAction === 'keyring-panic' ? latestKeyringAction : null);
   const firmwareState = latchedAction === 'keyring-panic' ? 'panic' : latchedAction === 'keyring-confirm' ? 'confirm' : 'ready';
-  const guidedComplete = guidedAction === null || verified === guidedAction
-    || snapshot?.mobius.events.some((event) => event.action === guidedAction) === true;
+  const guidedComplete = guidedAction === null || verified === guidedAction;
 
   return <div className="virtual-keyring" aria-labelledby="virtual-keyring-title">
     <h3 className="story-sr" id="virtual-keyring-title">{tr('키링', 'Keyring')}</h3>

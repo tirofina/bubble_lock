@@ -132,6 +132,8 @@ try {
     if (!point) throw new Error(`Missing click target ${selector}`);
     await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: point.x, y: point.y, button: 'left', clickCount: 1 });
     await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: point.x, y: point.y, button: 'left', clickCount: 1 });
+    // Park the pointer in the empty top-left corner so no :hover tint survives into the next screenshot.
+    await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 0, y: 0 });
   };
   const waitForAction200 = async (startIndex, label) => {
     const end = Date.now() + 20000;
@@ -306,6 +308,52 @@ try {
     if (result.evidence !== expectedEvidence || (expectedProgress !== undefined && result.progress !== expectedProgress)
       || result.tabStrength !== expectedStrength || result.panelStrength !== expectedStrength || !marked) {
       throw new Error(`${label} evidence guide contract failed: ${JSON.stringify(result)}`);
+    }
+    return result;
+  };
+  const assertSingleGuide = async (label, expectedTarget, expectedEvidence = null) => {
+    const result = await evaluate(`(() => {
+      const visible=(element)=>{if(!element)return false;const rect=element.getBoundingClientRect();const style=getComputedStyle(element);return rect.width>0&&rect.height>0&&style.display!=='none'&&style.visibility!=='hidden'&&Number(style.opacity)>0;};
+      const unique=(values)=>[...new Set(values.filter(Boolean))];
+      const root=document.querySelector('.story-demo');
+      const targetName=root?.dataset.coachTarget??null;
+      const evidence=root?.dataset.coachEvidence??null;
+      const keyringGuides=[...document.querySelectorAll('.keyring-physical-button.is-guided')].filter(visible);
+      const primaryEvidence=unique([...document.querySelectorAll('[data-guide-strength="primary"]')].filter(visible).map((element)=>element.dataset.evidenceTarget));
+      const secondaryEvidence=unique([...document.querySelectorAll('[data-guide-strength="secondary"]')].filter(visible).map((element)=>element.dataset.evidenceTarget));
+      const noticeEvidence=unique([...document.querySelectorAll('.has-new-event[data-evidence-target]')].filter(visible).map((element)=>element.dataset.evidenceTarget));
+      const orphanPrimary=document.querySelectorAll('[data-guide-strength="primary"]:not([data-evidence-target])').length;
+      const mobiusAfter=getComputedStyle(document.querySelector('.story-mobius'),'::after');
+      const strayMobiusGuide=targetName!=='mobius'&&mobiusAfter.content!=='none'&&mobiusAfter.content!=='normal';
+      let animationStyle=null;
+      if(targetName==='keyring'){
+        animationStyle=keyringGuides[0]?getComputedStyle(keyringGuides[0],'::after'):null;
+      }else if(targetName==='mobius'){
+        const tab=document.querySelector('.story-panel-tabs [data-guide-strength="primary"]');
+        const panel=document.querySelector('.story-panel-card[data-guide-strength="primary"]');
+        const open=tab?.getAttribute('aria-pressed')==='true';
+        if(!open) animationStyle=getComputedStyle(document.querySelector('.story-mobius'),'::after');
+        else if(evidence==='tree') animationStyle=getComputedStyle(panel?.querySelector('.mobius-tree-scroll'));
+        else if(evidence==='events') animationStyle=getComputedStyle(panel?.querySelector('li'));
+        else animationStyle=getComputedStyle(panel?.querySelector('.story-trace-steps'),'::before');
+      }else{
+        const target=[...document.querySelectorAll('[data-demo-target]')].find((element)=>element.dataset.demoTarget===targetName&&visible(element));
+        animationStyle=targetName==='proof'&&target?getComputedStyle(target,'::after'):target?getComputedStyle(target):null;
+      }
+      return {
+        target:targetName,evidence,keyringGuides:keyringGuides.length,primaryEvidence,secondaryEvidence,noticeEvidence,orphanPrimary,strayMobiusGuide,
+        animationName:animationStyle?.animationName??'none',iterations:animationStyle?.animationIterationCount??'0',
+        reduced:matchMedia('(prefers-reduced-motion: reduce)').matches,
+      };
+    })()`);
+    const expectedPrimary = expectedTarget === 'mobius' && expectedEvidence ? [expectedEvidence] : [];
+    const expectedKeyring = expectedTarget === 'keyring' ? 1 : 0;
+    const samePrimary = JSON.stringify(result.primaryEvidence) === JSON.stringify(expectedPrimary);
+    const noticeMatchesQueue = result.noticeEvidence.every((evidence) => expectedPrimary.includes(evidence));
+    const persistent = result.reduced || (result.animationName !== 'none' && result.iterations.split(',').every((value) => value.trim() === 'infinite'));
+    if (result.target !== expectedTarget || result.evidence !== expectedEvidence || result.keyringGuides !== expectedKeyring
+      || !samePrimary || result.secondaryEvidence.length > 0 || !noticeMatchesQueue || result.orphanPrimary > 0 || result.strayMobiusGuide || !persistent) {
+      throw new Error(`${label} single persistent guide contract failed: ${JSON.stringify(result)}`);
     }
     return result;
   };
@@ -584,11 +632,11 @@ try {
       await evaluate("window.location.hash='#/story/check-in'");
       await waitFor("Boolean(document.querySelector('button.story-secondary'))", `${label} location action`);
       await assertCoach(`${label} location preparation`, 'app-secondary');
-      await assertEvidenceGuide(`${label} location preparation receipt`, 'trace', 'secondary');
+      await assertSingleGuide(`${label} location preparation`, 'app-secondary');
       await clickCenter('button.story-secondary');
       await waitFor("document.querySelector('button.story-secondary')?.textContent?.includes('Review and share')", `${label} location draft`);
       await assertCoach(`${label} location review`, 'app-secondary');
-      await assertEvidenceGuide(`${label} location draft receipt`, 'events', 'secondary');
+      await assertSingleGuide(`${label} location review`, 'app-secondary');
       await assertViewportFit(`${label} location review`);
       await assertReadableLayout(`${label} location review`);
       await shot(captureName.replace('story-location-', 'story-location-review-'), width, height);
@@ -598,7 +646,7 @@ try {
       await assertViewportFit(`${label} approved map`);
       await assertReadableLayout(`${label} approved map`);
       await assertCoach(`${label} approved map`, 'map');
-      await assertEvidenceGuide(`${label} approved map receipt`, 'events', 'secondary');
+      await assertSingleGuide(`${label} approved map`, 'map');
       const map = await evaluate(`(() => {
         const rect=(selector)=>{const value=document.querySelector(selector)?.getBoundingClientRect();return value?{left:value.left,right:value.right,top:value.top,bottom:value.bottom,width:value.width,height:value.height}:null;};
         const phone=rect('.story-phone');
@@ -611,6 +659,14 @@ try {
         throw new Error(`${label} approved map contract failed: ${JSON.stringify(map)}`);
       }
       await shot(captureName, width, height);
+      await clickCenter('.story-location-map-target');
+      await waitFor("document.querySelector('.story-demo')?.dataset.coachTarget === 'app-primary' && document.querySelector('.story-location-actions .story-primary')?.disabled === false", `${label} map inspection`);
+      await assertCoach(`${label} call action`, 'app-primary');
+      await assertSingleGuide(`${label} call action`, 'app-primary');
+      await clickCenter('.story-location-actions .story-primary');
+      await waitFor("document.querySelector('.story-demo')?.dataset.coachTarget === 'next' && document.querySelector('.story-location-actions .story-primary')?.textContent?.includes('Call requested')", `${label} call completion`);
+      await assertCoach(`${label} system proof action`, 'next');
+      await assertSingleGuide(`${label} system proof action`, 'next');
     };
     const assertFinale = async (label, captureName, height) => {
       await evaluate("window.location.hash='#/story/check-in'");
@@ -620,6 +676,7 @@ try {
       await delay(240);
       await assertViewportFit(`${label} finale`);
       await assertCoach(`${label} finale`, 'proof');
+      await assertSingleGuide(`${label} finale`, 'proof');
       const finale = await evaluate(`(() => {
         const receipt=document.querySelector('[data-finale-receipt="true"]');
         const next=document.querySelector('.story-stepper-next');
@@ -674,6 +731,7 @@ try {
     }
     await assertViewportFit('iPhone 13 mini browser intro');
     await assertCoach('iPhone 13 mini browser intro', 'keyring');
+    await assertSingleGuide('iPhone 13 mini browser intro', 'keyring');
     await exercisePanic('iPhone 13 mini browser');
     const browserLayout = await readLayout();
     assertLayout(browserLayout, { label: 'iPhone 13 mini browser', height: browserHeight, mode: 'browser', minDock: 146, minModel: 136, minScreenWidth: 52, minScreenHeight: 25 });
@@ -697,6 +755,7 @@ try {
     await delay(180);
     await assertViewportFit('iPhone installed web app intro');
     await assertCoach('iPhone installed web app intro', 'keyring');
+    await assertSingleGuide('iPhone installed web app intro', 'keyring');
     const installedIntro = await evaluate("(() => { const model=document.querySelector('.keyring-model')?.getBoundingClientRect(); return {modelWidth:model?.width??0,launch:document.querySelectorAll('.story-fullscreen-launch').length,guide:document.querySelectorAll('.story-fullscreen-guide').length}; })()");
     if (installedIntro.modelWidth < 190 || installedIntro.launch !== 0 || installedIntro.guide !== 0) {
       throw new Error(`iPhone installed web app intro contract failed: ${JSON.stringify(installedIntro)}`);
@@ -743,6 +802,7 @@ try {
     throw new Error(`desktop intro contract failed: ${JSON.stringify(introLayout)}`);
   }
   await assertCoach('desktop intro', 'keyring');
+  await assertSingleGuide('desktop intro', 'keyring');
   let keyboardReachedConfirm = false;
   for (let index = 0; index < 12 && !keyboardReachedConfirm; index += 1) {
     await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
@@ -756,17 +816,20 @@ try {
   await clickCenter('.keyring-physical-button.confirm');
   await waitFor("document.querySelector('.story-demo')?.dataset.stage === 'sending'", 'desktop keyring sending transition');
   await assertEvidenceGuide('desktop live Transaction guide', 'trace', 'primary', 'closed');
+  await assertSingleGuide('desktop live Transaction guide', 'mobius', 'trace');
   await waitForAction200(introResponseIndex, 'intro keyring confirm');
   await waitFor("document.querySelector('.story-demo')?.dataset.stage === 'system'", 'desktop system transition');
   await delay(900);
   await assertCoach('desktop Mobius explanation', 'mobius');
   await assertEvidenceGuide('desktop Resource tree tab guide', 'tree', 'primary', 'closed');
+  await assertSingleGuide('desktop Resource tree tab guide', 'mobius', 'tree');
   await waitFor("document.querySelector('.story-trace-title')?.textContent?.includes('Resident confirmation stored') === true", 'resident confirmation record');
   await waitFor("Boolean(document.querySelector('[data-fresh=\"true\"]'))", 'fresh Mobius node');
   await evaluate("[...document.querySelectorAll('.story-panel-tabs button')].find((button)=>button.textContent.includes('Resource tree'))?.click()");
   await waitFor("document.querySelector('#story-panel-tree')?.classList.contains('is-mobile-open') === true", 'desktop resource tree panel');
   await waitFor("document.querySelector('.story-demo')?.dataset.evidenceProgress === 'open'", 'desktop Resource tree opened');
   await assertEvidenceGuide('desktop Resource tree inspection guide', 'tree', 'primary', 'open');
+  await assertSingleGuide('desktop Resource tree inspection guide', 'mobius', 'tree');
   await delay(320);
   const treeCoverage = String((await evaluate("document.querySelector('#story-panel-tree')?.textContent")) ?? '');
   const treeScrollBefore = await evaluate(`(() => {
@@ -789,9 +852,9 @@ try {
   await delay(180);
   const treeScrollAfter = Number((await evaluate("document.querySelector('.mobius-tree-scroll')?.scrollTop")) ?? 0);
   if (Math.abs(treeScrollAfter - treeScrollBefore.scrollTop) < 1) throw new Error(`desktop resource tree wheel did not scroll: before=${treeScrollBefore.scrollTop}, after=${treeScrollAfter}`);
-  await waitFor("document.querySelector('.story-demo')?.dataset.coachTarget === 'next' && document.querySelector('.story-demo')?.dataset.evidenceProgress === 'viewed'", 'desktop guide advances to Next');
+  await waitFor("document.querySelector('.story-demo')?.dataset.coachTarget === 'next' && !document.querySelector('.story-demo')?.dataset.coachEvidence", 'desktop guide advances to Next');
   await assertCoach('desktop next scene action', 'next');
-  await assertEvidenceGuide('desktop checked Resource tree evidence', 'tree', 'secondary', 'viewed');
+  await assertSingleGuide('desktop next scene action', 'next');
   await assertViewportFit('desktop resource tree');
   await openMobiusPanel('CSE records');
   await assertViewportFit('desktop CSE records');
@@ -863,8 +926,8 @@ try {
   // The interactive mobile shell owns exactly one viewport. Its lower dock unfolds one panel at a time.
   await clearStorySession();
   await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
-  await send('Page.navigate', { url: `${previewUrl}/?lang=en#/story/activity-away` });
-  await waitFor("Boolean(document.querySelector('.story-panel-tabs'))", 'mobile panel dock');
+  await send('Page.navigate', { url: `${previewUrl}/?lang=en#/story/login` });
+  await waitFor("document.querySelector('.story-demo')?.dataset.stage === 'intro' && Boolean(document.querySelector('.story-panel-tabs'))", 'mobile panel dock');
   const mobileLayout = await evaluate(`(() => {
     const visibleTargets = [...document.querySelectorAll('button,a,summary')].map((element) => {
       const rect = element.getBoundingClientRect(); const style = getComputedStyle(element);
@@ -883,10 +946,14 @@ try {
     throw new Error(`mobile viewport contract failed: ${JSON.stringify(mobileLayout)}`);
   }
   await waitFor("Boolean(document.querySelector('.keyring-physical-button.confirm.is-guided'))", 'guided keyring confirm button');
+  await assertSingleGuide('mobile keyring intro', 'keyring');
   if ((await evaluate("document.querySelector('.keyring-model')?.getBoundingClientRect().width")) < 104) throw new Error('mobile keyring is smaller than its readable system contract');
   await evaluate("document.querySelector('.keyring-physical-button.confirm')?.click()");
   await waitFor("document.querySelector('[data-firmware-screen]')?.dataset.firmwareScreen === 'confirm'", 'firmware confirm screen');
-  await waitFor("document.querySelectorAll('.story-panel-tabs .has-new-event').length >= 2", 'panel event highlights');
+  await waitFor("document.querySelector('.story-demo')?.dataset.stage === 'sending'", 'mobile transaction guide');
+  await assertSingleGuide('mobile transaction guide', 'mobius', 'trace');
+  await waitFor("document.querySelector('.story-demo')?.dataset.stage === 'system' && location.hash === '#/story/activity-away'", 'mobile resource guide');
+  await assertSingleGuide('mobile resource guide', 'mobius', 'tree');
   await evaluate("[...document.querySelectorAll('.story-panel-tabs button')].find((button)=>button.textContent.includes('Resource tree'))?.click()");
   await waitFor("Boolean(document.querySelector('.mobius-node-detail code'))", 'interactive Mobius tree');
   const pathLayout = await evaluate("(() => { const code=document.querySelector('.mobius-node-detail code'); return {text:code?.textContent, width:code?.clientWidth, scrollWidth:code?.scrollWidth}; })()");
@@ -908,6 +975,7 @@ try {
   await delay(900);
   await assertViewportFit('landscape system');
   await assertCoach('landscape Mobius explanation', 'mobius');
+  await assertSingleGuide('landscape Mobius explanation', 'mobius', 'tree');
   await openMobiusPanel('Resource tree');
   await assertViewportFit('landscape resource tree');
   await openMobiusPanel('CSE records');
@@ -967,6 +1035,7 @@ try {
   await delay(900);
   await assertViewportFit('portrait fallback system');
   await assertCoach('portrait Mobius explanation', 'mobius');
+  await assertSingleGuide('portrait Mobius explanation', 'mobius', 'tree');
   await openMobiusPanel('Resource tree');
   await assertViewportFit('portrait resource tree');
   await openMobiusPanel('CSE records');
@@ -1046,17 +1115,31 @@ try {
   await evaluate("document.querySelector('button.story-primary')?.click()");
   await waitFor("document.querySelector('button.story-primary')?.textContent?.includes('3/3 verified')", 'group command result');
 
-  await openScene('check-in', 'Prepare location share');
+  await send('Emulation.setDeviceMetricsOverride', { width: 844, height: 390, deviceScaleFactor: 1, mobile: true });
+  await send('Page.navigate', { url: `${previewUrl}/?lang=en#/story/check-in` });
+  await waitFor("document.querySelector('.story-demo')?.dataset.stage === 'system' && document.body?.innerText.includes('Prepare location share')", 'landscape location scene');
   await waitFor("Boolean(document.querySelector('button.story-secondary'))", 'location share action');
+  await assertSingleGuide('landscape location preparation', 'app-secondary');
   await evaluate("document.querySelector('button.story-secondary')?.click()");
   await waitFor("document.querySelector('button.story-secondary')?.textContent?.includes('Review and share')", 'location draft');
+  await assertSingleGuide('landscape location review', 'app-secondary');
   await evaluate("document.querySelector('button.story-secondary')?.click()");
   await waitFor("document.querySelector('[data-location-shared=\"true\"]') && document.querySelector('[data-story-location-map=\"true\"]')?.dataset.locationReady === 'true'", 'five-minute location map');
   await delay(700);
   await assertViewportFit('five-minute location map');
   const sharedMap = await evaluate("(() => { const canvas=document.querySelector('.location-story .location-canvas'); return {pin:document.querySelectorAll('.location-story .keyring-marker').length,canvasHeight:canvas?.getBoundingClientRect().height??0,countdown:document.querySelector('.story-location-countdown')?.textContent??'',ready:document.querySelector('[data-story-location-map=\"true\"]')?.getAttribute('data-location-ready')}; })()");
   if (sharedMap.pin < 1 || sharedMap.canvasHeight < 100 || sharedMap.ready !== 'true' || !/^4:|^5:/.test(sharedMap.countdown)) throw new Error(`five-minute location map contract failed: ${JSON.stringify(sharedMap)}`);
+  await assertCoach('landscape approved map', 'map');
+  await assertSingleGuide('landscape approved map', 'map');
   await shot('story-location-landscape', 844, 390);
+  await delay(3500);
+  await assertSingleGuide('landscape approved map after two pulse cycles', 'map');
+  await clickCenter('.story-location-map-target');
+  await waitFor("document.querySelector('.story-demo')?.dataset.coachTarget === 'app-primary' && document.querySelector('.story-location-actions .story-primary')?.disabled === false", 'landscape map inspection');
+  await assertSingleGuide('landscape call action', 'app-primary');
+  await clickCenter('.story-location-actions .story-primary');
+  await waitFor("document.querySelector('.story-demo')?.dataset.coachTarget === 'next'", 'landscape call completion');
+  await assertSingleGuide('landscape system proof action', 'next');
 
   await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
   await send('Page.navigate', { url: `${previewUrl}/?lang=en#/story/activity-away` });
@@ -1161,8 +1244,9 @@ try {
       'fresh Mobius tree node, trace path and newest record share one resource path',
       'Mobius browser is English-only and exposes oneM2M resource types, methods and RSC values without clipped text',
       'Mobius tree uses vertical-only touch and wheel scrolling with zero horizontal movement while CSE records keep compact paging',
-      'every story stage shows a safe-area overlay that explains the highlighted system element and names the next real action',
-      'scenario actions, Mobius evidence and the next arrow use distinct guidance targets; inspecting the tree advances guidance to Next',
+      'every story stage shows a safe-area overlay that explains the single highlighted system element and names the next real action',
+      'exactly one guidance owner is visible at a time and its pulse remains active until the required click or inspection advances the queue',
+      'scenario actions, Mobius evidence, the approved map, Call and the next arrow advance in order; inspecting the tree advances guidance to Next',
       'visible story text remains fully readable and language, coach and navigation overlays do not cover app or Mobius content',
       'desktop Mobius stays left of the phone in light and dark mode',
       'phone landscape fits Mobius, app and overlay keyring in one viewport',
