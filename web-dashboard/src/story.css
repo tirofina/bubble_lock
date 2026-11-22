@@ -645,6 +645,9 @@
 
 .story-actions { display: grid; gap: var(--s3); }
 .story-phone button.story-primary, .story-phone button.story-secondary { width: 100%; min-height: 48px; }
+/* Action labels break between words only: the page-wide overflow-wrap: anywhere would let a narrow
+   column shrink a button to one character and split words such as "requested" */
+.story-phone :is(button.story-primary, button.story-secondary) { overflow-wrap: break-word; }
 .story-phone button.story-primary { margin-top: var(--s2); background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .story-actions button.story-primary { margin-top: 0; }
 .story-phone button.story-primary:hover { background: var(--accent-pressed); border-color: var(--accent-pressed); }
@@ -678,11 +681,17 @@
 }
 .story-location-map-target { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; border-radius: 14px; }
 .story-location-map-target > * { flex: 1 1 auto; min-height: 0; }
+/* Status line: words never split. The keyring name keeps at least its longest word, and when the row is
+   short the source badge moves to a second line (still at the right edge) instead of squeezing the name */
+.story-demo .location-story .story-location-meta { flex-wrap: wrap; row-gap: 2px; }
+.story-demo .location-story .story-location-meta > span:not(.location-status-dot):not(.badge) { min-width: min-content; overflow-wrap: break-word; }
 /* The tile credit link keeps its 11px text and gains a 44px target that reaches up over the map */
 .story-demo .location-story .leaflet-control-attribution a { display: inline-block; padding-top: 30px; margin-top: -30px; }
 .story-location-loading { display: grid; place-items: center; border-radius: 14px; background: var(--surface-soft); color: var(--muted); font-size: var(--t-callout); }
-.story-location-actions { flex: none; display: grid; grid-template-columns: minmax(110px, .8fr) minmax(0, 1.2fr); align-items: center; gap: var(--s3); }
-.story-location-actions .story-primary { margin: 0; }
+.story-location-actions { flex: none; display: grid; grid-template-columns: minmax(min-content, max-content) minmax(0, 1fr); align-items: center; gap: var(--s3); }
+/* Call takes its label's width (one line where the row allows, otherwise a break between words) and
+   at least 110px; the note takes the rest */
+.story-location-actions .story-primary { min-width: 110px; margin: 0; padding-inline: 18px; }
 .story-location-actions > span { min-width: 0; display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: var(--t-caption); line-height: 1.3; overflow-wrap: anywhere; }
 .story-location-actions > span svg { flex: none; color: var(--success); }
 .story-privacy-note {
@@ -1027,7 +1036,8 @@
     overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
   }
   .story-demo:not(.capture) .story-location-countdown { min-width: 54px; padding: 3px 10px; font-size: 13px; line-height: 18px; }
-  .story-demo:not(.capture) .story-location-actions { grid-template-columns: minmax(96px, .75fr) minmax(0, 1.25fr); gap: 8px; }
+  .story-demo:not(.capture) .story-location-actions { gap: 8px; }
+  .story-demo:not(.capture) .story-location-actions .story-primary { min-width: 96px; padding-inline: 12px; }
   .story-demo:not(.capture) .story-location-actions > span { font-size: 11px; line-height: 1.25; }
   .story-demo:not(.capture) .story-location-actions > span svg { width: 14px; height: 14px; }
   .story-demo:not(.capture) .story-location-meta { font-size: 11px; line-height: 14px; }
@@ -1578,6 +1588,9 @@
 }
 .story-demo[data-finale="true"] .story-finale .story-title-block { grid-area: title; align-self: start; gap: var(--s3); }
 .story-demo[data-finale="true"] .story-finale h1 { font-size: var(--t-display); line-height: 1.1; letter-spacing: -0.02em; text-wrap: balance; }
+/* The tight display leading keeps its rhythm; equal padding and negative margin let the headline's box
+   contain its glyphs (ascenders and descenders) without moving anything */
+.story-demo[data-finale="true"] .story-finale h1 { padding-block: .12em; margin-block: -.12em; }
 .story-demo[data-finale="true"] .story-finale .story-subtitle { max-inline-size: 30rem; color: var(--muted); font-size: var(--t-body); line-height: 1.45; text-wrap: pretty; }
 
 /* Receipt: one card, three resolved steps on one success line (the S4 trace, completed) */

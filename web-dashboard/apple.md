@@ -606,6 +606,7 @@ with `.story-demo[data-display-mode="standalone"]` (display-mode standalone or f
 | The guided tab mark is the Mobius pane's own grid item over the exact segment | The pane clips at its edges, so an outer ring on the first or last segment would be cut; an inset ring and tint inside the segment keep every edge visible and give the pane one real highlight | P5, P12 |
 | A reviewed location draft stands in for the footnote (below 1024px); at 812 x 265 the draft reads as one paragraph and the care-request eyebrow stays for screen readers | The draft states purpose, recipient and time, as the footnote does; the drafted check-in overflowed by 14px (844 x 390), 13px (844 x 320) and 43px (812 x 265) | P2, P12 |
 | The map's tile credit link keeps its 11px text and gains a 44px target that reaches up over the map | The link measured 76 x 13 | P3 |
+| Story action buttons break between words only; Call sizes to its label; the map status line wraps whole items | The public build split `Call requested` into `Call / requeste / d` at 1440 x 900 and the keyring name into single letters at 1024 x 768: the page-wide `overflow-wrap: anywhere` let a grid or flex track shrink a button or name below one word | P4, P12 |
 
 ## 9b. S7 System proof (`#/story/finale`, `data-finale="true"`)
 
@@ -713,6 +714,15 @@ HttpOnly browser session (403 before approval, after expiry and for any other br
   row beside the flags, so the title may take two lines next to the countdown.
 - Credit link target: the 11px tile credit link keeps its text and gains a 44px target that reaches
   30px up over the map (inside the canvas, never over the caption).
+- Words never split (every layout). The page-wide `overflow-wrap: anywhere` let the Call column
+  shrink its button to one character, so the disabled `Call requested` read `Call / requeste / d` at
+  1440 x 900. Now story action buttons use `overflow-wrap: break-word` (min-content = the longest word),
+  and the actions row is `minmax(min-content, max-content) | 1fr`: Call takes its label's width (at
+  least 110px, 96px below 1024px) and the note the rest. Measured `Call requested` on one line:
+  143 x 48 at 1440 x 900, 143 x 44 at 1024 x 768, 124 x 44 at 844 x 390 and 390 x 844, 111 x 44 at
+  812 x 265 and 812 x 375; `Call` keeps 110 / 96px. The status line wraps whole items: the keyring
+  name keeps at least its longest word and the source badge moves to a second line at the right edge
+  when the row is short (1024 x 768 and 1440 x 900), instead of `Mo / m's / keyri / ng`.
 - Portrait fallback: while the map shows, the app pane takes 50% of the stage instead of 44%.
 - Attribution: the complete active-provider credit stays visible at 11px on a frosted strip;
   an unconfigured public host starts with OpenStreetMap, while a Stadia API key or exact registered
