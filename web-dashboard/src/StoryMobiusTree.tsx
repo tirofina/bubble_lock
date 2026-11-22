@@ -191,10 +191,11 @@ function TreeRow({ item, depth, selected, freshPath, onSelect }: {
   </li>;
 }
 
-export function StoryMobiusTree({ snapshot, freshPath = null, onRefresh }: {
+export function StoryMobiusTree({ snapshot, freshPath = null, onRefresh, onInspect }: {
   readonly snapshot: StorySessionSnapshot | null;
   readonly freshPath?: string | null;
   readonly onRefresh?: () => Promise<unknown> | unknown;
+  readonly onInspect?: () => void;
 }) {
   const roots = useMemo(() => snapshot ? buildTree(snapshot) : [], [snapshot]);
   const nodes = useMemo(() => flatten(roots), [roots]);
@@ -268,8 +269,11 @@ export function StoryMobiusTree({ snapshot, freshPath = null, onRefresh }: {
       tabIndex={0}
       aria-label={`Vertically scrollable oneM2M resource tree, ${nodes.length} resources`}
       onScroll={(event) => { if (event.currentTarget.scrollLeft !== 0) event.currentTarget.scrollLeft = 0; }}
+      onWheel={onInspect}
+      onTouchMove={onInspect}
+      onKeyDown={(event) => { if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(event.key)) onInspect?.(); }}
     ><ul className="mobius-tree" role="tree">
-      {rows.map(({ item, depth }) => <TreeRow key={item.id} item={item} depth={depth} selected={selected?.id ?? ''} freshPath={freshPath} onSelect={(next) => { setSelectedId(next.id); setCopied(false); }} />)}
+      {rows.map(({ item, depth }) => <TreeRow key={item.id} item={item} depth={depth} selected={selected?.id ?? ''} freshPath={freshPath} onSelect={(next) => { setSelectedId(next.id); setCopied(false); onInspect?.(); }} />)}
     </ul></div> : <p className="story-server-wait">Connecting to the Mobius CSE resource tree.</p>}
     {selected ? <div className="mobius-node-detail" aria-live="polite">
       <div><span>{kindLabel(selected.kind)}</span><b>{selected.status === 'removed' ? 'DELETE verified, RETRIEVE RSC 4004' : selected.verified ? `RETRIEVE verified, RSC ${selected.rsc}` : 'RETRIEVE pending'}</b></div>

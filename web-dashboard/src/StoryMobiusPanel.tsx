@@ -6,6 +6,8 @@ import type { StoryActionPhase, StorySessionSnapshot, StoryTrace } from './story
 
 type PanelId = 'trace' | 'tree' | 'events' | 'scenes';
 type KeyringAction = 'keyring-confirm' | 'keyring-panic';
+export type StoryMobiusEvidence = 'trace' | 'tree' | 'events';
+type GuideStrength = 'primary' | 'secondary';
 
 interface FlowCopy {
   readonly title: string;
@@ -86,6 +88,11 @@ const panelLabels: Record<PanelId, string> = {
 };
 
 const EVENTS_PER_PAGE = 1;
+const panelEvidence: Readonly<Partial<Record<PanelId, StoryMobiusEvidence>>> = {
+  trace: 'trace',
+  tree: 'tree',
+  events: 'events',
+};
 
 function readableType(type: string): string {
   const words = type.toLowerCase().split('_').filter(Boolean).join(' ');
@@ -118,7 +125,7 @@ function ResourcePath({ event, operation }: { readonly event: StoryTrace; readon
   </code>;
 }
 
-export function StoryMobiusPanel({ scene, snapshot, phase, message, refresh, focusAction = null, focusAfterSequence = 0, freshPath = null }: {
+export function StoryMobiusPanel({ scene, snapshot, phase, message, refresh, focusAction = null, focusAfterSequence = 0, freshPath = null, guidedEvidence, guideStrength = 'secondary', onEvidenceProgress }: {
   readonly scene: StoryScene;
   readonly snapshot: StorySessionSnapshot | null;
   readonly phase: StoryActionPhase;
@@ -127,6 +134,9 @@ export function StoryMobiusPanel({ scene, snapshot, phase, message, refresh, foc
   readonly focusAction?: KeyringAction | null;
   readonly focusAfterSequence?: number;
   readonly freshPath?: string | null;
+  readonly guidedEvidence?: StoryMobiusEvidence;
+  readonly guideStrength?: GuideStrength;
+  readonly onEvidenceProgress?: (evidence: StoryMobiusEvidence, progress: 'open' | 'viewed') => void;
 }) {
   const flow = flows[scene];
   const actual = snapshot?.mobius.actual === true;
@@ -170,6 +180,8 @@ export function StoryMobiusPanel({ scene, snapshot, phase, message, refresh, foc
 
   const choosePanel = (panel: PanelId) => {
     setMobilePanel(panel);
+    const evidence = panelEvidence[panel];
+    if (evidence && evidence === guidedEvidence) onEvidenceProgress?.(evidence, evidence === 'tree' ? 'open' : 'viewed');
     setFlashes((current) => {
       const next = new Set(current);
       next.delete(panel);
@@ -177,6 +189,7 @@ export function StoryMobiusPanel({ scene, snapshot, phase, message, refresh, foc
     });
   };
   const panelClass = (panel: PanelId, extra: string) => `story-panel-card story-mobile-panel ${extra}${mobilePanel === panel ? ' is-mobile-open' : ''}${flashes.has(panel) ? ' has-new-event' : ''}`;
+  const evidenceStrength = (panel: PanelId): GuideStrength | undefined => panelEvidence[panel] === guidedEvidence ? guideStrength : undefined;
 
   return <aside className="story-mobius" data-demo-target="mobius" aria-labelledby="story-mobius-title" lang="en">
     <header className="story-mobius-head">
@@ -198,11 +211,13 @@ export function StoryMobiusPanel({ scene, snapshot, phase, message, refresh, foc
         className={`${mobilePanel === panel ? 'active' : ''}${flashes.has(panel) ? ' has-new-event' : ''}`}
         aria-pressed={mobilePanel === panel}
         aria-controls={`story-panel-${panel}`}
+        data-evidence-target={panelEvidence[panel]}
+        data-guide-strength={evidenceStrength(panel)}
         onClick={() => choosePanel(panel)}
       >{panelLabels[panel]}<span className="story-panel-alert" aria-hidden="true" /></button>)}
     </nav>
 
-    <section id="story-panel-trace" className={panelClass('trace', 'story-trace')} data-phase={traceSending ? 'sending' : 'verified'} aria-labelledby="story-trace-title" aria-live="polite">
+    <section id="story-panel-trace" className={panelClass('trace', 'story-trace')} data-phase={traceSending ? 'sending' : 'verified'} data-evidence-target="trace" data-guide-strength={evidenceStrength('trace')} aria-labelledby="story-trace-title" aria-live="polite">
       <div className="story-trace-heading">
         <div>
           <p className="story-trace-eyebrow">Latest oneM2M transaction</p>
@@ -227,15 +242,15 @@ export function StoryMobiusPanel({ scene, snapshot, phase, message, refresh, foc
       <p className="story-trace-summary">{flow.summary}</p>
     </section>
 
-    <section id="story-panel-tree" className={panelClass('tree', 'story-mobius-tree-card')} aria-labelledby="story-tree-title">
+    <section id="story-panel-tree" className={panelClass('tree', 'story-mobius-tree-card')} data-evidence-target="tree" data-guide-strength={evidenceStrength('tree')} aria-labelledby="story-tree-title">
       <div className="story-events-head">
         <h3 id="story-tree-title">oneM2M resource tree</h3>
         <span>{actual ? 'CSE readback' : 'Contract replay'}</span>
       </div>
-      <StoryMobiusTree snapshot={snapshot} freshPath={freshPath} {...(refresh ? { onRefresh: refresh } : {})} />
+      <StoryMobiusTree snapshot={snapshot} freshPath={freshPath} onInspect={() => guidedEvidence === 'tree' && onEvidenceProgress?.('tree', 'viewed')} {...(refresh ? { onRefresh: refresh } : {})} />
     </section>
 
-    <section id="story-panel-events" className={panelClass('events', 'story-mobius-events')} aria-labelledby="story-events-title">
+    <section id="story-panel-events" className={panelClass('events', 'story-mobius-events')} data-evidence-target="events" data-guide-strength={evidenceStrength('events')} aria-labelledby="story-events-title">
       <div className="story-events-head">
         <h3 id="story-events-title">Verified CSE responses</h3>
         <span>{verifiedCount} total</span>

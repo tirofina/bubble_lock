@@ -111,16 +111,18 @@
 }
 .story-topbar-link:hover { text-decoration: underline; }
 
-/* Language: two small flags at the bottom-left of the screen (P10). Each 44px button keeps its word
+/* Language: two small flags at the top-right of the screen (P10). Each 44px button keeps its word
    ("한국어", "English") as the accessible name; the flag is the visible label. The chosen language
-   shows at full color with an accent ring, the other one rests at half strength. */
+   shows at full color with an accent ring, the other one rests at half strength. Desktop: the last
+   item of the top bar, the second flag's edge on the gutter line. Each layout below names its own
+   top-right slot; the flags never sit on app content, Mobius content, the coach, the keyring or the
+   scene navigation. */
 .story-topbar .lang-switch {
-  position: fixed; z-index: calc(var(--z-topbar) + 2);
-  left: max(var(--gutter), var(--safe-left)); bottom: var(--safe-bottom);
-  flex: none; gap: 0; padding: 0; border-radius: 0; background: transparent; box-shadow: none;
+  position: static; z-index: calc(var(--z-topbar) + 2);
+  flex: none; gap: 0; margin-inline-end: -11px; padding: 0; border-radius: 0; background: transparent; box-shadow: none;
 }
 .story-topbar .lang-switch button {
-  display: grid; place-items: center;
+  display: flex; align-items: center; justify-content: center;
   width: var(--control); min-width: var(--control); height: var(--control); min-height: var(--control); padding: 0;
   border: 0; border-radius: 10px; background: transparent; color: transparent;
   font-size: 0; line-height: 0; overflow: hidden;
@@ -676,6 +678,8 @@
 }
 .story-location-map-target { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; border-radius: 14px; }
 .story-location-map-target > * { flex: 1 1 auto; min-height: 0; }
+/* The tile credit link keeps its 11px text and gains a 44px target that reaches up over the map */
+.story-demo .location-story .leaflet-control-attribution a { display: inline-block; padding-top: 30px; margin-top: -30px; }
 .story-location-loading { display: grid; place-items: center; border-radius: 14px; background: var(--surface-soft); color: var(--muted); font-size: var(--t-callout); }
 .story-location-actions { flex: none; display: grid; grid-template-columns: minmax(110px, .8fr) minmax(0, 1.2fr); align-items: center; gap: var(--s3); }
 .story-location-actions .story-primary { margin: 0; }
@@ -1008,6 +1012,12 @@
   .story-demo:not(.capture) .story-draft-proof { gap: 0; padding: 4px 10px; }
   .story-demo:not(.capture) :is(.story-draft-proof span, .story-draft-proof code) { font-size: 11px; }
   .story-demo:not(.capture) .story-draft-proof strong { font-size: 12px; }
+  /* While the reviewed draft shows, it states purpose, recipient and time, so it stands in for the
+     footnote that says the same; the footnote stays for screen readers */
+  .story-demo:not(.capture) .story-check-in:has(.story-draft-proof) .story-privacy-note {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
   /* Approved map below 1024px: the eyebrow stays for screen readers (the countdown and the status line
      carry the purpose), the pin steps down to 32px around its tip, the readout keeps the coordinates */
   .story-demo:not(.capture) .story-check-in-shared { gap: 6px; padding-top: 6px; }
@@ -1055,7 +1065,11 @@
     box-shadow: none;
   }
   .story-intro-hint { font-size: var(--t-callout); }
-  .story-topbar .lang-switch { left: calc(max(8px, var(--safe-left)) + 48px); bottom: var(--safe-bottom); }
+  /* Flags: the top-right of the keyring track (empty above the keyring), on the safe edge */
+  .story-topbar .lang-switch {
+    position: fixed; top: max(6px, var(--safe-top)); right: max(8px, var(--safe-right));
+    margin: 0;
+  }
 
   .story-stage {
     padding: 6px max(8px, var(--safe-right)) 4px max(8px, var(--safe-left));
@@ -1109,12 +1123,13 @@
   }
   .story-topbar {
     grid-column: 2; grid-row: 1;
-    height: auto; flex-wrap: wrap; justify-content: center; gap: 0;
+    height: auto; flex-wrap: wrap; justify-content: flex-end; gap: 0;
     padding: max(4px, var(--safe-top)) 0 0;
   }
-  .story-brand { margin: 0 auto; }
-  /* Flags at the bottom-left, under the Mobius identity rail */
-  .story-topbar .lang-switch { left: max(8px, var(--safe-left)); bottom: max(4px, var(--safe-bottom)); }
+  /* Flags: the top row of the right rail, on its right edge. The brand takes the bottom-left slot
+     under the Mobius identity rail, so the rail keeps one 44px top row and the keyring keeps its size. */
+  .story-topbar .lang-switch { position: static; margin: 0; }
+  .story-brand { position: fixed; left: max(8px, var(--safe-left)); bottom: max(4px, var(--safe-bottom)); margin: 0; }
   .story-bottom-nav {
     grid-column: 2; grid-row: 3;
     justify-self: stretch; align-self: end;
@@ -1178,15 +1193,17 @@
     grid-template-columns: minmax(0, 1fr) var(--app-w);
     column-gap: 8px;
   }
-  /* Flags: the lowest-left free slot is the app pane's bottom-left, beside the privacy footnote
-     (the Mobius column uses its full height); on the intro they sit at the screen's bottom-left */
+  /* Flags: the keyring rail fills the right edge from top to bottom, so the flags take the next
+     top-right slot: the app pane's top-right corner, right beside the keyring. The screen title keeps
+     the row to their left (see the app rules below). On the intro the rail is empty and the flags take
+     the screen's top-right corner. */
   .story-topbar { height: 0; padding: 0; }
   .story-brand { display: none; }
   .story-topbar .lang-switch {
-    left: calc(100vw - var(--dock-right) - var(--rail-w) - 8px - var(--app-w) + 7px);
-    bottom: calc(max(4px, var(--safe-bottom)) + 5px);
+    position: fixed; margin: 0;
+    top: max(2px, var(--safe-top)); right: calc(var(--dock-right) + var(--rail-w) + 8px + 4px);
   }
-  .story-demo[data-stage="intro"] .story-topbar .lang-switch { left: max(8px, var(--safe-left)); bottom: max(4px, var(--safe-bottom)); }
+  .story-demo[data-stage="intro"] .story-topbar .lang-switch { right: var(--dock-right); }
   .story-bottom-nav {
     grid-column: 2; grid-row: 2;
     flex-wrap: nowrap; justify-content: space-between;
@@ -1253,11 +1270,19 @@
   .story-mobius-root { grid-column: 1; grid-row: 2; padding-top: 4px; grid-template-columns: minmax(0, 1fr); gap: 0; }
   .story-mobius-events li { padding: 4px 6px; }
 
-  /* App: no title bar at this size (the pane is the app), tight type, footnote beside the language slot */
+  /* App: no title bar at this size (the pane is the app), tight type. The title row is as tall as the
+     flags (40px under the 4px top padding) and stops 90px short of the right edge, so the flags sit in
+     their own corner and the first card starts under them. */
   .story-demo:not(.capture) .story-header { display: none; }
   .story-demo:not(.capture) .story-phone { padding: 0 10px 4px; }
   .story-demo:not(.capture) .story-content { padding-top: 4px; gap: 2px; }
   .story-demo:not(.capture) .story-content h1 { font-size: var(--t-callout); line-height: 18px; }
+  .story-demo:not(.capture):not([data-finale="true"]) :is(.story-content > h1, .story-content > .story-title-block, .story-location-heading) {
+    min-height: 40px; margin-inline-end: 90px; align-content: center;
+  }
+  .story-demo:not(.capture) .story-content > h1 { display: grid; }
+  /* Under the session banner the banner takes the top row and the flags yield, so the title row closes */
+  .story-demo:not(.capture) .story-inline-error + .story-content > .story-title-block { min-height: 0; margin-inline-end: 0; }
   .story-demo:not(.capture) .story-subtitle { font-size: 11px; }
   .story-demo:not(.capture) .story-event-list { gap: 4px; }
   .story-demo:not(.capture) .story-event { min-height: 44px; padding: 4px 10px; }
@@ -1273,12 +1298,22 @@
   .story-demo:not(.capture) .story-location-countdown { min-width: 48px; padding: 1px 8px; font-size: 12px; line-height: 18px; }
   .story-demo:not(.capture) .location-story { gap: 4px; }
   .story-demo:not(.capture) .location-story .map-corner-note { display: none; }
-  .story-demo:not(.capture) .story-check-in-shared .story-location-actions { grid-template-columns: minmax(0, 1fr); padding-left: 92px; }
-  .story-demo:not(.capture) .story-check-in-shared .story-location-actions > span { display: none; }
+  /* The card title names the request, so the care-request eyebrow stays for screen readers here */
+  .story-demo:not(.capture) .story-care-request .story-access-card > .story-eyebrow {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+  /* The reviewed draft reads as one paragraph: what is shared, then the draft hash as a whole token */
+  .story-demo:not(.capture) .story-draft-proof { display: block; padding: 3px 10px; line-height: 15px; }
+  .story-demo:not(.capture) .story-draft-proof > span {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+  .story-demo:not(.capture) .story-draft-proof code { margin-left: 6px; white-space: nowrap; }
   .story-demo:not(.capture) .story-auto-form { gap: 4px; }
   .story-demo:not(.capture) .story-auto-form label { grid-template-columns: 62px minmax(0, 1fr); align-items: center; gap: 6px; line-height: 1.2; }
   .story-demo:not(.capture) .story-auto-form input { padding: 6px 10px; font-size: 13px; }
-  .story-demo:not(.capture) .story-privacy-note { min-height: 44px; align-items: center; padding: 0 0 0 92px; }
+  .story-demo:not(.capture) .story-privacy-note { padding: 2px 0 0; }
   .story-demo:not(.capture) .story-inline-error { margin-top: 2px; font-size: 11px; line-height: 1.25; }
   .story-demo:not(.capture) .story-inline-error button { padding-inline: 6px; font-size: 12px; }
   .story-demo:not(.capture) .story-inline-error + .story-content { padding-top: 4px; }
@@ -1288,9 +1323,9 @@
 
 /* ---------- Installed web app, phone landscape (Home Screen launch: display-mode standalone or fullscreen) ----------
    No Safari bars: 812 x 375 on iPhone 13 mini, usable 724 x 354 inside insets 44 / 44 / 21. Columns: Mobius 300 |
-   app | rail 176, 8px gaps. The rail stacks the brand, a 176px keyring and the scene navigation; the flags keep the
-   bottom-left corner under the Mobius column; every Mobius page keeps its header, and only the tree
-   scrolls inside its own box. */
+   app | rail 176, 8px gaps. The rail stacks the brand and the flags (one 44px row, flags on the right edge), a
+   176px keyring and the scene navigation; the scene guide keeps the bottom strip under the Mobius column; every
+   Mobius page keeps its header, and only the tree scrolls inside its own box. */
 @media (max-width: 1023px) and (orientation: landscape) and (max-height: 440px) {
   .story-demo[data-display-mode="standalone"] {
     --topbar-h: 0px;
@@ -1318,12 +1353,12 @@
   }
   .story-demo[data-display-mode="standalone"] .story-topbar {
     grid-column: 2; grid-row: 1;
-    height: auto; justify-content: center; gap: 0;
+    height: auto; flex-wrap: nowrap; justify-content: space-between; gap: 0;
     padding: max(4px, var(--safe-top)) 0 0;
     box-shadow: none;
   }
-  .story-demo[data-display-mode="standalone"] .story-brand { margin: 0 auto; }
-  .story-demo[data-display-mode="standalone"] .story-topbar .lang-switch { left: max(8px, var(--safe-left)); bottom: max(4px, var(--safe-bottom)); }
+  .story-demo[data-display-mode="standalone"] .story-brand { position: static; margin: 0; }
+  .story-demo[data-display-mode="standalone"] .story-topbar .lang-switch { position: static; margin: 0; }
   .story-demo[data-display-mode="standalone"] .story-bottom-nav {
     grid-column: 2; grid-row: 3;
     justify-self: stretch; align-self: end;
@@ -1332,7 +1367,7 @@
   }
   .story-demo[data-display-mode="standalone"] .story-stepper-compact { order: 0; flex: 1 1 0; min-width: 0; font-size: 12px; line-height: 15px; white-space: normal; text-wrap: balance; }
 
-  /* Mobius: two-line header, switcher, one panel; the bottom 48px belong to the flags */
+  /* Mobius: two-line header, switcher, one panel; the bottom 48px belong to the scene guide */
   .story-demo[data-display-mode="standalone"] .story-mobius {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto auto minmax(0, 1fr);
@@ -1409,17 +1444,15 @@
   .story-topbar { padding-inline: max(var(--s2), var(--safe-left)) max(var(--s2), var(--safe-right)); }
   .story-bottom-nav {
     justify-self: stretch;
-    padding: 0 calc(var(--dock-right) + var(--dock-kw) + 12px) 0 calc(max(12px, var(--safe-left)) + 92px);
+    padding: 0 calc(var(--dock-right) + var(--dock-kw) + 12px) 0 max(12px, var(--safe-left));
     background: var(--surface);
   }
   /* The sheet surface continues under the home indicator without moving the controls into it. */
   .story-bottom-nav::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: var(--safe-bottom); background: inherit; }
   .story-demo[data-stage="intro"] .story-bottom-nav { background: transparent; }
   .story-bottom-nav .story-stepper-compact { min-width: 0; flex: 1 1 0; font-size: 11px; line-height: 13px; white-space: normal; text-wrap: balance; }
-  /* Flags at the bottom-left of the deck, before the scene navigation. The top bar's stacking context
-     sits above the deck surface here (they never overlap), so the fixed flags paint over it. */
-  .story-topbar { z-index: calc(var(--z-topbar) + 2); }
-  .story-topbar .lang-switch { left: max(12px, var(--safe-left)); bottom: var(--safe-bottom); }
+  /* Flags: the last item of the top bar, at the top-right; the scene guide sits between brand and flags */
+  .story-topbar .lang-switch { margin-inline-end: -4px; }
 
   .story-stage {
     grid-template-columns: minmax(0, 1fr);
@@ -1610,7 +1643,7 @@
 .story-finale-actions {
   grid-area: actions; min-width: 0;
   display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3);
-  margin-top: var(--s5); padding-inline-start: var(--finale-slot);
+  margin-top: var(--s5); margin-inline: var(--finale-slot, 0px) var(--finale-end-slot, 0px);
 }
 .story-finale-actions a {
   min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
@@ -1670,11 +1703,11 @@
   .story-finale-actions a { min-height: var(--control); padding: 0 14px; font-size: 13px; }
 }
 
-/* Shallow landscape: the rail holds the keyring, so the stage is one column; the flags keep the
+/* Shallow landscape: the rail holds the keyring, so the stage is one column; the brand keeps the
    bottom-left slot and the actions start after it */
 @media (max-width: 1023px) and (orientation: landscape) and (max-height: 340px) {
   .story-demo[data-finale="true"] .story-stage { grid-template-columns: minmax(0, 1fr); column-gap: 0; }
-  .story-demo[data-finale="true"] .story-finale { --finale-slot: 92px; }
+  .story-demo[data-finale="true"] .story-finale { --finale-slot: 48px; }
 }
 
 /* iPhone mini in Safari (812 x 265): the same composition at 11-17px; flags at the screen's bottom-left */
@@ -1693,16 +1726,22 @@
   .story-finale-proof small { line-height: 14px; }
   .story-finale-session { padding: 4px var(--proof-pad); line-height: 14px; }
   .story-finale-actions { margin-top: 6px; }
-  .story-demo[data-finale="true"] .story-topbar .lang-switch { left: max(8px, var(--safe-left)); bottom: max(4px, var(--safe-bottom)); }
+  /* The receipt owns the stage's top-right here, so the flags close the actions row at the bottom-right,
+     beside the keyring rail; the row ends 96px short of them */
+  .story-demo[data-finale="true"] .story-finale { --finale-slot: 0px; --finale-end-slot: 96px; }
+  .story-demo[data-finale="true"] .story-topbar .lang-switch {
+    top: auto; bottom: calc(max(4px, var(--safe-bottom)) + 6px);
+    right: calc(var(--dock-right) + var(--rail-w) + 8px + 6px);
+  }
 }
 
-/* Installed web app (812 x 375): the keyring rail sits outside the stage; flags at the bottom-left */
+/* Installed web app (812 x 375): the keyring rail sits outside the stage; the flags share its top row with the brand */
 @media (max-width: 1023px) and (orientation: landscape) and (max-height: 440px) {
   .story-demo[data-display-mode="standalone"][data-finale="true"] .story-stage { grid-template-columns: minmax(0, 1fr); column-gap: 0; }
   .story-demo[data-display-mode="standalone"][data-finale="true"] .story-finale {
     --proof-pad: 14px; --proof-marker: 24px; --proof-gap: 12px;
     --proof-title: 14px; --proof-title-lh: 18px; --proof-detail: 12px; --proof-code: 11px; --proof-count: 15px;
-    --finale-slot: 92px;
+    --finale-slot: 0px;
   }
 }
 
@@ -1727,23 +1766,29 @@
   .story-finale-actions a { min-height: var(--control); padding: 0 var(--s3); font-size: var(--t-callout); }
 }
 
-/* ---------- Scene guide (S9): one small overlay tip per scene and a large highlight on its target ----------
+/* ---------- Scene guide (S9): one small overlay tip per scene and three strengths of highlight ----------
    StoryDemo names the target on the root (data-coach-target) and on the tip (.story-coach[data-target]);
    the real element carries data-demo-target. The tip reads label, then the next real action; it ignores
-   the pointer and sits in a slot each layout keeps free (top bar, bottom bar, Mobius rail, flags strip,
-   Mobius identity line), so it never covers the map, the keyring, a record or an action. The target wears
-   a 4px accent halo that sends two soft waves, then rests (P6, P7). */
+   the pointer and sits in a slot each layout keeps free (top bar, bottom bar, Mobius rail, guide strip,
+   Mobius identity line), so it never covers the map, the keyring, a record or an action.
+   Hierarchy: 1. the keyring button keeps its large double halo (S5), the strongest mark on screen;
+   2. the exact next action (app button, map, Next arrow, the guided Mobius tab or the open guided panel
+   region) wears one medium mark that sends two soft waves, then rests; 3. secondary Mobius evidence
+   (data-guide-strength="secondary") wears the weakest mark: an accent label and dot on its tab and a
+   1px soft ring on its record region (P5, P6, P7, P13). */
 .story-demo {
   --coach-halo: color-mix(in srgb, var(--accent) 30%, transparent);
   --coach-wave: color-mix(in srgb, var(--accent) 36%, transparent);
   --coach-proof: color-mix(in srgb, var(--success) 34%, transparent);
-  --coach-wash: color-mix(in srgb, var(--accent) 6%, transparent);
+  --guide-fill: color-mix(in srgb, var(--accent) 12%, transparent);
+  --guide-ring: color-mix(in srgb, var(--accent) 60%, transparent);
+  --guide-soft: color-mix(in srgb, var(--accent) 30%, transparent);
 }
 .story-coach {
   position: fixed; z-index: calc(var(--z-dock) + 2);
   top: calc(var(--safe-top) + (var(--topbar-h) - 44px) / 2);
   left: 50%; translate: -50% 0;
-  width: max-content; max-width: min(700px, calc(100vw - 2 * 220px));
+  width: max-content; max-width: min(700px, calc(100vw - 2 * 240px));
   min-height: 44px; box-sizing: border-box;
   display: grid; grid-template-columns: auto minmax(0, 1fr);
   grid-template-areas: "label title" "action action";
@@ -1770,7 +1815,7 @@
 }
 @keyframes story-coach-in { from { opacity: .4; transform: scale(.97); } to { opacity: 1; transform: none; } }
 
-/* Highlight: a 4px accent halo on the target, two soft waves, then a steady halo */
+/* 2. Medium: the exact next action wears a 4px accent halo, two soft waves, then a steady halo */
 .story-demo[data-coach-target="map"] [data-demo-target="map"],
 .story-demo[data-coach-target="app-primary"] [data-demo-target="app-primary"],
 .story-demo[data-coach-target="app-secondary"] [data-demo-target="app-secondary"],
@@ -1778,19 +1823,68 @@
   box-shadow: 0 0 0 4px var(--coach-halo);
   animation: story-coach-halo 1.6s var(--ease) .3s 2 both;
 }
-/* The Mobius pane is flat and full of text: it lifts as one soft accent sheet that reaches 6px past
-   its edges (a spread shadow in the sheet's color), so no ring hugs a line of text */
-.story-demo[data-coach-target="mobius"] .story-mobius[data-demo-target="mobius"] {
-  border-radius: 12px;
-  background: var(--coach-wash);
-  box-shadow: 0 0 0 6px var(--coach-wash);
-  animation: story-coach-wash 1.6s var(--ease) .3s 2 both;
-}
 .story-demo[data-coach-target="app-secondary"] .story-text-action[data-demo-target="app-secondary"] { background: var(--accent-soft); }
+/* 2. Medium, inside Mobius: no sheet over the pane. While the guided panel is closed, its tab is the
+   action: an inset ring and tint drawn exactly over that segment by the pane's own grid item (the pane
+   clips at its edges, so the mark stays inside the segment). Segment geometry follows the switcher:
+   2px track padding and 2px gaps around three equal segments (2 x 2 in portrait). */
+.story-panel-tabs button[data-guide-strength="primary"]:not([aria-pressed="true"]) { color: var(--accent-text); }
+.story-mobius:has(.story-panel-tabs button[data-guide-strength="primary"]:not([aria-pressed="true"]))::after {
+  --tabs-w: min(100%, 440px);
+  --seg-w: calc((var(--tabs-w) - 8px) / 3);
+  content: ""; grid-area: tabs; z-index: 1;
+  justify-self: start; align-self: start;
+  width: var(--seg-w); height: 44px;
+  margin: 2px 0 0 calc(2px + var(--seg-i, 0) * (var(--seg-w) + 2px));
+  border-radius: 10px;
+  background: var(--guide-fill);
+  box-shadow: inset 0 0 0 1.5px var(--guide-ring);
+  pointer-events: none;
+  animation: story-guide-tab 1.6s var(--ease) .3s 2 both;
+}
+.story-mobius:has(.story-panel-tabs button[aria-controls="story-panel-tree"][data-guide-strength="primary"]:not([aria-pressed="true"]))::after { --seg-i: 1; }
+.story-mobius:has(.story-panel-tabs button[aria-controls="story-panel-events"][data-guide-strength="primary"]:not([aria-pressed="true"]))::after { --seg-i: 2; }
+/* Once the guided panel is open, its record region is the action: the tree box (scroll it or select
+   the fresh node) wears a 2px inset ring. Inset rings sit inside the region's own padding, so no ring
+   touches a line of text. */
+.story-panel-card.is-mobile-open[data-guide-strength="primary"] .mobius-tree-scroll,
+.story-panel-card.is-mobile-open[data-guide-strength="primary"].story-mobius-events li {
+  outline: 2px solid var(--guide-ring); outline-offset: -2px;
+  animation: story-guide-region 1.6s var(--ease) .3s 2 both;
+}
+/* Transaction receipt: its text runs edge to edge, so its region mark avoids every line of text. A rule
+   sits in the panel's own top padding (the empty band under the switcher), and the medium mark adds a
+   tinted spine behind the step markers, the receipt's one column without text. */
+.story-trace { --trace-marker: 24px; }
+.story-trace-steps { position: relative; }
+.story-panel-card.story-trace.is-mobile-open[data-guide-strength="primary"] { box-shadow: inset 0 2px 0 var(--guide-ring); }
+.story-panel-card.story-trace.is-mobile-open[data-guide-strength="primary"] .story-trace-steps::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+  width: var(--trace-marker); border-radius: calc(var(--trace-marker) / 2);
+  background: var(--guide-fill);
+  pointer-events: none;
+  animation: story-guide-tab 1.6s var(--ease) .3s 2 both;
+}
+.story-panel-card.story-trace.is-mobile-open[data-guide-strength="secondary"] { box-shadow: inset 0 1px 0 var(--guide-soft); }
+@media (max-width: 1023px) { .story-trace { --trace-marker: 20px; } }
+@media (max-width: 1023px) and (orientation: portrait) { .story-panel-card.story-trace { padding-top: 4px; } }
+@media (max-width: 1023px) and (orientation: landscape) and (max-height: 300px) { .story-trace { --trace-marker: 16px; } }
+@media (max-width: 1023px) and (orientation: landscape) and (max-height: 440px) {
+  .story-demo[data-display-mode="standalone"] .story-trace { --trace-marker: 18px; }
+}
+/* 3. Weakest: secondary evidence. The tab label turns accent with a steady 6px dot; the open record
+   region wears a 1px soft ring (on the receipt, a 1px soft rule in its top padding). It stays findable
+   and never competes with the action's halo. */
+.story-panel-tabs button[data-guide-strength="secondary"]:not([aria-pressed="true"]) { color: var(--accent-text); }
+.story-panel-tabs button[data-guide-strength="secondary"] .story-panel-alert { background: var(--guide-ring); }
+.story-panel-card.is-mobile-open[data-guide-strength="secondary"] .mobius-tree-scroll,
+.story-panel-card.is-mobile-open[data-guide-strength="secondary"].story-mobius-events li {
+  outline: 1px solid var(--guide-soft); outline-offset: -1px;
+}
 /* In-app targets sit on the content edge: the content box reaches 6px into the phone padding, so the
    halo shows whole while the content keeps its width */
 .story-demo:not(.capture) .story-content { margin-inline: -6px; padding-inline: 6px; }
-/* Keyring: the guided button keeps its own large halo (S5); the model gains a soft accent aura */
+/* 1. Strongest: the guided keyring button keeps its own large halo (S5); the model gains a soft accent aura */
 .story-demo[data-coach-target="keyring"] .keyring-dock::before {
   content: ""; position: absolute; z-index: -1; inset: 10% 4% 2%;
   border-radius: 50%;
@@ -1811,9 +1905,13 @@
   0% { box-shadow: 0 0 0 4px var(--coach-halo), 0 0 0 4px var(--coach-wave); }
   70%, 100% { box-shadow: 0 0 0 4px var(--coach-halo), 0 0 0 10px transparent; }
 }
-@keyframes story-coach-wash {
-  0% { box-shadow: 0 0 0 6px var(--coach-wash), 0 0 0 6px var(--coach-halo); }
-  70%, 100% { box-shadow: 0 0 0 6px var(--coach-wash), 0 0 0 14px transparent; }
+@keyframes story-guide-tab {
+  0%, 100% { background: var(--guide-fill); }
+  40% { background: color-mix(in srgb, var(--accent) 24%, transparent); }
+}
+@keyframes story-guide-region {
+  0%, 100% { outline-color: var(--guide-ring); }
+  40% { outline-color: color-mix(in srgb, var(--accent) 25%, transparent); }
 }
 @keyframes story-coach-aura {
   0% { opacity: .55; scale: .96; }
@@ -1839,7 +1937,7 @@
     translate: none; width: auto; max-width: none; min-height: 0; max-height: 44px;
     grid-template-columns: minmax(0, 1fr); grid-template-areas: "label" "action";
     align-content: center; gap: 0;
-    padding: 3px 10px; border-radius: 12px;
+    padding: 2px 10px; border-radius: 12px;
     font-size: 11px; line-height: 13px;
   }
   .story-coach-label { font-size: 11px; }
@@ -1889,36 +1987,50 @@
   .story-demo:has(> .story-coach:not([aria-hidden="true"])) .story-mobius:has(#story-panel-tree.is-mobile-open) .story-mobius-head { display: flex; }
 }
 
-/* Installed web app (812 x 375): the tip shares the flags strip under the Mobius column */
+/* Installed web app (812 x 375): the tip owns the 48px strip under the Mobius column, full column width */
 @media (max-width: 1023px) and (orientation: landscape) and (max-height: 440px) {
   .story-demo[data-display-mode="standalone"] .story-coach {
     top: auto; bottom: max(4px, var(--safe-bottom));
-    left: calc(max(8px, var(--safe-left)) + 92px); right: auto; width: 208px;
+    left: max(8px, var(--safe-left)); right: auto;
+    width: calc(100vw - max(8px, var(--safe-left)) - var(--app-w) - var(--rail-w) - var(--dock-right) - 16px);
     min-height: 44px; max-height: 44px;
-    padding: 3px 9px; border-radius: 10px;
+    padding: 3px 10px; border-radius: 10px;
   }
   .story-demo[data-display-mode="standalone"] .story-coach-action b {
     position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
     overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
   }
-  .story-demo[data-display-mode="standalone"][data-stage="intro"] .story-coach { width: 176px; }
+  .story-demo[data-display-mode="standalone"][data-stage="intro"] .story-coach { width: 232px; }
   /* System proof: the actions row owns the bottom line, so the tip takes the free top of the statement */
   .story-demo[data-display-mode="standalone"][data-finale="true"] .story-coach { top: max(4px, var(--safe-top)); bottom: auto; left: max(8px, var(--safe-left)); }
 }
 
-/* Portrait: the tip takes the top bar beside the brand */
+/* Portrait: the tip takes the top bar between the brand and the flags */
 @media (max-width: 1023px) and (orientation: portrait) {
   .story-coach {
     top: var(--safe-top); bottom: auto;
-    left: calc(max(12px, var(--safe-left)) + 52px); right: max(12px, var(--safe-right));
+    left: calc(max(8px, var(--safe-left)) + 50px); right: calc(max(8px, var(--safe-right)) + 90px);
     translate: none; width: auto; max-width: none; min-height: 44px; max-height: none;
     grid-template-columns: minmax(0, 1fr); grid-template-areas: "label" "action";
     gap: 0; padding: 3px 10px; border-radius: 12px;
     font-size: 11px; line-height: 13px;
   }
+  /* The guided tab mark follows the 2 x 2 switcher: two equal columns, 44px rows, 2px gaps */
+  .story-mobius:has(.story-panel-tabs button[data-guide-strength="primary"]:not([aria-pressed="true"]))::after {
+    --seg-w: calc((100% - 6px) / 2);
+    margin: calc(var(--s2) + 2px + var(--seg-row, 0) * 46px) 0 0 calc(2px + var(--seg-col, 0) * (var(--seg-w) + 2px));
+  }
+  .story-mobius:has(.story-panel-tabs button[aria-controls="story-panel-tree"][data-guide-strength="primary"]:not([aria-pressed="true"]))::after { --seg-col: 1; --seg-row: 0; }
+  .story-mobius:has(.story-panel-tabs button[aria-controls="story-panel-events"][data-guide-strength="primary"]:not([aria-pressed="true"]))::after { --seg-col: 0; --seg-row: 1; }
   /* The approved map is the scene's answer: the app pane grows to half the stage while it shows */
   .story-demo:has([data-location-shared="true"]) .story-stage { grid-template-rows: minmax(0, 50%) minmax(0, 1fr); }
-  .story-coach-label { font-size: 11px; }
+  /* Between the brand and the flags the tip keeps the next action only (two lines at most); the label,
+     title and detail stay in the live region */
+  .story-coach { grid-template-areas: "action"; }
+  .story-coach-label {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
   .story-coach-action svg { width: 12px; height: 12px; margin-top: 1px; }
   .story-coach > strong {
     position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
@@ -1961,5 +2073,7 @@
   .story-rotate-glyph::before { animation: none; rotate: -90deg; }
   .story-stepper-prev, .story-stepper-next, .story-topbar, .story-bottom-nav, .story-topbar-link { transition: none; }
   /* Scene guide: the tip appears at once; the halo, aura and proof ring are steady */
-  .story-coach, .story-demo [data-demo-target], .story-demo .keyring-dock::before, .story-demo .story-finale::after { animation: none !important; }
+  .story-coach, .story-demo [data-demo-target], .story-demo .keyring-dock::before, .story-demo .story-finale::after,
+  .story-mobius::after, .story-panel-card[data-guide-strength] :is(.mobius-tree-scroll, li),
+  .story-panel-card[data-guide-strength] .story-trace-steps::before { animation: none !important; }
 }
