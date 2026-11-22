@@ -177,11 +177,12 @@ function useSecondClock(active: boolean): number {
   return now;
 }
 
-function CheckInScreen({ pending, snapshot, callReady, mapInspected, onCall, onShare, onInspectMap }: {
+function CheckInScreen({ pending, snapshot, callReady, mapInspected, emergency, onCall, onShare, onInspectMap }: {
   readonly pending: PendingAction;
   readonly snapshot: StorySessionSnapshot | null;
   readonly callReady: boolean;
   readonly mapInspected: boolean;
+  readonly emergency: boolean;
   readonly onCall: () => void;
   readonly onShare: () => void;
   readonly onInspectMap: () => void;
@@ -193,8 +194,10 @@ function CheckInScreen({ pending, snapshot, callReady, mapInspected, onCall, onS
   const countdown = `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`;
   const drafted = snapshot?.location.status === 'drafted';
   const panicCount = snapshot?.keyring.panicPresses ?? 0;
-  if (remaining > 0) return <section className="story-content story-check-in story-check-in-shared" aria-labelledby="story-title" data-location-shared="true">
-    <div className="story-location-heading"><div><p className="story-eyebrow">{tr('목적 제한 위치 공유', 'Purpose-bound location share')}</p><h1 id="story-title">{tr('어머니 위치', "Mom's location")}</h1></div><strong className="story-location-countdown" aria-label={tr(`남은 시간 ${countdown}`, `${countdown} remaining`)}>{countdown}</strong></div>
+  if (remaining > 0) return <section className="story-content story-check-in story-check-in-shared" aria-labelledby="story-title" data-location-shared="true" data-emergency={emergency || undefined}>
+    <div className="story-location-heading"><div>{emergency
+      ? <p className="story-eyebrow story-emergency-eyebrow" role="status"><Icon name="bell" size={14} />{tr('비상 버튼, 비상 상황으로 전환', 'PANIC pressed, now an emergency')}</p>
+      : <p className="story-eyebrow">{tr('목적 제한 위치 공유', 'Purpose-bound location share')}</p>}<h1 id="story-title">{emergency ? tr('비상 상황', 'Emergency') : tr('어머니 위치', "Mom's location")}</h1></div><strong className="story-location-countdown" aria-label={tr(`남은 시간 ${countdown}`, `${countdown} remaining`)}>{countdown}</strong></div>
     <div
       className="story-location-map-target"
       data-demo-target="map"
@@ -374,6 +377,7 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
   const { snapshot, phase, message, refresh, runAction } = useStorySession(sessionEnabled);
   const [pending, setPending] = useState<PendingAction>(null);
   const [callReady, setCallReady] = useState(false);
+  const [panicEscalated, setPanicEscalated] = useState(false);
   const [mapInspected, setMapInspected] = useState(false);
   const automatic = useRef(new Set<string>());
   const transitionStarted = useRef(0);
@@ -385,7 +389,10 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
   const promptReturnFocus = useRef<HTMLElement | null>(null);
   const sceneGuidedAction: KeyringAction | null = scene === 'check-in' ? 'keyring-panic'
     : scene === 'login' || scene === 'activity-away' || scene === 'activity-home' ? 'keyring-confirm' : null;
-  const guidedAction = demoStage === 'intro' ? sceneGuidedAction : null;
+  const locationShared = Boolean(snapshot?.location.sharedUntil && Date.parse(snapshot.location.sharedUntil) > Date.now());
+  // Story order (video, article): Call goes unanswered, the five-minute share is open, then Mom presses PANIC.
+  const panicStep = scene === 'check-in' && demoStage === 'system' && locationShared && callReady && !panicEscalated;
+  const guidedAction = demoStage === 'intro' ? sceneGuidedAction : panicStep ? 'keyring-panic' : null;
   const orientationPromptOpen = !capture && portraitViewport && portraitChoice === 'ask';
   const modalOpen = orientationPromptOpen || fullscreenPromptOpen;
 
@@ -587,6 +594,7 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
   };
 
   const keyringVerified = (action: KeyringAction, next: StorySessionSnapshot) => {
+    if (action === 'keyring-panic' && scene === 'check-in' && demoStage === 'system') setPanicEscalated(true);
     const actionEvents = next.mobius.events.filter((event) => event.action === action && event.sequence > focusAfterSequenceRef.current);
     const primary = actionEvents.find((event) => event.type !== 'KEYRING_BUTTON_OBSERVATION') ?? actionEvents[0];
     if (primary) {
@@ -634,7 +642,6 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
   const startStory = () => { window.location.hash = '#/story/activity-away'; };
   const retry = () => { void refresh(); };
   const careStatus = snapshot?.care.status ?? 'ready';
-  const locationShared = Boolean(snapshot?.location.sharedUntil && Date.parse(snapshot.location.sharedUntil) > Date.now());
   const locationDrafted = snapshot?.location.status === 'drafted';
   const evidenceState = (evidence: StoryMobiusEvidence): EvidenceProgress => evidenceProgress[`${scene}:${evidence}`] ?? 'closed';
   const recordEvidenceProgress = (evidence: StoryMobiusEvidence, progress: Exclude<EvidenceProgress, 'closed'>) => {
@@ -733,6 +740,20 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
         action: tr('오른쪽 화살표로 다음 장면을 여세요.', 'Use the right arrow for the next scene.'),
       };
     }
+    if (panicStep) return {
+      target: 'keyring',
+      label: tr('비상 입력', 'Emergency input'),
+      title: tr('어머니가 비상 버튼을 누릅니다', 'Mom presses PANIC'),
+      detail: tr('전화를 받지 않은 뒤의 장면입니다. 키링의 PANIC 관측이 Mobius에 기록되고 같은 알림이 비상 상황으로 바뀝니다. 위치는 이미 승인한 5분 공유 안에서만 보입니다.', 'Mom did not answer. The keyring writes a PANIC observation to Mobius and the same alert becomes an emergency. Location stays inside the five-minute share you approved.'),
+      action: tr('키링의 주황 비상 버튼을 누르세요.', 'Press the orange emergency button on the keyring.'),
+    };
+    if (scene === 'check-in' && locationShared && callReady && panicEscalated) return {
+      target: 'next',
+      label: tr('비상 기록 확인', 'Emergency recorded'),
+      title: tr('PANIC이 CSE에 기록되었습니다', 'PANIC is recorded in the CSE'),
+      detail: tr('키링 관측 CREATE 2001과 RETRIEVE 2000이 같은 세션에 남았고, 위치는 승인한 5분이 끝나면 닫힙니다.', 'The keyring observation was created with 2001 and read back with 2000 in this session, and the location closes when the approved five minutes end.'),
+      action: tr('오른쪽 확인 화살표로 시스템 검증을 여세요.', 'Use the check arrow to open the system proof.'),
+    };
     if (scene === 'check-in' && locationShared) return {
       target: callReady ? 'next' : mapInspected ? 'app-primary' : 'map',
       label: tr('승인된 5분 지도', 'Approved five-minute map'),
@@ -820,7 +841,7 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
       <div className="story-app-column">
         <div className="story-device">
           <div className="story-phone" id="story-app" role="region" aria-label={tr('Privacy Bubble 앱', 'Privacy Bubble app')} tabIndex={-1}>
-            <StoryHeader time={sceneTime[scene]} />
+            <StoryHeader time={scene === 'check-in' && panicEscalated && locationShared ? '5:16' : sceneTime[scene]} />
             {message ? <div className="story-inline-error" role="status"><span>{message}</span><button type="button" onClick={retry}>{tr('다시 연결', 'Reconnect')}</button></div> : null}
             {scene === 'login' && <LoginScreen step={loginStep} snapshot={snapshot} onStart={startStory} />}
             {scene === 'activity-away' && <ActivityScreen home={false} />}
@@ -828,7 +849,7 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
             {scene === 'care-request' && <CareRequestScreen pending={pending === 'approve'} approved={careStatus === 'approved' || careStatus === 'active'} onApprove={() => void approveCare()} />}
             {scene === 'caregiver-shared' && <CaregiverSharedScreen pending={pending === 'all-on' || pending === 'expire'} status={careStatus} onAllOn={() => void allOn()} onExpire={() => void expireNow()} />}
             {scene === 'caregiver-ended' && <CaregiverEndedScreen pending={pending === 'expire'} expired={careStatus === 'expired'} />}
-            {scene === 'check-in' && <CheckInScreen pending={pending} snapshot={snapshot} callReady={callReady} mapInspected={mapInspected} onCall={() => void callMom()} onShare={() => void shareLocation()} onInspectMap={() => setMapInspected(true)} />}
+            {scene === 'check-in' && <CheckInScreen pending={pending} snapshot={snapshot} callReady={callReady} mapInspected={mapInspected} emergency={panicEscalated && locationShared} onCall={() => void callMom()} onShare={() => void shareLocation()} onInspectMap={() => setMapInspected(true)} />}
             {scene === 'finale' && <FinaleScreen snapshot={snapshot} />}
             <span className="story-home-indicator" aria-hidden="true" />
           </div>

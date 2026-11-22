@@ -219,11 +219,20 @@ export function StoryMobiusTree({ snapshot, freshPath = null, onRefresh, onInspe
     }
   }, [freshPath, rows]);
 
+  // The fresh row is centred when it appears, but a wheel, touch, key or pointer on the tree hands scrolling
+  // back to the reader; otherwise each snapshot refresh would pull the tree back for the whole highlight.
+  const readerScrolled = useRef(false);
+  useEffect(() => { readerScrolled.current = false; }, [freshPath]);
+
   useEffect(() => {
     if (!freshPath) return;
     const box = scroll.current;
     if (!box) return;
+    const handOver = () => { readerScrolled.current = true; };
+    const readerEvents = ['wheel', 'touchstart', 'keydown', 'pointerdown'] as const;
+    for (const type of readerEvents) box.addEventListener(type, handOver, { passive: true });
     const centerFresh = () => {
+      if (readerScrolled.current) return;
       const target = box.querySelector<HTMLElement>('[data-fresh="true"]');
       if (!target || box.clientHeight === 0) return;
       const boxRect = box.getBoundingClientRect();
@@ -239,6 +248,7 @@ export function StoryMobiusTree({ snapshot, freshPath = null, onRefresh, onInspe
     return () => {
       window.cancelAnimationFrame(frame);
       observer.disconnect();
+      for (const type of readerEvents) box.removeEventListener(type, handOver);
     };
   }, [freshPath, rows]);
 

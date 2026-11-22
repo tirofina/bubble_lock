@@ -25,6 +25,8 @@ export function VirtualKeyring({ snapshot, runAction, onActionStart, onVerified,
   const [pose, setPose] = useState<Pose>(initialPose);
   const [active, setActive] = useState<KeyringAction | null>(null);
   const [verified, setVerified] = useState<KeyringAction | null>(null);
+  // A new guided step starts unanswered, even if the same button was pressed earlier in the session.
+  useEffect(() => { setVerified(null); }, [guidedAction]);
   const gesture = useRef<Gesture | null>(null);
 
   useEffect(() => {
