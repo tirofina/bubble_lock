@@ -132,12 +132,15 @@ one formula for every layout.
 
 - Full canvas, no cards, no rail, no panels. The top bar shows only the brand and the flags
   at the top-right; the dashboard link and the bottom navigation wait for the system stage (P1).
-- The keyring sits at 50% width and on the optical center of the space between the top bar
-  and the bottom row, lifted by the hint band, with its own product shadow.
-- One hint line under the keyring (24px gap; 12px in landscape), 17px/600 ink (15px in
-  landscape), led by a 10px dot in the guided button's color: `파란 버튼을 눌러 보세요` /
-  `Press the blue button` (check-in scene: `주황 버튼을 눌러 보세요` / `Press the orange button`).
-  This is the only text on the intro besides the top bar (P2, P11).
+- The keyring sits at 50% width and on the center of the space between the top bar and the
+  bottom row, with its own product shadow. The hint band (`--intro-band`) is reserved only while
+  the line under the keyring holds a server message (`:has(.story-intro-hint:empty)` releases it
+  outside portrait phones, which keep it for the rotate prompt).
+- The quest (S9) is the one guidance on the intro: it names the button (`파란 확인 버튼을
+  누르세요.` / `Press the blue confirmation button.`, orange for the check-in scene). The line
+  under the keyring (24px gap; 12px in landscape, 17px/600 ink, 15px in landscape) stays an empty
+  polite live region and speaks only a server message, so the intro never says the same action
+  twice (P2, P11, P13).
 - The guided button carries the guidance halo of S5 (blue for confirm, orange-red for
   emergency), centered on the visual button, not on the hit area (P5, P7).
 - Dragging the keyring rotates it and the focused stage takes arrow keys (P10).
@@ -612,6 +615,8 @@ with `.story-demo[data-display-mode="standalone"]` (display-mode standalone or f
 | Desktop tree header is one 44px row (title, live count, Sync); below 1024px Sync shares the last line with the selected node's path | A floating Sync over the rows covered row text while rows scrolled under it; the separate section heading repeated the switcher and the Live/Replay badge | P2, P3, P11 |
 | System proof is an unnumbered conclusion: the Mobius pane and the phone chrome step away for a statement, one receipt card and two actions beside the same keyring | Inside a stretched phone frame the receipt was three small cards with 300px of empty canvas above them, and at 812 x 265 the action labels broke into near-vertical words (links inherit `overflow-wrap: anywhere` in narrow grid columns) | P2, P8, P11 |
 | Scene seven's next control becomes a success-tinted check circle (since 2026-11-22 only while it owns the guide, with a looping success halo instead of two invites) | It opens a different kind of page (the proof), so it reads as the success family of that page while staying a quiet 44px circle in the stepper | P1, P5 |
+| The intro line under the keyring speaks only server messages; the quest names the button (2026-11-22 review) | The intro said the same action twice (quest `Press the blue confirmation button.` and line `Press the blue button`); the quest leads every scene since the 12:16 decision | P2, P11, P13 |
+| Dark mode guide marks use `--accent-on-dark` at 55% (wave 50%, ring 70%) and success at 50% (2026-11-22 review) | `--accent` at 30% on the black canvas measured about 1.3:1, so the Next halo nearly vanished at 1440 x 900 dark; the new mix measures about 3.2:1 | P5, P10 |
 | Approved map: the readout leaves the canvas for a caption line under it; the live chip owns the top-left, the attribution the bottom-right | Before: the readout sat on the attribution in every layout, the pin met the chip at 812 x 265, 844 x 390 and 844 x 320, and chip, readout, action note and meta text rendered at 8-10px | P4, P11, P12 |
 | Approved map below 1024px: eyebrow for screen readers, 32px pin scaled around its tip, coordinates only in the caption; iPhone mini drops the live chip | The map is the answer to the approval; every line above it cost map height (the eyebrow wrapped to two lines at 812 x 375). Scaling around the icon anchor keeps the plotted point exact | P2, P12 |
 | Portrait fallback gives the app pane 50% of the stage while the map shows | At 44% the map was 132px tall and Call covered its attribution | P2, P12 |
@@ -863,7 +868,7 @@ div.story-demo[data-stage][data-scene][data-finale][data-portrait][data-display-
     a.story-brand, a.story-topbar-link (family dashboard), LangToggle
   section.story-intro (inert unless intro)
     h1.story-sr
-    p.story-intro-hint[aria-live=polite] > i.story-intro-dot.confirm|.panic + text
+    p.story-intro-hint[aria-live=polite] (empty; holds only a server message)
   button.story-fullscreen-launch[aria-haspopup=dialog][aria-expanded]   (iOS Safari intro only)
     > svg + text
   div.story-fullscreen-guide[role=dialog][aria-modal][hidden]

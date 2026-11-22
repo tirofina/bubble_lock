@@ -780,9 +780,8 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
     </header>
     <section className="story-intro" inert={demoStage !== 'intro' || fullscreenPromptOpen} aria-hidden={demoStage !== 'intro' || fullscreenPromptOpen}>
       <h1 className="story-sr">{tr('Privacy Bubble 키링 시연', 'Privacy Bubble keyring demo')}</h1>
-      <p className="story-intro-hint" aria-live="polite"><i className={`story-intro-dot ${guidedAction === 'keyring-panic' ? 'panic' : 'confirm'}`} aria-hidden="true" />
-        {message ?? (guidedAction === 'keyring-panic' ? tr('주황 버튼을 눌러 보세요', 'Press the orange button') : tr('파란 버튼을 눌러 보세요', 'Press the blue button'))}
-      </p>
+      {/* The quest (StoryCoach) carries the button action on the intro; this live line speaks only for a server message */}
+      <p className="story-intro-hint" aria-live="polite">{message ?? null}</p>
     </section>
     {fullscreenEligible && demoStage === 'intro' ? <button className="story-fullscreen-launch" type="button" aria-haspopup="dialog" aria-expanded={fullscreenPromptOpen} inert={fullscreenPromptOpen} onClick={() => setFullscreenPromptOpen(true)}>
       <Icon name="arrow" size={17} style={{ transform: 'rotate(-45deg)' }} />{tr('전체 화면', 'Full screen')}
