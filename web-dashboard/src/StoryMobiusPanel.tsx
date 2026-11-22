@@ -188,8 +188,9 @@ export function StoryMobiusPanel({ scene, snapshot, phase, message, refresh, foc
       return next;
     });
   };
-  const panelClass = (panel: PanelId, extra: string) => `story-panel-card story-mobile-panel ${extra}${mobilePanel === panel ? ' is-mobile-open' : ''}${flashes.has(panel) ? ' has-new-event' : ''}`;
-  const evidenceStrength = (panel: PanelId): GuideStrength | undefined => panelEvidence[panel] === guidedEvidence ? guideStrength : undefined;
+  const showsQueuedNotice = (panel: PanelId) => guidedEvidence !== undefined && panelEvidence[panel] === guidedEvidence && flashes.has(panel);
+  const panelClass = (panel: PanelId, extra: string) => `story-panel-card story-mobile-panel ${extra}${mobilePanel === panel ? ' is-mobile-open' : ''}${showsQueuedNotice(panel) ? ' has-new-event' : ''}`;
+  const evidenceStrength = (panel: PanelId): GuideStrength | undefined => guidedEvidence !== undefined && panelEvidence[panel] === guidedEvidence ? guideStrength : undefined;
 
   return <aside className="story-mobius" data-demo-target="mobius" aria-labelledby="story-mobius-title" lang="en">
     <header className="story-mobius-head">
@@ -208,7 +209,7 @@ export function StoryMobiusPanel({ scene, snapshot, phase, message, refresh, foc
       {(Object.keys(panelLabels) as PanelId[]).map((panel) => <button
         key={panel}
         type="button"
-        className={`${mobilePanel === panel ? 'active' : ''}${flashes.has(panel) ? ' has-new-event' : ''}`}
+        className={`${mobilePanel === panel ? 'active' : ''}${showsQueuedNotice(panel) ? ' has-new-event' : ''}`}
         aria-pressed={mobilePanel === panel}
         aria-controls={`story-panel-${panel}`}
         data-evidence-target={panelEvidence[panel]}
@@ -257,7 +258,7 @@ export function StoryMobiusPanel({ scene, snapshot, phase, message, refresh, foc
       </div>
       <div aria-live="polite">
         {events.length > 0 ? <ul>{visibleEvents.map((event, index) => <li
-          className={event.resource === freshPath ? 'is-new-event is-fresh' : index === 0 && flashes.has('events') ? 'is-new-event' : ''}
+          className={event.resource === freshPath ? 'is-new-event is-fresh' : index === 0 && showsQueuedNotice('events') ? 'is-new-event' : ''}
           key={`${event.sequence}-${event.type}`}
           data-event-type={event.type}
           data-path={event.resource}

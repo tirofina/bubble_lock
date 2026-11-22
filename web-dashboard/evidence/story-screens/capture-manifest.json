@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-22T01:54:38.318Z",
+  "generatedAt": "2026-11-22T03:08:46.917Z",
   "browser": "Chrome/157.0.8103.80",
   "mode": "browser-isolated replay CSE; full-viewport shell, fixed keyring overlay, iPhone 13 mini Safari visual viewport plus installed fullscreen web app and safe areas, landscape split, portrait fallback, guardian share and caregiver group command exercised",
   "command": "npm --prefix web-dashboard run capture:story",
@@ -22,8 +22,9 @@
     "fresh Mobius tree node, trace path and newest record share one resource path",
     "Mobius browser is English-only and exposes oneM2M resource types, methods and RSC values without clipped text",
     "Mobius tree uses vertical-only touch and wheel scrolling with zero horizontal movement while CSE records keep compact paging",
-    "every story stage shows a safe-area overlay that explains the highlighted system element and names the next real action",
-    "scenario actions, Mobius evidence and the next arrow use distinct guidance targets; inspecting the tree advances guidance to Next",
+    "every story stage shows a safe-area overlay that explains the single highlighted system element and names the next real action",
+    "exactly one guidance owner is visible at a time and its pulse remains active until the required click or inspection advances the queue",
+    "scenario actions, Mobius evidence, the approved map, Call and the next arrow advance in order; inspecting the tree advances guidance to Next",
     "visible story text remains fully readable and language, coach and navigation overlays do not cover app or Mobius content",
     "desktop Mobius stays left of the phone in light and dark mode",
     "phone landscape fits Mobius, app and overlay keyring in one viewport",
@@ -47,7 +48,7 @@
       "width": 390,
       "height": 844,
       "file": "01-login.png",
-      "sha256": "3fa8c0717653975af11f18bedec0a116abd92ed7dd4e4ab21e16f91dfb532ada"
+      "sha256": "aafd3d11447fede38febf71c4ebb7fc3dcddf65c43a5648949fbf067baf8a11c"
     },
     {
       "name": "02-activity-away",
@@ -68,14 +69,14 @@
       "width": 390,
       "height": 844,
       "file": "04-care-request.png",
-      "sha256": "13178ad03c24e5ed5b2a7df956e1dabfe027eb4968a85837324c5a591c3e5f52"
+      "sha256": "f2f7f83f866b33efb8dfe62d4b82b2203d09e79845f8628ee291e057505eb2d8"
     },
     {
       "name": "05-caregiver-shared",
       "width": 390,
       "height": 844,
       "file": "05-caregiver-shared.png",
-      "sha256": "fb185e29ee614a7fd281d9e2f6f98359f197ee9c464a98baa5fad0d2005a23d1"
+      "sha256": "bf7c89579ff3f79f34d913dfc378e53037c077d653a3da54572450c767d99208"
     },
     {
       "name": "06-caregiver-ended",
@@ -89,168 +90,168 @@
       "width": 390,
       "height": 844,
       "file": "07-check-in.png",
-      "sha256": "98f7e7bb99da594a170285e6e9ddf0034c273ef98dcb4f10a262d2a97fe984ee"
+      "sha256": "c068581ffedef1938ada0c785e010d0ad0ab6b9e69d5c0f32cde589f0e095375"
     },
     {
       "name": "story-intro-desktop",
       "width": 1440,
       "height": 900,
       "file": "story-intro-desktop.png",
-      "sha256": "c4eea5edb1c9ee282888bb22da17567ccb6965bdf58649e04ac3f64a0e99c9b7"
+      "sha256": "8252c3ed6d2cdcd5ec823a25605b394e1a4e4a0e4bd0b5ef0c681c862482d765"
     },
     {
       "name": "story-system-desktop",
       "width": 1440,
       "height": 900,
       "file": "story-system-desktop.png",
-      "sha256": "d52aa25eee72a7e8fd75775c46aa312775dd26847ca86ee8fa961c8d95bb3bd0"
+      "sha256": "947cee94389ee8f1f559add8da487a8b32cdac4d94ee50a3c54b3595dc2d57db"
     },
     {
       "name": "story-system-desktop-dark",
       "width": 1440,
       "height": 900,
       "file": "story-system-desktop-dark.png",
-      "sha256": "2d8957d87bd920c690a007cd517cb3c04f11d5e8a96a0f553c2ecdb889999725"
+      "sha256": "f1f49f91e7b30679c445e7a2bc925d4f1b1909f0a1f8cdf789e12a586d15a818"
     },
     {
       "name": "story-intro-landscape",
       "width": 844,
       "height": 390,
       "file": "story-intro-landscape.png",
-      "sha256": "e3205b6df33aa972a6451600b2a8817af1cd462d54391f728165f7e9964c05a0"
+      "sha256": "b1c2bb2e1fce44583384de22ccb63c9fcda382c737cf4538fa408fac66a3ec11"
     },
     {
       "name": "story-system-landscape",
       "width": 844,
       "height": 390,
       "file": "story-system-landscape.png",
-      "sha256": "2f583c04534c9d4b8660eaa43eabede72cc66b7b85aa0be86cad6926b8ec1aa1"
+      "sha256": "3506c2621cf970ea3469994a8c93355309cf994d64d3623eaf2ece2ef87fa70d"
     },
     {
       "name": "story-system-landscape-844x320",
       "width": 844,
       "height": 320,
       "file": "story-system-landscape-844x320.png",
-      "sha256": "bd0559b4fc42dc0bfc0c7cc79de1eb2a2bae5aa362412dc94407fa18a7ad0eb9"
+      "sha256": "2215ca0a62fded39b27dc229525d336d35bd19dc22ec84d297a580c174746405"
     },
     {
       "name": "story-system-landscape-1000x327",
       "width": 1000,
       "height": 327,
       "file": "story-system-landscape-1000x327.png",
-      "sha256": "98181fc25cb242c6434548fab2c66ac9b6841b0f983fb1e85aaf56ab7335ff24"
+      "sha256": "c8acfa45c48dfc033df807a3f636a6987edd5ef69f4e71c7510c16e9c5c76bda"
     },
     {
       "name": "story-iphone13mini-fullscreen-guide",
       "width": 812,
       "height": 265,
       "file": "story-iphone13mini-fullscreen-guide.png",
-      "sha256": "43b71ca9e08ae676470d40b7bf167d98a000db084fec65d3cae6d6f8920d4016"
+      "sha256": "0a3769fce6748370974ba6eef01f739f057b6d82f140934d4b853776e91927c4"
     },
     {
       "name": "story-system-iphone13mini-landscape",
       "width": 812,
       "height": 265,
       "file": "story-system-iphone13mini-landscape.png",
-      "sha256": "2c04c94d3c58daee08434d56dd18a9ca3832f7e45fd75b67845ed6b51c4b2ea4"
+      "sha256": "abc6678643dc4d05756e78e5ce48947fd88824ba03d8059853c9d600e42e1eb9"
     },
     {
       "name": "story-location-review-iphone13mini-landscape",
       "width": 812,
       "height": 265,
       "file": "story-location-review-iphone13mini-landscape.png",
-      "sha256": "b4b8056705df93f5da9c5fdc5aedb1dd7436e8fa251090d861707660ebb79e5b"
+      "sha256": "240c5b1a8a11f8f8e9c7c4fb02a7c2b0658381f3d330fdd9e921e1e65d943790"
     },
     {
       "name": "story-location-iphone13mini-landscape",
       "width": 812,
       "height": 265,
       "file": "story-location-iphone13mini-landscape.png",
-      "sha256": "aed940a8172d4f33029f61c0d1850841475f2f43c9e3edafb8375b407c7af992"
+      "sha256": "e9584baa42cb2e721ef52ddd5080c47248da2ee71b893a907069f86d24472c96"
     },
     {
       "name": "story-finale-iphone13mini-landscape",
       "width": 812,
       "height": 265,
       "file": "story-finale-iphone13mini-landscape.png",
-      "sha256": "7d8ac2a343f8b4633d86b4d9c9518b5b94966babb4987fa280159969027fbfc5"
+      "sha256": "635938d80699caa06be0e1aa908634a2420961117b7c60cec1f053b3477b2dd9"
     },
     {
       "name": "story-system-iphone13mini-fullscreen",
       "width": 812,
       "height": 375,
       "file": "story-system-iphone13mini-fullscreen.png",
-      "sha256": "f4b143c6324f2ea11a332cb5f14654efc191dd09b9ed7b9890a1058191176c3f"
+      "sha256": "83e8c2f6f40667cf6720faf754eeb9e51a515b25dc21eff6e0394968758236f0"
     },
     {
       "name": "story-location-review-iphone13mini-fullscreen",
       "width": 812,
       "height": 375,
       "file": "story-location-review-iphone13mini-fullscreen.png",
-      "sha256": "df264779bffb0ec698eea8a94ef2b0b5650f58f36534caa0ed7c209a091fc17a"
+      "sha256": "8fe31182ef035848a704c4ec3bfc8e91fbd1504923185f5e510807f3f3349ce8"
     },
     {
       "name": "story-location-iphone13mini-fullscreen",
       "width": 812,
       "height": 375,
       "file": "story-location-iphone13mini-fullscreen.png",
-      "sha256": "89cccb7a033aa5daf5ebec9ee19d0b9add28291e64cee95cd204d8814464e52b"
+      "sha256": "b5c3633f3fa34de97a072ae6bdcafafd2723ece97bdbb157827d484ba68e06a4"
     },
     {
       "name": "story-finale-iphone13mini-fullscreen",
       "width": 812,
       "height": 375,
       "file": "story-finale-iphone13mini-fullscreen.png",
-      "sha256": "e6a54957ee2b228461d4f9519df446fe540cba3b40b675d711949c586593bd3c"
+      "sha256": "b64c39242202d2bd0cace2a4a22b5882797a5f1c7bb9f0f81905433079da37c4"
     },
     {
       "name": "story-intro-portrait",
       "width": 390,
       "height": 844,
       "file": "story-intro-portrait.png",
-      "sha256": "6c3f0bbd0f48b21429571f1f9e20ac6cbb64e222ac773dce7726deab8c2ca2a8"
+      "sha256": "b261acd00ed1af51f601a74176cfdfdd939aea10f161a219f28c507864725d1f"
     },
     {
       "name": "story-system-portrait",
       "width": 390,
       "height": 844,
       "file": "story-system-portrait.png",
-      "sha256": "96a3bdc2e01e0e61ab3b7f20258a500c26fc94a294a9bd72ffcff907239a2400"
+      "sha256": "6728b5d8649b82394cdd947eef1e506a6dec677534d743736672d00a40473c85"
     },
     {
       "name": "story-location-landscape",
       "width": 844,
       "height": 390,
       "file": "story-location-landscape.png",
-      "sha256": "90489c774ebd373cc8a2d446befa5fb3d63e6ed24d4d6d25cbcca950105c46c4"
+      "sha256": "d3e8141f1f4f20bbdee095e7b6b9eb3ebbd69210a87918699af3a49d895669d6"
     },
     {
       "name": "story-system-desktop-interaction",
       "width": 1440,
       "height": 900,
       "file": "story-system-desktop-interaction.png",
-      "sha256": "f341411158b705133b4d2ddd39e9d7d36d6c9e45fdfdd3ed80a9573a8d5e8f1c"
+      "sha256": "d1a7312ac44151b0c3ffdf3e9e550469993468353472b9979b6df07bd929f243"
     },
     {
       "name": "story-finale-desktop",
       "width": 1440,
       "height": 900,
       "file": "story-finale-desktop.png",
-      "sha256": "586b3a0ffc8a01ad3a9ea55d2c6ba4f446a4e99c6ae12b87931d427a4e4095d7"
+      "sha256": "be151fadc379dd3ef5c782a78fd993335ec7b59780c76e5f5e44f31f8d57f71d"
     },
     {
       "name": "operator-map-mobius-desktop",
       "width": 1440,
       "height": 900,
       "file": "operator-map-mobius-desktop.png",
-      "sha256": "3664e0a7b64a856eb4af722454e647fab4f3b3dbbedcc84ab940d605fe54b3fc"
+      "sha256": "af0c47e1d99fd61e0ab8f45e5e7f77617433263f2c9351e7cdb63da7475b548e"
     },
     {
       "name": "story-screens-overview",
       "width": 1280,
       "height": 1900,
       "file": "story-screens-overview.png",
-      "sha256": "1ed83c7756401a41aa9e0c60d058064405fc0cb823351bc3ac93cff4a2a43ada"
+      "sha256": "520d003de2337ca23c12f1ba9d39f0b0bf7f3994978439ddb8c4bfe3a0c1f28e"
     }
   ]
 }

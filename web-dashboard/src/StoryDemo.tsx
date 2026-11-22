@@ -177,12 +177,14 @@ function useSecondClock(active: boolean): number {
   return now;
 }
 
-function CheckInScreen({ pending, snapshot, callReady, onCall, onShare }: {
+function CheckInScreen({ pending, snapshot, callReady, mapInspected, onCall, onShare, onInspectMap }: {
   readonly pending: PendingAction;
   readonly snapshot: StorySessionSnapshot | null;
   readonly callReady: boolean;
+  readonly mapInspected: boolean;
   readonly onCall: () => void;
   readonly onShare: () => void;
+  readonly onInspectMap: () => void;
 }) {
   const { lang, tr } = useLang();
   const sharedUntil = snapshot?.location.sharedUntil ? Date.parse(snapshot.location.sharedUntil) : 0;
@@ -193,12 +195,26 @@ function CheckInScreen({ pending, snapshot, callReady, onCall, onShare }: {
   const panicCount = snapshot?.keyring.panicPresses ?? 0;
   if (remaining > 0) return <section className="story-content story-check-in story-check-in-shared" aria-labelledby="story-title" data-location-shared="true">
     <div className="story-location-heading"><div><p className="story-eyebrow">{tr('목적 제한 위치 공유', 'Purpose-bound location share')}</p><h1 id="story-title">{tr('어머니 위치', "Mom's location")}</h1></div><strong className="story-location-countdown" aria-label={tr(`남은 시간 ${countdown}`, `${countdown} remaining`)}>{countdown}</strong></div>
-    <div className="story-location-map-target" data-demo-target="map">
+    <div
+      className="story-location-map-target"
+      data-demo-target="map"
+      data-inspected={mapInspected || undefined}
+      tabIndex={0}
+      role="region"
+      aria-label={tr('승인된 위치 지도를 확인하고 다음 단계로 이동', 'Inspect the approved location map to continue')}
+      onFocusCapture={onInspectMap}
+      onPointerDownCapture={onInspectMap}
+      onKeyDown={(event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        onInspectMap();
+      }}
+    >
       <Suspense fallback={<div className="story-location-loading" role="status">{tr('승인된 위치 지도를 여는 중', 'Opening the approved location map')}</div>}>
         <StoryLocationMap refresh={snapshot?.mobius.events[0]?.sequence ?? 0} variant="story" locationUrl={`/api/story/location?lang=${lang}`} />
       </Suspense>
     </div>
-    <div className="story-location-actions"><button type="button" className={`story-primary${callReady ? ' done' : ''}`} data-demo-target="app-primary" disabled={pending === 'call' || callReady} onClick={onCall}>
+    <div className="story-location-actions"><button type="button" className={`story-primary${callReady ? ' done' : ''}`} data-demo-target="app-primary" disabled={pending === 'call' || callReady || !mapInspected} onClick={onCall}>
       {pending === 'call' ? tr('전화를 요청하는 중', 'Requesting the call') : callReady ? tr('안부 전화 요청 완료', 'Call requested') : tr('안부 전화', 'Call')}
     </button><span><Icon name="shield" size={15} />{tr('나에게만, 5분 뒤 자동 종료', 'Only you, ends automatically')}</span></div>
   </section>;
@@ -358,6 +374,7 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
   const { snapshot, phase, message, refresh, runAction } = useStorySession(sessionEnabled);
   const [pending, setPending] = useState<PendingAction>(null);
   const [callReady, setCallReady] = useState(false);
+  const [mapInspected, setMapInspected] = useState(false);
   const automatic = useRef(new Set<string>());
   const transitionStarted = useRef(0);
   const stageTimer = useRef<number | null>(null);
@@ -366,8 +383,9 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
   const rotateContinue = useRef<HTMLButtonElement | null>(null);
   const fullscreenContinue = useRef<HTMLButtonElement | null>(null);
   const promptReturnFocus = useRef<HTMLElement | null>(null);
-  const guidedAction: KeyringAction | null = scene === 'check-in' ? 'keyring-panic'
+  const sceneGuidedAction: KeyringAction | null = scene === 'check-in' ? 'keyring-panic'
     : scene === 'login' || scene === 'activity-away' || scene === 'activity-home' ? 'keyring-confirm' : null;
+  const guidedAction = demoStage === 'intro' ? sceneGuidedAction : null;
   const orientationPromptOpen = !capture && portraitViewport && portraitChoice === 'ask';
   const modalOpen = orientationPromptOpen || fullscreenPromptOpen;
 
@@ -375,6 +393,10 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
     if (freshTimer.current !== null) window.clearTimeout(freshTimer.current);
     if (stageTimer.current !== null) window.clearTimeout(stageTimer.current);
   }, []);
+
+  useEffect(() => {
+    setMapInspected(false);
+  }, [scene, snapshot?.location.sharedUntil]);
 
   useEffect(() => {
     if (capture) return;
@@ -712,12 +734,15 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
       };
     }
     if (scene === 'check-in' && locationShared) return {
-      target: callReady ? 'next' : 'map',
-      evidence: 'events',
+      target: callReady ? 'next' : mapInspected ? 'app-primary' : 'map',
       label: tr('승인된 5분 지도', 'Approved five-minute map'),
       title: tr('지도는 승인된 시간에만 열립니다', 'The map opens only for the approved time'),
       detail: tr('현재 브라우저 세션과 목적, 수신자, 5분 lease가 맞을 때만 위치 API가 지도와 마커를 제공합니다.', 'The location API provides the map and marker only when browser session, purpose, recipient and five-minute lease match.'),
-      action: callReady ? tr('오른쪽 확인 화살표로 시스템 검증을 여세요.', 'Use the check arrow to open the system proof.') : tr('지도를 확인하고 통화를 누르세요.', 'Inspect the map, then select Call.'),
+      action: callReady
+        ? tr('오른쪽 확인 화살표로 시스템 검증을 여세요.', 'Use the check arrow to open the system proof.')
+        : mapInspected
+          ? tr('안부 전화를 누르세요.', 'Select Call.')
+          : tr('지도를 한 번 눌러 위치와 범위를 확인하세요.', 'Select the map once to inspect the location and boundary.'),
     };
     if (scene === 'check-in' && locationDrafted) return {
       target: 'app-secondary',
@@ -744,7 +769,9 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
     };
   })();
 
-  return <div className={`story-demo${capture ? ' capture' : ''}`} data-stage={demoStage} data-scene={scene} data-finale={scene === 'finale' || undefined} data-portrait={portraitChoice} data-display-mode={standalone ? 'standalone' : 'browser'} data-coach-target={coach.target} data-coach-evidence={coach.evidence} data-evidence-progress={coach.evidence ? evidenceState(coach.evidence) : undefined}>
+  const activeEvidence = coach.target === 'mobius' ? coach.evidence : undefined;
+
+  return <div className={`story-demo${capture ? ' capture' : ''}`} data-stage={demoStage} data-scene={scene} data-finale={scene === 'finale' || undefined} data-portrait={portraitChoice} data-display-mode={standalone ? 'standalone' : 'browser'} data-coach-target={coach.target} data-coach-evidence={activeEvidence} data-evidence-progress={activeEvidence ? evidenceState(activeEvidence) : undefined}>
     <a className="skip" href="#story-app" tabIndex={modalOpen ? -1 : undefined} aria-hidden={modalOpen} onClick={(event) => { event.preventDefault(); document.getElementById('story-app')?.focus(); }}>{tr('앱 화면으로 건너뛰기', 'Skip to the app')}</a>
     <header className="story-topbar" inert={modalOpen}>
       <a className="story-brand" href="#/"><span aria-hidden="true"><Icon name="bubble" size={22} /></span>BubbleLock</a>
@@ -787,8 +814,8 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
         focusAction={focusAction}
         focusAfterSequence={focusAfterSequence}
         freshPath={freshPath}
-        {...(coach.evidence ? { guidedEvidence: coach.evidence } : {})}
-        guideStrength={coach.target === 'mobius' ? 'primary' : 'secondary'}
+        {...(activeEvidence ? { guidedEvidence: activeEvidence } : {})}
+        guideStrength="primary"
         onEvidenceProgress={recordEvidenceProgress}
       />
       <div className="story-app-column">
@@ -802,7 +829,7 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
             {scene === 'care-request' && <CareRequestScreen pending={pending === 'approve'} approved={careStatus === 'approved' || careStatus === 'active'} onApprove={() => void approveCare()} />}
             {scene === 'caregiver-shared' && <CaregiverSharedScreen pending={pending === 'all-on' || pending === 'expire'} status={careStatus} onAllOn={() => void allOn()} onExpire={() => void expireNow()} />}
             {scene === 'caregiver-ended' && <CaregiverEndedScreen pending={pending === 'expire'} expired={careStatus === 'expired'} />}
-            {scene === 'check-in' && <CheckInScreen pending={pending} snapshot={snapshot} callReady={callReady} onCall={() => void callMom()} onShare={() => void shareLocation()} />}
+            {scene === 'check-in' && <CheckInScreen pending={pending} snapshot={snapshot} callReady={callReady} mapInspected={mapInspected} onCall={() => void callMom()} onShare={() => void shareLocation()} onInspectMap={() => setMapInspected(true)} />}
             {scene === 'finale' && <FinaleScreen snapshot={snapshot} />}
             <span className="story-home-indicator" aria-hidden="true" />
           </div>
