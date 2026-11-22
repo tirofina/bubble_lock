@@ -47,7 +47,7 @@ flowchart LR
 | accessControlPolicy | Every app, the MEC IPE and the AI agent are originators with narrow rights; each client certificate maps to one originator |
 | Subscription and notification | One write notifies every subscribed app |
 | Group and fanOutPoint | One UPDATE reaches every member keyring, with a result per member |
-| SDT (TS-0023) and flexContainer | Device state is a `binarySwitch` (`cod:binSh`), found by `cnd` discovery |
+| SDT (TS-0023) and flexContainer | Device state is a `binarySwitch` (`cod:binSh`), found by `cnd` discovery; the keyring maps to `deviceServiceButton` with `pushButton` and `battery` ([model](docs/keyring-sdt-model.md)) |
 | container and contentInstance | Immutable observations, receipts and incidents with an expiry |
 | IPE | MEC013 Location, MEC012 RNIS and MEC021 events become oneM2M resources |
 
@@ -55,7 +55,7 @@ We map the edge layout to deployment option B of oneM2M TR-0077: the CSE and the
 
 ## Results
 
-Every local run uses real Mobius4 4.24.5 processes; the team server runs Mobius4 4.25.0. Every receipt identifies its simulated components. `npm run verify` passes 13 steps with 488 tests ([log](docs/verification/2026-11-20/results.json)).
+Local runs use real Mobius4 processes (4.24.5, and 4.25.0 for the access-control matrix); the team server runs Mobius4 4.25.0. Every receipt identifies its simulated components. `npm run verify` passes 13 steps with 686 tests ([log](docs/verification/2026-11-22/results.json)).
 
 | What | Result | Setup | Receipt |
 |---|---|---|---|
@@ -64,6 +64,7 @@ Every local run uses real Mobius4 4.24.5 processes; the team server runs Mobius4
 | PANIC to three apps | 10–12 ms, 19/19 checks passed | Real CSE, emulated keyrings | [multiapp](docs/verification-evidence/2026-11-19/multiapp-real-cse.json) |
 | One tap, three keyrings | `fopt` returned 2004, 2004 and 4103; retry targeted the member with 4103; 27/27 checks passed | Real CSE | [group command](docs/verification-evidence/2026-11-19/group-command-real-cse.json) |
 | MQTT first, HTTPS when needed | All 509 observations arrived across 4 fault conditions | Real Gateway daemon | [protocol matrix](docs/verification-evidence/2026-11-19/protocol-matrix-real-cse.json) |
+| Access-control matrix | 838/838 cases passed for six roles and six operations, including subscription creation and revocation | Mobius4 4.25.0 | [acp](docs/verification-evidence/2026-11-21/acp-real-cse.json), [location privacy](docs/verification-evidence/2026-11-21/location-privacy-real-cse.json) |
 | Identity bound to ACP | 918/918 security cases passed; a forged originator received 4103 | Two real CSEs, real PKI | [acp-mtls](docs/verification-evidence/2026-11-19/acp-mtls-real-cse.json) |
 | CSE handover | 30 handovers preserved all 2,154 observations; p95 interruption was 779.5 ms | Two real CSEs | [handover](docs/verification-evidence/2026-11-19/handover-auto-real-cse.json) |
 | MEC IPE | 33/33 checks passed on the real ETSI MEC Sandbox; relocation from mep1 to mep2 passed 25/25 checks and preserved every event | Real sandbox, scripted movement | [sandbox](docs/verification-evidence/2026-11-20/mec-ipe-sandbox.json), [day of care](docs/verification-evidence/2026-11-20/mec-day-of-care.json) |
@@ -129,7 +130,7 @@ The sandbox runs require a local ETSI MEC Sandbox; [deploy/mec-sandbox](deploy/m
 ## Deployment
 
 - **Raspberry Pi Gateway:** systemd service under its own user, with certificates in `/etc/privacy-bubble/tls`: [raspberry-pi-gateway](keyring/raspberry-pi-gateway/README.md).
-- **Central server:** Mobius4 with PostgreSQL and PostGIS, the binarySwitch specialization (`prepare-specialization`) and standard subscription verification on an unmodified Mobius4 ([CSE_SECURITY.md](pc-mobius/integration/CSE_SECURITY.md)). The stack also includes an MQTT broker with TLS 1.3 and per-Gateway ACLs ([dev stack](keyring/dev/mobius4/README.md)), the integration API ([Gateway registration](pc-mobius/integration/GATEWAY_REGISTRATION.md)) and web apps with an OIDC backend ([oidc-session.md](web-dashboard/docs/oidc-session.md)).
+- **Central server:** Mobius4 with PostgreSQL and PostGIS, the binarySwitch specialization (`prepare-specialization`) and the standard subscription procedure on Mobius4 4.25.0 ([CSE_SECURITY.md](pc-mobius/integration/CSE_SECURITY.md)). The stack also includes an MQTT broker with TLS 1.3 and per-Gateway ACLs ([dev stack](keyring/dev/mobius4/README.md)), the integration API ([Gateway registration](pc-mobius/integration/GATEWAY_REGISTRATION.md)) and web apps with an OIDC backend ([oidc-session.md](web-dashboard/docs/oidc-session.md)).
 - **ETSI MEC Sandbox and the MEC IPE image:** [deploy/mec-sandbox](deploy/mec-sandbox/README.md).
 
 Certificates, private keys, passkeys, databases and runtime state belong in git-ignored paths such as `.local/` and `/etc/privacy-bubble/`.

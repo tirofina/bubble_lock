@@ -1,0 +1,20 @@
+
+> privacy-bubble-pc-mobius-core@0.1.0 integration:validate
+> node scripts/validate-integration.mjs
+
+{
+  "contractId": "privacy-bubble.integration.v1",
+  "docRevision": "2.0.0",
+  "owner": "PC-MOBIUS-INTEGRATION",
+  "rubric": [
+    "R06",
+    "R10",
+    "R12",
+    "R13",
+    "R14",
+    "R15",
+    "R16",
+    "R17"
+  ],
+  "status": "PASS"
+}

@@ -104,7 +104,7 @@ Gateway ACK and readback path ([MCP notes](../pc-mobius/integration/MCP.md)).
 | TS-0004 Service Layer Core Protocol | Primitives, resource types, short names, XSD common types ([ts-0004 schemas](https://git.onem2m.org/XMLSchemas/ts-0004)) |
 | TS-0009 HTTP Protocol Binding | Gateway HTTPS fallback, CORE HTTP client |
 | TS-0010 MQTT Protocol Binding | Gateway and CORE MQTT requests on `/oneM2M/req/{originator}/{cseId}/json` |
-| TS-0023 SDT based information model | binarySwitch ModuleClass, `cod:binSh` short names, flexContainer specialization |
+| TS-0023 SDT based information model | binarySwitch ModuleClass, `cod:binSh` short names, flexContainer specialization; [keyring model](keyring-sdt-model.md) with `deviceServiceButton`, `pushButton` and `battery` |
 | TR-0084 | Federated learning category of the hackathon rubric |
 | TR-0077, TR-0086 | Deployment and interworking guidance used by the hackathon work packages; both are available by document number on the published specifications page |
 

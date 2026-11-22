@@ -101,5 +101,7 @@ runner는 upstream Mobius4 소스 사본으로 CSE 두 개를 띄우고 PostgreS
 검사 항목은 역할별 CRUDN·DISCOVER, RETRIEVE 전용 생성 거부, 임시 CREATE 복원, creator 검증,
 구독 삭제 우선 회수, 위치 보호이다.
 
-고정 4.25.0 아티팩트 실행 결과는 ACP 838/838, 위치 보호 5/5 PASS이다. 저장소 `npm run verify`는
+고정 4.25.0 아티팩트 실행 결과는 ACP 838/838, 위치 보호 5/5 PASS이다
+([ACP receipt](../../docs/verification-evidence/2026-11-21/acp-real-cse.json),
+[위치 보호 receipt](../../docs/verification-evidence/2026-11-21/location-privacy-real-cse.json)). 저장소 `npm run verify`는
 core 266건, web 117건, Gateway 167건, 교차 런타임 11건과 계약·데모·웹 빌드를 PASS로 정산했다.
