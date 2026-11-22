@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { Icon } from './Icon.tsx';
 import { LangToggle, useLang } from './i18n.tsx';
 import { StoryMobiusPanel } from './StoryMobiusPanel.tsx';
+import type { StoryMobiusEvidence } from './StoryMobiusPanel.tsx';
 import { VirtualKeyring } from './VirtualKeyring.tsx';
 import { useStorySession } from './story-session.ts';
 import type { StorySessionSnapshot } from './story-session.ts';
@@ -22,9 +23,11 @@ type DemoStage = 'intro' | 'sending' | 'system';
 type PortraitChoice = 'ask' | 'continue';
 type KeyringAction = 'keyring-confirm' | 'keyring-panic';
 type CoachTarget = 'keyring' | 'mobius' | 'app-primary' | 'app-secondary' | 'map' | 'next' | 'proof';
+type EvidenceProgress = 'closed' | 'open' | 'viewed';
 
 type CoachCue = {
   readonly target: CoachTarget;
+  readonly evidence?: StoryMobiusEvidence;
   readonly label: string;
   readonly title: string;
   readonly detail: string;
@@ -322,6 +325,7 @@ function StoryCoach({ cue, hidden }: { readonly cue: CoachCue; readonly hidden: 
   return <aside
     className="story-coach"
     data-target={cue.target}
+    data-evidence={cue.evidence}
     aria-hidden={hidden}
     inert={hidden}
     hidden={hidden}
@@ -349,6 +353,7 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
   const [focusAction, setFocusAction] = useState<KeyringAction | null>(null);
   const [focusAfterSequence, setFocusAfterSequence] = useState(0);
   const [freshPath, setFreshPath] = useState<string | null>(null);
+  const [evidenceProgress, setEvidenceProgress] = useState<Record<string, EvidenceProgress>>({});
   const sessionEnabled = true;
   const { snapshot, phase, message, refresh, runAction } = useStorySession(sessionEnabled);
   const [pending, setPending] = useState<PendingAction>(null);
@@ -609,6 +614,15 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
   const careStatus = snapshot?.care.status ?? 'ready';
   const locationShared = Boolean(snapshot?.location.sharedUntil && Date.parse(snapshot.location.sharedUntil) > Date.now());
   const locationDrafted = snapshot?.location.status === 'drafted';
+  const evidenceState = (evidence: StoryMobiusEvidence): EvidenceProgress => evidenceProgress[`${scene}:${evidence}`] ?? 'closed';
+  const recordEvidenceProgress = (evidence: StoryMobiusEvidence, progress: Exclude<EvidenceProgress, 'closed'>) => {
+    const key = `${scene}:${evidence}`;
+    setEvidenceProgress((current) => {
+      const previous = current[key] ?? 'closed';
+      if (previous === 'viewed' || previous === progress) return current;
+      return { ...current, [key]: progress };
+    });
+  };
   const coach: CoachCue = (() => {
     if (demoStage === 'intro') return {
       target: 'keyring',
@@ -619,6 +633,7 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
     };
     if (demoStage === 'sending') return {
       target: 'mobius',
+      evidence: 'trace',
       label: tr('oneM2M 기록 중', 'Writing oneM2M records'),
       title: tr('하나의 입력을 끝까지 추적합니다', 'Follow one input end to end'),
       detail: tr('BFF 요청과 contentInstance 생성, CSE 재조회 결과가 같은 리소스 경로로 연결됩니다.', 'The BFF request, contentInstance CREATE and CSE RETRIEVE share one resource path.'),
@@ -626,20 +641,36 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
     };
     if (scene === 'login') return {
       target: 'app-primary',
+      evidence: 'trace',
       label: tr('브라우저 격리 로그인', 'Browser-isolated sign-in'),
       title: tr('시연 정보가 자동으로 채워집니다', 'Demo details fill automatically'),
       detail: tr('일회용 정보와 서버 자격 증명은 브라우저 세션 경계 안에서 처리됩니다.', 'One-time details and server credentials stay inside the browser-session boundary.'),
       action: loginStep >= 3 ? tr('시작하기를 누르세요.', 'Select Start.') : tr('자동 입력이 끝날 때까지 잠시 기다리세요.', 'Wait for automatic sign-in to finish.'),
     };
-    if (scene === 'activity-away' || scene === 'activity-home') return {
-      target: 'mobius',
-      label: tr('검증된 생활 신호', 'Verified daily signal'),
-      title: tr('앱 알림과 CSE 기록을 함께 봅니다', 'Read the app and CSE record together'),
-      detail: tr('앱에는 필요한 생활 상태만 보이고, 왼쪽에는 동일 이벤트의 oneM2M 영수증이 남습니다.', 'The app shows only the useful daily state while the matching oneM2M receipt remains in the browser.'),
-      action: tr('Resource tree를 열어 세로로 스크롤한 뒤 오른쪽 화살표를 누르세요.', 'Open Resource tree, scroll vertically, then use the right arrow.'),
-    };
+    if (scene === 'activity-away' || scene === 'activity-home') {
+      const progress = evidenceState('tree');
+      if (progress !== 'viewed') return {
+        target: 'mobius',
+        evidence: 'tree',
+        label: tr('검증된 생활 신호', 'Verified daily signal'),
+        title: tr('앱 알림과 CSE 기록을 함께 봅니다', 'Read the app and CSE record together'),
+        detail: tr('앱에는 필요한 생활 상태만 보이고, 왼쪽에는 동일 이벤트의 oneM2M 영수증이 남습니다.', 'The app shows only the useful daily state while the matching oneM2M receipt remains in the browser.'),
+        action: progress === 'closed'
+          ? tr('Resource tree 탭을 여세요.', 'Open Resource tree.')
+          : tr('트리를 세로로 스크롤하거나 새 리소스를 선택하세요.', 'Scroll the tree vertically or select the fresh resource.'),
+      };
+      return {
+        target: 'next',
+        evidence: 'tree',
+        label: tr('기록 확인 완료', 'Record checked'),
+        title: tr('앱 상태와 CSE 리소스가 연결되었습니다', 'The app state matches its CSE resource'),
+        detail: tr('확인한 리소스 경로와 readback 결과가 이 장면의 영수증입니다.', 'The resource path and readback you inspected are this scene\'s receipt.'),
+        action: tr('오른쪽 화살표로 다음 장면을 여세요.', 'Use the right arrow for the next scene.'),
+      };
+    }
     if (scene === 'care-request') return {
       target: 'app-primary',
+      evidence: 'trace',
       label: tr('최소 권한 승인', 'Least-privilege approval'),
       title: tr('범위와 만료 시각을 함께 승인합니다', 'Approve scope and expiry together'),
       detail: tr('거실의 세 기기와 30초라는 경계가 하나의 승인에 결합됩니다.', 'Three living-room devices and a 30-second deadline are bound to one approval.'),
@@ -647,6 +678,7 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
     };
     if (scene === 'caregiver-shared' && careStatus !== 'active') return {
       target: 'app-primary',
+      evidence: 'trace',
       label: tr('그룹 명령', 'Group command'),
       title: tr('한 번의 명령을 세 기기에 적용합니다', 'Apply one command to three devices'),
       detail: tr('Mobius group fan-out 뒤 각 기기의 3/3 readback을 확인합니다.', 'Mobius group fan-out is followed by a 3-of-3 device readback.'),
@@ -654,20 +686,34 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
     };
     if (scene === 'caregiver-shared') return {
       target: 'app-secondary',
+      evidence: 'trace',
       label: tr('검증 완료', 'Readback complete'),
       title: tr('세 기기 응답이 모두 돌아왔습니다', 'All three device responses returned'),
       detail: tr('명령 성공 화면과 CSE 응답 수가 같은 결과를 보여줍니다.', 'The command result and CSE response count show the same outcome.'),
       action: tr('종료 시각으로 건너뛰기를 누르세요.', 'Select Skip to the end time.'),
     };
-    if (scene === 'caregiver-ended') return {
-      target: 'mobius',
-      label: tr('서버 강제 만료', 'Server-enforced expiry'),
-      title: tr('승인 범위가 정해진 시각에 닫힙니다', 'The approved scope closes on schedule'),
-      detail: tr('UI 상태와 별개로 서버 deadline과 명시적 종료 기록이 권한을 닫습니다.', 'The server deadline and explicit expiry record close access independently of the UI state.'),
-      action: tr('CSE 기록을 확인한 뒤 오른쪽 화살표를 누르세요.', 'Check the CSE record, then use the right arrow.'),
-    };
+    if (scene === 'caregiver-ended') {
+      const progress = evidenceState('events');
+      if (progress !== 'viewed') return {
+        target: 'mobius',
+        evidence: 'events',
+        label: tr('서버 강제 만료', 'Server-enforced expiry'),
+        title: tr('승인 범위가 정해진 시각에 닫힙니다', 'The approved scope closes on schedule'),
+        detail: tr('UI 상태와 별개로 서버 deadline과 명시적 종료 기록이 권한을 닫습니다.', 'The server deadline and explicit expiry record close access independently of the UI state.'),
+        action: tr('CSE records 탭을 열어 종료 영수증을 확인하세요.', 'Open CSE records and inspect the expiry receipt.'),
+      };
+      return {
+        target: 'next',
+        evidence: 'events',
+        label: tr('만료 기록 확인 완료', 'Expiry record checked'),
+        title: tr('권한 종료가 CSE에 남았습니다', 'The CSE holds the access-expiry receipt'),
+        detail: tr('서버 만료와 리소스 종료가 같은 세션 기록으로 확인되었습니다.', 'Server expiry and resource closure are verified in the same session record.'),
+        action: tr('오른쪽 화살표로 다음 장면을 여세요.', 'Use the right arrow for the next scene.'),
+      };
+    }
     if (scene === 'check-in' && locationShared) return {
-      target: 'map',
+      target: callReady ? 'next' : 'map',
+      evidence: 'events',
       label: tr('승인된 5분 지도', 'Approved five-minute map'),
       title: tr('지도는 승인된 시간에만 열립니다', 'The map opens only for the approved time'),
       detail: tr('현재 브라우저 세션과 목적, 수신자, 5분 lease가 맞을 때만 위치 API가 지도와 마커를 제공합니다.', 'The location API provides the map and marker only when browser session, purpose, recipient and five-minute lease match.'),
@@ -675,6 +721,7 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
     };
     if (scene === 'check-in' && locationDrafted) return {
       target: 'app-secondary',
+      evidence: 'events',
       label: tr('공유 전 검토', 'Review before sharing'),
       title: tr('목적, 수신자, 시간을 먼저 확인합니다', 'Confirm purpose, recipient and time first'),
       detail: tr('위치 좌표는 아직 닫혀 있고 검토한 초안 해시만 기록됩니다.', 'Coordinates remain closed while the reviewed draft hash is recorded.'),
@@ -682,6 +729,7 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
     };
     if (scene === 'check-in') return {
       target: 'app-secondary',
+      evidence: 'trace',
       label: tr('안부 확인', 'Check-in'),
       title: tr('위치보다 연락을 먼저 제안합니다', 'Contact comes before location'),
       detail: tr('비상 입력을 확인하면서 통화와 목적 제한 위치 공유를 분리해 선택합니다.', 'The emergency input keeps Call separate from purpose-bound location sharing.'),
@@ -696,7 +744,7 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
     };
   })();
 
-  return <div className={`story-demo${capture ? ' capture' : ''}`} data-stage={demoStage} data-scene={scene} data-finale={scene === 'finale' || undefined} data-portrait={portraitChoice} data-display-mode={standalone ? 'standalone' : 'browser'} data-coach-target={coach.target}>
+  return <div className={`story-demo${capture ? ' capture' : ''}`} data-stage={demoStage} data-scene={scene} data-finale={scene === 'finale' || undefined} data-portrait={portraitChoice} data-display-mode={standalone ? 'standalone' : 'browser'} data-coach-target={coach.target} data-coach-evidence={coach.evidence} data-evidence-progress={coach.evidence ? evidenceState(coach.evidence) : undefined}>
     <a className="skip" href="#story-app" tabIndex={modalOpen ? -1 : undefined} aria-hidden={modalOpen} onClick={(event) => { event.preventDefault(); document.getElementById('story-app')?.focus(); }}>{tr('앱 화면으로 건너뛰기', 'Skip to the app')}</a>
     <header className="story-topbar" inert={modalOpen}>
       <a className="story-brand" href="#/"><span aria-hidden="true"><Icon name="bubble" size={22} /></span>BubbleLock</a>
@@ -730,7 +778,19 @@ export function StoryDemo({ scene }: { readonly scene: StoryScene }) {
       <button className="story-rotate-continue" ref={rotateContinue} type="button" onClick={continueUpright}>{tr('세로로 계속 보기', 'Continue upright')}</button>
     </div>
     <main className="story-stage" inert={demoStage !== 'system' || modalOpen}>
-      <StoryMobiusPanel scene={scene} snapshot={snapshot} phase={phase} message={message} refresh={refresh} focusAction={focusAction} focusAfterSequence={focusAfterSequence} freshPath={freshPath} />
+      <StoryMobiusPanel
+        scene={scene}
+        snapshot={snapshot}
+        phase={phase}
+        message={message}
+        refresh={refresh}
+        focusAction={focusAction}
+        focusAfterSequence={focusAfterSequence}
+        freshPath={freshPath}
+        {...(coach.evidence ? { guidedEvidence: coach.evidence } : {})}
+        guideStrength={coach.target === 'mobius' ? 'primary' : 'secondary'}
+        onEvidenceProgress={recordEvidenceProgress}
+      />
       <div className="story-app-column">
         <div className="story-device">
           <div className="story-phone" id="story-app" role="region" aria-label={tr('Privacy Bubble 앱', 'Privacy Bubble app')} tabIndex={-1}>

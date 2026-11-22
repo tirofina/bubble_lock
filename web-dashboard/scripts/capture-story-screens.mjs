@@ -233,6 +233,82 @@ try {
     }
     return coach;
   };
+  const assertReadableLayout = async (label) => {
+    const result = await evaluate(`(() => {
+      const rendered=(element)=>{if(!element)return false;const rect=element.getBoundingClientRect();if(rect.width<=2||rect.height<=2)return false;for(let node=element;node;node=node.parentElement){const style=getComputedStyle(node);if(style.display==='none'||style.visibility==='hidden'||Number(style.opacity)===0)return false;}return true;};
+      const rect=(element)=>{const value=element?.getBoundingClientRect();return value?{left:value.left,right:value.right,top:value.top,bottom:value.bottom,width:value.width,height:value.height}:null;};
+      const overlaps=(a,b)=>!!a&&!!b&&a.left<b.right-1&&a.right>b.left+1&&a.top<b.bottom-1&&a.bottom>b.top+1;
+      const selectors='.story-app-column h1,.story-app-column h2,.story-app-column p,.story-app-column strong,.story-app-column small,.story-app-column button,.story-app-column code,.story-mobius h2,.story-mobius h3,.story-mobius p,.story-mobius strong,.story-mobius small,.story-mobius button,.story-mobius code,.story-mobius .mobius-node-name,.story-bottom-nav a,.story-bottom-nav span,.lang-switch button,.story-coach p,.story-coach strong';
+      const textElements=[...document.querySelectorAll(selectors)].filter(rendered);
+      const clipped=[];const obscured=[];
+      for(const element of textElements){
+        const own=rect(element);if(!own)continue;
+        const nodes=[...element.childNodes].filter((node)=>node.nodeType===Node.TEXT_NODE&&(node.textContent??'').trim());
+        for(const node of nodes){
+          const range=document.createRange();range.selectNodeContents(node);
+          for(const value of range.getClientRects()){
+            if(value.width<2||value.height<2)continue;
+            if(value.left<own.left-1||value.right>own.right+1||value.top<own.top-1||value.bottom>own.bottom+1){clipped.push({text:(node.textContent??'').trim(),owner:element.className||element.tagName});continue;}
+            if(element.closest('.story-coach'))continue;
+            const hit=document.elementFromPoint(Math.max(0,Math.min(innerWidth-1,value.left+value.width/2)),Math.max(0,Math.min(innerHeight-1,value.top+value.height/2)));
+            const sameControl=element.closest('button,a')&&hit?.closest('button,a')===element.closest('button,a');
+            if(hit&&!element.contains(hit)&&!hit.contains(element)&&!sameControl)obscured.push({text:(node.textContent??'').trim(),owner:element.className||element.tagName,hit:hit.className||hit.tagName});
+          }
+        }
+      }
+      const language=rect(document.querySelector('.lang-switch'));
+      const coach=rect(document.querySelector('.story-coach'));
+      const navigation=rect(document.querySelector('.story-bottom-nav'));
+      const appBlocks=[...document.querySelectorAll('.story-content > *,.story-inline-error')].filter(rendered).map((element)=>({name:element.className||element.tagName,value:rect(element)}));
+      const systemBlocks=[
+        {name:'Mobius tabs',value:rect(document.querySelector('.story-panel-tabs'))},
+        {name:'open Mobius panel',value:rect(document.querySelector('.story-panel-card.is-mobile-open'))},
+        {name:'app column',value:rect(document.querySelector('.story-app-column'))},
+      ];
+      const overlapsFound=[];
+      for(const block of appBlocks){if(overlaps(language,block.value))overlapsFound.push('language / '+block.name);if(overlaps(navigation,block.value))overlapsFound.push('navigation / '+block.name);}
+      for(const block of systemBlocks){if(overlaps(coach,block.value))overlapsFound.push('coach / '+block.name);}
+      return {clipped:clipped.slice(0,12),obscured:obscured.slice(0,12),overlaps:[...new Set(overlapsFound)]};
+    })()`);
+    if (result.clipped.length > 0 || result.obscured.length > 0 || result.overlaps.length > 0) {
+      throw new Error(`${label} readable layout contract failed: ${JSON.stringify(result)}`);
+    }
+    return result;
+  };
+  const assertEvidenceGuide = async (label, expectedEvidence, expectedStrength, expectedProgress) => {
+    const result = await evaluate(`(() => {
+      const root=document.querySelector('.story-demo');
+      const tab=document.querySelector('.story-panel-tabs [data-evidence-target=${JSON.stringify(expectedEvidence)}]');
+      const panel=document.querySelector('.story-panel-card[data-evidence-target=${JSON.stringify(expectedEvidence)}]');
+      const pressed=tab?.getAttribute('aria-pressed')==='true';
+      const tabStyle=tab?getComputedStyle(tab):null;
+      const alert=tab?.querySelector('.story-panel-alert');
+      const alertStyle=alert?getComputedStyle(alert):null;
+      const region=${JSON.stringify(expectedEvidence)}==='tree'
+        ? panel?.querySelector('.mobius-tree-scroll')
+        : ${JSON.stringify(expectedEvidence)}==='events'
+          ? panel?.querySelector('li')
+          : panel;
+      const regionStyle=region?getComputedStyle(region):null;
+      const mobiusAfter=getComputedStyle(document.querySelector('.story-mobius'),'::after');
+      const tabMarked=!!tabStyle&&(tabStyle.color!==getComputedStyle(document.documentElement).color||mobiusAfter.animationName==='story-guide-tab'||mobiusAfter.boxShadow!=='none');
+      const regionMarked=!!regionStyle&&(parseFloat(regionStyle.outlineWidth)>0||regionStyle.boxShadow!=='none'||regionStyle.animationName==='story-guide-region');
+      const dotMarked=!!alertStyle&&alertStyle.backgroundColor!=='rgba(0, 0, 0, 0)'&&alertStyle.backgroundColor!=='transparent';
+      return {
+        evidence:root?.dataset.coachEvidence,progress:root?.dataset.evidenceProgress,
+        tabStrength:tab?.dataset.guideStrength,panelStrength:panel?.dataset.guideStrength,
+        pressed,tabMarked,regionMarked,dotMarked,
+      };
+    })()`);
+    const marked = expectedStrength === 'primary'
+      ? (result.pressed ? result.regionMarked : result.tabMarked)
+      : (result.dotMarked || result.regionMarked || result.tabMarked);
+    if (result.evidence !== expectedEvidence || (expectedProgress !== undefined && result.progress !== expectedProgress)
+      || result.tabStrength !== expectedStrength || result.panelStrength !== expectedStrength || !marked) {
+      throw new Error(`${label} evidence guide contract failed: ${JSON.stringify(result)}`);
+    }
+    return result;
+  };
   const openMobiusPanel = async (label) => {
     await evaluate(`[...document.querySelectorAll('.story-panel-tabs button')].find((button)=>button.textContent.trim()===${JSON.stringify(label)})?.click()`);
     await waitFor(`[...document.querySelectorAll('.story-panel-tabs button')].some((button)=>button.textContent.trim()===${JSON.stringify(label)} && button.getAttribute('aria-pressed')==='true')`, `${label} panel`);
@@ -244,6 +320,7 @@ try {
       await waitFor(`document.body?.innerText.includes(${JSON.stringify(expected)})`, `${label} ${scene}`);
       await delay(180);
       await assertViewportFit(`${label} ${scene}`);
+      await assertReadableLayout(`${label} ${scene}`);
     }
   };
   const assertLandscapeLoginErrorFit = async () => {
@@ -507,14 +584,21 @@ try {
       await evaluate("window.location.hash='#/story/check-in'");
       await waitFor("Boolean(document.querySelector('button.story-secondary'))", `${label} location action`);
       await assertCoach(`${label} location preparation`, 'app-secondary');
+      await assertEvidenceGuide(`${label} location preparation receipt`, 'trace', 'secondary');
       await clickCenter('button.story-secondary');
       await waitFor("document.querySelector('button.story-secondary')?.textContent?.includes('Review and share')", `${label} location draft`);
       await assertCoach(`${label} location review`, 'app-secondary');
+      await assertEvidenceGuide(`${label} location draft receipt`, 'events', 'secondary');
+      await assertViewportFit(`${label} location review`);
+      await assertReadableLayout(`${label} location review`);
+      await shot(captureName.replace('story-location-', 'story-location-review-'), width, height);
       await clickCenter('button.story-secondary');
       await waitFor("document.querySelector('[data-location-shared=\"true\"]') && document.querySelector('[data-story-location-map=\"true\"]')?.dataset.locationReady === 'true'", `${label} approved map`);
       await delay(700);
       await assertViewportFit(`${label} approved map`);
+      await assertReadableLayout(`${label} approved map`);
       await assertCoach(`${label} approved map`, 'map');
+      await assertEvidenceGuide(`${label} approved map receipt`, 'events', 'secondary');
       const map = await evaluate(`(() => {
         const rect=(selector)=>{const value=document.querySelector(selector)?.getBoundingClientRect();return value?{left:value.left,right:value.right,top:value.top,bottom:value.bottom,width:value.width,height:value.height}:null;};
         const phone=rect('.story-phone');
@@ -670,14 +754,19 @@ try {
   await shot('story-intro-desktop', 1440, 900);
   const introResponseIndex = actionResponses.length;
   await clickCenter('.keyring-physical-button.confirm');
+  await waitFor("document.querySelector('.story-demo')?.dataset.stage === 'sending'", 'desktop keyring sending transition');
+  await assertEvidenceGuide('desktop live Transaction guide', 'trace', 'primary', 'closed');
   await waitForAction200(introResponseIndex, 'intro keyring confirm');
   await waitFor("document.querySelector('.story-demo')?.dataset.stage === 'system'", 'desktop system transition');
   await delay(900);
   await assertCoach('desktop Mobius explanation', 'mobius');
+  await assertEvidenceGuide('desktop Resource tree tab guide', 'tree', 'primary', 'closed');
   await waitFor("document.querySelector('.story-trace-title')?.textContent?.includes('Resident confirmation stored') === true", 'resident confirmation record');
   await waitFor("Boolean(document.querySelector('[data-fresh=\"true\"]'))", 'fresh Mobius node');
   await evaluate("[...document.querySelectorAll('.story-panel-tabs button')].find((button)=>button.textContent.includes('Resource tree'))?.click()");
   await waitFor("document.querySelector('#story-panel-tree')?.classList.contains('is-mobile-open') === true", 'desktop resource tree panel');
+  await waitFor("document.querySelector('.story-demo')?.dataset.evidenceProgress === 'open'", 'desktop Resource tree opened');
+  await assertEvidenceGuide('desktop Resource tree inspection guide', 'tree', 'primary', 'open');
   await delay(320);
   const treeCoverage = String((await evaluate("document.querySelector('#story-panel-tree')?.textContent")) ?? '');
   const treeScrollBefore = await evaluate(`(() => {
@@ -700,6 +789,9 @@ try {
   await delay(180);
   const treeScrollAfter = Number((await evaluate("document.querySelector('.mobius-tree-scroll')?.scrollTop")) ?? 0);
   if (Math.abs(treeScrollAfter - treeScrollBefore.scrollTop) < 1) throw new Error(`desktop resource tree wheel did not scroll: before=${treeScrollBefore.scrollTop}, after=${treeScrollAfter}`);
+  await waitFor("document.querySelector('.story-demo')?.dataset.coachTarget === 'next' && document.querySelector('.story-demo')?.dataset.evidenceProgress === 'viewed'", 'desktop guide advances to Next');
+  await assertCoach('desktop next scene action', 'next');
+  await assertEvidenceGuide('desktop checked Resource tree evidence', 'tree', 'secondary', 'viewed');
   await assertViewportFit('desktop resource tree');
   await openMobiusPanel('CSE records');
   await assertViewportFit('desktop CSE records');
@@ -1070,6 +1162,8 @@ try {
       'Mobius browser is English-only and exposes oneM2M resource types, methods and RSC values without clipped text',
       'Mobius tree uses vertical-only touch and wheel scrolling with zero horizontal movement while CSE records keep compact paging',
       'every story stage shows a safe-area overlay that explains the highlighted system element and names the next real action',
+      'scenario actions, Mobius evidence and the next arrow use distinct guidance targets; inspecting the tree advances guidance to Next',
+      'visible story text remains fully readable and language, coach and navigation overlays do not cover app or Mobius content',
       'desktop Mobius stays left of the phone in light and dark mode',
       'phone landscape fits Mobius, app and overlay keyring in one viewport',
       'phone portrait and portrait deep links show the optimized landscape prompt with a 44px Continue upright path',
