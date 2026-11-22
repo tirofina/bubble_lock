@@ -1830,6 +1830,27 @@
      so a focus ring left on a control the guide has moved past never reads as a second highlight */
   --focus: var(--ink);
 }
+/* The intro line under the keyring is empty unless the server sends a message (the quest names the button), so
+   its reserved band returns to the keyring and the keyring sits on the optical center. Portrait phones keep
+   their band for the rotate prompt. */
+@media not all and (max-width: 760px) and (orientation: portrait) {
+  .story-demo:has(.story-intro-hint:empty) { --intro-band: 0px; }
+}
+/* Dark: the guide marks take the on-dark blue and a stronger success tint, so the moving halo keeps 3:1 or
+   more against the black canvas (accent #0070d1 at 30% measured about 1.3:1; on-dark blue at 55% about 3.2:1) */
+@media (prefers-color-scheme: dark) {
+  .story-demo {
+    --coach-halo: color-mix(in srgb, var(--accent-on-dark) 55%, transparent);
+    --coach-wave: color-mix(in srgb, var(--accent-on-dark) 50%, transparent);
+    --coach-proof: color-mix(in srgb, var(--success) 50%, transparent);
+    --guide-ring: color-mix(in srgb, var(--accent-on-dark) 70%, transparent);
+    --guide-glow: color-mix(in srgb, var(--accent-on-dark) 20%, transparent);
+  }
+  .story-demo[data-coach-target="next"] .story-stepper-next[data-special="true"] {
+    --coach-halo: color-mix(in srgb, var(--success) 50%, transparent);
+    --coach-wave: color-mix(in srgb, var(--success) 46%, transparent);
+  }
+}
 .story-coach {
   position: fixed; z-index: calc(var(--z-dock) + 2);
   top: calc(var(--safe-top) + (var(--topbar-h) - 44px) / 2);
